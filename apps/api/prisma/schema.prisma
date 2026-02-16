@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  role      String     @default("USER")
+  
+  // Perfil básico
+  bio       String?
+  bioLong   String?     // Bio extendida para creadores de contenido
+  avatarUrl String?
+  bannerUrl String?     // Banner/portada del perfil
+  
+  // Tipo de cuenta
+  isInfluencer   Boolean @default(false)
+  isVerified     Boolean @default(false)
+  accountType    String  @default("BASIC") // BASIC, PRO, CREATOR, ANALYST
+  
+  // Información profesional
+  title          String?  // ej: "Trading Analyst", "Crypto Investor"
+  company        String?
+  location       String?
+  website        String?
+  
+  // Redes sociales
+  linkedinUrl    String?
+  twitterUrl     String?
+  youtubeUrl     String?
+  instagramUrl   String?
+  
+  // Experiencia y credenciales
+  yearsExperience Int?
+  specializations String?  // JSON array: ["Stocks", "Crypto", "Options"]
+  certifications  String?  // JSON array de certificaciones
+  
+  // Estadísticas públicas
+  totalReturn     Float?   // Retorno total del portfolio (si es público)
+  winRate         Float?   // Tasa de éxito en trades
+  riskScore       Float?   // Score de riesgo (1-10)
+  
+  // Configuración de privacidad
+  isProfilePublic    Boolean @default(true)
+  showPortfolio      Boolean @default(false)
+  showStats          Boolean @default(false)
+  acceptingFollowers Boolean @default(true)
+  
+  // Relaciones
+  posts           Post[]
+  comments        Comment[]
+  likes           Like[]
+  followedBy      Follow[]  @relation("following")
+  following       Follow[]  @relation("follower")
+  
+  portfolios      Portfolio[]
+  watchlists      Watchlist[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  follower    User   @relation("follower", fields: [followerId], references: [id])
+  following   User   @relation("following", fields: [followingId], references: [id])
+
+  @@id([followerId, followingId])
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  content   String
+  mediaUrl  String?
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  
+  likes     Like[]
+  comments  Comment[]
+  
+  tickers   String // Comma separated tickers
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  
+  createdAt DateTime @default(now())
+}
+
+model Like {
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@id([postId, userId])
+}
+
+model Portfolio {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  nombre        String
+  descripcion   String?
+  objetivo      String?
+  monedaBase    String   @default("USD")
+  nivelRiesgo   String   @default("medio")
+  modoSocial    Boolean  @default(false)
+  esPrincipal   Boolean  @default(false)
+  admiteBienesRaices Boolean @default(false)
+  
+  // Relations
+  holdings      Holding[]
+  transactions  Transaction[]
+  cashAccounts  CashAccount[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Asset {
+  id        String   @id @default(uuid())
+  ticker    String   @unique
+  name      String
+  type      String   // STOCK, CRYPTO, ETF, BOND
+  currency  String   @default("USD")
+  
+  holdings     Holding[]
+  transactions Transaction[]
+}
+
+model Holding {
+  id          String   @id @default(uuid())
+  portfolioId String
+  assetId     String
+  
+  quantity    Decimal  @default(0)
+  averageCost Decimal  @default(0) // WAC
+  
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  asset       Asset     @relation(fields: [assetId], references: [id])
+  
+  @@unique([portfolioId, assetId])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  portfolioId String
+  assetId     String?  // Null for DEPOSIT/WITHDRAW
+  
+  type        String   // BUY, SELL, DIVIDEND, FEE, DEPOSIT, WITHDRAW
+  date        DateTime @default(now())
+  
+  quantity    Decimal  @default(0)
+  pricePerUnit Decimal @default(0)
+  fee         Decimal  @default(0)
+  total       Decimal  @default(0)
+  currency    String   @default("USD")
+  
+  notes       String?
+  
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  asset       Asset?    @relation(fields: [assetId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}
+
+model CashAccount {
+  id          String   @id @default(uuid())
+  portfolioId String
+  currency    String
+  balance     Decimal  @default(0)
+  
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  
+  @@unique([portfolioId, currency])
+}
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  tickers   String
+  
+  createdAt DateTime @default(now())
+}
+
+// ============================================
+// NEWS SYSTEM MODELS
+// ============================================
+
+model NewsSource {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  apiType     String   // 'rss', 'api', 'scraper'
+  country     String   // 'AR', 'US', 'GLOBAL'
+  language    String   @default("es")
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0) // Higher = more important
+  
+  news        News[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model NewsCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  color       String?  // For UI display
+  icon        String?  // Icon identifier
+  
+  news        News[]
+  
+  createdAt   DateTime @default(now())
+}
+
+model News {
+  id              String   @id @default(uuid())
+  
+  // Content
+  title           String
+  titleEs         String?  // Spanish translation if original is English
+  content         String   // Full article content
+  contentEs       String?  // Spanish translation
+  summary         String   // Short summary
+  summaryEs       String?
+  
+  // Metadata
+  url             String   @unique
+  urlHash         String   @unique // MD5 hash to prevent duplicates
+  imageUrl        String?
+  language        String   @default("es") // Original language
+  wasTranslated   Boolean  @default(false)
+  
+  // Classification
+  categoryId      String?
+  category        NewsCategory? @relation(fields: [categoryId], references: [id])
+  
+  sourceId        String
+  source          NewsSource @relation(fields: [sourceId], references: [id])
+  
+  author          String?
+  
+  // Analysis
+  sentiment       String?  // 'positive', 'neutral', 'negative'
+  sentimentScore  Float?   // -1.0 to 1.0
+  impactLevel     String?  // 'high', 'medium', 'low'
+  
+  // Associated companies/tickers
+  tickers         String   @default("") // Comma-separated tickers
+  
+  // Engagement
+  viewCount       Int      @default(0)
+  
+  // Dates
+  publishedAt     DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([publishedAt])
+  @@index([categoryId])
+  @@index([sourceId])
+  @@index([sentiment])
+}

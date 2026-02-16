@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        font-size: 18px;
+        --background: 0 0% 7%;
+        --foreground: 0 0% 98%;
+
+        --card: 0 0% 12%;
+        --card-foreground: 0 0% 98%;
+
+        --popover: 0 0% 9%;
+        --popover-foreground: 0 0% 98%;
+
+        --primary: 158 100% 48%;
+        --primary-foreground: 0 0% 7%;
+
+        --secondary: 0 0% 15%;
+        --secondary-foreground: 0 0% 98%;
+
+        --muted: 0 0% 18%;
+        --muted-foreground: 0 0% 60%;
+
+        --accent: 158 100% 48%;
+        --accent-foreground: 0 0% 7%;
+
+        --success: 142 76% 36%;
+        --success-foreground: 0 0% 98%;
+
+        --danger: 0 84% 60%;
+        --danger-foreground: 0 0% 98%;
+
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+
+        --border: 0 0% 20%;
+        --input: 0 0% 20%;
+        --ring: 158 100% 48%;
+
+        --radius: 1rem;
+
+        --gradient-hero: linear-gradient(135deg, hsl(0 0% 7%) 0%, hsl(0 0% 12%) 50%, hsl(158 100% 48% / 0.1) 100%);
+        --gradient-card: linear-gradient(135deg, hsl(0 0% 10% / 0.95) 0%, hsl(0 0% 12% / 0.8) 100%);
+        --gradient-accent: linear-gradient(90deg, hsl(158 100% 48%) 0%, hsl(158 100% 58%) 100%);
+        --gradient-primary-glow: radial-gradient(circle at center, hsl(158 100% 48% / 0.3) 0%, transparent 70%);
+
+        --shadow-glow: 0 0 60px hsl(158 100% 48% / 0.3);
+        --shadow-card: 0 12px 40px hsl(0 0% 0% / 0.6);
+        --shadow-intense: 0 0 80px hsl(158 100% 48% / 0.4);
+
+        --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        --sidebar-background: 0 0% 98%;
+        --sidebar-foreground: 240 5.3% 26.1%;
+        --sidebar-primary: 240 5.9% 10%;
+        --sidebar-primary-foreground: 0 0% 98%;
+        --sidebar-accent: 240 4.8% 95.9%;
+        --sidebar-accent-foreground: 240 5.9% 10%;
+        --sidebar-border: 220 13% 91%;
+        --sidebar-ring: 217.2 91.2% 59.8%;
+    }
+
+    @media (min-width: 1024px) {
+        :root {
+            font-size: 19px;
+        }
+    }
+
+    /* Force Dark Mode defaults */
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground font-sans antialiased text-lg;
+        line-height: 1.7;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-heading;
+    }
+}
+
+.market-overview-widget,
+.market-overview-widget .tradingview-widget-container__widget,
+.market-overview-widget iframe {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.market-overview-widget iframe {
+    display: block;
+}

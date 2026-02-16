@@ -1,0 +1,13 @@
+{
+    "name": "finix-backend",
+    "private": true,
+    "scripts": {
+        "start": "npm --prefix ../apps/api start",
+        "dev": "npm --prefix ../apps/api run dev",
+        "build": "npm --prefix ../apps/api run build",
+        "seed": "npm --prefix ../apps/api run seed",
+        "prisma:generate": "npm --prefix ../apps/api exec prisma generate",
+        "prisma:migrate": "npm --prefix ../apps/api exec prisma migrate deploy",
+        "prisma:studio": "npm --prefix ../apps/api exec prisma studio"
+    }
+}

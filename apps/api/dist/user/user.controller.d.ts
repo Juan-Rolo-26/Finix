@@ -1,0 +1,138 @@
+import { UserService } from './user.service';
+export declare class UserController {
+    private userService;
+    constructor(userService: UserService);
+    getMyProfile(req: any): Promise<{
+        id: string;
+        email: string;
+        username: string;
+        bio: string;
+        bioLong: string;
+        avatarUrl: string;
+        bannerUrl: string;
+        isInfluencer: boolean;
+        isVerified: boolean;
+        accountType: string;
+        title: string;
+        company: string;
+        location: string;
+        website: string;
+        linkedinUrl: string;
+        twitterUrl: string;
+        youtubeUrl: string;
+        instagramUrl: string;
+        yearsExperience: number;
+        specializations: string;
+        certifications: string;
+        totalReturn: number;
+        winRate: number;
+        riskScore: number;
+        isProfilePublic: boolean;
+        showPortfolio: boolean;
+        showStats: boolean;
+        acceptingFollowers: boolean;
+        createdAt: Date;
+        _count: {
+            posts: number;
+            followedBy: number;
+            following: number;
+        };
+    }>;
+    updateProfile(req: any, updateData: any): Promise<{
+        id: string;
+        email: string;
+        username: string;
+        bio: string;
+        bioLong: string;
+        avatarUrl: string;
+        bannerUrl: string;
+        isInfluencer: boolean;
+        isVerified: boolean;
+        accountType: string;
+        title: string;
+        company: string;
+        location: string;
+        website: string;
+        linkedinUrl: string;
+        twitterUrl: string;
+        youtubeUrl: string;
+        instagramUrl: string;
+        yearsExperience: number;
+        specializations: string;
+        certifications: string;
+        totalReturn: number;
+        winRate: number;
+        riskScore: number;
+        isProfilePublic: boolean;
+        showPortfolio: boolean;
+        showStats: boolean;
+        acceptingFollowers: boolean;
+        createdAt: Date;
+        _count: {
+            posts: number;
+            followedBy: number;
+            following: number;
+        };
+    }>;
+    updatePassword(req: any, body: {
+        currentPassword?: string;
+        newPassword?: string;
+    }): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    getMyStats(req: any): Promise<{
+        totalReturn: number;
+        winRate: number;
+        riskScore: number;
+        postsCount: number;
+        followersCount: number;
+        followingCount: number;
+        portfoliosCount: number;
+    }>;
+    getUserProfile(username: string): Promise<{
+        id: string;
+        email: string;
+        username: string;
+        bio: string;
+        bioLong: string;
+        avatarUrl: string;
+        bannerUrl: string;
+        isInfluencer: boolean;
+        isVerified: boolean;
+        accountType: string;
+        title: string;
+        company: string;
+        location: string;
+        website: string;
+        linkedinUrl: string;
+        twitterUrl: string;
+        youtubeUrl: string;
+        instagramUrl: string;
+        yearsExperience: number;
+        specializations: string;
+        certifications: string;
+        totalReturn: number;
+        winRate: number;
+        riskScore: number;
+        isProfilePublic: boolean;
+        showPortfolio: boolean;
+        showStats: boolean;
+        acceptingFollowers: boolean;
+        createdAt: Date;
+        _count: {
+            posts: number;
+            followedBy: number;
+            following: number;
+        };
+    } | {
+        id: string;
+        username: string;
+        bio: string;
+        avatarUrl: string;
+        isInfluencer: boolean;
+        isVerified: boolean;
+        accountType: string;
+        isProfilePublic: boolean;
+    }>;
+}
