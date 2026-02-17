@@ -12,6 +12,7 @@ import ResponsibleUse from './pages/legal/ResponsibleUse';
 import Markets from './pages/Markets';
 import News from './pages/News';
 import Profile from './pages/Profile';
+import FundamentalAnalysis from './pages/FundamentalAnalysis';
 import Settings from './pages/Settings';
 
 import DashboardLayout from './layouts/DashboardLayout';
@@ -29,6 +30,8 @@ export default function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/portfolio" element={<PortfolioPage />} />
                 <Route path="/market" element={<Markets />} />
+                <Route path="/analysis" element={<FundamentalAnalysis />} />
+                <Route path="/analysis/:ticker" element={<FundamentalAnalysis />} />
                 <Route path="/news" element={<News />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/profile/:username" element={<Profile />} />

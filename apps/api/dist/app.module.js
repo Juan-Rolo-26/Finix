@@ -16,6 +16,7 @@ const portfolio_module_1 = require("./portfolio/portfolio.module");
 const posts_module_1 = require("./posts/posts.module");
 const news_module_1 = require("./news/news.module");
 const user_module_1 = require("./user/user.module");
+const analysis_module_1 = require("./analysis/analysis.module");
 const events_gateway_1 = require("./events.gateway");
 let AppModule = class AppModule {
 };
@@ -30,6 +31,7 @@ exports.AppModule = AppModule = __decorate([
             posts_module_1.PostsModule,
             news_module_1.NewsModule,
             user_module_1.UserModule,
+            analysis_module_1.AnalysisModule,
         ],
         controllers: [],
         providers: [prisma_service_1.PrismaService, events_gateway_1.EventsGateway],

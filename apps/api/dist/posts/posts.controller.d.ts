@@ -42,6 +42,9 @@ export declare class PostsController {
         tickers: string;
         authorId: string;
     }>;
+    uploadFile(file: any): {
+        url: string;
+    };
     getAllPosts(page?: string, limit?: string): Promise<{
         posts: ({
             comments: ({

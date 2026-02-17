@@ -285,3 +285,52 @@ model News {
   @@index([sourceId])
   @@index([sentiment])
 }
+
+model FundamentalData {
+  id              String   @id @default(uuid())
+  ticker          String   @unique
+  
+  // Valuation
+  pe              Float?
+  forwardPe       Float?
+  ps              Float?
+  pb              Float?
+  evEbitda        Float?
+  dividendYield   Float?
+
+  // Profitability
+  roe             Float?
+  roa             Float?
+  netMargin       Float?
+  operatingMargin Float?
+  grossMargin     Float?
+
+  // Growth
+  revenueGrowth3Y Float?
+  revenueGrowth5Y Float?
+  epsGrowth       Float?
+
+  // Solidity
+  debtEquity      Float?
+  currentRatio    Float?
+  quickRatio      Float?
+  freeCashFlow    Float?
+
+  // Risk
+  beta            Float?
+  volatility      Float?
+  maxDrawdown     Float?
+
+  // Finix Score
+  finixScore      Float?
+  scoreDetails    String? // JSON string
+
+  // AI Analysis
+  aiSummary       String?
+  strengths       String // JSON stringified array
+  risks           String // JSON stringified array
+  sectorComparison String?
+  conclusion      String?
+
+  lastUpdated     DateTime @default(now())
+}

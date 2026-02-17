@@ -33,6 +33,7 @@ import {
     NotebookPen,
     Loader2
 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 // --- Helper Components ---
 
@@ -47,14 +48,15 @@ const Badge = ({ children, className, variant = "default" }: { children: React.R
 // --- Sections ---
 
 const Hero = () => {
+    const t = useTranslation();
     const { scrollY } = useScroll();
     const y = useTransform(scrollY, [0, 500], [0, 150]);
     const opacity = useTransform(scrollY, [0, 300], [1, 0]);
 
     const stats = [
-        { icon: TrendingUp, value: "Progreso", label: "Potencia tu capital a largo plazo", delay: 0.6 },
-        { icon: Users, value: "Comunidad", label: "Aprende de inversores reales", delay: 0.7 },
-        { icon: BarChart3, value: "Criterio", label: "Toma decisiones fundamentadas", delay: 0.8 },
+        { icon: TrendingUp, value: t.landing.hero.progress, label: t.landing.hero.progressDesc, delay: 0.6 },
+        { icon: Users, value: t.landing.hero.community, label: t.landing.hero.communityDesc, delay: 0.7 },
+        { icon: BarChart3, value: t.landing.hero.criteria, label: t.landing.hero.criteriaDesc, delay: 0.8 },
     ];
 
     return (
@@ -117,7 +119,7 @@ const Hero = () => {
                         className="space-y-4"
                     >
                         <h1 className="text-5xl md:text-7xl lg:text-8xl font-heading font-extrabold tracking-tight leading-[0.9]">
-                            <span className="block text-foreground">Bienvenido a</span>
+                            <span className="block text-foreground">{t.landing.hero.welcome}</span>
                             <span className="relative inline-block mt-2">
                                 <motion.span
                                     className="text-transparent bg-clip-text bg-gradient-accent"
@@ -143,12 +145,12 @@ const Hero = () => {
                         transition={{ duration: 0.7, delay: 0.3 }}
                         className="text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-3xl leading-relaxed"
                     >
-                        La plataforma donde invertir se vuelve{" "}
-                        <span className="text-primary font-semibold">social</span>,{" "}
-                        <span className="text-primary font-semibold">simple</span> y{" "}
-                        <span className="text-primary font-semibold">poderosa</span>.
+                        {t.landing.hero.subtitle}{" "}
+                        <span className="text-primary font-semibold">{t.landing.hero.social}</span>,{" "}
+                        <span className="text-primary font-semibold">{t.landing.hero.simple}</span> {t.lang.startsWith('en') ? 'and' : (t.lang.startsWith('pt') ? 'e' : 'y')}{" "}
+                        <span className="text-primary font-semibold">{t.landing.hero.powerful}</span>.
                         <br className="hidden md:block" />
-                        Analiza mercados, comparte ideas y conecta con inversores.
+                        {t.landing.hero.desc}
                     </motion.p>
 
                     {/* CTA Buttons */}
@@ -170,7 +172,7 @@ const Hero = () => {
                                 className="relative text-lg md:text-xl px-10 md:px-12 py-7 md:py-8 font-bold rounded-xl shadow-intense hover:shadow-[0_0_110px_rgba(0,255,170,0.5)] transition-all bg-primary text-primary-foreground border-none"
                             >
                                 <Link to="/auth" className="flex items-center">
-                                    <span>Comenzar Gratis</span>
+                                    <span>{t.landing.hero.startFree}</span>
                                     <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
                                 </Link>
                             </Button>
@@ -227,7 +229,7 @@ const Hero = () => {
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                     className="flex flex-col items-center gap-2"
                 >
-                    <span className="text-xs text-muted-foreground font-medium">Descubre más</span>
+                    <span className="text-xs text-muted-foreground font-medium">{t.landing.hero.discoverMore}</span>
                     <div className="w-6 h-10 rounded-full border-2 border-primary/40 flex items-start justify-center p-2">
                         <motion.div
                             className="w-1.5 h-3 bg-primary rounded-full"
@@ -242,6 +244,7 @@ const Hero = () => {
 };
 
 const MVPExplanation = () => {
+    const t = useTranslation();
     return (
         <section id="mvp" className="py-20 px-4 md:px-6 relative overflow-hidden bg-secondary/5 border-y border-primary/5">
             <div className="container max-w-[1200px] mx-auto">
@@ -253,14 +256,13 @@ const MVPExplanation = () => {
                 >
                     <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 px-4 py-1.5 shadow-[0_0_15px_rgba(34,197,94,0.15)]">
                         <NotebookPen className="w-3 h-3 mr-2" />
-                        Transparencia Total
+                        {t.landing.mvp.transparency}
                     </Badge>
                     <h2 className="text-4xl md:text-5xl font-heading font-bold mb-6">
-                        ¿Qué es un <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">MVP</span>?
+                        {t.landing.mvp.whatIs} <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">MVP</span>?
                     </h2>
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                        Estás viendo nuestra versión <strong>"Minimum Viable Product"</strong>.
-                        No es el final, es solo el comienzo explosivo.
+                        {t.landing.mvp.desc}
                     </p>
                 </motion.div>
 
@@ -268,22 +270,22 @@ const MVPExplanation = () => {
                     {[
                         {
                             icon: Loader2,
-                            title: "En Construcción Activa",
-                            desc: "Lanzamos las funciones nucleares para que operes YA. Mientras usas Finix, estamos programando las funciones de mañana.",
+                            title: t.landing.mvp.cards.construction.title,
+                            desc: t.landing.mvp.cards.construction.desc,
                             color: "text-blue-400",
                             bg: "bg-blue-500/10"
                         },
                         {
                             icon: Users,
-                            title: "Tu Voz Manda",
-                            desc: "No adivinamos qué quieres. Lo construimos basado en lo que TÚ nos pides. Eres co-creador de esta revolución.",
+                            title: t.landing.mvp.cards.voice.title,
+                            desc: t.landing.mvp.cards.voice.desc,
                             color: "text-emerald-400",
                             bg: "bg-emerald-500/10"
                         },
                         {
                             icon: Zap,
-                            title: "Iteración Rápida",
-                            desc: "Olvídate de actualizaciones anuales. Aquí verás mejoras, parches y nuevas herramientas cada semana.",
+                            title: t.landing.mvp.cards.iteration.title,
+                            desc: t.landing.mvp.cards.iteration.desc,
                             color: "text-orange-400",
                             bg: "bg-orange-500/10"
                         }
@@ -314,9 +316,9 @@ const MVPExplanation = () => {
                 >
                     <div className="relative z-10 flex flex-col items-center">
                         <MessageSquare className="w-10 h-10 text-primary mb-4" />
-                        <h4 className="text-2xl font-bold mb-2">¿Encontraste un bug o tienes una idea?</h4>
+                        <h4 className="text-2xl font-bold mb-2">{t.landing.mvp.feedback.title}</h4>
                         <p className="text-muted-foreground mb-6 max-w-xl">
-                            Tu feedback vale oro. Reporta errores o sugiere features y recibe insignias exclusivas de "Early Adopter" en tu perfil.
+                            {t.landing.mvp.feedback.desc}
                         </p>
                         <Button
                             variant="outline"
@@ -325,7 +327,7 @@ const MVPExplanation = () => {
                                 window.location.href = "mailto:finixarg@gmail.com?subject=Feedback%20Finix%20MVP&body=Hola%20equipo%20de%20Finix,%20tengo%20el%20siguiente%20feedback:";
                             }}
                         >
-                            Enviar Feedback
+                            {t.landing.mvp.feedback.btn}
                         </Button>
                     </div>
                 </motion.div>
@@ -335,57 +337,58 @@ const MVPExplanation = () => {
 };
 
 const Features = () => {
+    const t = useTranslation();
     const features = [
         {
             icon: TrendingUp,
-            title: "Feed Social Financiero",
-            description: "Como Instagram, pero con contenido financiero. Ideas de trading, análisis técnico, gráficos incrustados y opiniones de la comunidad.",
+            title: t.landing.features.cards.socialFeed.title,
+            description: t.landing.features.cards.socialFeed.desc,
             gradient: "from-primary/20 to-primary/5",
             iconBg: "bg-primary/20",
         },
         {
             icon: Wallet,
-            title: "Portafolios Inteligentes",
-            description: "Gestiona tus inversiones, compara rendimientos, simula operaciones y comparte tu estrategia con otros inversores.",
+            title: t.landing.features.cards.smartPortfolios.title,
+            description: t.landing.features.cards.smartPortfolios.desc,
             gradient: "from-emerald-500/20 to-emerald-500/5",
             iconBg: "bg-emerald-500/20",
         },
         {
             icon: Newspaper,
-            title: "Noticias Inteligentes",
-            description: "Noticias curadas por IA que resume eventos clave, explica impactos al mercado y genera alertas personalizadas.",
+            title: t.landing.features.cards.smartNews.title,
+            description: t.landing.features.cards.smartNews.desc,
             gradient: "from-blue-500/20 to-blue-500/5",
             iconBg: "bg-blue-500/20",
         },
         {
             icon: LineChart,
-            title: "Análisis Técnico Avanzado",
-            description: "TradingView integrado con herramientas profesionales: Fibonacci, RSI, MACD, y análisis automático generado por IA.",
+            title: t.landing.features.cards.techAnalysis.title,
+            description: t.landing.features.cards.techAnalysis.desc,
             gradient: "from-orange-500/20 to-orange-500/5",
             iconBg: "bg-orange-500/20",
         },
         {
             icon: User,
-            title: "Perfiles Profesionales",
-            description: "Muestra tu estrategia, portafolio, rendimiento histórico y conecta con inversores de ideas similares.",
+            title: t.landing.features.cards.proProfiles.title,
+            description: t.landing.features.cards.proProfiles.desc,
             gradient: "from-purple-500/20 to-purple-500/5",
             iconBg: "bg-purple-500/20",
         },
         {
             icon: GraduationCap,
-            title: "Academia y Webinars",
-            description: "Sesiones en vivo, rutas de aprendizaje y workshops con expertos para mejorar tus habilidades.",
+            title: t.landing.features.cards.academy.title,
+            description: t.landing.features.cards.academy.desc,
             gradient: "from-pink-500/20 to-pink-500/5",
             iconBg: "bg-pink-500/20",
         }
     ];
 
     const socialFeatures = [
-        { icon: MessageSquare, label: "Comentarios", color: "text-blue-400" },
-        { icon: Heart, label: "Likes", color: "text-red-400" },
-        { icon: Share2, label: "Compartir", color: "text-primary" },
-        { icon: Shield, label: "Seguridad", color: "text-emerald-400" },
-        { icon: Zap, label: "Tiempo Real", color: "text-yellow-400" }
+        { icon: MessageSquare, label: t.landing.features.social.comments, color: "text-blue-400" },
+        { icon: Heart, label: t.landing.features.social.likes, color: "text-red-400" },
+        { icon: Share2, label: t.landing.features.social.share, color: "text-primary" },
+        { icon: Shield, label: t.landing.features.social.security, color: "text-emerald-400" },
+        { icon: Zap, label: t.landing.features.social.realtime, color: "text-yellow-400" }
     ];
 
     return (
@@ -419,16 +422,16 @@ const Features = () => {
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6"
                     >
                         <Zap className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-medium text-primary">Todo lo que necesitas</span>
+                        <span className="text-sm font-medium text-primary">{t.landing.features.pill}</span>
                     </motion.div>
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6">
-                        5 Pilares de{" "}
+                        {t.landing.features.title}{" "}
                         <span className="text-transparent bg-clip-text bg-gradient-accent">
                             FINIX
                         </span>
                     </h2>
                     <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                        Una plataforma completa que combina lo mejor de las redes sociales con herramientas financieras profesionales
+                        {t.landing.features.subtitle}
                     </p>
                 </motion.div>
 
@@ -510,33 +513,34 @@ const Features = () => {
 };
 
 const Steps = () => {
+    const t = useTranslation();
     const steps = [
         {
             number: "01",
             icon: UserPlus,
-            title: "Crea tu Cuenta",
-            description: "Regístrate gratis en segundos con tu email o redes sociales. Sin tarjeta de crédito requerida.",
+            title: t.landing.steps.cards.step1.title,
+            description: t.landing.steps.cards.step1.desc,
             color: "from-primary to-emerald-400",
         },
         {
             number: "02",
             icon: Settings,
-            title: "Configura tu Perfil",
-            description: "Define tu estrategia de inversión, intereses y nivel de experiencia para personalizar tu feed.",
+            title: t.landing.steps.cards.step2.title,
+            description: t.landing.steps.cards.step2.desc,
             color: "from-blue-500 to-cyan-400",
         },
         {
             number: "03",
             icon: TrendingUp,
-            title: "Carga tu Portafolio",
-            description: "Importa tus posiciones manualmente o conecta tu broker para sincronizar automáticamente.",
+            title: t.landing.steps.cards.step3.title,
+            description: t.landing.steps.cards.step3.desc,
             color: "from-orange-500 to-yellow-400",
         },
         {
             number: "04",
             icon: Users,
-            title: "Conecta y Aprende",
-            description: "Sigue a inversores exitosos, comparte tus ideas y aprende de la comunidad en tiempo real.",
+            title: t.landing.steps.cards.step4.title,
+            description: t.landing.steps.cards.step4.desc,
             color: "from-purple-500 to-pink-400",
         },
     ];
@@ -565,14 +569,14 @@ const Steps = () => {
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6"
                     >
                         <CheckCircle2 className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-medium text-primary">Simple y Rápido</span>
+                        <span className="text-sm font-medium text-primary">{t.landing.steps.pill}</span>
                     </motion.div>
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6">
-                        Comienza en{" "}
-                        <span className="text-transparent bg-clip-text bg-gradient-accent">4 Pasos</span>
+                        {t.landing.steps.title}{" "}
+                        <span className="text-transparent bg-clip-text bg-gradient-accent">{t.landing.steps.titleSuffix}</span>
                     </h2>
                     <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                        Únete a la comunidad financiera más activa en minutos
+                        {t.landing.steps.subtitle}
                     </p>
                 </motion.div>
 
@@ -640,8 +644,8 @@ const Steps = () => {
                     className="text-center mt-16"
                 >
                     <p className="text-muted-foreground mb-6">
-                        ¿Listo para empezar? El proceso completo toma menos de{" "}
-                        <span className="text-primary font-semibold">2 minutos</span>
+                        {t.landing.steps.ready}{" "}
+                        <span className="text-primary font-semibold">{t.landing.steps.time}</span>
                     </p>
                     <motion.a
                         href="#register"
@@ -649,7 +653,7 @@ const Steps = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                     >
-                        <span>Crear Mi Cuenta Gratis</span>
+                        <span>{t.landing.steps.cta}</span>
                         <ArrowRight className="w-5 h-5" />
                     </motion.a>
                 </motion.div>
@@ -659,13 +663,14 @@ const Steps = () => {
 };
 
 const Showcase = () => {
+    const t = useTranslation();
     const mockPosts = [
         {
             user: "María López",
             username: "@marialopez",
             avatar: "M",
             verified: true,
-            action: "compartió análisis",
+            action: t.landing.showcase.sharedAnalysis,
             asset: "AAPL",
             trend: "up",
             change: "+3.2%",
@@ -678,7 +683,7 @@ const Showcase = () => {
             username: "@carlosruiz",
             avatar: "C",
             verified: false,
-            action: "publicó idea",
+            action: t.landing.showcase.postedIdea,
             asset: "TSLA",
             trend: "down",
             change: "-1.8%",
@@ -691,7 +696,7 @@ const Showcase = () => {
             username: "@anagarcia",
             avatar: "A",
             verified: true,
-            action: "actualizó portafolio",
+            action: t.landing.showcase.updatedPortfolio,
             asset: "BTC",
             trend: "up",
             change: "+5.7%",
@@ -730,16 +735,16 @@ const Showcase = () => {
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6"
                     >
                         <Eye className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-medium text-primary">Vista previa</span>
+                        <span className="text-sm font-medium text-primary">{t.landing.showcase.pill}</span>
                     </motion.div>
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6">
-                        Experiencia de{" "}
+                        {t.landing.showcase.title}{" "}
                         <span className="text-transparent bg-clip-text bg-gradient-accent">
-                            Usuario
+                            {t.landing.showcase.titleSuffix}
                         </span>
                     </h2>
                     <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                        Diseñada para que cualquier inversor pueda navegar con facilidad
+                        {t.landing.showcase.subtitle}
                     </p>
                 </motion.div>
 
@@ -758,8 +763,8 @@ const Showcase = () => {
                                             <Activity className="w-6 h-6 text-primary" />
                                         </div>
                                         <div>
-                                            <h3 className="font-heading font-bold text-lg">Feed en Tiempo Real</h3>
-                                            <p className="text-sm text-muted-foreground">Ideas de la comunidad</p>
+                                            <h3 className="font-heading font-bold text-lg">{t.landing.showcase.feedTitle}</h3>
+                                            <p className="text-sm text-muted-foreground">{t.landing.showcase.feedSubtitle}</p>
                                         </div>
                                     </div>
                                     <Badge className="bg-primary/20 text-primary border-primary/30">
@@ -840,8 +845,8 @@ const Showcase = () => {
                                             <TrendingUp className="w-6 h-6 text-emerald-400" />
                                         </div>
                                         <div>
-                                            <h3 className="font-heading font-bold text-lg">Mi Portafolio</h3>
-                                            <p className="text-sm text-muted-foreground">Rendimiento en tiempo real</p>
+                                            <h3 className="font-heading font-bold text-lg">{t.landing.showcase.myPortfolio}</h3>
+                                            <p className="text-sm text-muted-foreground">{t.landing.showcase.realtimePerformance}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1">
@@ -855,7 +860,7 @@ const Showcase = () => {
                                         className="p-5 rounded-xl bg-background/60 border border-border/30"
                                         whileHover={{ scale: 1.02 }}
                                     >
-                                        <p className="text-xs text-muted-foreground mb-1.5">Valor Total</p>
+                                        <p className="text-xs text-muted-foreground mb-1.5">{t.landing.showcase.totalValue}</p>
                                         <p className="text-3xl font-heading font-bold">$124,580</p>
                                         <p className="text-xs text-muted-foreground mt-1">USD</p>
                                     </motion.div>
@@ -863,14 +868,14 @@ const Showcase = () => {
                                         className="p-5 rounded-xl bg-background/60 border border-emerald-500/20"
                                         whileHover={{ scale: 1.02 }}
                                     >
-                                        <p className="text-xs text-muted-foreground mb-1.5">Ganancia Total</p>
+                                        <p className="text-xs text-muted-foreground mb-1.5">{t.landing.showcase.totalGain}</p>
                                         <p className="text-3xl font-heading font-bold text-emerald-400">+$8,420</p>
                                         <p className="text-xs text-emerald-400 mt-1">+7.25% YTD</p>
                                     </motion.div>
                                 </div>
 
                                 <div className="space-y-3">
-                                    <p className="text-sm font-medium text-muted-foreground">Posiciones</p>
+                                    <p className="text-sm font-medium text-muted-foreground">{t.landing.showcase.positions}</p>
                                     {holdings.map((holding, i) => (
                                         <motion.div
                                             key={i}
@@ -919,21 +924,22 @@ const Showcase = () => {
 
 const AuthSection = () => {
     const navigate = useNavigate();
+    const t = useTranslation();
     const benefits = [
         {
             icon: TrendingUp,
-            title: "Análisis en Tiempo Real",
-            description: "Accede a gráficos profesionales y análisis técnico avanzado",
+            title: t.landing.authSection.benefits.analysis.title,
+            description: t.landing.authSection.benefits.analysis.desc,
         },
         {
             icon: Shield,
-            title: "Portafolio Seguro",
-            description: "Gestiona tus inversiones con encriptación de nivel bancario",
+            title: t.landing.authSection.benefits.portfolio.title,
+            description: t.landing.authSection.benefits.portfolio.desc,
         },
         {
             icon: Zap,
-            title: "Comunidad Activa",
-            description: "Conecta con inversores y comparte estrategias ganadoras",
+            title: t.landing.authSection.benefits.community.title,
+            description: t.landing.authSection.benefits.community.desc,
         },
     ];
 
@@ -979,17 +985,17 @@ const AuthSection = () => {
                                     <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}>
                                         <Zap className="w-5 h-5 text-primary" />
                                     </motion.div>
-                                    <span className="text-base font-semibold text-primary">Únete a la Revolución</span>
+                                    <span className="text-base font-semibold text-primary">{t.landing.authSection.pill}</span>
                                 </div>
                             </motion.div>
                             <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold tracking-tight leading-[1.05]">
-                                Comienza tu viaje{" "}
+                                {t.landing.authSection.title}{" "}
                                 <span className="text-transparent bg-clip-text bg-gradient-accent">
-                                    financiero
+                                    {t.landing.authSection.titleSuffix}
                                 </span>
                             </h2>
                             <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl">
-                                Regístrate o inicia sesión en segundos. Todo listo para que inviertas y compartas sin fricción.
+                                {t.landing.authSection.desc}
                             </p>
                         </div>
 
@@ -1030,15 +1036,15 @@ const AuthSection = () => {
                     >
                         <div className="relative bg-gradient-to-br from-secondary/90 to-secondary/60 backdrop-blur-2xl border border-primary/20 rounded-3xl p-8 md:p-10 shadow-2xl space-y-6">
                             <div className="text-center space-y-4">
-                                <h3 className="text-3xl font-heading font-bold">Bienvenido a Finix</h3>
-                                <p className="text-muted-foreground">Únete a la comunidad líder en trading social.</p>
+                                <h3 className="text-3xl font-heading font-bold">{t.landing.authSection.cardTitle}</h3>
+                                <p className="text-muted-foreground">{t.landing.authSection.cardDesc}</p>
                                 <div className="grid grid-cols-2 gap-4">
                                     <Button
                                         size="lg"
                                         className="w-full bg-primary text-primary-foreground font-bold shadow-glow hover:shadow-intense"
                                         onClick={() => navigate('/auth')}
                                     >
-                                        Registrarse
+                                        {t.landing.authSection.register}
                                     </Button>
                                     <Button
                                         size="lg"
@@ -1046,7 +1052,7 @@ const AuthSection = () => {
                                         className="w-full border-primary/50 hover:bg-primary/10"
                                         onClick={() => navigate('/auth')}
                                     >
-                                        Iniciar Sesión
+                                        {t.landing.authSection.login}
                                     </Button>
                                 </div>
                             </div>
@@ -1059,12 +1065,8 @@ const AuthSection = () => {
 };
 
 const CTA = () => {
-    const features = [
-        "Gratis para siempre",
-        "Sin tarjeta de crédito",
-        "Configuración en 2 minutos",
-        "Comunidad activa"
-    ];
+    const t = useTranslation();
+    const features = t.landing.cta.features;
 
     return (
         <section id="cta" className="py-24 md:py-32 px-4 md:px-6 relative overflow-hidden">
@@ -1113,18 +1115,18 @@ const CTA = () => {
                         >
                             <Sparkles className="w-4 h-4 text-primary" />
                         </motion.div>
-                        <span className="text-sm font-semibold text-primary">Únete a la Revolución Financiera</span>
+                        <span className="text-sm font-semibold text-primary">{t.landing.cta.pill}</span>
                     </motion.div>
 
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold tracking-tight leading-[1.1]">
-                        ¿Listo para invertir{" "}
+                        {t.landing.cta.title}{" "}
                         <span className="text-transparent bg-clip-text bg-gradient-accent">
-                            de forma inteligente?
+                            {t.landing.cta.titleSuffix}
                         </span>
                     </h2>
 
                     <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                        Únete a miles de inversores que ya están tomando decisiones más informadas con FINIX
+                        {t.landing.cta.desc}
                     </p>
 
                     <div className="flex flex-wrap justify-center gap-3 pt-2">
@@ -1156,7 +1158,7 @@ const CTA = () => {
                                 className="relative text-lg md:text-xl px-10 md:px-12 py-7 md:py-8 font-bold rounded-xl shadow-intense group bg-primary text-primary-foreground"
                             >
                                 <a href="#register" className="flex items-center">
-                                    <span>Crear Cuenta Gratis</span>
+                                    <span>{t.landing.cta.btn}</span>
                                     <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
                                 </a>
                             </Button>
@@ -1170,6 +1172,7 @@ const CTA = () => {
 
 // --- Footer saved from current version ---
 const Footer = () => {
+    const t = useTranslation();
     return (
         <footer className="border-t border-white/5 bg-black py-16">
             <div className="container mx-auto px-6">
@@ -1180,29 +1183,29 @@ const Footer = () => {
                             <span className="font-heading font-bold text-xl text-white">Finix</span>
                         </div>
                         <p className="text-muted-foreground max-w-sm leading-relaxed">
-                            Plataforma social dedicada al análisis y debate financiero profesional. Conectamos inversores con criterio.
+                            {t.landing.footer.desc}
                         </p>
                     </div>
                     <div>
-                        <h4 className="font-bold text-white mb-4">Plataforma</h4>
+                        <h4 className="font-bold text-white mb-4">{t.landing.footer.platform}</h4>
                         <ul className="space-y-3 text-sm text-muted-foreground">
-                            <li><a href="#" className="hover:text-primary transition-colors">Sobre Finix</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">Comunidad PRO</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">Normas de la comunidad</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">Contacto</a></li>
+                            <li><a href="#" className="hover:text-primary transition-colors">{t.landing.footer.about}</a></li>
+                            <li><a href="#" className="hover:text-primary transition-colors">{t.landing.footer.proCommunity}</a></li>
+                            <li><a href="#" className="hover:text-primary transition-colors">{t.landing.footer.rules}</a></li>
+                            <li><a href="#" className="hover:text-primary transition-colors">{t.landing.footer.contact}</a></li>
                         </ul>
                     </div>
                     <div>
-                        <h4 className="font-bold text-white mb-4">Legal</h4>
+                        <h4 className="font-bold text-white mb-4">{t.landing.footer.legal}</h4>
                         <ul className="space-y-3 text-sm text-muted-foreground">
-                            <li><Link to="/legal/privacy" className="hover:text-primary transition-colors">Política de Privacidad</Link></li>
-                            <li><Link to="/legal/terms" className="hover:text-primary transition-colors">Términos y Condiciones</Link></li>
-                            <li><Link to="/legal/responsible" className="hover:text-primary transition-colors">Uso Responsable</Link></li>
+                            <li><Link to="/legal/privacy" className="hover:text-primary transition-colors">{t.legal.privacy}</Link></li>
+                            <li><Link to="/legal/terms" className="hover:text-primary transition-colors">{t.legal.terms}</Link></li>
+                            <li><Link to="/legal/responsible" className="hover:text-primary transition-colors">{t.landing.footer.responsible}</Link></li>
                         </ul>
                     </div>
                 </div>
                 <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-sm text-muted-foreground">© 2025 Finix. Todos los derechos reservados.</p>
+                    <p className="text-sm text-muted-foreground">{t.landing.footer.copyright}</p>
                     <div className="flex gap-6">
                         <a href="https://instagram.com/fiinixarg" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-white transition-colors">Instagram</a>
                         <a href="https://tiktok.com/@finixarg" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-white transition-colors">TikTok</a>
@@ -1217,6 +1220,7 @@ const Footer = () => {
 // --- Main Page ---
 
 const Landing = () => {
+    const t = useTranslation();
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background text-foreground overflow-x-hidden selection:bg-primary selection:text-primary-foreground font-sans">
             {/* Navbar */}
@@ -1238,7 +1242,7 @@ const Landing = () => {
                                             Finix
                                         </span>
                                         <span className="text-[10px] uppercase tracking-[0.35em] text-muted-foreground">
-                                            Inversión social
+                                            {t.landing.nav.investmentSocial}
                                         </span>
                                     </div>
                                 </Link>
@@ -1247,11 +1251,11 @@ const Landing = () => {
                             {/* Navigation */}
                             <div className="hidden md:flex items-center gap-1 rounded-full bg-white/5 px-2 py-1 border border-white/10">
                                 {[
-                                    { name: "Inicio", href: "#inicio" },
-                                    { name: "Sobre MVP", href: "#mvp" },
-                                    { name: "Pilares", href: "#features" },
-                                    { name: "Experiencia", href: "#showcase" },
-                                    { name: "Registro", href: "#register" },
+                                    { name: t.landing.nav.home, href: "#inicio" },
+                                    { name: t.landing.nav.mvp, href: "#mvp" },
+                                    { name: t.landing.nav.pillars, href: "#features" },
+                                    { name: t.landing.nav.experience, href: "#showcase" },
+                                    { name: t.landing.nav.register, href: "#register" },
                                 ].map((link) => (
                                     <a
                                         key={link.name}
@@ -1270,14 +1274,14 @@ const Landing = () => {
                                         variant="ghost"
                                         className="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10"
                                     >
-                                        Ingresar
+                                        {t.landing.nav.login}
                                     </Button>
                                 </Link>
                                 <Link to="/auth">
                                     <Button
                                         className="h-10 rounded-full bg-gradient-to-r from-primary to-emerald-400 px-5 text-sm font-bold text-black shadow-[0_0_20px_rgba(34,197,94,0.35)] hover:shadow-[0_0_30px_rgba(34,197,94,0.55)] transition-all duration-300"
                                     >
-                                        Registrarse
+                                        {t.landing.nav.signup}
                                     </Button>
                                 </Link>
                             </div>

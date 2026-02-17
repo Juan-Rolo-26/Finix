@@ -10,14 +10,12 @@ import {
     Trash2,
     DollarSign,
     Wallet,
-    Target,
     Filter,
     Download,
-    Bell,
     RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
     Dialog,
@@ -49,8 +47,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { apiFetch } from '@/lib/api';
+import { useTranslation } from '@/i18n';
 
 import { AddTransactionModal } from '@/components/portfolio/AddTransactionModal';
+import { AllocationChart, TopAssetsChart, CapitalEvolutionChart } from '@/components/portfolio/PortfolioCharts';
 
 // Types
 interface Portfolio {
@@ -111,6 +111,7 @@ const getInitialPortfolioForm = () => ({
 });
 
 const PortfolioPage = () => {
+    const t = useTranslation();
     const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
     const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
     const [metrics, setMetrics] = useState<PortfolioMetrics | null>(null);
@@ -125,8 +126,6 @@ const PortfolioPage = () => {
 
     // Forms
     const [portfolioForm, setPortfolioForm] = useState(getInitialPortfolioForm);
-
-    // Asset form state removed - moved to AddTransactionModal
 
     // Load portfolios
     useEffect(() => {
@@ -152,7 +151,7 @@ const PortfolioPage = () => {
             const response = await apiFetch('/portfolios');
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Error al cargar portafolios');
+                throw new Error(errorData.message || 'Error loading portfolios');
             }
 
             const data = await response.json();
@@ -182,7 +181,7 @@ const PortfolioPage = () => {
             setSelectedPortfolio(null);
             setMetrics(null);
             setMovements([]);
-            setErrorMessage((error as any)?.message || 'Error al cargar portafolios');
+            setErrorMessage((error as any)?.message || 'Error loading portfolios');
         } finally {
             setLoading(false);
         }
@@ -193,14 +192,14 @@ const PortfolioPage = () => {
             const response = await apiFetch(`/portfolios/${portfolioId}/metrics`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Error al cargar métricas');
+                throw new Error(errorData.message || 'Error loading metrics');
             }
             const data = await response.json();
             setMetrics(data);
             setErrorMessage(null);
         } catch (error) {
             console.error('Error loading metrics:', error);
-            setErrorMessage((error as any)?.message || 'Error al cargar métricas');
+            setErrorMessage((error as any)?.message || 'Error loading metrics');
         }
     };
 
@@ -209,7 +208,7 @@ const PortfolioPage = () => {
             const response = await apiFetch(`/portfolios/${portfolioId}/movements`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Error al cargar movimientos');
+                throw new Error(errorData.message || 'Error loading movements');
             }
             const data = await response.json();
             setMovements(Array.isArray(data) ? data : []);
@@ -217,7 +216,7 @@ const PortfolioPage = () => {
         } catch (error) {
             console.error('Error loading movements:', error);
             setMovements([]);
-            setErrorMessage((error as any)?.message || 'Error al cargar movimientos');
+            setErrorMessage((error as any)?.message || 'Error loading movements');
         }
     };
 
@@ -236,7 +235,7 @@ const PortfolioPage = () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Error al crear portafolio');
+                throw new Error(errorData.message || 'Error creating portfolio');
             }
 
             const newPortfolio = await response.json();
@@ -245,7 +244,7 @@ const PortfolioPage = () => {
             await loadPortfolios(newPortfolio?.id);
         } catch (error: any) {
             console.error('Error creating portfolio:', error);
-            alert(error?.message || 'Error al crear portafolio');
+            alert(error?.message || 'Error creating portfolio');
         } finally {
             setIsSubmitting(false);
         }
@@ -253,7 +252,7 @@ const PortfolioPage = () => {
 
     const deleteAsset = async (assetId: string) => {
         if (!selectedPortfolio?.id) return;
-        if (!confirm('¿Estás seguro de eliminar este activo?')) return;
+        if (!confirm(t.portfolio.assets.deleteConfirm)) return;
 
         try {
             const response = await apiFetch(`/portfolios/assets/${assetId}?portfolioId=${encodeURIComponent(selectedPortfolio.id)}`, {
@@ -262,18 +261,18 @@ const PortfolioPage = () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Error al eliminar activo');
+                throw new Error(errorData.message || 'Error deleting asset');
             }
 
             await loadPortfolios(selectedPortfolio.id);
         } catch (error: any) {
             console.error('Error deleting asset:', error);
-            alert(error?.message || 'Error al eliminar activo');
+            alert(error?.message || 'Error deleting asset');
         }
     };
 
     const deletePortfolio = async (portfolioId: string) => {
-        if (!confirm('¿Eliminar este portafolio? Esta acción no se puede deshacer.')) return;
+        if (!confirm(t.portfolio.deleteConfirm)) return;
 
         try {
             const response = await apiFetch(`/portfolios/${portfolioId}`, {
@@ -282,13 +281,13 @@ const PortfolioPage = () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Error al eliminar portafolio');
+                throw new Error(errorData.message || 'Error deleting portfolio');
             }
 
             await loadPortfolios();
         } catch (error: any) {
             console.error('Error deleting portfolio:', error);
-            alert(error?.message || 'Error al eliminar portafolio');
+            alert(error?.message || 'Error deleting portfolio');
         }
     };
 
@@ -309,7 +308,7 @@ const PortfolioPage = () => {
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <RefreshCw className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-                    <p className="text-muted-foreground">Cargando portafolios...</p>
+                    <p className="text-muted-foreground">Loading...</p>
                 </div>
             </div>
         );
@@ -321,9 +320,9 @@ const PortfolioPage = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-4xl font-heading font-bold mb-2">Portafolios</h1>
+                        <h1 className="text-4xl font-heading font-bold mb-2">{t.portfolio.title}</h1>
                         <p className="text-muted-foreground">
-                            Gestiona tus inversiones de forma profesional
+                            {t.portfolio.subtitle}
                         </p>
                     </div>
 
@@ -335,7 +334,7 @@ const PortfolioPage = () => {
                                 onClick={() => deletePortfolio(selectedPortfolio.id)}
                             >
                                 <Trash2 className="w-4 h-4 mr-2" />
-                                Eliminar Portafolio
+                                {t.portfolio.deletePortfolio}
                             </Button>
                         )}
 
@@ -343,32 +342,32 @@ const PortfolioPage = () => {
                             <DialogTrigger asChild>
                                 <Button className="gap-2">
                                     <Plus className="w-4 h-4" />
-                                    Crear Portafolio
+                                    {t.portfolio.createPortfolio}
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[500px]">
                                 <DialogHeader>
-                                    <DialogTitle>Crear Nuevo Portafolio</DialogTitle>
+                                    <DialogTitle>{t.portfolio.createTitle}</DialogTitle>
                                     <DialogDescription>
-                                        Define los parámetros de tu nuevo portafolio de inversión
+                                        {t.portfolio.createDesc}
                                     </DialogDescription>
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="nombre">Nombre *</Label>
+                                        <Label htmlFor="nombre">{t.portfolio.form.name} *</Label>
                                         <Input
                                             id="nombre"
-                                            placeholder="Mi Portafolio de Largo Plazo"
+                                            placeholder={t.portfolio.form.namePlaceholder}
                                             value={portfolioForm.nombre}
                                             onChange={(e) => setPortfolioForm({ ...portfolioForm, nombre: e.target.value })}
                                         />
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="descripcion">Descripción</Label>
+                                        <Label htmlFor="descripcion">{t.portfolio.form.desc}</Label>
                                         <Textarea
                                             id="descripcion"
-                                            placeholder="Describe el propósito de este portafolio..."
+                                            placeholder={t.portfolio.form.descPlaceholder}
                                             value={portfolioForm.descripcion}
                                             onChange={(e) => setPortfolioForm({ ...portfolioForm, descripcion: e.target.value })}
                                         />
@@ -376,7 +375,7 @@ const PortfolioPage = () => {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="objetivo">Objetivo</Label>
+                                            <Label htmlFor="objetivo">{t.portfolio.form.objective}</Label>
                                             <Select
                                                 value={portfolioForm.objetivo}
                                                 onValueChange={(value) => setPortfolioForm({ ...portfolioForm, objetivo: value })}
@@ -394,7 +393,7 @@ const PortfolioPage = () => {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="monedaBase">Moneda Base</Label>
+                                            <Label htmlFor="monedaBase">{t.portfolio.form.baseCurrency}</Label>
                                             <Select
                                                 value={portfolioForm.monedaBase}
                                                 onValueChange={(value) => setPortfolioForm({ ...portfolioForm, monedaBase: value })}
@@ -412,7 +411,7 @@ const PortfolioPage = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="nivelRiesgo">Nivel de Riesgo</Label>
+                                        <Label htmlFor="nivelRiesgo">{t.portfolio.form.riskLevel}</Label>
                                         <Select
                                             value={portfolioForm.nivelRiesgo}
                                             onValueChange={(value) => setPortfolioForm({ ...portfolioForm, nivelRiesgo: value })}
@@ -430,9 +429,9 @@ const PortfolioPage = () => {
 
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
-                                            <Label htmlFor="modoSocial">Modo Social</Label>
+                                            <Label htmlFor="modoSocial">{t.portfolio.form.socialMode}</Label>
                                             <p className="text-xs text-muted-foreground">
-                                                Permite que otros usuarios vean este portafolio
+                                                {t.portfolio.form.socialModeDesc}
                                             </p>
                                         </div>
                                         <Switch
@@ -444,9 +443,9 @@ const PortfolioPage = () => {
 
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
-                                            <Label htmlFor="admiteBienesRaices">Bienes Raíces</Label>
+                                            <Label htmlFor="admiteBienesRaices">{t.portfolio.form.realEstate}</Label>
                                             <p className="text-xs text-muted-foreground">
-                                                Permite agregar activos inmobiliarios en este portafolio
+                                                {t.portfolio.form.realEstateDesc}
                                             </p>
                                         </div>
                                         <Switch
@@ -458,9 +457,9 @@ const PortfolioPage = () => {
 
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
-                                            <Label htmlFor="esPrincipal">Portafolio Principal</Label>
+                                            <Label htmlFor="esPrincipal">{t.portfolio.form.mainPortfolio}</Label>
                                             <p className="text-xs text-muted-foreground">
-                                                Se mostrará por defecto al abrir la sección
+                                                {t.portfolio.form.mainPortfolioDesc}
                                             </p>
                                         </div>
                                         <Switch
@@ -472,10 +471,10 @@ const PortfolioPage = () => {
                                 </div>
                                 <DialogFooter>
                                     <Button variant="outline" onClick={() => setCreatePortfolioOpen(false)}>
-                                        Cancelar
+                                        {t.portfolio.form.cancel}
                                     </Button>
                                     <Button onClick={createPortfolio} disabled={!portfolioForm.nombre || isSubmitting}>
-                                        {isSubmitting ? 'Creando...' : 'Crear Portafolio'}
+                                        {isSubmitting ? t.portfolio.form.creating : t.portfolio.form.create}
                                     </Button>
                                 </DialogFooter>
                             </DialogContent>
@@ -530,7 +529,7 @@ const PortfolioPage = () => {
                             >
                                 <Card>
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Capital Total</CardTitle>
+                                        <CardTitle className="text-sm font-medium">{t.portfolio.metrics.totalCapital}</CardTitle>
                                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                                     </CardHeader>
                                     <CardContent>
@@ -538,7 +537,7 @@ const PortfolioPage = () => {
                                             {formatCurrency(metrics.capitalTotal, selectedPortfolio.monedaBase)}
                                         </div>
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            Monto invertido
+                                            {t.portfolio.metrics.investedAmount}
                                         </p>
                                     </CardContent>
                                 </Card>
@@ -551,7 +550,7 @@ const PortfolioPage = () => {
                             >
                                 <Card>
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Valor Actual</CardTitle>
+                                        <CardTitle className="text-sm font-medium">{t.portfolio.metrics.currentValue}</CardTitle>
                                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                                     </CardHeader>
                                     <CardContent>
@@ -559,7 +558,7 @@ const PortfolioPage = () => {
                                             {formatCurrency(metrics.valorActual, selectedPortfolio.monedaBase)}
                                         </div>
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            Valor de mercado
+                                            {t.portfolio.metrics.marketValue}
                                         </p>
                                     </CardContent>
                                 </Card>
@@ -572,7 +571,7 @@ const PortfolioPage = () => {
                             >
                                 <Card>
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Ganancia/Pérdida</CardTitle>
+                                        <CardTitle className="text-sm font-medium">{t.portfolio.metrics.gainLoss}</CardTitle>
                                         {metrics.gananciaTotal >= 0 ? (
                                             <ArrowUpRight className="h-4 w-4 text-green-500" />
                                         ) : (
@@ -597,13 +596,13 @@ const PortfolioPage = () => {
                             >
                                 <Card>
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Activos</CardTitle>
+                                        <CardTitle className="text-sm font-medium">{t.portfolio.metrics.assets}</CardTitle>
                                         <PieChart className="h-4 w-4 text-muted-foreground" />
                                     </CardHeader>
                                     <CardContent>
                                         <div className="text-2xl font-bold">{metrics.cantidadActivos}</div>
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            En portafolio
+                                            {t.portfolio.metrics.inPortfolio}
                                         </p>
                                     </CardContent>
                                 </Card>
@@ -613,19 +612,19 @@ const PortfolioPage = () => {
                         {/* Main Content */}
                         <Tabs defaultValue="assets" className="space-y-6">
                             <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-                                <TabsTrigger value="assets">Activos</TabsTrigger>
-                                <TabsTrigger value="movements">Movimientos</TabsTrigger>
-                                <TabsTrigger value="diversification">Diversificación</TabsTrigger>
-                                <TabsTrigger value="advanced">Avanzado</TabsTrigger>
+                                <TabsTrigger value="assets">{t.portfolio.tabs.assets}</TabsTrigger>
+                                <TabsTrigger value="movements">{t.portfolio.tabs.movements}</TabsTrigger>
+                                <TabsTrigger value="diversification">{t.portfolio.tabs.diversification}</TabsTrigger>
+                                <TabsTrigger value="advanced">{t.portfolio.tabs.advanced}</TabsTrigger>
                             </TabsList>
 
                             {/* Assets Tab */}
                             <TabsContent value="assets" className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-2xl font-bold">Activos del Portafolio</h2>
+                                    <h2 className="text-2xl font-bold">{t.portfolio.assets.title}</h2>
                                     <Button className="gap-2" onClick={() => setAddAssetOpen(true)}>
                                         <Plus className="w-4 h-4" />
-                                        Agregar Activo
+                                        {t.portfolio.assets.add}
                                     </Button>
                                     <AddTransactionModal
                                         open={addAssetOpen}
@@ -644,15 +643,15 @@ const PortfolioPage = () => {
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
-                                                    <TableHead>Ticker</TableHead>
-                                                    <TableHead>Tipo</TableHead>
-                                                    <TableHead className="text-right">Cantidad</TableHead>
-                                                    <TableHead className="text-right">Monto Invertido</TableHead>
-                                                    <TableHead className="text-right">PPC</TableHead>
-                                                    <TableHead className="text-right">Precio Actual</TableHead>
-                                                    <TableHead className="text-right">Variación</TableHead>
-                                                    <TableHead className="text-right">Ganancia</TableHead>
-                                                    <TableHead className="text-right">Acciones</TableHead>
+                                                    <TableHead>{t.portfolio.assets.table.ticker}</TableHead>
+                                                    <TableHead>{t.portfolio.assets.table.type}</TableHead>
+                                                    <TableHead className="text-right">{t.portfolio.assets.table.quantity}</TableHead>
+                                                    <TableHead className="text-right">{t.portfolio.assets.table.invested}</TableHead>
+                                                    <TableHead className="text-right">{t.portfolio.assets.table.avgPrice}</TableHead>
+                                                    <TableHead className="text-right">{t.portfolio.assets.table.currentPrice}</TableHead>
+                                                    <TableHead className="text-right">{t.portfolio.assets.table.variation}</TableHead>
+                                                    <TableHead className="text-right">{t.portfolio.assets.table.gain}</TableHead>
+                                                    <TableHead className="text-right">{t.portfolio.assets.table.actions}</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -705,14 +704,14 @@ const PortfolioPage = () => {
                                             <div className="text-center py-12">
                                                 <Wallet className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                                                 <p className="text-muted-foreground">
-                                                    No hay activos en este portafolio
+                                                    {t.portfolio.assets.empty}
                                                 </p>
                                                 <Button
                                                     variant="outline"
                                                     className="mt-4"
                                                     onClick={() => setAddAssetOpen(true)}
                                                 >
-                                                    Agregar Primer Activo
+                                                    {t.portfolio.assets.addFirst}
                                                 </Button>
                                             </div>
                                         )}
@@ -723,15 +722,15 @@ const PortfolioPage = () => {
                             {/* Movements Tab */}
                             <TabsContent value="movements" className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-2xl font-bold">Historial de Movimientos</h2>
+                                    <h2 className="text-2xl font-bold">{t.portfolio.movements.title}</h2>
                                     <div className="flex gap-2">
                                         <Button variant="outline" size="sm">
                                             <Filter className="w-4 h-4 mr-2" />
-                                            Filtros
+                                            {t.portfolio.movements.filters}
                                         </Button>
                                         <Button variant="outline" size="sm">
                                             <Download className="w-4 h-4 mr-2" />
-                                            Exportar
+                                            {t.portfolio.movements.export}
                                         </Button>
                                     </div>
                                 </div>
@@ -741,13 +740,13 @@ const PortfolioPage = () => {
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
-                                                    <TableHead>Fecha</TableHead>
-                                                    <TableHead>Tipo</TableHead>
-                                                    <TableHead>Activo</TableHead>
-                                                    <TableHead>Clase</TableHead>
-                                                    <TableHead className="text-right">Cantidad</TableHead>
-                                                    <TableHead className="text-right">Precio</TableHead>
-                                                    <TableHead className="text-right">Total</TableHead>
+                                                    <TableHead>{t.portfolio.movements.table.date}</TableHead>
+                                                    <TableHead>{t.portfolio.movements.table.type}</TableHead>
+                                                    <TableHead>{t.portfolio.movements.table.asset}</TableHead>
+                                                    <TableHead>{t.portfolio.movements.table.class}</TableHead>
+                                                    <TableHead className="text-right">{t.portfolio.movements.table.quantity}</TableHead>
+                                                    <TableHead className="text-right">{t.portfolio.movements.table.price}</TableHead>
+                                                    <TableHead className="text-right">{t.portfolio.movements.table.total}</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -787,7 +786,7 @@ const PortfolioPage = () => {
                                             <div className="text-center py-12">
                                                 <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                                                 <p className="text-muted-foreground">
-                                                    No hay movimientos registrados
+                                                    {t.portfolio.movements.empty}
                                                 </p>
                                             </div>
                                         )}
@@ -796,171 +795,50 @@ const PortfolioPage = () => {
                             </TabsContent>
 
                             {/* Diversification Tab */}
-                            <TabsContent value="diversification" className="space-y-4">
-                                <h2 className="text-2xl font-bold">Análisis de Diversificación</h2>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <TabsContent value="diversification" className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <Card>
                                         <CardHeader>
                                             <CardTitle>Por Clase de Activo</CardTitle>
-                                            <CardDescription>
-                                                Distribución del portafolio por tipo de activo
-                                            </CardDescription>
                                         </CardHeader>
                                         <CardContent>
-                                            <div className="space-y-4">
-                                                {Object.entries(metrics.diversificacionPorClase).map(([clase, valor]) => {
-                                                    const porcentaje = metrics.valorActual > 0 ? (valor / metrics.valorActual) * 100 : 0;
-                                                    return (
-                                                        <div key={clase}>
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <span className="text-sm font-medium capitalize">{clase}</span>
-                                                                <span className="text-sm text-muted-foreground">
-                                                                    {porcentaje.toFixed(1)}%
-                                                                </span>
-                                                            </div>
-                                                            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-primary rounded-full transition-all"
-                                                                    style={{ width: `${porcentaje}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                            {metrics.diversificacionPorClase && (
+                                                <div className="h-[300px]">
+                                                    <AllocationChart data={metrics.diversificacionPorClase} totalValue={metrics.valorActual} />
+                                                </div>
+                                            )}
                                         </CardContent>
                                     </Card>
 
                                     <Card>
                                         <CardHeader>
                                             <CardTitle>Por Activo Individual</CardTitle>
-                                            <CardDescription>
-                                                Top activos por valor en portafolio
-                                            </CardDescription>
                                         </CardHeader>
                                         <CardContent>
-                                            <div className="space-y-4">
-                                                {Object.entries(metrics.diversificacionPorActivo)
-                                                    .sort(([, a], [, b]) => b - a)
-                                                    .slice(0, 5)
-                                                    .map(([ticker, valor]) => {
-                                                        const porcentaje = metrics.valorActual > 0 ? (valor / metrics.valorActual) * 100 : 0;
-                                                        return (
-                                                            <div key={ticker}>
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <span className="text-sm font-medium">{ticker}</span>
-                                                                    <span className="text-sm text-muted-foreground">
-                                                                        {porcentaje.toFixed(1)}%
-                                                                    </span>
-                                                                </div>
-                                                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                                                                    <div
-                                                                        className="h-full bg-primary rounded-full transition-all"
-                                                                        style={{ width: `${porcentaje}%` }}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                            </div>
+                                            {metrics.diversificacionPorActivo && (
+                                                <div className="h-[300px]">
+                                                    <TopAssetsChart data={metrics.diversificacionPorActivo} totalValue={metrics.valorActual} />
+                                                </div>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 </div>
                             </TabsContent>
 
-                            {/* Advanced Tab */}
-                            <TabsContent value="advanced" className="space-y-4">
-                                <h2 className="text-2xl font-bold">Funciones Avanzadas</h2>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <Card className="opacity-60">
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center gap-2">
-                                                <RefreshCw className="w-5 h-5" />
-                                                Rebalanceo Automático
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Próximamente: Mantén tu portafolio balanceado automáticamente
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <Button disabled className="w-full">
-                                                Configurar Rebalanceo
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card className="opacity-60">
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center gap-2">
-                                                <Bell className="w-5 h-5" />
-                                                Alertas de Precio
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Próximamente: Recibe notificaciones cuando tus activos alcancen ciertos precios
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <Button disabled className="w-full">
-                                                Configurar Alertas
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card className="opacity-60">
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center gap-2">
-                                                <Download className="w-5 h-5" />
-                                                Exportación de Datos
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Próximamente: Exporta tu portafolio en múltiples formatos
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <Button disabled className="w-full">
-                                                Exportar Datos
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card className="opacity-60">
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center gap-2">
-                                                <Target className="w-5 h-5" />
-                                                Objetivos de Inversión
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Próximamente: Define y trackea tus objetivos financieros
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <Button disabled className="w-full">
-                                                Configurar Objetivos
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                </div>
+                            <TabsContent value="advanced">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Análisis y Proyección</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="h-[400px]">
+                                            <CapitalEvolutionChart movements={movements} />
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             </TabsContent>
                         </Tabs>
                     </>
-                )}
-
-                {portfolios.length === 0 && (
-                    <Card className="p-12">
-                        <div className="text-center">
-                            <Wallet className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                            <h2 className="text-2xl font-bold mb-2">No tienes portafolios aún</h2>
-                            <p className="text-muted-foreground mb-6">
-                                Crea tu primer portafolio para comenzar a gestionar tus inversiones
-                            </p>
-                            <Button onClick={() => setCreatePortfolioOpen(true)} className="gap-2">
-                                <Plus className="w-4 h-4" />
-                                Crear Mi Primer Portafolio
-                            </Button>
-                        </div>
-                    </Card>
                 )}
             </div>
         </div>

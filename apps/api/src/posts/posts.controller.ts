@@ -9,7 +9,12 @@ import {
     Query,
     Request,
     UseGuards,
+    UseInterceptors,
+    UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { PostsService } from './posts.service';
 import { CreatePostDto, UpdatePostDto } from './dto/post.dto';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
@@ -34,6 +39,22 @@ export class PostsController {
     async createPost(@Request() req, @Body() dto: CreatePostDto) {
         const userId = await this.resolveUserId(req);
         return this.postsService.createPost(userId, dto);
+    }
+
+    @Post('upload')
+    @UseInterceptors(FileInterceptor('file', {
+        storage: diskStorage({
+            destination: './uploads',
+            filename: (req, file, cb) => {
+                const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+                return cb(null, `${randomName}${extname(file.originalname)}`);
+            },
+        }),
+    }))
+    uploadFile(@UploadedFile() file: any) { // Using any for Express.Multer.File to avoid type issues if not present
+        return {
+            url: `/uploads/${file.filename}`,
+        };
     }
 
     @Get()

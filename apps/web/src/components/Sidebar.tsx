@@ -6,23 +6,27 @@ import {
     LogOut,
     User,
     TrendingUp,
-    Newspaper
+    Newspaper,
+    BarChart3
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
+import { useTranslation } from '../i18n';
 
 export function Sidebar() {
     const location = useLocation();
     const { logout, user } = useAuthStore();
+    const t = useTranslation();
 
     const links = [
-        { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-        { name: 'Portafolio', path: '/portfolio', icon: PieChart },
-        { name: 'Mercado', path: '/market', icon: TrendingUp },
-        { name: 'Noticias', path: '/news', icon: Newspaper },
-        { name: 'Perfil', path: '/profile', icon: User },
-        { name: 'Configuración', path: '/settings', icon: Settings },
+        { name: t.nav.dashboard, path: '/dashboard', icon: LayoutDashboard },
+        { name: t.nav.portfolio, path: '/portfolio', icon: PieChart },
+        { name: t.nav.market, path: '/market', icon: TrendingUp },
+        { name: t.nav.analysis, path: '/analysis', icon: BarChart3 },
+        { name: t.nav.news, path: '/news', icon: Newspaper },
+        { name: t.nav.profile, path: '/profile', icon: User },
+        { name: t.nav.settings, path: '/settings', icon: Settings },
     ];
 
     return (
@@ -70,7 +74,7 @@ export function Sidebar() {
                     onClick={() => logout()}
                 >
                     <LogOut className="w-4 h-4" />
-                    <span>Cerrar Sesión</span>
+                    <span>{t.nav.logout}</span>
                 </Button>
             </div>
         </aside>

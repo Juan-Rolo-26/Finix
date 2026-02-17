@@ -7,6 +7,7 @@ import { PortfolioModule } from './portfolio/portfolio.module';
 import { PostsModule } from './posts/posts.module';
 import { NewsModule } from './news/news.module';
 import { UserModule } from './user/user.module';
+import { AnalysisModule } from './analysis/analysis.module';
 
 import { EventsGateway } from './events.gateway';
 
@@ -17,8 +18,10 @@ import { EventsGateway } from './events.gateway';
         MarketModule,
         PortfolioModule,
         PostsModule,
+
         NewsModule,
         UserModule,
+        AnalysisModule,
     ],
     controllers: [],
     providers: [PrismaService, EventsGateway],

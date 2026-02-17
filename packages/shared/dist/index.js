@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateMovementSchema = exports.CreateAssetSchema = exports.CreatePortfolioSchema = exports.CreatePostSchema = exports.RegisterSchema = exports.LoginSchema = exports.UserSchema = exports.UserRole = void 0;
+exports.CreateMovementSchema = exports.CreateAssetSchema = exports.CreatePortfolioSchema = exports.CreatePostSchema = exports.RegisterSchema = exports.LoginSchema = exports.UserSchema = exports.AccountPlan = exports.UserRole = void 0;
 const zod_1 = require("zod");
 exports.UserRole = {
     USER: 'USER',
@@ -8,12 +8,20 @@ exports.UserRole = {
     MODERATOR: 'MODERATOR',
     ADMIN: 'ADMIN',
 };
+exports.AccountPlan = {
+    FREE: 'FREE',
+    PRO: 'PRO',
+    CREATOR: 'CREATOR',
+};
 exports.UserSchema = zod_1.z.object({
     id: zod_1.z.string().uuid(),
     email: zod_1.z.string().email(),
     username: zod_1.z.string().min(3).max(20),
     role: zod_1.z.nativeEnum(exports.UserRole).default(exports.UserRole.USER),
+    accountType: zod_1.z.nativeEnum(exports.AccountPlan).default(exports.AccountPlan.FREE),
+    subscriptionStatus: zod_1.z.string().optional(),
     isInfluencer: zod_1.z.boolean().default(false),
+    isVerified: zod_1.z.boolean().default(false),
     bio: zod_1.z.string().optional(),
     avatarUrl: zod_1.z.string().optional(),
     createdAt: zod_1.z.date(),

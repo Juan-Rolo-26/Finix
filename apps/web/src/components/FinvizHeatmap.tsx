@@ -66,26 +66,17 @@ const subtypeOptions: Array<{ value: HeatmapSubtype; label: string }> = [
     { value: 'ytd', label: 'YTD' },
 ];
 
-// Paleta oficial Finviz para performance (scale "default" / DayPerf en dark theme).
 const FINVIZ_PERF_COLORS = [
-    '#f63538', '#ee373a', '#e6393b', '#df3a3d', '#d73c3f', '#ce3d41', '#c73e43',
-    '#bf4045', '#b64146', '#ae4248', '#a5424a', '#9d434b', '#94444d', '#8b444e',
-    '#824450', '#784551', '#6f4552', '#644553', '#5a4554', '#4f4554', '#414554',
-    '#3f4c53', '#3d5451', '#3b5a50', '#3a614f', '#38694f', '#366f4e', '#35764e',
-    '#347d4e', '#32844e', '#31894e', '#31904e', '#30974f', '#2f9e4f', '#2fa450',
-    '#2faa51', '#2fb152', '#2fb854', '#30be56', '#30c558', '#30cc5a',
+    '#F63538', '#BF4045', '#8B444E', '#414554', '#35764E', '#2F9E4F', '#30CC5A'
 ] as const;
 
 const FINVIZ_NULL_COLOR = '#2f323d';
 
 const FINVIZ_RANGE_BY_SUBTYPE: Record<HeatmapSubtype, { min: number; max: number }> = {
-    // Finviz scale ids:
-    // d1 -> DayPerf(default): [-3, 3]
-    // w1 -> WeekPerf(_5): [-6, 6]
-    // ytd -> YearPerf(_25): [-30, 30]
+    // Finviz scale adjusted for visual balance
     d1: { min: -3, max: 3 },
     w1: { min: -6, max: 6 },
-    ytd: { min: -30, max: 30 },
+    ytd: { min: -25, max: 25 },
 };
 
 function formatPerf(perf: number) {
@@ -98,29 +89,51 @@ function formatMarketCap(value: number) {
     return `${Math.round(value)}M`;
 }
 
-function mapLinear(value: number, domainMin: number, domainMax: number, rangeMin: number, rangeMax: number) {
-    if (domainMax === domainMin) return rangeMin;
-    const ratio = (value - domainMin) / (domainMax - domainMin);
-    return rangeMin + ratio * (rangeMax - rangeMin);
+// Function to interpolate colors for smoother gradients
+function interpolateColor(color1: string, color2: string, factor: number) {
+    if (arguments.length < 3) { factor = 0.5; }
+    const result = color1.slice(1).match(/.{2}/g)!.map((hex, i) => {
+        return Math.round(parseInt(hex, 16) + factor * (parseInt(color2.slice(1).match(/.{2}/g)![i], 16) - parseInt(hex, 16)));
+    });
+    return `#${result.map(val => val.toString(16).padStart(2, '0')).join('')}`;
 }
 
 function getPerfColor(perf: number, subtype: HeatmapSubtype) {
     if (!Number.isFinite(perf)) return FINVIZ_NULL_COLOR;
 
     const { min, max } = FINVIZ_RANGE_BY_SUBTYPE[subtype];
-    const colors = FINVIZ_PERF_COLORS;
-    const centerIndex = Math.floor(colors.length / 2);
-    const lastIndex = colors.length - 1;
 
-    const clamped = Math.max(Math.min(perf, max), min);
-    const index = clamped < 0
-        ? Math.round(mapLinear(clamped, min, 0, 0, centerIndex))
-        : (clamped > 0
-            ? Math.round(mapLinear(clamped, 0, max, centerIndex, lastIndex))
-            : centerIndex);
+    // Normalize performance to 0-1 range relative to min/max
+    let normalized = (Math.max(Math.min(perf, max), min) - min) / (max - min);
 
-    const boundedIndex = Math.max(0, Math.min(lastIndex, index));
-    return colors[boundedIndex];
+    // Key color points in the 0-1 range
+    // 0.0 (Min) -> Red (#F63538)
+    // 0.33 -> Dark Red (#8B444E)
+    // 0.5 -> Neutral (#414554)
+    // 0.66 -> Dark Green (#35764E)
+    // 1.0 (Max) -> Bright Green (#30CC5A)
+
+    const points = [
+        { pos: 0.0, color: '#F63538' }, // Bright Red
+        { pos: 0.25, color: '#BF4045' }, // Red
+        { pos: 0.40, color: '#5e3a3f' }, // Dark Red/Grey
+        { pos: 0.5, color: '#414554' },  // Neutral Grey
+        { pos: 0.60, color: '#2f4b36' }, // Dark Green/Grey
+        { pos: 0.75, color: '#2F9E4F' }, // Green
+        { pos: 1.0, color: '#30CC5A' }   // Bright Green
+    ];
+
+    // Find the segment
+    for (let i = 0; i < points.length - 1; i++) {
+        const curr = points[i];
+        const next = points[i + 1];
+        if (normalized >= curr.pos && normalized <= next.pos) {
+            const range = next.pos - curr.pos;
+            const factor = (normalized - curr.pos) / range;
+            return interpolateColor(curr.color, next.color, factor);
+        }
+    }
+    return points[points.length - 1].color;
 }
 
 function parsePerf(value: unknown): number | null {
@@ -151,7 +164,14 @@ function FinvizTreemapNode({
     children,
     payload
 }: TreemapNodeRendererProps & { [key: string]: any }) {
-    if (width <= 1 || height <= 1) return null;
+    // Manual gap calculation
+    const GAP = 2; // px
+    const adjustedX = x + GAP / 2;
+    const adjustedY = y + GAP / 2;
+    const adjustedWidth = width - GAP;
+    const adjustedHeight = height - GAP;
+
+    if (adjustedWidth <= 0 || adjustedHeight <= 0) return null;
 
     // CRÍTICO: Solo los nodos de profundidad 1 son sectores, el resto son tickers
     const isSectorNode = depth === 1;
@@ -164,68 +184,70 @@ function FinvizTreemapNode({
     const normalizedSubtype: HeatmapSubtype = subtype === 'w1' || subtype === 'ytd' ? subtype : 'd1';
 
     // Determine styles - Sectores con fondo oscuro, tickers con colores según performance
-    const fill = isSectorNode ? 'rgba(8,15,25,0.95)' : getPerfColor(perf, normalizedSubtype);
-    const stroke = isSectorNode ? '#1f2937' : 'rgba(2, 6, 23, 0.75)';
-    const strokeWidth = isSectorNode ? 3 : 1.5;
+    const fill = isSectorNode ? 'transparent' : getPerfColor(perf, normalizedSubtype); // Make sectors transparent to show background/stroke only
+    const stroke = isSectorNode ? '#334155' : 'rgba(0,0,0,0.1)';
+    const strokeWidth = isSectorNode ? 2 : 1;
 
-    // Determine font sizes
-    const primaryFontSize = Math.min(15, Math.max(9, width / 10));
-    const secondaryFontSize = Math.min(13, Math.max(8, width / 14));
+    // Font Sizing - slightly larger for better readability
+    const primaryFontSize = Math.min(18, Math.max(10, Math.min(width, height) / 4));
+    const secondaryFontSize = Math.min(14, Math.max(9, Math.min(width, height) / 6));
 
-    // Determine visibility
-    const showPrimary = width > 56 && height > 24;
-    const showSecondary = width > 84 && height > 42;
+    // Visibility Logic
+    const showPrimary = width > 40 && height > 20;
+    const showSecondary = width > 60 && height > 35;
 
     const label = String(name || '').replace(/^Root$/i, '');
-    const childrenCount = Array.isArray(children)
-        ? children.length
-        : (Array.isArray(payload?.children) ? payload.children.length : 0);
 
     return (
         <g>
             <rect
-                x={x}
-                y={y}
-                width={width}
-                height={height}
+                x={adjustedX}
+                y={adjustedY}
+                width={adjustedWidth}
+                height={adjustedHeight}
                 style={{ fill, stroke, strokeWidth }}
-                rx={isSectorNode ? 0 : 3}
-                ry={isSectorNode ? 0 : 3}
+                rx={isSectorNode ? 4 : 2}
+                ry={isSectorNode ? 4 : 2}
             />
-            {showPrimary && (
+
+            {isSectorNode && width > 50 && height > 20 && (
                 <text
-                    x={x + 6}
-                    y={y + 14}
-                    fill={isSectorNode ? "#94a3b8" : "#ffffff"}
-                    fontSize={primaryFontSize}
-                    fontWeight={isSectorNode ? 600 : 700}
-                    style={{ pointerEvents: 'none', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                    x={adjustedX + 4}
+                    y={adjustedY + 16}
+                    fill="#94a3b8"
+                    fontSize={12}
+                    fontWeight={700}
+                    style={{ pointerEvents: 'none', textTransform: 'uppercase' }}
                 >
                     {label}
                 </text>
             )}
-            {showSecondary && !isSectorNode && (
+
+            {!isSectorNode && showPrimary && (
                 <text
-                    x={x + 6}
-                    y={y + 28}
+                    x={adjustedX + adjustedWidth / 2}
+                    y={showSecondary ? adjustedY + adjustedHeight / 2 - secondaryFontSize / 2 - 2 : adjustedY + adjustedHeight / 2 + primaryFontSize / 3}
+                    textAnchor="middle"
                     fill="#ffffff"
-                    fontSize={secondaryFontSize}
+                    fontSize={primaryFontSize}
                     fontWeight={700}
-                    style={{ pointerEvents: 'none', textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}
+                    style={{ pointerEvents: 'none', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
                 >
-                    {formatPerf(perf)}
+                    {label}
                 </text>
             )}
-            {showSecondary && isSectorNode && (
+
+            {!isSectorNode && showSecondary && (
                 <text
-                    x={x + 6}
-                    y={y + 28}
-                    fill="#64748b"
+                    x={adjustedX + adjustedWidth / 2}
+                    y={adjustedY + adjustedHeight / 2 + secondaryFontSize / 2 + 4}
+                    textAnchor="middle"
+                    fill="#ffffff" // Always white for contrast on colored bg
                     fontSize={secondaryFontSize}
                     fontWeight={600}
-                    style={{ pointerEvents: 'none' }}
+                    style={{ pointerEvents: 'none', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
                 >
-                    {childrenCount} tickers
+                    {formatPerf(perf)}
                 </text>
             )}
         </g>
@@ -307,7 +329,7 @@ export default function FinvizHeatmap() {
                 </div>
             </div>
 
-            <div className="h-[860px] w-full overflow-hidden rounded-xl border border-primary/30 bg-[#0a0f1a]">
+            <div className="h-[860px] w-full overflow-hidden rounded-xl border border-primary/30 bg-[#020617] shadow-xl">
                 {isLoading && (
                     <div className="flex h-full items-center justify-center">
                         <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -337,9 +359,10 @@ export default function FinvizHeatmap() {
                         <Treemap
                             data={data?.sectors}
                             dataKey="value"
-                            stroke="#0f172a"
+                            stroke="rgba(0,0,0,0)"
                             isAnimationActive={false}
                             content={<FinvizTreemapNode subtype={(data?.subtype as HeatmapSubtype) || subtype} />}
+                            style={{ background: 'transparent' }}
                         />
                     </ResponsiveContainer>
                 )}

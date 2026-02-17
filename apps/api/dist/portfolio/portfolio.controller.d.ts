@@ -78,8 +78,8 @@ export declare class PortfolioController {
     }>;
     addAsset(req: any, portfolioId: string, dto: CreateAssetDto): Promise<{
         asset: {
-            id: string;
             name: string;
+            id: string;
             type: string;
             currency: string;
             ticker: string;
@@ -87,10 +87,10 @@ export declare class PortfolioController {
     } & {
         id: string;
         createdAt: Date;
+        type: string;
         date: Date;
         portfolioId: string;
         assetId: string | null;
-        type: string;
         quantity: import("@prisma/client/runtime/library").Decimal;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
         fee: import("@prisma/client/runtime/library").Decimal;
@@ -130,8 +130,8 @@ export declare class PortfolioController {
     }[]>;
     createTransaction(req: any, portfolioId: string, dto: CreateTransactionDto): Promise<{
         asset: {
-            id: string;
             name: string;
+            id: string;
             type: string;
             currency: string;
             ticker: string;
@@ -139,10 +139,10 @@ export declare class PortfolioController {
     } & {
         id: string;
         createdAt: Date;
+        type: string;
         date: Date;
         portfolioId: string;
         assetId: string | null;
-        type: string;
         quantity: import("@prisma/client/runtime/library").Decimal;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
         fee: import("@prisma/client/runtime/library").Decimal;

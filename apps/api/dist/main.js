@@ -10,6 +10,9 @@ async function bootstrap() {
         credentials: true,
     });
     app.setGlobalPrefix('api');
+    const { join } = require('path');
+    const express = require('express');
+    app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
     const port = Number(process.env.PORT || 3001);
     await app.listen(port);
 }

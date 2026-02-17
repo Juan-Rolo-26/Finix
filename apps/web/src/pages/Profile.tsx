@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from '@/i18n';
 
 interface UserProfile {
     id: string;
@@ -53,6 +54,7 @@ interface UserProfile {
 }
 
 export default function Profile() {
+    const t = useTranslation();
     const { username } = useParams();
     const navigate = useNavigate();
     const { user: currentUser } = useAuthStore();
@@ -84,13 +86,13 @@ export default function Profile() {
                 setProfile(data);
                 setEditForm(data);
             } else {
-                // Si la API falla, usar datos del usuario actual
+                // If API fails, use current user data fallback
                 if (targetUsername === currentUser?.username && currentUser) {
                     const fallbackProfile: UserProfile = {
                         id: currentUser.id || '1',
-                        username: currentUser.username || 'Usuario',
-                        email: currentUser.email || 'usuario@finix.com',
-                        bio: currentUser.bio || 'Inversor en Finix',
+                        username: currentUser.username || 'User',
+                        email: currentUser.email || 'user@finix.com',
+                        bio: currentUser.bio || 'Finix Investor',
                         bioLong: undefined,
                         avatarUrl: currentUser.avatarUrl,
                         bannerUrl: undefined,
@@ -128,13 +130,12 @@ export default function Profile() {
             }
         } catch (error) {
             console.error('Error loading profile:', error);
-            // En caso de error, intentar usar datos del usuario actual
             if (currentUser) {
                 const fallbackProfile: UserProfile = {
                     id: currentUser.id || '1',
-                    username: currentUser.username || 'Usuario',
-                    email: currentUser.email || 'usuario@finix.com',
-                    bio: currentUser.bio || 'Inversor en Finix',
+                    username: currentUser.username || 'User',
+                    email: currentUser.email || 'user@finix.com',
+                    bio: currentUser.bio || 'Finix Investor',
                     bioLong: undefined,
                     avatarUrl: currentUser.avatarUrl,
                     bannerUrl: undefined,
@@ -193,14 +194,12 @@ export default function Profile() {
     };
 
     const handleUploadImage = async (type: 'avatar' | 'banner') => {
-        // En producción, aquí se subiría la imagen a un servicio de almacenamiento
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
         input.onchange = async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-                // Simulación de URL - en producción sería la URL real
                 const fakeUrl = URL.createObjectURL(file);
                 setEditForm({
                     ...editForm,
@@ -212,16 +211,15 @@ export default function Profile() {
     };
 
     const toggleFollow = async () => {
-        // Implementar lógica de follow/unfollow
         setIsFollowing(!isFollowing);
     };
 
     const getAccountTypeBadge = (type: string) => {
         const badges: Record<string, { label: string; color: string }> = {
-            BASIC: { label: 'Usuario', color: 'bg-gray-500/10 text-gray-400 border-gray-500/20' },
+            BASIC: { label: 'Basic', color: 'bg-gray-500/10 text-gray-400 border-gray-500/20' },
             PRO: { label: 'Pro', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-            CREATOR: { label: 'Creador', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
-            ANALYST: { label: 'Analista', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' }
+            CREATOR: { label: 'Creator', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+            ANALYST: { label: 'Analyst', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' }
         };
 
         const badge = badges[type] || badges.BASIC;
@@ -249,8 +247,8 @@ export default function Profile() {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen gap-4">
                 <User className="w-16 h-16 text-muted-foreground" />
-                <h2 className="text-2xl font-bold">Perfil no encontrado</h2>
-                <Button onClick={() => navigate('/dashboard')}>Volver al Dashboard</Button>
+                <h2 className="text-2xl font-bold">{t.profile.notFound}</h2>
+                <Button onClick={() => navigate('/dashboard')}>{t.profile.backDashboard}</Button>
             </div>
         );
     }
@@ -280,7 +278,7 @@ export default function Profile() {
                             onClick={() => handleUploadImage('banner')}
                         >
                             <Camera className="w-4 h-4 mr-2" />
-                            Cambiar Banner
+                            {t.profile.changeBanner}
                         </Button>
                     )}
 
@@ -315,7 +313,7 @@ export default function Profile() {
                         </div>
                     </div>
 
-                    {/* Acciones */}
+                    {/* Actions */}
                     <div className="absolute bottom-4 right-4 flex gap-2">
                         {isOwnProfile ? (
                             <>
@@ -323,17 +321,17 @@ export default function Profile() {
                                     <>
                                         <Button variant="outline" onClick={() => setIsEditing(false)}>
                                             <X className="w-4 h-4 mr-2" />
-                                            Cancelar
+                                            {t.profile.cancel}
                                         </Button>
                                         <Button onClick={handleSaveProfile}>
                                             <Check className="w-4 h-4 mr-2" />
-                                            Guardar
+                                            {t.profile.save}
                                         </Button>
                                     </>
                                 ) : (
                                     <Button onClick={() => setIsEditing(true)}>
                                         <Edit className="w-4 h-4 mr-2" />
-                                        Editar Perfil
+                                        {t.profile.edit}
                                     </Button>
                                 )}
                             </>
@@ -343,14 +341,14 @@ export default function Profile() {
                                     <Share2 className="w-4 h-4" />
                                 </Button>
                                 <Button onClick={toggleFollow}>
-                                    {isFollowing ? 'Siguiendo' : 'Seguir'}
+                                    {isFollowing ? t.profile.following : t.profile.follow}
                                 </Button>
                             </>
                         )}
                     </div>
                 </div>
 
-                {/* Info básica */}
+                {/* Basic Info */}
                 <CardContent className="pt-20 pb-6">
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                         <div className="flex-1">
@@ -375,7 +373,7 @@ export default function Profile() {
 
                             {isEditing ? (
                                 <Input
-                                    placeholder="ej: Trading Analyst | Crypto Investor"
+                                    placeholder="e.g. Trading Analyst | Crypto Investor"
                                     value={editForm.title || ''}
                                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                                     className="mb-2"
@@ -400,18 +398,18 @@ export default function Profile() {
                                 {profile.yearsExperience && (
                                     <div className="flex items-center gap-1">
                                         <Calendar className="w-4 h-4" />
-                                        <span>{profile.yearsExperience} años de experiencia</span>
+                                        <span>{profile.yearsExperience} {t.profile.experience}</span>
                                     </div>
                                 )}
                                 <div className="flex items-center gap-1">
                                     <Users className="w-4 h-4" />
-                                    <span>{profile._count?.followedBy || 0} seguidores</span>
+                                    <span>{profile._count?.followedBy || 0} {t.profile.followers}</span>
                                 </div>
                             </div>
 
                             {isEditing ? (
                                 <Textarea
-                                    placeholder="Cuéntanos sobre ti..."
+                                    placeholder="Tell us about yourself..."
                                     value={editForm.bio || ''}
                                     onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
                                     className="mb-4"
@@ -421,7 +419,7 @@ export default function Profile() {
                                 <p className="text-foreground mb-4">{profile.bio}</p>
                             )}
 
-                            {/* Redes sociales */}
+                            {/* Social Media */}
                             <div className="flex gap-2">
                                 {profile.linkedinUrl && (
                                     <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer">
@@ -470,7 +468,7 @@ export default function Profile() {
                                         <div className="text-2xl font-bold text-emerald-400">
                                             {profile.totalReturn ? `+${profile.totalReturn.toFixed(1)}%` : 'N/A'}
                                         </div>
-                                        <div className="text-xs text-muted-foreground">Retorno Total</div>
+                                        <div className="text-xs text-muted-foreground">{t.profile.stats.totalReturn}</div>
                                     </CardContent>
                                 </Card>
 
@@ -480,7 +478,7 @@ export default function Profile() {
                                         <div className="text-2xl font-bold">
                                             {profile.winRate ? `${profile.winRate.toFixed(0)}%` : 'N/A'}
                                         </div>
-                                        <div className="text-xs text-muted-foreground">Win Rate</div>
+                                        <div className="text-xs text-muted-foreground">{t.profile.stats.winRate}</div>
                                     </CardContent>
                                 </Card>
 
@@ -490,7 +488,7 @@ export default function Profile() {
                                         <div className="text-2xl font-bold">
                                             {profile.riskScore ? profile.riskScore.toFixed(1) : 'N/A'}
                                         </div>
-                                        <div className="text-xs text-muted-foreground">Riesgo</div>
+                                        <div className="text-xs text-muted-foreground">{t.profile.stats.risk}</div>
                                     </CardContent>
                                 </Card>
                             </div>
@@ -499,24 +497,24 @@ export default function Profile() {
                 </CardContent>
             </Card>
 
-            {/* Tabs de contenido */}
+            {/* Content Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="overview">Resumen</TabsTrigger>
-                    <TabsTrigger value="posts">Posts ({profile._count?.posts || 0})</TabsTrigger>
-                    <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-                    <TabsTrigger value="about">Sobre Mí</TabsTrigger>
+                    <TabsTrigger value="overview">{t.profile.tabs.overview}</TabsTrigger>
+                    <TabsTrigger value="posts">{t.profile.tabs.posts} ({profile._count?.posts || 0})</TabsTrigger>
+                    <TabsTrigger value="portfolio">{t.profile.tabs.portfolio}</TabsTrigger>
+                    <TabsTrigger value="about">{t.profile.tabs.about}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
-                        {/* Especializaciones */}
+                        {/* Specializations */}
                         {specializations.length > 0 && (
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <BarChart3 className="w-5 h-5 text-primary" />
-                                        Especializaciones
+                                        {t.profile.about.specializations}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
@@ -531,13 +529,13 @@ export default function Profile() {
                             </Card>
                         )}
 
-                        {/* Certificaciones */}
+                        {/* Certifications */}
                         {certifications.length > 0 && (
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <Award className="w-5 h-5 text-primary" />
-                                        Certificaciones
+                                        {t.profile.about.certifications}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
@@ -554,11 +552,11 @@ export default function Profile() {
                         )}
                     </div>
 
-                    {/* Bio extendida */}
+                    {/* Extended Bio */}
                     {profile.bioLong && (
                         <Card>
                             <CardHeader>
-                                <CardTitle>Sobre {profile.username}</CardTitle>
+                                <CardTitle>{t.profile.about.aboutUser} {profile.username}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <p className="text-muted-foreground whitespace-pre-wrap">
@@ -572,11 +570,12 @@ export default function Profile() {
                 <TabsContent value="posts">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Posts de {profile.username}</CardTitle>
+                            <CardTitle>{t.profile.tabs.posts} - {profile.username}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="text-center py-12 text-muted-foreground">
-                                Los posts se mostrarán aquí
+                                {/* Fallback or implement post list */}
+                                No posts yet.
                             </div>
                         </CardContent>
                     </Card>
@@ -587,21 +586,21 @@ export default function Profile() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <PieChart className="w-5 h-5 text-primary" />
-                                Portfolio Público
+                                {t.profile.tabs.portfolio}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             {profile.showPortfolio ? (
                                 <div className="text-center py-12 text-muted-foreground">
-                                    Portfolio se mostrará aquí
+                                    Portfolio content...
                                 </div>
                             ) : (
                                 <div className="text-center py-12">
                                     <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                                     <p className="text-muted-foreground">
                                         {isOwnProfile
-                                            ? 'Tu portfolio está privado. Actívalo en configuración para compartirlo.'
-                                            : 'Este portfolio es privado'}
+                                            ? t.profile.about.privatePortfolioOwn
+                                            : t.profile.about.privatePortfolio}
                                     </p>
                                 </div>
                             )}
@@ -613,12 +612,12 @@ export default function Profile() {
                     {isEditing && (
                         <Card>
                             <CardHeader>
-                                <CardTitle>Editar Información Profesional</CardTitle>
+                                <CardTitle>{t.profile.about.editInfo}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-sm font-medium mb-2 block">Título/Rol</label>
+                                        <label className="text-sm font-medium mb-2 block">{t.profile.about.title}</label>
                                         <Input
                                             placeholder="ej: Trading Analyst"
                                             value={editForm.title || ''}
@@ -626,7 +625,7 @@ export default function Profile() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-medium mb-2 block">Empresa</label>
+                                        <label className="text-sm font-medium mb-2 block">{t.profile.about.company}</label>
                                         <Input
                                             placeholder="ej: Goldman Sachs"
                                             value={editForm.company || ''}
@@ -634,7 +633,7 @@ export default function Profile() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-medium mb-2 block">Ubicación</label>
+                                        <label className="text-sm font-medium mb-2 block">{t.profile.about.location}</label>
                                         <Input
                                             placeholder="ej: Buenos Aires, Argentina"
                                             value={editForm.location || ''}
@@ -642,7 +641,7 @@ export default function Profile() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-medium mb-2 block">Años de Experiencia</label>
+                                        <label className="text-sm font-medium mb-2 block">{t.profile.about.yearsExperience}</label>
                                         <Input
                                             type="number"
                                             placeholder="5"
@@ -653,9 +652,9 @@ export default function Profile() {
                                 </div>
 
                                 <div>
-                                    <label className="text-sm font-medium mb-2 block">Bio Extendida</label>
+                                    <label className="text-sm font-medium mb-2 block">{t.profile.about.bioLong}</label>
                                     <Textarea
-                                        placeholder="Cuéntanos más sobre tu experiencia, logros, filosofía de inversión..."
+                                        placeholder="..."
                                         value={editForm.bioLong || ''}
                                         onChange={(e) => setEditForm({ ...editForm, bioLong: e.target.value })}
                                         rows={6}
@@ -663,7 +662,7 @@ export default function Profile() {
                                 </div>
 
                                 <div>
-                                    <label className="text-sm font-medium mb-2 block">Sitio Web</label>
+                                    <label className="text-sm font-medium mb-2 block">{t.profile.about.website}</label>
                                     <Input
                                         placeholder="https://..."
                                         value={editForm.website || ''}
@@ -711,7 +710,7 @@ export default function Profile() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Detalles de la Cuenta</CardTitle>
+                            <CardTitle>{t.profile.about.accountDetails}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center justify-between">
@@ -722,9 +721,9 @@ export default function Profile() {
                             </div>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="font-medium">Miembro desde</p>
+                                    <p className="font-medium">{t.profile.about.memberSince}</p>
                                     <p className="text-sm text-muted-foreground">
-                                        {new Date(profile.createdAt).toLocaleDateString('es-AR', {
+                                        {new Date(profile.createdAt).toLocaleDateString(undefined, {
                                             year: 'numeric',
                                             month: 'long',
                                             day: 'numeric'

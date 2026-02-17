@@ -5,6 +5,12 @@ export declare const UserRole: {
     readonly MODERATOR: "MODERATOR";
     readonly ADMIN: "ADMIN";
 };
+export declare const AccountPlan: {
+    readonly FREE: "FREE";
+    readonly PRO: "PRO";
+    readonly CREATOR: "CREATOR";
+};
+export type AccountPlanType = typeof AccountPlan[keyof typeof AccountPlan];
 export declare const UserSchema: z.ZodObject<{
     id: z.ZodString;
     email: z.ZodString;
@@ -15,7 +21,14 @@ export declare const UserSchema: z.ZodObject<{
         readonly MODERATOR: "MODERATOR";
         readonly ADMIN: "ADMIN";
     }>>;
+    accountType: z.ZodDefault<z.ZodNativeEnum<{
+        readonly FREE: "FREE";
+        readonly PRO: "PRO";
+        readonly CREATOR: "CREATOR";
+    }>>;
+    subscriptionStatus: z.ZodOptional<z.ZodString>;
     isInfluencer: z.ZodDefault<z.ZodBoolean>;
+    isVerified: z.ZodDefault<z.ZodBoolean>;
     bio: z.ZodOptional<z.ZodString>;
     avatarUrl: z.ZodOptional<z.ZodString>;
     createdAt: z.ZodDate;
@@ -24,8 +37,11 @@ export declare const UserSchema: z.ZodObject<{
     role: "USER" | "INFLUENCER" | "MODERATOR" | "ADMIN";
     username: string;
     email: string;
+    accountType: "FREE" | "PRO" | "CREATOR";
     isInfluencer: boolean;
+    isVerified: boolean;
     createdAt: Date;
+    subscriptionStatus?: string | undefined;
     bio?: string | undefined;
     avatarUrl?: string | undefined;
 }, {
@@ -34,7 +50,10 @@ export declare const UserSchema: z.ZodObject<{
     email: string;
     createdAt: Date;
     role?: "USER" | "INFLUENCER" | "MODERATOR" | "ADMIN" | undefined;
+    accountType?: "FREE" | "PRO" | "CREATOR" | undefined;
+    subscriptionStatus?: string | undefined;
     isInfluencer?: boolean | undefined;
+    isVerified?: boolean | undefined;
     bio?: string | undefined;
     avatarUrl?: string | undefined;
 }>;

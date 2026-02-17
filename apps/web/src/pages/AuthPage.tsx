@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/i18n';
 import {
     Mail,
     Lock,
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export default function AuthPage() {
+    const t = useTranslation();
     const [view, setView] = useState<'login' | 'register' | 'forgot'>('login');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +36,7 @@ export default function AuthPage() {
     const navigate = useNavigate();
 
     const loginGoogle = () => {
-        setAuthError('Login con Google no está configurado todavía. Usa email y contraseña.');
+        setAuthError(t.auth.errors.googleNotConfigured);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -66,9 +68,9 @@ export default function AuthPage() {
                 return;
             }
 
-            setAuthError(data?.message || 'Credenciales inválidas o usuario ya registrado.');
+            setAuthError(data?.message || t.auth.errors.invalidCredentials);
         } catch (err) {
-            setAuthError('No se pudo conectar con el servidor. Verifica que la API esté levantada.');
+            setAuthError(t.auth.errors.connectionError);
         } finally {
             setIsLoading(false);
         }
@@ -111,11 +113,11 @@ export default function AuthPage() {
                         transition={{ delay: 0.3, duration: 0.8 }}
                     >
                         <h1 className="text-4xl lg:text-5xl font-heading font-bold mb-6">
-                            Bienvenido al Futuro <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">Financiero Social</span>
+                            {t.auth.welcomeTitle} <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">{t.auth.welcomeSubtitle}</span>
                         </h1>
                         <p className="text-lg text-muted-foreground leading-relaxed">
-                            Únete a la comunidad de inversores más inteligente. Comparte ideas, analiza mercados y haz crecer tu portafolio con herramientas profesionales.
+                            {t.auth.welcomeBack}
                         </p>
                     </motion.div>
 
@@ -127,11 +129,11 @@ export default function AuthPage() {
                     >
                         <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
                             <h3 className="text-2xl font-bold text-primary mb-1">100%</h3>
-                            <p className="text-sm text-muted-foreground">Transparencia</p>
+                            <p className="text-sm text-muted-foreground">{t.auth.transparency}</p>
                         </div>
                         <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
                             <h3 className="text-2xl font-bold text-indigo-400 mb-1">24/7</h3>
-                            <p className="text-sm text-muted-foreground">Acceso al Mercado</p>
+                            <p className="text-sm text-muted-foreground">{t.auth.marketAccess}</p>
                         </div>
                     </motion.div>
                 </div>
@@ -140,20 +142,20 @@ export default function AuthPage() {
             {/* Right Side - Form */}
             <div className="flex flex-col justify-center items-center p-6 lg:p-12 relative">
                 <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                    <ArrowLeft className="w-4 h-4" /> Volver al Inicio
+                    <ArrowLeft className="w-4 h-4" /> {t.auth.backHome}
                 </Link>
 
                 <div className="w-full max-w-sm space-y-8">
                     <div className="text-center space-y-2">
                         <h2 className="text-3xl font-heading font-bold tracking-tight">
-                            {view === 'login' && 'Iniciar Sesión'}
-                            {view === 'register' && 'Crear Cuenta'}
-                            {view === 'forgot' && 'Recuperar Contraseña'}
+                            {view === 'login' && t.auth.loginTitle}
+                            {view === 'register' && t.auth.registerTitle}
+                            {view === 'forgot' && t.auth.forgotTitle}
                         </h2>
                         <p className="text-muted-foreground">
-                            {view === 'login' && 'Ingresa tus credenciales para continuar'}
-                            {view === 'register' && 'Regístrate gratis en menos de 1 minuto'}
-                            {view === 'forgot' && 'Te enviaremos las instrucciones a tu email'}
+                            {view === 'login' && t.auth.loginDesc}
+                            {view === 'register' && t.auth.registerDesc}
+                            {view === 'forgot' && t.auth.forgotDesc}
                         </p>
                     </div>
 
@@ -168,16 +170,16 @@ export default function AuthPage() {
                                 <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-500">
                                     <CheckCircle2 className="w-8 h-8" />
                                 </div>
-                                <h3 className="text-xl font-bold text-emerald-400">¡Correo Enviado!</h3>
+                                <h3 className="text-xl font-bold text-emerald-400">{t.auth.emailSentTitle}</h3>
                                 <p className="text-sm text-muted-foreground">
-                                    Hemos enviado un enlace de recuperación a <strong>{email}</strong>. Por favor revisa tu bandeja de entrada.
+                                    {t.auth.emailSentDesc} <strong>{email}</strong>. {t.auth.checkInbox}
                                 </p>
                                 <Button
                                     onClick={() => { setView('login'); setResetSent(false); }}
                                     className="w-full mt-4"
                                     variant="outline"
                                 >
-                                    Volver al Login
+                                    {t.auth.backLogin}
                                 </Button>
                             </motion.div>
                         ) : (
@@ -194,7 +196,7 @@ export default function AuthPage() {
                                         <div className="relative">
                                             <User className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                                             <Input
-                                                placeholder="Nombre de usuario"
+                                                placeholder={t.auth.username}
                                                 className="pl-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
                                                 value={username}
                                                 onChange={(e) => setUsername(e.target.value)}
@@ -209,7 +211,7 @@ export default function AuthPage() {
                                         <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                                         <Input
                                             type="email"
-                                            placeholder="Correo electrónico"
+                                            placeholder={t.auth.email}
                                             className="pl-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
@@ -224,7 +226,7 @@ export default function AuthPage() {
                                             <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                                             <Input
                                                 type={showPassword ? "text" : "password"}
-                                                placeholder="Contraseña"
+                                                placeholder={t.auth.password}
                                                 className="pl-10 pr-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
@@ -248,7 +250,7 @@ export default function AuthPage() {
                                             onClick={() => setView('forgot')}
                                             className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                                         >
-                                            ¿Olvidaste tu contraseña?
+                                            {t.auth.forgotPassword}
                                         </button>
                                     </div>
                                 )}
@@ -263,9 +265,9 @@ export default function AuthPage() {
                                         <Loader2 className="w-5 h-5 animate-spin" />
                                     ) : (
                                         <>
-                                            {view === 'login' && 'Ingresar'}
-                                            {view === 'register' && 'Crear Cuenta'}
-                                            {view === 'forgot' && 'Enviar Enlace'}
+                                            {view === 'login' && t.auth.loginBtn}
+                                            {view === 'register' && t.auth.createAccountBtn}
+                                            {view === 'forgot' && t.auth.sendLinkBtn}
                                             {(view === 'login' || view === 'register') && <ArrowRight className="w-5 h-5 ml-2" />}
                                         </>
                                     )}
@@ -279,7 +281,7 @@ export default function AuthPage() {
                                         <span className="w-full border-t border-muted/30" />
                                     </div>
                                     <div className="relative flex justify-center text-xs uppercase">
-                                        <span className="bg-background px-2 text-muted-foreground/50">O continúa con</span>
+                                        <span className="bg-background px-2 text-muted-foreground/50">{t.auth.orContinue}</span>
                                     </div>
                                 </div>
 
@@ -307,23 +309,23 @@ export default function AuthPage() {
                     <div className="text-center text-sm">
                         {view === 'login' ? (
                             <p className="text-muted-foreground">
-                                ¿No tienes una cuenta?{' '}
+                                {t.auth.noAccount}{' '}
                                 <button onClick={() => setView('register')} className="font-bold text-foreground hover:text-primary transition-colors underline-offset-4 hover:underline">
-                                    Regístrate
+                                    {t.auth.register}
                                 </button>
                             </p>
                         ) : (
                             <p className="text-muted-foreground">
                                 {view === 'register' ? (
                                     <>
-                                        ¿Ya tienes cuenta?{' '}
+                                        {t.auth.hasAccount}{' '}
                                         <button onClick={() => setView('login')} className="font-bold text-foreground hover:text-primary transition-colors underline-offset-4 hover:underline">
-                                            Inicia Sesión
+                                            {t.auth.login}
                                         </button>
                                     </>
                                 ) : (
                                     <button onClick={() => { setView('login'); setResetSent(false); }} className="font-bold text-foreground hover:text-primary transition-colors flex items-center justify-center gap-2 w-full">
-                                        <ArrowLeft className="w-4 h-4" /> Volver al Inicio de Sesión
+                                        <ArrowLeft className="w-4 h-4" /> {t.auth.backToLogin}
                                     </button>
                                 )}
                             </p>
@@ -333,9 +335,9 @@ export default function AuthPage() {
 
                 {/* Footer Links */}
                 <div className="absolute bottom-6 flex gap-6 text-xs text-muted-foreground">
-                    <Link to="/legal/privacy" className="hover:text-foreground">Privacidad</Link>
-                    <Link to="/legal/terms" className="hover:text-foreground">Términos</Link>
-                    <Link to="/legal/responsible" className="hover:text-foreground">Ayuda</Link>
+                    <Link to="/legal/privacy" className="hover:text-foreground">{t.legal.privacy}</Link>
+                    <Link to="/legal/terms" className="hover:text-foreground">{t.legal.terms}</Link>
+                    <Link to="/legal/responsible" className="hover:text-foreground">{t.legal.help}</Link>
                 </div>
             </div>
         </div>

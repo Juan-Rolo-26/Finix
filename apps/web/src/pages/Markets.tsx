@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, TrendingUp, TrendingDown, Activity, BarChart3, LineChart, Zap, Newspaper } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import TradingViewChart from '@/components/TradingViewChart';
 import TradingViewAnalysis from '@/components/TradingViewAnalysis';
 import MarketOverview from '@/components/MarketOverview';
 import MarketNews from '@/components/MarketNews';
+import { useTranslation } from '@/i18n';
 
 interface MarketAsset {
     symbol: string;
@@ -28,6 +30,7 @@ interface QuoteData {
 }
 
 export default function Markets() {
+    const t = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<MarketAsset[]>([]);
     const [selectedAsset, setSelectedAsset] = useState<MarketAsset | null>({
@@ -123,10 +126,10 @@ export default function Markets() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-5xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
-                            Mercados
+                            {t.markets.title}
                         </h1>
                         <p className="text-muted-foreground mt-3 text-lg">
-                            Análisis en tiempo real con gráficos de TradingView
+                            {t.markets.subtitle}
                         </p>
                     </div>
                     <Activity className="w-16 h-16 text-primary/60" />
@@ -137,7 +140,7 @@ export default function Markets() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                     <Input
                         type="text"
-                        placeholder="Buscar activos (ej: AAPL, BTC, EUR/USD)..."
+                        placeholder={t.markets.searchPlaceholder}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-12 h-14 text-lg bg-card/50 border-border/60 focus:bg-card"
@@ -183,7 +186,7 @@ export default function Markets() {
                 <div className="space-y-3">
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         <Zap className="inline w-4 h-4 mr-2" />
-                        Acceso Rápido
+                        {t.markets.quickAccess}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                         {popularAssets.map((asset) => (
@@ -209,6 +212,14 @@ export default function Markets() {
                             <div>
                                 <CardTitle className="text-2xl">{selectedAsset.symbol}</CardTitle>
                                 <CardDescription className="text-base mt-1">{selectedAsset.name}</CardDescription>
+                                <div className="flex gap-2 mt-4">
+                                    <Button asChild size="sm" variant="secondary" className="gap-2">
+                                        <Link to={`/analysis/${selectedAsset.symbol}`}>
+                                            <BarChart3 className="w-4 h-4" />
+                                            {t.markets.tabs.analysis}
+                                        </Link>
+                                    </Button>
+                                </div>
                             </div>
                             {quoteData && (
                                 <div className="text-right">
@@ -231,7 +242,7 @@ export default function Markets() {
                                         </>
                                     ) : (
                                         <div className="text-xs text-yellow-400">
-                                            Sin cotización en vivo
+                                            {t.markets.noQuote}
                                         </div>
                                     )}
                                 </div>
@@ -246,19 +257,19 @@ export default function Markets() {
                 <TabsList className="grid w-full grid-cols-4 h-16 bg-secondary/50">
                     <TabsTrigger value="chart" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                         <LineChart className="w-4 h-4" />
-                        Gráfico
+                        {t.markets.tabs.chart}
                     </TabsTrigger>
                     <TabsTrigger value="analysis" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                         <BarChart3 className="w-4 h-4" />
-                        Análisis Técnico
+                        {t.markets.tabs.analysis}
                     </TabsTrigger>
                     <TabsTrigger value="overview" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                         <Activity className="w-4 h-4" />
-                        Resumen
+                        {t.markets.tabs.overview}
                     </TabsTrigger>
                     <TabsTrigger value="news" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                         <Newspaper className="w-4 h-4" />
-                        Noticias
+                        {t.markets.tabs.news}
                     </TabsTrigger>
                 </TabsList>
 

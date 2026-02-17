@@ -14,6 +14,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PostsController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
+const path_1 = require("path");
 const posts_service_1 = require("./posts.service");
 const post_dto_1 = require("./dto/post.dto");
 const optional_jwt_guard_1 = require("../auth/optional-jwt.guard");
@@ -32,6 +35,11 @@ let PostsController = class PostsController {
     async createPost(req, dto) {
         const userId = await this.resolveUserId(req);
         return this.postsService.createPost(userId, dto);
+    }
+    uploadFile(file) {
+        return {
+            url: `/uploads/${file.filename}`,
+        };
     }
     getAllPosts(page, limit) {
         const pageNum = page ? parseInt(page) : 1;
@@ -67,6 +75,22 @@ __decorate([
     __metadata("design:paramtypes", [Object, post_dto_1.CreatePostDto]),
     __metadata("design:returntype", Promise)
 ], PostsController.prototype, "createPost", null);
+__decorate([
+    (0, common_1.Post)('upload'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
+        storage: (0, multer_1.diskStorage)({
+            destination: './uploads',
+            filename: (req, file, cb) => {
+                const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+                return cb(null, `${randomName}${(0, path_1.extname)(file.originalname)}`);
+            },
+        }),
+    })),
+    __param(0, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], PostsController.prototype, "uploadFile", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('page')),
