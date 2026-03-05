@@ -1,13 +1,12 @@
-import { Controller, Get, Param, Post, UseGuards, Request, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AnalysisService } from './analysis.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
 
 @Controller('analysis')
 export class AnalysisController {
     constructor(private readonly analysisService: AnalysisService) { }
 
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get(':ticker')
     async getAnalysis(@Param('ticker') ticker: string) {
         // Normalize ticker

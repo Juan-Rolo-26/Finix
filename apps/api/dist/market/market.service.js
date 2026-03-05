@@ -67,12 +67,19 @@ let MarketService = class MarketService {
     stripHtml(value) {
         return value.replace(/\u003c[^\u003e]*\u003e/g, '').trim();
     }
-    getTickers() {
-        return this.mockTickers.map(t => ({
-            ...t,
-            price: t.price + (Math.random() - 0.5) * (t.price * 0.01),
-            change: t.change + (Math.random() - 0.5),
-        }));
+    async getTickers() {
+        const defaultTickers = ['NASDAQ:TSLA', 'CRYPTO:BTCUSD', 'AMEX:SPY', 'NASDAQ:NVDA', 'NASDAQ:AAPL'];
+        const quotes = await this.getQuotes(defaultTickers);
+        return quotes.map((q, i) => {
+            const mockFallback = this.mockTickers[i % this.mockTickers.length];
+            const shortSymbol = q.inputSymbol.split(':')[1] || q.inputSymbol;
+            return {
+                symbol: shortSymbol === 'BTCUSD' ? 'BTC' : shortSymbol,
+                price: q.price ?? mockFallback.price,
+                change: q.change ?? mockFallback.change,
+                volume: Math.floor(Math.random() * 50000) + 10000
+            };
+        });
     }
     async searchSymbols(query) {
         console.log(`[MarketService] Searching for: ${query}`);

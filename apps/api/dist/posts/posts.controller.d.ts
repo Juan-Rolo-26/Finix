@@ -1,185 +1,254 @@
+import { Response } from 'express';
 import { PostsService } from './posts.service';
-import { CreatePostDto, UpdatePostDto } from './dto/post.dto';
-import { DemoUserService } from '../demo-user.service';
 export declare class PostsController {
     private postsService;
-    private demoUserService;
-    constructor(postsService: PostsService, demoUserService: DemoUserService);
-    private resolveUserId;
-    createPost(req: any, dto: CreatePostDto): Promise<{
-        comments: ({
+    constructor(postsService: PostsService);
+    getFeed(req: any, cursor?: string, limit?: string, sort?: string, type?: string): Promise<{
+        posts: any[];
+        nextCursor: string;
+        hasMore: boolean;
+    }>;
+    getSaved(req: any, cursor?: string, limit?: string): Promise<{
+        posts: any[];
+        nextCursor: string;
+        hasMore: boolean;
+    }>;
+    getUserPosts(req: any, username: string, cursor?: string, limit?: string): Promise<{
+        posts: any[];
+        nextCursor: string;
+        hasMore: boolean;
+    }>;
+    proxyImage(url: string, res: Response): Promise<void>;
+    uploadMedia(files: Express.Multer.File[]): {
+        url: string;
+        mediaType: string;
+        originalName: string;
+        size: number;
+    }[];
+    createPost(req: any, body: any): Promise<any>;
+    getPost(req: any, id: string): Promise<any>;
+    updatePost(req: any, id: string, content: string): Promise<{
+        author: {
+            id: string;
+            username: string;
+            avatarUrl: string;
+            isInfluencer: boolean;
+            isVerified: boolean;
+            plan: string;
+            isCreator: boolean;
+        };
+        parent: {
             author: {
                 id: string;
                 username: string;
                 avatarUrl: string;
+                isInfluencer: boolean;
+                isVerified: boolean;
+                plan: string;
+                isCreator: boolean;
             };
         } & {
             id: string;
-            createdAt: Date;
             content: string;
             authorId: string;
+            type: string;
+            visibility: string;
+            deletedAt: Date | null;
+            assetSymbol: string | null;
+            analysisType: string | null;
+            riskLevel: string | null;
+            contentEditedAt: Date | null;
+            tickers: string;
+            parentId: string | null;
+            quotedPostId: string | null;
+            viewCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        quotedPost: {
+            author: {
+                id: string;
+                username: string;
+                avatarUrl: string;
+                isInfluencer: boolean;
+                isVerified: boolean;
+                plan: string;
+                isCreator: boolean;
+            };
+            media: {
+                id: string;
+                createdAt: Date;
+                postId: string;
+                url: string;
+                mediaType: string;
+                order: number;
+            }[];
+        } & {
+            id: string;
+            content: string;
+            authorId: string;
+            type: string;
+            visibility: string;
+            deletedAt: Date | null;
+            assetSymbol: string | null;
+            analysisType: string | null;
+            riskLevel: string | null;
+            contentEditedAt: Date | null;
+            tickers: string;
+            parentId: string | null;
+            quotedPostId: string | null;
+            viewCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        media: {
+            id: string;
+            createdAt: Date;
             postId: string;
-        })[];
+            url: string;
+            mediaType: string;
+            order: number;
+        }[];
         likes: {
             userId: string;
-            postId: string;
         }[];
-        author: {
-            id: string;
-            email: string;
-            username: string;
-            role: string;
-            bio: string;
-            avatarUrl: string;
-            isInfluencer: boolean;
+        reposts: {
+            userId: string;
+        }[];
+        saves: {
+            userId: string;
+        }[];
+        _count: {
+            replies: number;
+            quotes: number;
+            likes: number;
+            reposts: number;
+            saves: number;
         };
     } & {
         id: string;
+        content: string;
+        authorId: string;
+        type: string;
+        visibility: string;
+        deletedAt: Date | null;
+        assetSymbol: string | null;
+        analysisType: string | null;
+        riskLevel: string | null;
+        contentEditedAt: Date | null;
+        tickers: string;
+        parentId: string | null;
+        quotedPostId: string | null;
+        viewCount: number;
         createdAt: Date;
         updatedAt: Date;
-        content: string;
-        mediaUrl: string | null;
-        tickers: string;
-        authorId: string;
     }>;
-    uploadFile(file: any): {
-        url: string;
-    };
-    getAllPosts(page?: string, limit?: string): Promise<{
-        posts: ({
-            comments: ({
+    deletePost(req: any, id: string): Promise<{
+        success: boolean;
+    }>;
+    toggleLike(req: any, id: string): Promise<{
+        liked: boolean;
+    }>;
+    getComments(req: any, id: string, cursor?: string, limit?: string): Promise<{
+        comments: {
+            likedByMe: boolean;
+            likesCount: number;
+            repliesCount: number;
+            author: {
+                id: string;
+                username: string;
+                avatarUrl: string;
+                isInfluencer: boolean;
+                isVerified: boolean;
+                plan: string;
+                isCreator: boolean;
+            };
+            replies: ({
                 author: {
                     id: string;
                     username: string;
                     avatarUrl: string;
+                    isInfluencer: boolean;
+                    isVerified: boolean;
+                    plan: string;
+                    isCreator: boolean;
+                };
+                likes: {
+                    userId: string;
+                }[];
+                _count: {
+                    likes: number;
                 };
             } & {
                 id: string;
-                createdAt: Date;
                 content: string;
                 authorId: string;
+                deletedAt: Date | null;
+                parentId: string | null;
+                createdAt: Date;
                 postId: string;
             })[];
             likes: {
                 userId: string;
-                postId: string;
             }[];
-            author: {
-                id: string;
-                email: string;
-                username: string;
-                role: string;
-                bio: string;
-                avatarUrl: string;
-                isInfluencer: boolean;
+            _count: {
+                replies: number;
+                likes: number;
             };
-        } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             content: string;
-            mediaUrl: string | null;
-            tickers: string;
             authorId: string;
-        })[];
+            deletedAt: Date | null;
+            parentId: string | null;
+            createdAt: Date;
+            postId: string;
+        }[];
+        nextCursor: string;
+        hasMore: boolean;
+    }>;
+    addComment(req: any, id: string, content: string, parentId?: string): Promise<{
+        author: {
+            id: string;
+            username: string;
+            avatarUrl: string;
+            isInfluencer: boolean;
+            isVerified: boolean;
+            plan: string;
+            isCreator: boolean;
+        };
+        _count: {
+            replies: number;
+            likes: number;
+        };
+    } & {
+        id: string;
+        content: string;
+        authorId: string;
+        deletedAt: Date | null;
+        parentId: string | null;
+        createdAt: Date;
+        postId: string;
+    }>;
+    deleteComment(req: any, commentId: string): Promise<{
+        success: boolean;
+    }>;
+    toggleCommentLike(req: any, commentId: string): Promise<{
+        liked: boolean;
+    }>;
+    toggleRepost(req: any, id: string, comment?: string): Promise<{
+        reposted: boolean;
+    }>;
+    toggleSave(req: any, id: string): Promise<{
+        saved: boolean;
+    }>;
+    reportPost(req: any, id: string, reason: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    getAllPosts(page?: string, limit?: string): Promise<{
+        posts: any[];
         total: number;
         page: number;
         totalPages: number;
-    }>;
-    getPostById(id: string): Promise<{
-        comments: ({
-            author: {
-                id: string;
-                username: string;
-                avatarUrl: string;
-            };
-        } & {
-            id: string;
-            createdAt: Date;
-            content: string;
-            authorId: string;
-            postId: string;
-        })[];
-        likes: ({
-            user: {
-                id: string;
-                username: string;
-            };
-        } & {
-            userId: string;
-            postId: string;
-        })[];
-        author: {
-            id: string;
-            email: string;
-            username: string;
-            role: string;
-            bio: string;
-            avatarUrl: string;
-            isInfluencer: boolean;
-        };
-    } & {
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        content: string;
-        mediaUrl: string | null;
-        tickers: string;
-        authorId: string;
-    }>;
-    updatePost(req: any, id: string, dto: UpdatePostDto): Promise<{
-        comments: {
-            id: string;
-            createdAt: Date;
-            content: string;
-            authorId: string;
-            postId: string;
-        }[];
-        likes: {
-            userId: string;
-            postId: string;
-        }[];
-        author: {
-            id: string;
-            email: string;
-            username: string;
-            role: string;
-            bio: string;
-            avatarUrl: string;
-            isInfluencer: boolean;
-        };
-    } & {
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        content: string;
-        mediaUrl: string | null;
-        tickers: string;
-        authorId: string;
-    }>;
-    deletePost(req: any, id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        content: string;
-        mediaUrl: string | null;
-        tickers: string;
-        authorId: string;
-    }>;
-    likePost(req: any, id: string): Promise<{
-        liked: boolean;
-    }>;
-    addComment(req: any, id: string, content: string): Promise<{
-        author: {
-            id: string;
-            username: string;
-            avatarUrl: string;
-        };
-    } & {
-        id: string;
-        createdAt: Date;
-        content: string;
-        authorId: string;
-        postId: string;
     }>;
 }

@@ -13,6 +13,7 @@ exports.PortfolioService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
 const market_service_1 = require("../market/market.service");
+const access_control_service_1 = require("../access/access-control.service");
 const normalizeAssetType = (value) => {
     if (!value)
         return undefined;
@@ -40,9 +41,10 @@ const DB_TYPE_TO_MOVEMENT = {
     WITHDRAW: 'retiro',
 };
 let PortfolioService = class PortfolioService {
-    constructor(prisma, marketService) {
+    constructor(prisma, marketService, accessControlService) {
         this.prisma = prisma;
         this.marketService = marketService;
+        this.accessControlService = accessControlService;
     }
     async assertPortfolioOwner(portfolioId, userId) {
         const portfolio = await this.prisma.portfolio.findFirst({
@@ -135,6 +137,7 @@ let PortfolioService = class PortfolioService {
         };
     }
     async createPortfolio(userId, dto) {
+        await this.accessControlService.limitFreePortfolio(userId);
         if (dto.esPrincipal) {
             await this.prisma.portfolio.updateMany({
                 where: { userId, esPrincipal: true },
@@ -495,11 +498,45 @@ let PortfolioService = class PortfolioService {
         });
         return transactions.map((transaction) => this.toLegacyMovement(transaction));
     }
+    async getWatchlists(userId) {
+        return this.prisma.watchlist.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'asc' },
+        });
+    }
+    async createWatchlist(userId, name, tickers) {
+        if (!name || name.trim().length === 0) {
+            throw new common_1.BadRequestException('El nombre de la watchlist es requerido');
+        }
+        return this.prisma.watchlist.create({
+            data: { userId, name: name.trim(), tickers },
+        });
+    }
+    async updateWatchlist(id, userId, data) {
+        const existing = await this.prisma.watchlist.findFirst({ where: { id, userId } });
+        if (!existing)
+            throw new common_1.NotFoundException('Watchlist no encontrada');
+        return this.prisma.watchlist.update({
+            where: { id },
+            data: {
+                ...(data.name !== undefined && { name: data.name.trim() }),
+                ...(data.tickers !== undefined && { tickers: data.tickers }),
+            },
+        });
+    }
+    async deleteWatchlist(id, userId) {
+        const existing = await this.prisma.watchlist.findFirst({ where: { id, userId } });
+        if (!existing)
+            throw new common_1.NotFoundException('Watchlist no encontrada');
+        await this.prisma.watchlist.delete({ where: { id } });
+        return { ok: true };
+    }
 };
 exports.PortfolioService = PortfolioService;
 exports.PortfolioService = PortfolioService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        market_service_1.MarketService])
+        market_service_1.MarketService,
+        access_control_service_1.AccessControlService])
 ], PortfolioService);
 //# sourceMappingURL=portfolio.service.js.map

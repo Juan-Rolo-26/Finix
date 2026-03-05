@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export type Language = 'es-AR' | 'en-US' | 'pt-BR';
 export type Currency = 'USD' | 'ARS' | 'EUR';
+export type Theme = 'dark' | 'light' | 'system';
 
 export interface AppPreferences {
     language: Language;
@@ -10,11 +11,13 @@ export interface AppPreferences {
     autoRefreshMarket: boolean;
     compactTables: boolean;
     showAdvancedMetrics: boolean;
+    theme: Theme;
 }
 
 interface PreferencesState extends AppPreferences {
     setLanguage: (lang: Language) => void;
     setCurrency: (curr: Currency) => void;
+    setTheme: (theme: Theme) => void;
     toggleAutoRefresh: () => void;
     toggleCompactTables: () => void;
     toggleAdvancedMetrics: () => void;
@@ -29,16 +32,18 @@ export const usePreferencesStore = create<PreferencesState>()(
             autoRefreshMarket: true,
             compactTables: false,
             showAdvancedMetrics: true,
+            theme: 'dark',
 
             setLanguage: (language) => set({ language }),
             setCurrency: (currency) => set({ currency }),
+            setTheme: (theme) => set({ theme }),
             toggleAutoRefresh: () => set((state) => ({ autoRefreshMarket: !state.autoRefreshMarket })),
             toggleCompactTables: () => set((state) => ({ compactTables: !state.compactTables })),
             toggleAdvancedMetrics: () => set((state) => ({ showAdvancedMetrics: !state.showAdvancedMetrics })),
             updatePreferences: (prefs) => set((state) => ({ ...state, ...prefs })),
         }),
         {
-            name: 'finix_app_preferences_v2', // bumped version
+            name: 'finix_app_preferences_v3',
         }
     )
 );

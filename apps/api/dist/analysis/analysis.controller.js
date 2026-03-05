@@ -16,7 +16,6 @@ exports.AnalysisController = void 0;
 const common_1 = require("@nestjs/common");
 const analysis_service_1 = require("./analysis.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
-const optional_jwt_guard_1 = require("../auth/optional-jwt.guard");
 let AnalysisController = class AnalysisController {
     constructor(analysisService) {
         this.analysisService = analysisService;
@@ -31,7 +30,7 @@ let AnalysisController = class AnalysisController {
 };
 exports.AnalysisController = AnalysisController;
 __decorate([
-    (0, common_1.UseGuards)(optional_jwt_guard_1.OptionalJwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)(':ticker'),
     __param(0, (0, common_1.Param)('ticker')),
     __metadata("design:type", Function),

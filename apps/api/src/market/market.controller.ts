@@ -8,8 +8,8 @@ export class MarketController {
     }
 
     @Get('tickers')
-    getTickers() {
-        return this.marketService.getTickers();
+    async getTickers() {
+        return await this.marketService.getTickers();
     }
 
     @Get('search')

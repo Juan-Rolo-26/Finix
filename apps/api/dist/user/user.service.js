@@ -29,7 +29,9 @@ let UserService = class UserService {
             bannerUrl: true,
             isInfluencer: true,
             isVerified: true,
+            plan: true,
             accountType: true,
+            subscriptionStatus: true,
             title: true,
             company: true,
             location: true,
@@ -68,6 +70,47 @@ let UserService = class UserService {
         }
         return user;
     }
+    async getNotifications(userId) {
+        const followers = await this.prisma.follow.findMany({
+            where: { followingId: userId },
+            include: { follower: { select: { id: true, username: true, avatarUrl: true } } },
+            take: 3
+        });
+        const dbUser = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { totalReturn: true }
+        });
+        const notifications = [];
+        followers.forEach((f, index) => {
+            notifications.push({
+                id: `fol_${f.followerId}_${index}`,
+                type: 'follow',
+                title: `${f.follower.username} empezó a seguirte.`,
+                time: `${index + 1}h`,
+                user: f.follower
+            });
+        });
+        if (dbUser?.totalReturn !== undefined && dbUser?.totalReturn !== null) {
+            const isUp = dbUser.totalReturn >= 0;
+            notifications.push({
+                id: `perf_${userId}`,
+                type: 'portfolio',
+                title: `Tu portafolio ${isUp ? 'subió' : 'bajó'} ${isUp ? '+' : ''}${dbUser.totalReturn.toFixed(1)}% hoy.`,
+                time: '5h',
+                isUp
+            });
+        }
+        else {
+            notifications.push({
+                id: `perf_${userId}_mock`,
+                type: 'portfolio',
+                title: `Tu portafolio está listo para invertir.`,
+                time: '5h',
+                isUp: true
+            });
+        }
+        return notifications;
+    }
     async getUserProfile(username) {
         const user = await this.prisma.user.findUnique({
             where: { username },
@@ -85,6 +128,7 @@ let UserService = class UserService {
                 isInfluencer: user.isInfluencer,
                 isVerified: user.isVerified,
                 accountType: user.accountType,
+                plan: user.plan,
                 isProfilePublic: false,
             };
         }
@@ -274,6 +318,28 @@ let UserService = class UserService {
             winRate: totalTransactions > 0 ? 50 + Math.random() * 30 : null,
             riskScore: parseFloat(riskScore.toFixed(1)),
         };
+    }
+    async getTopTraders() {
+        return this.prisma.user.findMany({
+            where: { isProfilePublic: true, totalReturn: { not: null } },
+            orderBy: { totalReturn: 'desc' },
+            take: 10,
+            select: this.getProfileSelect(),
+        });
+    }
+    async searchUsers(query) {
+        if (!query || query.length < 2)
+            return [];
+        return this.prisma.user.findMany({
+            where: {
+                username: {
+                    contains: query,
+                },
+                isProfilePublic: true,
+            },
+            take: 10,
+            select: this.getProfileSelect(),
+        });
     }
 };
 exports.UserService = UserService;

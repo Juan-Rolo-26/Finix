@@ -23,11 +23,12 @@ export declare class MarketService {
     private stripHtml;
     private mockTickers;
     private symbolCatalog;
-    getTickers(): {
+    getTickers(): Promise<{
+        symbol: string;
         price: number;
         change: number;
-        symbol: string;
-    }[];
+        volume: number;
+    }[]>;
     searchSymbols(query: string): Promise<any[]>;
     private normalizeQuoteInputSymbol;
     private buildSymbolCandidates;

@@ -66,10 +66,6 @@ const subtypeOptions: Array<{ value: HeatmapSubtype; label: string }> = [
     { value: 'ytd', label: 'YTD' },
 ];
 
-const FINVIZ_PERF_COLORS = [
-    '#F63538', '#BF4045', '#8B444E', '#414554', '#35764E', '#2F9E4F', '#30CC5A'
-] as const;
-
 const FINVIZ_NULL_COLOR = '#2f323d';
 
 const FINVIZ_RANGE_BY_SUBTYPE: Record<HeatmapSubtype, { min: number; max: number }> = {
@@ -161,7 +157,6 @@ function FinvizTreemapNode({
     depth = 0,
     perf: rawPerf,
     subtype = 'd1',
-    children,
     payload
 }: TreemapNodeRendererProps & { [key: string]: any }) {
     // Manual gap calculation

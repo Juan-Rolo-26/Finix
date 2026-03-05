@@ -103,24 +103,24 @@ export declare class NewsService {
         language: any;
     }[]>;
     getCategories(): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
-        name: string;
-        slug: string;
         description: string | null;
+        slug: string;
         color: string | null;
         icon: string | null;
     }[]>;
     getSources(): Promise<{
+        name: string;
         id: string;
+        language: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        priority: number;
         apiType: string;
         country: string;
-        language: string;
         isActive: boolean;
-        priority: number;
     }[]>;
     getNewsStats(): Promise<{
         totalNews: number;

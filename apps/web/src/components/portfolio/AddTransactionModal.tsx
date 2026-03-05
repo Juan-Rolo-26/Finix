@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { apiFetch } from '@/lib/api';
+import BackButton from '@/components/BackButton';
 
 interface AddTransactionModalProps {
     open: boolean;
@@ -493,7 +494,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
 
                 <DialogFooter className="p-6 pt-2 gap-2">
                     {step === 'details' && (
-                        <Button variant="outline" onClick={() => setStep('search')}>Volver</Button>
+                        <BackButton onClick={() => setStep('search')} label="Volver" />
                     )}
                     <Button
                         onClick={() => (step === 'search' ? onOpenChange(false) : handleSubmit())}

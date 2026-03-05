@@ -13,6 +13,8 @@ export declare class UserController {
         isInfluencer: boolean;
         isVerified: boolean;
         accountType: string;
+        plan: string;
+        subscriptionStatus: string;
         title: string;
         company: string;
         location: string;
@@ -49,6 +51,8 @@ export declare class UserController {
         isInfluencer: boolean;
         isVerified: boolean;
         accountType: string;
+        plan: string;
+        subscriptionStatus: string;
         title: string;
         company: string;
         location: string;
@@ -81,6 +85,7 @@ export declare class UserController {
         success: boolean;
         message: string;
     }>;
+    getMyNotifications(req: any): Promise<any[]>;
     getMyStats(req: any): Promise<{
         totalReturn: number;
         winRate: number;
@@ -90,6 +95,82 @@ export declare class UserController {
         followingCount: number;
         portfoliosCount: number;
     }>;
+    getTopTraders(): Promise<{
+        id: string;
+        email: string;
+        username: string;
+        bio: string;
+        bioLong: string;
+        avatarUrl: string;
+        bannerUrl: string;
+        isInfluencer: boolean;
+        isVerified: boolean;
+        accountType: string;
+        plan: string;
+        subscriptionStatus: string;
+        title: string;
+        company: string;
+        location: string;
+        website: string;
+        linkedinUrl: string;
+        twitterUrl: string;
+        youtubeUrl: string;
+        instagramUrl: string;
+        yearsExperience: number;
+        specializations: string;
+        certifications: string;
+        totalReturn: number;
+        winRate: number;
+        riskScore: number;
+        isProfilePublic: boolean;
+        showPortfolio: boolean;
+        showStats: boolean;
+        acceptingFollowers: boolean;
+        createdAt: Date;
+        _count: {
+            posts: number;
+            followedBy: number;
+            following: number;
+        };
+    }[]>;
+    searchUsers(query: string): Promise<{
+        id: string;
+        email: string;
+        username: string;
+        bio: string;
+        bioLong: string;
+        avatarUrl: string;
+        bannerUrl: string;
+        isInfluencer: boolean;
+        isVerified: boolean;
+        accountType: string;
+        plan: string;
+        subscriptionStatus: string;
+        title: string;
+        company: string;
+        location: string;
+        website: string;
+        linkedinUrl: string;
+        twitterUrl: string;
+        youtubeUrl: string;
+        instagramUrl: string;
+        yearsExperience: number;
+        specializations: string;
+        certifications: string;
+        totalReturn: number;
+        winRate: number;
+        riskScore: number;
+        isProfilePublic: boolean;
+        showPortfolio: boolean;
+        showStats: boolean;
+        acceptingFollowers: boolean;
+        createdAt: Date;
+        _count: {
+            posts: number;
+            followedBy: number;
+            following: number;
+        };
+    }[]>;
     getUserProfile(username: string): Promise<{
         id: string;
         email: string;
@@ -101,6 +182,8 @@ export declare class UserController {
         isInfluencer: boolean;
         isVerified: boolean;
         accountType: string;
+        plan: string;
+        subscriptionStatus: string;
         title: string;
         company: string;
         location: string;
@@ -133,6 +216,7 @@ export declare class UserController {
         isInfluencer: boolean;
         isVerified: boolean;
         accountType: string;
+        plan: string;
         isProfilePublic: boolean;
     }>;
 }

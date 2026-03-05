@@ -1,10 +1,12 @@
 import { PrismaService } from '../prisma.service';
 import { CreatePortfolioDto, UpdatePortfolioDto, CreateAssetDto, UpdateAssetDto, CreateTransactionDto } from './dto/portfolio.dto';
 import { MarketService } from '../market/market.service';
+import { AccessControlService } from '../access/access-control.service';
 export declare class PortfolioService {
     private prisma;
     private marketService;
-    constructor(prisma: PrismaService, marketService: MarketService);
+    private accessControlService;
+    constructor(prisma: PrismaService, marketService: MarketService, accessControlService: AccessControlService);
     private assertPortfolioOwner;
     private normalizeMovementType;
     private normalizeTicker;
@@ -79,44 +81,44 @@ export declare class PortfolioService {
         asset: {
             name: string;
             id: string;
-            type: string;
             currency: string;
+            type: string;
             ticker: string;
         };
     } & {
         id: string;
+        currency: string;
         createdAt: Date;
-        type: string;
         date: Date;
+        type: string;
+        total: import("@prisma/client/runtime/library").Decimal;
+        fee: import("@prisma/client/runtime/library").Decimal;
         portfolioId: string;
         assetId: string | null;
         quantity: import("@prisma/client/runtime/library").Decimal;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
-        fee: import("@prisma/client/runtime/library").Decimal;
-        total: import("@prisma/client/runtime/library").Decimal;
-        currency: string;
         notes: string | null;
     }>;
     addAsset(portfolioId: string, userId: string, dto: CreateAssetDto): Promise<{
         asset: {
             name: string;
             id: string;
-            type: string;
             currency: string;
+            type: string;
             ticker: string;
         };
     } & {
         id: string;
+        currency: string;
         createdAt: Date;
-        type: string;
         date: Date;
+        type: string;
+        total: import("@prisma/client/runtime/library").Decimal;
+        fee: import("@prisma/client/runtime/library").Decimal;
         portfolioId: string;
         assetId: string | null;
         quantity: import("@prisma/client/runtime/library").Decimal;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
-        fee: import("@prisma/client/runtime/library").Decimal;
-        total: import("@prisma/client/runtime/library").Decimal;
-        currency: string;
         notes: string | null;
     }>;
     getPortfolioAssets(portfolioId: string, userId: string): Promise<{
@@ -158,4 +160,31 @@ export declare class PortfolioService {
         precio: number;
         total: number;
     }[]>;
+    getWatchlists(userId: string): Promise<{
+        name: string;
+        id: string;
+        createdAt: Date;
+        tickers: string;
+        userId: string;
+    }[]>;
+    createWatchlist(userId: string, name: string, tickers: string): Promise<{
+        name: string;
+        id: string;
+        createdAt: Date;
+        tickers: string;
+        userId: string;
+    }>;
+    updateWatchlist(id: string, userId: string, data: {
+        name?: string;
+        tickers?: string;
+    }): Promise<{
+        name: string;
+        id: string;
+        createdAt: Date;
+        tickers: string;
+        userId: string;
+    }>;
+    deleteWatchlist(id: string, userId: string): Promise<{
+        ok: boolean;
+    }>;
 }

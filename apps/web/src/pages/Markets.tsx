@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, TrendingUp, TrendingDown, Activity, BarChart3, LineChart, Zap, Newspaper } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, Activity, LineChart, Zap } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,9 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { apiFetch } from '@/lib/api';
 import TradingViewChart from '@/components/TradingViewChart';
-import TradingViewAnalysis from '@/components/TradingViewAnalysis';
 import MarketOverview from '@/components/MarketOverview';
-import MarketNews from '@/components/MarketNews';
 import { useTranslation } from '@/i18n';
 
 interface MarketAsset {
@@ -120,7 +117,7 @@ export default function Markets() {
     };
 
     return (
-        <div className="w-full space-y-8 pb-16 xl:space-y-10">
+        <div className="p-4 md:p-6 lg:p-8 w-full space-y-8 pb-16 xl:space-y-10">
             {/* Header */}
             <div className="flex flex-col gap-6">
                 <div className="flex items-center justify-between">
@@ -212,14 +209,6 @@ export default function Markets() {
                             <div>
                                 <CardTitle className="text-2xl">{selectedAsset.symbol}</CardTitle>
                                 <CardDescription className="text-base mt-1">{selectedAsset.name}</CardDescription>
-                                <div className="flex gap-2 mt-4">
-                                    <Button asChild size="sm" variant="secondary" className="gap-2">
-                                        <Link to={`/analysis/${selectedAsset.symbol}`}>
-                                            <BarChart3 className="w-4 h-4" />
-                                            {t.markets.tabs.analysis}
-                                        </Link>
-                                    </Button>
-                                </div>
                             </div>
                             {quoteData && (
                                 <div className="text-right">
@@ -254,22 +243,14 @@ export default function Markets() {
 
             {/* Main Content Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-7">
-                <TabsList className="grid w-full grid-cols-4 h-16 bg-secondary/50">
+                <TabsList className="grid w-full grid-cols-2 h-16 bg-secondary/50">
                     <TabsTrigger value="chart" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                         <LineChart className="w-4 h-4" />
                         {t.markets.tabs.chart}
                     </TabsTrigger>
-                    <TabsTrigger value="analysis" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                        <BarChart3 className="w-4 h-4" />
-                        {t.markets.tabs.analysis}
-                    </TabsTrigger>
                     <TabsTrigger value="overview" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                         <Activity className="w-4 h-4" />
                         {t.markets.tabs.overview}
-                    </TabsTrigger>
-                    <TabsTrigger value="news" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                        <Newspaper className="w-4 h-4" />
-                        {t.markets.tabs.news}
                     </TabsTrigger>
                 </TabsList>
 
@@ -279,22 +260,8 @@ export default function Markets() {
                     )}
                 </TabsContent>
 
-                <TabsContent value="analysis" className="space-y-4">
-                    {selectedAsset && (
-                        <TradingViewAnalysis
-                            symbol={selectedAsset.symbol}
-                            quoteData={quoteData}
-                            asset={selectedAsset}
-                        />
-                    )}
-                </TabsContent>
-
                 <TabsContent value="overview" className="space-y-4">
                     <MarketOverview />
-                </TabsContent>
-
-                <TabsContent value="news" className="space-y-4">
-                    <MarketNews symbol={selectedAsset?.symbol} />
                 </TabsContent>
             </Tabs>
         </div>

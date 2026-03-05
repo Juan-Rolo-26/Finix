@@ -51,6 +51,7 @@ import { useTranslation } from '@/i18n';
 
 import { AddTransactionModal } from '@/components/portfolio/AddTransactionModal';
 import { AllocationChart, TopAssetsChart, CapitalEvolutionChart } from '@/components/portfolio/PortfolioCharts';
+import { PortfolioAdvancedMetrics } from '@/components/portfolio/AdvancedDiversification';
 
 // Types
 interface Portfolio {
@@ -315,7 +316,7 @@ const PortfolioPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background p-6">
+        <div className="min-h-screen bg-transparent p-6">
             <div className="max-w-[1600px] mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -796,6 +797,7 @@ const PortfolioPage = () => {
 
                             {/* Diversification Tab */}
                             <TabsContent value="diversification" className="space-y-6">
+                                <PortfolioAdvancedMetrics metrics={metrics} assets={selectedPortfolio.assets} />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <Card>
                                         <CardHeader>

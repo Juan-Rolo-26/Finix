@@ -4,7 +4,6 @@ import { AnalysisService } from './analysis.service';
 import { PrismaService } from '../prisma.service';
 
 @Module({
-    imports: [],
     controllers: [AnalysisController],
     providers: [AnalysisService, PrismaService],
     exports: [AnalysisService],

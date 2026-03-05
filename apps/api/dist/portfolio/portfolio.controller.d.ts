@@ -4,6 +4,36 @@ export declare class PortfolioController {
     private portfolioService;
     constructor(portfolioService: PortfolioService);
     private resolveUserId;
+    getWatchlists(req: any): Promise<{
+        name: string;
+        id: string;
+        createdAt: Date;
+        tickers: string;
+        userId: string;
+    }[]>;
+    createWatchlist(req: any, body: {
+        name: string;
+        tickers: string;
+    }): Promise<{
+        name: string;
+        id: string;
+        createdAt: Date;
+        tickers: string;
+        userId: string;
+    }>;
+    updateWatchlist(req: any, id: string, body: {
+        name?: string;
+        tickers?: string;
+    }): Promise<{
+        name: string;
+        id: string;
+        createdAt: Date;
+        tickers: string;
+        userId: string;
+    }>;
+    deleteWatchlist(req: any, id: string): Promise<{
+        ok: boolean;
+    }>;
     createPortfolio(req: any, dto: CreatePortfolioDto): Promise<{
         id: any;
         nombre: any;
@@ -80,22 +110,22 @@ export declare class PortfolioController {
         asset: {
             name: string;
             id: string;
-            type: string;
             currency: string;
+            type: string;
             ticker: string;
         };
     } & {
         id: string;
+        currency: string;
         createdAt: Date;
-        type: string;
         date: Date;
+        type: string;
+        total: import("@prisma/client/runtime/library").Decimal;
+        fee: import("@prisma/client/runtime/library").Decimal;
         portfolioId: string;
         assetId: string | null;
         quantity: import("@prisma/client/runtime/library").Decimal;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
-        fee: import("@prisma/client/runtime/library").Decimal;
-        total: import("@prisma/client/runtime/library").Decimal;
-        currency: string;
         notes: string | null;
     }>;
     getPortfolioAssets(req: any, portfolioId: string): Promise<{
@@ -132,22 +162,22 @@ export declare class PortfolioController {
         asset: {
             name: string;
             id: string;
-            type: string;
             currency: string;
+            type: string;
             ticker: string;
         };
     } & {
         id: string;
+        currency: string;
         createdAt: Date;
-        type: string;
         date: Date;
+        type: string;
+        total: import("@prisma/client/runtime/library").Decimal;
+        fee: import("@prisma/client/runtime/library").Decimal;
         portfolioId: string;
         assetId: string | null;
         quantity: import("@prisma/client/runtime/library").Decimal;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
-        fee: import("@prisma/client/runtime/library").Decimal;
-        total: import("@prisma/client/runtime/library").Decimal;
-        currency: string;
         notes: string | null;
     }>;
 }

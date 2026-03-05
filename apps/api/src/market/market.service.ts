@@ -127,13 +127,22 @@ export class MarketService {
         { symbol: 'NYSE:CVX', name: 'Chevron Corporation', type: 'stock', exchange: 'NYSE' },
     ];
 
-    getTickers() {
-        // Randomize slightly for "live" feel
-        return this.mockTickers.map(t => ({
-            ...t,
-            price: t.price + (Math.random() - 0.5) * (t.price * 0.01),
-            change: t.change + (Math.random() - 0.5),
-        }));
+    async getTickers() {
+        const defaultTickers = ['NASDAQ:TSLA', 'CRYPTO:BTCUSD', 'AMEX:SPY', 'NASDAQ:NVDA', 'NASDAQ:AAPL'];
+        const quotes = await this.getQuotes(defaultTickers);
+
+        return quotes.map((q, i) => {
+            const mockFallback = this.mockTickers[i % this.mockTickers.length];
+            // Extraer el símbolo corto (ej: TSLA en lugar de NASDAQ:TSLA)
+            const shortSymbol = q.inputSymbol.split(':')[1] || q.inputSymbol;
+
+            return {
+                symbol: shortSymbol === 'BTCUSD' ? 'BTC' : shortSymbol,
+                price: q.price ?? mockFallback.price,
+                change: q.change ?? mockFallback.change,
+                volume: Math.floor(Math.random() * 50000) + 10000 // Simulation for volume as real volume might be missing
+            };
+        });
     }
 
     async searchSymbols(query: string) {

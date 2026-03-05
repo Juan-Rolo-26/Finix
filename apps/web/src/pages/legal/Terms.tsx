@@ -1,15 +1,12 @@
-import { Link } from 'react-router-dom';
-import { Scale, ArrowLeft } from 'lucide-react';
+import { Scale } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 
 const Terms = () => {
     return (
-        <div className="min-h-screen bg-background text-foreground font-sans">
+        <div className="min-h-screen finix-unified-bg text-foreground font-sans">
             <nav className="fixed top-0 w-full z-50 border-b border-primary/10 bg-background/60 backdrop-blur-xl">
                 <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2 group">
-                        <ArrowLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                        <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Volver al inicio</span>
-                    </Link>
+                    <BackButton to="/" label="Volver al inicio" />
                     <div className="flex items-center gap-2">
                         <span className="font-heading font-bold text-xl">Finix</span>
                     </div>

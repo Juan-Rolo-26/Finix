@@ -1,0 +1,36 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AccessModule = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma.service");
+const access_control_service_1 = require("./access-control.service");
+const require_pro_guard_1 = require("./require-pro.guard");
+const limit_free_portfolio_guard_1 = require("./limit-free-portfolio.guard");
+const require_paid_community_access_guard_1 = require("./require-paid-community-access.guard");
+let AccessModule = class AccessModule {
+};
+exports.AccessModule = AccessModule;
+exports.AccessModule = AccessModule = __decorate([
+    (0, common_1.Module)({
+        providers: [
+            prisma_service_1.PrismaService,
+            access_control_service_1.AccessControlService,
+            require_pro_guard_1.RequireProGuard,
+            limit_free_portfolio_guard_1.LimitFreePortfolioGuard,
+            require_paid_community_access_guard_1.RequirePaidCommunityAccessGuard,
+        ],
+        exports: [
+            access_control_service_1.AccessControlService,
+            require_pro_guard_1.RequireProGuard,
+            limit_free_portfolio_guard_1.LimitFreePortfolioGuard,
+            require_paid_community_access_guard_1.RequirePaidCommunityAccessGuard,
+        ],
+    })
+], AccessModule);
+//# sourceMappingURL=access.module.js.map

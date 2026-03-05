@@ -1,4 +1,4 @@
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,7 +9,6 @@ import {
     Sparkles,
     ArrowRight,
     Wallet,
-    Newspaper,
     LineChart,
     User,
     MessageSquare,
@@ -55,7 +54,7 @@ const Hero = () => {
 
     const stats = [
         { icon: TrendingUp, value: t.landing.hero.progress, label: t.landing.hero.progressDesc, delay: 0.6 },
-        { icon: Users, value: t.landing.hero.community, label: t.landing.hero.communityDesc, delay: 0.7 },
+        { icon: Users, value: t.landing.hero.community, label: 'Usuarios activos', delay: 0.7 },
         { icon: BarChart3, value: t.landing.hero.criteria, label: t.landing.hero.criteriaDesc, delay: 0.8 },
     ];
 
@@ -171,7 +170,7 @@ const Hero = () => {
                                 asChild
                                 className="relative text-lg md:text-xl px-10 md:px-12 py-7 md:py-8 font-bold rounded-xl shadow-intense hover:shadow-[0_0_110px_rgba(0,255,170,0.5)] transition-all bg-primary text-primary-foreground border-none"
                             >
-                                <Link to="/auth" className="flex items-center">
+                                <Link to="/" className="flex items-center">
                                     <span>{t.landing.hero.startFree}</span>
                                     <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
                                 </Link>
@@ -354,16 +353,16 @@ const Features = () => {
             iconBg: "bg-emerald-500/20",
         },
         {
-            icon: Newspaper,
-            title: t.landing.features.cards.smartNews.title,
-            description: t.landing.features.cards.smartNews.desc,
+            icon: BarChart3,
+            title: 'Exploración de mercado',
+            description: 'Seguimiento en tiempo real de activos con métricas claras para tomar decisiones.',
             gradient: "from-blue-500/20 to-blue-500/5",
             iconBg: "bg-blue-500/20",
         },
         {
             icon: LineChart,
-            title: t.landing.features.cards.techAnalysis.title,
-            description: t.landing.features.cards.techAnalysis.desc,
+            title: 'Herramientas de decisión',
+            description: 'Visualizá el comportamiento de activos y compará escenarios desde una sola pantalla.',
             gradient: "from-orange-500/20 to-orange-500/5",
             iconBg: "bg-orange-500/20",
         },
@@ -922,147 +921,7 @@ const Showcase = () => {
     );
 };
 
-const AuthSection = () => {
-    const navigate = useNavigate();
-    const t = useTranslation();
-    const benefits = [
-        {
-            icon: TrendingUp,
-            title: t.landing.authSection.benefits.analysis.title,
-            description: t.landing.authSection.benefits.analysis.desc,
-        },
-        {
-            icon: Shield,
-            title: t.landing.authSection.benefits.portfolio.title,
-            description: t.landing.authSection.benefits.portfolio.desc,
-        },
-        {
-            icon: Zap,
-            title: t.landing.authSection.benefits.community.title,
-            description: t.landing.authSection.benefits.community.desc,
-        },
-    ];
 
-    return (
-        <section id="register" className="relative py-24 md:py-32 overflow-hidden">
-            <div className="absolute inset-0 -z-10">
-                <div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/30 to-background" />
-                <motion.div
-                    className="absolute top-1/3 left-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl"
-                    animate={{
-                        scale: [1, 1.2, 1],
-                        opacity: [0.3, 0.5, 0.3],
-                    }}
-                    transition={{ duration: 8, repeat: Infinity }}
-                />
-                <motion.div
-                    className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl"
-                    animate={{
-                        scale: [1.2, 1, 1.2],
-                        opacity: [0.2, 0.4, 0.2],
-                    }}
-                    transition={{ duration: 10, repeat: Infinity }}
-                />
-            </div>
-
-            <div className="container max-w-[1400px] mx-auto px-4 md:px-6">
-                <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-                    <motion.div
-                        initial={{ opacity: 0, x: -50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6 }}
-                        viewport={{ once: true }}
-                        className="space-y-10"
-                    >
-                        <div className="space-y-6">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5, delay: 0.1 }}
-                                viewport={{ once: true }}
-                            >
-                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30 mb-6">
-                                    <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-                                        <Zap className="w-5 h-5 text-primary" />
-                                    </motion.div>
-                                    <span className="text-base font-semibold text-primary">{t.landing.authSection.pill}</span>
-                                </div>
-                            </motion.div>
-                            <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold tracking-tight leading-[1.05]">
-                                {t.landing.authSection.title}{" "}
-                                <span className="text-transparent bg-clip-text bg-gradient-accent">
-                                    {t.landing.authSection.titleSuffix}
-                                </span>
-                            </h2>
-                            <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl">
-                                {t.landing.authSection.desc}
-                            </p>
-                        </div>
-
-                        <div className="space-y-6">
-                            {benefits.map((benefit, index) => (
-                                <motion.div
-                                    key={benefit.title}
-                                    initial={{ opacity: 0, x: -30 }}
-                                    whileInView={{ opacity: 1, x: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                                    viewport={{ once: true }}
-                                    className="flex gap-4 group"
-                                >
-                                    <div className="relative flex-shrink-0">
-                                        <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-secondary to-secondary/50 border border-primary/30 flex items-center justify-center group-hover:border-primary/60 transition-all shadow-glow">
-                                            <benefit.icon className="w-8 h-8 text-primary" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h3 className="font-heading font-bold text-xl group-hover:text-primary transition-colors">
-                                            {benefit.title}
-                                        </h3>
-                                        <p className="text-muted-foreground leading-relaxed text-lg">
-                                            {benefit.description}
-                                        </p>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, x: 50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6 }}
-                        viewport={{ once: true }}
-                        className="relative"
-                    >
-                        <div className="relative bg-gradient-to-br from-secondary/90 to-secondary/60 backdrop-blur-2xl border border-primary/20 rounded-3xl p-8 md:p-10 shadow-2xl space-y-6">
-                            <div className="text-center space-y-4">
-                                <h3 className="text-3xl font-heading font-bold">{t.landing.authSection.cardTitle}</h3>
-                                <p className="text-muted-foreground">{t.landing.authSection.cardDesc}</p>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Button
-                                        size="lg"
-                                        className="w-full bg-primary text-primary-foreground font-bold shadow-glow hover:shadow-intense"
-                                        onClick={() => navigate('/auth')}
-                                    >
-                                        {t.landing.authSection.register}
-                                    </Button>
-                                    <Button
-                                        size="lg"
-                                        variant="outline"
-                                        className="w-full border-primary/50 hover:bg-primary/10"
-                                        onClick={() => navigate('/auth')}
-                                    >
-                                        {t.landing.authSection.login}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                </div>
-            </div>
-        </section>
-    );
-};
 
 const CTA = () => {
     const t = useTranslation();
@@ -1157,10 +1016,10 @@ const CTA = () => {
                                 size="lg"
                                 className="relative text-lg md:text-xl px-10 md:px-12 py-7 md:py-8 font-bold rounded-xl shadow-intense group bg-primary text-primary-foreground"
                             >
-                                <a href="#register" className="flex items-center">
+                                <Link to="/" className="flex items-center">
                                     <span>{t.landing.cta.btn}</span>
                                     <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
-                                </a>
+                                </Link>
                             </Button>
                         </motion.div>
                     </div>
@@ -1190,7 +1049,7 @@ const Footer = () => {
                         <h4 className="font-bold text-white mb-4">{t.landing.footer.platform}</h4>
                         <ul className="space-y-3 text-sm text-muted-foreground">
                             <li><a href="#" className="hover:text-primary transition-colors">{t.landing.footer.about}</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">{t.landing.footer.proCommunity}</a></li>
+                            <li><a href="#" className="hover:text-primary transition-colors">Mercados</a></li>
                             <li><a href="#" className="hover:text-primary transition-colors">{t.landing.footer.rules}</a></li>
                             <li><a href="#" className="hover:text-primary transition-colors">{t.landing.footer.contact}</a></li>
                         </ul>
@@ -1217,85 +1076,16 @@ const Footer = () => {
     );
 };
 
-// --- Main Page ---
+// --- Main Page (used by InfoPage) ---
 
 const Landing = () => {
-    const t = useTranslation();
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background text-foreground overflow-x-hidden selection:bg-primary selection:text-primary-foreground font-sans">
-            {/* Navbar */}
-            <nav className="fixed top-4 left-0 right-0 z-50 px-4">
-                <div className="mx-auto max-w-6xl">
-                    <div className="relative">
-                        <div className="absolute -inset-1 rounded-[28px] bg-gradient-to-r from-primary/25 via-white/5 to-emerald-400/20 blur-xl opacity-70" />
-                        <div className="relative flex items-center justify-between gap-4 rounded-[28px] border border-white/10 bg-[#0b0f14]/75 px-5 py-3 backdrop-blur-2xl shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
-
-                            {/* Logo Section */}
-                            <div className="flex items-center gap-3 flex-1">
-                                <Link to="/" className="flex items-center gap-3 group">
-                                    <div className="relative flex items-center justify-center">
-                                        <div className="absolute -inset-2 rounded-2xl bg-primary/20 blur-lg opacity-0 group-hover:opacity-100 transition duration-500" />
-                                        <img src="/logo.png" alt="Finix" className="relative h-9 w-auto object-contain drop-shadow-[0_0_12px_rgba(34,197,94,0.5)]" />
-                                    </div>
-                                    <div className="hidden sm:flex flex-col leading-none">
-                                        <span className="font-heading text-lg font-bold tracking-tight text-white group-hover:text-primary transition-colors duration-300">
-                                            Finix
-                                        </span>
-                                        <span className="text-[10px] uppercase tracking-[0.35em] text-muted-foreground">
-                                            {t.landing.nav.investmentSocial}
-                                        </span>
-                                    </div>
-                                </Link>
-                            </div>
-
-                            {/* Navigation */}
-                            <div className="hidden md:flex items-center gap-1 rounded-full bg-white/5 px-2 py-1 border border-white/10">
-                                {[
-                                    { name: t.landing.nav.home, href: "#inicio" },
-                                    { name: t.landing.nav.mvp, href: "#mvp" },
-                                    { name: t.landing.nav.pillars, href: "#features" },
-                                    { name: t.landing.nav.experience, href: "#showcase" },
-                                    { name: t.landing.nav.register, href: "#register" },
-                                ].map((link) => (
-                                    <a
-                                        key={link.name}
-                                        href={link.href}
-                                        className="px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                                    >
-                                        {link.name}
-                                    </a>
-                                ))}
-                            </div>
-
-                            {/* Actions Section */}
-                            <div className="flex items-center gap-3 flex-1 justify-end">
-                                <Link to="/auth">
-                                    <Button
-                                        variant="ghost"
-                                        className="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10"
-                                    >
-                                        {t.landing.nav.login}
-                                    </Button>
-                                </Link>
-                                <Link to="/auth">
-                                    <Button
-                                        className="h-10 rounded-full bg-gradient-to-r from-primary to-emerald-400 px-5 text-sm font-bold text-black shadow-[0_0_20px_rgba(34,197,94,0.35)] hover:shadow-[0_0_30px_rgba(34,197,94,0.55)] transition-all duration-300"
-                                    >
-                                        {t.landing.nav.signup}
-                                    </Button>
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
             <Hero />
             <MVPExplanation />
             <Features />
             <Steps />
             <Showcase />
-            <AuthSection />
             <CTA />
             <Footer />
         </div>

@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -28,9 +28,25 @@ export class UserController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Get('me/notifications')
+    async getMyNotifications(@Request() req) {
+        return this.userService.getNotifications(req.user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Get('me/stats')
     async getMyStats(@Request() req) {
         return this.userService.getUserStats(req.user.id);
+    }
+
+    @Get('top-traders')
+    async getTopTraders() {
+        return this.userService.getTopTraders();
+    }
+
+    @Get('search')
+    async searchUsers(@Query('q') query: string) {
+        return this.userService.searchUsers(query);
     }
 
     @Get(':username')

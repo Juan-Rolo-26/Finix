@@ -16,7 +16,6 @@ let AnalysisModule = class AnalysisModule {
 exports.AnalysisModule = AnalysisModule;
 exports.AnalysisModule = AnalysisModule = __decorate([
     (0, common_1.Module)({
-        imports: [],
         controllers: [analysis_controller_1.AnalysisController],
         providers: [analysis_service_1.AnalysisService, prisma_service_1.PrismaService],
         exports: [analysis_service_1.AnalysisService],

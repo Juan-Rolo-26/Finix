@@ -29,8 +29,17 @@ let UserController = class UserController {
     async updatePassword(req, body) {
         return this.userService.changePassword(req.user.id, body.currentPassword || '', body.newPassword || '');
     }
+    async getMyNotifications(req) {
+        return this.userService.getNotifications(req.user.id);
+    }
     async getMyStats(req) {
         return this.userService.getUserStats(req.user.id);
+    }
+    async getTopTraders() {
+        return this.userService.getTopTraders();
+    }
+    async searchUsers(query) {
+        return this.userService.searchUsers(query);
     }
     async getUserProfile(username) {
         return this.userService.getUserProfile(username);
@@ -65,12 +74,33 @@ __decorate([
 ], UserController.prototype, "updatePassword", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('me/notifications'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "getMyNotifications", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('me/stats'),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UserController.prototype, "getMyStats", null);
+__decorate([
+    (0, common_1.Get)('top-traders'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "getTopTraders", null);
+__decorate([
+    (0, common_1.Get)('search'),
+    __param(0, (0, common_1.Query)('q')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "searchUsers", null);
 __decorate([
     (0, common_1.Get)(':username'),
     __param(0, (0, common_1.Param)('username')),

@@ -17,12 +17,29 @@ const common_1 = require("@nestjs/common");
 const portfolio_service_1 = require("./portfolio.service");
 const portfolio_dto_1 = require("./dto/portfolio.dto");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const limit_free_portfolio_guard_1 = require("../access/limit-free-portfolio.guard");
 let PortfolioController = class PortfolioController {
     constructor(portfolioService) {
         this.portfolioService = portfolioService;
     }
     resolveUserId(req) {
         return req.user.id;
+    }
+    async getWatchlists(req) {
+        const userId = this.resolveUserId(req);
+        return this.portfolioService.getWatchlists(userId);
+    }
+    async createWatchlist(req, body) {
+        const userId = this.resolveUserId(req);
+        return this.portfolioService.createWatchlist(userId, body.name, body.tickers || '');
+    }
+    async updateWatchlist(req, id, body) {
+        const userId = this.resolveUserId(req);
+        return this.portfolioService.updateWatchlist(id, userId, body);
+    }
+    async deleteWatchlist(req, id) {
+        const userId = this.resolveUserId(req);
+        return this.portfolioService.deleteWatchlist(id, userId);
     }
     async createPortfolio(req, dto) {
         const userId = this.resolveUserId(req);
@@ -81,6 +98,39 @@ let PortfolioController = class PortfolioController {
 };
 exports.PortfolioController = PortfolioController;
 __decorate([
+    (0, common_1.Get)('watchlists'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], PortfolioController.prototype, "getWatchlists", null);
+__decorate([
+    (0, common_1.Post)('watchlists'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], PortfolioController.prototype, "createWatchlist", null);
+__decorate([
+    (0, common_1.Patch)('watchlists/:id'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:returntype", Promise)
+], PortfolioController.prototype, "updateWatchlist", null);
+__decorate([
+    (0, common_1.Delete)('watchlists/:id'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], PortfolioController.prototype, "deleteWatchlist", null);
+__decorate([
+    (0, common_1.UseGuards)(limit_free_portfolio_guard_1.LimitFreePortfolioGuard),
     (0, common_1.Post)(),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),

@@ -8,7 +8,6 @@ export declare const UserRole: {
 export declare const AccountPlan: {
     readonly FREE: "FREE";
     readonly PRO: "PRO";
-    readonly CREATOR: "CREATOR";
 };
 export type AccountPlanType = typeof AccountPlan[keyof typeof AccountPlan];
 export declare const UserSchema: z.ZodObject<{
@@ -21,25 +20,32 @@ export declare const UserSchema: z.ZodObject<{
         readonly MODERATOR: "MODERATOR";
         readonly ADMIN: "ADMIN";
     }>>;
-    accountType: z.ZodDefault<z.ZodNativeEnum<{
+    plan: z.ZodDefault<z.ZodNativeEnum<{
         readonly FREE: "FREE";
         readonly PRO: "PRO";
-        readonly CREATOR: "CREATOR";
     }>>;
+    accountType: z.ZodDefault<z.ZodString>;
     subscriptionStatus: z.ZodOptional<z.ZodString>;
     isInfluencer: z.ZodDefault<z.ZodBoolean>;
+    isCreator: z.ZodDefault<z.ZodBoolean>;
     isVerified: z.ZodDefault<z.ZodBoolean>;
     bio: z.ZodOptional<z.ZodString>;
     avatarUrl: z.ZodOptional<z.ZodString>;
+    onboardingCompleted: z.ZodDefault<z.ZodBoolean>;
+    onboardingStep: z.ZodDefault<z.ZodNumber>;
     createdAt: z.ZodDate;
 }, "strip", z.ZodTypeAny, {
     id: string;
     role: "USER" | "INFLUENCER" | "MODERATOR" | "ADMIN";
     username: string;
     email: string;
-    accountType: "FREE" | "PRO" | "CREATOR";
+    plan: "FREE" | "PRO";
+    accountType: string;
     isInfluencer: boolean;
+    isCreator: boolean;
     isVerified: boolean;
+    onboardingCompleted: boolean;
+    onboardingStep: number;
     createdAt: Date;
     subscriptionStatus?: string | undefined;
     bio?: string | undefined;
@@ -50,12 +56,16 @@ export declare const UserSchema: z.ZodObject<{
     email: string;
     createdAt: Date;
     role?: "USER" | "INFLUENCER" | "MODERATOR" | "ADMIN" | undefined;
-    accountType?: "FREE" | "PRO" | "CREATOR" | undefined;
+    plan?: "FREE" | "PRO" | undefined;
+    accountType?: string | undefined;
     subscriptionStatus?: string | undefined;
     isInfluencer?: boolean | undefined;
+    isCreator?: boolean | undefined;
     isVerified?: boolean | undefined;
     bio?: string | undefined;
     avatarUrl?: string | undefined;
+    onboardingCompleted?: boolean | undefined;
+    onboardingStep?: number | undefined;
 }>;
 export declare const LoginSchema: z.ZodObject<{
     email: z.ZodString;
@@ -80,18 +90,51 @@ export declare const RegisterSchema: z.ZodObject<{
     email: string;
     password: string;
 }>;
+export declare const VerifyEmailSchema: z.ZodObject<{
+    email: z.ZodString;
+    code: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    code: string;
+    email: string;
+}, {
+    code: string;
+    email: string;
+}>;
+export declare const ForgotPasswordSchema: z.ZodObject<{
+    email: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    email: string;
+}, {
+    email: string;
+}>;
+export declare const ResetPasswordSchema: z.ZodObject<{
+    token: z.ZodString;
+    newPassword: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    token: string;
+    newPassword: string;
+}, {
+    token: string;
+    newPassword: string;
+}>;
 export declare const CreatePostSchema: z.ZodObject<{
-    content: z.ZodString;
+    content: z.ZodOptional<z.ZodString>;
     mediaUrl: z.ZodOptional<z.ZodString>;
     tickers: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    parentId: z.ZodOptional<z.ZodString>;
+    quotedPostId: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    content: string;
+    content?: string | undefined;
     mediaUrl?: string | undefined;
     tickers?: string[] | undefined;
+    parentId?: string | undefined;
+    quotedPostId?: string | undefined;
 }, {
-    content: string;
+    content?: string | undefined;
     mediaUrl?: string | undefined;
     tickers?: string[] | undefined;
+    parentId?: string | undefined;
+    quotedPostId?: string | undefined;
 }>;
 export declare const CreatePortfolioSchema: z.ZodObject<{
     nombre: z.ZodString;
@@ -177,6 +220,9 @@ export declare const CreateMovementSchema: z.ZodObject<{
 export type User = z.infer<typeof UserSchema>;
 export type LoginDto = z.infer<typeof LoginSchema>;
 export type RegisterDto = z.infer<typeof RegisterSchema>;
+export type VerifyEmailDto = z.infer<typeof VerifyEmailSchema>;
+export type ForgotPasswordDto = z.infer<typeof ForgotPasswordSchema>;
+export type ResetPasswordDto = z.infer<typeof ResetPasswordSchema>;
 export type CreatePostDto = z.infer<typeof CreatePostSchema>;
 export type CreatePortfolioDto = z.infer<typeof CreatePortfolioSchema>;
 export type CreateAssetDto = z.infer<typeof CreateAssetSchema>;

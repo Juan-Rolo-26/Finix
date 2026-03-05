@@ -1,101 +1,89 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
-import { useAuthStore } from '../stores/authStore';
 import { formatCurrency } from '../lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { TrendingUp, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, Plus, Award } from 'lucide-react';
 import SocialFeed from '../components/SocialFeed';
-import { useTranslation } from '@/i18n';
+
+interface User {
+    id: string;
+    username: string;
+    avatarUrl?: string;
+    winRate?: number;
+    totalReturn?: number;
+}
 
 export default function Dashboard() {
-    const { user } = useAuthStore();
-    const t = useTranslation();
-    const [tickers, setTickers] = useState<any[]>([]);
+    const navigate = useNavigate();
+    const [topAssets, setTopAssets] = useState<any[]>([]);
+    const [topTraders, setTopTraders] = useState<User[]>([]);
     const [posts, setPosts] = useState<any[]>([]);
 
     useEffect(() => {
+        // Fetch top assets (using tickers sorted by change)
         apiFetch('/market/tickers')
             .then((res) => res.json())
             .then((data) => {
-                setTickers(Array.isArray(data) ? data : []);
+                let list = Array.isArray(data) ? data : [];
+                // Sort by highest change
+                list.sort((a, b) => b.change - a.change);
+                setTopAssets(list.slice(0, 3));
             })
-            .catch(() => {
-                setTickers([]);
-            });
+            .catch(() => setTopAssets([]));
 
-        // Fetch posts from API - Initial Load
+        // Fetch Top Traders
+        apiFetch('/users/top-traders')
+            .then(res => res.json())
+            .then(data => {
+                setTopTraders(Array.isArray(data) ? data : []);
+            })
+            .catch(() => setTopTraders([]));
+
+        // Fetch posts from API
         apiFetch('/posts')
             .then(res => res.json())
             .then(data => {
                 const list = Array.isArray(data) ? data : data.posts || [];
                 setPosts(list);
             })
-            .catch(() => {
-                setPosts([]);
-            });
+            .catch(() => setPosts([]));
     }, []);
 
-    const trending = useMemo(() => {
-        const counts = new Map<string, number>();
-        for (const post of posts) {
-            const raw = typeof post.tickers === 'string' ? post.tickers : '';
-            raw.split(',')
-                .map((t: string) => t.trim())
-                .filter(Boolean)
-                .forEach((ticker: string) => {
-                    counts.set(ticker, (counts.get(ticker) || 0) + 1);
-                });
-        }
-        return Array.from(counts.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3)
-            .map(([ticker, count]) => ({ ticker, count }));
-    }, [posts]);
-
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-heading font-bold">{t.dashboard.welcome} {user?.username} 👋</h1>
-                    <p className="text-muted-foreground">{t.dashboard.subtitle}</p>
-                </div>
-                <div className="flex gap-3">
-                    <Link to="/portfolio">
-                        <Button className="bg-primary text-black font-bold shadow-glow hover:shadow-intense transition-all">
-                            {t.dashboard.newTrade}
-                        </Button>
-                    </Link>
-                </div>
-            </div>
+        <div className="p-4 md:p-6 lg:p-8 animate-in fade-in duration-500 w-full max-w-6xl mx-auto pt-2">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Main Content (Feed) */}
+                <div className="space-y-6">
 
-                {/* Main Content */}
-                <div className="lg:col-span-2 space-y-6">
+                    {/* Stories Bar (Top Traders) */}
+                    <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                        {/* Own story / Add */}
+                        <div className="flex flex-col items-center gap-1.5 cursor-pointer flex-shrink-0" onClick={() => navigate('/explore?create=true')}>
+                            <div className="w-16 h-16 rounded-full border-2 border-primary border-dashed p-1 flex items-center justify-center bg-primary/10 hover:bg-primary/20 transition-colors">
+                                <Plus className="w-6 h-6 text-primary" />
+                            </div>
+                            <span className="text-[11px] font-medium text-muted-foreground">Post Story</span>
+                        </div>
 
-                    {/* Ticker Tape */}
-                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                        {tickers.map(t => (
-                            <Card key={t.symbol} className="min-w-[160px] p-4 bg-secondary/30 border-border/50 hover:border-primary/30 transition-colors cursor-pointer group">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="font-bold font-heading">{t.symbol}</span>
-                                    <div className={`p-1 rounded bg-background/50 ${t.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                        {t.change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
+                        {topTraders.map((trader) => (
+                            <div key={trader.id} className="flex flex-col items-center gap-1.5 cursor-pointer flex-shrink-0 group" onClick={() => navigate(`/${trader.username}`)}>
+                                <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-primary to-emerald-400 group-hover:scale-105 transition-transform">
+                                    <div className="w-full h-full rounded-full border-2 border-background overflow-hidden bg-secondary flex items-center justify-center">
+                                        {trader.avatarUrl ? (
+                                            <img src={trader.avatarUrl} alt={trader.username} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="text-xl font-bold uppercase">{trader.username[0]}</span>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-lg font-mono font-medium">{formatCurrency(t.price, 'USD')}</span>
-                                </div>
-                                <span className={`text-xs ${t.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    {t.change > 0 ? '+' : ''}{t.change.toFixed(2)}%
-                                </span>
-                            </Card>
+                                <span className="text-[11px] font-medium text-muted-foreground w-16 truncate text-center group-hover:text-foreground transition-colors">{trader.username}</span>
+                            </div>
                         ))}
                     </div>
 
+                    {/* Filter / Tabs ? */}
                     {/* Unified Social Feed */}
                     <SocialFeed initialPosts={posts} onPostCreated={(newPost) => setPosts([newPost, ...posts])} />
 
@@ -103,35 +91,87 @@ export default function Dashboard() {
 
                 {/* Right Sidebar */}
                 <div className="space-y-6 hidden lg:block">
-                    <Card className="p-5 border-border/50 bg-secondary/10">
-                        <h3 className="font-bold mb-4 font-heading flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-primary" /> {t.dashboard.trends}
-                        </h3>
+
+                    {/* Trending Assets */}
+                    <Card className="p-5 bg-card border-border/40 rounded-2xl">
+                        <div className="flex justify-between items-center mb-5">
+                            <h3 className="font-bold flex items-center gap-2 text-sm">
+                                <TrendingUp className="w-4 h-4 text-primary" /> Trending Assets
+                            </h3>
+                            <Link to="/market" className="text-xs text-primary font-medium hover:underline">See all</Link>
+                        </div>
                         <ul className="space-y-4">
-                            {trending.length === 0 ? (
-                                <li className="text-sm text-muted-foreground">{t.dashboard.noTrends}</li>
+                            {topAssets.length === 0 ? (
+                                <li className="text-sm text-muted-foreground">No data</li>
                             ) : (
-                                trending.map((item) => (
-                                    <li key={item.ticker} className="flex justify-between items-center text-sm group cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded transition-colors">
-                                        <span className="font-mono font-medium group-hover:text-primary transition-colors">{item.ticker}</span>
-                                        <span className="font-medium text-emerald-400">{item.count} {t.dashboard.mentions}</span>
+                                topAssets.map((item) => (
+                                    <li key={item.symbol} className="flex justify-between items-center group cursor-pointer" onClick={() => navigate(`/market?symbol=${item.symbol}`)}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-primary font-bold text-xs">
+                                                {item.symbol}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold leading-tight group-hover:text-primary transition-colors">{item.symbol}</p>
+                                                <p className="text-[11px] text-muted-foreground">Vol: {item.volume ? (item.volume / 1000).toFixed(1) + 'k' : '--'} posts</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-bold">{formatCurrency(item.price, 'USD')}</p>
+                                            <p className={`text-[11px] font-medium ${item.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                {item.change > 0 ? '+' : ''}{item.change.toFixed(2)}%
+                                            </p>
+                                        </div>
                                     </li>
                                 ))
                             )}
                         </ul>
                     </Card>
 
-                    <div className="p-5 rounded-xl bg-gradient-to-br from-indigo-900/40 via-purple-900/40 to-background border border-indigo-500/20 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-indigo-500/10 blur-xl group-hover:bg-indigo-500/20 transition-all duration-500" />
-                        <div className="relative">
-                            <h3 className="font-bold text-lg mb-2 text-white">{t.dashboard.premium.title}</h3>
-                            <p className="text-sm text-indigo-200/80 mb-4 leading-relaxed">
-                                {t.dashboard.premium.desc}
-                            </p>
-                            <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white border-0 shadow-lg shadow-indigo-500/20">
-                                {t.dashboard.premium.btn} <ArrowUpRight className="w-4 h-4 ml-1" />
-                            </Button>
-                        </div>
+                    {/* Top Traders */}
+                    <Card className="p-5 bg-[#0e1613] border-border/40 rounded-2xl">
+                        <h3 className="font-bold mb-5 flex items-center gap-2 text-sm">
+                            <Award className="w-4 h-4 text-emerald-400" /> Top Traders
+                        </h3>
+                        <ul className="space-y-4">
+                            {topTraders.length === 0 ? (
+                                <li className="text-sm text-muted-foreground">No traders found</li>
+                            ) : (
+                                topTraders.slice(0, 3).map((trader) => (
+                                    <li key={trader.id} className="flex justify-between items-center cursor-pointer group" onClick={() => navigate(`/${trader.username}`)}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full overflow-hidden bg-secondary">
+                                                {trader.avatarUrl ? (
+                                                    <img src={trader.avatarUrl} alt={trader.username} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-primary/20 flex items-center justify-center font-bold text-primary text-xs">
+                                                        {trader.username[0].toUpperCase()}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold leading-tight group-hover:text-primary transition-colors">{trader.username}</p>
+                                                <p className="text-[11px] text-muted-foreground">{trader.winRate ? trader.winRate.toFixed(0) : '--'}% Win Rate</p>
+                                            </div>
+                                        </div>
+                                        <div className="px-3 py-1 rounded-full border border-border/50 text-[11px] font-medium hover:bg-white/5 transition-colors">
+                                            Follow
+                                        </div>
+                                    </li>
+                                ))
+                            )}
+                        </ul>
+                    </Card>
+
+                    {/* Footer Links */}
+                    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] text-muted-foreground/60 w-full">
+                        <Link to="/about" className="hover:text-primary transition-colors">About</Link>
+                        <span>•</span>
+                        <Link to="/help" className="hover:text-primary transition-colors">Help</Link>
+                        <span>•</span>
+                        <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
+                        <span>•</span>
+                        <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
+                        <div className="w-full text-center mt-1">© 2024 Finix Network</div>
                     </div>
                 </div>
             </div>

@@ -1,10 +1,12 @@
 import { PrismaService } from '../prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { RegisterDto, LoginDto } from '@finix/shared';
+import { RegisterDto, LoginDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto } from '@finix/shared';
+import { MailService } from '../mail/mail.service';
 export declare class AuthService {
     private prisma;
     private jwtService;
-    constructor(prisma: PrismaService, jwtService: JwtService);
+    private mailService;
+    constructor(prisma: PrismaService, jwtService: JwtService, mailService: MailService);
     register(dto: RegisterDto): Promise<{
         access_token: string;
         user: {
@@ -12,9 +14,16 @@ export declare class AuthService {
             username: string;
             role: string;
             email: string;
+            plan: string;
+            accountType: string;
+            subscriptionStatus: string;
             isInfluencer: boolean;
+            isVerified: boolean;
+            isCreator: boolean;
             bio: string;
             avatarUrl: string;
+            onboardingCompleted: boolean;
+            onboardingStep: number;
             createdAt: Date;
         };
     }>;
@@ -25,11 +34,27 @@ export declare class AuthService {
             username: string;
             role: string;
             email: string;
+            plan: string;
+            accountType: string;
+            subscriptionStatus: string;
             isInfluencer: boolean;
+            isVerified: boolean;
+            isCreator: boolean;
             bio: string;
             avatarUrl: string;
+            onboardingCompleted: boolean;
+            onboardingStep: number;
             createdAt: Date;
         };
+    }>;
+    verifyEmail(dto: VerifyEmailDto): Promise<{
+        message: string;
+    }>;
+    forgotPassword(dto: ForgotPasswordDto): Promise<{
+        message: string;
+    }>;
+    resetPassword(dto: ResetPasswordDto): Promise<{
+        message: string;
     }>;
     private signToken;
 }

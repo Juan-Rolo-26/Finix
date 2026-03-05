@@ -16,6 +16,10 @@ export default defineConfig({
                 target: 'http://localhost:3001',
                 changeOrigin: true,
             },
+            '/admin': {
+                target: 'http://localhost:5147',
+                changeOrigin: true,
+            },
             '/tv': {
                 target: 'https://symbol-search.tradingview.com',
                 changeOrigin: true,

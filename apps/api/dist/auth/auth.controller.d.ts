@@ -1,5 +1,5 @@
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto } from '@finix/shared';
+import { LoginDto, RegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto } from '@finix/shared';
 export declare class AuthController {
     private authService;
     constructor(authService: AuthService);
@@ -10,9 +10,16 @@ export declare class AuthController {
             username: string;
             role: string;
             email: string;
+            plan: string;
+            accountType: string;
+            subscriptionStatus: string;
             isInfluencer: boolean;
+            isVerified: boolean;
+            isCreator: boolean;
             bio: string;
             avatarUrl: string;
+            onboardingCompleted: boolean;
+            onboardingStep: number;
             createdAt: Date;
         };
     }>;
@@ -23,10 +30,26 @@ export declare class AuthController {
             username: string;
             role: string;
             email: string;
+            plan: string;
+            accountType: string;
+            subscriptionStatus: string;
             isInfluencer: boolean;
+            isVerified: boolean;
+            isCreator: boolean;
             bio: string;
             avatarUrl: string;
+            onboardingCompleted: boolean;
+            onboardingStep: number;
             createdAt: Date;
         };
+    }>;
+    verifyEmail(dto: VerifyEmailDto): Promise<{
+        message: string;
+    }>;
+    forgotPassword(dto: ForgotPasswordDto): Promise<{
+        message: string;
+    }>;
+    resetPassword(dto: ResetPasswordDto): Promise<{
+        message: string;
     }>;
 }

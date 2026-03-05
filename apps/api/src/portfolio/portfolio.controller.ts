@@ -3,6 +3,7 @@ import {
     Get,
     Post,
     Put,
+    Patch,
     Delete,
     Body,
     Param,
@@ -13,6 +14,7 @@ import {
 import { PortfolioService } from './portfolio.service';
 import { CreatePortfolioDto, UpdatePortfolioDto, CreateAssetDto, UpdateAssetDto, CreateTransactionDto } from './dto/portfolio.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { LimitFreePortfolioGuard } from '../access/limit-free-portfolio.guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller('portfolios')
@@ -23,8 +25,39 @@ export class PortfolioController {
         return req.user.id;
     }
 
+    // ==================== WATCHLISTS ====================
+
+    @Get('watchlists')
+    async getWatchlists(@Request() req) {
+        const userId = this.resolveUserId(req);
+        return this.portfolioService.getWatchlists(userId);
+    }
+
+    @Post('watchlists')
+    async createWatchlist(@Request() req, @Body() body: { name: string; tickers: string }) {
+        const userId = this.resolveUserId(req);
+        return this.portfolioService.createWatchlist(userId, body.name, body.tickers || '');
+    }
+
+    @Patch('watchlists/:id')
+    async updateWatchlist(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { name?: string; tickers?: string },
+    ) {
+        const userId = this.resolveUserId(req);
+        return this.portfolioService.updateWatchlist(id, userId, body);
+    }
+
+    @Delete('watchlists/:id')
+    async deleteWatchlist(@Request() req, @Param('id') id: string) {
+        const userId = this.resolveUserId(req);
+        return this.portfolioService.deleteWatchlist(id, userId);
+    }
+
     // ==================== PORTFOLIOS ====================
 
+    @UseGuards(LimitFreePortfolioGuard)
     @Post()
     async createPortfolio(@Request() req, @Body() dto: CreatePortfolioDto) {
         const userId = this.resolveUserId(req);
@@ -135,7 +168,4 @@ export class PortfolioController {
         const userId = this.resolveUserId(req);
         return this.portfolioService.createTransaction(portfolioId, userId, dto);
     }
-
-    // ==================== ASSETS (Legacy) ====================
-    // ... existing asset methods ...
 }

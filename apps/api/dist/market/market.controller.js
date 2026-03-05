@@ -20,8 +20,8 @@ let MarketController = class MarketController {
         this.marketService = marketService;
         console.log('MarketController initialized');
     }
-    getTickers() {
-        return this.marketService.getTickers();
+    async getTickers() {
+        return await this.marketService.getTickers();
     }
     search(q) {
         const query = q.query || q.q || q.text || q.search || '';
@@ -48,7 +48,7 @@ __decorate([
     (0, common_1.Get)('tickers'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], MarketController.prototype, "getTickers", null);
 __decorate([
     (0, common_1.Get)('search'),

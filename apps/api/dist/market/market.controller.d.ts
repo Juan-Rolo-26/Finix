@@ -2,11 +2,12 @@ import { MarketService } from './market.service';
 export declare class MarketController {
     private marketService;
     constructor(marketService: MarketService);
-    getTickers(): {
+    getTickers(): Promise<{
+        symbol: string;
         price: number;
         change: number;
-        symbol: string;
-    }[];
+        volume: number;
+    }[]>;
     search(q: any): Promise<any[]>;
     quote(q: any): Promise<import("./market.service").MarketQuote>;
     getFinvizHeatmap(q: any): Promise<unknown>;
