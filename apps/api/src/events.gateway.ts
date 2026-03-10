@@ -115,7 +115,16 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('sendDirectMessage')
     async handleSendDirectMessage(
         @ConnectedSocket() client: Socket,
-        @MessageBody() data: { conversationId: string; content: string },
+        @MessageBody() data: {
+            conversationId: string;
+            content?: string;
+            attachment?: {
+                type: 'image' | 'post' | 'chart';
+                url?: string;
+                postId?: string;
+                meta?: Record<string, any>;
+            } | null;
+        },
     ) {
         const senderId: string | undefined = client.data.userId;
         if (!senderId) return;
@@ -124,16 +133,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const message = await this.messagesService.sendMessage(
                 senderId,
                 data.conversationId,
-                data.content,
+                {
+                    content: data.content,
+                    attachment: data.attachment,
+                },
             );
 
             // Broadcast to everyone in the conversation room (including sender)
-            this.server.to(`conv:${data.conversationId}`).emit('newDirectMessage', message);
-
-            this.server.to(`conv:${data.conversationId}`).emit('conversationUpdated', {
-                conversationId: data.conversationId,
-                lastMessage: message,
-            });
+            this.emitNewMessage(data.conversationId, message);
         } catch (err) {
             client.emit('error', { message: 'Error al enviar mensaje' });
         }
@@ -142,6 +149,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // ─── Emit helpers (called from REST controller) ──────────────────────────
 
     emitNewMessage(conversationId: string, message: any) {
+        if (!this.server) {
+            return;
+        }
+
         this.server.to(`conv:${conversationId}`).emit('newDirectMessage', message);
         this.server.to(`conv:${conversationId}`).emit('conversationUpdated', {
             conversationId,

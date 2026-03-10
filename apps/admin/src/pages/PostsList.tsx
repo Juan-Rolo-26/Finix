@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { adminFetch } from '../lib/api';
 import { Search, EyeOff, Trash2 } from 'lucide-react';
 
 export default function PostsList() {
@@ -10,10 +11,7 @@ export default function PostsList() {
     const loadPosts = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('auth-token');
-            const res = await fetch(`/api/admin/posts?page=${page}&limit=50&search=${search}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await adminFetch(`/admin/posts?page=${page}&limit=50&search=${search}`);
             if (res.ok) {
                 const data = await res.json();
                 setPosts(data.data);
@@ -37,13 +35,9 @@ export default function PostsList() {
         if (!confirm('¿Confirmas esta acción sobre el post?')) return;
 
         try {
-            const token = localStorage.getItem('auth-token');
-            const res = await fetch(`/api/admin/posts/${id}`, {
+            const res = await adminFetch(`/admin/posts/${id}`, {
                 method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
             });
             if (res.ok) {

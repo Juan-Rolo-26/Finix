@@ -43,24 +43,24 @@ export declare class NewsController {
         language: any;
     }[]>;
     getCategories(): Promise<{
-        name: string;
         id: string;
         createdAt: Date;
+        name: string;
         description: string | null;
         slug: string;
         color: string | null;
         icon: string | null;
     }[]>;
     getSources(): Promise<{
-        name: string;
         id: string;
         language: string;
         createdAt: Date;
         updatedAt: Date;
-        priority: number;
+        name: string;
         apiType: string;
         country: string;
         isActive: boolean;
+        priority: number;
     }[]>;
     getTrending(limit?: number): Promise<{
         id: any;

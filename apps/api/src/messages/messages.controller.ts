@@ -2,7 +2,6 @@ import {
     Controller,
     Get,
     Post,
-    Delete,
     Param,
     Body,
     Query,
@@ -10,12 +9,16 @@ import {
     Request,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { EventsGateway } from '../events.gateway';
 import { MessagesService } from './messages.service';
 
 @Controller('messages')
 @UseGuards(JwtAuthGuard)
 export class MessagesController {
-    constructor(private readonly messagesService: MessagesService) { }
+    constructor(
+        private readonly messagesService: MessagesService,
+        private readonly eventsGateway: EventsGateway,
+    ) { }
 
     /** GET /api/messages/conversations */
     @Get('conversations')
@@ -41,24 +44,34 @@ export class MessagesController {
 
     /** POST /api/messages/conversations/:id/messages */
     @Post('conversations/:id/messages')
-    sendMessage(
+    async sendMessage(
         @Param('id') id: string,
         @Request() req: any,
-        @Body() body: { content: string },
+        @Body() body: {
+            content?: string;
+            attachment?: {
+                type: 'image' | 'post' | 'chart' | 'story';
+                url?: string;
+                postId?: string;
+                meta?: Record<string, any>;
+            } | null;
+        },
     ) {
-        return this.messagesService.sendMessage(req.user.id, id, body.content);
+        const message = await this.messagesService.sendMessage(req.user.id, id, body);
+
+        try {
+            this.eventsGateway.emitNewMessage(id, message);
+        } catch {
+            // The message is already persisted; realtime delivery is best-effort.
+        }
+
+        return message;
     }
 
     /** POST /api/messages/conversations/:id/read */
     @Post('conversations/:id/read')
     markAsRead(@Param('id') id: string, @Request() req: any) {
         return this.messagesService.markAsRead(id, req.user.id);
-    }
-
-    /** DELETE /api/messages/conversations/:id */
-    @Delete('conversations/:id')
-    deleteConversation(@Param('id') id: string, @Request() req: any) {
-        return this.messagesService.deleteConversation(id, req.user.id);
     }
 
     /** GET /api/messages/unread-count */

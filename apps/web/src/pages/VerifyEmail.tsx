@@ -1,53 +1,27 @@
-import { useState } from 'react';
-import { useAuthStore } from '../stores/authStore';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { apiFetch } from '@/lib/api';
+import { MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Loader2, MailCheck } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function VerifyEmail() {
-    const [code, setCode] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-    const { user } = useAuthStore();
-    const navigate = useNavigate();
+    const [resending, setResending] = useState(false);
+    const [resent, setResent] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError('');
-
-        try {
-            const res = await apiFetch('/auth/verify-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: (user as any)?.email, code }),
+    const handleResend = async () => {
+        setResending(true);
+        // Get the email from the pending Supabase signup
+        const { data } = await supabase.auth.getUser();
+        if (data.user?.email) {
+            await supabase.auth.resend({
+                type: 'signup',
+                email: data.user.email,
+                options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
             });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                // Actualizamos el estado del user usando el backend y lo reguardamos.
-                // Idealmente el login nos devuelve el accessToken nuevo, o simplemente updateamos store
-                useAuthStore.setState((state) => ({
-                    user: state.user ? { ...state.user, isVerified: true, emailVerified: true } : null
-                }));
-
-                if (user && !user.onboardingCompleted) {
-                    navigate('/onboarding');
-                } else {
-                    navigate('/dashboard');
-                }
-            } else {
-                setError(data?.message || 'Código inválido o expirado');
-            }
-        } catch {
-            setError('Error de conexión. Intente nuevamente.');
-        } finally {
-            setIsLoading(false);
         }
+        setResent(true);
+        setResending(false);
     };
 
     return (
@@ -55,33 +29,32 @@ export default function VerifyEmail() {
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-sm bg-card p-6 rounded-2xl border flex flex-col items-center"
+                className="w-full max-w-sm bg-card p-6 rounded-2xl border flex flex-col items-center text-center gap-4"
             >
-                <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex justify-center items-center mb-6">
+                <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex justify-center items-center">
                     <MailCheck className="w-8 h-8" />
                 </div>
-                <h2 className="text-xl font-bold mb-2 text-center">Verificación de Correo</h2>
-                <p className="text-sm text-muted-foreground text-center mb-6">
-                    Ingresa el código de 6 dígitos que enviamos a tu correo electrónico.
+                <h2 className="text-xl font-bold">Verificá tu correo</h2>
+                <p className="text-sm text-muted-foreground">
+                    Te enviamos un enlace de confirmación. Revisá tu bandeja de entrada y hacé click en el enlace para activar tu cuenta.
+                </p>
+                <p className="text-xs text-muted-foreground/60">
+                    Si no lo ves, revisá la carpeta de spam.
                 </p>
 
-                <form onSubmit={handleSubmit} className="w-full space-y-4">
-                    <Input
-                        type="text"
-                        placeholder="123456"
-                        maxLength={6}
-                        className="text-center text-2xl tracking-widest uppercase h-14"
-                        value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                        required
-                    />
-
-                    {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-
-                    <Button type="submit" disabled={isLoading || code.length < 6} className="w-full shadow-glow">
-                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verificar'}
+                {resent ? (
+                    <p className="text-sm text-emerald-400">¡Email reenviado!</p>
+                ) : (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResend}
+                        disabled={resending}
+                        className="mt-2"
+                    >
+                        {resending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reenviar email'}
                     </Button>
-                </form>
+                )}
             </motion.div>
         </div>
     );

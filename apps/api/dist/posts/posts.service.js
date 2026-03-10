@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PostsService = void 0;
 const common_1 = require("@nestjs/common");
+const notifications_service_1 = require("../notifications/notifications.service");
 const prisma_service_1 = require("../prisma.service");
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
 const BANNED_WORDS = ['spam', 'scam', 'estafa'];
@@ -42,6 +43,11 @@ const POST_INCLUDE = (userId) => ({
     },
     _count: { select: { likes: true, replies: true, reposts: true, saves: true, quotes: true } },
 });
+const COMMENT_INCLUDE = {
+    author: { select: AUTHOR_SELECT },
+    likes: { select: { userId: true } },
+    _count: { select: { likes: true, replies: true } },
+};
 function sanitize(text) {
     return text.replace(/<[^>]*>/g, '').trim();
 }
@@ -65,9 +71,72 @@ function enrichPost(post, userId) {
         savesCount: post._count?.saves ?? 0,
     };
 }
+function enrichComment(comment, userId, repliesByParent) {
+    const replies = (repliesByParent.get(comment.id) || []).map((reply) => enrichComment(reply, userId, repliesByParent));
+    return {
+        ...comment,
+        likedByMe: userId ? comment.likes?.some((like) => like.userId === userId) : false,
+        likesCount: comment._count?.likes ?? comment.likes?.length ?? 0,
+        repliesCount: comment._count?.replies ?? replies.length,
+        replies,
+    };
+}
 let PostsService = class PostsService {
-    constructor(prisma) {
+    constructor(prisma, notificationsService) {
         this.prisma = prisma;
+        this.notificationsService = notificationsService;
+    }
+    async getActorUsername(userId) {
+        const actor = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { username: true },
+        });
+        if (!actor) {
+            throw new common_1.NotFoundException('Usuario no encontrado');
+        }
+        return actor.username;
+    }
+    async loadCommentRepliesMap(postId, rootIds) {
+        const repliesByParent = new Map();
+        let frontier = [...rootIds];
+        while (frontier.length > 0) {
+            const replies = await this.prisma.comment.findMany({
+                where: {
+                    postId,
+                    parentId: { in: frontier },
+                },
+                orderBy: { createdAt: 'asc' },
+                include: COMMENT_INCLUDE,
+            });
+            if (replies.length === 0) {
+                break;
+            }
+            frontier = [];
+            for (const reply of replies) {
+                if (!reply.parentId)
+                    continue;
+                const siblings = repliesByParent.get(reply.parentId) || [];
+                siblings.push(reply);
+                repliesByParent.set(reply.parentId, siblings);
+                frontier.push(reply.id);
+            }
+        }
+        return repliesByParent;
+    }
+    async collectCommentThreadLevels(rootCommentId) {
+        const levels = [[rootCommentId]];
+        let frontier = [rootCommentId];
+        while (frontier.length > 0) {
+            const children = await this.prisma.comment.findMany({
+                where: { parentId: { in: frontier } },
+                select: { id: true },
+            });
+            frontier = children.map((child) => child.id);
+            if (frontier.length > 0) {
+                levels.push(frontier);
+            }
+        }
+        return levels;
     }
     async createPost(userId, dto) {
         const content = sanitize(dto.content || '');
@@ -203,7 +272,13 @@ let PostsService = class PostsService {
         return { success: true };
     }
     async toggleLike(postId, userId) {
-        const post = await this.prisma.post.findUnique({ where: { id: postId } });
+        const post = await this.prisma.post.findUnique({
+            where: { id: postId },
+            select: {
+                id: true,
+                authorId: true,
+            },
+        });
         if (!post)
             throw new common_1.NotFoundException('Post no encontrado');
         const existing = await this.prisma.like.findUnique({
@@ -214,61 +289,102 @@ let PostsService = class PostsService {
             return { liked: false };
         }
         await this.prisma.like.create({ data: { postId, userId } });
+        if (post.authorId !== userId) {
+            const actorUsername = await this.getActorUsername(userId);
+            await this.notificationsService.createNotification({
+                userId: post.authorId,
+                actorId: userId,
+                type: 'post_like',
+                title: `${actorUsername} le dio like a tu publicacion.`,
+                link: `/posts/${postId}`,
+            });
+        }
         return { liked: true };
     }
     async addComment(postId, userId, content, parentId) {
-        const post = await this.prisma.post.findUnique({ where: { id: postId } });
+        const post = await this.prisma.post.findUnique({
+            where: { id: postId },
+            select: {
+                id: true,
+                authorId: true,
+            },
+        });
         if (!post)
             throw new common_1.NotFoundException('Post no encontrado');
         const sanitized = sanitize(content);
         if (!sanitized)
             throw new common_1.BadRequestException('El comentario no puede estar vacío');
         moderateContent(sanitized);
+        let parentComment = null;
         if (parentId) {
-            const parent = await this.prisma.comment.findUnique({ where: { id: parentId } });
-            if (!parent || parent.postId !== postId)
+            parentComment = await this.prisma.comment.findUnique({
+                where: { id: parentId },
+                select: {
+                    authorId: true,
+                    postId: true,
+                },
+            });
+            if (!parentComment || parentComment.postId !== postId)
                 throw new common_1.NotFoundException('Comentario padre no encontrado');
         }
-        return this.prisma.comment.create({
+        const comment = await this.prisma.comment.create({
             data: { postId, authorId: userId, content: sanitized, parentId: parentId || null },
-            include: {
-                author: { select: AUTHOR_SELECT },
-                _count: { select: { likes: true, replies: true } },
-            },
+            include: COMMENT_INCLUDE,
         });
+        const shouldNotifyPostAuthor = post.authorId !== userId;
+        const shouldNotifyParentAuthor = Boolean(parentComment &&
+            parentComment.authorId !== userId &&
+            parentComment.authorId !== post.authorId);
+        if (shouldNotifyPostAuthor || shouldNotifyParentAuthor) {
+            const actorUsername = await this.getActorUsername(userId);
+            const trimmedContent = sanitized.length > 140 ? `${sanitized.slice(0, 137)}...` : sanitized;
+            if (shouldNotifyPostAuthor) {
+                await this.notificationsService.createNotification({
+                    userId: post.authorId,
+                    actorId: userId,
+                    type: parentId ? 'comment_reply' : 'post_comment',
+                    title: `${actorUsername} comento tu publicacion.`,
+                    content: trimmedContent,
+                    link: `/posts/${postId}`,
+                });
+            }
+            if (shouldNotifyParentAuthor && parentComment) {
+                await this.notificationsService.createNotification({
+                    userId: parentComment.authorId,
+                    actorId: userId,
+                    type: 'comment_reply',
+                    title: `${actorUsername} respondio tu comentario.`,
+                    content: trimmedContent,
+                    link: `/posts/${postId}`,
+                });
+            }
+        }
+        return enrichComment(comment, userId, new Map());
     }
     async getComments(postId, userId, cursor, limit = 20) {
-        const comments = await this.prisma.comment.findMany({
-            where: { postId, parentId: null },
-            take: limit + 1,
-            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-            orderBy: { createdAt: 'desc' },
-            include: {
-                author: { select: AUTHOR_SELECT },
-                likes: { select: { userId: true } },
-                _count: { select: { likes: true, replies: true } },
-                replies: {
-                    take: 3,
-                    orderBy: { createdAt: 'asc' },
-                    include: {
-                        author: { select: AUTHOR_SELECT },
-                        likes: { select: { userId: true } },
-                        _count: { select: { likes: true } },
-                    },
-                },
-            },
-        });
+        const post = await this.prisma.post.findUnique({ where: { id: postId }, select: { id: true } });
+        if (!post)
+            throw new common_1.NotFoundException('Post no encontrado');
+        const [comments, totalCount] = await Promise.all([
+            this.prisma.comment.findMany({
+                where: { postId, parentId: null },
+                take: limit + 1,
+                ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+                orderBy: { createdAt: 'desc' },
+                include: COMMENT_INCLUDE,
+            }),
+            this.prisma.comment.count({ where: { postId } }),
+        ]);
         const hasMore = comments.length > limit;
         const items = hasMore ? comments.slice(0, limit) : comments;
+        const repliesByParent = items.length > 0
+            ? await this.loadCommentRepliesMap(postId, items.map((comment) => comment.id))
+            : new Map();
         return {
-            comments: items.map((c) => ({
-                ...c,
-                likedByMe: userId ? c.likes.some((l) => l.userId === userId) : false,
-                likesCount: c._count.likes,
-                repliesCount: c._count.replies,
-            })),
+            comments: items.map((comment) => enrichComment(comment, userId, repliesByParent)),
             nextCursor: hasMore ? items[items.length - 1].id : null,
             hasMore,
+            totalCount,
         };
     }
     async deleteComment(commentId, userId) {
@@ -277,11 +393,29 @@ let PostsService = class PostsService {
         });
         if (!comment)
             throw new common_1.NotFoundException('Comentario no encontrado o sin permisos');
-        await this.prisma.comment.delete({ where: { id: commentId } });
-        return { success: true };
+        const levels = await this.collectCommentThreadLevels(commentId);
+        const allIds = levels.flat();
+        await this.prisma.$transaction(async (tx) => {
+            await tx.commentLike.deleteMany({
+                where: { commentId: { in: allIds } },
+            });
+            for (const levelIds of [...levels].reverse()) {
+                await tx.comment.deleteMany({
+                    where: { id: { in: levelIds } },
+                });
+            }
+        });
+        return { success: true, removedCount: allIds.length };
     }
     async toggleCommentLike(commentId, userId) {
-        const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+        const comment = await this.prisma.comment.findUnique({
+            where: { id: commentId },
+            select: {
+                id: true,
+                authorId: true,
+                postId: true,
+            },
+        });
         if (!comment)
             throw new common_1.NotFoundException('Comentario no encontrado');
         const existing = await this.prisma.commentLike.findUnique({
@@ -292,10 +426,26 @@ let PostsService = class PostsService {
             return { liked: false };
         }
         await this.prisma.commentLike.create({ data: { commentId, userId } });
+        if (comment.authorId !== userId) {
+            const actorUsername = await this.getActorUsername(userId);
+            await this.notificationsService.createNotification({
+                userId: comment.authorId,
+                actorId: userId,
+                type: 'comment_like',
+                title: `${actorUsername} le dio like a tu comentario.`,
+                link: `/posts/${comment.postId}`,
+            });
+        }
         return { liked: true };
     }
     async toggleRepost(postId, userId, comment) {
-        const post = await this.prisma.post.findUnique({ where: { id: postId } });
+        const post = await this.prisma.post.findUnique({
+            where: { id: postId },
+            select: {
+                id: true,
+                authorId: true,
+            },
+        });
         if (!post)
             throw new common_1.NotFoundException('Post no encontrado');
         const existing = await this.prisma.repost.findUnique({
@@ -308,6 +458,16 @@ let PostsService = class PostsService {
         await this.prisma.repost.create({
             data: { userId, postId },
         });
+        if (post.authorId !== userId) {
+            const actorUsername = await this.getActorUsername(userId);
+            await this.notificationsService.createNotification({
+                userId: post.authorId,
+                actorId: userId,
+                type: 'post_repost',
+                title: `${actorUsername} republico tu publicacion.`,
+                link: `/posts/${postId}`,
+            });
+        }
         return { reposted: true };
     }
     async toggleSave(postId, userId) {
@@ -356,7 +516,7 @@ let PostsService = class PostsService {
         if (!user)
             throw new common_1.NotFoundException('Usuario no encontrado');
         const posts = await this.prisma.post.findMany({
-            where: { authorId: user.id },
+            where: { authorId: user.id, parentId: null },
             take: limit + 1,
             ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
             orderBy: { createdAt: 'desc' },
@@ -370,23 +530,30 @@ let PostsService = class PostsService {
             hasMore,
         };
     }
-    async getAllPosts(page = 1, limit = 20) {
+    async getAllPosts(page = 1, limit = 20, viewerId) {
         const skip = (page - 1) * limit;
         const [posts, total] = await Promise.all([
             this.prisma.post.findMany({
+                where: { parentId: null },
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
-                include: POST_INCLUDE(),
+                include: POST_INCLUDE(viewerId),
             }),
-            this.prisma.post.count(),
+            this.prisma.post.count({ where: { parentId: null } }),
         ]);
-        return { posts: posts.map((p) => enrichPost(p)), total, page, totalPages: Math.ceil(total / limit) };
+        return {
+            posts: posts.map((post) => enrichPost(post, viewerId)),
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 };
 exports.PostsService = PostsService;
 exports.PostsService = PostsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        notifications_service_1.NotificationsService])
 ], PostsService);
 //# sourceMappingURL=posts.service.js.map

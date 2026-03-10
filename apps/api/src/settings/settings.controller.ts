@@ -34,6 +34,18 @@ const avatarStorage = diskStorage({
     },
 });
 
+const bannerStorage = diskStorage({
+    destination: (_req, _file, cb) => {
+        const dir = join(process.cwd(), 'uploads', 'banners');
+        if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (_req, file, cb) => {
+        const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        cb(null, `${unique}${extname(file.originalname)}`);
+    },
+});
+
 // ─── Controller ───────────────────────────────────────────────────────────────
 
 @Controller('me')
@@ -95,5 +107,32 @@ export class SettingsController {
         await this.settingsService.saveAvatarUrl(req.user.id, avatarUrl);
 
         return { avatarUrl };
+    }
+
+    @Post('banner')
+    @UseInterceptors(
+        FileInterceptor('banner', {
+            storage: bannerStorage,
+            limits: { fileSize: MAX_SIZE_BYTES },
+            fileFilter: (_req, file, cb) => {
+                if (!ALLOWED_MIME.includes(file.mimetype)) {
+                    return cb(new BadRequestException('Solo se permiten imágenes JPG, PNG, WEBP o GIF'), false);
+                }
+                cb(null, true);
+            },
+        }),
+    )
+    async uploadBanner(
+        @Request() req,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
+        if (!file) throw new BadRequestException('No se recibió ningún archivo');
+
+        const apiBase = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
+        const bannerUrl = `${apiBase}/uploads/banners/${file.filename}`;
+
+        await this.settingsService.saveBannerUrl(req.user.id, bannerUrl);
+
+        return { bannerUrl };
     }
 }

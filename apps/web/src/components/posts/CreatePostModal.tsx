@@ -17,7 +17,7 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type PostType = 'post' | 'image' | 'reel' | 'chart';
-type CaptureStatus = 'idle' | 'waiting' | 'processing' | 'captured' | 'error';
+type CaptureStatus = 'idle' | 'processing' | 'captured' | 'error';
 
 interface MediaFile {
     file: File;
@@ -67,9 +67,10 @@ interface EmbeddedChartProps {
     symbol: string;
     interval: string;
     theme: 'dark' | 'light';
+    onWidgetReady?: (widget: any | null) => void;
 }
 
-function EmbeddedChart({ symbol, interval, theme }: EmbeddedChartProps) {
+function EmbeddedChart({ symbol, interval, theme, onWidgetReady }: EmbeddedChartProps) {
     const wrapRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -84,7 +85,7 @@ function EmbeddedChart({ symbol, interval, theme }: EmbeddedChartProps) {
         const mount = () => {
             const TV = (window as any).TradingView;
             if (!TV) return;
-            new TV.widget({
+            const widget = new TV.widget({
                 container_id: containerId,
                 width: '100%',
                 height: 480,
@@ -101,6 +102,12 @@ function EmbeddedChart({ symbol, interval, theme }: EmbeddedChartProps) {
                 save_image: true,            // 📷 botón de captura nativo
                 support_host: 'https://www.tradingview.com',
             });
+
+            if (typeof widget?.ready === 'function') {
+                widget.ready(() => onWidgetReady?.(widget));
+            } else {
+                onWidgetReady?.(widget);
+            }
         };
 
         if ((window as any).TradingView) {
@@ -122,8 +129,11 @@ function EmbeddedChart({ symbol, interval, theme }: EmbeddedChartProps) {
             }
         }
 
-        return () => { if (wrapRef.current) wrapRef.current.innerHTML = ''; };
-    }, [symbol, interval, theme]);
+        return () => {
+            onWidgetReady?.(null);
+            if (wrapRef.current) wrapRef.current.innerHTML = '';
+        };
+    }, [symbol, interval, theme, onWidgetReady]);
 
     return (
         <div className="w-full rounded-xl overflow-hidden" style={{ height: 480 }}>
@@ -172,22 +182,29 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
     const [isPublishing, setIsPublishing] = useState(false);
     const [error, setError] = useState('');
     const [isDragging, setIsDragging] = useState(false);
+    const [chartWidget, setChartWidget] = useState<any | null>(null);
+    const [isCapturingChart, setIsCapturingChart] = useState(false);
 
     // Capture
     const [captureStatus, setCaptureStatus] = useState<CaptureStatus>('idle');
     const [capturedPreview, setCapturedPreview] = useState<string | null>(null);
-    const [capturedUploadedUrl, setCapturedUploadedUrl] = useState<string | null>(null);
-    const cleanupRef = useRef<(() => void) | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const maxFiles = 10;
     const acceptedTypes = ALLOWED_IMAGE.join(',');
 
-    // Cleanup window.open override on unmount
-    useEffect(() => {
-        return () => { cleanupRef.current?.(); };
+    const revokePreviewUrl = useCallback((value: string | null) => {
+        if (value?.startsWith('blob:')) {
+            URL.revokeObjectURL(value);
+        }
     }, []);
+
+    useEffect(() => {
+        return () => {
+            revokePreviewUrl(capturedPreview);
+        };
+    }, [capturedPreview, revokePreviewUrl]);
 
     // ── File handling ─────────────────────────────────────────────────────────
 
@@ -222,96 +239,43 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
     const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files); };
 
-    // ── Chart capture via TradingView native camera button ────────────────────
-
     const clearCapture = useCallback(() => {
-        cleanupRef.current?.();
-        cleanupRef.current = null;
+        revokePreviewUrl(capturedPreview);
         setCapturedPreview(null);
-        setCapturedUploadedUrl(null);
         setCaptureStatus('idle');
-    }, []);
+    }, [capturedPreview, revokePreviewUrl]);
 
-    const startCapture = useCallback(() => {
-        // Clean up any previous override
-        cleanupRef.current?.();
+    const captureChartImage = useCallback(async () => {
+        if (!chartWidget || typeof chartWidget.imageCanvas !== 'function') {
+            throw new Error('El gráfico todavía no está listo. Esperá un segundo e intentá publicar de nuevo.');
+        }
 
-        const origOpen = window.open.bind(window);
-        let done = false;
+        setIsCapturingChart(true);
+        setCaptureStatus('processing');
 
-        const restore = () => {
-            window.open = origOpen;
-        };
-        cleanupRef.current = restore;
+        try {
+            const canvas = await chartWidget.imageCanvas();
+            const blob = await new Promise<Blob>((resolve, reject) => {
+                canvas.toBlob((nextBlob: Blob | null) => {
+                    if (nextBlob) resolve(nextBlob);
+                    else reject(new Error('No se pudo generar la imagen del gráfico.'));
+                }, 'image/png');
+            });
 
-        // Auto-cancel after 120s
-        const timeoutId = setTimeout(() => {
-            if (!done) { restore(); setCaptureStatus('idle'); }
-        }, 120_000);
+            revokePreviewUrl(capturedPreview);
+            const preview = URL.createObjectURL(blob);
+            const uploaded = await uploadBlob(blob, `chart_${assetSymbol.replace(/[^A-Z0-9:_-]/gi, '_')}_${Date.now()}.png`);
 
-        window.open = function (urlArg?: string | URL, target?: string, features?: string) {
-            const urlStr = String(urlArg ?? '');
-
-            // TradingView snapshot page URL: https://www.tradingview.com/x/HASH/
-            if (urlStr.match(/tradingview\.com\/x\/[A-Za-z0-9]+/)) {
-                done = true;
-                clearTimeout(timeoutId);
-                restore();
-                setCaptureStatus('processing');
-
-                // Extract hash from URL
-                const match = urlStr.match(/tradingview\.com\/x\/([A-Za-z0-9]+)/);
-                if (!match) { setCaptureStatus('error'); return null; }
-                const hash = match[1];
-
-                // TradingView stores snapshots at this S3 path
-                const imageUrl = `https://s3.tradingview.com/snapshots/${hash}.png`;
-
-                // Fetch via proxy to avoid CORS, then upload
-                (async () => {
-                    try {
-                        // Try fetching through our backend proxy
-                        const res = await apiFetch(`/posts/proxy-image?url=${encodeURIComponent(imageUrl)}`);
-                        if (res.ok) {
-                            const blob = await res.blob();
-                            const preview = URL.createObjectURL(blob);
-                            setCapturedPreview(preview);
-                            const uploaded = await uploadBlob(blob, `chart_${hash}.png`);
-                            setCapturedUploadedUrl(uploaded);
-                            setCaptureStatus('captured');
-                        } else {
-                            // Fallback: try direct fetch (might work if CORS allows)
-                            const direct = await fetch(imageUrl);
-                            if (direct.ok) {
-                                const blob = await direct.blob();
-                                const preview = URL.createObjectURL(blob);
-                                setCapturedPreview(preview);
-                                const uploaded = await uploadBlob(blob, `chart_${hash}.png`);
-                                setCapturedUploadedUrl(uploaded);
-                                setCaptureStatus('captured');
-                            } else {
-                                // Last resort: use the S3 URL directly as image URL (publicly accessible)
-                                setCapturedPreview(imageUrl);
-                                setCapturedUploadedUrl(imageUrl);
-                                setCaptureStatus('captured');
-                            }
-                        }
-                    } catch {
-                        // Use URL directly as fallback
-                        setCapturedPreview(imageUrl);
-                        setCapturedUploadedUrl(imageUrl);
-                        setCaptureStatus('captured');
-                    }
-                })();
-
-                return null;
-            }
-
-            return origOpen(urlArg as any, target, features);
-        } as typeof window.open;
-
-        setCaptureStatus('waiting');
-    }, [clearCapture]);
+            setCapturedPreview(preview);
+            setCaptureStatus('captured');
+            return uploaded;
+        } catch (e) {
+            setCaptureStatus('error');
+            throw e;
+        } finally {
+            setIsCapturingChart(false);
+        }
+    }, [assetSymbol, capturedPreview, chartWidget, revokePreviewUrl]);
 
     // ── Apply symbol ──────────────────────────────────────────────────────────
 
@@ -323,8 +287,8 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
     // ── Publish ───────────────────────────────────────────────────────────────
 
     const handlePublish = async () => {
-        if (type === 'chart' && !content.trim() && !capturedUploadedUrl && mediaFiles.length === 0) {
-            setError('Capturá el gráfico (hacé clic en 📷 en el gráfico) o escribí tu análisis.');
+        if (type === 'chart' && !content.trim() && mediaFiles.length === 0 && !chartWidget) {
+            setError('Esperá a que cargue el gráfico para adjuntarlo automáticamente o escribí tu análisis.');
             return;
         }
         if (type !== 'chart' && !content.trim() && mediaFiles.length === 0) {
@@ -339,9 +303,10 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
         try {
             let allMediaUrls: { url: string; mediaType: string }[] = [];
 
-            // Chart capture goes first
-            if (type === 'chart' && capturedUploadedUrl) {
-                allMediaUrls.push({ url: capturedUploadedUrl, mediaType: 'image' });
+            // Chart capture goes first and is generated automatically at publish time.
+            if (type === 'chart') {
+                const chartImageUrl = await captureChartImage();
+                allMediaUrls.push({ url: chartImageUrl, mediaType: 'image' });
             }
             allMediaUrls = [...allMediaUrls, ...mediaFiles.filter((m) => m.url).map((m) => ({ url: m.url!, mediaType: m.mediaType }))];
 
@@ -462,56 +427,30 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
                                 {/* Embedded chart */}
                                 <div className="rounded-xl overflow-hidden border border-border/40">
-                                    <EmbeddedChart symbol={assetSymbol} interval={tvInterval} theme={tvTheme} />
+                                    <EmbeddedChart symbol={assetSymbol} interval={tvInterval} theme={tvTheme} onWidgetReady={setChartWidget} />
                                 </div>
 
                                 {/* ── CAPTURE SECTION ── */}
                                 <AnimatePresence mode="wait">
-                                    {captureStatus === 'idle' && (
-                                        <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                            <button onClick={startCapture}
-                                                className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/70 transition-all font-semibold text-sm"
-                                            >
-                                                <Camera className="w-4 h-4" />
-                                                Activar captura — luego hacé clic en 📷 en el gráfico
-                                            </button>
-                                        </motion.div>
-                                    )}
-
-                                    {captureStatus === 'waiting' && (
-                                        <motion.div key="waiting" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                                    {captureStatus !== 'captured' && captureStatus !== 'error' && (
+                                        <motion.div key="auto-info" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
                                             className="rounded-xl border border-primary/40 bg-primary/8 p-4 space-y-3"
                                         >
-                                            {/* Animated instruction */}
                                             <div className="flex items-center gap-3">
                                                 <motion.div
-                                                    animate={{ scale: [1, 1.15, 1] }}
+                                                    animate={isCapturingChart ? { scale: [1, 1.08, 1] } : undefined}
                                                     transition={{ duration: 1.2, repeat: Infinity }}
                                                     className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0"
                                                 >
                                                     <Camera className="w-5 h-5 text-primary" />
                                                 </motion.div>
                                                 <div>
-                                                    <p className="font-bold text-sm text-primary">Captura lista — hacé clic en el ícono 📷</p>
-                                                    <p className="text-xs text-muted-foreground mt-0.5">Está en la esquina superior derecha del gráfico. TradingView tomará la foto del gráfico con todos tus dibujos.</p>
+                                                    <p className="font-bold text-sm text-primary">Adjunto automático del gráfico</p>
+                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                        Al publicar, Finix genera y sube solo la imagen del gráfico con tus dibujos actuales. No tenés que descargar ni copiar nada.
+                                                    </p>
                                                 </div>
                                             </div>
-
-                                            {/* Arrow pointing up toward chart */}
-                                            <div className="flex justify-center">
-                                                <motion.div
-                                                    animate={{ y: [0, -6, 0] }}
-                                                    transition={{ duration: 1, repeat: Infinity }}
-                                                    className="flex flex-col items-center text-primary/60"
-                                                >
-                                                    <div className="text-xl">↑</div>
-                                                    <span className="text-[10px] font-semibold">Botón 📷 arriba</span>
-                                                </motion.div>
-                                            </div>
-
-                                            <button onClick={clearCapture} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center underline">
-                                                Cancelar captura
-                                            </button>
                                         </motion.div>
                                     )}
 
@@ -520,7 +459,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                             className="flex items-center justify-center gap-2.5 py-4 rounded-xl bg-primary/5 border border-primary/20"
                                         >
                                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                            <span className="text-sm font-medium text-primary">Procesando captura del gráfico...</span>
+                                            <span className="text-sm font-medium text-primary">Capturando y subiendo el gráfico...</span>
                                         </motion.div>
                                     )}
 
@@ -529,18 +468,21 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                             <div className="flex items-center justify-between">
                                                 <span className="flex items-center gap-1.5 text-sm font-bold text-emerald-500">
                                                     <CheckCircle2 className="w-4 h-4" />
-                                                    ¡Gráfico capturado! Se publicará esta imagen
+                                                    Última captura generada correctamente
                                                 </span>
                                                 <button onClick={clearCapture} className="text-xs text-muted-foreground hover:text-foreground transition-colors underline">
-                                                    Volver a capturar
+                                                    Limpiar preview
                                                 </button>
                                             </div>
                                             <div className="relative rounded-xl overflow-hidden border-2 border-emerald-500/40 shadow-lg shadow-emerald-500/10">
                                                 <img src={capturedPreview} alt="Captura del gráfico" className="w-full object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                                 <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow">
-                                                    ✓ Lista para publicar
+                                                    ✓ Adjuntada automáticamente
                                                 </div>
                                             </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Si seguís dibujando o cambiás el gráfico, al publicar se genera una captura nueva con el estado actual.
+                                            </p>
                                         </motion.div>
                                     )}
 
@@ -549,8 +491,8 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                             className="flex items-center gap-2 text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg px-3 py-2.5"
                                         >
                                             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                            No se pudo procesar la captura. Subí la imagen manualmente abajo o intentá nuevamente.
-                                            <button onClick={startCapture} className="ml-auto font-bold underline whitespace-nowrap">Reintentar</button>
+                                            No se pudo generar la imagen automática del gráfico. Esperá a que termine de cargar e intentá publicar de nuevo, o subí una captura manual abajo.
+                                            <button onClick={clearCapture} className="ml-auto font-bold underline whitespace-nowrap">Limpiar</button>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
@@ -605,7 +547,15 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                             {mediaFiles.length < maxFiles && (
                                 <div
                                     className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${isDragging ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-border hover:bg-secondary/20'}`}
+                                    role="button"
+                                    tabIndex={0}
                                     onClick={() => fileInputRef.current?.click()}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            fileInputRef.current?.click();
+                                        }
+                                    }}
                                     onDrop={handleDrop}
                                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                                     onDragLeave={() => setIsDragging(false)}
@@ -623,7 +573,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                             {mediaFiles.length > 0 && (
                                 <div className={`grid gap-2 ${mediaFiles.length > 1 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1'}`}>
                                     {mediaFiles.map((m, i) => (
-                                        <div key={i} className="relative group rounded-xl overflow-hidden bg-black/20 aspect-square">
+                                        <div key={m.url || m.preview || `${m.file.name}-${m.file.lastModified}-${i}`} className="relative group rounded-xl overflow-hidden bg-black/20 aspect-square">
                                             {m.mediaType === 'video' ? <video src={m.preview} className="w-full h-full object-cover" muted /> : <img src={m.preview} alt="" className="w-full h-full object-cover" />}
                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                 <button onClick={() => removeMedia(i)} className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center"><Trash2 className="w-4 h-4 text-white" /></button>
@@ -646,13 +596,13 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                         <Button variant="outline" onClick={onClose} className="flex-1">Cancelar</Button>
                         <Button
                             onClick={handlePublish}
-                            disabled={isPublishing || mediaFiles.some((m) => m.uploading) || captureStatus === 'processing'}
+                            disabled={isPublishing || isCapturingChart || mediaFiles.some((m) => m.uploading) || captureStatus === 'processing' || (type === 'chart' && !chartWidget)}
                             className="flex-1 bg-gradient-to-r from-primary to-emerald-400 text-black font-bold shadow-glow"
                         >
-                            {isPublishing
-                                ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Publicando...</>
+                            {isPublishing || isCapturingChart
+                                ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> {isCapturingChart ? 'Adjuntando gráfico...' : 'Publicando...'}</>
                                 : type === 'chart'
-                                    ? captureStatus === 'captured' ? '📊 Publicar análisis con gráfico' : '📊 Publicar análisis'
+                                    ? '📊 Publicar análisis con gráfico'
                                     : 'Crear en feed'
                             }
                         </Button>

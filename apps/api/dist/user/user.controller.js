@@ -16,6 +16,7 @@ exports.UserController = void 0;
 const common_1 = require("@nestjs/common");
 const user_service_1 = require("./user.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const optional_jwt_guard_1 = require("../auth/optional-jwt.guard");
 let UserController = class UserController {
     constructor(userService) {
         this.userService = userService;
@@ -32,6 +33,12 @@ let UserController = class UserController {
     async getMyNotifications(req) {
         return this.userService.getNotifications(req.user.id);
     }
+    async getMyUnreadNotificationsCount(req) {
+        return this.userService.getUnreadNotificationsCount(req.user.id);
+    }
+    async markMyNotificationsAsRead(req) {
+        return this.userService.markAllNotificationsAsRead(req.user.id);
+    }
     async getMyStats(req) {
         return this.userService.getUserStats(req.user.id);
     }
@@ -41,8 +48,11 @@ let UserController = class UserController {
     async searchUsers(query) {
         return this.userService.searchUsers(query);
     }
-    async getUserProfile(username) {
-        return this.userService.getUserProfile(username);
+    async toggleFollow(username, req) {
+        return this.userService.toggleFollow(req.user.id, username);
+    }
+    async getUserProfile(username, req) {
+        return this.userService.getUserProfile(username, req.user?.id);
     }
 };
 exports.UserController = UserController;
@@ -82,6 +92,22 @@ __decorate([
 ], UserController.prototype, "getMyNotifications", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('me/notifications/unread-count'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "getMyUnreadNotificationsCount", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Patch)('me/notifications/read-all'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "markMyNotificationsAsRead", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('me/stats'),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -102,10 +128,21 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UserController.prototype, "searchUsers", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Patch)(':username/follow'),
+    __param(0, (0, common_1.Param)('username')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "toggleFollow", null);
+__decorate([
+    (0, common_1.UseGuards)(optional_jwt_guard_1.OptionalJwtAuthGuard),
     (0, common_1.Get)(':username'),
     __param(0, (0, common_1.Param)('username')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], UserController.prototype, "getUserProfile", null);
 exports.UserController = UserController = __decorate([

@@ -49,6 +49,15 @@ let PortfolioController = class PortfolioController {
         const userId = this.resolveUserId(req);
         return this.portfolioService.getUserPortfolios(userId);
     }
+    async getPublicPortfolios(userId) {
+        return this.portfolioService.getPublicPortfolios(userId);
+    }
+    async getPublicPortfolioMetrics(id) {
+        return this.portfolioService.getPublicPortfolioMetrics(id);
+    }
+    async getPublicPortfolioMovements(id) {
+        return this.portfolioService.getPublicPortfolioMovements(id);
+    }
     async getPortfolioById(req, id) {
         const userId = this.resolveUserId(req);
         return this.portfolioService.getPortfolioById(id, userId);
@@ -98,6 +107,7 @@ let PortfolioController = class PortfolioController {
 };
 exports.PortfolioController = PortfolioController;
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('watchlists'),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -105,6 +115,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "getWatchlists", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)('watchlists'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
@@ -113,6 +124,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "createWatchlist", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Patch)('watchlists/:id'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
@@ -122,6 +134,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "updateWatchlist", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Delete)('watchlists/:id'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
@@ -130,7 +143,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "deleteWatchlist", null);
 __decorate([
-    (0, common_1.UseGuards)(limit_free_portfolio_guard_1.LimitFreePortfolioGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, limit_free_portfolio_guard_1.LimitFreePortfolioGuard),
     (0, common_1.Post)(),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
@@ -139,6 +152,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "createPortfolio", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)(),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -146,6 +160,28 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "getUserPortfolios", null);
 __decorate([
+    (0, common_1.Get)('public/:userId'),
+    __param(0, (0, common_1.Param)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], PortfolioController.prototype, "getPublicPortfolios", null);
+__decorate([
+    (0, common_1.Get)('public/portfolio/:id/metrics'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], PortfolioController.prototype, "getPublicPortfolioMetrics", null);
+__decorate([
+    (0, common_1.Get)('public/portfolio/:id/movements'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], PortfolioController.prototype, "getPublicPortfolioMovements", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
@@ -154,6 +190,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "getPortfolioById", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)(':id/metrics'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
@@ -162,6 +199,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "getPortfolioMetrics", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
@@ -171,6 +209,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "updatePortfolio", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
@@ -179,6 +218,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "deletePortfolio", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)(':id/assets'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
@@ -188,6 +228,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "addAsset", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)(':id/assets'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
@@ -196,6 +237,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "getPortfolioAssets", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Put)('assets/:assetId'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('assetId')),
@@ -205,6 +247,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "updateAsset", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Delete)('assets/:assetId'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('assetId')),
@@ -214,6 +257,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "deleteAsset", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)(':id/movements'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
@@ -226,6 +270,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "getPortfolioMovements", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)(':id/transactions'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
@@ -235,7 +280,6 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PortfolioController.prototype, "createTransaction", null);
 exports.PortfolioController = PortfolioController = __decorate([
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('portfolios'),
     __metadata("design:paramtypes", [portfolio_service_1.PortfolioService])
 ], PortfolioController);

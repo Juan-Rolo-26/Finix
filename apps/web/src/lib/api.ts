@@ -36,12 +36,14 @@ const shouldAutoLogoutOnUnauthorized = (path: string, status: number) => {
     const token = localStorage.getItem('token');
     if (!token) return false;
 
-    // Evita interceptar errores de login/register.
+    // Evita invalidar la sesión durante el bootstrap de autenticación.
     const normalizedPath = path.toLowerCase();
     if (
         normalizedPath.includes('/auth/login') ||
         normalizedPath.includes('/auth/register') ||
-        normalizedPath.includes('/auth/forgot')
+        normalizedPath.includes('/auth/forgot') ||
+        normalizedPath.includes('/auth/me') ||
+        normalizedPath.includes('/auth/sync-user')
     ) {
         return false;
     }

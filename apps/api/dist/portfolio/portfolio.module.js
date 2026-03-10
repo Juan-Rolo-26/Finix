@@ -10,7 +10,6 @@ exports.PortfolioModule = void 0;
 const common_1 = require("@nestjs/common");
 const portfolio_controller_1 = require("./portfolio.controller");
 const portfolio_service_1 = require("./portfolio.service");
-const prisma_service_1 = require("../prisma.service");
 const market_module_1 = require("../market/market.module");
 const access_module_1 = require("../access/access.module");
 let PortfolioModule = class PortfolioModule {
@@ -20,7 +19,7 @@ exports.PortfolioModule = PortfolioModule = __decorate([
     (0, common_1.Module)({
         imports: [market_module_1.MarketModule, access_module_1.AccessModule],
         controllers: [portfolio_controller_1.PortfolioController],
-        providers: [portfolio_service_1.PortfolioService, prisma_service_1.PrismaService],
+        providers: [portfolio_service_1.PortfolioService],
         exports: [portfolio_service_1.PortfolioService],
     })
 ], PortfolioModule);

@@ -10,7 +10,6 @@ exports.FundamentalModule = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const market_module_1 = require("../market/market.module");
-const prisma_service_1 = require("../prisma.service");
 const adapter_alpha_vantage_service_1 = require("./adapters/adapter-alpha-vantage.service");
 const adapter_finnhub_service_1 = require("./adapters/adapter-finnhub.service");
 const adapter_fmp_service_1 = require("./adapters/adapter-fmp.service");
@@ -31,7 +30,6 @@ exports.FundamentalModule = FundamentalModule = __decorate([
         imports: [market_module_1.MarketModule],
         controllers: [fundamental_controller_1.FundamentalController],
         providers: [
-            prisma_service_1.PrismaService,
             jwt_auth_guard_1.JwtAuthGuard,
             fundamental_orchestrator_service_1.FundamentalOrchestratorService,
             symbol_resolver_service_1.SymbolResolverService,

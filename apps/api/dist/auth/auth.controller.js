@@ -15,66 +15,114 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
+const jwt_auth_guard_1 = require("./jwt-auth.guard");
+const auth_dto_1 = require("./dto/auth.dto");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    register(dto) {
-        return this.authService.register(dto);
+    requestRegisterCode(body) {
+        return this.authService.requestRegisterCode(body.email, body.username, body.password);
     }
-    login(dto) {
-        return this.authService.login(dto);
+    verifyRegisterCode(body) {
+        return this.authService.verifyRegisterCode(body.email, body.code);
     }
-    verifyEmail(dto) {
-        return this.authService.verifyEmail(dto);
+    requestLoginCode(body) {
+        return this.authService.requestLoginCode(body.email, body.password);
     }
-    forgotPassword(dto) {
-        return this.authService.forgotPassword(dto);
+    verifyLoginCode(body) {
+        return this.authService.verifyLoginCode(body.email, body.code);
     }
-    resetPassword(dto) {
-        return this.authService.resetPassword(dto);
+    loginAsDemo() {
+        return this.authService.loginAsDemo();
+    }
+    requestPasswordResetCode(body) {
+        return this.authService.requestPasswordResetCode(body.email);
+    }
+    resetPasswordWithCode(body) {
+        return this.authService.resetPasswordWithCode(body.email, body.code, body.newPassword);
+    }
+    syncUser(req, body) {
+        return this.authService.syncUser(req.user.id, req.user.email, body.username ?? req.user.username);
+    }
+    getProfile(req) {
+        return this.authService.getProfile(req.user.id);
     }
 };
 exports.AuthController = AuthController;
 __decorate([
-    (0, common_1.Post)('register'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.Post)('register/request-code'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [auth_dto_1.RegisterRequestDto]),
     __metadata("design:returntype", void 0)
-], AuthController.prototype, "register", null);
+], AuthController.prototype, "requestRegisterCode", null);
 __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, common_1.Post)('login'),
+    (0, common_1.Post)('register/verify-code'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [auth_dto_1.EmailCodeDto]),
     __metadata("design:returntype", void 0)
-], AuthController.prototype, "login", null);
+], AuthController.prototype, "verifyRegisterCode", null);
 __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, common_1.Post)('verify-email'),
+    (0, common_1.Post)('login/request-code'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [auth_dto_1.LoginRequestDto]),
     __metadata("design:returntype", void 0)
-], AuthController.prototype, "verifyEmail", null);
+], AuthController.prototype, "requestLoginCode", null);
 __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, common_1.Post)('forgot-password'),
+    (0, common_1.Post)('login/verify-code'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [auth_dto_1.EmailCodeDto]),
     __metadata("design:returntype", void 0)
-], AuthController.prototype, "forgotPassword", null);
+], AuthController.prototype, "verifyLoginCode", null);
 __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, common_1.Post)('reset-password'),
+    (0, common_1.Post)('demo-login'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "loginAsDemo", null);
+__decorate([
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.Post)('forgot/request-code'),
     __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_1.ForgotPasswordRequestDto]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "requestPasswordResetCode", null);
+__decorate([
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.Post)('forgot/reset'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_1.ForgotPasswordResetDto]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "resetPasswordWithCode", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.Post)('sync-user'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "syncUser", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('me'),
+    __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
-], AuthController.prototype, "resetPassword", null);
+], AuthController.prototype, "getProfile", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

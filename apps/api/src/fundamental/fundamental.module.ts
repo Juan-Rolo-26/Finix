@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MarketModule } from '../market/market.module';
-import { PrismaService } from '../prisma.service';
 import { AdapterAlphaVantageService } from './adapters/adapter-alpha-vantage.service';
 import { AdapterFinnhubService } from './adapters/adapter-finnhub.service';
 import { AdapterFMPService } from './adapters/adapter-fmp.service';
@@ -19,7 +18,6 @@ import { SymbolResolverService } from './services/symbol-resolver.service';
     imports: [MarketModule],
     controllers: [FundamentalController],
     providers: [
-        PrismaService,
         JwtAuthGuard,
         FundamentalOrchestratorService,
         SymbolResolverService,

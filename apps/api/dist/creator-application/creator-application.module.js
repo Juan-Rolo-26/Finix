@@ -10,7 +10,6 @@ exports.CreatorApplicationModule = void 0;
 const common_1 = require("@nestjs/common");
 const creator_application_controller_1 = require("./creator-application.controller");
 const creator_application_service_1 = require("./creator-application.service");
-const prisma_service_1 = require("../prisma.service");
 const auth_module_1 = require("../auth/auth.module");
 let CreatorApplicationModule = class CreatorApplicationModule {
 };
@@ -19,7 +18,7 @@ exports.CreatorApplicationModule = CreatorApplicationModule = __decorate([
     (0, common_1.Module)({
         imports: [auth_module_1.AuthModule],
         controllers: [creator_application_controller_1.CreatorApplicationController],
-        providers: [creator_application_service_1.CreatorApplicationService, prisma_service_1.PrismaService],
+        providers: [creator_application_service_1.CreatorApplicationService],
         exports: [creator_application_service_1.CreatorApplicationService],
     })
 ], CreatorApplicationModule);

@@ -1,5 +1,50 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    ForbiddenException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+
+type MessageAttachmentType = 'image' | 'post' | 'chart' | 'story';
+type MessageAttachmentInput =
+    | {
+        type: MessageAttachmentType;
+        url?: string;
+        postId?: string;
+        meta?: Record<string, any> | null;
+    }
+    | null
+    | undefined;
+
+const USER_SELECT = {
+    id: true,
+    username: true,
+    avatarUrl: true,
+    isVerified: true,
+} satisfies Prisma.UserSelect;
+
+const SHARED_POST_SELECT = {
+    id: true,
+    content: true,
+    type: true,
+    assetSymbol: true,
+    analysisType: true,
+    riskLevel: true,
+    createdAt: true,
+    author: { select: USER_SELECT },
+    media: {
+        orderBy: { order: 'asc' as const },
+    },
+} satisfies Prisma.PostSelect;
+
+const MESSAGE_INCLUDE = Prisma.validator<Prisma.DirectMessageInclude>()({
+    sender: { select: USER_SELECT },
+    sharedPost: { select: SHARED_POST_SELECT },
+});
+
+type MessageRecord = Prisma.DirectMessageGetPayload<{ include: typeof MESSAGE_INCLUDE }>;
 
 @Injectable()
 export class MessagesService {
@@ -7,14 +52,13 @@ export class MessagesService {
 
     /** Returns or creates a conversation between two users */
     async getOrCreateConversation(userId: string, otherUserId: string) {
-        // Consistent ordering to avoid duplicate conversations
         const [p1, p2] = [userId, otherUserId].sort();
 
         let conversation = await this.prisma.conversation.findUnique({
             where: { participant1Id_participant2Id: { participant1Id: p1, participant2Id: p2 } },
             include: {
-                participant1: { select: { id: true, username: true, avatarUrl: true, isVerified: true } },
-                participant2: { select: { id: true, username: true, avatarUrl: true, isVerified: true } },
+                participant1: { select: USER_SELECT },
+                participant2: { select: USER_SELECT },
             },
         });
 
@@ -22,8 +66,8 @@ export class MessagesService {
             conversation = await this.prisma.conversation.create({
                 data: { participant1Id: p1, participant2Id: p2 },
                 include: {
-                    participant1: { select: { id: true, username: true, avatarUrl: true, isVerified: true } },
-                    participant2: { select: { id: true, username: true, avatarUrl: true, isVerified: true } },
+                    participant1: { select: USER_SELECT },
+                    participant2: { select: USER_SELECT },
                 },
             });
         }
@@ -38,14 +82,12 @@ export class MessagesService {
                 OR: [{ participant1Id: userId }, { participant2Id: userId }],
             },
             include: {
-                participant1: { select: { id: true, username: true, avatarUrl: true, isVerified: true } },
-                participant2: { select: { id: true, username: true, avatarUrl: true, isVerified: true } },
+                participant1: { select: USER_SELECT },
+                participant2: { select: USER_SELECT },
                 messages: {
                     orderBy: { createdAt: 'desc' },
                     take: 1,
-                    include: {
-                        sender: { select: { id: true, username: true } },
-                    },
+                    include: MESSAGE_INCLUDE,
                 },
             },
             orderBy: { updatedAt: 'desc' },
@@ -67,7 +109,7 @@ export class MessagesService {
                 return {
                     id: conv.id,
                     otherUser,
-                    lastMessage: conv.messages[0] || null,
+                    lastMessage: conv.messages[0] ? this.serializeMessage(conv.messages[0]) : null,
                     updatedAt: conv.updatedAt,
                     unreadCount,
                 };
@@ -89,19 +131,24 @@ export class MessagesService {
 
         const messages = await this.prisma.directMessage.findMany({
             where: { conversationId },
-            include: {
-                sender: { select: { id: true, username: true, avatarUrl: true } },
-            },
+            include: MESSAGE_INCLUDE,
             orderBy: { createdAt: 'asc' },
             ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
             take: 50,
         });
 
-        return messages;
+        return messages.map((message) => this.serializeMessage(message));
     }
 
     /** Save a message to the database */
-    async sendMessage(senderId: string, conversationId: string, content: string) {
+    async sendMessage(
+        senderId: string,
+        conversationId: string,
+        payload: {
+            content?: string;
+            attachment?: MessageAttachmentInput;
+        },
+    ) {
         const conv = await this.prisma.conversation.findFirst({
             where: {
                 id: conversationId,
@@ -110,11 +157,24 @@ export class MessagesService {
         });
         if (!conv) throw new ForbiddenException('No tienes acceso a esta conversación');
 
+        const content = typeof payload.content === 'string' ? payload.content.trim() : '';
+        const attachment = await this.prepareAttachment(payload.attachment);
+
+        if (!content && !attachment) {
+            throw new BadRequestException('El mensaje debe tener texto o un adjunto');
+        }
+
         const message = await this.prisma.directMessage.create({
-            data: { conversationId, senderId, content },
-            include: {
-                sender: { select: { id: true, username: true, avatarUrl: true } },
+            data: {
+                conversationId,
+                senderId,
+                content,
+                attachmentType: attachment?.attachmentType ?? null,
+                attachmentUrl: attachment?.attachmentUrl ?? null,
+                attachmentData: attachment?.attachmentData ?? null,
+                sharedPostId: attachment?.sharedPostId ?? null,
             },
+            include: MESSAGE_INCLUDE,
         });
 
         await this.prisma.conversation.update({
@@ -122,7 +182,7 @@ export class MessagesService {
             data: { updatedAt: new Date() },
         });
 
-        return message;
+        return this.serializeMessage(message);
     }
 
     /** Mark all unread messages in a conversation as read */
@@ -165,20 +225,6 @@ export class MessagesService {
         return { count };
     }
 
-    /** Delete a conversation and all its messages */
-    async deleteConversation(conversationId: string, userId: string) {
-        const conv = await this.prisma.conversation.findFirst({
-            where: {
-                id: conversationId,
-                OR: [{ participant1Id: userId }, { participant2Id: userId }],
-            },
-        });
-        if (!conv) throw new NotFoundException('Conversación no encontrada');
-
-        await this.prisma.conversation.delete({ where: { id: conversationId } });
-        return { success: true };
-    }
-
     /** Search users to start a conversation with */
     async searchUsers(query: string, userId: string) {
         if (!query || query.trim().length < 1) return [];
@@ -187,14 +233,16 @@ export class MessagesService {
             where: {
                 AND: [
                     { id: { not: userId } },
-                    { username: { contains: query } },
+                    {
+                        username: {
+                            contains: query.trim(),
+                            mode: 'insensitive',
+                        },
+                    },
                 ],
             },
             select: {
-                id: true,
-                username: true,
-                avatarUrl: true,
-                isVerified: true,
+                ...USER_SELECT,
                 title: true,
             },
             take: 10,
@@ -209,12 +257,153 @@ export class MessagesService {
                 OR: [{ participant1Id: userId }, { participant2Id: userId }],
             },
             include: {
-                participant1: { select: { id: true, username: true, avatarUrl: true, isVerified: true } },
-                participant2: { select: { id: true, username: true, avatarUrl: true, isVerified: true } },
+                participant1: { select: USER_SELECT },
+                participant2: { select: USER_SELECT },
             },
         });
         if (!conv) throw new ForbiddenException('No tienes acceso');
 
         return conv.participant1Id === userId ? conv.participant2 : conv.participant1;
+    }
+
+    private serializeMessage(message: MessageRecord) {
+        const { attachmentData, ...rest } = message;
+        return {
+            ...rest,
+            attachmentMeta: this.parseAttachmentData(attachmentData),
+        };
+    }
+
+    private parseAttachmentData(value: string | null) {
+        if (!value) return null;
+        try {
+            return JSON.parse(value);
+        } catch {
+            return null;
+        }
+    }
+
+    private stringifyMeta(value: Record<string, any> | null) {
+        if (!value) return null;
+        const entries = Object.entries(value).filter(([, next]) => next !== undefined && next !== null && next !== '');
+        if (entries.length === 0) return null;
+        return JSON.stringify(Object.fromEntries(entries));
+    }
+
+    private async prepareAttachment(input: MessageAttachmentInput) {
+        if (!input) return null;
+
+        const type = input.type;
+        if (!type || !['image', 'post', 'chart', 'story'].includes(type)) {
+            throw new BadRequestException('Tipo de adjunto inválido');
+        }
+
+        if (type === 'post') {
+            if (!input.postId) throw new BadRequestException('La publicación es obligatoria');
+            const sharedPost = await this.prisma.post.findUnique({
+                where: { id: input.postId },
+                select: { id: true },
+            });
+            if (!sharedPost) throw new NotFoundException('La publicación no existe');
+
+            return {
+                attachmentType: 'post' as const,
+                attachmentUrl: null,
+                attachmentData: null,
+                sharedPostId: sharedPost.id,
+            };
+        }
+
+        if (type === 'story') {
+            const meta = input.meta && typeof input.meta === 'object' ? input.meta : {};
+            const nestedStory = meta.story && typeof meta.story === 'object'
+                ? meta.story as Record<string, any>
+                : null;
+            const rawStoryId = typeof meta.storyId === 'string'
+                ? meta.storyId
+                : typeof nestedStory?.id === 'string'
+                    ? String(nestedStory.id)
+                    : '';
+            const storyId = rawStoryId.trim();
+
+            if (!storyId) {
+                throw new BadRequestException('La historia es obligatoria');
+            }
+
+            const sharedStory = await this.prisma.story.findUnique({
+                where: { id: storyId },
+                include: {
+                    author: { select: USER_SELECT },
+                },
+            });
+
+            if (!sharedStory || sharedStory.expiresAt <= new Date()) {
+                throw new NotFoundException('La historia no existe o ya expiró');
+            }
+
+            return {
+                attachmentType: 'story' as const,
+                attachmentUrl: sharedStory.mediaUrl ?? null,
+                attachmentData: this.stringifyMeta({
+                    storyId: sharedStory.id,
+                    story: {
+                        id: sharedStory.id,
+                        content: sharedStory.content,
+                        mediaUrl: sharedStory.mediaUrl,
+                        background: sharedStory.background,
+                        textColor: sharedStory.textColor,
+                        createdAt: sharedStory.createdAt,
+                        expiresAt: sharedStory.expiresAt,
+                        author: sharedStory.author,
+                    },
+                }),
+                sharedPostId: null,
+            };
+        }
+
+        if (!input.url) {
+            throw new BadRequestException('El adjunto necesita una URL');
+        }
+
+        if (type === 'image') {
+            const meta = input.meta && typeof input.meta === 'object'
+                ? {
+                    originalName:
+                        typeof input.meta.originalName === 'string'
+                            ? input.meta.originalName.slice(0, 140)
+                            : undefined,
+                    size:
+                        typeof input.meta.size === 'number' && Number.isFinite(input.meta.size)
+                            ? input.meta.size
+                            : undefined,
+                }
+                : null;
+
+            return {
+                attachmentType: 'image' as const,
+                attachmentUrl: input.url,
+                attachmentData: this.stringifyMeta(meta),
+                sharedPostId: null,
+            };
+        }
+
+        const meta = input.meta && typeof input.meta === 'object' ? input.meta : {};
+        const symbol = typeof meta.symbol === 'string' ? meta.symbol.trim().toUpperCase() : '';
+        if (!symbol) {
+            throw new BadRequestException('El gráfico necesita un símbolo');
+        }
+
+        return {
+            attachmentType: 'chart' as const,
+            attachmentUrl: input.url,
+            attachmentData: this.stringifyMeta({
+                symbol,
+                interval: typeof meta.interval === 'string' ? meta.interval : 'D',
+                title: typeof meta.title === 'string' ? meta.title.slice(0, 120) : undefined,
+                analysisType: typeof meta.analysisType === 'string' ? meta.analysisType : undefined,
+                riskLevel: typeof meta.riskLevel === 'string' ? meta.riskLevel : undefined,
+            }),
+            sharedPostId: null,
+        };
     }
 }

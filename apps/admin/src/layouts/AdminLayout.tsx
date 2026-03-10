@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Shield, LayoutDashboard, Users, FileText, AlertTriangle, LogOut, Menu } from 'lucide-react';
+import { adminFetch } from '../lib/api';
 
 export default function AdminLayout() {
     const navigate = useNavigate();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    const handleLogout = () => {
-        localStorage.removeItem('auth-token');
+    const handleLogout = async () => {
+        await adminFetch('/admin/auth/logout', { method: 'POST' });
         navigate('/login');
     };
 
@@ -70,6 +71,13 @@ export default function AdminLayout() {
                 <div
                     className="fixed inset-0 bg-black/50 z-30 lg:hidden backdrop-blur-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            setIsMobileMenuOpen(false);
+                        }
+                    }}
+                    role="button"
+                    tabIndex={0}
                 />
             )}
 

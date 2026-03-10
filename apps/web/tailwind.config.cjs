@@ -18,8 +18,8 @@ module.exports = {
         },
         extend: {
             fontFamily: {
-                sans: ['Satoshi', 'sans-serif'],
-                heading: ['Satoshi', 'sans-serif'],
+                sans: ['Satoshi', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"', 'sans-serif'],
+                heading: ['Satoshi', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
                 mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
             },
             colors: {
@@ -28,6 +28,10 @@ module.exports = {
                 ring: "hsl(var(--ring))",
                 background: "hsl(var(--background))",
                 foreground: "hsl(var(--foreground))",
+                brand: {
+                    DEFAULT: "hsl(var(--brand))",
+                    foreground: "hsl(var(--brand-foreground))",
+                },
                 primary: {
                     DEFAULT: "hsl(var(--primary))",
                     foreground: "hsl(var(--primary-foreground))",

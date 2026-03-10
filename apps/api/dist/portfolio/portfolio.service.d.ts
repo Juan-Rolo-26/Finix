@@ -44,6 +44,23 @@ export declare class PortfolioService {
         createdAt: any;
         updatedAt: any;
     }[]>;
+    private canExposePortfoliosPublicly;
+    private getVisiblePublicPortfolioRecords;
+    getPublicPortfolios(userId: string): Promise<{
+        id: any;
+        nombre: any;
+        descripcion: any;
+        objetivo: any;
+        monedaBase: any;
+        nivelRiesgo: any;
+        modoSocial: any;
+        esPrincipal: any;
+        admiteBienesRaices: any;
+        assets: any;
+        movements: any;
+        createdAt: any;
+        updatedAt: any;
+    }[]>;
     getPortfolioById(portfolioId: string, userId: string): Promise<{
         id: any;
         nombre: any;
@@ -59,6 +76,7 @@ export declare class PortfolioService {
         createdAt: any;
         updatedAt: any;
     }>;
+    private getPublicPortfolioRecord;
     updatePortfolio(portfolioId: string, userId: string, dto: UpdatePortfolioDto): Promise<{
         id: any;
         nombre: any;
@@ -79,46 +97,46 @@ export declare class PortfolioService {
     }>;
     createTransaction(portfolioId: string, userId: string, dto: CreateTransactionDto): Promise<{
         asset: {
-            name: string;
             id: string;
-            currency: string;
+            name: string;
             type: string;
+            currency: string;
             ticker: string;
         };
     } & {
         id: string;
-        currency: string;
         createdAt: Date;
         date: Date;
-        type: string;
-        total: import("@prisma/client/runtime/library").Decimal;
-        fee: import("@prisma/client/runtime/library").Decimal;
         portfolioId: string;
         assetId: string | null;
+        type: string;
         quantity: import("@prisma/client/runtime/library").Decimal;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
+        fee: import("@prisma/client/runtime/library").Decimal;
+        total: import("@prisma/client/runtime/library").Decimal;
+        currency: string;
         notes: string | null;
     }>;
     addAsset(portfolioId: string, userId: string, dto: CreateAssetDto): Promise<{
         asset: {
-            name: string;
             id: string;
-            currency: string;
+            name: string;
             type: string;
+            currency: string;
             ticker: string;
         };
     } & {
         id: string;
-        currency: string;
         createdAt: Date;
         date: Date;
-        type: string;
-        total: import("@prisma/client/runtime/library").Decimal;
-        fee: import("@prisma/client/runtime/library").Decimal;
         portfolioId: string;
         assetId: string | null;
+        type: string;
         quantity: import("@prisma/client/runtime/library").Decimal;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
+        fee: import("@prisma/client/runtime/library").Decimal;
+        total: import("@prisma/client/runtime/library").Decimal;
+        currency: string;
         notes: string | null;
     }>;
     getPortfolioAssets(portfolioId: string, userId: string): Promise<{
@@ -140,7 +158,17 @@ export declare class PortfolioService {
         portfolioId: string;
         ticker: string;
     }>;
+    private buildPortfolioMetrics;
     getPortfolioMetrics(portfolioId: string, userId: string): Promise<{
+        capitalTotal: number;
+        valorActual: number;
+        gananciaTotal: number;
+        variacionPorcentual: number;
+        diversificacionPorClase: Record<string, number>;
+        diversificacionPorActivo: Record<string, number>;
+        cantidadActivos: number;
+    }>;
+    getPublicPortfolioMetrics(portfolioId: string): Promise<{
         capitalTotal: number;
         valorActual: number;
         gananciaTotal: number;
@@ -160,29 +188,39 @@ export declare class PortfolioService {
         precio: number;
         total: number;
     }[]>;
+    getPublicPortfolioMovements(portfolioId: string): Promise<{
+        id: any;
+        fecha: any;
+        tipoMovimiento: string;
+        ticker: any;
+        claseActivo: any;
+        cantidad: number;
+        precio: number;
+        total: number;
+    }[]>;
     getWatchlists(userId: string): Promise<{
-        name: string;
         id: string;
         createdAt: Date;
-        tickers: string;
         userId: string;
+        name: string;
+        tickers: string;
     }[]>;
     createWatchlist(userId: string, name: string, tickers: string): Promise<{
-        name: string;
         id: string;
         createdAt: Date;
-        tickers: string;
         userId: string;
+        name: string;
+        tickers: string;
     }>;
     updateWatchlist(id: string, userId: string, data: {
         name?: string;
         tickers?: string;
     }): Promise<{
-        name: string;
         id: string;
         createdAt: Date;
-        tickers: string;
         userId: string;
+        name: string;
+        tickers: string;
     }>;
     deleteWatchlist(id: string, userId: string): Promise<{
         ok: boolean;

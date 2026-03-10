@@ -4,7 +4,6 @@ import { NewsService } from './news.service';
 import { NewsFetcherService } from './news-fetcher.service';
 import { NewsTranslationService } from './news-translation.service';
 import { NewsSentimentService } from './news-sentiment.service';
-import { PrismaService } from '../prisma.service';
 
 @Module({
     controllers: [NewsController],
@@ -13,7 +12,6 @@ import { PrismaService } from '../prisma.service';
         NewsFetcherService,
         NewsTranslationService,
         NewsSentimentService,
-        PrismaService,
     ],
     exports: [NewsService],
 })

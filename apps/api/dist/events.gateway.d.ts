@@ -22,7 +22,13 @@ export declare class EventsGateway implements OnGatewayConnection, OnGatewayDisc
     }): void;
     handleSendDirectMessage(client: Socket, data: {
         conversationId: string;
-        content: string;
+        content?: string;
+        attachment?: {
+            type: 'image' | 'post' | 'chart';
+            url?: string;
+            postId?: string;
+            meta?: Record<string, any>;
+        } | null;
     }): Promise<void>;
     emitNewMessage(conversationId: string, message: any): void;
 }

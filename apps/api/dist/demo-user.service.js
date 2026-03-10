@@ -12,63 +12,94 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DemoUserService = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
+const argon2 = require("argon2");
 const prisma_service_1 = require("./prisma.service");
 let DemoUserService = class DemoUserService {
     constructor(prisma) {
         this.prisma = prisma;
         this.cachedId = null;
+        this.demoEmail = 'demo@finix.local';
+        this.demoUsername = 'demo_user';
+        this.demoPassword = 'finixdemo123';
     }
-    async getOrCreateDemoUserId() {
+    async buildDemoPasswordHash() {
+        return argon2.hash(this.demoPassword);
+    }
+    demoUserData(passwordHash) {
+        return {
+            email: this.demoEmail,
+            username: this.demoUsername,
+            password: passwordHash,
+            role: 'USER',
+            isInfluencer: false,
+            isVerified: true,
+            emailVerified: true,
+            plan: 'FREE',
+            onboardingCompleted: true,
+            onboardingStep: 5,
+            bio: 'Usuario demo de Finix para pruebas locales.',
+            location: 'Cordoba, Argentina',
+        };
+    }
+    async getOrCreateDemoUser() {
         if (this.cachedId) {
-            return this.cachedId;
+            const cachedUser = await this.prisma.user.findUnique({
+                where: { id: this.cachedId },
+            });
+            if (cachedUser) {
+                return cachedUser;
+            }
+            this.cachedId = null;
         }
-        const email = 'demo@finix.local';
-        const username = 'demo_user';
         const existing = await this.prisma.user.findFirst({
             where: {
                 OR: [
-                    { email },
-                    { username },
+                    { email: this.demoEmail },
+                    { username: this.demoUsername },
                 ],
             },
-            select: { id: true },
         });
+        const passwordHash = await this.buildDemoPasswordHash();
+        const demoData = this.demoUserData(passwordHash);
         if (existing?.id) {
-            this.cachedId = existing.id;
-            return existing.id;
+            const updated = await this.prisma.user.update({
+                where: { id: existing.id },
+                data: {
+                    ...demoData,
+                    username: existing.username === this.demoUsername ? this.demoUsername : existing.username,
+                },
+            });
+            this.cachedId = updated.id;
+            return updated;
         }
         try {
             const created = await this.prisma.user.create({
-                data: {
-                    email,
-                    username,
-                    password: 'demo',
-                    role: 'USER',
-                    isInfluencer: false,
-                },
-                select: { id: true },
+                data: demoData,
             });
             this.cachedId = created.id;
-            return created.id;
+            return created;
         }
         catch (error) {
             if (error instanceof client_1.Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
                 const fallbackUsername = `demo_${Math.random().toString(36).slice(2, 8)}`;
                 const created = await this.prisma.user.create({
                     data: {
-                        email,
+                        ...demoData,
                         username: fallbackUsername,
-                        password: 'demo',
-                        role: 'USER',
-                        isInfluencer: false,
                     },
-                    select: { id: true },
                 });
                 this.cachedId = created.id;
-                return created.id;
+                return created;
             }
             throw error;
         }
+    }
+    getDemoCredentials() {
+        return {
+            email: this.demoEmail,
+            username: this.demoUsername,
+            password: this.demoPassword,
+        };
     }
 };
 exports.DemoUserService = DemoUserService;

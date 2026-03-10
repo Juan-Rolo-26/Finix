@@ -36,6 +36,105 @@ interface PinnedAsset {
     price: number;
 }
 
+interface NotificationItem {
+    id: string;
+    type: string;
+    title: string;
+    content?: string | null;
+    link?: string | null;
+    isRead?: boolean;
+    time: string;
+}
+
+interface SidebarNavLinkProps {
+    name: string;
+    path: string;
+    icon: ComponentType<{ className?: string }>;
+    badge: number;
+    active: boolean;
+    hovered: boolean;
+    onHoverStart: (path: string) => void;
+    onHoverEnd: () => void;
+}
+
+function SidebarNavLink({
+    name,
+    path,
+    icon: Icon,
+    badge,
+    active,
+    hovered,
+    onHoverStart,
+    onHoverEnd,
+}: SidebarNavLinkProps) {
+    return (
+        <Link
+            to={path}
+            onMouseEnter={() => onHoverStart(path)}
+            onMouseLeave={onHoverEnd}
+            className="relative flex items-center gap-3 rounded-xl px-3.5 py-[9px] text-[15px] font-medium transition-colors duration-300 select-none overflow-hidden"
+            style={{
+                color: active
+                    ? PRIMARY
+                    : hovered
+                        ? 'hsl(var(--foreground))'
+                        : 'hsl(var(--muted-foreground))',
+            }}
+        >
+            {active && (
+                <motion.div
+                    layoutId="sidebar-active-bg"
+                    className="absolute inset-0 rounded-xl"
+                    style={{
+                        background: 'linear-gradient(90deg, hsl(var(--sidebar-active-bg-from)) 0%, hsl(var(--sidebar-active-bg-to)) 100%)',
+                        border: '1px solid hsl(var(--sidebar-active-border))',
+                    }}
+                    initial={false}
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                />
+            )}
+            {hovered && !active && (
+                <motion.div
+                    className="absolute inset-0 rounded-xl"
+                    style={{
+                        background: 'hsl(var(--sidebar-hover-bg))',
+                        border: '1px solid hsl(var(--sidebar-hover-border))',
+                    }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                />
+            )}
+            <div className="relative z-10 flex items-center gap-3 w-full">
+                <Icon className="w-[17px] h-[17px] flex-shrink-0" />
+                <span className="flex-1 tracking-wide">{name}</span>
+                {badge > 0 && (
+                    <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="min-w-[18px] h-[18px] rounded-full text-[11px] font-bold flex items-center justify-center px-1"
+                        style={{ background: PRIMARY, color: 'hsl(var(--primary-foreground))' }}
+                    >
+                        {badge > 9 ? '9+' : badge}
+                    </motion.span>
+                )}
+            </div>
+        </Link>
+    );
+}
+
+function SectionLabel({ label }: { label: string }) {
+    return (
+        <p
+            className="mb-2 px-3 text-[11.5px] font-bold uppercase tracking-[0.22em]"
+            style={{ color: 'hsl(var(--sidebar-section-label))' }}
+        >
+            {label}
+        </p>
+    );
+}
+
 export function Sidebar() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -43,7 +142,7 @@ export function Sidebar() {
     const { theme, setTheme } = usePreferencesStore();
     const [hov, setHov] = useState<string | null>(null);
     const [unreadMsgs, setUnreadMsgs] = useState(0);
-    const [unreadNotifs] = useState(0);
+    const [unreadNotifs, setUnreadNotifs] = useState(0);
     const [pinnedAssets, setPinnedAssets] = useState<PinnedAsset[]>([]);
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -52,7 +151,7 @@ export function Sidebar() {
     const [isNotifsOpen, setIsNotifsOpen] = useState(false);
     const [isSearchLoading, setIsSearchLoading] = useState(false);
 
-    const [notifications, setNotifications] = useState<any[]>([]);
+    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [isNotifsLoading, setIsNotifsLoading] = useState(false);
 
     /* Detect resolved theme for icon */
@@ -83,14 +182,40 @@ export function Sidebar() {
                 try {
                     const res = await apiFetch('/users/me/notifications');
                     if (res.ok) {
-                        setNotifications(await res.json());
+                        const data = await res.json();
+                        setNotifications(Array.isArray(data) ? data : []);
+                        const readRes = await apiFetch('/users/me/notifications/read-all', {
+                            method: 'PATCH',
+                        });
+                        if (readRes.ok) {
+                            setUnreadNotifs(0);
+                        }
                     }
-                } catch { }
-                setIsNotifsLoading(false);
+                } catch {
+                    setNotifications([]);
+                } finally {
+                    setIsNotifsLoading(false);
+                }
             };
             fetchNotifs();
         }
     }, [isNotifsOpen]);
+
+    useEffect(() => {
+        const loadUnreadCount = async () => {
+            try {
+                const res = await apiFetch('/users/me/notifications/unread-count');
+                if (res.ok) {
+                    const data = await res.json();
+                    setUnreadNotifs(data.count ?? 0);
+                }
+            } catch { }
+        };
+
+        loadUnreadCount();
+        const iv = setInterval(loadUnreadCount, 30_000);
+        return () => clearInterval(iv);
+    }, []);
 
     /* ── Poll unread count ───────────────────────────────────── */
     useEffect(() => {
@@ -168,76 +293,6 @@ export function Sidebar() {
         },
     ];
 
-    /* ── NavLink ─────────────────────────────────────────────── */
-    const NavLink = ({
-        name, path, icon: Icon, badge,
-    }: {
-        name: string; path: string;
-        icon: ComponentType<{ className?: string }>; badge: number;
-    }) => {
-        const active = isActive(path);
-        const hovered = hov === path;
-        return (
-            <Link
-                to={path}
-                onMouseEnter={() => setHov(path)}
-                onMouseLeave={() => setHov(null)}
-                className="relative flex items-center gap-3 rounded-xl px-3.5 py-[9px] text-[15px] font-medium transition-colors duration-300 select-none overflow-hidden"
-                style={{
-                    color: active
-                        ? PRIMARY
-                        : hovered
-                            ? 'hsl(var(--foreground))'
-                            : 'hsl(var(--muted-foreground))',
-                }}
-            >
-                {active && (
-                    <motion.div
-                        layoutId="sidebar-active-bg"
-                        className="absolute inset-0 rounded-xl"
-                        style={{
-                            background: `linear-gradient(90deg, hsl(var(--sidebar-active-bg-from)) 0%, hsl(var(--sidebar-active-bg-to)) 100%)`,
-                            border: `1px solid hsl(var(--sidebar-active-border))`,
-                        }}
-                        initial={false}
-                        transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                    />
-                )}
-                {hovered && !active && (
-                    <motion.div
-                        className="absolute inset-0 rounded-xl"
-                        style={{
-                            background: `hsl(var(--sidebar-hover-bg))`,
-                            border: `1px solid hsl(var(--sidebar-hover-border))`,
-                        }}
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                    />
-                )}
-                <div className="relative z-10 flex items-center gap-3 w-full">
-                    <Icon className="w-[17px] h-[17px] flex-shrink-0" />
-                    <span className="flex-1 tracking-wide">{name}</span>
-                    {badge > 0 && (
-                        <motion.span
-                            initial={{ scale: 0 }} animate={{ scale: 1 }}
-                            className="min-w-[18px] h-[18px] rounded-full text-[11px] font-bold flex items-center justify-center px-1"
-                            style={{ background: PRIMARY, color: 'hsl(var(--primary-foreground))' }}
-                        >
-                            {badge > 9 ? '9+' : badge}
-                        </motion.span>
-                    )}
-                </div>
-            </Link>
-        );
-    };
-
-    const SectionLabel = ({ label }: { label: string }) => (
-        <p className="mb-2 px-3 text-[11.5px] font-bold uppercase tracking-[0.22em]"
-            style={{ color: `hsl(var(--sidebar-section-label))` }}>
-            {label}
-        </p>
-    );
-
     /* ── Popover shared styles ───────────────────────────────── */
     const popoverStyle: React.CSSProperties = {
         background: 'hsl(var(--popover))',
@@ -247,6 +302,13 @@ export function Sidebar() {
 
     const toggleTheme = () => {
         setTheme(isLight ? 'dark' : 'light');
+    };
+
+    const handleNotificationClick = (notification: NotificationItem) => {
+        if (notification.link) {
+            navigate(notification.link);
+        }
+        setIsNotifsOpen(false);
     };
 
     return (
@@ -352,13 +414,23 @@ export function Sidebar() {
                                             searchResults.map(u => (
                                                 <div
                                                     key={u.id}
-                                                    className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors"
+                                                    className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors border border-transparent"
                                                     style={{ color: 'hsl(var(--foreground))' }}
-                                                    onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
-                                                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                                    onClick={() => { navigate(`/${u.username}`); setIsSearchOpen(false); }}
+                                                    onMouseEnter={e => {
+                                                        e.currentTarget.style.background = 'hsl(var(--secondary))';
+                                                        e.currentTarget.style.borderColor = 'hsl(var(--border))';
+                                                    }}
+                                                    onMouseLeave={e => {
+                                                        e.currentTarget.style.background = 'transparent';
+                                                        e.currentTarget.style.borderColor = 'transparent';
+                                                    }}
+                                                    onClick={() => {
+                                                        navigate(`/profile/${u.username}`);
+                                                        setIsSearchOpen(false);
+                                                        setSearchQuery('');
+                                                    }}
                                                 >
-                                                    <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden shrink-0"
+                                                    <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shrink-0"
                                                         style={{ background: 'hsl(var(--primary) / 0.15)' }}>
                                                         {u.avatarUrl
                                                             ? <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
@@ -366,10 +438,19 @@ export function Sidebar() {
                                                         }
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-bold truncate leading-tight">{u.username}</p>
-                                                        <p className="text-[10px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                            {u.winRate ? u.winRate.toFixed(0) : '--'}% Win Rate
+                                                        <div className="flex items-center gap-1.5">
+                                                            <p className="text-sm font-bold truncate leading-tight">{u.username}</p>
+                                                            {u.isVerified && (
+                                                                <span className="text-[10px] font-bold" style={{ color: PRIMARY }}>✓</span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                                            {u.title || u.company || (u.winRate ? `${u.winRate.toFixed(0)}% Win Rate` : 'Ver perfil')}
                                                         </p>
+                                                    </div>
+                                                    <div className="px-2.5 py-1 rounded-lg text-[10px] font-bold"
+                                                        style={{ background: 'hsl(var(--primary) / 0.1)', color: PRIMARY }}>
+                                                        Ver perfil
                                                     </div>
                                                 </div>
                                             ))
@@ -400,10 +481,10 @@ export function Sidebar() {
                         </button>
                         {unreadNotifs > 0 && (
                             <span
-                                className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center pointer-events-none"
+                                className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center pointer-events-none px-1"
                                 style={{ background: PRIMARY, color: 'hsl(var(--primary-foreground))' }}
                             >
-                                {unreadNotifs}
+                                {unreadNotifs > 9 ? '9+' : unreadNotifs}
                             </span>
                         )}
                         <AnimatePresence>
@@ -428,51 +509,41 @@ export function Sidebar() {
                                                 <Loader2 className="w-5 h-5 animate-spin" />
                                             </div>
                                         ) : notifications.length > 0 ? (
-                                            notifications.map((n: any, i) => (
+                                            notifications.map((n, i) => (
                                                 <div
                                                     key={n.id || i}
                                                     className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors group"
                                                     onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
                                                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                                    onClick={() => handleNotificationClick(n)}
                                                 >
-                                                    {n.type === 'follow' ? (
-                                                        <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden relative"
-                                                            style={{ background: 'hsl(var(--primary) / 0.15)' }}>
-                                                            {n.user?.avatarUrl
-                                                                ? <img src={n.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                                                                : <User className="w-5 h-5" style={{ color: PRIMARY }} />
-                                                            }
-                                                        </div>
-                                                    ) : (
-                                                        <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center"
-                                                            style={{ background: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
-                                                            <TrendingUp className="w-4 h-4 text-emerald-500" />
-                                                        </div>
-                                                    )}
-                                                    <div className="flex-1 text-[13px] leading-snug break-words">
-                                                        <span dangerouslySetInnerHTML={{ __html: n.title }}></span>
-                                                        <span className="text-[10px] ml-1.5 font-bold" style={{ color: 'hsl(var(--primary) / 0.7)' }}>{n.time}</span>
+                                                    <div
+                                                        className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center"
+                                                        style={{
+                                                            background: n.type === 'follow' ? 'hsl(var(--primary) / 0.15)' : 'hsl(var(--secondary))',
+                                                            border: n.type === 'follow' ? 'none' : '1px solid hsl(var(--border))',
+                                                        }}
+                                                    >
+                                                        {n.type === 'follow'
+                                                            ? <User className="w-5 h-5" style={{ color: PRIMARY }} />
+                                                            : <TrendingUp className="w-4 h-4 text-emerald-500" />
+                                                        }
                                                     </div>
-                                                    {n.type === 'follow' && (
-                                                        <button
-                                                            onClick={() => navigate(`/${n.user?.username}`)}
-                                                            className="px-3 py-1.5 font-bold text-[10px] rounded-lg transition-all"
-                                                            style={{
-                                                                background: 'hsl(var(--primary) / 0.1)',
-                                                                color: PRIMARY,
-                                                            }}
-                                                            onMouseEnter={e => {
-                                                                e.currentTarget.style.background = PRIMARY;
-                                                                e.currentTarget.style.color = 'hsl(var(--primary-foreground))';
-                                                            }}
-                                                            onMouseLeave={e => {
-                                                                e.currentTarget.style.background = 'hsl(var(--primary) / 0.1)';
-                                                                e.currentTarget.style.color = PRIMARY;
-                                                            }}
-                                                        >
-                                                            Ver
-                                                        </button>
-                                                    )}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[13px] font-medium leading-snug break-words">{n.title}</p>
+                                                        {n.content && (
+                                                            <p
+                                                                className="mt-1 text-[11px] leading-snug break-words"
+                                                                style={{ color: 'hsl(var(--muted-foreground))' }}
+                                                            >
+                                                                {n.content}
+                                                            </p>
+                                                        )}
+                                                        <span className="text-[10px] mt-1 inline-block font-bold" style={{ color: 'hsl(var(--primary) / 0.7)' }}>
+                                                            {n.time}
+                                                        </span>
+                                                    </div>
+                                                    {n.link && <ChevronRight className="w-4 h-4 shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }} />}
                                                 </div>
                                             ))
                                         ) : (
@@ -480,7 +551,7 @@ export function Sidebar() {
                                                 <Bell className="w-8 h-8 mx-auto mb-3" style={{ color: 'hsl(var(--muted-foreground) / 0.3)' }} />
                                                 <p className="text-sm font-semibold">No tienes notificaciones</p>
                                                 <p className="text-xs mt-1 leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                    Aquí verás tus nuevos seguidores y actualizaciones de tu portafolio.
+                                                    Aqui veras seguidores, likes, comentarios y actividad relevante.
                                                 </p>
                                             </div>
                                         )}
@@ -527,7 +598,16 @@ export function Sidebar() {
                     >
                         <SectionLabel label={section.label} />
                         <div className="space-y-0.5">
-                            {section.links.map((link) => <NavLink key={link.path} {...link} />)}
+                            {section.links.map((link) => (
+                                <SidebarNavLink
+                                    key={link.path}
+                                    {...link}
+                                    active={isActive(link.path)}
+                                    hovered={hov === link.path}
+                                    onHoverStart={setHov}
+                                    onHoverEnd={() => setHov(null)}
+                                />
+                            ))}
                         </div>
                     </motion.div>
                 ))}

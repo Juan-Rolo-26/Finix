@@ -191,6 +191,66 @@ export class PortfolioService {
         return portfolios.map((portfolio) => this.toLegacyPortfolio(portfolio, quoteMap));
     }
 
+    private async canExposePortfoliosPublicly(userId: string) {
+        const owner = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                isProfilePublic: true,
+                showPortfolio: true,
+            },
+        });
+
+        return Boolean(owner?.isProfilePublic && owner?.showPortfolio);
+    }
+
+    private async getVisiblePublicPortfolioRecords(userId: string, includeTransactions = false) {
+        const canExpose = await this.canExposePortfoliosPublicly(userId);
+        if (!canExpose) {
+            return [];
+        }
+
+        const portfolios = await this.prisma.portfolio.findMany({
+            where: { userId },
+            include: {
+                holdings: { include: { asset: true } },
+                ...(includeTransactions
+                    ? {
+                        transactions: {
+                            include: { asset: true },
+                            orderBy: { date: 'desc' as const },
+                            take: 100,
+                        },
+                    }
+                    : {}),
+            },
+            orderBy: [
+                { esPrincipal: 'desc' },
+                { createdAt: 'desc' },
+            ],
+        });
+
+        if (portfolios.length === 0) {
+            return [];
+        }
+
+        const explicitlyPublic = portfolios.filter((portfolio) => portfolio.modoSocial);
+        if (explicitlyPublic.length > 0) {
+            return explicitlyPublic;
+        }
+
+        // Backward compatibility: if the user exposed the portfolio section but no
+        // portfolio has been marked social yet, surface the primary/first one.
+        return [portfolios[0]];
+    }
+
+    async getPublicPortfolios(userId: string) {
+        const portfolios = await this.getVisiblePublicPortfolioRecords(userId, true);
+        const holdings = portfolios.flatMap((portfolio) => portfolio.holdings ?? []);
+        const quoteMap = await this.getLiveQuoteMap(holdings);
+        return portfolios.map((portfolio) => this.toLegacyPortfolio(portfolio, quoteMap));
+    }
+
     async getPortfolioById(portfolioId: string, userId: string) {
         const portfolio = await this.prisma.portfolio.findFirst({
             where: { id: portfolioId, userId },
@@ -206,6 +266,29 @@ export class PortfolioService {
 
         const quoteMap = await this.getLiveQuoteMap(portfolio.holdings ?? []);
         return this.toLegacyPortfolio(portfolio, quoteMap);
+    }
+
+    private async getPublicPortfolioRecord(portfolioId: string, includeTransactions = false) {
+        const targetPortfolio = await this.prisma.portfolio.findUnique({
+            where: { id: portfolioId },
+            select: { userId: true },
+        });
+
+        if (!targetPortfolio) {
+            throw new NotFoundException('Portafolio publico no encontrado');
+        }
+
+        const visiblePortfolios = await this.getVisiblePublicPortfolioRecords(
+            targetPortfolio.userId,
+            includeTransactions,
+        );
+        const portfolio = visiblePortfolios.find((item) => item.id === portfolioId);
+
+        if (!portfolio) {
+            throw new NotFoundException('Portafolio publico no encontrado');
+        }
+
+        return portfolio;
     }
 
     async updatePortfolio(portfolioId: string, userId: string, dto: UpdatePortfolioDto) {
@@ -250,6 +333,7 @@ export class PortfolioService {
         const quantity = Number(dto.quantity);
         const price = Number(dto.price || 0);
         const fee = Number(dto.fee || 0);
+        const grossAmount = quantity * price;
 
         if (!Number.isFinite(quantity) || quantity <= 0) {
             throw new BadRequestException('La cantidad debe ser mayor a 0');
@@ -257,6 +341,10 @@ export class PortfolioService {
 
         if ((dto.type === 'BUY' || dto.type === 'SELL') && (!Number.isFinite(price) || price <= 0)) {
             throw new BadRequestException('El precio debe ser mayor a 0 para compras/ventas');
+        }
+
+        if (!Number.isFinite(fee) || fee < 0) {
+            throw new BadRequestException('La comisión no puede ser negativa');
         }
 
         const cleanedTicker = (dto.assetTicker || '').trim();
@@ -305,10 +393,9 @@ export class PortfolioService {
         const date = dto.date ? new Date(dto.date) : new Date();
 
         let total = 0;
-        if (dto.type === 'BUY') {
-            total = (quantity * price) + fee;
-        } else if (dto.type === 'SELL') {
-            total = (quantity * price) - fee;
+        if (dto.type === 'BUY' || dto.type === 'SELL') {
+            // El total representa el monto nocional del activo; la comisión se guarda aparte.
+            total = grossAmount;
         } else {
             total = Math.abs(quantity);
         }
@@ -386,8 +473,8 @@ export class PortfolioService {
             });
 
             let cashChange = 0;
-            if (dto.type === 'BUY') cashChange = -total;
-            if (dto.type === 'SELL') cashChange = total;
+            if (dto.type === 'BUY') cashChange = -(grossAmount + fee);
+            if (dto.type === 'SELL') cashChange = grossAmount - fee;
             if (dto.type === 'DIVIDEND') cashChange = total;
             if (dto.type === 'DEPOSIT') cashChange = total;
             if (dto.type === 'WITHDRAW') cashChange = -total;
@@ -466,18 +553,9 @@ export class PortfolioService {
         };
     }
 
-    async getPortfolioMetrics(portfolioId: string, userId: string) {
-        const portfolio = await this.prisma.portfolio.findFirst({
-            where: { id: portfolioId, userId },
-            include: {
-                holdings: { include: { asset: true } },
-            },
-        });
-
-        if (!portfolio) {
-            throw new NotFoundException('Portafolio no encontrado');
-        }
-
+    private async buildPortfolioMetrics(portfolio: {
+        holdings: Array<{ quantity: any; averageCost: any; asset?: { ticker?: string; type?: string } | null }>;
+    }) {
         const quoteMap = await this.getLiveQuoteMap(portfolio.holdings ?? []);
         let capitalTotal = 0;
         let valorActual = 0;
@@ -512,6 +590,26 @@ export class PortfolioService {
             diversificacionPorActivo,
             cantidadActivos: portfolio.holdings.length,
         };
+    }
+
+    async getPortfolioMetrics(portfolioId: string, userId: string) {
+        const portfolio = await this.prisma.portfolio.findFirst({
+            where: { id: portfolioId, userId },
+            include: {
+                holdings: { include: { asset: true } },
+            },
+        });
+
+        if (!portfolio) {
+            throw new NotFoundException('Portafolio no encontrado');
+        }
+
+        return this.buildPortfolioMetrics(portfolio);
+    }
+
+    async getPublicPortfolioMetrics(portfolioId: string) {
+        const portfolio = await this.getPublicPortfolioRecord(portfolioId);
+        return this.buildPortfolioMetrics(portfolio);
     }
 
     async updateAsset(assetId: string, userId: string, dto: UpdateAssetDto) {
@@ -558,6 +656,11 @@ export class PortfolioService {
         });
 
         return transactions.map((transaction) => this.toLegacyMovement(transaction));
+    }
+
+    async getPublicPortfolioMovements(portfolioId: string) {
+        const portfolio = await this.getPublicPortfolioRecord(portfolioId, true);
+        return (portfolio.transactions ?? []).map((transaction) => this.toLegacyMovement(transaction));
     }
 
     // ==================== WATCHLISTS ====================

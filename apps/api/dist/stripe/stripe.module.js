@@ -8,7 +8,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StripeModule = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_service_1 = require("../prisma.service");
 const stripe_controller_1 = require("./stripe.controller");
 const stripe_service_1 = require("./stripe.service");
 let StripeModule = class StripeModule {
@@ -17,7 +16,7 @@ exports.StripeModule = StripeModule;
 exports.StripeModule = StripeModule = __decorate([
     (0, common_1.Module)({
         controllers: [stripe_controller_1.StripeController],
-        providers: [stripe_service_1.StripeService, prisma_service_1.PrismaService],
+        providers: [stripe_service_1.StripeService],
         exports: [stripe_service_1.StripeService],
     })
 ], StripeModule);

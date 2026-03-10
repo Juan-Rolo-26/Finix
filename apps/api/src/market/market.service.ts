@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma.service';
 
 interface FinvizBaseNode {
     name: string;
@@ -51,13 +52,91 @@ interface FinvizSectorNode {
     children: FinvizTickerNode[];
 }
 
+interface MarketNewsFeed {
+    url: string;
+    bucket: 'argentina' | 'global';
+}
+
+type DashboardValueFormat = 'currency' | 'number' | 'percent';
+
+interface MarketDashboardAssetDefinition {
+    id: string;
+    symbol: string;
+    label: string;
+    description: string;
+    format: DashboardValueFormat;
+    currency?: 'ARS' | 'USD';
+}
+
+export interface MarketDashboardAsset extends MarketDashboardAssetDefinition {
+    price: number | null;
+    change: number | null;
+    updatedAt: string;
+    unavailable: boolean;
+}
+
+export interface MarketDollarRate {
+    id: string;
+    label: string;
+    buy: number;
+    sell: number;
+    spreadPct: number;
+    updatedAt: string;
+}
+
+export interface MarketCommunityTrend {
+    symbol: string;
+    label: string;
+    mentions: number;
+    engagement: number;
+    price: number | null;
+    change: number | null;
+    updatedAt: string;
+}
+
+export interface MarketDashboardPayload {
+    updatedAt: string;
+    pulse: {
+        label: string;
+        tone: 'positive' | 'neutral' | 'negative';
+        summary: string;
+        advancing: number;
+        declining: number;
+        unchanged: number;
+    };
+    currencyGap: {
+        label: string;
+        gapPct: number;
+        gapValue: number;
+        officialSell: number;
+        blueSell: number;
+    } | null;
+    dollars: MarketDollarRate[];
+    sections: {
+        argentina: MarketDashboardAsset[];
+        global: MarketDashboardAsset[];
+        crypto: MarketDashboardAsset[];
+        commodities: MarketDashboardAsset[];
+        indicators: MarketDashboardAsset[];
+    };
+    leaders: {
+        gainers: MarketDashboardAsset[];
+        losers: MarketDashboardAsset[];
+    };
+    community: MarketCommunityTrend[];
+}
+
 @Injectable()
 export class MarketService {
     private finvizBaseCache: { data: FinvizBaseNode; fetchedAt: number } | null = null;
     private finvizHeatmapCache = new Map<string, { data: unknown; fetchedAt: number }>();
+    private marketNewsCache: { data: NewsItem[]; fetchedAt: number } | null = null;
     private readonly finvizBaseTtlMs = 6 * 60 * 60 * 1000;
     private readonly finvizHeatmapTtlMs = 60 * 1000;
+    private readonly marketNewsTtlMs = 5 * 60 * 1000;
     private readonly finvizDefaultBaseScript = '/assets/dist-legacy/map_base_sec.v1.6b264ef1.js';
+
+    constructor(private prisma: PrismaService) { }
 
     private stripHtml(value: string) {
         return value.replace(/\u003c[^\u003e]*\u003e/g, '').trim();
@@ -70,6 +149,166 @@ export class MarketService {
         { symbol: 'TSLA', price: 210, change: 3.1 },
         { symbol: 'SPY', price: 490, change: 0.8 },
     ];
+
+    private readonly marketDashboardCatalog = {
+        argentina: [
+            {
+                id: 'merval',
+                symbol: 'BCBA:IMV',
+                label: 'S&P Merval',
+                description: 'Indice lider de la bolsa argentina',
+                format: 'number',
+            },
+            {
+                id: 'arg-general',
+                symbol: 'BCBA:IAB',
+                label: 'Argentina General',
+                description: 'Indice amplio del mercado local',
+                format: 'number',
+            },
+            {
+                id: 'arg-energy',
+                symbol: 'BCBA:SPBYUEAP',
+                label: 'BYMA Utilities & Energy',
+                description: 'Utilities y energia en Argentina',
+                format: 'number',
+            },
+            {
+                id: 'arg-financials',
+                symbol: 'BCBA:SPBYMAIG40',
+                label: 'BYMA Financials',
+                description: 'Sector financiero argentino',
+                format: 'number',
+            },
+        ],
+        global: [
+            {
+                id: 'sp500',
+                symbol: 'AMEX:SPY',
+                label: 'S&P 500',
+                description: 'Proxy del mercado accionario de EE. UU.',
+                format: 'currency',
+                currency: 'USD',
+            },
+            {
+                id: 'nasdaq100',
+                symbol: 'NASDAQ:QQQ',
+                label: 'Nasdaq 100',
+                description: 'Tecnologia y crecimiento global',
+                format: 'currency',
+                currency: 'USD',
+            },
+            {
+                id: 'nikkei225',
+                symbol: 'TVC:NI225',
+                label: 'Nikkei 225',
+                description: 'Bolsa de Japon',
+                format: 'number',
+            },
+            {
+                id: 'hang-seng',
+                symbol: 'TVC:HSI',
+                label: 'Hang Seng',
+                description: 'Mercado de Hong Kong',
+                format: 'number',
+            },
+        ],
+        crypto: [
+            {
+                id: 'btc',
+                symbol: 'CRYPTO:BTCUSD',
+                label: 'Bitcoin',
+                description: 'Referencia principal del mercado cripto',
+                format: 'currency',
+                currency: 'USD',
+            },
+            {
+                id: 'eth',
+                symbol: 'CRYPTO:ETHUSD',
+                label: 'Ethereum',
+                description: 'Infraestructura y smart contracts',
+                format: 'currency',
+                currency: 'USD',
+            },
+            {
+                id: 'sol',
+                symbol: 'BINANCE:SOLUSDT',
+                label: 'Solana',
+                description: 'Actividad y velocidad de red',
+                format: 'currency',
+                currency: 'USD',
+            },
+            {
+                id: 'xrp',
+                symbol: 'BINANCE:XRPUSDT',
+                label: 'XRP',
+                description: 'Pagos y liquidez',
+                format: 'currency',
+                currency: 'USD',
+            },
+        ],
+        commodities: [
+            {
+                id: 'gold',
+                symbol: 'OANDA:XAUUSD',
+                label: 'Oro',
+                description: 'Activo refugio global',
+                format: 'currency',
+                currency: 'USD',
+            },
+            {
+                id: 'soybeans',
+                symbol: 'CBOT:ZS1!',
+                label: 'Soja',
+                description: 'Clave para la economia argentina',
+                format: 'number',
+            },
+            {
+                id: 'wheat',
+                symbol: 'CBOT:ZW1!',
+                label: 'Trigo',
+                description: 'Agricolas y exportaciones',
+                format: 'number',
+            },
+            {
+                id: 'natgas',
+                symbol: 'NYMEX:NG1!',
+                label: 'Gas natural',
+                description: 'Energia y costos globales',
+                format: 'number',
+            },
+        ],
+        indicators: [
+            {
+                id: 'bcra-rate',
+                symbol: 'ECONOMICS:ARINTR',
+                label: 'Tasa BCRA',
+                description: 'Tasa de referencia en Argentina',
+                format: 'percent',
+            },
+            {
+                id: 'us10y',
+                symbol: 'TVC:US10Y',
+                label: 'Bono 10Y EE. UU.',
+                description: 'Rendimiento del treasury a 10 anos',
+                format: 'percent',
+            },
+            {
+                id: 'dxy',
+                symbol: 'TVC:DXY',
+                label: 'Indice Dolar',
+                description: 'Fortaleza global del USD',
+                format: 'number',
+            },
+            {
+                id: 'vix',
+                symbol: 'TVC:VIX',
+                label: 'VIX',
+                description: 'Volatilidad implicita del mercado',
+                format: 'number',
+            },
+        ],
+    } satisfies Record<string, MarketDashboardAssetDefinition[]>;
 
     // Expanded catalog with more assets
     private symbolCatalog = [
@@ -126,6 +365,329 @@ export class MarketService {
         { symbol: 'NYSE:XOM', name: 'Exxon Mobil Corp', type: 'stock', exchange: 'NYSE' },
         { symbol: 'NYSE:CVX', name: 'Chevron Corporation', type: 'stock', exchange: 'NYSE' },
     ];
+
+    private toShortSymbol(symbol: string) {
+        const clean = (symbol || '').trim().toUpperCase();
+        if (!clean) return '';
+        return clean.includes(':') ? clean.split(':').pop() || clean : clean;
+    }
+
+    private getDashboardDefinitions() {
+        return [
+            ...this.marketDashboardCatalog.argentina,
+            ...this.marketDashboardCatalog.global,
+            ...this.marketDashboardCatalog.crypto,
+            ...this.marketDashboardCatalog.commodities,
+            ...this.marketDashboardCatalog.indicators,
+        ];
+    }
+
+    private buildDashboardAsset(definition: MarketDashboardAssetDefinition, quote?: MarketQuote): MarketDashboardAsset {
+        return {
+            ...definition,
+            price: quote?.price ?? null,
+            change: quote?.change ?? null,
+            updatedAt: quote?.updatedAt || new Date().toISOString(),
+            unavailable: quote?.unavailable ?? true,
+        };
+    }
+
+    private buildDashboardSections(quotes: MarketQuote[]) {
+        const quotesByInput = new Map(quotes.map((quote) => [this.normalizeQuoteInputSymbol(quote.inputSymbol), quote]));
+        const mapSection = (items: MarketDashboardAssetDefinition[]) =>
+            items.map((definition) => this.buildDashboardAsset(
+                definition,
+                quotesByInput.get(this.normalizeQuoteInputSymbol(definition.symbol))
+            ));
+
+        return {
+            argentina: mapSection(this.marketDashboardCatalog.argentina),
+            global: mapSection(this.marketDashboardCatalog.global),
+            crypto: mapSection(this.marketDashboardCatalog.crypto),
+            commodities: mapSection(this.marketDashboardCatalog.commodities),
+            indicators: mapSection(this.marketDashboardCatalog.indicators),
+        };
+    }
+
+    private buildMarketPulse(sections: MarketDashboardPayload['sections']): MarketDashboardPayload['pulse'] {
+        const tradableItems = [
+            ...sections.argentina,
+            ...sections.global,
+            ...sections.crypto,
+            ...sections.commodities,
+        ].filter((item) => item.change !== null);
+
+        const advancing = tradableItems.filter((item) => (item.change ?? 0) > 0).length;
+        const declining = tradableItems.filter((item) => (item.change ?? 0) < 0).length;
+        const unchanged = Math.max(0, tradableItems.length - advancing - declining);
+        const vix = sections.indicators.find((item) => item.id === 'vix')?.price ?? null;
+        const breadth = tradableItems.length > 0 ? (advancing - declining) / tradableItems.length : 0;
+
+        let tone: 'positive' | 'neutral' | 'negative' = 'neutral';
+        let label = 'Sesion mixta';
+
+        if (vix !== null && vix >= 28) {
+            tone = 'negative';
+            label = 'Mercado defensivo';
+        } else if (breadth >= 0.25) {
+            tone = 'positive';
+            label = 'Sesgo comprador';
+        } else if (breadth <= -0.25) {
+            tone = 'negative';
+            label = 'Sesgo vendedor';
+        }
+
+        return {
+            label,
+            tone,
+            summary: tradableItems.length > 0
+                ? `${advancing} de ${tradableItems.length} referencias seguidas operan en verde.`
+                : 'Sin suficientes referencias para medir el pulso del mercado.',
+            advancing,
+            declining,
+            unchanged,
+        };
+    }
+
+    private buildDashboardLeaders(sections: MarketDashboardPayload['sections']) {
+        const tradableItems = [
+            ...sections.argentina,
+            ...sections.global,
+            ...sections.crypto,
+            ...sections.commodities,
+        ].filter((item) => item.change !== null);
+
+        return {
+            gainers: [...tradableItems].sort((a, b) => (b.change ?? -Infinity) - (a.change ?? -Infinity)).slice(0, 4),
+            losers: [...tradableItems].sort((a, b) => (a.change ?? Infinity) - (b.change ?? Infinity)).slice(0, 4),
+        };
+    }
+
+    private buildCurrencyGap(dollars: MarketDollarRate[]): MarketDashboardPayload['currencyGap'] {
+        const official = dollars.find((rate) => rate.id === 'oficial');
+        const blue = dollars.find((rate) => rate.id === 'blue');
+
+        if (!official || !blue || official.sell <= 0) {
+            return null;
+        }
+
+        const gapValue = blue.sell - official.sell;
+        return {
+            label: 'Brecha blue vs oficial',
+            gapPct: (gapValue / official.sell) * 100,
+            gapValue,
+            officialSell: official.sell,
+            blueSell: blue.sell,
+        };
+    }
+
+    private async getDollarRates(): Promise<MarketDollarRate[]> {
+        const fallbackUpdatedAt = new Date().toISOString();
+        const fallback = [
+            { id: 'oficial', label: 'Oficial', buy: 1385, sell: 1435, spreadPct: 3.61, updatedAt: fallbackUpdatedAt },
+            { id: 'blue', label: 'Blue', buy: 1395, sell: 1415, spreadPct: 1.43, updatedAt: fallbackUpdatedAt },
+            { id: 'mep', label: 'MEP', buy: 1435.5, sell: 1439.5, spreadPct: 0.28, updatedAt: fallbackUpdatedAt },
+            { id: 'ccl', label: 'CCL', buy: 1475.7, sell: 1478.7, spreadPct: 0.20, updatedAt: fallbackUpdatedAt },
+        ];
+
+        try {
+            const response = await fetch('https://dolarapi.com/v1/dolares', {
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                },
+                signal: AbortSignal.timeout(10000),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Dollar API failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (!Array.isArray(data)) {
+                throw new Error('Dollar API returned unexpected payload');
+            }
+
+            const mapRate = (house: string, label: string): MarketDollarRate | null => {
+                const item = data.find((entry: any) => String(entry?.casa || '').toLowerCase() === house);
+                if (!item) return null;
+
+                const buy = Number(item.compra ?? 0);
+                const sell = Number(item.venta ?? 0);
+                return {
+                    id: house === 'bolsa' ? 'mep' : house === 'contadoconliqui' ? 'ccl' : house,
+                    label,
+                    buy,
+                    sell,
+                    spreadPct: buy > 0 ? ((sell - buy) / buy) * 100 : 0,
+                    updatedAt: String(item.fechaActualizacion || fallbackUpdatedAt),
+                };
+            };
+
+            const rates = [
+                mapRate('oficial', 'Oficial'),
+                mapRate('blue', 'Blue'),
+                mapRate('bolsa', 'MEP'),
+                mapRate('contadoconliqui', 'CCL'),
+            ].filter((item): item is MarketDollarRate => item !== null);
+
+            return rates.length > 0 ? rates : fallback;
+        } catch (error) {
+            console.error('[MarketService] Dollar rates failed:', error);
+            return fallback;
+        }
+    }
+
+    private resolveAssetLabel(symbol: string) {
+        const normalized = this.normalizeQuoteInputSymbol(symbol);
+        const short = this.toShortSymbol(normalized);
+        const definition = this.getDashboardDefinitions().find((item) =>
+            this.normalizeQuoteInputSymbol(item.symbol) === normalized || this.toShortSymbol(item.symbol) === short
+        );
+
+        if (definition) {
+            return definition.label;
+        }
+
+        const catalogItem = this.symbolCatalog.find((item) =>
+            this.normalizeQuoteInputSymbol(item.symbol) === normalized || this.toShortSymbol(item.symbol) === short
+        );
+
+        return catalogItem?.name || short || normalized;
+    }
+
+    private extractCommunitySymbols(content: string) {
+        const matches = content.match(/\$([A-Z]{2,10})\b/gi) || [];
+        return matches
+            .map((match) => match.replace('$', '').trim().toUpperCase())
+            .filter(Boolean);
+    }
+
+    private normalizeCommunitySymbol(symbol: string) {
+        return this.normalizeQuoteInputSymbol(symbol.replace(/\s+/g, ''));
+    }
+
+    private async getCommunityTrends(): Promise<MarketCommunityTrend[]> {
+        try {
+            const recentPosts = await this.prisma.post.findMany({
+                where: {
+                    parentId: null,
+                    visibility: 'VISIBLE',
+                    deletedAt: null,
+                    createdAt: {
+                        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 250,
+                select: {
+                    assetSymbol: true,
+                    tickers: true,
+                    content: true,
+                    _count: {
+                        select: {
+                            likes: true,
+                            reposts: true,
+                            quotes: true,
+                            replies: true,
+                        },
+                    },
+                },
+            });
+
+            const allowedShortSymbols = new Set(
+                [
+                    ...this.symbolCatalog.map((item) => this.toShortSymbol(item.symbol)),
+                    ...this.getDashboardDefinitions().map((item) => this.toShortSymbol(item.symbol)),
+                ].filter(Boolean)
+            );
+            const aggregated = new Map<string, { mentions: number; engagement: number }>();
+
+            for (const post of recentPosts) {
+                const engagement = (post._count?.likes ?? 0)
+                    + (post._count?.reposts ?? 0)
+                    + (post._count?.quotes ?? 0)
+                    + (post._count?.replies ?? 0);
+                const mentions = new Set<string>();
+
+                if (post.assetSymbol) {
+                    mentions.add(this.normalizeCommunitySymbol(post.assetSymbol));
+                }
+
+                if (post.tickers) {
+                    post.tickers
+                        .split(',')
+                        .map((entry) => this.normalizeCommunitySymbol(entry))
+                        .filter(Boolean)
+                        .forEach((entry) => mentions.add(entry));
+                }
+
+                this.extractCommunitySymbols(post.content || '')
+                    .filter((entry) => allowedShortSymbols.has(entry))
+                    .forEach((entry) => mentions.add(entry));
+
+                for (const symbol of mentions) {
+                    const current = aggregated.get(symbol) || { mentions: 0, engagement: 0 };
+                    current.mentions += 1;
+                    current.engagement += engagement;
+                    aggregated.set(symbol, current);
+                }
+            }
+
+            const ranked = [...aggregated.entries()]
+                .sort((a, b) => {
+                    if (b[1].mentions !== a[1].mentions) return b[1].mentions - a[1].mentions;
+                    return b[1].engagement - a[1].engagement;
+                })
+                .slice(0, 4);
+
+            if (ranked.length === 0) {
+                return [];
+            }
+
+            const quotes = await this.getQuotes(ranked.map(([symbol]) => symbol));
+            const quoteMap = new Map(quotes.map((quote) => [this.normalizeQuoteInputSymbol(quote.inputSymbol), quote]));
+
+            return ranked.map(([symbol, stats]) => {
+                const quote = quoteMap.get(this.normalizeQuoteInputSymbol(symbol));
+                return {
+                    symbol,
+                    label: this.resolveAssetLabel(symbol),
+                    mentions: stats.mentions,
+                    engagement: stats.engagement,
+                    price: quote?.price ?? null,
+                    change: quote?.change ?? null,
+                    updatedAt: quote?.updatedAt || new Date().toISOString(),
+                };
+            });
+        } catch (error) {
+            console.error('[MarketService] Community trends failed:', error);
+            return [];
+        }
+    }
+
+    async getDashboard(): Promise<MarketDashboardPayload> {
+        const definitions = this.getDashboardDefinitions();
+        const [quotes, dollars, community] = await Promise.all([
+            this.getQuotes(definitions.map((item) => item.symbol)),
+            this.getDollarRates(),
+            this.getCommunityTrends(),
+        ]);
+
+        const sections = this.buildDashboardSections(quotes);
+        const leaders = this.buildDashboardLeaders(sections);
+        const pulse = this.buildMarketPulse(sections);
+
+        return {
+            updatedAt: new Date().toISOString(),
+            pulse,
+            currencyGap: this.buildCurrencyGap(dollars),
+            dollars,
+            sections,
+            leaders,
+            community,
+        };
+    }
 
     async getTickers() {
         const defaultTickers = ['NASDAQ:TSLA', 'CRYPTO:BTCUSD', 'AMEX:SPY', 'NASDAQ:NVDA', 'NASDAQ:AAPL'];
@@ -708,7 +1270,64 @@ export class MarketService {
         };
     }
 
-    private parseRSS(xml: string): NewsItem[] {
+    private decodeHtmlEntities(value: string) {
+        return value
+            .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/&amp;/gi, '&')
+            .replace(/&quot;/gi, '"')
+            .replace(/&#39;/gi, "'")
+            .replace(/&apos;/gi, "'")
+            .replace(/&lt;/gi, '<')
+            .replace(/&gt;/gi, '>')
+            .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+            .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)));
+    }
+
+    private stripTags(value: string) {
+        return this.decodeHtmlEntities(value)
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    private escapeRegExp(value: string) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    private buildGoogleNewsSearchUrl(query: string) {
+        const params = new URLSearchParams({
+            q: query,
+            hl: 'es-419',
+            gl: 'AR',
+            ceid: 'AR:es-419',
+        });
+
+        return `https://news.google.com/rss/search?${params.toString()}`;
+    }
+
+    private buildMarketNewsFeeds(): MarketNewsFeed[] {
+        return [
+            {
+                bucket: 'argentina',
+                url: this.buildGoogleNewsSearchUrl('economia argentina mercados inversiones bolsa buenos aires dolar riesgo pais'),
+            },
+            {
+                bucket: 'argentina',
+                url: this.buildGoogleNewsSearchUrl('acciones argentinas bonos bcra inflacion empresas argentina'),
+            },
+            {
+                bucket: 'global',
+                url: this.buildGoogleNewsSearchUrl('wall street reserva federal petroleo bolsas economia internacional'),
+            },
+            {
+                bucket: 'global',
+                url: this.buildGoogleNewsSearchUrl('mercados internacionales fed china europa petroleo'),
+            },
+        ];
+    }
+
+    private parseRSS(xml: string, fallbackSource = 'Google Noticias'): NewsItem[] {
         const items: NewsItem[] = [];
         const itemRegex = /<item>([\s\S]*?)<\/item>/g;
         let match;
@@ -717,200 +1336,199 @@ export class MarketService {
             const itemContent = match[1];
 
             const getTag = (tag: string) => {
-                const regex = new RegExp(`<${tag}.*?>([\\s\\S]*?)<\\/${tag}>`);
+                const regex = new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, 'i');
                 const complexMatch = itemContent.match(regex);
-                if (complexMatch) return complexMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim();
+                if (complexMatch) return complexMatch[1].trim();
                 return '';
             };
 
-            const title = getTag('title');
-            const link = getTag('link');
+            const rawTitle = getTag('title');
+            const link = this.stripTags(getTag('link'));
             const pubDate = getTag('pubDate');
-            const description = getTag('description');
+            const rawDescription = getTag('description');
+            const source = this.stripTags(getTag('source')) || fallbackSource;
 
-            // Try to extract image from media:content or description
+            const cleanTitle = this.stripTags(rawTitle);
+            const titleSuffix = source ? ` - ${source}` : '';
+            const title = source && cleanTitle.toLowerCase().endsWith(titleSuffix.toLowerCase())
+                ? cleanTitle.slice(0, -titleSuffix.length).trim()
+                : cleanTitle;
+
+            const cleanDescription = this.stripTags(rawDescription)
+                .replace(source ? new RegExp(`\\s*${this.escapeRegExp(source)}\\s*$`, 'i') : /$^/, '')
+                .trim();
+            const summary = cleanDescription && cleanDescription.toLowerCase() !== title.toLowerCase()
+                ? cleanDescription.slice(0, 220)
+                : '';
+
             let image = '';
             const mediaRegex = /<media:content[^>]*url="([^"]*)"/i;
             const mediaMatch = itemContent.match(mediaRegex);
             if (mediaMatch) {
                 image = mediaMatch[1];
             } else {
-                // Try extracting from description if it contains HTML image
+                const decodedDescription = this.decodeHtmlEntities(rawDescription);
                 const imgRegex = /<img[^>]+src="([^"]+)"/i;
-                const imgMatch = description.match(imgRegex);
+                const imgMatch = decodedDescription.match(imgRegex);
                 if (imgMatch) image = imgMatch[1];
             }
-
-            // Clean description (remove HTML tags for summary)
-            const cleanSummary = description.replace(/<[^>]+>/g, '').substring(0, 200) + (description.length > 200 ? '...' : '');
 
             if (title && link) {
                 items.push({
                     title,
                     link,
                     publishedAt: pubDate || new Date().toISOString(),
-                    source: 'Yahoo Finance',
-                    summary: cleanSummary,
-                    image: image || undefined
+                    source,
+                    summary,
+                    image: image || undefined,
                 });
             }
         }
         return items;
     }
 
-    async getNews(symbol?: string) {
+    private looksSpanish(item: NewsItem) {
+        const text = `${item.title} ${item.summary}`.toLowerCase();
+        if (/[áéíóúñ¿¡]/i.test(text)) {
+            return true;
+        }
+
+        const matches = text.match(/\b(el|la|los|las|de|del|por|para|con|sin|mercado|mercados|economia|economía|acciones|bonos|dolar|dólar|bolsa|tasas|inflacion|inflación|federal|petroleo|petróleo|riesgo|pais|país)\b/g);
+        return (matches?.length ?? 0) >= 2;
+    }
+
+    private dedupeNews(items: NewsItem[]) {
+        const seen = new Set<string>();
+
+        return items.filter((item) => {
+            const key = `${item.title.toLowerCase()}|${item.source.toLowerCase()}`;
+            if (seen.has(key)) {
+                return false;
+            }
+
+            seen.add(key);
+            return true;
+        });
+    }
+
+    private sortNewsByDate(items: NewsItem[]) {
+        return [...items].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    }
+
+    private async fetchNewsFeed(feed: MarketNewsFeed) {
+        const response = await fetch(feed.url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
+            signal: AbortSignal.timeout(10000),
+        });
+
+        if (!response.ok) {
+            throw new Error(`RSS fetch failed: ${response.status}`);
+        }
+
+        const xml = await response.text();
+        return this.parseRSS(xml).filter((item) => this.looksSpanish(item));
+    }
+
+    private getFallbackMarketNews() {
+        return [
+            {
+                title: 'Mercados: suben las acciones y los bonos argentinos tras una jornada de alivio',
+                link: '#',
+                publishedAt: new Date().toISOString(),
+                source: 'Infobae',
+                summary: 'Seguimiento de acciones, bonos, dólar y riesgo país con foco en la plaza local.',
+            },
+            {
+                title: 'El dólar y el riesgo país marcan el pulso financiero de la semana en Argentina',
+                link: '#',
+                publishedAt: new Date(Date.now() - 45 * 60000).toISOString(),
+                source: 'La Nación',
+                summary: 'Cobertura sobre tipo de cambio, deuda soberana y expectativa por las próximas medidas económicas.',
+            },
+            {
+                title: 'Empresas argentinas y BCRA, en el centro del radar de los inversores',
+                link: '#',
+                publishedAt: new Date(Date.now() - 90 * 60000).toISOString(),
+                source: 'Ámbito',
+                summary: 'El mercado sigue de cerca inflación, tasas y señales del Banco Central.',
+            },
+            {
+                title: 'Wall Street y la Reserva Federal condicionan el ánimo global de los mercados',
+                link: '#',
+                publishedAt: new Date(Date.now() - 135 * 60000).toISOString(),
+                source: 'France 24',
+                summary: 'La lectura internacional se concentra en tasas, bonos y expectativa por la política monetaria de EE. UU.',
+            },
+            {
+                title: 'El petróleo y las commodities vuelven a impactar en la dinámica financiera internacional',
+                link: '#',
+                publishedAt: new Date(Date.now() - 180 * 60000).toISOString(),
+                source: 'BBC',
+                summary: 'Energía y materias primas siguen siendo catalizadores clave para bolsas y monedas.',
+            },
+        ];
+    }
+
+    async getNews(_symbol?: string) {
+        if (this.marketNewsCache && (Date.now() - this.marketNewsCache.fetchedAt) < this.marketNewsTtlMs) {
+            return this.marketNewsCache.data;
+        }
+
         try {
-            const url = symbol
-                ? `https://finance.yahoo.com/rss/headline?s=${symbol}`
-                : 'https://finance.yahoo.com/news/rssindex';
+            const feeds = this.buildMarketNewsFeeds();
+            const settled = await Promise.allSettled(
+                feeds.map(async (feed) => ({
+                    bucket: feed.bucket,
+                    items: await this.fetchNewsFeed(feed),
+                }))
+            );
 
-            const response = await fetch(url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                }
-            });
+            const argentinaItems = this.sortNewsByDate(
+                this.dedupeNews(
+                    settled
+                        .filter((result): result is PromiseFulfilledResult<{ bucket: 'argentina' | 'global'; items: NewsItem[] }> => result.status === 'fulfilled' && result.value.bucket === 'argentina')
+                        .flatMap((result) => result.value.items)
+                )
+            );
+            const globalItems = this.sortNewsByDate(
+                this.dedupeNews(
+                    settled
+                        .filter((result): result is PromiseFulfilledResult<{ bucket: 'argentina' | 'global'; items: NewsItem[] }> => result.status === 'fulfilled' && result.value.bucket === 'global')
+                        .flatMap((result) => result.value.items)
+                )
+            );
 
-            if (!response.ok) throw new Error(`RSS fetch failed: ${response.status}`);
+            const prioritized = this.dedupeNews([
+                ...argentinaItems.slice(0, 7),
+                ...globalItems.slice(0, 3),
+            ]);
 
-            const xml = await response.text();
-            const news = this.parseRSS(xml);
+            const completed = prioritized.length >= 8
+                ? prioritized
+                : this.dedupeNews([
+                    ...prioritized,
+                    ...argentinaItems,
+                    ...globalItems,
+                ]).slice(0, 10);
 
-            // Sort by date desc
-            return news.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+            const news = this.sortNewsByDate(completed).slice(0, 10);
+
+            if (news.length === 0) {
+                const fallback = this.getFallbackMarketNews();
+                this.marketNewsCache = { data: fallback, fetchedAt: Date.now() };
+                return fallback;
+            }
+
+            this.marketNewsCache = { data: news, fetchedAt: Date.now() };
+            return news;
 
         } catch (error) {
             console.error('[MarketService] Failed to fetch news:', error);
-
-            // Expanded fallback mock news with various categories
-            const mockNews = [
-                // Companies
-                {
-                    title: symbol ? `${symbol} Reports Strong Earnings Beat Expectations` : 'Apple Unveils Revolutionary AI Features for iPhone',
-                    link: '#',
-                    publishedAt: new Date().toISOString(),
-                    source: 'Financial Times',
-                    summary: symbol ? `${symbol} exceeded analyst estimates with strong revenue growth and positive guidance for the next quarter.` : 'Apple announced groundbreaking AI integration across its product lineup, sending shares higher in after-hours trading.',
-                    image: 'https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=600&auto=format&fit=crop'
-                },
-                {
-                    title: 'Tesla Expands Production Capacity in New Gigafactory',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 1800000).toISOString(),
-                    source: 'Bloomberg',
-                    summary: 'Tesla announces plans to increase global production capacity with new manufacturing facilities in strategic locations.',
-                    image: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?q=80&w=600&auto=format&fit=crop'
-                },
-                {
-                    title: 'Microsoft y Google Intensifican Competencia en IA',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 3600000).toISOString(),
-                    source: 'Reuters',
-                    summary: 'Las gigantes tecnológicas anuncian nuevas inversiones millonarias en inteligencia artificial y servicios cloud.',
-                    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=600&auto=format&fit=crop'
-                },
-                // Crypto
-                {
-                    title: 'Bitcoin Alcanza Nuevo Máximo Histórico por Adopción Institucional',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 5400000).toISOString(),
-                    source: 'CoinDesk',
-                    summary: 'El Bitcoin supera los $70,000 impulsado por la creciente adopción de fondos institucionales y ETFs aprobados.',
-                    image: 'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?q=80&w=600&auto=format&fit=crop'
-                },
-                {
-                    title: 'Ethereum Completa Exitosa Actualización de Red',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 7200000).toISOString(),
-                    source: 'CoinTelegraph',
-                    summary: 'La actualización mejora significativamente la escalabilidad y reduce las tarifas de transacción en la red Ethereum.',
-                    image: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=600&auto=format&fit=crop'
-                },
-                // Economy
-                {
-                    title: 'Fed Mantiene Tasas de Interés Estables',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 9000000).toISOString(),
-                    source: 'Wall Street Journal',
-                    summary: 'La Reserva Federal mantiene las tasas sin cambios mientras evalúa datos económicos recientes y la inflación.',
-                    image: 'https://images.unsplash.com/photo-1518186285589-2f7649de83e0?q=80&w=600&auto=format&fit=crop'
-                },
-                {
-                    title: 'Informe de Empleos de EE.UU. Supera Expectativas',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 10800000).toISOString(),
-                    source: 'CNBC',
-                    summary: 'Los datos de empleo no agrícola muestran una economía resiliente con bajo desempleo y crecimiento salarial.',
-                    image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=600&auto=format&fit=crop'
-                },
-                // Argentina
-                {
-                    title: 'Banco Central de Argentina Interviene en Mercado Cambiario',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 12600000).toISOString(),
-                    source: 'Ámbito Financiero',
-                    summary: 'El BCRA implementa nuevas medidas para estabilizar el tipo de cambio y controlar la inflación.',
-                    image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=600&auto=format&fit=crop'
-                },
-                {
-                    title: 'YPF Anuncia Récord de Producción en Vaca Muerta',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 14400000).toISOString(),
-                    source: 'Cronista',
-                    summary: 'La petrolera estatal alcanza niveles históricos de extracción en la formación de shale más grande de Latinoamérica.',
-                    image: 'https://images.unsplash.com/photo-1545670723-196ed0954986?q=80&w=600&auto=format&fit=crop'
-                },
-                {
-                    title: 'Mercado Libre Expande Operaciones Fintech en Latinoamérica',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 16200000).toISOString(),
-                    source: 'iProfesional',
-                    summary: 'La compañía argentina anuncia nuevos servicios financieros digitales para competir con bancos tradicionales.',
-                    image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=600&auto=format&fit=crop'
-                },
-                // Markets
-                {
-                    title: 'S&P 500 Cierra en Máximos Históricos',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 18000000).toISOString(),
-                    source: 'MarketWatch',
-                    summary: 'Los principales índices de Wall Street alcanzan nuevos récords impulsados por sector tecnológico y financiero.',
-                    image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?q=80&w=600&auto=format&fit=crop'
-                },
-                {
-                    title: 'Commodities en Alza por Tensiones Geopolíticas',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 19800000).toISOString(),
-                    source: 'Bloomberg',
-                    summary: 'Oro y petróleo registran ganancias significativas ante incertidumbre en mercados globales.',
-                    image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?q=80&w=600&auto=format&fit=crop'
-                },
-                {
-                    title: 'Sector Inmobiliario Muestra Señales de Recuperación',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 21600000).toISOString(),
-                    source: 'Financial Times',
-                    summary: 'Los REITs y empresas de desarrollo inmobiliario recuperan terreno tras meses de ajustes por tasas altas.',
-                    image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=600&auto=format&fit=crop'
-                },
-                {
-                    title: 'Inversores Institucionales Aumentan Posiciones en Mercados Emergentes',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 23400000).toISOString(),
-                    source: 'Reuters',
-                    summary: 'Fondos de inversión globales ven oportunidades de crecimiento en economías en desarrollo.',
-                    image: 'https://images.unsplash.com/photo-1559526324-593bc073d938?q=80&w=600&auto=format&fit=crop'
-                },
-                {
-                    title: 'Fusiones y Adquisiciones Tecnológicas Alcanzan Récord',
-                    link: '#',
-                    publishedAt: new Date(Date.now() - 25200000).toISOString(),
-                    source: 'Wall Street Journal',
-                    summary: 'La actividad de M&A en el sector tech alcanza niveles no vistos desde 2021, señalando confianza del mercado.',
-                    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=600&auto=format&fit=crop'
-                }
-            ];
-
-            return mockNews;
+            const fallback = this.getFallbackMarketNews();
+            this.marketNewsCache = { data: fallback, fetchedAt: Date.now() };
+            return fallback;
         }
     }
 }

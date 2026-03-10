@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { apiFetch } from '@/lib/api';
+import { uploadProfileImage } from '@/lib/profileMedia';
 import { motion, AnimatePresence } from 'framer-motion';
+import PostCard from '@/components/posts/PostCard';
+import type { Post } from '@/pages/Explore';
 import {
     User, MapPin, Briefcase, Calendar, Award, TrendingUp,
     Linkedin, Twitter, Youtube, Instagram,
@@ -49,6 +52,7 @@ interface UserProfile {
     showPortfolio: boolean;
     showStats: boolean;
     acceptingFollowers: boolean;
+    isFollowedByMe?: boolean;
     _count?: { posts: number; following: number; followedBy: number };
     createdAt: string;
 }
@@ -238,36 +242,109 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
     const selected = portfolios.find(p => p.id === selectedId) ?? null;
 
     useEffect(() => {
+        let cancelled = false;
+
+        setLoading(true);
+        setPortfolios([]);
+        setSelectedId(null);
+        setMetrics(null);
+        setMovements([]);
+
         (async () => {
-            setLoading(true);
             try {
                 const endpoint = isOwnProfile ? '/portfolios' : `/portfolios/public/${profileUserId}`;
                 const res = await apiFetch(endpoint);
-                if (res.ok) {
-                    const data: PortfolioData[] = await res.json();
-                    const list = Array.isArray(data) ? data : [];
-                    const visible = isOwnProfile ? list : list.filter(p => p.modoSocial);
-                    setPortfolios(visible);
-                    if (visible.length > 0) setSelectedId(visible[0].id);
+                if (!res.ok) {
+                    if (!cancelled) {
+                        setPortfolios([]);
+                        setSelectedId(null);
+                    }
+                    return;
                 }
-            } catch { /* noop */ }
-            setLoading(false);
+
+                const data: PortfolioData[] = await res.json();
+                const list = Array.isArray(data) ? data : [];
+
+                if (cancelled) return;
+
+                setPortfolios(list);
+                setSelectedId((current) => {
+                    if (current && list.some((portfolio) => portfolio.id === current)) {
+                        return current;
+                    }
+                    return list[0]?.id ?? null;
+                });
+            } catch {
+                if (!cancelled) {
+                    setPortfolios([]);
+                    setSelectedId(null);
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
         })();
+
+        return () => {
+            cancelled = true;
+        };
     }, [isOwnProfile, profileUserId]);
 
     useEffect(() => {
-        if (!selectedId) return;
+        if (!selectedId) {
+            setMetrics(null);
+            setMovements([]);
+            return;
+        }
+
+        let cancelled = false;
+
         (async () => {
+            setMetrics(null);
+            setMovements([]);
             try {
+                const metricsEndpoint = isOwnProfile
+                    ? `/portfolios/${selectedId}/metrics`
+                    : `/portfolios/public/portfolio/${selectedId}/metrics`;
+                const movementsEndpoint = isOwnProfile
+                    ? `/portfolios/${selectedId}/movements`
+                    : `/portfolios/public/portfolio/${selectedId}/movements`;
+
                 const [mRes, mvRes] = await Promise.all([
-                    apiFetch(`/portfolios/${selectedId}/metrics`),
-                    apiFetch(`/portfolios/${selectedId}/movements`),
+                    apiFetch(metricsEndpoint),
+                    apiFetch(movementsEndpoint),
                 ]);
-                if (mRes.ok) setMetrics(await mRes.json());
-                if (mvRes.ok) setMovements(await mvRes.json().then(d => Array.isArray(d) ? d.slice(0, 6) : []));
-            } catch { /* noop */ }
+
+                if (mRes.ok) {
+                    const metricsData = await mRes.json();
+                    if (!cancelled) {
+                        setMetrics(metricsData);
+                    }
+                } else if (!cancelled) {
+                    setMetrics(null);
+                }
+
+                if (mvRes.ok) {
+                    const movementData = await mvRes.json();
+                    if (!cancelled) {
+                        setMovements(Array.isArray(movementData) ? movementData.slice(0, 6) : []);
+                    }
+                } else if (!cancelled) {
+                    setMovements([]);
+                }
+            } catch {
+                if (!cancelled) {
+                    setMetrics(null);
+                    setMovements([]);
+                }
+            }
         })();
-    }, [selectedId]);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isOwnProfile, selectedId]);
 
     const fmt = (n: number, cur = 'USD') =>
         new Intl.NumberFormat('es-AR', { style: 'currency', currency: cur, maximumFractionDigits: 2 }).format(n);
@@ -275,6 +352,48 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
     const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
 
     const PIE_COLORS = ['hsl(158 100% 45%)', '#3b82f6', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316'];
+    const riskLabels: Record<string, string> = {
+        bajo: 'Conservador',
+        medio: 'Moderado',
+        alto: 'Agresivo',
+    };
+    const hasTotalReturn = typeof totalReturn === 'number' && Number.isFinite(totalReturn);
+    const hasWinRate = typeof winRate === 'number' && Number.isFinite(winRate);
+    const hasRiskScore = typeof riskScore === 'number' && Number.isFinite(riskScore);
+    const statsCards = [
+        {
+            label: 'Retorno Total',
+            value: hasTotalReturn ? fmtPct(totalReturn) : metrics ? fmtPct(metrics.variacionPorcentual) : '—',
+            color: PRIMARY,
+            icon: TrendingUp,
+        },
+        hasWinRate
+            ? {
+                label: 'Win Rate',
+                value: `${winRate.toFixed(0)}%`,
+                color: '#3b82f6',
+                icon: Target,
+            }
+            : {
+                label: 'Ganancia Actual',
+                value: metrics ? fmt(metrics.gananciaTotal, selected?.monedaBase) : '—',
+                color: metrics && metrics.gananciaTotal < 0 ? 'hsl(0 90% 58%)' : '#3b82f6',
+                icon: metrics && metrics.gananciaTotal < 0 ? ArrowDownRight : DollarSign,
+            },
+        hasRiskScore
+            ? {
+                label: 'Risk Score',
+                value: riskScore.toFixed(1),
+                color: '#f59e0b',
+                icon: Activity,
+            }
+            : {
+                label: 'Riesgo',
+                value: selected?.nivelRiesgo ? (riskLabels[selected.nivelRiesgo.toLowerCase()] ?? selected.nivelRiesgo) : '—',
+                color: '#f59e0b',
+                icon: Activity,
+            },
+    ];
 
     // ── Not public ──
     if (!isOwnProfile && !showPortfolio) {
@@ -454,11 +573,7 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
                         {/* Stats row */}
                         {(showStats || isOwnProfile) && (
                             <div className="grid grid-cols-3 gap-2.5">
-                                {[
-                                    { label: 'Retorno Total', value: totalReturn ? `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(1)}%` : fmtPct(metrics?.variacionPorcentual ?? 0), color: PRIMARY, icon: TrendingUp },
-                                    { label: 'Win Rate', value: winRate ? `${winRate.toFixed(0)}%` : '—', color: '#3b82f6', icon: Target },
-                                    { label: 'Risk Score', value: riskScore ? riskScore.toFixed(1) : '—', color: '#f59e0b', icon: Activity },
-                                ].map(({ label, value, color, icon: Icon }) => (
+                                {statsCards.map(({ label, value, color, icon: Icon }) => (
                                     <div key={label} className="rounded-xl p-3 text-center" style={{ background: 'hsl(var(--secondary) / 0.5)', border: '1px solid hsl(var(--border))' }}>
                                         <Icon className="w-4 h-4 mx-auto mb-1.5" style={{ color }} />
                                         <div className="text-base font-black" style={{ color }}>{value}</div>
@@ -612,13 +727,20 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
 export default function Profile() {
     const { username } = useParams();
     const navigate = useNavigate();
-    const { user: currentUser } = useAuthStore();
+    const { user: currentUser, updateUser } = useAuthStore();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<Partial<UserProfile>>({});
-    const [activeTab, setActiveTab] = useState<'posts' | 'portfolio' | 'saved'>('portfolio');
+    const [uploadingImage, setUploadingImage] = useState<'avatar' | 'banner' | null>(null);
+    const [imageUploadError, setImageUploadError] = useState('');
+    const [activeTab, setActiveTab] = useState<'posts' | 'portfolio' | 'saved'>('posts');
     const [isFollowing, setIsFollowing] = useState(false);
+    const [isFollowSubmitting, setIsFollowSubmitting] = useState(false);
+    const [profilePosts, setProfilePosts] = useState<Post[]>([]);
+    const [savedPosts, setSavedPosts] = useState<Post[]>([]);
+    const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+    const [isLoadingSavedPosts, setIsLoadingSavedPosts] = useState(false);
 
     // Pinned assets state
     const [pinnedAssets, setPinnedAssets] = useState<PinnedAsset[]>([]);
@@ -632,7 +754,21 @@ export default function Profile() {
     const isOwnProfile = !!(currentUser?.username === username || (!username && currentUser));
 
     useEffect(() => { loadProfile(); }, [username]);
-    useEffect(() => { loadPinnedAssets(); }, []);
+    useEffect(() => {
+        if (isOwnProfile) {
+            void loadPinnedAssets();
+            return;
+        }
+
+        setPinnedAssets([]);
+        setAllPinnedTickers([]);
+    }, [isOwnProfile, profile?.id]);
+
+    useEffect(() => {
+        if (!isOwnProfile && activeTab === 'saved') {
+            setActiveTab('posts');
+        }
+    }, [isOwnProfile, activeTab]);
 
     /* ── Load profile ────────────────────────────── */
     const loadProfile = async () => {
@@ -645,16 +781,19 @@ export default function Profile() {
                 const data = await res.json();
                 setProfile(data);
                 setEditForm(data);
+                setIsFollowing(Boolean(data.isFollowedByMe));
             } else if (currentUser) {
                 const fallback = buildFallback(currentUser);
                 setProfile(fallback);
                 setEditForm(fallback);
+                setIsFollowing(false);
             }
         } catch {
             if (currentUser) {
                 const fallback = buildFallback(currentUser);
                 setProfile(fallback);
                 setEditForm(fallback);
+                setIsFollowing(false);
             }
         } finally {
             setIsLoading(false);
@@ -669,6 +808,62 @@ export default function Profile() {
         _count: { posts: 0, following: 0, followedBy: 0 },
         createdAt: new Date().toISOString(),
     });
+
+    const handleToggleFollow = async () => {
+        if (!profile || isOwnProfile || isFollowSubmitting) return;
+
+        const previousFollowing = isFollowing;
+        const previousFollowers = profile._count?.followedBy || 0;
+        const nextFollowing = !previousFollowing;
+
+        setIsFollowSubmitting(true);
+        setIsFollowing(nextFollowing);
+        setProfile((prev) => prev ? {
+            ...prev,
+            _count: {
+                posts: prev._count?.posts || 0,
+                following: prev._count?.following || 0,
+                followedBy: Math.max(previousFollowers + (nextFollowing ? 1 : -1), 0),
+            },
+            isFollowedByMe: nextFollowing,
+        } : prev);
+
+        try {
+            const res = await apiFetch(`/users/${profile.username}/follow`, {
+                method: 'PATCH',
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data?.message || 'No se pudo actualizar el seguimiento');
+            }
+
+            const data = await res.json();
+            setIsFollowing(Boolean(data.following));
+            setProfile((prev) => prev ? {
+                ...prev,
+                _count: {
+                    posts: prev._count?.posts || 0,
+                    following: prev._count?.following || 0,
+                    followedBy: typeof data.followersCount === 'number' ? data.followersCount : prev._count?.followedBy || 0,
+                },
+                isFollowedByMe: Boolean(data.following),
+            } : prev);
+        } catch {
+            setIsFollowing(previousFollowing);
+            setProfile((prev) => prev ? {
+                ...prev,
+                _count: {
+                    posts: prev._count?.posts || 0,
+                    following: prev._count?.following || 0,
+                    followedBy: previousFollowers,
+                },
+                isFollowedByMe: previousFollowing,
+            } : prev);
+        } finally {
+            setIsFollowSubmitting(false);
+        }
+    };
 
     /* ── Load pinned assets from watchlist "__pinned__" ── */
     const loadPinnedAssets = async () => {
@@ -786,6 +981,57 @@ export default function Profile() {
         await savePinnedTickers(newTickers);
     };
 
+    const loadProfilePosts = async () => {
+        const targetUsername = profile?.username || username || currentUser?.username;
+        if (!targetUsername) return;
+
+        setIsLoadingPosts(true);
+        try {
+            const res = await apiFetch(`/posts/user/${encodeURIComponent(targetUsername)}?limit=20`);
+            if (!res.ok) {
+                setProfilePosts([]);
+                return;
+            }
+
+            const data = await res.json();
+            setProfilePosts(Array.isArray(data?.posts) ? data.posts : []);
+        } catch {
+            setProfilePosts([]);
+        } finally {
+            setIsLoadingPosts(false);
+        }
+    };
+
+    const loadSavedPosts = async () => {
+        if (!isOwnProfile) return;
+
+        setIsLoadingSavedPosts(true);
+        try {
+            const res = await apiFetch('/posts/saved?limit=20');
+            if (!res.ok) {
+                setSavedPosts([]);
+                return;
+            }
+
+            const data = await res.json();
+            setSavedPosts(Array.isArray(data?.posts) ? data.posts : []);
+        } catch {
+            setSavedPosts([]);
+        } finally {
+            setIsLoadingSavedPosts(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!profile) return;
+
+        if (activeTab === 'posts') {
+            void loadProfilePosts();
+        } else if (activeTab === 'saved' && isOwnProfile) {
+            void loadSavedPosts();
+        }
+    }, [activeTab, profile?.username, isOwnProfile]);
+
     /* ── Save profile ────────────────────────────── */
     const handleSaveProfile = async () => {
         try {
@@ -804,8 +1050,28 @@ export default function Profile() {
         input.onchange = async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-                const fakeUrl = URL.createObjectURL(file);
-                setEditForm(prev => ({ ...prev, [type === 'avatar' ? 'avatarUrl' : 'bannerUrl']: fakeUrl }));
+                setUploadingImage(type);
+                setImageUploadError('');
+
+                try {
+                    const data = await uploadProfileImage(type, file);
+                    const nextUrl = type === 'avatar' ? data.avatarUrl : data.bannerUrl;
+
+                    if (!nextUrl) {
+                        throw new Error(`No se recibió la URL del ${type === 'avatar' ? 'avatar' : 'banner'}`);
+                    }
+
+                    setEditForm((prev) => ({ ...prev, [type === 'avatar' ? 'avatarUrl' : 'bannerUrl']: nextUrl }));
+                    setProfile((prev) => (prev ? { ...prev, [type === 'avatar' ? 'avatarUrl' : 'bannerUrl']: nextUrl } : prev));
+
+                    if (type === 'avatar') {
+                        updateUser({ avatarUrl: nextUrl });
+                    }
+                } catch (error: any) {
+                    setImageUploadError(error?.message || `No se pudo subir el ${type === 'avatar' ? 'avatar' : 'banner'}`);
+                } finally {
+                    setUploadingImage(null);
+                }
             }
         };
         input.click();
@@ -842,11 +1108,11 @@ export default function Profile() {
     const specializations = parseJsonArray(profile.specializations);
     const certifications = parseJsonArray(profile.certifications);
 
-    const tabs = [
+    const tabs: { id: 'posts' | 'portfolio' | 'saved'; label: string; count?: number; icon?: JSX.Element }[] = [
         { id: 'posts', label: 'Posts', count: profile._count?.posts },
         { id: 'portfolio', label: 'Portfolio', icon: <PieChart className="w-3.5 h-3.5" /> },
-        { id: 'saved', label: 'Guardados' },
-    ] as const;
+        ...(isOwnProfile ? [{ id: 'saved' as const, label: 'Guardados' }] : []),
+    ];
 
     return (
         <div className="flex-1 w-full pb-20 bg-background text-foreground">
@@ -876,11 +1142,12 @@ export default function Profile() {
                     {isOwnProfile && isEditing && (
                         <button
                             onClick={() => handleUploadImage('banner')}
+                            disabled={uploadingImage === 'banner'}
                             className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium"
                             style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', backdropFilter: 'blur(8px)' }}
                         >
-                            <Camera className="w-3.5 h-3.5" />
-                            Cambiar banner
+                            {uploadingImage === 'banner' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                            {uploadingImage === 'banner' ? 'Subiendo...' : 'Cambiar banner'}
                         </button>
                     )}
                 </div>
@@ -907,10 +1174,11 @@ export default function Profile() {
                         {isOwnProfile && isEditing && (
                             <button
                                 onClick={() => handleUploadImage('avatar')}
+                                disabled={uploadingImage === 'avatar'}
                                 className="absolute bottom-1 right-1 w-8 h-8 rounded-full flex items-center justify-center"
                                 style={{ background: PRIMARY, color: '#000' }}
                             >
-                                <Camera className="w-3.5 h-3.5" />
+                                {uploadingImage === 'avatar' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                             </button>
                         )}
                         {/* Verified badge */}
@@ -963,15 +1231,21 @@ export default function Profile() {
                                     <MessageSquare className="w-3.5 h-3.5" /> Mensaje
                                 </button>
                                 <button
-                                    onClick={() => setIsFollowing(!isFollowing)}
+                                    onClick={handleToggleFollow}
+                                    disabled={isFollowSubmitting}
                                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
                                     style={{
                                         background: isFollowing ? 'hsl(var(--secondary))' : PRIMARY,
                                         color: isFollowing ? 'hsl(var(--muted-foreground))' : '#000',
                                         border: isFollowing ? '1px solid hsl(var(--border))' : 'none',
+                                        opacity: isFollowSubmitting ? 0.75 : 1,
                                     }}
                                 >
-                                    {isFollowing ? <><Check className="w-3.5 h-3.5" /> Siguiendo</> : <><UserPlus className="w-3.5 h-3.5" /> Seguir</>}
+                                    {isFollowSubmitting
+                                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando</>
+                                        : isFollowing
+                                            ? <><Check className="w-3.5 h-3.5" /> Siguiendo</>
+                                            : <><UserPlus className="w-3.5 h-3.5" /> Seguir</>}
                                 </button>
                             </>
                         )}
@@ -980,6 +1254,12 @@ export default function Profile() {
 
                 {/* ── PROFILE INFO ──────────────────────────────── */}
                 <div className="px-6 mt-4">
+                    {imageUploadError && isEditing ? (
+                        <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                            {imageUploadError}
+                        </div>
+                    ) : null}
+
                     <div className="flex items-center gap-2 mb-1">
                         {isEditing ? (
                             <Input
@@ -1082,6 +1362,59 @@ export default function Profile() {
                             </div>
                         ))}
                     </div>
+
+                    {(profile.bioLong || profile.yearsExperience || specializations.length > 0 || certifications.length > 0) && (
+                        <div className="grid gap-4 mb-6 md:grid-cols-2">
+                            {profile.bioLong && (
+                                <div className="rounded-2xl p-5 md:col-span-2" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
+                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Sobre el perfil</p>
+                                    <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap">{profile.bioLong}</p>
+                                </div>
+                            )}
+
+                            {profile.yearsExperience !== undefined && profile.yearsExperience !== null && (
+                                <div className="rounded-2xl p-5" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
+                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Experiencia</p>
+                                    <p className="text-lg font-black text-foreground">{profile.yearsExperience} años</p>
+                                    <p className="text-xs mt-1 text-muted-foreground">Trayectoria declarada en mercados</p>
+                                </div>
+                            )}
+
+                            {specializations.length > 0 && (
+                                <div className="rounded-2xl p-5" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
+                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">Especializaciones</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {specializations.map((item) => (
+                                            <span
+                                                key={item}
+                                                className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                                                style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}
+                                            >
+                                                {item}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {certifications.length > 0 && (
+                                <div className="rounded-2xl p-5 md:col-span-2" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
+                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">Certificaciones</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {certifications.map((item) => (
+                                            <span
+                                                key={item}
+                                                className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                                                style={{ background: 'hsl(var(--secondary))', color: 'hsl(var(--foreground))', border: '1px solid hsl(var(--border))' }}
+                                            >
+                                                {item}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* ── ACTIVOS DESTACADOS ───────────────────── */}
                     <div className="mb-6">
@@ -1207,6 +1540,7 @@ export default function Profile() {
                                 className="space-y-5"
                             >
                                 <ProfilePortfolioSection
+                                    key={`${profile.id}-${isOwnProfile ? 'own' : 'public'}`}
                                     profileUserId={profile.id}
                                     isOwnProfile={isOwnProfile}
                                     showPortfolio={profile.showPortfolio}
@@ -1220,19 +1554,81 @@ export default function Profile() {
 
                         {activeTab === 'posts' && (
                             <motion.div key="posts" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                                <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                    <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                    <p className="text-muted-foreground text-sm">No hay publicaciones aún</p>
-                                </div>
+                                {isLoadingPosts ? (
+                                    <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
+                                        <Loader2 className="w-12 h-12 mx-auto mb-3 opacity-40 animate-spin" />
+                                        <p className="text-muted-foreground text-sm">Cargando publicaciones...</p>
+                                    </div>
+                                ) : profilePosts.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {profilePosts.map((post) => (
+                                            <PostCard
+                                                key={post.id}
+                                                post={post}
+                                                currentUserId={currentUser?.id}
+                                                onUpdated={(updatedPost) => {
+                                                    setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
+                                                    setSavedPosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
+                                                }}
+                                                onDeleted={(postId) => {
+                                                    setProfilePosts((prev) => prev.filter((item) => item.id !== postId));
+                                                    setSavedPosts((prev) => prev.filter((item) => item.id !== postId));
+                                                    setProfile((prev) => prev ? {
+                                                        ...prev,
+                                                        _count: prev._count ? {
+                                                            ...prev._count,
+                                                            posts: Math.max((prev._count.posts || 0) - 1, 0),
+                                                        } : prev._count,
+                                                    } : prev);
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
+                                        <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                        <p className="text-muted-foreground text-sm">No hay publicaciones aún</p>
+                                    </div>
+                                )}
                             </motion.div>
                         )}
 
                         {activeTab === 'saved' && (
                             <motion.div key="saved" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                                <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                    <Shield className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                    <p className="text-muted-foreground text-sm">No hay guardados</p>
-                                </div>
+                                {isLoadingSavedPosts ? (
+                                    <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
+                                        <Loader2 className="w-12 h-12 mx-auto mb-3 opacity-40 animate-spin" />
+                                        <p className="text-muted-foreground text-sm">Cargando guardados...</p>
+                                    </div>
+                                ) : savedPosts.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {savedPosts.map((post) => (
+                                            <PostCard
+                                                key={post.id}
+                                                post={post}
+                                                currentUserId={currentUser?.id}
+                                                onUpdated={(updatedPost) => {
+                                                    if (activeTab === 'saved' && !updatedPost.savedByMe) {
+                                                        setSavedPosts((prev) => prev.filter((item) => item.id !== updatedPost.id));
+                                                        setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
+                                                        return;
+                                                    }
+                                                    setSavedPosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
+                                                    setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
+                                                }}
+                                                onDeleted={(postId) => {
+                                                    setSavedPosts((prev) => prev.filter((item) => item.id !== postId));
+                                                    setProfilePosts((prev) => prev.filter((item) => item.id !== postId));
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
+                                        <Shield className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                        <p className="text-muted-foreground text-sm">No hay guardados</p>
+                                    </div>
+                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>

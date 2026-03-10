@@ -3,15 +3,16 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
   id           String    @id @default(uuid())
   email        String    @unique
   username     String    @unique
-  password     String
+  password     String?  // Managed by Finix for email/password auth; Supabase remains for OAuth
   role         String    @default("USER") // USER, CREATOR, ADMIN
   status       String    @default("ACTIVE") // ACTIVE, BANNED
   shadowbanned Boolean   @default(false)
@@ -22,8 +23,16 @@ model User {
   emailVerified            Boolean   @default(false)
   emailVerificationCode    String?
   emailVerificationExpires DateTime?
+  loginVerificationCode    String?
+  loginVerificationExpires DateTime?
   resetPasswordToken       String?
   resetPasswordExpires     DateTime?
+  adminTwoFactorEnabled    Boolean   @default(false)
+  adminTotpSecret          String?
+  adminTotpTempSecret      String?
+  adminTotpTempExpires     DateTime?
+  adminLockedUntil         DateTime?
+  adminFailedLoginAttempts Int       @default(0)
 
   // Perfil básico
   bio       String?
@@ -123,10 +132,18 @@ model User {
   conversations1 Conversation[]  @relation("ConvParticipant1")
   conversations2 Conversation[]  @relation("ConvParticipant2")
   sentMessages   DirectMessage[] @relation("SentMessages")
+  stories        Story[]
+  storyViews     StoryView[]
 
   // Admin relations
   adminLogs      AdminAuditLog[] @relation("AdminActor")
+  adminSessions  AdminSession[]
   reportsCreated Report[]        @relation("Reporter")
+  
+  // Notifications
+  notifications  Notification[]  @relation("UserNotifications")
+
+  @@index([createdAt])
 }
 
 model CreatorApplication {
@@ -195,6 +212,7 @@ model Post {
   reposts  Repost[]
   saves    Save[]
   reports  PostReport[]
+  sharedInMessages DirectMessage[] @relation("SharedPostMessages")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -736,11 +754,44 @@ model DirectMessage {
   senderId       String
   sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   content        String
+  attachmentType String?
+  attachmentUrl  String?
+  attachmentData String?
+  sharedPostId   String?
+  sharedPost     Post?        @relation("SharedPostMessages", fields: [sharedPostId], references: [id], onDelete: SetNull)
   isRead         Boolean      @default(false)
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])
   @@index([senderId])
+  @@index([sharedPostId])
+}
+
+model Story {
+  id         String      @id @default(uuid())
+  authorId   String
+  author     User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content    String?
+  mediaUrl   String?
+  background String?
+  textColor  String?
+  createdAt  DateTime    @default(now())
+  expiresAt  DateTime
+  views      StoryView[]
+
+  @@index([authorId, createdAt])
+  @@index([expiresAt])
+}
+
+model StoryView {
+  storyId   String
+  viewerId  String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewer    User     @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+  viewedAt  DateTime @default(now())
+
+  @@id([storyId, viewerId])
+  @@index([viewerId, viewedAt])
 }
 
 model PlatformSetting {
@@ -770,6 +821,22 @@ model PaymentLog {
 // ADMIN REPORTING & LOGGING MODELS
 // ============================================
 
+model AdminSession {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId, expiresAt])
+  @@index([revokedAt])
+}
+
 model Report {
   id             String  @id @default(uuid())
   reporterId     String
@@ -787,12 +854,33 @@ model Report {
 }
 
 model AdminAuditLog {
-  id       String  @id @default(uuid())
-  action   String // e.g. "BAN_USER", "HIDE_POST", "ROLE_CHANGE"
-  actorId  String
-  targetId String
-  metadata String? // JSON string
+  id        String  @id @default(uuid())
+  action    String // e.g. "BAN_USER", "HIDE_POST", "ROLE_CHANGE"
+  actorId   String
+  targetId  String?
+  sessionId String?
+  ipAddress String?
+  userAgent String?
+  metadata  String? // JSON string
 
   actor     User     @relation("AdminActor", fields: [actorId], references: [id])
   createdAt DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  content   String?
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

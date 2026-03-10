@@ -5,7 +5,22 @@ import { useAuthStore } from '@/stores/authStore';
 import { useLocation, useNavigate } from 'react-router-dom';
 import PostCard from '@/components/posts/PostCard';
 import CreatePostModal from '@/components/posts/CreatePostModal';
+import { StoryComposerModal } from '@/components/stories/StoryComposerModal';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+    Card,
+    CardContent,
+} from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
     Flame,
     Clock,
@@ -19,7 +34,10 @@ import {
     BarChart2,
     Image,
     Bookmark,
+    ChevronDown,
+    Sparkles,
 } from 'lucide-react';
+import type { StoryAuthor, StoryItem } from '@/components/stories/storyTypes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,6 +77,7 @@ export interface Post {
     contentEditedAt?: string;
     createdAt: string;
     tickers?: string;
+    quotedPost?: Post;
 }
 
 // ─── Sort tabs ────────────────────────────────────────────────────────────────
@@ -92,8 +111,18 @@ export default function ExplorePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
+    const [showStoryComposer, setShowStoryComposer] = useState(false);
     const [showSaved, setShowSaved] = useState(false);
     const loaderRef = useRef<HTMLDivElement>(null);
+
+    const storyComposerUser: StoryAuthor | null = user ? {
+        id: user.id,
+        username: user.username,
+        avatarUrl: user.avatarUrl,
+        isVerified: user.isVerified,
+        bio: user.bio,
+        title: (user as any).title,
+    } : null;
 
     const fetchPosts = useCallback(async (reset = false) => {
         if (isLoading) return;
@@ -173,157 +202,224 @@ export default function ExplorePage() {
     };
 
     const handlePostUpdated = (updated: Post) => {
-        setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        setPosts((prev) => {
+            if (showSaved && !updated.savedByMe) {
+                return prev.filter((p) => p.id !== updated.id);
+            }
+            return prev.map((p) => (p.id === updated.id ? updated : p));
+        });
     };
 
     const handlePostDeleted = (postId: string) => {
         setPosts((prev) => prev.filter((p) => p.id !== postId));
     };
 
+    const handleStoryCreated = (_story: StoryItem) => {
+        setShowStoryComposer(false);
+    };
+
     return (
-        <div className="min-h-screen">
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        <div className="min-h-screen w-full">
+            <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
 
-                {/* ── Header ── */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-heading font-bold">Crear</h1>
-                        <p className="text-sm text-muted-foreground">Publica en el feed principal como Instagram: posts, ediciones y gráficos</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setShowSaved(!showSaved)}
-                            className={showSaved ? 'text-primary' : ''}
-                            title="Guardados"
-                        >
-                            <Bookmark className="w-5 h-5" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={handleRefresh}
-                            disabled={isRefreshing}
-                            title="Actualizar"
-                        >
-                            <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        </Button>
-                        <Button
-                            onClick={() => setShowCreate(true)}
-                            className="gap-2 bg-gradient-to-r from-primary to-emerald-400 text-black font-bold shadow-glow"
-                        >
-                            <PenSquare className="w-4 h-4" />
-                            <span className="hidden sm:inline">Crear</span>
-                        </Button>
-                    </div>
-                </div>
+                <Card className="overflow-hidden border-border/60 bg-card/80 shadow-sm">
+                    <div className="relative">
+                        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.16),transparent_34%)]" />
+                        <div className="relative flex flex-col gap-6 p-6 md:p-8">
+                            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                                <div className="max-w-3xl space-y-3">
+                                    <Badge
+                                        variant="outline"
+                                        className="w-fit border-primary/20 bg-primary/10 text-primary"
+                                    >
+                                        {showSaved ? 'Colección personal' : 'Feed de mercado'}
+                                    </Badge>
+                                    <div className="space-y-2">
+                                        <h1 className="text-3xl font-semibold tracking-tight">Explorar</h1>
+                                        <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
+                                            Descubrí ideas, publicaciones, ediciones y gráficos con una superficie más amplia,
+                                            limpia y profesional para navegar el feed de Finix.
+                                        </p>
+                                    </div>
+                                </div>
 
-                {/* ── Sort tabs ── */}
-                {!showSaved && (
-                    <div className="flex gap-1 bg-secondary/30 p-1 rounded-xl overflow-x-auto scrollbar-hide">
-                        {SORT_TABS.map(({ key, label, icon: Icon }) => (
-                            <button
-                                key={key}
-                                onClick={() => setSort(key)}
-                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${sort === key
-                                    ? 'bg-background text-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                            >
-                                <Icon className="w-3.5 h-3.5" />
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                )}
-
-                {/* ── Type filter ── */}
-                {!showSaved && (
-                    <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-                        {TYPE_FILTERS.map(({ key, label, icon: Icon }) => (
-                            <button
-                                key={key}
-                                onClick={() => setTypeFilter(key)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap ${typeFilter === key
-                                    ? 'bg-primary/10 border-primary/40 text-primary'
-                                    : 'border-border/50 text-muted-foreground hover:border-border hover:text-foreground'
-                                    }`}
-                            >
-                                <Icon className="w-3 h-3" />
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                )}
-
-                {/* ── Saved header ── */}
-                {showSaved && (
-                    <div className="flex items-center gap-2 text-primary">
-                        <Bookmark className="w-5 h-5 fill-primary" />
-                        <span className="font-semibold">Publicaciones guardadas</span>
-                    </div>
-                )}
-
-                {/* ── Posts ── */}
-                <div className="space-y-4">
-                    <AnimatePresence mode="popLayout">
-                        {posts.map((post, i) => (
-                            <motion.div
-                                key={post.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ delay: i < 5 ? i * 0.05 : 0 }}
-                            >
-                                <PostCard
-                                    post={post}
-                                    currentUserId={user?.id}
-                                    onUpdated={handlePostUpdated}
-                                    onDeleted={handlePostDeleted}
-                                />
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-
-                    {/* Empty state */}
-                    {!isLoading && posts.length === 0 && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-center py-16 space-y-4"
-                        >
-                            <div className="text-6xl">📭</div>
-                            <h3 className="text-lg font-semibold">
-                                {showSaved ? 'No tenés publicaciones guardadas' : 'No hay publicaciones aún'}
-                            </h3>
-                            <p className="text-muted-foreground text-sm">
-                                {showSaved
-                                    ? 'Guardá publicaciones para verlas acá'
-                                    : sort === 'following'
-                                        ? 'Seguí a usuarios para ver su contenido acá'
-                                        : '¡Sé el primero en crear contenido!'}
-                            </p>
-                            {!showSaved && (
-                                <Button onClick={() => setShowCreate(true)} className="mt-2">
-                                    Crear publicación
-                                </Button>
-                            )}
-                        </motion.div>
-                    )}
-
-                    {/* Infinite scroll loader */}
-                    <div ref={loaderRef} className="py-4 flex justify-center">
-                        {isLoading && (
-                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Cargando...
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Button
+                                        variant={showSaved ? 'secondary' : 'outline'}
+                                        onClick={() => setShowSaved(!showSaved)}
+                                        className={`gap-2 ${showSaved ? 'text-primary' : ''}`}
+                                    >
+                                        <Bookmark className={`w-5 h-5 ${showSaved ? 'fill-primary' : ''}`} />
+                                        <span>{showSaved ? 'Volver al feed' : 'Guardados'}</span>
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={handleRefresh}
+                                        disabled={isRefreshing}
+                                        title="Actualizar"
+                                    >
+                                        <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button className="gap-2 bg-gradient-to-r from-primary to-emerald-400 text-black font-bold shadow-glow">
+                                                <PenSquare className="w-4 h-4" />
+                                                <span>Crear</span>
+                                                <ChevronDown className="w-4 h-4 opacity-70" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-52">
+                                            <DropdownMenuLabel>Nuevo contenido</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={() => setShowCreate(true)}>
+                                                <PenSquare className="w-4 h-4" />
+                                                Publicación
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setShowStoryComposer(true)}>
+                                                <Sparkles className="w-4 h-4" />
+                                                Historia
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
                             </div>
-                        )}
-                        {!isLoading && !hasMore && posts.length > 0 && (
-                            <p className="text-xs text-muted-foreground">— Fin del feed —</p>
-                        )}
+
+                            {!showSaved && (
+                                <div className="grid gap-4">
+                                    <div className="grid gap-2 rounded-2xl border border-border/60 bg-background/70 p-2 md:grid-cols-2 xl:grid-cols-4">
+                                        {SORT_TABS.map(({ key, label, icon: Icon }) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => setSort(key)}
+                                                className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${sort === key
+                                                    ? 'bg-card text-foreground shadow-sm ring-1 ring-border/70'
+                                                    : 'text-muted-foreground hover:bg-background hover:text-foreground'
+                                                    }`}
+                                            >
+                                                <Icon className="w-4 h-4" />
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        {TYPE_FILTERS.map(({ key, label, icon: Icon }) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => setTypeFilter(key)}
+                                                className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${typeFilter === key
+                                                    ? 'border-primary/40 bg-primary/10 text-primary'
+                                                    : 'border-border/60 bg-background/50 text-muted-foreground hover:border-border hover:text-foreground'
+                                                    }`}
+                                            >
+                                                <Icon className="w-3.5 h-3.5" />
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {showSaved && (
+                                <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-4 text-primary">
+                                    <Bookmark className="w-5 h-5 fill-primary" />
+                                    <div className="space-y-0.5">
+                                        <p className="text-sm font-semibold">Publicaciones guardadas</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Un espacio dedicado para volver rápido a tus ideas y análisis más relevantes.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
+                </Card>
+
+                <div className="min-w-0 space-y-4">
+                        {isLoading && posts.length === 0 ? (
+                            <div className="space-y-4">
+                                {[0, 1, 2].map((item) => (
+                                    <Card key={item} className="border-border/60 bg-card/70 shadow-sm">
+                                        <CardContent className="space-y-5 p-6">
+                                            <div className="flex items-center gap-3">
+                                                <Skeleton className="h-11 w-11 rounded-full" />
+                                                <div className="space-y-2">
+                                                    <Skeleton className="h-4 w-32" />
+                                                    <Skeleton className="h-3 w-24" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Skeleton className="h-4 w-full" />
+                                                <Skeleton className="h-4 w-[82%]" />
+                                                <Skeleton className="h-4 w-[68%]" />
+                                            </div>
+                                            <Skeleton className="h-52 w-full rounded-2xl" />
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : (
+                            <>
+                                <AnimatePresence mode="popLayout">
+                                    {posts.map((post, i) => (
+                                        <motion.div
+                                            key={post.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            transition={{ delay: i < 5 ? i * 0.05 : 0 }}
+                                        >
+                                            <PostCard
+                                                post={post}
+                                                currentUserId={user?.id}
+                                                onUpdated={handlePostUpdated}
+                                                onDeleted={handlePostDeleted}
+                                            />
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+
+                                {!isLoading && posts.length === 0 && (
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                        <Card className="border-border/60 bg-card/70 shadow-sm">
+                                            <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+                                                <span className="emoji-glyph text-6xl">📭</span>
+                                                <div className="space-y-2">
+                                                    <h3 className="text-lg font-semibold">
+                                                        {showSaved ? 'No tenés publicaciones guardadas' : 'No hay publicaciones aún'}
+                                                    </h3>
+                                                    <p className="mx-auto max-w-md text-sm text-muted-foreground">
+                                                        {showSaved
+                                                            ? 'Guardá publicaciones para revisitarlas acá con una vista limpia y enfocada.'
+                                                            : sort === 'following'
+                                                                ? 'Seguí a otros usuarios para ver su contenido en esta vista.'
+                                                                : 'Todavía no hay contenido cargado para este filtro. Probá cambiar la vista o crear una publicación.'}
+                                                    </p>
+                                                </div>
+                                                {!showSaved && (
+                                                    <Button onClick={() => setShowCreate(true)} className="mt-2">
+                                                        Crear publicación
+                                                    </Button>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                )}
+                            </>
+                        )}
+
+                        <div ref={loaderRef} className="flex justify-center py-4">
+                            {isLoading && posts.length > 0 && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Cargando más publicaciones...
+                                </div>
+                            )}
+                            {!isLoading && !hasMore && posts.length > 0 && (
+                                <p className="text-xs text-muted-foreground">Fin del feed</p>
+                            )}
+                        </div>
                 </div>
             </div>
 
@@ -336,6 +432,13 @@ export default function ExplorePage() {
                     />
                 )}
             </AnimatePresence>
+
+            <StoryComposerModal
+                open={showStoryComposer}
+                onOpenChange={setShowStoryComposer}
+                onCreated={handleStoryCreated}
+                currentUser={storyComposerUser}
+            />
         </div>
     );
 }

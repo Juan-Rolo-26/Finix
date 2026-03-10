@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { apiFetch } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Lock, Eye, EyeOff } from 'lucide-react';
@@ -14,45 +14,24 @@ export default function ResetPassword() {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    // Get token from URL
-    const location = useLocation();
-    const query = new URLSearchParams(location.search);
-    const token = query.get('token');
-
-    if (!token) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-6 text-center">
-                <p className="text-red-400">Enlace inválido o expirado.</p>
-            </div>
-        );
-    }
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
         setMessage('');
 
-        try {
-            const res = await apiFetch('/auth/reset-password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, newPassword: password }),
-            });
+        // Supabase restores the recovery session from the URL hash automatically.
+        // We just call updateUser to set the new password.
+        const { error: updateError } = await supabase.auth.updateUser({ password });
 
-            const data = await res.json();
-
-            if (res.ok) {
-                setMessage('Tu contraseña ha sido restablecida. Redirigiendo...');
-                setTimeout(() => navigate('/'), 2500);
-            } else {
-                setError(data?.message || 'Error restableciendo la contraseña');
-            }
-        } catch {
-            setError('Error de conexión. Intente nuevamente.');
-        } finally {
-            setIsLoading(false);
+        if (updateError) {
+            setError(updateError.message || 'Error restableciendo la contraseña');
+        } else {
+            setMessage('Tu contraseña ha sido restablecida. Redirigiendo...');
+            setTimeout(() => navigate('/'), 2500);
         }
+
+        setIsLoading(false);
     };
 
     return (

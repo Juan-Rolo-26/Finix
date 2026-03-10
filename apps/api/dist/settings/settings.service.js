@@ -183,6 +183,13 @@ let SettingsService = class SettingsService {
         });
         return { success: true };
     }
+    async saveBannerUrl(userId, bannerUrl) {
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { bannerUrl },
+        });
+        return { success: true };
+    }
     async logoutAllSessions(userId) {
         return { success: true, message: 'Sesiones cerradas (JWT stateless - tokens expirarán naturalmente)' };
     }

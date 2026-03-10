@@ -8,27 +8,30 @@
 
     /* ─── DARK MODE (default) ─── */
     :root {
-        font-size: 16px;
-        --background: 0 0% 7%;
-        --foreground: 0 0% 98%;
+        font-size: 18px;
+        --background: 220 24% 7%;
+        --foreground: 210 40% 98%;
 
-        --card: 0 0% 12%;
-        --card-foreground: 0 0% 98%;
+        --card: 220 20% 11%;
+        --card-foreground: 210 40% 98%;
 
-        --popover: 0 0% 9%;
-        --popover-foreground: 0 0% 98%;
+        --popover: 220 24% 10%;
+        --popover-foreground: 210 40% 98%;
 
         --primary: 158 100% 45%;
-        --primary-foreground: 0 0% 7%;
+        --primary-foreground: 220 24% 7%;
 
-        --secondary: 0 0% 15%;
-        --secondary-foreground: 0 0% 98%;
+        --secondary: 220 17% 14%;
+        --secondary-foreground: 210 32% 96%;
 
-        --muted: 0 0% 18%;
-        --muted-foreground: 0 0% 55%;
+        --muted: 220 16% 16%;
+        --muted-foreground: 217 10% 65%;
 
-        --accent: 158 100% 45%;
-        --accent-foreground: 0 0% 7%;
+        --brand: 214 88% 68%;
+        --brand-foreground: 220 42% 10%;
+
+        --accent: 218 32% 18%;
+        --accent-foreground: 210 38% 95%;
 
         --success: 142 76% 36%;
         --success-foreground: 0 0% 98%;
@@ -39,72 +42,109 @@
         --destructive: 0 84% 60%;
         --destructive-foreground: 0 0% 98%;
 
-        --border: 0 0% 20%;
-        --input: 0 0% 20%;
+        --border: 220 15% 22%;
+        --input: 220 15% 22%;
         --ring: 158 100% 45%;
 
         --radius: 1rem;
 
-        --gradient-hero: linear-gradient(135deg, hsl(0 0% 7%) 0%, hsl(0 0% 12%) 50%, hsl(158 100% 45% / 0.1) 100%);
-        --gradient-card: linear-gradient(135deg, hsl(0 0% 10% / 0.95) 0%, hsl(0 0% 12% / 0.8) 100%);
-        --gradient-accent: linear-gradient(90deg, hsl(158 100% 45%) 0%, hsl(158 100% 55%) 100%);
-        --gradient-primary-glow: radial-gradient(circle at center, hsl(158 100% 45% / 0.3) 0%, transparent 70%);
+        --gradient-hero: linear-gradient(135deg, hsl(220 24% 7%) 0%, hsl(220 24% 10%) 46%, hsl(214 88% 68% / 0.08) 72%, hsl(158 100% 45% / 0.1) 100%);
+        --gradient-card: linear-gradient(155deg, hsl(220 20% 11% / 0.98) 0%, hsl(220 18% 10% / 0.92) 58%, hsl(214 88% 68% / 0.06) 100%);
+        --gradient-accent: linear-gradient(90deg, hsl(158 100% 45%) 0%, hsl(214 88% 68%) 100%);
+        --gradient-primary-glow:
+            radial-gradient(circle at center, hsl(158 100% 45% / 0.24) 0%, transparent 52%),
+            radial-gradient(circle at 74% 28%, hsl(214 88% 68% / 0.18) 0%, transparent 62%);
 
-        --shadow-glow: 0 0 60px hsl(158 100% 45% / 0.3);
-        --shadow-card: 0 12px 40px hsl(0 0% 0% / 0.6);
-        --shadow-intense: 0 0 80px hsl(158 100% 45% / 0.4);
+        --shadow-glow: 0 18px 44px hsl(214 88% 68% / 0.18);
+        --shadow-card: 0 20px 48px hsl(220 42% 3% / 0.34);
+        --shadow-intense: 0 28px 70px hsl(214 88% 68% / 0.24);
 
         --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
         /* Sidebar tokens (dark) */
-        --sidebar-bg: 0 0% 6%;
-        --sidebar-border: 0 0% 15%;
-        --sidebar-text: 0 0% 96%;
-        --sidebar-muted: 0 0% 48%;
-        --sidebar-hover-bg: 0 0% 100% / 0.04;
-        --sidebar-hover-border: 0 0% 100% / 0.06;
-        --sidebar-section-label: 158 100% 45% / 0.35;
-        --sidebar-active-bg-from: 158 100% 45% / 0.1;
-        --sidebar-active-bg-to: 158 100% 45% / 0.02;
-        --sidebar-active-border: 158 100% 45% / 0.22;
-        --sidebar-card-bg-from: 158 100% 45% / 0.07;
+        --sidebar-bg: 220 26% 6%;
+        --sidebar-border: 220 16% 15%;
+        --sidebar-text: 210 38% 96%;
+        --sidebar-muted: 217 10% 56%;
+        --sidebar-hover-bg: 214 88% 68% / 0.09;
+        --sidebar-hover-border: 214 88% 68% / 0.18;
+        --sidebar-section-label: 214 88% 68% / 0.5;
+        --sidebar-active-bg-from: 214 88% 68% / 0.14;
+        --sidebar-active-bg-to: 158 100% 45% / 0.04;
+        --sidebar-active-border: 214 88% 68% / 0.24;
+        --sidebar-card-bg-from: 214 88% 68% / 0.08;
         --sidebar-card-bg-to: 0 0% 100% / 0.02;
-        --sidebar-card-border: 158 100% 45% / 0.14;
+        --sidebar-card-border: 214 88% 68% / 0.16;
         --sidebar-pinned-bg: 0 0% 100% / 0.03;
         --sidebar-pinned-border: 0 0% 100% / 0.06;
         --sidebar-pinned-row-border: 0 0% 100% / 0.05;
-        --sidebar-online-border: 0 0% 6%;
-        --sidebar-logo-bg-from: 158 100% 45% / 0.16;
-        --sidebar-logo-bg-to: 158 100% 45% / 0.06;
-        --sidebar-logo-border: 158 100% 45% / 0.3;
+        --sidebar-online-border: 220 26% 6%;
+        --sidebar-logo-bg-from: 214 88% 68% / 0.18;
+        --sidebar-logo-bg-to: 158 100% 45% / 0.08;
+        --sidebar-logo-border: 214 88% 68% / 0.32;
         --sidebar-logo-text-from: #fff;
-        --sidebar-logo-text-to: hsl(158 100% 76%);
-        --sidebar-logo-subtitle: 158 100% 45% / 0.45;
-        --sidebar-top-glow: radial-gradient(ellipse 80% 60% at 50% -10%, hsl(158 100% 45% / 0.07) 0%, transparent 100%);
+        --sidebar-logo-text-to: hsl(214 100% 82%);
+        --sidebar-logo-subtitle: 214 88% 68% / 0.52;
+        --sidebar-top-glow:
+            radial-gradient(ellipse 80% 60% at 50% -10%, hsl(214 88% 68% / 0.08) 0%, transparent 62%),
+            radial-gradient(ellipse 66% 52% at 32% -8%, hsl(158 100% 45% / 0.04) 0%, transparent 100%);
+
+        /* Marketing/info surfaces */
+        --marketing-shell-bg:
+            radial-gradient(circle at 18% 12%, hsl(158 100% 45% / 0.12) 0%, transparent 18%),
+            radial-gradient(circle at 76% 18%, hsl(214 88% 68% / 0.12) 0%, transparent 20%),
+            radial-gradient(circle at 68% 62%, hsl(214 88% 68% / 0.08) 0%, transparent 20%),
+            linear-gradient(180deg, hsl(214 40% 8%) 0%, hsl(220 44% 5%) 100%);
+        --marketing-grid-line: hsl(214 88% 68% / 0.08);
+        --marketing-panel-bg: hsl(220 24% 10% / 0.68);
+        --marketing-panel-border: hsl(214 88% 68% / 0.12);
+        --marketing-header-bg: hsl(220 28% 8% / 0.78);
+        --marketing-panel-shadow: 0 20px 48px hsl(220 45% 4% / 0.28);
+
+        /* Auth screen */
+        --auth-shell-bg: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.3) 100%);
+        --auth-hero-background: linear-gradient(180deg, hsl(216 40% 10%) 0%, hsl(220 44% 5%) 58%, hsl(214 88% 68% / 0.08) 100%);
+        --auth-hero-surface: hsl(214 88% 68% / 0.06);
+        --auth-hero-border: hsl(214 88% 68% / 0.14);
+        --auth-hero-copy: hsl(0 0% 100% / 0.62);
+        --auth-hero-card-title: hsl(0 0% 100% / 0.94);
+        --auth-hero-card-copy: hsl(0 0% 100% / 0.5);
+        --auth-feature-pill-bg: hsl(214 88% 68% / 0.08);
+        --auth-feature-pill-border: hsl(214 88% 68% / 0.16);
+        --auth-feature-pill-text: hsl(0 0% 100% / 0.72);
+        --auth-hero-badge-bg: hsl(214 88% 68% / 0.12);
+        --auth-hero-badge-border: hsl(214 88% 68% / 0.24);
+        --auth-hero-badge-text: hsl(214 100% 82%);
+        --auth-form-surface: hsl(var(--card) / 0.7);
+        --auth-form-border: hsl(var(--border) / 0.6);
+        --auth-footer-bg: transparent;
     }
 
     /* ─── LIGHT MODE ─── */
     .light {
-        --background: 0 0% 97%;
-        --foreground: 220 15% 10%;
+        --background: 210 40% 98%;
+        --foreground: 220 24% 13%;
 
         --card: 0 0% 100%;
-        --card-foreground: 220 15% 10%;
+        --card-foreground: 220 24% 13%;
 
         --popover: 0 0% 100%;
-        --popover-foreground: 220 15% 10%;
+        --popover-foreground: 220 24% 13%;
 
         --primary: 158 80% 32%;
         --primary-foreground: 0 0% 100%;
 
-        --secondary: 210 14% 93%;
-        --secondary-foreground: 220 15% 20%;
+        --secondary: 214 29% 95%;
+        --secondary-foreground: 220 20% 24%;
 
-        --muted: 210 14% 92%;
-        --muted-foreground: 220 10% 42%;
+        --muted: 214 24% 94%;
+        --muted-foreground: 220 10% 44%;
 
-        --accent: 158 80% 32%;
-        --accent-foreground: 0 0% 100%;
+        --brand: 214 67% 46%;
+        --brand-foreground: 0 0% 100%;
+
+        --accent: 214 73% 94%;
+        --accent-foreground: 220 30% 25%;
 
         --success: 142 60% 28%;
         --success-foreground: 0 0% 100%;
@@ -115,49 +155,83 @@
         --destructive: 0 72% 50%;
         --destructive-foreground: 0 0% 100%;
 
-        --border: 214 18% 86%;
-        --input: 214 18% 86%;
+        --border: 214 24% 87%;
+        --input: 214 24% 87%;
         --ring: 158 80% 32%;
 
-        --gradient-hero: linear-gradient(135deg, hsl(0 0% 96%) 0%, hsl(0 0% 100%) 50%, hsl(158 80% 32% / 0.08) 100%);
-        --gradient-card: linear-gradient(135deg, hsl(0 0% 100% / 0.95) 0%, hsl(0 0% 98% / 0.8) 100%);
-        --gradient-accent: linear-gradient(90deg, hsl(158 80% 32%) 0%, hsl(158 80% 40%) 100%);
-        --gradient-primary-glow: radial-gradient(circle at center, hsl(158 80% 32% / 0.15) 0%, transparent 70%);
+        --gradient-hero: linear-gradient(135deg, hsl(210 40% 98%) 0%, hsl(0 0% 100%) 44%, hsl(214 70% 92%) 76%, hsl(158 40% 92%) 100%);
+        --gradient-card: linear-gradient(155deg, hsl(0 0% 100% / 0.98) 0%, hsl(210 28% 98% / 0.96) 64%, hsl(214 67% 46% / 0.05) 100%);
+        --gradient-accent: linear-gradient(90deg, hsl(158 80% 32%) 0%, hsl(214 67% 46%) 100%);
+        --gradient-primary-glow:
+            radial-gradient(circle at center, hsl(158 80% 32% / 0.12) 0%, transparent 55%),
+            radial-gradient(circle at 72% 34%, hsl(214 67% 46% / 0.12) 0%, transparent 60%);
 
-        --shadow-glow: 0 0 60px hsl(158 80% 32% / 0.18);
-        --shadow-card: 0 4px 24px hsl(220 15% 10% / 0.08);
-        --shadow-intense: 0 0 80px hsl(158 80% 32% / 0.22);
+        --shadow-glow: 0 18px 44px hsl(214 67% 46% / 0.14);
+        --shadow-card: 0 10px 32px hsl(220 22% 14% / 0.08);
+        --shadow-intense: 0 28px 64px hsl(214 67% 46% / 0.16);
 
         /* Sidebar tokens (light) */
         --sidebar-bg: 0 0% 100%;
-        --sidebar-border: 214 18% 88%;
-        --sidebar-text: 220 15% 10%;
+        --sidebar-border: 214 24% 88%;
+        --sidebar-text: 220 24% 13%;
         --sidebar-muted: 220 10% 50%;
-        --sidebar-hover-bg: 158 80% 32% / 0.06;
-        --sidebar-hover-border: 158 80% 32% / 0.12;
-        --sidebar-section-label: 158 80% 28% / 0.5;
-        --sidebar-active-bg-from: 158 80% 32% / 0.1;
-        --sidebar-active-bg-to: 158 80% 32% / 0.02;
-        --sidebar-active-border: 158 80% 32% / 0.25;
-        --sidebar-card-bg-from: 158 80% 32% / 0.06;
+        --sidebar-hover-bg: 214 67% 46% / 0.08;
+        --sidebar-hover-border: 214 67% 46% / 0.12;
+        --sidebar-section-label: 214 67% 40% / 0.58;
+        --sidebar-active-bg-from: 214 67% 46% / 0.11;
+        --sidebar-active-bg-to: 158 80% 32% / 0.03;
+        --sidebar-active-border: 214 67% 46% / 0.18;
+        --sidebar-card-bg-from: 214 67% 46% / 0.06;
         --sidebar-card-bg-to: 158 80% 32% / 0.01;
-        --sidebar-card-border: 158 80% 32% / 0.18;
-        --sidebar-pinned-bg: 158 80% 32% / 0.04;
-        --sidebar-pinned-border: 214 18% 88%;
-        --sidebar-pinned-row-border: 214 18% 90%;
+        --sidebar-card-border: 214 67% 46% / 0.14;
+        --sidebar-pinned-bg: 214 67% 46% / 0.04;
+        --sidebar-pinned-border: 214 24% 88%;
+        --sidebar-pinned-row-border: 214 24% 90%;
         --sidebar-online-border: 0 0% 100%;
-        --sidebar-logo-bg-from: 158 80% 32% / 0.12;
-        --sidebar-logo-bg-to: 158 80% 32% / 0.04;
-        --sidebar-logo-border: 158 80% 32% / 0.25;
-        --sidebar-logo-text-from: hsl(220 15% 10%);
-        --sidebar-logo-text-to: hsl(158 80% 30%);
-        --sidebar-logo-subtitle: 158 80% 28% / 0.6;
-        --sidebar-top-glow: radial-gradient(ellipse 80% 60% at 50% -10%, hsl(158 80% 32% / 0.06) 0%, transparent 100%);
+        --sidebar-logo-bg-from: 214 67% 46% / 0.11;
+        --sidebar-logo-bg-to: 158 80% 32% / 0.03;
+        --sidebar-logo-border: 214 67% 46% / 0.2;
+        --sidebar-logo-text-from: hsl(220 24% 13%);
+        --sidebar-logo-text-to: hsl(214 67% 42%);
+        --sidebar-logo-subtitle: 214 67% 40% / 0.6;
+        --sidebar-top-glow:
+            radial-gradient(ellipse 80% 60% at 50% -10%, hsl(214 67% 46% / 0.06) 0%, transparent 100%),
+            radial-gradient(ellipse 72% 56% at 28% -10%, hsl(158 80% 32% / 0.03) 0%, transparent 100%);
+
+        /* Marketing/info surfaces */
+        --marketing-shell-bg:
+            radial-gradient(circle at 16% 12%, hsl(156 68% 34% / 0.08) 0%, transparent 18%),
+            radial-gradient(circle at 76% 16%, hsl(214 67% 46% / 0.1) 0%, transparent 18%),
+            radial-gradient(circle at 66% 78%, hsl(214 67% 46% / 0.06) 0%, transparent 18%),
+            linear-gradient(180deg, hsl(210 38% 98%) 0%, hsl(0 0% 99%) 56%, hsl(210 24% 96%) 100%);
+        --marketing-grid-line: hsl(214 42% 68% / 0.2);
+        --marketing-panel-bg: hsl(0 0% 100% / 0.78);
+        --marketing-panel-border: hsl(214 42% 78% / 0.66);
+        --marketing-header-bg: hsl(0 0% 100% / 0.76);
+        --marketing-panel-shadow: 0 18px 40px hsl(210 20% 18% / 0.08);
+
+        /* Auth screen */
+        --auth-shell-bg: linear-gradient(180deg, hsl(210 38% 98%) 0%, hsl(0 0% 99%) 58%, hsl(210 24% 96%) 100%);
+        --auth-hero-background: linear-gradient(180deg, hsl(212 72% 96%) 0%, hsl(0 0% 100%) 52%, hsl(156 24% 95%) 100%);
+        --auth-hero-surface: hsl(0 0% 100% / 0.78);
+        --auth-hero-border: hsl(214 42% 78% / 0.7);
+        --auth-hero-copy: hsl(220 10% 32%);
+        --auth-hero-card-title: hsl(220 15% 12%);
+        --auth-hero-card-copy: hsl(220 10% 38%);
+        --auth-feature-pill-bg: hsl(0 0% 100% / 0.8);
+        --auth-feature-pill-border: hsl(214 42% 78% / 0.82);
+        --auth-feature-pill-text: hsl(220 12% 22%);
+        --auth-hero-badge-bg: hsl(214 70% 94%);
+        --auth-hero-badge-border: hsl(214 56% 76% / 0.9);
+        --auth-hero-badge-text: hsl(214 67% 36%);
+        --auth-form-surface: hsl(0 0% 100% / 0.9);
+        --auth-form-border: hsl(214 24% 84%);
+        --auth-footer-bg: linear-gradient(180deg, transparent 0%, hsl(210 22% 95%) 100%);
     }
 
     @media (min-width: 1024px) {
         :root {
-            font-size: 17px;
+            font-size: 19px;
         }
     }
 
@@ -165,6 +239,11 @@
         background-color: hsl(var(--background));
         color: hsl(var(--foreground));
         transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    ::selection {
+        background: hsl(var(--brand) / 0.22);
+        color: hsl(var(--foreground));
     }
 }
 
@@ -175,7 +254,7 @@
 
     body {
         @apply bg-background text-foreground font-sans antialiased;
-        line-height: 1.6;
+        line-height: 1.68;
         font-feature-settings: "cv02", "cv03", "cv04", "cv11";
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
@@ -188,6 +267,177 @@
     h5,
     h6 {
         @apply font-heading;
+    }
+}
+
+@layer components {
+    .emoji-glyph {
+        font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+        font-variant-emoji: emoji;
+        line-height: 1;
+    }
+
+    .finix-card-surface {
+        border-color: hsl(var(--border) / 0.9);
+        background:
+            linear-gradient(180deg, hsl(var(--card) / 0.98) 0%, hsl(var(--card) / 0.94) 100%),
+            radial-gradient(circle at top right, hsl(var(--brand) / 0.12) 0%, transparent 40%);
+        box-shadow:
+            inset 0 1px 0 hsl(var(--brand) / 0.05),
+            var(--shadow-card);
+    }
+
+    .finix-panel-surface {
+        border-color: hsl(var(--border) / 0.92);
+        background:
+            linear-gradient(180deg, hsl(var(--popover) / 0.98) 0%, hsl(var(--popover) / 0.92) 100%),
+            radial-gradient(circle at top right, hsl(var(--brand) / 0.14) 0%, transparent 42%);
+        box-shadow:
+            inset 0 1px 0 hsl(var(--brand) / 0.06),
+            var(--shadow-card);
+        backdrop-filter: blur(18px);
+    }
+
+    .finix-field-surface {
+        border-color: hsl(var(--input));
+        background:
+            linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.82) 100%);
+        box-shadow: inset 0 1px 0 hsl(var(--brand) / 0.04);
+    }
+
+    .market-tone-positive {
+        color: rgb(110 231 183);
+    }
+
+    .light .market-tone-positive {
+        color: rgb(22 101 52);
+    }
+
+    .market-tone-negative {
+        color: rgb(253 164 175);
+    }
+
+    .light .market-tone-negative {
+        color: rgb(159 18 57);
+    }
+
+    .market-trend-chip--positive {
+        border-color: rgb(16 185 129 / 0.2);
+        background-color: rgb(16 185 129 / 0.1);
+        color: rgb(209 250 229);
+    }
+
+    .light .market-trend-chip--positive {
+        border-color: rgb(110 231 183 / 0.85);
+        background-color: rgb(236 253 245);
+        color: rgb(22 101 52);
+    }
+
+    .market-trend-chip--negative {
+        border-color: rgb(244 63 94 / 0.2);
+        background-color: rgb(244 63 94 / 0.1);
+        color: rgb(255 228 230);
+    }
+
+    .light .market-trend-chip--negative {
+        border-color: rgb(253 164 175 / 0.9);
+        background-color: rgb(255 241 242);
+        color: rgb(159 18 57);
+    }
+
+    .market-section-badge--argentina {
+        border-color: rgb(56 189 248 / 0.22);
+        background-color: rgb(14 165 233 / 0.12);
+        color: rgb(224 242 254);
+    }
+
+    .light .market-section-badge--argentina {
+        border-color: rgb(125 211 252);
+        background-color: rgb(224 242 254);
+        color: rgb(12 74 110);
+    }
+
+    .market-section-badge--global {
+        border-color: rgb(34 211 238 / 0.22);
+        background-color: rgb(6 182 212 / 0.12);
+        color: rgb(207 250 254);
+    }
+
+    .light .market-section-badge--global {
+        border-color: rgb(103 232 249);
+        background-color: rgb(236 254 255);
+        color: rgb(22 78 99);
+    }
+
+    .market-section-badge--crypto {
+        border-color: rgb(251 191 36 / 0.24);
+        background-color: rgb(245 158 11 / 0.12);
+        color: rgb(254 243 199);
+    }
+
+    .light .market-section-badge--crypto {
+        border-color: rgb(252 211 77);
+        background-color: rgb(255 251 235);
+        color: rgb(146 64 14);
+    }
+
+    .market-section-badge--commodities {
+        border-color: rgb(251 146 60 / 0.24);
+        background-color: rgb(249 115 22 / 0.12);
+        color: rgb(255 237 213);
+    }
+
+    .light .market-section-badge--commodities {
+        border-color: rgb(253 186 116);
+        background-color: rgb(255 247 237);
+        color: rgb(154 52 18);
+    }
+
+    .market-section-badge--indicators {
+        border-color: rgb(16 185 129 / 0.22);
+        background-color: rgb(16 185 129 / 0.12);
+        color: rgb(209 250 229);
+    }
+
+    .light .market-section-badge--indicators {
+        border-color: rgb(110 231 183);
+        background-color: rgb(236 253 245);
+        color: rgb(6 95 70);
+    }
+
+    .market-pulse-card--positive {
+        border-color: rgb(16 185 129 / 0.25);
+        background-color: rgb(16 185 129 / 0.1);
+        color: rgb(236 253 245);
+    }
+
+    .light .market-pulse-card--positive {
+        border-color: rgb(110 231 183);
+        background-color: rgb(236 253 245);
+        color: rgb(6 95 70);
+    }
+
+    .market-pulse-card--neutral {
+        border-color: hsl(var(--border) / 0.6);
+        background-color: hsl(var(--background) / 0.45);
+        color: hsl(var(--foreground));
+    }
+
+    .market-pulse-card--negative {
+        border-color: rgb(244 63 94 / 0.25);
+        background-color: rgb(244 63 94 / 0.1);
+        color: rgb(255 228 230);
+    }
+
+    .light .market-pulse-card--negative {
+        border-color: rgb(253 164 175);
+        background-color: rgb(255 241 242);
+        color: rgb(136 19 55);
+    }
+
+    .market-pulse-subtle {
+        color: currentColor !important;
+        opacity: 0.82;
     }
 }
 
@@ -214,23 +464,23 @@
 }
 
 /* ─── Light mode: card backgrounds ─── */
-.light .bg-\[#0e1613\] {
+.light .bg-\[\#0e1613\] {
     background-color: hsl(0 0% 100%) !important;
 }
 
-.light .bg-\[#0a0a0a\] {
+.light .bg-\[\#0a0a0a\] {
     background-color: hsl(0 0% 97%) !important;
 }
 
-.light .bg-\[#111\] {
+.light .bg-\[\#111\] {
     background-color: hsl(0 0% 100%) !important;
 }
 
-.light .bg-\[#0c0c0c\] {
+.light .bg-\[\#0c0c0c\] {
     background-color: hsl(0 0% 97%) !important;
 }
 
-.light .bg-\[#1a1a1a\] {
+.light .bg-\[\#1a1a1a\] {
     background-color: hsl(0 0% 95%) !important;
 }
 
@@ -288,6 +538,101 @@
 
 .light .border-dark-subtle {
     border-color: hsl(var(--border)) !important;
+}
+
+/* ─── Marketing pages ─── */
+.finix-marketing-shell {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background: var(--marketing-shell-bg);
+}
+
+.finix-marketing-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-image:
+        linear-gradient(var(--marketing-grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--marketing-grid-line) 1px, transparent 1px);
+    background-size: 86px 86px;
+    opacity: 0.82;
+}
+
+.finix-marketing-shell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+        radial-gradient(circle at 10% 16%, hsl(var(--primary) / 0.08) 0%, transparent 18%),
+        radial-gradient(circle at 86% 52%, hsl(var(--primary) / 0.06) 0%, transparent 18%);
+}
+
+.finix-marketing-header {
+    background: var(--marketing-header-bg);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid hsl(var(--border) / 0.36);
+}
+
+.finix-marketing-panel {
+    background: var(--marketing-panel-bg);
+    border: 1px solid var(--marketing-panel-border);
+    backdrop-filter: blur(18px);
+    box-shadow: var(--marketing-panel-shadow);
+}
+
+/* ─── Auth page theme helpers ─── */
+.auth-shell {
+    background: var(--auth-shell-bg);
+}
+
+.auth-hero-panel {
+    background: var(--auth-hero-background);
+}
+
+.auth-hero-copy {
+    color: var(--auth-hero-copy);
+}
+
+.auth-hero-card {
+    background: var(--auth-hero-surface);
+    border: 1px solid var(--auth-hero-border);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 10px 30px hsl(220 40% 2% / 0.1);
+}
+
+.auth-hero-card-title {
+    color: var(--auth-hero-card-title);
+}
+
+.auth-hero-card-copy {
+    color: var(--auth-hero-card-copy);
+}
+
+.auth-feature-pill {
+    background: var(--auth-feature-pill-bg);
+    border: 1px solid var(--auth-feature-pill-border);
+    color: var(--auth-feature-pill-text);
+    backdrop-filter: blur(12px);
+}
+
+.auth-hero-badge {
+    background: var(--auth-hero-badge-bg);
+    border: 1px solid var(--auth-hero-badge-border);
+    color: var(--auth-hero-badge-text);
+}
+
+.auth-form-panel {
+    background: var(--auth-form-surface);
+    border-color: var(--auth-form-border);
+}
+
+.auth-footer {
+    background: var(--auth-footer-bg);
 }
 
 /* ─── Transition all themed elements ─── */

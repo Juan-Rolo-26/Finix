@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AuthPage from './pages/AuthPage';
-import VerifyEmail from './pages/VerifyEmail';
-import ResetPassword from './pages/ResetPassword';
+import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import PortfolioPage from './pages/Portfolio';
 import { useAuthStore } from './stores/authStore';
 import { usePreferencesStore } from './stores/preferencesStore';
+import { supabase } from './lib/supabase';
 
 import InfoPage from './pages/InfoPage';
 import OnboardingWizard from './pages/OnboardingWizard';
@@ -22,6 +22,7 @@ import Settings from './pages/Settings';
 
 import Explore from './pages/Explore';
 import Messages from './pages/Messages';
+import PostDetail from './pages/PostDetail';
 import DashboardLayout from './layouts/DashboardLayout';
 
 // ─── Theme Applier ────────────────────────────────────────────────────────────
@@ -73,7 +74,27 @@ function RequireOnboarding({ children }: { children: React.ReactNode }) {
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-    const { token, user } = useAuthStore();
+    const { token, user, syncFromSession } = useAuthStore();
+
+    // Restore session on app load and keep token in sync
+    useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'TOKEN_REFRESHED' && session) {
+                localStorage.setItem('token', session.access_token);
+                useAuthStore.setState({ token: session.access_token });
+            }
+            if (event === 'SIGNED_OUT') {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                useAuthStore.setState({ token: null, user: null });
+            }
+        });
+
+        // On first load, sync user from existing Supabase session
+        syncFromSession();
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     const onboardingCompleted = !user || (user as any).onboardingCompleted !== false;
 
@@ -93,14 +114,12 @@ export default function App() {
                     }
                 />
 
-                {/* Email Verification Component */}
-                <Route
-                    path="/verify-email"
-                    element={!token ? <Navigate to="/" replace /> : <VerifyEmail />}
-                />
+                {/* Supabase auth callback (email verification + OAuth) */}
+                <Route path="/auth/callback" element={<AuthCallback />} />
 
-                {/* Password Reset Component */}
-                <Route path="/reset-password" element={<ResetPassword />} />
+                {/* Legacy routes now fold back into the main auth screen */}
+                <Route path="/verify-email" element={<Navigate to="/" replace />} />
+                <Route path="/reset-password" element={<Navigate to="/" replace />} />
 
                 {/* Onboarding wizard (requires auth, skips if already completed) */}
                 <Route
@@ -133,6 +152,7 @@ export default function App() {
                     <Route path="/profile/:username" element={<Profile />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/explore" element={<Explore />} />
+                    <Route path="/posts/:id" element={<PostDetail />} />
                     <Route path="/messages" element={<Messages />} />
                 </Route>
 

@@ -4,16 +4,17 @@ import {
     useRef,
     useCallback,
     KeyboardEvent,
+    ChangeEvent,
 } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import {
+    BarChart2,
     Search,
     Send,
     Smile,
     Plus,
-    Trash2,
     ArrowLeft,
     Check,
     CheckCheck,
@@ -21,9 +22,31 @@ import {
     X,
     ExternalLink,
     Loader2,
-    BadgeCheck
+    BadgeCheck,
+    Image as ImageIcon,
+    Newspaper,
+    MoreHorizontal,
+    Sparkles,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import ChartAttachmentModal from '@/components/messages/ChartAttachmentModal';
+import PostPickerModal from '@/components/messages/PostPickerModal';
+import { uploadChatFile } from '@/components/messages/mediaUpload';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import type {
+    ComposerAttachment,
+    MessageAttachmentMeta,
+    MessageAttachmentType,
+    SharedPostPreview,
+    SharedStoryPreview,
+} from '@/components/messages/messageTypes';
 import { useAuthStore } from '@/stores/authStore';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 
@@ -43,6 +66,10 @@ interface DirectMessage {
     senderId: string;
     sender: MsgUser;
     content: string;
+    attachmentType?: MessageAttachmentType | null;
+    attachmentUrl?: string | null;
+    attachmentMeta?: MessageAttachmentMeta | null;
+    sharedPost?: SharedPostPreview | null;
     isRead: boolean;
     createdAt: string;
 }
@@ -55,6 +82,15 @@ interface ConversationItem {
     unreadCount: number;
 }
 
+interface ConversationApiRecord {
+    id: string;
+    participant1Id: string;
+    participant2Id: string;
+    participant1: MsgUser;
+    participant2: MsgUser;
+    updatedAt: string;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PRIMARY = 'hsl(158 100% 45%)';
@@ -62,7 +98,18 @@ const SOCKET_URL =
     (import.meta.env.VITE_API_URL as string | undefined)?.replace('/api', '') ||
     'http://localhost:3001';
 
-const COMMON_EMOJIS = ['😊', '👍', '🚀', '📈', '📉', '💰', '🔥', '💡', '✅', '❌', '🤔', '💎', '⚡', '🎯', '📊'];
+const EMOJI_FONT_STACK = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif';
+const EMOJI_GROUPS = [
+    { label: 'Frecuentes', items: ['😊', '👍', '🔥', '🤔', '✅', '💡'] },
+    { label: 'Mercado', items: ['🚀', '📈', '📉', '💰', '💎', '⚡', '🎯', '📊', '❌'] },
+] as const;
+const CHART_INTERVAL_LABELS: Record<string, string> = {
+    '15': '15m',
+    '60': '1H',
+    '240': '4H',
+    D: '1D',
+    W: '1S',
+};
 
 // ─── Avatar helper ────────────────────────────────────────────────────────────
 
@@ -97,6 +144,377 @@ function UserAvatar({ user, size = 40, online = false }: { user: MsgUser; size?:
             )}
         </div>
     );
+}
+
+function getChartIntervalLabel(value?: string) {
+    if (!value) return '1D';
+    return CHART_INTERVAL_LABELS[value] || value;
+}
+
+function getPostTypeLabel(type?: SharedPostPreview['type']) {
+    switch (type) {
+        case 'chart':
+            return 'Grafico';
+        case 'image':
+            return 'Imagen';
+        case 'reel':
+            return 'Edicion';
+        default:
+            return 'Publicacion';
+    }
+}
+
+function getMessagePreview(message: DirectMessage | null) {
+    if (!message) return 'Iniciar conversación';
+
+    const text = message.content?.trim();
+    if (message.attachmentType === 'image') {
+        return text ? `Foto: ${text}` : 'Foto';
+    }
+    if (message.attachmentType === 'post') {
+        return text ? `Publicacion: ${text}` : 'Publicacion compartida';
+    }
+    if (message.attachmentType === 'chart') {
+        return text ? `Grafico: ${text}` : 'Grafico compartido';
+    }
+    if (message.attachmentType === 'story') {
+        return text ? `Historia: ${text}` : 'Historia compartida';
+    }
+
+    return text || 'Mensaje';
+}
+
+function sortConversations(items: ConversationItem[]) {
+    return [...items].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+}
+
+function upsertConversation(items: ConversationItem[], conversation: ConversationItem) {
+    return sortConversations([conversation, ...items.filter((item) => item.id !== conversation.id)]);
+}
+
+function buildConversationFromApiRecord(record: ConversationApiRecord, currentUserId: string): ConversationItem {
+    const otherUser = record.participant1Id === currentUserId ? record.participant2 : record.participant1;
+
+    return {
+        id: record.id,
+        otherUser,
+        lastMessage: null,
+        updatedAt: record.updatedAt,
+        unreadCount: 0,
+    };
+}
+
+function applyConversationMessageUpdate(
+    items: ConversationItem[],
+    conversationId: string,
+    lastMessage: DirectMessage,
+    currentUserId?: string,
+    activeConversationId?: string | null,
+) {
+    const existingConversation = items.find((item) => item.id === conversationId);
+    const unreadCount = lastMessage.senderId !== currentUserId && activeConversationId !== conversationId
+        ? (existingConversation?.unreadCount ?? 0) + 1
+        : 0;
+
+    if (existingConversation) {
+        return upsertConversation(items, {
+            ...existingConversation,
+            lastMessage,
+            updatedAt: lastMessage.createdAt,
+            unreadCount,
+        });
+    }
+
+    if (lastMessage.senderId === currentUserId) {
+        return items;
+    }
+
+    return upsertConversation(items, {
+        id: conversationId,
+        otherUser: lastMessage.sender,
+        lastMessage,
+        updatedAt: lastMessage.createdAt,
+        unreadCount,
+    });
+}
+
+function SharedPostCard({
+    post,
+    borderColor,
+    isLight,
+    textPrimary,
+    textMuted,
+}: {
+    post: SharedPostPreview;
+    borderColor: string;
+    isLight: boolean;
+    textPrimary: string;
+    textMuted: string;
+}) {
+    const firstMedia = post.media?.[0];
+
+    return (
+        <div
+            className="rounded-2xl overflow-hidden border"
+            style={{
+                borderColor,
+                background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 100% / 0.04)',
+            }}
+        >
+            <div className="p-3 space-y-3">
+                <div className="flex items-center gap-2.5">
+                    {post.author.avatarUrl ? (
+                        <img
+                            src={post.author.avatarUrl}
+                            alt={post.author.username}
+                            className="w-9 h-9 rounded-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-9 h-9 rounded-full bg-primary text-black font-bold flex items-center justify-center">
+                            {post.author.username[0]?.toUpperCase() || '?'}
+                        </div>
+                    )}
+
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-semibold truncate" style={{ color: textPrimary }}>
+                                {post.author.username}
+                            </span>
+                            {post.author.isVerified && <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-[11px]" style={{ color: textMuted }}>
+                            <span>{getPostTypeLabel(post.type)}</span>
+                            {post.type === 'chart' && post.assetSymbol && <span className="font-mono">{post.assetSymbol}</span>}
+                        </div>
+                    </div>
+                </div>
+
+                {post.content && (
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textPrimary }}>
+                        {post.content}
+                    </p>
+                )}
+
+                {firstMedia?.url && (
+                    <div className="rounded-2xl overflow-hidden border" style={{ borderColor }}>
+                        <img
+                            src={firstMedia.url}
+                            alt="Publicacion compartida"
+                            className="w-full max-h-80 object-cover"
+                            loading="lazy"
+                        />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function SharedStoryCard({
+    story,
+    borderColor,
+    isLight,
+    textPrimary,
+    textMuted,
+}: {
+    story: SharedStoryPreview;
+    borderColor: string;
+    isLight: boolean;
+    textPrimary: string;
+    textMuted: string;
+}) {
+    const background = story.background || 'linear-gradient(135deg, #0f172a 0%, #111827 45%, #10b981 100%)';
+
+    return (
+        <div
+            className="rounded-2xl overflow-hidden border"
+            style={{
+                borderColor,
+                background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 100% / 0.04)',
+            }}
+        >
+            <div className="p-3 space-y-3">
+                <div className="flex items-center gap-2.5">
+                    {story.author.avatarUrl ? (
+                        <img
+                            src={story.author.avatarUrl}
+                            alt={story.author.username}
+                            className="w-9 h-9 rounded-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-9 h-9 rounded-full bg-primary text-black font-bold flex items-center justify-center">
+                            {story.author.username[0]?.toUpperCase() || '?'}
+                        </div>
+                    )}
+
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-semibold truncate" style={{ color: textPrimary }}>
+                                {story.author.username}
+                            </span>
+                            {story.author.isVerified && <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-[11px]" style={{ color: textMuted }}>
+                            <span>Historia</span>
+                        </div>
+                    </div>
+                </div>
+
+                {story.mediaUrl ? (
+                    <div className="rounded-2xl overflow-hidden border" style={{ borderColor }}>
+                        <img
+                            src={story.mediaUrl}
+                            alt={`Historia de ${story.author.username}`}
+                            className="w-full max-h-80 object-cover"
+                            loading="lazy"
+                        />
+                    </div>
+                ) : (
+                    <div
+                        className="flex min-h-[200px] items-center justify-center rounded-2xl px-5 py-6 text-center"
+                        style={{ background }}
+                    >
+                        <p
+                            className="whitespace-pre-wrap break-words text-lg font-semibold leading-tight"
+                            style={{ color: story.textColor || '#ffffff' }}
+                        >
+                            {story.content || 'Historia compartida'}
+                        </p>
+                    </div>
+                )}
+
+                {story.mediaUrl && story.content && (
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textPrimary }}>
+                        {story.content}
+                    </p>
+                )}
+
+                <Link
+                    to={`/profile/${story.author.username}`}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-primary"
+                >
+                    Ver perfil
+                    <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+            </div>
+        </div>
+    );
+}
+
+function MessageAttachmentCard({
+    message,
+    isLight,
+    borderColor,
+    textPrimary,
+    textMuted,
+}: {
+    message: DirectMessage;
+    isLight: boolean;
+    borderColor: string;
+    textPrimary: string;
+    textMuted: string;
+}) {
+    if (message.attachmentType === 'image' && message.attachmentUrl) {
+        return (
+            <div className="space-y-2">
+                <img
+                    src={message.attachmentUrl}
+                    alt="Foto enviada"
+                    className="w-full max-w-[320px] max-h-[300px] object-cover rounded-2xl"
+                    loading="lazy"
+                />
+                {message.attachmentMeta?.originalName && (
+                    <p className="text-[11px]" style={{ color: textMuted }}>
+                        {String(message.attachmentMeta.originalName)}
+                    </p>
+                )}
+            </div>
+        );
+    }
+
+    if (message.attachmentType === 'post' && message.sharedPost) {
+        return (
+            <div className="w-full max-w-[360px]">
+                <SharedPostCard
+                    post={message.sharedPost}
+                    borderColor={borderColor}
+                    isLight={isLight}
+                    textPrimary={textPrimary}
+                    textMuted={textMuted}
+                />
+            </div>
+        );
+    }
+
+    if (message.attachmentType === 'chart' && message.attachmentUrl) {
+        const symbol = typeof message.attachmentMeta?.symbol === 'string' ? message.attachmentMeta.symbol : 'ACTIVO';
+        const interval = typeof message.attachmentMeta?.interval === 'string' ? message.attachmentMeta.interval : 'D';
+        const analysisType = typeof message.attachmentMeta?.analysisType === 'string' ? message.attachmentMeta.analysisType : '';
+        const riskLevel = typeof message.attachmentMeta?.riskLevel === 'string' ? message.attachmentMeta.riskLevel : '';
+
+        return (
+            <div
+                className="w-full max-w-[360px] rounded-2xl overflow-hidden border"
+                style={{
+                    borderColor,
+                    background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 100% / 0.04)',
+                }}
+            >
+                <img
+                    src={message.attachmentUrl}
+                    alt={`Grafico ${symbol}`}
+                    className="w-full max-h-80 object-cover"
+                    loading="lazy"
+                />
+                <div className="p-3 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-primary/15 text-primary">
+                            {symbol}
+                        </span>
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.05)', color: textPrimary }}>
+                            {getChartIntervalLabel(interval)}
+                        </span>
+                        {analysisType && (
+                            <span className="text-[11px]" style={{ color: textMuted }}>
+                                {analysisType}
+                            </span>
+                        )}
+                        {riskLevel && (
+                            <span className="text-[11px]" style={{ color: textMuted }}>
+                                Riesgo {riskLevel}
+                            </span>
+                        )}
+                    </div>
+                    <Link
+                        to={`/market?symbol=${encodeURIComponent(symbol)}`}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-primary"
+                    >
+                        Abrir grafico
+                        <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
+    if (message.attachmentType === 'story') {
+        const story = message.attachmentMeta?.story as SharedStoryPreview | null | undefined;
+        if (!story) return null;
+
+        return (
+            <div className="w-full max-w-[360px]">
+                <SharedStoryCard
+                    story={story}
+                    borderColor={borderColor}
+                    isLight={isLight}
+                    textPrimary={textPrimary}
+                    textMuted={textMuted}
+                />
+            </div>
+        );
+    }
+
+    return null;
 }
 
 // ─── New Message Modal ────────────────────────────────────────────────────────
@@ -204,6 +622,7 @@ export default function MessagesPage() {
     const { theme: appTheme } = usePreferencesStore();
     const isLight = appTheme === 'light' || (appTheme === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches);
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
 
     // ── State ──────────────────────────────────────────────────────────────
@@ -216,18 +635,26 @@ export default function MessagesPage() {
     const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
     const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showAttachMenu, setShowAttachMenu] = useState(false);
+    const [showPostPicker, setShowPostPicker] = useState(false);
+    const [showChartPicker, setShowChartPicker] = useState(false);
+    const [pendingAttachment, setPendingAttachment] = useState<ComposerAttachment | null>(null);
+    const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+    const [composerError, setComposerError] = useState('');
     const [showNewMsg, setShowNewMsg] = useState(false);
     const [isLoadingConvs, setIsLoadingConvs] = useState(true);
     const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [showMobileList, setShowMobileList] = useState(true);
-    const [, setShowConvMenu] = useState<string | null>(null);
 
     const socketRef = useRef<Socket | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const prevConvRef = useRef<string | null>(null);
+    const activeConvIdRef = useRef<string | null>(null);
+    const conversationsRef = useRef<ConversationItem[]>([]);
 
     const activeConv = conversations.find((c) => c.id === activeConvId) ?? null;
 
@@ -249,36 +676,19 @@ export default function MessagesPage() {
         ? 'hsl(0 0% 100%)'
         : 'linear-gradient(90deg, rgba(0,230,118,0.03) 0%, transparent 60%)';
 
-    // ── Socket setup ───────────────────────────────────────────────────────
+    useEffect(() => {
+        activeConvIdRef.current = activeConvId;
+    }, [activeConvId]);
 
     useEffect(() => {
-        if (!token) return;
-        const socket = io(SOCKET_URL, { auth: { token }, transports: ['websocket', 'polling'] });
-        socketRef.current = socket;
+        conversationsRef.current = conversations;
+    }, [conversations]);
 
-        socket.on('userOnline', ({ userId }: { userId: string }) => setOnlineUsers((p) => new Set([...p, userId])));
-        socket.on('userOffline', ({ userId }: { userId: string }) => setOnlineUsers((p) => { const n = new Set(p); n.delete(userId); return n; }));
-
-        socket.on('newDirectMessage', (msg: DirectMessage) => {
-            setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
-        });
-
-        socket.on('conversationUpdated', ({ conversationId, lastMessage }: { conversationId: string; lastMessage: DirectMessage }) => {
-            setConversations((prev) =>
-                prev.map((c) => c.id === conversationId
-                    ? { ...c, lastMessage, updatedAt: lastMessage.createdAt, unreadCount: lastMessage.senderId !== user?.id && activeConvId !== conversationId ? c.unreadCount + 1 : c.unreadCount }
-                    : c
-                ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-            );
-        });
-
-        socket.on('userTyping', ({ userId, isTyping }: { userId: string; isTyping: boolean }) => {
-            setTypingUsers((prev) => { const n = new Set(prev); isTyping ? n.add(userId) : n.delete(userId); return n; });
-        });
-
-        return () => { socket.disconnect(); };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token]);
+    useEffect(() => {
+        if (!inputText && inputRef.current) {
+            inputRef.current.style.height = 'auto';
+        }
+    }, [inputText]);
 
     // ── Load conversations ─────────────────────────────────────────────────
 
@@ -290,15 +700,162 @@ export default function MessagesPage() {
         } finally { setIsLoadingConvs(false); }
     }, []);
 
+    // ── Socket setup ───────────────────────────────────────────────────────
+
+    useEffect(() => {
+        if (!token) return;
+        const socket = io(SOCKET_URL, { auth: { token }, transports: ['websocket', 'polling'] });
+        socketRef.current = socket;
+
+        socket.on('userOnline', ({ userId }: { userId: string }) => setOnlineUsers((p) => new Set([...p, userId])));
+        socket.on('userOffline', ({ userId }: { userId: string }) => setOnlineUsers((p) => { const n = new Set(p); n.delete(userId); return n; }));
+
+        socket.on('newDirectMessage', (msg: DirectMessage) => {
+            if (activeConvIdRef.current !== msg.conversationId) {
+                return;
+            }
+
+            setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
+        });
+
+        socket.on('conversationUpdated', ({ conversationId, lastMessage }: { conversationId: string; lastMessage: DirectMessage }) => {
+            const shouldReloadConversations =
+                lastMessage.senderId === user?.id &&
+                !conversationsRef.current.some((conversation) => conversation.id === conversationId);
+
+            setConversations((prev) => {
+                return applyConversationMessageUpdate(
+                    prev,
+                    conversationId,
+                    lastMessage,
+                    user?.id,
+                    activeConvIdRef.current,
+                );
+            });
+
+            if (shouldReloadConversations) {
+                void loadConversations();
+            }
+        });
+
+        socket.on('userTyping', ({ userId, isTyping }: { userId: string; isTyping: boolean }) => {
+            setTypingUsers((prev) => { const n = new Set(prev); isTyping ? n.add(userId) : n.delete(userId); return n; });
+        });
+
+        return () => { socket.disconnect(); };
+    }, [token, user?.id, loadConversations]);
+
     useEffect(() => { loadConversations(); }, [loadConversations]);
+
+    // ── Open conversation from URL param ───────────────────────────────────
+
+    // ── Handlers ───────────────────────────────────────────────────────────
+
+    const resetComposer = () => {
+        setInputText('');
+        setPendingAttachment(null);
+        setShowAttachMenu(false);
+        setShowEmojiPicker(false);
+        setComposerError('');
+        if (inputRef.current) {
+            inputRef.current.style.height = 'auto';
+        }
+    };
+
+    const handleReturnToInbox = () => {
+        setActiveConvId(null);
+        setMessages([]);
+        setShowMobileList(true);
+        setTypingUsers(new Set());
+        setShowPostPicker(false);
+        setShowChartPicker(false);
+        resetComposer();
+    };
+
+    const handleSelectConv = (convId: string) => {
+        const currentAttachment = pendingAttachment;
+        const shouldPreserveAttachment = Boolean(currentAttachment && !activeConvId);
+        setActiveConvId(convId);
+        setShowMobileList(false);
+        setTypingUsers(new Set());
+        setShowPostPicker(false);
+        setShowChartPicker(false);
+        resetComposer();
+        if (shouldPreserveAttachment && currentAttachment) {
+            setPendingAttachment(currentAttachment);
+        }
+    };
+
+    const handleStartConversation = useCallback(async (otherUserId: string, clearUserSearchParam = false) => {
+        const currentAttachment = pendingAttachment;
+        const existing = conversations.find((c) => c.otherUser.id === otherUserId);
+        if (existing) {
+            handleSelectConv(existing.id);
+            if (currentAttachment) {
+                setPendingAttachment(currentAttachment);
+            }
+            setShowNewMsg(false);
+            if (clearUserSearchParam) {
+                navigate('/messages', { replace: true });
+            }
+            return;
+        }
+
+        try {
+            const res = await apiFetch('/messages/conversations', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: otherUserId }),
+            });
+            if (res.ok) {
+                const data: ConversationApiRecord = await res.json();
+
+                if (user?.id) {
+                    setConversations((prev) => upsertConversation(prev, buildConversationFromApiRecord(data, user.id)));
+                }
+
+                handleSelectConv(data.id);
+                if (currentAttachment) {
+                    setPendingAttachment(currentAttachment);
+                }
+                void loadConversations();
+            }
+        } catch { /* noop */ }
+
+        if (clearUserSearchParam) {
+            navigate('/messages', { replace: true });
+        }
+
+        setShowNewMsg(false);
+    }, [conversations, loadConversations, navigate, pendingAttachment, user?.id]);
 
     // ── Open conversation from URL param ───────────────────────────────────
 
     useEffect(() => {
         const userId = searchParams.get('user');
-        if (userId && !isLoadingConvs) handleStartConversation(userId);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams, isLoadingConvs]);
+        if (!userId || isLoadingConvs) return;
+
+        void handleStartConversation(userId, true);
+    }, [searchParams, isLoadingConvs, handleStartConversation]);
+
+    useEffect(() => {
+        const state = location.state as { composerAttachment?: ComposerAttachment | null; openNewMessage?: boolean } | null;
+        if (!state?.composerAttachment) return;
+
+        setPendingAttachment(state.composerAttachment);
+        setComposerError('');
+        setShowAttachMenu(false);
+        setShowEmojiPicker(false);
+
+        if (!activeConvId && state.openNewMessage !== false && !searchParams.get('user')) {
+            setShowNewMsg(true);
+            setShowMobileList(true);
+        }
+
+        navigate(`${location.pathname}${location.search}`, {
+            replace: true,
+            state: null,
+        });
+    }, [activeConvId, location.pathname, location.search, location.state, navigate, searchParams]);
 
     // ── Load messages when active conversation changes ─────────────────────
 
@@ -325,53 +882,75 @@ export default function MessagesPage() {
 
     useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-    // ── Handlers ───────────────────────────────────────────────────────────
-
-    const handleSelectConv = (convId: string) => {
-        setActiveConvId(convId);
-        setShowMobileList(false);
-        setTypingUsers(new Set());
-        setShowConvMenu(null);
+    const handleAttachmentSelect = (attachment: ComposerAttachment) => {
+        setPendingAttachment(attachment);
+        setShowAttachMenu(false);
+        setShowPostPicker(false);
+        setShowChartPicker(false);
+        setComposerError('');
     };
 
-    const handleStartConversation = async (otherUserId: string) => {
-        const existing = conversations.find((c) => c.otherUser.id === otherUserId);
-        if (existing) { handleSelectConv(existing.id); setShowNewMsg(false); return; }
+    const handleImageAttachmentChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+
+        setIsUploadingAttachment(true);
+        setComposerError('');
+        setShowAttachMenu(false);
+
         try {
-            const res = await apiFetch('/messages/conversations', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: otherUserId }),
+            const uploaded = await uploadChatFile(file);
+            handleAttachmentSelect({
+                type: 'image',
+                url: uploaded.url,
+                meta: {
+                    originalName: uploaded.originalName || file.name,
+                    size: uploaded.size || file.size,
+                },
             });
-            if (res.ok) {
-                await loadConversations();
-                const data = await res.clone().json();
-                handleSelectConv(data.id);
-            }
-        } catch { /* noop */ }
-        setShowNewMsg(false);
+        } catch (error: any) {
+            setComposerError(error?.message || 'No se pudo subir la foto');
+        } finally {
+            setIsUploadingAttachment(false);
+        }
     };
 
     const handleSendMessage = async () => {
         const content = inputText.trim();
-        if (!content || !activeConvId || isSending) return;
-        setInputText('');
-        setIsSending(true);
+        const attachment = pendingAttachment
+            ? {
+                type: pendingAttachment.type,
+                url: pendingAttachment.url,
+                postId: pendingAttachment.postId || pendingAttachment.sharedPost?.id,
+                meta: pendingAttachment.meta || undefined,
+            }
+            : undefined;
 
-        if (socketRef.current?.connected) {
-            socketRef.current.emit('sendDirectMessage', { conversationId: activeConvId, content });
+        if ((!content && !attachment) || !activeConvId || isSending || isUploadingAttachment) return;
+
+        setIsSending(true);
+        setComposerError('');
+
+        try {
+            const res = await apiFetch(`/messages/conversations/${activeConvId}/messages`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content, attachment }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(typeof data?.message === 'string' ? data.message : 'No se pudo enviar el mensaje');
+            }
+
+            const msg: DirectMessage = await res.json();
+            setMessages((prev) => prev.some((item) => item.id === msg.id) ? prev : [...prev, msg]);
+            setConversations((prev) => applyConversationMessageUpdate(prev, activeConvId, msg, user?.id, activeConvId));
+            resetComposer();
+        } catch (error: any) {
+            setComposerError(error?.message || 'No se pudo enviar el mensaje');
+        } finally {
             setIsSending(false);
-        } else {
-            try {
-                const res = await apiFetch(`/messages/conversations/${activeConvId}/messages`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content }),
-                });
-                if (res.ok) {
-                    const msg: DirectMessage = await res.json();
-                    setMessages((p) => [...p, msg]);
-                    setConversations((p) => p.map((c) => c.id === activeConvId ? { ...c, lastMessage: msg, updatedAt: msg.createdAt } : c).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
-                }
-            } finally { setIsSending(false); }
         }
 
         socketRef.current?.emit('typing', { conversationId: activeConvId, isTyping: false });
@@ -391,11 +970,10 @@ export default function MessagesPage() {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
     };
 
-    const handleDeleteConv = async (convId: string) => {
-        if (!confirm('¿Eliminar esta conversación? No se puede deshacer.')) return;
-        await apiFetch(`/messages/conversations/${convId}`, { method: 'DELETE' });
-        setConversations((p) => p.filter((c) => c.id !== convId));
-        if (activeConvId === convId) { setActiveConvId(null); setMessages([]); setShowMobileList(true); }
+    const handleEmojiSelect = (emoji: string) => {
+        setInputText((current) => `${current}${emoji}`);
+        setShowEmojiPicker(false);
+        requestAnimationFrame(() => inputRef.current?.focus());
     };
 
     // ── Helpers ────────────────────────────────────────────────────────────
@@ -403,6 +981,7 @@ export default function MessagesPage() {
     const filteredConvs = convSearch.trim()
         ? conversations.filter((c) => c.otherUser.username.toLowerCase().includes(convSearch.toLowerCase()))
         : conversations;
+    const canSendMessage = Boolean((inputText.trim() || pendingAttachment) && activeConvId && !isSending && !isUploadingAttachment);
 
     const formatTime = (iso: string) => {
         const d = new Date(iso), diffH = (Date.now() - d.getTime()) / 36e5;
@@ -417,12 +996,32 @@ export default function MessagesPage() {
 
     return (
         <div className="flex flex-col flex-1 overflow-hidden">
-            {/* New message modal */}
             <AnimatePresence>
                 {showNewMsg && (
                     <NewMessageModal onClose={() => setShowNewMsg(false)} onSelect={handleStartConversation} />
                 )}
+                {showPostPicker && (
+                    <PostPickerModal
+                        currentUsername={user?.username}
+                        onClose={() => setShowPostPicker(false)}
+                        onSelect={handleAttachmentSelect}
+                    />
+                )}
+                {showChartPicker && (
+                    <ChartAttachmentModal
+                        onClose={() => setShowChartPicker(false)}
+                        onSelect={handleAttachmentSelect}
+                    />
+                )}
             </AnimatePresence>
+
+            <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={handleImageAttachmentChange}
+            />
 
             <div className="flex flex-1 h-full overflow-hidden" style={{ background: bgPage }}>
 
@@ -514,7 +1113,7 @@ export default function MessagesPage() {
                                                     <div className="relative group">
                                                         <button
                                                             onClick={() => handleSelectConv(conv.id)}
-                                                            className="w-full flex items-center gap-3 px-4 py-3.5 transition-all text-left"
+                                                            className="w-full flex items-center gap-3 px-4 pr-12 py-3.5 transition-all text-left"
                                                             style={{
                                                                 background: isActive ? 'hsl(158 100% 45% / 0.07)' : 'transparent',
                                                                 borderLeft: isActive ? '3px solid hsl(158 100% 45%)' : '3px solid transparent',
@@ -539,7 +1138,7 @@ export default function MessagesPage() {
                                                                 <div className="flex items-center justify-between">
                                                                     <p className="text-xs text-muted-foreground truncate max-w-[160px]">
                                                                         {conv.lastMessage
-                                                                            ? `${conv.lastMessage.senderId === user?.id ? 'Tú: ' : ''}${conv.lastMessage.content}`
+                                                                            ? `${conv.lastMessage.senderId === user?.id ? 'Tu: ' : ''}${getMessagePreview(conv.lastMessage)}`
                                                                             : 'Iniciar conversación'}
                                                                     </p>
                                                                     {conv.unreadCount > 0 && (
@@ -552,14 +1151,33 @@ export default function MessagesPage() {
                                                             </div>
                                                         </button>
 
-                                                        {/* Hover actions */}
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleDeleteConv(conv.id); }}
-                                                            className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-500/10"
-                                                            title="Eliminar chat"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                                                        </button>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <button
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className={`absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                                                                        isActive ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100'
+                                                                    }`}
+                                                                    style={{ background: isActive ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
+                                                                    title="Acciones del chat"
+                                                                    aria-label={`Acciones del chat con ${conv.otherUser.username}`}
+                                                                >
+                                                                    <MoreHorizontal className="w-4 h-4" style={{ color: textMuted }} />
+                                                                </button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="w-48">
+                                                                <DropdownMenuLabel>Acciones del chat</DropdownMenuLabel>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem onClick={() => handleSelectConv(conv.id)}>
+                                                                    <MessageSquare className="w-4 h-4" />
+                                                                    Abrir chat
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => navigate(`/profile/${conv.otherUser.username}`)}>
+                                                                    <ExternalLink className="w-4 h-4" />
+                                                                    Ver perfil
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
                                                     </div>
                                                 </motion.li>
                                             );
@@ -633,12 +1251,14 @@ export default function MessagesPage() {
                                 className="flex items-center gap-3 px-5 py-3.5 flex-shrink-0"
                                 style={{ borderBottom: `1px solid ${borderColor}`, background: chatHeaderBg }}
                             >
-                                {/* Mobile back */}
                                 <button
-                                    onClick={() => { setShowMobileList(true); setActiveConvId(null); }}
-                                    className="lg:hidden p-2 rounded-xl transition-all hover:bg-secondary/50"
+                                    onClick={handleReturnToInbox}
+                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl transition-all hover:bg-secondary/50"
                                 >
                                     <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+                                    <span className="hidden sm:inline text-sm font-semibold" style={{ color: textPrimary }}>
+                                        Volver a mensajes
+                                    </span>
                                 </button>
 
                                 {activeConv && (
@@ -676,20 +1296,29 @@ export default function MessagesPage() {
 
                                         {/* Header actions */}
                                         <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={() => navigate(`/profile/${activeConv.otherUser.username}`)}
-                                                className="p-2 rounded-xl transition-all hover:bg-secondary/50"
-                                                title="Ver perfil"
-                                            >
-                                                <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteConv(activeConvId)}
-                                                className="p-2 rounded-xl transition-all hover:bg-red-500/10"
-                                                title="Eliminar conversación"
-                                            >
-                                                <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-400 transition-colors" />
-                                            </button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button
+                                                        className="p-2 rounded-xl transition-all hover:bg-secondary/50"
+                                                        title="Acciones del chat"
+                                                        aria-label={`Acciones del chat con ${activeConv.otherUser.username}`}
+                                                    >
+                                                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-52">
+                                                    <DropdownMenuLabel>Acciones del chat</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => navigate(`/profile/${activeConv.otherUser.username}`)}>
+                                                        <ExternalLink className="w-4 h-4" />
+                                                        Ver perfil
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={handleReturnToInbox}>
+                                                        <ArrowLeft className="w-4 h-4" />
+                                                        Volver a mensajes
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </>
                                 )}
@@ -755,8 +1384,13 @@ export default function MessagesPage() {
                                                         )}
 
                                                         <div className={`flex flex-col max-w-[68%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                                            {(() => {
+                                                                const hasAttachment = Boolean(msg.attachmentType);
+                                                                const hasText = Boolean(msg.content?.trim());
+
+                                                                return (
                                                             <div
-                                                                className="px-3.5 py-2.5 text-sm leading-relaxed break-words whitespace-pre-wrap"
+                                                                className="text-sm leading-relaxed break-words whitespace-pre-wrap overflow-hidden"
                                                                 style={{
                                                                     borderRadius: isMe
                                                                         ? isFirstInGroup ? '18px 4px 18px 18px' : '18px 4px 4px 18px'
@@ -767,10 +1401,26 @@ export default function MessagesPage() {
                                                                     color: isMe ? '#030d06' : bubbleText,
                                                                     fontWeight: isMe ? 500 : 400,
                                                                     boxShadow: isMe ? '0 2px 8px hsl(158 100% 45% / 0.25)' : 'none',
+                                                                    padding: hasAttachment ? '10px' : '10px 14px',
                                                                 }}
                                                             >
-                                                                {msg.content}
+                                                                {hasAttachment && (
+                                                                    <MessageAttachmentCard
+                                                                        message={msg}
+                                                                        isLight={isLight}
+                                                                        borderColor={isMe ? 'hsl(158 100% 30% / 0.25)' : borderColor}
+                                                                        textPrimary={isMe ? '#031108' : textPrimary}
+                                                                        textMuted={isMe ? 'rgba(3,17,8,0.7)' : textMuted}
+                                                                    />
+                                                                )}
+                                                                {hasText && (
+                                                                    <div className={hasAttachment ? 'mt-2.5 px-1 pb-1' : ''}>
+                                                                        {msg.content}
+                                                                    </div>
+                                                                )}
                                                             </div>
+                                                                );
+                                                            })()}
 
                                                             {/* Time + read status */}
                                                             {isLastInGroup && (
@@ -801,8 +1451,8 @@ export default function MessagesPage() {
                                                     {activeConv && <UserAvatar user={activeConv.otherUser} size={28} />}
                                                     <div className="flex items-center gap-1 px-4 py-3 rounded-[4px_18px_18px_18px]"
                                                         style={{ background: bubbleBg }}>
-                                                        {[0, 1, 2].map((i) => (
-                                                            <motion.span key={i} className="w-1.5 h-1.5 rounded-full"
+                                                        {['typing-a', 'typing-b', 'typing-c'].map((dotId, i) => (
+                                                            <motion.span key={dotId} className="w-1.5 h-1.5 rounded-full"
                                                                 style={{ background: textMuted }}
                                                                 animate={{ y: [0, -4, 0] }}
                                                                 transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
@@ -823,18 +1473,196 @@ export default function MessagesPage() {
                                 className="flex-shrink-0 px-4 py-4"
                                 style={{ borderTop: `1px solid ${borderColor}`, background: chatHeaderBg }}
                             >
+                                {pendingAttachment && (
+                                    <div
+                                        className="mb-3 rounded-2xl border p-3"
+                                        style={{
+                                            borderColor,
+                                            background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 100% / 0.04)',
+                                        }}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            {pendingAttachment.type === 'image' && pendingAttachment.url && (
+                                                <img
+                                                    src={pendingAttachment.url}
+                                                    alt="Foto lista para enviar"
+                                                    className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
+                                                />
+                                            )}
+
+                                            {pendingAttachment.type === 'chart' && pendingAttachment.url && (
+                                                <img
+                                                    src={pendingAttachment.url}
+                                                    alt="Grafico listo para enviar"
+                                                    className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
+                                                />
+                                            )}
+
+                                            {pendingAttachment.type === 'post' && (
+                                                <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                                                    <Newspaper className="w-7 h-7" />
+                                                </div>
+                                            )}
+
+                                            {pendingAttachment.type === 'story' && (
+                                                pendingAttachment.sharedStory?.mediaUrl ? (
+                                                    <img
+                                                        src={pendingAttachment.sharedStory.mediaUrl}
+                                                        alt="Historia lista para enviar"
+                                                        className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                                                        <Sparkles className="w-7 h-7" />
+                                                    </div>
+                                                )
+                                            )}
+
+                                            <div className="min-w-0 flex-1">
+                                                {pendingAttachment.type === 'image' && (
+                                                    <>
+                                                        <p className="text-sm font-semibold" style={{ color: textPrimary }}>
+                                                            Foto lista para enviar
+                                                        </p>
+                                                        <p className="text-xs mt-1" style={{ color: textMuted }}>
+                                                            {String(pendingAttachment.meta?.originalName || 'Imagen')}
+                                                        </p>
+                                                    </>
+                                                )}
+
+                                                {pendingAttachment.type === 'post' && pendingAttachment.sharedPost && (
+                                                    <>
+                                                        <p className="text-sm font-semibold" style={{ color: textPrimary }}>
+                                                            Publicacion compartida
+                                                        </p>
+                                                        <p className="text-xs mt-1" style={{ color: textMuted }}>
+                                                            {pendingAttachment.sharedPost.author.username}
+                                                        </p>
+                                                        {pendingAttachment.sharedPost.content && (
+                                                            <p className="text-sm mt-2 max-h-10 overflow-hidden" style={{ color: textPrimary }}>
+                                                                {pendingAttachment.sharedPost.content}
+                                                            </p>
+                                                        )}
+                                                    </>
+                                                )}
+
+                                                {pendingAttachment.type === 'chart' && (
+                                                    <>
+                                                        <p className="text-sm font-semibold" style={{ color: textPrimary }}>
+                                                            Grafico listo para enviar
+                                                        </p>
+                                                        <p className="text-xs mt-1 font-mono" style={{ color: textMuted }}>
+                                                            {String(pendingAttachment.meta?.symbol || 'ACTIVO')} · {getChartIntervalLabel(String(pendingAttachment.meta?.interval || 'D'))}
+                                                        </p>
+                                                    </>
+                                                )}
+
+                                                {pendingAttachment.type === 'story' && pendingAttachment.sharedStory && (
+                                                    <>
+                                                        <p className="text-sm font-semibold" style={{ color: textPrimary }}>
+                                                            Historia compartida
+                                                        </p>
+                                                        <p className="text-xs mt-1" style={{ color: textMuted }}>
+                                                            {pendingAttachment.sharedStory.author.username}
+                                                        </p>
+                                                        {pendingAttachment.sharedStory.content && (
+                                                            <p className="text-sm mt-2 max-h-10 overflow-hidden" style={{ color: textPrimary }}>
+                                                                {pendingAttachment.sharedStory.content}
+                                                            </p>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            <button
+                                                onClick={() => setPendingAttachment(null)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/60 transition-colors"
+                                            >
+                                                <X className="w-4 h-4 text-muted-foreground" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {composerError && (
+                                    <div className="mb-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                                        {composerError}
+                                    </div>
+                                )}
+
                                 <div
                                     className="flex items-end gap-2 rounded-2xl px-3 py-2.5 transition-all"
                                     style={{
                                         background: inputBg,
-                                        border: `1px solid ${inputText.trim() ? 'hsl(158 100% 45% / 0.4)' : inputBorder}`,
-                                        boxShadow: inputText.trim() ? '0 0 0 3px hsl(158 100% 45% / 0.08)' : 'none',
+                                        border: `1px solid ${(inputText.trim() || pendingAttachment) ? 'hsl(158 100% 45% / 0.4)' : inputBorder}`,
+                                        boxShadow: (inputText.trim() || pendingAttachment) ? '0 0 0 3px hsl(158 100% 45% / 0.08)' : 'none',
                                     }}
                                 >
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => {
+                                                setShowAttachMenu((prev) => !prev);
+                                                setShowEmojiPicker(false);
+                                            }}
+                                            className="p-1.5 rounded-xl transition-all flex-shrink-0 mb-0.5"
+                                            style={{ color: showAttachMenu ? 'hsl(158 100% 45%)' : textMuted, background: showAttachMenu ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
+                                            title="Adjuntar"
+                                        >
+                                            <Plus className="w-5 h-5" />
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {showAttachMenu && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                                                    transition={{ duration: 0.15 }}
+                                                    className="absolute bottom-full left-0 mb-2 w-52 p-2 rounded-2xl border shadow-xl z-20"
+                                                    style={{ background: isLight ? 'hsl(0 0% 100%)' : '#1a1a1a', borderColor }}
+                                                >
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowAttachMenu(false);
+                                                            imageInputRef.current?.click();
+                                                        }}
+                                                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
+                                                    >
+                                                        <ImageIcon className="w-4 h-4 text-primary" />
+                                                        Foto
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowAttachMenu(false);
+                                                            setShowPostPicker(true);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
+                                                    >
+                                                        <Newspaper className="w-4 h-4 text-primary" />
+                                                        Publicacion
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowAttachMenu(false);
+                                                            setShowChartPicker(true);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
+                                                    >
+                                                        <BarChart2 className="w-4 h-4 text-primary" />
+                                                        Grafico
+                                                    </button>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
                                     {/* Emoji button */}
                                     <div className="relative">
                                         <button
-                                            onClick={() => setShowEmojiPicker((p) => !p)}
+                                            onClick={() => {
+                                                setShowEmojiPicker((prev) => !prev);
+                                                setShowAttachMenu(false);
+                                            }}
                                             className="p-1.5 rounded-xl transition-all flex-shrink-0 mb-0.5"
                                             style={{ color: showEmojiPicker ? 'hsl(158 100% 45%)' : textMuted, background: showEmojiPicker ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
                                             title="Emojis"
@@ -850,19 +1678,52 @@ export default function MessagesPage() {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
                                                     transition={{ duration: 0.15 }}
-                                                    className="absolute bottom-full left-0 mb-2 p-2 rounded-2xl border shadow-xl z-20"
-                                                    style={{ background: isLight ? 'hsl(0 0% 100%)' : '#1a1a1a', borderColor }}
-                                                    onMouseLeave={() => setShowEmojiPicker(false)}
+                                                    className="absolute bottom-full left-0 mb-3 w-[288px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border shadow-2xl z-20"
+                                                    style={{
+                                                        background: isLight ? 'hsl(0 0% 100% / 0.98)' : 'hsl(0 0% 8% / 0.98)',
+                                                        borderColor,
+                                                        backdropFilter: 'blur(10px)',
+                                                    }}
                                                 >
-                                                    <div className="grid grid-cols-5 gap-1">
-                                                        {COMMON_EMOJIS.map((emoji) => (
-                                                            <button
-                                                                key={emoji}
-                                                                onClick={() => { setInputText((t) => t + emoji); setShowEmojiPicker(false); inputRef.current?.focus(); }}
-                                                                className="w-9 h-9 rounded-lg text-lg flex items-center justify-center hover:bg-secondary/50 transition-colors"
-                                                            >
-                                                                {emoji}
-                                                            </button>
+                                                    <div
+                                                        className="px-3 py-2.5 border-b"
+                                                        style={{
+                                                            borderColor,
+                                                            background: isLight ? 'hsl(210 20% 98%)' : 'hsl(0 0% 100% / 0.03)',
+                                                        }}
+                                                    >
+                                                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: textMuted }}>
+                                                            Emojis
+                                                        </p>
+                                                    </div>
+                                                    <div className="p-3 space-y-3">
+                                                        {EMOJI_GROUPS.map((group) => (
+                                                            <div key={group.label} className="space-y-2">
+                                                                <p className="text-[11px] font-medium" style={{ color: textMuted }}>
+                                                                    {group.label}
+                                                                </p>
+                                                                <div className="grid grid-cols-5 gap-2">
+                                                                    {group.items.map((emoji) => (
+                                                                        <button
+                                                                            key={emoji}
+                                                                            onClick={() => handleEmojiSelect(emoji)}
+                                                                            className="flex h-11 w-11 items-center justify-center rounded-xl border transition-all hover:-translate-y-0.5 hover:bg-secondary/60"
+                                                                            style={{
+                                                                                borderColor: isLight ? 'hsl(214 18% 90%)' : 'hsl(0 0% 100% / 0.06)',
+                                                                                background: isLight ? 'hsl(210 20% 99%)' : 'hsl(0 0% 100% / 0.03)',
+                                                                            }}
+                                                                            aria-label={`Agregar ${emoji}`}
+                                                                        >
+                                                                            <span
+                                                                                className="emoji-glyph block text-[25px]"
+                                                                                style={{ fontFamily: EMOJI_FONT_STACK }}
+                                                                            >
+                                                                                {emoji}
+                                                                            </span>
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 </motion.div>
@@ -876,7 +1737,7 @@ export default function MessagesPage() {
                                         value={inputText}
                                         onChange={(e) => handleInputChange(e.target.value)}
                                         onKeyDown={handleKeyDown}
-                                        placeholder="Escribí un mensaje..."
+                                        placeholder={pendingAttachment ? 'Agrega un texto opcional...' : 'Escribi un mensaje...'}
                                         rows={1}
                                         className="flex-1 bg-transparent text-sm resize-none outline-none py-1.5 max-h-32 leading-relaxed placeholder:text-muted-foreground"
                                         style={{
@@ -893,25 +1754,29 @@ export default function MessagesPage() {
                                     {/* Send button */}
                                     <motion.button
                                         onClick={handleSendMessage}
-                                        disabled={!inputText.trim() || isSending}
-                                        whileHover={inputText.trim() ? { scale: 1.08 } : {}}
-                                        whileTap={inputText.trim() ? { scale: 0.92 } : {}}
+                                        disabled={!canSendMessage}
+                                        whileHover={canSendMessage ? { scale: 1.08 } : {}}
+                                        whileTap={canSendMessage ? { scale: 0.92 } : {}}
                                         className="p-2 rounded-xl flex-shrink-0 mb-0.5 transition-all"
                                         style={{
-                                            background: inputText.trim()
+                                            background: canSendMessage
                                                 ? 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)'
                                                 : 'transparent',
-                                            color: inputText.trim() ? '#060a07' : textMuted,
-                                            boxShadow: inputText.trim() ? '0 2px 10px hsl(158 100% 45% / 0.35)' : 'none',
-                                            cursor: inputText.trim() ? 'pointer' : 'default',
+                                            color: canSendMessage ? '#060a07' : textMuted,
+                                            boxShadow: canSendMessage ? '0 2px 10px hsl(158 100% 45% / 0.35)' : 'none',
+                                            cursor: canSendMessage ? 'pointer' : 'default',
                                         }}
                                     >
-                                        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                        {(isSending || isUploadingAttachment)
+                                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                                            : <Send className="w-4 h-4" />}
                                     </motion.button>
                                 </div>
 
                                 <p className="text-center text-[10px] text-muted-foreground mt-2 opacity-60">
-                                    Enter para enviar · Shift+Enter nueva línea
+                                    {isUploadingAttachment
+                                        ? 'Subiendo adjunto...'
+                                        : 'Enter para enviar · Shift+Enter nueva linea'}
                                 </p>
                             </div>
                         </>

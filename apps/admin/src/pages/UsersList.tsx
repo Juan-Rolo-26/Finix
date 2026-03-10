@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { adminFetch } from '../lib/api';
 import { Search, ShieldAlert } from 'lucide-react';
 
 export default function UsersList() {
@@ -10,10 +11,7 @@ export default function UsersList() {
     const loadUsers = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('auth-token');
-            const res = await fetch(`/api/admin/users?page=${page}&limit=50&search=${search}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await adminFetch(`/admin/users?page=${page}&limit=50&search=${search}`);
             if (res.ok) {
                 const data = await res.json();
                 setUsers(data.data);
@@ -37,13 +35,9 @@ export default function UsersList() {
         if (!confirm('¿Confirmas esta acción de moderación?')) return;
 
         try {
-            const token = localStorage.getItem('auth-token');
-            const res = await fetch(`/api/admin/users/${id}`, {
+            const res = await adminFetch(`/admin/users/${id}`, {
                 method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
             });
             if (res.ok) {

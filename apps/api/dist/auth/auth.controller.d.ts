@@ -1,55 +1,151 @@
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto } from '@finix/shared';
+import { EmailCodeDto, ForgotPasswordRequestDto, ForgotPasswordResetDto, LoginRequestDto, RegisterRequestDto } from './dto/auth.dto';
 export declare class AuthController {
     private authService;
     constructor(authService: AuthService);
-    register(dto: RegisterDto): Promise<{
-        access_token: string;
+    requestRegisterCode(body: RegisterRequestDto): Promise<{
+        message: string;
+        email: string;
+        devCode?: undefined;
+        delivery?: undefined;
+    } | {
+        message: string;
+        email: string;
+        devCode: string;
+        delivery: string;
+    }>;
+    verifyRegisterCode(body: EmailCodeDto): Promise<{
+        token: string;
         user: {
-            id: string;
-            username: string;
-            role: string;
-            email: string;
-            plan: string;
-            accountType: string;
-            subscriptionStatus: string;
-            isInfluencer: boolean;
-            isVerified: boolean;
-            isCreator: boolean;
-            bio: string;
-            avatarUrl: string;
-            onboardingCompleted: boolean;
-            onboardingStep: number;
-            createdAt: Date;
+            id: any;
+            username: any;
+            email: any;
+            emailVerified: any;
+            role: any;
+            plan: any;
+            accountType: any;
+            subscriptionStatus: any;
+            isInfluencer: any;
+            isVerified: any;
+            isCreator: any;
+            bio: any;
+            avatarUrl: any;
+            onboardingCompleted: any;
+            onboardingStep: any;
+            createdAt: any;
         };
     }>;
-    login(dto: LoginDto): Promise<{
-        access_token: string;
+    requestLoginCode(body: LoginRequestDto): Promise<{
+        message: string;
+        email: string;
+        devCode?: undefined;
+        delivery?: undefined;
+    } | {
+        message: string;
+        email: string;
+        devCode: string;
+        delivery: string;
+    }>;
+    verifyLoginCode(body: EmailCodeDto): Promise<{
+        token: string;
         user: {
-            id: string;
-            username: string;
-            role: string;
-            email: string;
-            plan: string;
-            accountType: string;
-            subscriptionStatus: string;
-            isInfluencer: boolean;
-            isVerified: boolean;
-            isCreator: boolean;
-            bio: string;
-            avatarUrl: string;
-            onboardingCompleted: boolean;
-            onboardingStep: number;
-            createdAt: Date;
+            id: any;
+            username: any;
+            email: any;
+            emailVerified: any;
+            role: any;
+            plan: any;
+            accountType: any;
+            subscriptionStatus: any;
+            isInfluencer: any;
+            isVerified: any;
+            isCreator: any;
+            bio: any;
+            avatarUrl: any;
+            onboardingCompleted: any;
+            onboardingStep: any;
+            createdAt: any;
         };
     }>;
-    verifyEmail(dto: VerifyEmailDto): Promise<{
+    loginAsDemo(): Promise<{
+        demo: boolean;
+        credentials: {
+            email: string;
+            username: string;
+            password: string;
+        };
+        token: string;
+        user: {
+            id: any;
+            username: any;
+            email: any;
+            emailVerified: any;
+            role: any;
+            plan: any;
+            accountType: any;
+            subscriptionStatus: any;
+            isInfluencer: any;
+            isVerified: any;
+            isCreator: any;
+            bio: any;
+            avatarUrl: any;
+            onboardingCompleted: any;
+            onboardingStep: any;
+            createdAt: any;
+        };
+    }>;
+    requestPasswordResetCode(body: ForgotPasswordRequestDto): Promise<{
+        message: string;
+        email: string;
+        devCode?: undefined;
+        delivery?: undefined;
+    } | {
+        message: string;
+        email: string;
+        devCode: string;
+        delivery: string;
+    } | {
         message: string;
     }>;
-    forgotPassword(dto: ForgotPasswordDto): Promise<{
+    resetPasswordWithCode(body: ForgotPasswordResetDto): Promise<{
         message: string;
     }>;
-    resetPassword(dto: ResetPasswordDto): Promise<{
-        message: string;
+    syncUser(req: any, body: {
+        username?: string;
+    }): Promise<{
+        id: any;
+        username: any;
+        email: any;
+        emailVerified: any;
+        role: any;
+        plan: any;
+        accountType: any;
+        subscriptionStatus: any;
+        isInfluencer: any;
+        isVerified: any;
+        isCreator: any;
+        bio: any;
+        avatarUrl: any;
+        onboardingCompleted: any;
+        onboardingStep: any;
+        createdAt: any;
+    }>;
+    getProfile(req: any): Promise<{
+        id: any;
+        username: any;
+        email: any;
+        emailVerified: any;
+        role: any;
+        plan: any;
+        accountType: any;
+        subscriptionStatus: any;
+        isInfluencer: any;
+        isVerified: any;
+        isCreator: any;
+        bio: any;
+        avatarUrl: any;
+        onboardingCompleted: any;
+        onboardingStep: any;
+        createdAt: any;
     }>;
 }

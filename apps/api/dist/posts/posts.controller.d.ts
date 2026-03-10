@@ -50,7 +50,6 @@ export declare class PostsController {
         } & {
             id: string;
             content: string;
-            authorId: string;
             type: string;
             visibility: string;
             deletedAt: Date | null;
@@ -59,11 +58,12 @@ export declare class PostsController {
             riskLevel: string | null;
             contentEditedAt: Date | null;
             tickers: string;
-            parentId: string | null;
-            quotedPostId: string | null;
             viewCount: number;
             createdAt: Date;
             updatedAt: Date;
+            authorId: string;
+            parentId: string | null;
+            quotedPostId: string | null;
         };
         quotedPost: {
             author: {
@@ -78,15 +78,14 @@ export declare class PostsController {
             media: {
                 id: string;
                 createdAt: Date;
-                postId: string;
                 url: string;
                 mediaType: string;
                 order: number;
+                postId: string;
             }[];
         } & {
             id: string;
             content: string;
-            authorId: string;
             type: string;
             visibility: string;
             deletedAt: Date | null;
@@ -95,19 +94,20 @@ export declare class PostsController {
             riskLevel: string | null;
             contentEditedAt: Date | null;
             tickers: string;
-            parentId: string | null;
-            quotedPostId: string | null;
             viewCount: number;
             createdAt: Date;
             updatedAt: Date;
+            authorId: string;
+            parentId: string | null;
+            quotedPostId: string | null;
         };
         media: {
             id: string;
             createdAt: Date;
-            postId: string;
             url: string;
             mediaType: string;
             order: number;
+            postId: string;
         }[];
         likes: {
             userId: string;
@@ -128,7 +128,6 @@ export declare class PostsController {
     } & {
         id: string;
         content: string;
-        authorId: string;
         type: string;
         visibility: string;
         deletedAt: Date | null;
@@ -137,11 +136,12 @@ export declare class PostsController {
         riskLevel: string | null;
         contentEditedAt: Date | null;
         tickers: string;
-        parentId: string | null;
-        quotedPostId: string | null;
         viewCount: number;
         createdAt: Date;
         updatedAt: Date;
+        authorId: string;
+        parentId: string | null;
+        quotedPostId: string | null;
     }>;
     deletePost(req: any, id: string): Promise<{
         success: boolean;
@@ -150,87 +150,15 @@ export declare class PostsController {
         liked: boolean;
     }>;
     getComments(req: any, id: string, cursor?: string, limit?: string): Promise<{
-        comments: {
-            likedByMe: boolean;
-            likesCount: number;
-            repliesCount: number;
-            author: {
-                id: string;
-                username: string;
-                avatarUrl: string;
-                isInfluencer: boolean;
-                isVerified: boolean;
-                plan: string;
-                isCreator: boolean;
-            };
-            replies: ({
-                author: {
-                    id: string;
-                    username: string;
-                    avatarUrl: string;
-                    isInfluencer: boolean;
-                    isVerified: boolean;
-                    plan: string;
-                    isCreator: boolean;
-                };
-                likes: {
-                    userId: string;
-                }[];
-                _count: {
-                    likes: number;
-                };
-            } & {
-                id: string;
-                content: string;
-                authorId: string;
-                deletedAt: Date | null;
-                parentId: string | null;
-                createdAt: Date;
-                postId: string;
-            })[];
-            likes: {
-                userId: string;
-            }[];
-            _count: {
-                replies: number;
-                likes: number;
-            };
-            id: string;
-            content: string;
-            authorId: string;
-            deletedAt: Date | null;
-            parentId: string | null;
-            createdAt: Date;
-            postId: string;
-        }[];
+        comments: any[];
         nextCursor: string;
         hasMore: boolean;
+        totalCount: number;
     }>;
-    addComment(req: any, id: string, content: string, parentId?: string): Promise<{
-        author: {
-            id: string;
-            username: string;
-            avatarUrl: string;
-            isInfluencer: boolean;
-            isVerified: boolean;
-            plan: string;
-            isCreator: boolean;
-        };
-        _count: {
-            replies: number;
-            likes: number;
-        };
-    } & {
-        id: string;
-        content: string;
-        authorId: string;
-        deletedAt: Date | null;
-        parentId: string | null;
-        createdAt: Date;
-        postId: string;
-    }>;
+    addComment(req: any, id: string, content: string, parentId?: string): Promise<any>;
     deleteComment(req: any, commentId: string): Promise<{
         success: boolean;
+        removedCount: number;
     }>;
     toggleCommentLike(req: any, commentId: string): Promise<{
         liked: boolean;
@@ -245,7 +173,7 @@ export declare class PostsController {
         success: boolean;
         message: string;
     }>;
-    getAllPosts(page?: string, limit?: string): Promise<{
+    getAllPosts(req: any, page?: string, limit?: string): Promise<{
         posts: any[];
         total: number;
         page: number;

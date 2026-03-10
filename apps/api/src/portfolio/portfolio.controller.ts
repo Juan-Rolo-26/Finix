@@ -16,7 +16,6 @@ import { CreatePortfolioDto, UpdatePortfolioDto, CreateAssetDto, UpdateAssetDto,
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { LimitFreePortfolioGuard } from '../access/limit-free-portfolio.guard';
 
-@UseGuards(JwtAuthGuard)
 @Controller('portfolios')
 export class PortfolioController {
     constructor(private portfolioService: PortfolioService) { }
@@ -27,18 +26,21 @@ export class PortfolioController {
 
     // ==================== WATCHLISTS ====================
 
+    @UseGuards(JwtAuthGuard)
     @Get('watchlists')
     async getWatchlists(@Request() req) {
         const userId = this.resolveUserId(req);
         return this.portfolioService.getWatchlists(userId);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Post('watchlists')
     async createWatchlist(@Request() req, @Body() body: { name: string; tickers: string }) {
         const userId = this.resolveUserId(req);
         return this.portfolioService.createWatchlist(userId, body.name, body.tickers || '');
     }
 
+    @UseGuards(JwtAuthGuard)
     @Patch('watchlists/:id')
     async updateWatchlist(
         @Request() req,
@@ -49,6 +51,7 @@ export class PortfolioController {
         return this.portfolioService.updateWatchlist(id, userId, body);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Delete('watchlists/:id')
     async deleteWatchlist(@Request() req, @Param('id') id: string) {
         const userId = this.resolveUserId(req);
@@ -57,31 +60,50 @@ export class PortfolioController {
 
     // ==================== PORTFOLIOS ====================
 
-    @UseGuards(LimitFreePortfolioGuard)
+    @UseGuards(JwtAuthGuard, LimitFreePortfolioGuard)
     @Post()
     async createPortfolio(@Request() req, @Body() dto: CreatePortfolioDto) {
         const userId = this.resolveUserId(req);
         return this.portfolioService.createPortfolio(userId, dto);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Get()
     async getUserPortfolios(@Request() req) {
         const userId = this.resolveUserId(req);
         return this.portfolioService.getUserPortfolios(userId);
     }
 
+    @Get('public/:userId')
+    async getPublicPortfolios(@Param('userId') userId: string) {
+        return this.portfolioService.getPublicPortfolios(userId);
+    }
+
+    @Get('public/portfolio/:id/metrics')
+    async getPublicPortfolioMetrics(@Param('id') id: string) {
+        return this.portfolioService.getPublicPortfolioMetrics(id);
+    }
+
+    @Get('public/portfolio/:id/movements')
+    async getPublicPortfolioMovements(@Param('id') id: string) {
+        return this.portfolioService.getPublicPortfolioMovements(id);
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Get(':id')
     async getPortfolioById(@Request() req, @Param('id') id: string) {
         const userId = this.resolveUserId(req);
         return this.portfolioService.getPortfolioById(id, userId);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Get(':id/metrics')
     async getPortfolioMetrics(@Request() req, @Param('id') id: string) {
         const userId = this.resolveUserId(req);
         return this.portfolioService.getPortfolioMetrics(id, userId);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Put(':id')
     async updatePortfolio(
         @Request() req,
@@ -92,6 +114,7 @@ export class PortfolioController {
         return this.portfolioService.updatePortfolio(id, userId, dto);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Delete(':id')
     async deletePortfolio(@Request() req, @Param('id') id: string) {
         const userId = this.resolveUserId(req);
@@ -100,6 +123,7 @@ export class PortfolioController {
 
     // ==================== ASSETS ====================
 
+    @UseGuards(JwtAuthGuard)
     @Post(':id/assets')
     async addAsset(
         @Request() req,
@@ -110,12 +134,14 @@ export class PortfolioController {
         return this.portfolioService.addAsset(portfolioId, userId, dto);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Get(':id/assets')
     async getPortfolioAssets(@Request() req, @Param('id') portfolioId: string) {
         const userId = this.resolveUserId(req);
         return this.portfolioService.getPortfolioAssets(portfolioId, userId);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Put('assets/:assetId')
     async updateAsset(
         @Request() req,
@@ -126,6 +152,7 @@ export class PortfolioController {
         return this.portfolioService.updateAsset(assetId, userId, dto);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Delete('assets/:assetId')
     async deleteAsset(
         @Request() req,
@@ -138,6 +165,7 @@ export class PortfolioController {
 
     // ==================== MOVEMENTS ====================
 
+    @UseGuards(JwtAuthGuard)
     @Get(':id/movements')
     async getPortfolioMovements(
         @Request() req,
@@ -159,6 +187,7 @@ export class PortfolioController {
 
     // ==================== TRANSACTIONS ====================
 
+    @UseGuards(JwtAuthGuard)
     @Post(':id/transactions')
     async createTransaction(
         @Request() req,

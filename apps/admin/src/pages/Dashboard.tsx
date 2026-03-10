@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { adminFetch } from '../lib/api';
 import { Users, FileText, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 export default function Dashboard() {
@@ -6,10 +7,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         const fetchKpis = async () => {
-            const token = localStorage.getItem('auth-token');
-            const res = await fetch('/api/admin/kpis', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await adminFetch('/admin/kpis');
             if (res.ok) {
                 const data = await res.json();
                 setKpis(data.kpis);
@@ -30,8 +28,8 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold tracking-tight text-white mb-6">Dashboard</h1>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat, i) => (
-                    <div key={i} className="bg-zinc-900 border border-zinc-800/60 p-6 rounded-2xl flex items-center justify-between">
+                {stats.map((stat) => (
+                    <div key={stat.title} className="bg-zinc-900 border border-zinc-800/60 p-6 rounded-2xl flex items-center justify-between">
                         <div>
                             <p className="text-zinc-400 text-sm mb-1">{stat.title}</p>
                             <h3 className="text-2xl font-bold text-white">{stat.value.toLocaleString()}</h3>

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import { apiFetch } from '@/lib/api';
 import { Loader2, Upload, X, Camera } from 'lucide-react';
+import { uploadProfileImage } from '@/lib/profileMedia';
 
 interface AvatarUploadProps {
     currentUrl?: string | null;
@@ -22,17 +22,6 @@ export default function AvatarUpload({ currentUrl, onUploaded, size = 'md' }: Av
     const s = SIZES[size];
 
     const handleFile = async (file: File) => {
-        // Validate client-side
-        const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-        if (!ALLOWED.includes(file.type)) {
-            setError('Solo se permiten imágenes JPG, PNG, WEBP o GIF');
-            return;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-            setError('La imagen no puede superar 5 MB');
-            return;
-        }
-
         setError('');
         // Show local preview immediately
         const objectUrl = URL.createObjectURL(file);
@@ -40,21 +29,10 @@ export default function AvatarUpload({ currentUrl, onUploaded, size = 'md' }: Av
 
         setIsUploading(true);
         try {
-            const formData = new FormData();
-            formData.append('avatar', file);
-
-            const res = await apiFetch('/me/avatar', {
-                method: 'POST',
-                body: formData,
-                // Don't set Content-Type — browser sets it with boundary for multipart
-            });
-
-            if (!res.ok) {
-                const d = await res.json().catch(() => ({}));
-                throw new Error(d?.message || `Error ${res.status}`);
+            const { avatarUrl } = await uploadProfileImage('avatar', file);
+            if (!avatarUrl) {
+                throw new Error('No se recibió la URL del avatar');
             }
-
-            const { avatarUrl } = await res.json();
             onUploaded(avatarUrl);
             setPreview(avatarUrl);
         } catch (e: any) {

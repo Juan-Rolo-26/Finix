@@ -15,11 +15,11 @@ export declare class CommunitiesService {
             resources: number;
         };
     } & {
-        name: string;
         id: string;
         bannerUrl: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         creatorId: string;
         description: string;
         category: string;
@@ -42,11 +42,11 @@ export declare class CommunitiesService {
             isVerified: boolean;
         };
     } & {
-        name: string;
         id: string;
         bannerUrl: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         creatorId: string;
         description: string;
         category: string;
@@ -63,8 +63,8 @@ export declare class CommunitiesService {
             id: string;
             role: string;
             subscriptionStatus: string;
-            userId: string;
             communityId: string;
+            userId: string;
             paymentStatus: string | null;
             stripePaymentId: string | null;
             stripeSubscriptionId: string | null;
@@ -84,11 +84,11 @@ export declare class CommunitiesService {
             isVerified: boolean;
             plan: string;
         };
-        name: string;
         id: string;
         bannerUrl: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         creatorId: string;
         description: string;
         category: string;
@@ -102,8 +102,8 @@ export declare class CommunitiesService {
         id: string;
         role: string;
         subscriptionStatus: string;
-        userId: string;
         communityId: string;
+        userId: string;
         paymentStatus: string | null;
         stripePaymentId: string | null;
         stripeSubscriptionId: string | null;
@@ -122,11 +122,11 @@ export declare class CommunitiesService {
             resources: number;
         };
     } & {
-        name: string;
         id: string;
         bannerUrl: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         creatorId: string;
         description: string;
         category: string;
@@ -161,8 +161,8 @@ export declare class CommunitiesService {
         id: string;
         role: string;
         subscriptionStatus: string;
-        userId: string;
         communityId: string;
+        userId: string;
         paymentStatus: string | null;
         stripePaymentId: string | null;
         stripeSubscriptionId: string | null;
@@ -170,11 +170,11 @@ export declare class CommunitiesService {
         joinedAt: Date;
     })[]>;
     updatePricing(userId: string, communityId: string, dto: UpdateCommunityDto): Promise<{
-        name: string;
         id: string;
         bannerUrl: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         creatorId: string;
         description: string;
         category: string;
@@ -197,9 +197,9 @@ export declare class CommunitiesService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        communityId: string;
         content: string;
         authorId: string;
-        communityId: string;
         mediaUrl: string | null;
         isPublic: boolean;
     })[]>;
@@ -207,9 +207,9 @@ export declare class CommunitiesService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        communityId: string;
         content: string;
         authorId: string;
-        communityId: string;
         mediaUrl: string | null;
         isPublic: boolean;
     }>;
@@ -224,9 +224,9 @@ export declare class CommunitiesService {
         title: string;
         createdAt: Date;
         updatedAt: Date;
-        authorId: string | null;
         description: string | null;
         communityId: string;
+        authorId: string | null;
         isPublic: boolean;
         resourceUrl: string;
     })[]>;
@@ -235,9 +235,9 @@ export declare class CommunitiesService {
         title: string;
         createdAt: Date;
         updatedAt: Date;
-        authorId: string | null;
         description: string | null;
         communityId: string;
+        authorId: string | null;
         isPublic: boolean;
         resourceUrl: string;
     }>;

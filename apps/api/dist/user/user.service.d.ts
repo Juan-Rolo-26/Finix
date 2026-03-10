@@ -1,7 +1,9 @@
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma.service';
 export declare class UserService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private notificationsService;
+    constructor(prisma: PrismaService, notificationsService: NotificationsService);
     private getProfileSelect;
     getCurrentUserProfile(userId: string): Promise<{
         id: string;
@@ -41,8 +43,35 @@ export declare class UserService {
             following: number;
         };
     }>;
-    getNotifications(userId: string): Promise<any[]>;
-    getUserProfile(username: string): Promise<{
+    getNotifications(userId: string): Promise<{
+        id: string;
+        type: string;
+        title: string;
+        content: string;
+        link: string;
+        isRead: boolean;
+        time: string;
+        createdAt: Date;
+    }[]>;
+    getUnreadNotificationsCount(userId: string): Promise<{
+        count: number;
+    }>;
+    markAllNotificationsAsRead(userId: string): Promise<{
+        success: boolean;
+    }>;
+    getUserProfile(username: string, viewerId?: string): Promise<{
+        id: string;
+        username: string;
+        bio: string;
+        avatarUrl: string;
+        isInfluencer: boolean;
+        isVerified: boolean;
+        accountType: string;
+        plan: string;
+        isProfilePublic: boolean;
+        isFollowedByMe: boolean;
+    } | {
+        isFollowedByMe: boolean;
         id: string;
         email: string;
         username: string;
@@ -79,16 +108,6 @@ export declare class UserService {
             followedBy: number;
             following: number;
         };
-    } | {
-        id: string;
-        username: string;
-        bio: string;
-        avatarUrl: string;
-        isInfluencer: boolean;
-        isVerified: boolean;
-        accountType: string;
-        plan: string;
-        isProfilePublic: boolean;
     }>;
     private normalizeNullableText;
     updateProfile(userId: string, updateData: any): Promise<{
@@ -183,40 +202,17 @@ export declare class UserService {
     }[]>;
     searchUsers(query: string): Promise<{
         id: string;
-        email: string;
         username: string;
         bio: string;
-        bioLong: string;
         avatarUrl: string;
-        bannerUrl: string;
-        isInfluencer: boolean;
         isVerified: boolean;
-        accountType: string;
-        plan: string;
-        subscriptionStatus: string;
         title: string;
         company: string;
-        location: string;
-        website: string;
-        linkedinUrl: string;
-        twitterUrl: string;
-        youtubeUrl: string;
-        instagramUrl: string;
-        yearsExperience: number;
-        specializations: string;
-        certifications: string;
         totalReturn: number;
         winRate: number;
-        riskScore: number;
-        isProfilePublic: boolean;
-        showPortfolio: boolean;
-        showStats: boolean;
-        acceptingFollowers: boolean;
-        createdAt: Date;
-        _count: {
-            posts: number;
-            followedBy: number;
-            following: number;
-        };
     }[]>;
+    toggleFollow(followerId: string, username: string): Promise<{
+        following: boolean;
+        followersCount: number;
+    }>;
 }

@@ -23,6 +23,9 @@ let MarketController = class MarketController {
     async getTickers() {
         return await this.marketService.getTickers();
     }
+    getDashboard() {
+        return this.marketService.getDashboard();
+    }
     search(q) {
         const query = q.query || q.q || q.text || q.search || '';
         return this.marketService.searchSymbols(query);
@@ -50,6 +53,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], MarketController.prototype, "getTickers", null);
+__decorate([
+    (0, common_1.Get)('dashboard'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], MarketController.prototype, "getDashboard", null);
 __decorate([
     (0, common_1.Get)('search'),
     __param(0, (0, common_1.Query)()),

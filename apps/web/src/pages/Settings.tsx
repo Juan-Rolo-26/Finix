@@ -27,9 +27,12 @@ import {
     Download,
     Bell,
     Clock,
+    ImagePlus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AvatarUpload from '@/components/AvatarUpload';
+import LocationQuickSelect from '@/components/LocationQuickSelect';
+import { uploadProfileImage } from '@/lib/profileMedia';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -153,6 +156,9 @@ export default function Settings() {
     // ── Profile form state ──
     const [profileForm, setProfileForm] = useState<Partial<FullSettings>>({});
     const [isSavingProfile, setIsSavingProfile] = useState(false);
+    const bannerInputRef = useRef<HTMLInputElement>(null);
+    const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+    const [bannerUploadError, setBannerUploadError] = useState('');
 
     // ── Privacy form state ──
     const [privacyForm, setPrivacyForm] = useState({
@@ -300,6 +306,25 @@ export default function Settings() {
             showToast(e.message || 'No se pudo guardar el perfil', 'error');
         } finally {
             setIsSavingProfile(false);
+        }
+    };
+
+    const handleBannerUpload = async (file: File) => {
+        setIsUploadingBanner(true);
+        setBannerUploadError('');
+
+        try {
+            const { bannerUrl } = await uploadProfileImage('banner', file);
+            if (!bannerUrl) {
+                throw new Error('No se recibió la URL del banner');
+            }
+
+            setProfileForm((prev) => ({ ...prev, bannerUrl }));
+            setSettings((prev) => (prev ? { ...prev, bannerUrl } : prev));
+        } catch (e: any) {
+            setBannerUploadError(e.message || 'No se pudo subir el banner');
+        } finally {
+            setIsUploadingBanner(false);
         }
     };
 
@@ -491,7 +516,7 @@ export default function Settings() {
 
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="s-username">Usuario (@handle)</Label>
+                                    <Label htmlFor="s-username">Usuario</Label>
                                     <Input
                                         id="s-username"
                                         value={profileForm.username || ''}
@@ -535,10 +560,10 @@ export default function Settings() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="s-location">Ciudad / País</Label>
-                                    <Input
+                                    <LocationQuickSelect
                                         id="s-location"
                                         value={profileForm.location || ''}
-                                        onChange={(e) => setProfileForm((p) => ({ ...p, location: e.target.value }))}
+                                        onChange={(value) => setProfileForm((p) => ({ ...p, location: value }))}
                                         placeholder="Buenos Aires, AR"
                                         className="bg-secondary/30"
                                     />
@@ -587,14 +612,56 @@ export default function Settings() {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="s-banner">URL de banner</Label>
-                                    <Input
-                                        id="s-banner"
-                                        value={profileForm.bannerUrl || ''}
-                                        onChange={(e) => setProfileForm((p) => ({ ...p, bannerUrl: e.target.value }))}
-                                        placeholder="https://..."
-                                        className="bg-secondary/30"
-                                    />
+                                    <Label>Banner del perfil</Label>
+                                    <div className="space-y-3">
+                                        <div className="relative h-28 overflow-hidden rounded-2xl border border-border/50 bg-secondary/30">
+                                            {profileForm.bannerUrl ? (
+                                                <img
+                                                    src={profileForm.bannerUrl}
+                                                    alt="Banner del perfil"
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-full w-full items-center justify-center gap-2 text-sm text-muted-foreground">
+                                                    <ImagePlus className="h-4 w-4" />
+                                                    Sin banner cargado
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/30" />
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="gap-2 border-border/60"
+                                                disabled={isUploadingBanner}
+                                                onClick={() => bannerInputRef.current?.click()}
+                                            >
+                                                {isUploadingBanner ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                                                {isUploadingBanner ? 'Subiendo...' : (profileForm.bannerUrl ? 'Cambiar banner' : 'Subir banner')}
+                                            </Button>
+                                            <span className="text-xs text-muted-foreground">JPG, PNG, WEBP o GIF · Máx 5 MB</span>
+                                        </div>
+
+                                        {bannerUploadError ? (
+                                            <p className="text-xs text-red-400">{bannerUploadError}</p>
+                                        ) : null}
+
+                                        <input
+                                            ref={bannerInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp,image/gif"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    void handleBannerUpload(file);
+                                                }
+                                                e.target.value = '';
+                                            }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -910,18 +977,6 @@ export default function Settings() {
                                     description="Mantener los widgets de mercado actualizados automáticamente."
                                     checked={prefs.autoRefreshMarket}
                                     onChange={(v) => updatePref('autoRefreshMarket', v)}
-                                />
-                                <ToggleRow
-                                    label="Tablas compactas"
-                                    description="Reduce espaciado en tablas para ver más información en pantalla."
-                                    checked={prefs.compactTables}
-                                    onChange={(v) => updatePref('compactTables', v)}
-                                />
-                                <ToggleRow
-                                    label="Métricas avanzadas visibles"
-                                    description="Muestra indicadores técnicos y métricas extendidas cuando estén disponibles."
-                                    checked={prefs.showAdvancedMetrics}
-                                    onChange={(v) => updatePref('showAdvancedMetrics', v)}
                                 />
                                 <ToggleRow
                                     label="Notificaciones de mercado"

@@ -64,4 +64,7 @@ export declare class SettingsController {
     uploadAvatar(req: any, file: Express.Multer.File): Promise<{
         avatarUrl: string;
     }>;
+    uploadBanner(req: any, file: Express.Multer.File): Promise<{
+        bannerUrl: string;
+    }>;
 }

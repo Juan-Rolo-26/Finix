@@ -3,8 +3,9 @@ import { apiFetch } from '@/lib/api';
 import { formatCurrency } from '../lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { TrendingUp, Plus, Award } from 'lucide-react';
+import { TrendingUp, Award } from 'lucide-react';
 import SocialFeed from '../components/SocialFeed';
+import { StoriesRail } from '@/components/stories/StoriesRail';
 
 interface User {
     id: string;
@@ -57,31 +58,7 @@ export default function Dashboard() {
                 {/* Main Content (Feed) */}
                 <div className="space-y-6">
 
-                    {/* Stories Bar (Top Traders) */}
-                    <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                        {/* Own story / Add */}
-                        <div className="flex flex-col items-center gap-1.5 cursor-pointer flex-shrink-0" onClick={() => navigate('/explore?create=true')}>
-                            <div className="w-16 h-16 rounded-full border-2 border-primary border-dashed p-1 flex items-center justify-center bg-primary/10 hover:bg-primary/20 transition-colors">
-                                <Plus className="w-6 h-6 text-primary" />
-                            </div>
-                            <span className="text-[11px] font-medium text-muted-foreground">Post Story</span>
-                        </div>
-
-                        {topTraders.map((trader) => (
-                            <div key={trader.id} className="flex flex-col items-center gap-1.5 cursor-pointer flex-shrink-0 group" onClick={() => navigate(`/${trader.username}`)}>
-                                <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-primary to-emerald-400 group-hover:scale-105 transition-transform">
-                                    <div className="w-full h-full rounded-full border-2 border-background overflow-hidden bg-secondary flex items-center justify-center">
-                                        {trader.avatarUrl ? (
-                                            <img src={trader.avatarUrl} alt={trader.username} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <span className="text-xl font-bold uppercase">{trader.username[0]}</span>
-                                        )}
-                                    </div>
-                                </div>
-                                <span className="text-[11px] font-medium text-muted-foreground w-16 truncate text-center group-hover:text-foreground transition-colors">{trader.username}</span>
-                            </div>
-                        ))}
-                    </div>
+                    <StoriesRail />
 
                     {/* Filter / Tabs ? */}
                     {/* Unified Social Feed */}
@@ -137,7 +114,7 @@ export default function Dashboard() {
                                 <li className="text-sm text-muted-foreground">No traders found</li>
                             ) : (
                                 topTraders.slice(0, 3).map((trader) => (
-                                    <li key={trader.id} className="flex justify-between items-center cursor-pointer group" onClick={() => navigate(`/${trader.username}`)}>
+                                    <li key={trader.id} className="flex justify-between items-center cursor-pointer group" onClick={() => navigate(`/profile/${trader.username}`)}>
                                         <div className="flex items-center gap-3">
                                             <div className="w-9 h-9 rounded-full overflow-hidden bg-secondary">
                                                 {trader.avatarUrl ? (

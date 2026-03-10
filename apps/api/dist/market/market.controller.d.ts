@@ -8,6 +8,7 @@ export declare class MarketController {
         change: number;
         volume: number;
     }[]>;
+    getDashboard(): Promise<import("./market.service").MarketDashboardPayload>;
     search(q: any): Promise<any[]>;
     quote(q: any): Promise<import("./market.service").MarketQuote>;
     getFinvizHeatmap(q: any): Promise<unknown>;
@@ -16,5 +17,11 @@ export declare class MarketController {
         venta: any;
         fecha: any;
     }>;
-    getNews(q: any): Promise<import("./market.service").NewsItem[]>;
+    getNews(q: any): Promise<{
+        title: string;
+        link: string;
+        publishedAt: string;
+        source: string;
+        summary: string;
+    }[]>;
 }

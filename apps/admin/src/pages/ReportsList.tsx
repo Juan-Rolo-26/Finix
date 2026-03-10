@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { adminFetch } from '../lib/api';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function ReportsList() {
@@ -6,10 +7,7 @@ export default function ReportsList() {
 
     const loadReports = async () => {
         try {
-            const token = localStorage.getItem('auth-token');
-            const res = await fetch(`/api/admin/reports`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await adminFetch('/admin/reports');
             if (res.ok) {
                 const data = await res.json();
                 setReports(data.data);
@@ -28,13 +26,9 @@ export default function ReportsList() {
         if (note === null) return;
 
         try {
-            const token = localStorage.getItem('auth-token');
-            const res = await fetch(`/api/admin/reports/${id}`, {
+            const res = await adminFetch(`/admin/reports/${id}`, {
                 method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: 'RESOLVED', resolutionNote: note })
             });
 

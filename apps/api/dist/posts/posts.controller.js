@@ -153,8 +153,8 @@ let PostsController = class PostsController {
     reportPost(req, id, reason) {
         return this.postsService.reportPost(id, req.user.id, reason);
     }
-    getAllPosts(page, limit) {
-        return this.postsService.getAllPosts(page ? parseInt(page) : 1, limit ? parseInt(limit) : 20);
+    getAllPosts(req, page, limit) {
+        return this.postsService.getAllPosts(page ? parseInt(page) : 1, limit ? parseInt(limit) : 20, req.user?.id);
     }
 };
 exports.PostsController = PostsController;
@@ -343,10 +343,11 @@ __decorate([
 __decorate([
     (0, common_1.UseGuards)(optional_jwt_guard_1.OptionalJwtAuthGuard),
     (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)('page')),
-    __param(1, (0, common_1.Query)('limit')),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", void 0)
 ], PostsController.prototype, "getAllPosts", null);
 exports.PostsController = PostsController = __decorate([

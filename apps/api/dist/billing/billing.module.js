@@ -8,7 +8,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BillingModule = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_service_1 = require("../prisma.service");
 const access_module_1 = require("../access/access.module");
 const stripe_module_1 = require("../stripe/stripe.module");
 const billing_controller_1 = require("./billing.controller");
@@ -20,7 +19,7 @@ exports.BillingModule = BillingModule = __decorate([
     (0, common_1.Module)({
         imports: [access_module_1.AccessModule, stripe_module_1.StripeModule],
         controllers: [billing_controller_1.BillingController],
-        providers: [billing_service_1.BillingService, prisma_service_1.PrismaService],
+        providers: [billing_service_1.BillingService],
         exports: [billing_service_1.BillingService],
     })
 ], BillingModule);

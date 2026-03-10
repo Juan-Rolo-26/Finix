@@ -1,7 +1,12 @@
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma.service';
 export declare class PostsService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private notificationsService;
+    constructor(prisma: PrismaService, notificationsService: NotificationsService);
+    private getActorUsername;
+    private loadCommentRepliesMap;
+    private collectCommentThreadLevels;
     createPost(userId: string, dto: {
         content?: string;
         type?: string;
@@ -28,22 +33,6 @@ export declare class PostsService {
     }>;
     getPostById(postId: string, userId?: string): Promise<any>;
     updatePost(postId: string, userId: string, content: string): Promise<{
-        likes: {
-            userId: string;
-        }[];
-        reposts: {
-            userId: string;
-        }[];
-        saves: {
-            userId: string;
-        }[];
-        _count: {
-            likes: number;
-            reposts: number;
-            saves: number;
-            replies: number;
-            quotes: number;
-        };
         author: {
             id: string;
             username: string;
@@ -65,8 +54,6 @@ export declare class PostsService {
             };
         } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             content: string;
             type: string;
             visibility: string;
@@ -77,6 +64,8 @@ export declare class PostsService {
             contentEditedAt: Date | null;
             tickers: string;
             viewCount: number;
+            createdAt: Date;
+            updatedAt: Date;
             authorId: string;
             parentId: string | null;
             quotedPostId: string | null;
@@ -101,8 +90,6 @@ export declare class PostsService {
             }[];
         } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             content: string;
             type: string;
             visibility: string;
@@ -113,6 +100,8 @@ export declare class PostsService {
             contentEditedAt: Date | null;
             tickers: string;
             viewCount: number;
+            createdAt: Date;
+            updatedAt: Date;
             authorId: string;
             parentId: string | null;
             quotedPostId: string | null;
@@ -125,10 +114,24 @@ export declare class PostsService {
             order: number;
             postId: string;
         }[];
+        likes: {
+            userId: string;
+        }[];
+        reposts: {
+            userId: string;
+        }[];
+        saves: {
+            userId: string;
+        }[];
+        _count: {
+            replies: number;
+            quotes: number;
+            likes: number;
+            reposts: number;
+            saves: number;
+        };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         content: string;
         type: string;
         visibility: string;
@@ -139,6 +142,8 @@ export declare class PostsService {
         contentEditedAt: Date | null;
         tickers: string;
         viewCount: number;
+        createdAt: Date;
+        updatedAt: Date;
         authorId: string;
         parentId: string | null;
         quotedPostId: string | null;
@@ -149,88 +154,16 @@ export declare class PostsService {
     toggleLike(postId: string, userId: string): Promise<{
         liked: boolean;
     }>;
-    addComment(postId: string, userId: string, content: string, parentId?: string): Promise<{
-        _count: {
-            likes: number;
-            replies: number;
-        };
-        author: {
-            id: string;
-            username: string;
-            avatarUrl: string;
-            isInfluencer: boolean;
-            isVerified: boolean;
-            plan: string;
-            isCreator: boolean;
-        };
-    } & {
-        id: string;
-        createdAt: Date;
-        content: string;
-        deletedAt: Date | null;
-        authorId: string;
-        parentId: string | null;
-        postId: string;
-    }>;
+    addComment(postId: string, userId: string, content: string, parentId?: string): Promise<any>;
     getComments(postId: string, userId?: string, cursor?: string, limit?: number): Promise<{
-        comments: {
-            likedByMe: boolean;
-            likesCount: number;
-            repliesCount: number;
-            likes: {
-                userId: string;
-            }[];
-            _count: {
-                likes: number;
-                replies: number;
-            };
-            author: {
-                id: string;
-                username: string;
-                avatarUrl: string;
-                isInfluencer: boolean;
-                isVerified: boolean;
-                plan: string;
-                isCreator: boolean;
-            };
-            replies: ({
-                likes: {
-                    userId: string;
-                }[];
-                _count: {
-                    likes: number;
-                };
-                author: {
-                    id: string;
-                    username: string;
-                    avatarUrl: string;
-                    isInfluencer: boolean;
-                    isVerified: boolean;
-                    plan: string;
-                    isCreator: boolean;
-                };
-            } & {
-                id: string;
-                createdAt: Date;
-                content: string;
-                deletedAt: Date | null;
-                authorId: string;
-                parentId: string | null;
-                postId: string;
-            })[];
-            id: string;
-            createdAt: Date;
-            content: string;
-            deletedAt: Date | null;
-            authorId: string;
-            parentId: string | null;
-            postId: string;
-        }[];
+        comments: any[];
         nextCursor: string;
         hasMore: boolean;
+        totalCount: number;
     }>;
     deleteComment(commentId: string, userId: string): Promise<{
         success: boolean;
+        removedCount: number;
     }>;
     toggleCommentLike(commentId: string, userId: string): Promise<{
         liked: boolean;
@@ -255,7 +188,7 @@ export declare class PostsService {
         nextCursor: string;
         hasMore: boolean;
     }>;
-    getAllPosts(page?: number, limit?: number): Promise<{
+    getAllPosts(page?: number, limit?: number, viewerId?: string): Promise<{
         posts: any[];
         total: number;
         page: number;

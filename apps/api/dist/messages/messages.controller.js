@@ -15,10 +15,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MessagesController = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const events_gateway_1 = require("../events.gateway");
 const messages_service_1 = require("./messages.service");
 let MessagesController = class MessagesController {
-    constructor(messagesService) {
+    constructor(messagesService, eventsGateway) {
         this.messagesService = messagesService;
+        this.eventsGateway = eventsGateway;
     }
     getConversations(req) {
         return this.messagesService.getConversations(req.user.id);
@@ -29,14 +31,17 @@ let MessagesController = class MessagesController {
     getMessages(id, req, cursor) {
         return this.messagesService.getMessages(id, req.user.id, cursor);
     }
-    sendMessage(id, req, body) {
-        return this.messagesService.sendMessage(req.user.id, id, body.content);
+    async sendMessage(id, req, body) {
+        const message = await this.messagesService.sendMessage(req.user.id, id, body);
+        try {
+            this.eventsGateway.emitNewMessage(id, message);
+        }
+        catch {
+        }
+        return message;
     }
     markAsRead(id, req) {
         return this.messagesService.markAsRead(id, req.user.id);
-    }
-    deleteConversation(id, req) {
-        return this.messagesService.deleteConversation(id, req.user.id);
     }
     getUnreadCount(req) {
         return this.messagesService.getUnreadCount(req.user.id);
@@ -77,7 +82,7 @@ __decorate([
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], MessagesController.prototype, "sendMessage", null);
 __decorate([
     (0, common_1.Post)('conversations/:id/read'),
@@ -87,14 +92,6 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], MessagesController.prototype, "markAsRead", null);
-__decorate([
-    (0, common_1.Delete)('conversations/:id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Request)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", void 0)
-], MessagesController.prototype, "deleteConversation", null);
 __decorate([
     (0, common_1.Get)('unread-count'),
     __param(0, (0, common_1.Request)()),
@@ -113,6 +110,7 @@ __decorate([
 exports.MessagesController = MessagesController = __decorate([
     (0, common_1.Controller)('messages'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [messages_service_1.MessagesService])
+    __metadata("design:paramtypes", [messages_service_1.MessagesService,
+        events_gateway_1.EventsGateway])
 ], MessagesController);
 //# sourceMappingURL=messages.controller.js.map

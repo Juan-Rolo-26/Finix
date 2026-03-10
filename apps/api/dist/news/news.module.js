@@ -13,7 +13,6 @@ const news_service_1 = require("./news.service");
 const news_fetcher_service_1 = require("./news-fetcher.service");
 const news_translation_service_1 = require("./news-translation.service");
 const news_sentiment_service_1 = require("./news-sentiment.service");
-const prisma_service_1 = require("../prisma.service");
 let NewsModule = class NewsModule {
 };
 exports.NewsModule = NewsModule;
@@ -25,7 +24,6 @@ exports.NewsModule = NewsModule = __decorate([
             news_fetcher_service_1.NewsFetcherService,
             news_translation_service_1.NewsTranslationService,
             news_sentiment_service_1.NewsSentimentService,
-            prisma_service_1.PrismaService,
         ],
         exports: [news_service_1.NewsService],
     })

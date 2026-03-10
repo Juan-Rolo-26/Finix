@@ -16,11 +16,11 @@ const Badge = React.forwardRef<
                 {
                     "border-transparent bg-primary text-primary-foreground hover:bg-primary/80":
                         variant === "default",
-                    "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80":
+                    "border-brand/20 bg-brand/10 text-brand hover:bg-brand/15":
                         variant === "secondary",
                     "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80":
                         variant === "destructive",
-                    "text-foreground": variant === "outline",
+                    "border-border/80 bg-background/60 text-foreground": variant === "outline",
                 },
                 className
             )}

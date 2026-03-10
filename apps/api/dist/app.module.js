@@ -11,7 +11,6 @@ const common_1 = require("@nestjs/common");
 const schedule_1 = require("@nestjs/schedule");
 const mail_module_1 = require("./mail/mail.module");
 const auth_module_1 = require("./auth/auth.module");
-const prisma_service_1 = require("./prisma.service");
 const market_module_1 = require("./market/market.module");
 const portfolio_module_1 = require("./portfolio/portfolio.module");
 const posts_module_1 = require("./posts/posts.module");
@@ -27,8 +26,10 @@ const settings_module_1 = require("./settings/settings.module");
 const fundamental_module_1 = require("./fundamental/fundamental.module");
 const ai_module_1 = require("./ai/ai.module");
 const messages_module_1 = require("./messages/messages.module");
-const events_gateway_1 = require("./events.gateway");
 const admin_module_1 = require("./admin/admin.module");
+const stories_module_1 = require("./stories/stories.module");
+const prisma_module_1 = require("./prisma.module");
+const notifications_module_1 = require("./notifications/notifications.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -36,6 +37,8 @@ exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
             schedule_1.ScheduleModule.forRoot(),
+            prisma_module_1.PrismaModule,
+            notifications_module_1.NotificationsModule,
             auth_module_1.AuthModule,
             market_module_1.MarketModule,
             portfolio_module_1.PortfolioModule,
@@ -52,12 +55,12 @@ exports.AppModule = AppModule = __decorate([
             fundamental_module_1.FundamentalModule,
             ai_module_1.AiModule,
             messages_module_1.MessagesModule,
+            stories_module_1.StoriesModule,
             admin_module_1.AdminModule,
             mail_module_1.MailModule,
         ],
         controllers: [],
-        providers: [prisma_service_1.PrismaService, events_gateway_1.EventsGateway],
-        exports: [prisma_service_1.PrismaService],
+        providers: [],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

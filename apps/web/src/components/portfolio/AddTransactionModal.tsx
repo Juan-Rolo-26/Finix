@@ -77,6 +77,21 @@ const parseInputNumber = (value: string) => {
     return Number(String(value).replace(',', '.'));
 };
 
+const getErrorMessage = async (response: Response) => {
+    try {
+        const data = await response.json();
+        if (Array.isArray(data?.message)) {
+            return data.message.join('\n');
+        }
+        if (typeof data?.message === 'string') {
+            return data.message;
+        }
+    } catch {
+        // noop
+    }
+    return null;
+};
+
 const parseTradingViewSymbolInput = (value: string): AssetResult | null => {
     const raw = value.trim().toUpperCase().replace(/\s+/g, '');
     const match = raw.match(/^([A-Z0-9._-]+):([A-Z0-9._/\-]+)$/);
@@ -280,8 +295,9 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                 assetTicker: selectedAsset.symbol,
                 assetName: selectedAsset.name,
                 assetType: isCedear ? 'CEDEAR' : selectedAsset.type,
+                assetExchange: selectedAsset.exchange,
                 type: transactionType,
-                date: new Date(date),
+                date,
                 quantity: numericQuantity,
                 price: numericPrice,
                 fee: parseInputNumber(fee || '0'),
@@ -297,8 +313,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
             });
 
             if (!response.ok) {
-                const data = await response.json().catch(() => ({}));
-                throw new Error(data?.message || 'Error creating transaction');
+                throw new Error((await getErrorMessage(response)) || 'Error creating transaction');
             }
 
             onSuccess();
@@ -449,6 +464,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
 
                                 <TabsContent value="BUY" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
                                     <FormContent
+                                        transactionType="BUY"
                                         date={date} setDate={setDate}
                                         quantity={quantity} setQuantity={setQuantity}
                                         price={price} setPrice={setPrice}
@@ -462,6 +478,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                 </TabsContent>
                                 <TabsContent value="SELL" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
                                     <FormContent
+                                        transactionType="SELL"
                                         date={date} setDate={setDate}
                                         quantity={quantity} setQuantity={setQuantity}
                                         price={price} setPrice={setPrice}
@@ -509,6 +526,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
 }
 
 function FormContent({
+    transactionType,
     date,
     setDate,
     quantity,
@@ -526,7 +544,10 @@ function FormContent({
     onRefreshPrice,
 }: any) {
     const feeValue = parseInputNumber(fee || '0');
-    const displayTotal = total + feeValue;
+    const safeFee = Number.isFinite(feeValue) ? feeValue : 0;
+    const cashImpact = transactionType === 'SELL' ? total - safeFee : -(total + safeFee);
+    const amountLabel = transactionType === 'SELL' ? 'Monto de venta' : 'Monto del activo';
+    const cashImpactLabel = transactionType === 'SELL' ? 'Ingreso neto' : 'Salida de caja';
     const formatter = new Intl.NumberFormat(currency === 'ARS' ? 'es-AR' : 'en-US', {
         style: 'currency',
         currency: currency || 'USD',
@@ -587,8 +608,16 @@ function FormContent({
             </div>
 
             <div className="bg-muted p-3 rounded-lg flex justify-between items-center">
-                <span className="font-medium">Total Estimado</span>
-                <span className="text-xl font-bold">{formatter.format(displayTotal)}</span>
+                <div>
+                    <div className="font-medium">{amountLabel}</div>
+                    <div className="text-xs text-muted-foreground">
+                        Comisión: -{formatter.format(safeFee)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        {cashImpactLabel}: {formatter.format(cashImpact)}
+                    </div>
+                </div>
+                <span className="text-xl font-bold">{formatter.format(total)}</span>
             </div>
 
             <div className="space-y-2">

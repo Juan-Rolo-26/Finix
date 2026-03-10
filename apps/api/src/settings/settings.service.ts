@@ -213,6 +213,14 @@ export class SettingsService {
         return { success: true };
     }
 
+    async saveBannerUrl(userId: string, bannerUrl: string) {
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { bannerUrl },
+        });
+        return { success: true };
+    }
+
     // ─── LOGOUT ALL SESSIONS ────────────────────────────────────────────────────
     async logoutAllSessions(userId: string) {
         // In a JWT-based system without token blacklisting, we rotate a secret or

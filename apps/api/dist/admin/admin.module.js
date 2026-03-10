@@ -8,15 +8,26 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminModule = void 0;
 const common_1 = require("@nestjs/common");
+const jwt_1 = require("@nestjs/jwt");
 const admin_controller_1 = require("./admin.controller");
-const prisma_service_1 = require("../prisma.service");
+const admin_auth_controller_1 = require("./admin-auth.controller");
+const admin_guard_1 = require("./admin.guard");
+const admin_auth_service_1 = require("./admin-auth.service");
+const permissions_guard_1 = require("./permissions.guard");
+const admin_audit_service_1 = require("./admin-audit.service");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
 exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
-        controllers: [admin_controller_1.AdminController],
-        providers: [prisma_service_1.PrismaService],
+        imports: [
+            jwt_1.JwtModule.register({
+                secret: process.env.JWT_SECRET || 'secretKey',
+            }),
+        ],
+        controllers: [admin_controller_1.AdminController, admin_auth_controller_1.AdminAuthController],
+        providers: [admin_guard_1.AdminGuard, permissions_guard_1.AdminPermissionsGuard, admin_audit_service_1.AdminAuditService, admin_auth_service_1.AdminAuthService],
+        exports: [admin_guard_1.AdminGuard],
     })
 ], AdminModule);
 //# sourceMappingURL=admin.module.js.map

@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
 import { Post } from '@/pages/Explore';
@@ -167,6 +167,7 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: PostCardProps) {
+    const navigate = useNavigate();
     const [liked, setLiked] = useState(post.likedByMe);
     const [likesCount, setLikesCount] = useState(post.likesCount);
     const [reposted, setReposted] = useState(post.repostedByMe);
@@ -189,6 +190,26 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
 
     const typeBadge = TYPE_BADGE[post.type];
     const tradingViewUrl = getTradingViewUrl(post.content || '');
+    const quotedMediaUrl = post.quotedPost?.media?.[0]?.url || post.quotedPost?.mediaUrl;
+
+    useEffect(() => {
+        setLiked(post.likedByMe);
+        setLikesCount(post.likesCount);
+        setReposted(post.repostedByMe);
+        setRepostsCount(post.repostsCount);
+        setSaved(post.savedByMe);
+        setCommentsCount(post.commentsCount);
+        setEditContent(post.content);
+    }, [
+        post.id,
+        post.likedByMe,
+        post.likesCount,
+        post.repostedByMe,
+        post.repostsCount,
+        post.savedByMe,
+        post.commentsCount,
+        post.content,
+    ]);
 
     // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -206,9 +227,11 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
 
     const handleSave = async () => {
         const prev = saved;
-        setSaved(!saved);
+        const nextSaved = !saved;
+        setSaved(nextSaved);
         try {
             await apiFetch(`/posts/${post.id}/save`, { method: 'POST' });
+            onUpdated({ ...post, savedByMe: nextSaved });
         } catch {
             setSaved(prev);
         }
@@ -418,6 +441,41 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
                     <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{post.content}</p>
                 )}
             </div>
+
+            {post.quotedPost && (
+                <div className="px-4 pb-3">
+                    <button
+                        type="button"
+                        onClick={() => navigate(`/posts/${post.quotedPost!.id}`)}
+                        className="w-full text-left rounded-xl border border-border/50 bg-background/30 p-4 hover:bg-muted/10 transition-colors"
+                    >
+                        <div className="flex items-center gap-2 mb-2">
+                            {post.quotedPost.author.avatarUrl ? (
+                                <img
+                                    src={post.quotedPost.author.avatarUrl}
+                                    alt={post.quotedPost.author.username}
+                                    className="w-5 h-5 rounded-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold">
+                                    {post.quotedPost.author.username[0]}
+                                </div>
+                            )}
+                            <span className="font-bold text-sm">{post.quotedPost.author.username}</span>
+                            <span className="text-xs text-muted-foreground">{timeAgo(post.quotedPost.createdAt)}</span>
+                        </div>
+                        <p className="text-sm line-clamp-3 mb-2">{post.quotedPost.content}</p>
+                        {quotedMediaUrl && (
+                            <img
+                                src={quotedMediaUrl}
+                                alt="Vista previa del post citado"
+                                className="w-full h-32 object-cover rounded-lg"
+                                loading="lazy"
+                            />
+                        )}
+                    </button>
+                </div>
+            )}
 
             {/* TradingView link */}
             {tradingViewUrl && (

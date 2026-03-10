@@ -82,18 +82,20 @@ let EventsGateway = class EventsGateway {
         if (!senderId)
             return;
         try {
-            const message = await this.messagesService.sendMessage(senderId, data.conversationId, data.content);
-            this.server.to(`conv:${data.conversationId}`).emit('newDirectMessage', message);
-            this.server.to(`conv:${data.conversationId}`).emit('conversationUpdated', {
-                conversationId: data.conversationId,
-                lastMessage: message,
+            const message = await this.messagesService.sendMessage(senderId, data.conversationId, {
+                content: data.content,
+                attachment: data.attachment,
             });
+            this.emitNewMessage(data.conversationId, message);
         }
         catch (err) {
             client.emit('error', { message: 'Error al enviar mensaje' });
         }
     }
     emitNewMessage(conversationId, message) {
+        if (!this.server) {
+            return;
+        }
         this.server.to(`conv:${conversationId}`).emit('newDirectMessage', message);
         this.server.to(`conv:${conversationId}`).emit('conversationUpdated', {
             conversationId,

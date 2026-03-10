@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MailModule } from './mail/mail.module';
 import { AuthModule } from './auth/auth.module';
-import { PrismaService } from './prisma.service';
 import { MarketModule } from './market/market.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
 import { PostsModule } from './posts/posts.module';
@@ -18,12 +17,16 @@ import { SettingsModule } from './settings/settings.module';
 import { FundamentalModule } from './fundamental/fundamental.module';
 import { AiModule } from './ai/ai.module';
 import { MessagesModule } from './messages/messages.module';
-import { EventsGateway } from './events.gateway';
 import { AdminModule } from './admin/admin.module';
+import { StoriesModule } from './stories/stories.module';
+import { PrismaModule } from './prisma.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
     imports: [
         ScheduleModule.forRoot(),
+        PrismaModule,
+        NotificationsModule,
         AuthModule,
         MarketModule,
         PortfolioModule,
@@ -40,11 +43,11 @@ import { AdminModule } from './admin/admin.module';
         FundamentalModule,
         AiModule,
         MessagesModule,
+        StoriesModule,
         AdminModule,
         MailModule,
     ],
     controllers: [],
-    providers: [PrismaService, EventsGateway],
-    exports: [PrismaService],
+    providers: [],
 })
 export class AppModule { }

@@ -11,7 +11,6 @@ const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
 const settings_controller_1 = require("./settings.controller");
 const settings_service_1 = require("./settings.service");
-const prisma_service_1 = require("../prisma.service");
 let SettingsModule = class SettingsModule {
 };
 exports.SettingsModule = SettingsModule;
@@ -21,7 +20,7 @@ exports.SettingsModule = SettingsModule = __decorate([
             platform_express_1.MulterModule.register({}),
         ],
         controllers: [settings_controller_1.SettingsController],
-        providers: [settings_service_1.SettingsService, prisma_service_1.PrismaService],
+        providers: [settings_service_1.SettingsService],
         exports: [settings_service_1.SettingsService],
     })
 ], SettingsModule);

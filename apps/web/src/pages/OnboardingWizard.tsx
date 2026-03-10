@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import AvatarUpload from '@/components/AvatarUpload';
 import BackButton from '@/components/BackButton';
+import LocationQuickSelect from '@/components/LocationQuickSelect';
 import {
     CheckCircle2,
     ChevronRight,
@@ -177,11 +178,11 @@ const StepProfile = ({
 
         <div className="space-y-2">
             <Label htmlFor="ob-location">Ciudad / País (opcional)</Label>
-            <Input
+            <LocationQuickSelect
                 id="ob-location"
                 placeholder="Ej: Buenos Aires, Argentina"
                 value={data.location}
-                onChange={(e) => onChange('location', e.target.value)}
+                onChange={(value) => onChange('location', value)}
                 className="bg-secondary/30 border-border/50"
             />
         </div>
@@ -277,18 +278,6 @@ const StepPreferences = ({
             description="Mantener los widgets de mercado actualizados automáticamente."
             checked={data.autoRefreshMarket}
             onChange={(v) => onChange('autoRefreshMarket', v)}
-        />
-        <ToggleRow
-            label="Tablas compactas"
-            description="Reduce espaciado en tablas para ver más información."
-            checked={data.compactTables}
-            onChange={(v) => onChange('compactTables', v)}
-        />
-        <ToggleRow
-            label="Métricas avanzadas"
-            description="Muestra indicadores técnicos y métricas extendidas."
-            checked={data.showAdvancedMetrics}
-            onChange={(v) => onChange('showAdvancedMetrics', v)}
         />
     </div>
 );

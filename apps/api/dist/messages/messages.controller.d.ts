@@ -1,7 +1,9 @@
+import { EventsGateway } from '../events.gateway';
 import { MessagesService } from './messages.service';
 export declare class MessagesController {
     private readonly messagesService;
-    constructor(messagesService: MessagesService);
+    private readonly eventsGateway;
+    constructor(messagesService: MessagesService, eventsGateway: EventsGateway);
     getConversations(req: any): Promise<{
         id: string;
         otherUser: {
@@ -11,16 +13,44 @@ export declare class MessagesController {
             isVerified: boolean;
         };
         lastMessage: {
+            attachmentMeta: any;
             sender: {
                 id: string;
                 username: string;
+                avatarUrl: string;
+                isVerified: boolean;
             };
-        } & {
+            sharedPost: {
+                id: string;
+                createdAt: Date;
+                content: string;
+                type: string;
+                assetSymbol: string;
+                analysisType: string;
+                riskLevel: string;
+                author: {
+                    id: string;
+                    username: string;
+                    avatarUrl: string;
+                    isVerified: boolean;
+                };
+                media: {
+                    id: string;
+                    createdAt: Date;
+                    postId: string;
+                    url: string;
+                    mediaType: string;
+                    order: number;
+                }[];
+            };
             id: string;
             createdAt: Date;
-            content: string;
             conversationId: string;
             senderId: string;
+            content: string;
+            attachmentType: string | null;
+            attachmentUrl: string | null;
+            sharedPostId: string | null;
             isRead: boolean;
         };
         updatedAt: Date;
@@ -43,45 +73,102 @@ export declare class MessagesController {
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         participant1Id: string;
         participant2Id: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    getMessages(id: string, req: any, cursor?: string): Promise<({
+    getMessages(id: string, req: any, cursor?: string): Promise<{
+        attachmentMeta: any;
         sender: {
             id: string;
             username: string;
             avatarUrl: string;
+            isVerified: boolean;
         };
-    } & {
+        sharedPost: {
+            id: string;
+            createdAt: Date;
+            content: string;
+            type: string;
+            assetSymbol: string;
+            analysisType: string;
+            riskLevel: string;
+            author: {
+                id: string;
+                username: string;
+                avatarUrl: string;
+                isVerified: boolean;
+            };
+            media: {
+                id: string;
+                createdAt: Date;
+                postId: string;
+                url: string;
+                mediaType: string;
+                order: number;
+            }[];
+        };
         id: string;
         createdAt: Date;
-        content: string;
         conversationId: string;
         senderId: string;
+        content: string;
+        attachmentType: string | null;
+        attachmentUrl: string | null;
+        sharedPostId: string | null;
         isRead: boolean;
-    })[]>;
+    }[]>;
     sendMessage(id: string, req: any, body: {
-        content: string;
+        content?: string;
+        attachment?: {
+            type: 'image' | 'post' | 'chart' | 'story';
+            url?: string;
+            postId?: string;
+            meta?: Record<string, any>;
+        } | null;
     }): Promise<{
+        attachmentMeta: any;
         sender: {
             id: string;
             username: string;
             avatarUrl: string;
+            isVerified: boolean;
         };
-    } & {
+        sharedPost: {
+            id: string;
+            createdAt: Date;
+            content: string;
+            type: string;
+            assetSymbol: string;
+            analysisType: string;
+            riskLevel: string;
+            author: {
+                id: string;
+                username: string;
+                avatarUrl: string;
+                isVerified: boolean;
+            };
+            media: {
+                id: string;
+                createdAt: Date;
+                postId: string;
+                url: string;
+                mediaType: string;
+                order: number;
+            }[];
+        };
         id: string;
         createdAt: Date;
-        content: string;
         conversationId: string;
         senderId: string;
+        content: string;
+        attachmentType: string | null;
+        attachmentUrl: string | null;
+        sharedPostId: string | null;
         isRead: boolean;
     }>;
     markAsRead(id: string, req: any): Promise<{
-        success: boolean;
-    }>;
-    deleteConversation(id: string, req: any): Promise<{
         success: boolean;
     }>;
     getUnreadCount(req: any): Promise<{

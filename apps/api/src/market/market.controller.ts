@@ -12,6 +12,11 @@ export class MarketController {
         return await this.marketService.getTickers();
     }
 
+    @Get('dashboard')
+    getDashboard() {
+        return this.marketService.getDashboard();
+    }
+
     @Get('search')
     search(@Query() q: any) {
         const query = q.query || q.q || q.text || q.search || '';

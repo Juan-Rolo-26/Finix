@@ -1,13 +1,50 @@
-import { Controller, Get, Patch, Query, Body, Param, UseGuards, Req } from '@nestjs/common';
+import {
+    BadRequestException,
+    Controller,
+    ForbiddenException,
+    Get,
+    Patch,
+    Query,
+    Body,
+    Param,
+    UseGuards,
+    Req,
+} from '@nestjs/common';
+import type { Request } from 'express';
 import { AdminGuard } from './admin.guard';
 import { PrismaService } from '../prisma.service';
+import {
+    AdminAuditLogsQueryDto,
+    AdminPostsQueryDto,
+    AdminResolveReportDto,
+    AdminUpdatePostDto,
+    AdminUpdateUserDto,
+    AdminUsersQueryDto,
+} from './dto/admin-management.dto';
+import { AdminPermissionsGuard } from './permissions.guard';
+import { RequireAdminPermissions } from './permissions.decorator';
+import { AdminPermission, hasAdminPermission } from './admin-permissions';
+import { AdminAuditService } from './admin-audit.service';
+
+type AdminRequest = Request & {
+    user?: {
+        id: string;
+        email: string;
+        role: string;
+        sessionId?: string;
+    };
+};
 
 @Controller('admin')
-@UseGuards(AdminGuard)
+@UseGuards(AdminGuard, AdminPermissionsGuard)
 export class AdminController {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly adminAuditService: AdminAuditService,
+    ) { }
 
     @Get('kpis')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
     async getKPIs() {
         const totalUsers = await this.prisma.user.count();
         const activeUsersCount = await this.prisma.user.count({ where: { status: 'ACTIVE' } });
@@ -25,24 +62,23 @@ export class AdminController {
     }
 
     @Get('users')
-    async getUsers(@Query() query: any) {
-        const { search, role, status, page = '1', limit = '50' } = query;
-
+    @RequireAdminPermissions(AdminPermission.USERS_READ)
+    async getUsers(@Query() query: AdminUsersQueryDto) {
         const whereClause: any = {};
-        if (search) {
+        if (query.search) {
             whereClause.OR = [
-                { username: { contains: search } },
-                { email: { contains: search } },
+                { username: { contains: query.search } },
+                { email: { contains: query.search } },
             ];
         }
-        if (role) whereClause.role = role;
-        if (status) whereClause.status = status;
+        if (query.role) whereClause.role = query.role;
+        if (query.status) whereClause.status = query.status;
 
-        const skip = (Number(page) - 1) * Number(limit);
+        const skip = (query.page - 1) * query.limit;
 
         const users = await this.prisma.user.findMany({
             where: whereClause,
-            take: Number(limit),
+            take: query.limit,
             skip,
             orderBy: { createdAt: 'desc' },
             select: {
@@ -60,46 +96,82 @@ export class AdminController {
 
         const total = await this.prisma.user.count({ where: whereClause });
 
-        return { data: users, total, page: Number(page), limit: Number(limit) };
+        return { data: users, total, page: query.page, limit: query.limit };
     }
 
     @Patch('users/:id')
-    async updateUser(@Param('id') id: string, @Body() body: any, @Req() req: any) {
-        const { status, shadowbanned, role } = body;
+    @RequireAdminPermissions(AdminPermission.USERS_MODERATE)
+    async updateUser(@Param('id') id: string, @Body() body: AdminUpdateUserDto, @Req() req: AdminRequest) {
         const adminUser = req.user;
+        if (!adminUser?.id) {
+            throw new ForbiddenException('Sesión admin inválida');
+        }
 
-        const updatedUser = await this.prisma.user.update({
-            where: { id },
-            data: { status, shadowbanned, role },
+        const updateData: any = {};
+        if (body.status !== undefined) updateData.status = body.status;
+        if (body.shadowbanned !== undefined) updateData.shadowbanned = body.shadowbanned;
+        if (body.role !== undefined) updateData.role = body.role;
+
+        if (Object.keys(updateData).length === 0) {
+            throw new BadRequestException('No se enviaron campos válidos para actualizar');
+        }
+
+        const roleChangeRequested = typeof body.role === 'string';
+        if (roleChangeRequested && !this.canChangeRoles(adminUser)) {
+            throw new ForbiddenException('Requiere permiso para cambio de rol');
+        }
+
+        if (id === adminUser.id && roleChangeRequested && body.role && !this.isAdminRole(body.role)) {
+            throw new ForbiddenException('No puedes quitarte acceso admin a ti mismo');
+        }
+
+        let action = 'UPDATE_USER';
+        if (roleChangeRequested) {
+            action = 'CHANGE_ROLE';
+        } else if (body.status === 'BANNED') {
+            action = 'BAN_USER';
+        } else if (body.status === 'ACTIVE') {
+            action = 'UNBAN_USER';
+        } else if (body.shadowbanned !== undefined) {
+            action = body.shadowbanned ? 'SHADOWBAN_USER' : 'UNSHADOWBAN_USER';
+        }
+
+        const auditData = this.adminAuditService.buildAuditData(req, {
+            action,
+            targetId: id,
+            metadata: updateData,
         });
 
-        await this.prisma.adminAuditLog.create({
-            data: {
-                action: status === 'BANNED' ? 'BAN_USER' : 'UPDATE_USER',
-                actorId: adminUser.id,
-                targetId: id,
-                metadata: JSON.stringify({ status, shadowbanned, role }),
-            },
+        const updatedUser = await this.prisma.$transaction(async (tx) => {
+            const user = await tx.user.update({
+                where: { id },
+                data: updateData,
+            });
+
+            if (auditData) {
+                await tx.adminAuditLog.create({ data: auditData });
+            }
+
+            return user;
         });
 
         return { data: updatedUser };
     }
 
     @Get('posts')
-    async getPosts(@Query() query: any) {
-        const { search, visibility, page = '1', limit = '50' } = query;
-
+    @RequireAdminPermissions(AdminPermission.POSTS_READ)
+    async getPosts(@Query() query: AdminPostsQueryDto) {
         const whereClause: any = { deletedAt: null };
-        if (search) {
-            whereClause.content = { contains: search };
+        if (query.search) {
+            whereClause.content = { contains: query.search };
         }
-        if (visibility) whereClause.visibility = visibility;
+        if (query.visibility) whereClause.visibility = query.visibility;
 
-        const skip = (Number(page) - 1) * Number(limit);
+        const skip = (query.page - 1) * query.limit;
 
         const posts = await this.prisma.post.findMany({
             where: whereClause,
-            take: Number(limit),
+            take: query.limit,
             skip,
             orderBy: { createdAt: 'desc' },
             include: {
@@ -114,36 +186,51 @@ export class AdminController {
 
         const total = await this.prisma.post.count({ where: whereClause });
 
-        return { data: posts, total, page: Number(page), limit: Number(limit) };
+        return { data: posts, total, page: query.page, limit: query.limit };
     }
 
     @Patch('posts/:id')
-    async updatePost(@Param('id') id: string, @Body() body: any, @Req() req: any) {
-        const { visibility, deleted } = body;
-        const adminUser = req.user;
-
+    @RequireAdminPermissions(AdminPermission.POSTS_MODERATE)
+    async updatePost(@Param('id') id: string, @Body() body: AdminUpdatePostDto, @Req() req: AdminRequest) {
         const updateData: any = {};
-        if (visibility) updateData.visibility = visibility;
-        if (deleted === true) updateData.deletedAt = new Date();
+        if (body.visibility) updateData.visibility = body.visibility;
+        if (body.deleted === true) updateData.deletedAt = new Date();
 
-        const updatedPost = await this.prisma.post.update({
-            where: { id },
-            data: updateData,
+        if (Object.keys(updateData).length === 0) {
+            throw new BadRequestException('No se enviaron cambios para el post');
+        }
+
+        const action = body.deleted
+            ? 'DELETE_POST'
+            : (body.visibility === 'HIDDEN' ? 'HIDE_POST' : 'UPDATE_POST');
+
+        const auditData = this.adminAuditService.buildAuditData(req, {
+            action,
+            targetId: id,
+            metadata: {
+                visibility: body.visibility,
+                deleted: body.deleted,
+            },
         });
 
-        await this.prisma.adminAuditLog.create({
-            data: {
-                action: deleted ? 'DELETE_POST' : (visibility === 'HIDDEN' ? 'HIDE_POST' : 'UPDATE_POST'),
-                actorId: adminUser.id,
-                targetId: id,
-                metadata: JSON.stringify({ visibility, deleted }),
-            },
+        const updatedPost = await this.prisma.$transaction(async (tx) => {
+            const post = await tx.post.update({
+                where: { id },
+                data: updateData,
+            });
+
+            if (auditData) {
+                await tx.adminAuditLog.create({ data: auditData });
+            }
+
+            return post;
         });
 
         return { data: updatedPost };
     }
 
     @Get('reports')
+    @RequireAdminPermissions(AdminPermission.REPORTS_READ)
     async getReports() {
         const reports = await this.prisma.report.findMany({
             orderBy: { createdAt: 'desc' },
@@ -158,39 +245,110 @@ export class AdminController {
     }
 
     @Patch('reports/:id')
-    async resolveReport(@Param('id') id: string, @Body() body: any, @Req() req: any) {
-        const { status, resolutionNote } = body;
-        const adminUser = req.user;
+    @RequireAdminPermissions(AdminPermission.REPORTS_RESOLVE)
+    async resolveReport(@Param('id') id: string, @Body() body: AdminResolveReportDto, @Req() req: AdminRequest) {
+        const status = body.status || 'RESOLVED';
 
-        const updatedReport = await this.prisma.report.update({
-            where: { id },
-            data: { status, resolutionNote },
+        const auditData = this.adminAuditService.buildAuditData(req, {
+            action: 'RESOLVE_REPORT',
+            targetId: id,
+            metadata: {
+                status,
+                resolutionNote: body.resolutionNote || null,
+            },
         });
 
-        await this.prisma.adminAuditLog.create({
-            data: {
-                action: 'RESOLVE_REPORT',
-                actorId: adminUser.id,
-                targetId: id,
-                metadata: JSON.stringify({ status, resolutionNote }),
-            },
+        const updatedReport = await this.prisma.$transaction(async (tx) => {
+            const report = await tx.report.update({
+                where: { id },
+                data: {
+                    status,
+                    resolutionNote: body.resolutionNote || null,
+                },
+            });
+
+            if (auditData) {
+                await tx.adminAuditLog.create({ data: auditData });
+            }
+
+            return report;
         });
 
         return { data: updatedReport };
     }
 
     @Get('audit-logs')
-    async getAuditLogs() {
-        const logs = await this.prisma.adminAuditLog.findMany({
-            orderBy: { createdAt: 'desc' },
-            take: 100,
-            include: {
-                actor: {
-                    select: { id: true, username: true },
-                },
-            },
-        });
+    @RequireAdminPermissions(AdminPermission.LOGS_READ)
+    async getAuditLogs(@Query() query: AdminAuditLogsQueryDto) {
+        const whereClause: any = {};
 
-        return { data: logs };
+        if (query.action) {
+            whereClause.action = query.action;
+        }
+
+        if (query.adminId) {
+            whereClause.actorId = query.adminId;
+        }
+
+        if (query.from || query.to) {
+            whereClause.createdAt = {};
+            if (query.from) {
+                whereClause.createdAt.gte = new Date(query.from);
+            }
+            if (query.to) {
+                whereClause.createdAt.lte = new Date(query.to);
+            }
+        }
+
+        const skip = (query.page - 1) * query.limit;
+
+        const [logs, total] = await this.prisma.$transaction([
+            this.prisma.adminAuditLog.findMany({
+                where: whereClause,
+                orderBy: { createdAt: 'desc' },
+                take: query.limit,
+                skip,
+                include: {
+                    actor: {
+                        select: { id: true, username: true, email: true, role: true },
+                    },
+                },
+            }),
+            this.prisma.adminAuditLog.count({ where: whereClause }),
+        ]);
+
+        return {
+            data: logs,
+            total,
+            page: query.page,
+            limit: query.limit,
+        };
+    }
+
+    private canChangeRoles(user: { id: string; email: string; role: string }) {
+        if (this.isOwner(user)) {
+            return true;
+        }
+
+        return hasAdminPermission(user.role, AdminPermission.USERS_ROLE_CHANGE);
+    }
+
+    private isOwner(user: { id: string; email: string }) {
+        const ownerId = (process.env.ADMIN_OWNER_USER_ID || '').trim();
+        if (ownerId && user.id === ownerId) {
+            return true;
+        }
+
+        const ownerEmail = (process.env.ADMIN_OWNER_EMAIL || '').trim().toLowerCase();
+        if (ownerEmail && user.email.toLowerCase() === ownerEmail) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private isAdminRole(role: string) {
+        const normalized = role.toUpperCase();
+        return normalized === 'ADMIN' || normalized === 'SUPER_ADMIN';
     }
 }

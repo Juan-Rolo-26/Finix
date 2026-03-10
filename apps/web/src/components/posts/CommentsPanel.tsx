@@ -46,16 +46,19 @@ function CommentItem({
     postId,
     currentUserId,
     onDeleted,
+    onThreadCountDelta,
     depth = 0,
 }: {
     comment: Comment;
     postId: string;
     currentUserId?: string;
-    onDeleted: (id: string) => void;
+    onDeleted: (id: string, removedCount?: number) => void;
+    onThreadCountDelta: (delta: number) => void;
     depth?: number;
 }) {
     const [liked, setLiked] = useState(comment.likedByMe);
     const [likesCount, setLikesCount] = useState(comment.likesCount);
+    const [repliesCount, setRepliesCount] = useState(comment.repliesCount);
     const [showReply, setShowReply] = useState(false);
     const [replyText, setReplyText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,8 +82,11 @@ function CommentItem({
     const handleDelete = async () => {
         if (!confirm('¿Eliminar este comentario?')) return;
         try {
-            await apiFetch(`/posts/comment/${comment.id}`, { method: 'DELETE' });
-            onDeleted(comment.id);
+            const res = await apiFetch(`/posts/comment/${comment.id}`, { method: 'DELETE' });
+            if (!res.ok) return;
+
+            const data = await res.json();
+            onDeleted(comment.id, data.removedCount || 1);
         } catch { }
     };
 
@@ -95,10 +101,12 @@ function CommentItem({
             });
             if (res.ok) {
                 const newReply = await res.json();
-                setReplies((prev) => [...prev, { ...newReply, likedByMe: false, likesCount: 0, repliesCount: 0 }]);
+                setReplies((prev) => [...prev, { ...newReply, replies: [] }]);
+                setRepliesCount((count) => count + 1);
                 setReplyText('');
                 setShowReply(false);
                 setShowReplies(true);
+                onThreadCountDelta(1);
             }
         } catch { }
         setIsSubmitting(false);
@@ -140,7 +148,7 @@ function CommentItem({
                             <Heart className={`w-3 h-3 ${liked ? 'fill-red-400' : ''}`} />
                             {likesCount > 0 && likesCount}
                         </button>
-                        {depth === 0 && currentUserId && (
+                        {currentUserId && (
                             <button
                                 onClick={() => setShowReply(!showReply)}
                                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -184,13 +192,13 @@ function CommentItem({
                     )}
 
                     {/* Show replies */}
-                    {comment.repliesCount > 0 && depth === 0 && (
+                    {repliesCount > 0 && (
                         <button
                             onClick={() => setShowReplies(!showReplies)}
                             className="flex items-center gap-1 text-xs text-primary mt-1 ml-1 hover:underline"
                         >
                             <ChevronDown className={`w-3 h-3 transition-transform ${showReplies ? 'rotate-180' : ''}`} />
-                            {showReplies ? 'Ocultar' : `Ver ${comment.repliesCount} respuesta${comment.repliesCount > 1 ? 's' : ''}`}
+                            {showReplies ? 'Ocultar' : `Ver ${repliesCount} respuesta${repliesCount > 1 ? 's' : ''}`}
                         </button>
                     )}
                 </div>
@@ -203,8 +211,13 @@ function CommentItem({
                     comment={reply}
                     postId={postId}
                     currentUserId={currentUserId}
-                    onDeleted={(id) => setReplies((prev) => prev.filter((r) => r.id !== id))}
-                    depth={1}
+                    onDeleted={(id, removedCount = 1) => {
+                        setReplies((prev) => prev.filter((r) => r.id !== id));
+                        setRepliesCount((count) => Math.max(0, count - 1));
+                        onThreadCountDelta(-removedCount);
+                    }}
+                    onThreadCountDelta={onThreadCountDelta}
+                    depth={depth + 1}
                 />
             ))}
         </div>
@@ -226,6 +239,20 @@ export default function CommentsPanel({ postId, currentUserId, onCountChange }: 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(false);
+    const [, setTotalCount] = useState(0);
+
+    const syncCount = (nextValue: number) => {
+        setTotalCount(nextValue);
+        onCountChange(nextValue);
+    };
+
+    const applyCountDelta = (delta: number) => {
+        setTotalCount((current) => {
+            const nextValue = Math.max(0, current + delta);
+            onCountChange(nextValue);
+            return nextValue;
+        });
+    };
 
     useEffect(() => {
         const load = async () => {
@@ -237,7 +264,7 @@ export default function CommentsPanel({ postId, currentUserId, onCountChange }: 
                     setComments(data.comments || []);
                     setNextCursor(data.nextCursor);
                     setHasMore(data.hasMore);
-                    onCountChange(data.comments?.length || 0);
+                    syncCount(data.totalCount || 0);
                 }
             } catch { }
             setIsLoading(false);
@@ -256,10 +283,10 @@ export default function CommentsPanel({ postId, currentUserId, onCountChange }: 
             });
             if (res.ok) {
                 const comment = await res.json();
-                const enriched = { ...comment, likedByMe: false, likesCount: 0, repliesCount: 0 };
+                const enriched = { ...comment, replies: [] };
                 setComments((prev) => [enriched, ...prev]);
                 setNewComment('');
-                onCountChange(comments.length + 1);
+                applyCountDelta(1);
             }
         } catch { }
         setIsSubmitting(false);
@@ -327,10 +354,11 @@ export default function CommentsPanel({ postId, currentUserId, onCountChange }: 
                             comment={c}
                             postId={postId}
                             currentUserId={currentUserId}
-                            onDeleted={(id) => {
+                            onDeleted={(id, removedCount = 1) => {
                                 setComments((prev) => prev.filter((x) => x.id !== id));
-                                onCountChange(Math.max(0, comments.length - 1));
+                                applyCountDelta(-removedCount);
                             }}
+                            onThreadCountDelta={applyCountDelta}
                         />
                     ))}
                     {hasMore && (

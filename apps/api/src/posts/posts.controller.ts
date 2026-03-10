@@ -295,7 +295,11 @@ export class PostsController {
 
     @UseGuards(OptionalJwtAuthGuard)
     @Get()
-    getAllPosts(@Query('page') page?: string, @Query('limit') limit?: string) {
-        return this.postsService.getAllPosts(page ? parseInt(page) : 1, limit ? parseInt(limit) : 20);
+    getAllPosts(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
+        return this.postsService.getAllPosts(
+            page ? parseInt(page) : 1,
+            limit ? parseInt(limit) : 20,
+            req.user?.id,
+        );
     }
 }

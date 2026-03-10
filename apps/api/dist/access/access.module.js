@@ -8,7 +8,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AccessModule = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_service_1 = require("../prisma.service");
 const access_control_service_1 = require("./access-control.service");
 const require_pro_guard_1 = require("./require-pro.guard");
 const limit_free_portfolio_guard_1 = require("./limit-free-portfolio.guard");
@@ -19,7 +18,6 @@ exports.AccessModule = AccessModule;
 exports.AccessModule = AccessModule = __decorate([
     (0, common_1.Module)({
         providers: [
-            prisma_service_1.PrismaService,
             access_control_service_1.AccessControlService,
             require_pro_guard_1.RequireProGuard,
             limit_free_portfolio_guard_1.LimitFreePortfolioGuard,

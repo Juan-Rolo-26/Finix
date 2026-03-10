@@ -13,10 +13,12 @@ exports.UserService = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const argon2 = require("argon2");
+const notifications_service_1 = require("../notifications/notifications.service");
 const prisma_service_1 = require("../prisma.service");
 let UserService = class UserService {
-    constructor(prisma) {
+    constructor(prisma, notificationsService) {
         this.prisma = prisma;
+        this.notificationsService = notificationsService;
     }
     getProfileSelect() {
         return {
@@ -71,47 +73,15 @@ let UserService = class UserService {
         return user;
     }
     async getNotifications(userId) {
-        const followers = await this.prisma.follow.findMany({
-            where: { followingId: userId },
-            include: { follower: { select: { id: true, username: true, avatarUrl: true } } },
-            take: 3
-        });
-        const dbUser = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { totalReturn: true }
-        });
-        const notifications = [];
-        followers.forEach((f, index) => {
-            notifications.push({
-                id: `fol_${f.followerId}_${index}`,
-                type: 'follow',
-                title: `${f.follower.username} empezó a seguirte.`,
-                time: `${index + 1}h`,
-                user: f.follower
-            });
-        });
-        if (dbUser?.totalReturn !== undefined && dbUser?.totalReturn !== null) {
-            const isUp = dbUser.totalReturn >= 0;
-            notifications.push({
-                id: `perf_${userId}`,
-                type: 'portfolio',
-                title: `Tu portafolio ${isUp ? 'subió' : 'bajó'} ${isUp ? '+' : ''}${dbUser.totalReturn.toFixed(1)}% hoy.`,
-                time: '5h',
-                isUp
-            });
-        }
-        else {
-            notifications.push({
-                id: `perf_${userId}_mock`,
-                type: 'portfolio',
-                title: `Tu portafolio está listo para invertir.`,
-                time: '5h',
-                isUp: true
-            });
-        }
-        return notifications;
+        return this.notificationsService.getNotifications(userId);
     }
-    async getUserProfile(username) {
+    async getUnreadNotificationsCount(userId) {
+        return this.notificationsService.countUnread(userId);
+    }
+    async markAllNotificationsAsRead(userId) {
+        return this.notificationsService.markAllAsRead(userId);
+    }
+    async getUserProfile(username, viewerId) {
         const user = await this.prisma.user.findUnique({
             where: { username },
             select: this.getProfileSelect(),
@@ -119,6 +89,17 @@ let UserService = class UserService {
         if (!user) {
             throw new common_1.NotFoundException('Usuario no encontrado');
         }
+        const isFollowedByMe = viewerId
+            ? await this.prisma.follow.findUnique({
+                where: {
+                    followerId_followingId: {
+                        followerId: viewerId,
+                        followingId: user.id,
+                    },
+                },
+                select: { followerId: true },
+            }).then(Boolean)
+            : false;
         if (!user.isProfilePublic) {
             return {
                 id: user.id,
@@ -130,9 +111,13 @@ let UserService = class UserService {
                 accountType: user.accountType,
                 plan: user.plan,
                 isProfilePublic: false,
+                isFollowedByMe,
             };
         }
-        return user;
+        return {
+            ...user,
+            isFollowedByMe,
+        };
     }
     normalizeNullableText(value, maxLen) {
         if (value === null)
@@ -334,17 +319,105 @@ let UserService = class UserService {
             where: {
                 username: {
                     contains: query,
+                    mode: 'insensitive',
                 },
                 isProfilePublic: true,
             },
             take: 10,
-            select: this.getProfileSelect(),
+            select: {
+                id: true,
+                username: true,
+                avatarUrl: true,
+                isVerified: true,
+                title: true,
+                company: true,
+                bio: true,
+                winRate: true,
+                totalReturn: true,
+            },
         });
+    }
+    async toggleFollow(followerId, username) {
+        const [targetUser, follower] = await Promise.all([
+            this.prisma.user.findUnique({
+                where: { username },
+                select: {
+                    id: true,
+                    username: true,
+                    acceptingFollowers: true,
+                    _count: {
+                        select: {
+                            followedBy: true,
+                        },
+                    },
+                },
+            }),
+            this.prisma.user.findUnique({
+                where: { id: followerId },
+                select: {
+                    id: true,
+                    username: true,
+                },
+            }),
+        ]);
+        if (!targetUser) {
+            throw new common_1.NotFoundException('Usuario no encontrado');
+        }
+        if (!follower) {
+            throw new common_1.NotFoundException('Usuario autenticado no encontrado');
+        }
+        if (targetUser.id === followerId) {
+            throw new common_1.BadRequestException('No puedes seguir tu propio perfil');
+        }
+        const existing = await this.prisma.follow.findUnique({
+            where: {
+                followerId_followingId: {
+                    followerId,
+                    followingId: targetUser.id,
+                },
+            },
+            select: { followerId: true },
+        });
+        if (existing) {
+            await this.prisma.follow.delete({
+                where: {
+                    followerId_followingId: {
+                        followerId,
+                        followingId: targetUser.id,
+                    },
+                },
+            });
+            return {
+                following: false,
+                followersCount: Math.max((targetUser._count?.followedBy || 1) - 1, 0),
+            };
+        }
+        if (!targetUser.acceptingFollowers) {
+            throw new common_1.BadRequestException('Este usuario no acepta seguidores en este momento');
+        }
+        await this.prisma.follow.create({
+            data: {
+                followerId,
+                followingId: targetUser.id,
+            },
+        });
+        await this.notificationsService.createNotification({
+            userId: targetUser.id,
+            actorId: followerId,
+            type: 'follow',
+            title: `${follower.username} empezo a seguirte.`,
+            link: `/profile/${follower.username}`,
+        });
+        return {
+            following: true,
+            followersCount: (targetUser._count?.followedBy || 0) + 1,
+        };
     }
 };
 exports.UserService = UserService;
 exports.UserService = UserService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        notifications_service_1.NotificationsService])
 ], UserService);
 //# sourceMappingURL=user.service.js.map

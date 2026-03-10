@@ -1,0 +1,81 @@
+# Example hardening for admin.finix.com + api.finix.com admin routes
+# Adjust upstreams, cert paths and allowlisted IPs before use.
+
+limit_req_zone $binary_remote_addr zone=admin_login_limit:10m rate=5r/m;
+
+# Add this block inside your finix.com server to kill public /admin route.
+# This avoids anyone entering by typing finix.com/admin.
+#
+# location ^~ /admin {
+#     return 404;
+# }
+
+server {
+    listen 443 ssl http2;
+    server_name admin.finix.com;
+
+    ssl_certificate     /etc/letsencrypt/live/admin.finix.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/admin.finix.com/privkey.pem;
+
+    # Optional strict IP allowlist for the admin frontend itself
+    allow 203.0.113.10;
+    allow 198.51.100.24;
+    deny all;
+
+    root /var/www/finix-admin/dist;
+    index index.html;
+
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header Content-Security-Policy "default-src 'self'; connect-src 'self' https://api.finix.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none';" always;
+
+    location / {
+        try_files $uri /index.html;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name api.finix.com;
+
+    ssl_certificate     /etc/letsencrypt/live/api.finix.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.finix.com/privkey.pem;
+
+    # Public API upstream
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Extra shield for admin auth endpoint (rate-limit + IP allowlist)
+    location = /api/admin/auth/login {
+        allow 203.0.113.10;
+        allow 198.51.100.24;
+        deny all;
+
+        limit_req zone=admin_login_limit burst=5 nodelay;
+
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Optional: block all admin API routes outside allowlist
+    location ^~ /api/admin/ {
+        allow 203.0.113.10;
+        allow 198.51.100.24;
+        deny all;
+
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

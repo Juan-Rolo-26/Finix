@@ -34,6 +34,18 @@ const avatarStorage = (0, multer_1.diskStorage)({
         cb(null, `${unique}${(0, path_1.extname)(file.originalname)}`);
     },
 });
+const bannerStorage = (0, multer_1.diskStorage)({
+    destination: (_req, _file, cb) => {
+        const dir = (0, path_1.join)(process.cwd(), 'uploads', 'banners');
+        if (!(0, fs_1.existsSync)(dir))
+            (0, fs_1.mkdirSync)(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (_req, file, cb) => {
+        const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        cb(null, `${unique}${(0, path_1.extname)(file.originalname)}`);
+    },
+});
 let SettingsController = class SettingsController {
     constructor(settingsService) {
         this.settingsService = settingsService;
@@ -60,6 +72,14 @@ let SettingsController = class SettingsController {
         const avatarUrl = `${apiBase}/uploads/avatars/${file.filename}`;
         await this.settingsService.saveAvatarUrl(req.user.id, avatarUrl);
         return { avatarUrl };
+    }
+    async uploadBanner(req, file) {
+        if (!file)
+            throw new common_1.BadRequestException('No se recibió ningún archivo');
+        const apiBase = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
+        const bannerUrl = `${apiBase}/uploads/banners/${file.filename}`;
+        await this.settingsService.saveBannerUrl(req.user.id, bannerUrl);
+        return { bannerUrl };
     }
 };
 exports.SettingsController = SettingsController;
@@ -119,6 +139,24 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "uploadAvatar", null);
+__decorate([
+    (0, common_1.Post)('banner'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('banner', {
+        storage: bannerStorage,
+        limits: { fileSize: MAX_SIZE_BYTES },
+        fileFilter: (_req, file, cb) => {
+            if (!ALLOWED_MIME.includes(file.mimetype)) {
+                return cb(new common_1.BadRequestException('Solo se permiten imágenes JPG, PNG, WEBP o GIF'), false);
+            }
+            cb(null, true);
+        },
+    })),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], SettingsController.prototype, "uploadBanner", null);
 exports.SettingsController = SettingsController = __decorate([
     (0, common_1.Controller)('me'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

@@ -86,6 +86,9 @@ export declare class SettingsService {
     saveAvatarUrl(userId: string, avatarUrl: string): Promise<{
         success: boolean;
     }>;
+    saveBannerUrl(userId: string, bannerUrl: string): Promise<{
+        success: boolean;
+    }>;
     logoutAllSessions(userId: string): Promise<{
         success: boolean;
         message: string;

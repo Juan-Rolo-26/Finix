@@ -124,6 +124,7 @@ const PortfolioPage = () => {
     const [createPortfolioOpen, setCreatePortfolioOpen] = useState(false);
     const [addAssetOpen, setAddAssetOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
 
     // Forms
     const [portfolioForm, setPortfolioForm] = useState(getInitialPortfolioForm);
@@ -251,6 +252,32 @@ const PortfolioPage = () => {
         }
     };
 
+    const updatePortfolioVisibility = async (modoSocial: boolean) => {
+        if (!selectedPortfolio) return;
+
+        setIsUpdatingVisibility(true);
+        try {
+            const response = await apiFetch(`/portfolios/${selectedPortfolio.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ modoSocial }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Error updating portfolio visibility');
+            }
+
+            const updatedPortfolio = await response.json();
+            await loadPortfolios(updatedPortfolio?.id || selectedPortfolio.id);
+        } catch (error: any) {
+            console.error('Error updating portfolio visibility:', error);
+            alert(error?.message || 'Error updating portfolio visibility');
+        } finally {
+            setIsUpdatingVisibility(false);
+        }
+    };
+
     const deleteAsset = async (assetId: string) => {
         if (!selectedPortfolio?.id) return;
         if (!confirm(t.portfolio.assets.deleteConfirm)) return;
@@ -328,6 +355,22 @@ const PortfolioPage = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {selectedPortfolio && (
+                            <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-4 py-2.5">
+                                <div>
+                                    <p className="text-sm font-medium">Portfolio publico</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Visible en tu perfil para otros inversores
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={selectedPortfolio.modoSocial}
+                                    onCheckedChange={updatePortfolioVisibility}
+                                    disabled={isUpdatingVisibility}
+                                />
+                            </div>
+                        )}
+
                         {selectedPortfolio && (
                             <Button
                                 variant="outline"
@@ -805,9 +848,11 @@ const PortfolioPage = () => {
                                         </CardHeader>
                                         <CardContent>
                                             {metrics.diversificacionPorClase && (
-                                                <div className="h-[300px]">
-                                                    <AllocationChart data={metrics.diversificacionPorClase} totalValue={metrics.valorActual} />
-                                                </div>
+                                                <AllocationChart
+                                                    data={metrics.diversificacionPorClase}
+                                                    totalValue={metrics.valorActual}
+                                                    embedded
+                                                />
                                             )}
                                         </CardContent>
                                     </Card>
@@ -818,9 +863,11 @@ const PortfolioPage = () => {
                                         </CardHeader>
                                         <CardContent>
                                             {metrics.diversificacionPorActivo && (
-                                                <div className="h-[300px]">
-                                                    <TopAssetsChart data={metrics.diversificacionPorActivo} totalValue={metrics.valorActual} />
-                                                </div>
+                                                <TopAssetsChart
+                                                    data={metrics.diversificacionPorActivo}
+                                                    totalValue={metrics.valorActual}
+                                                    embedded
+                                                />
                                             )}
                                         </CardContent>
                                     </Card>
@@ -833,9 +880,7 @@ const PortfolioPage = () => {
                                         <CardTitle>Análisis y Proyección</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="h-[400px]">
-                                            <CapitalEvolutionChart movements={movements} />
-                                        </div>
+                                        <CapitalEvolutionChart movements={movements} embedded />
                                     </CardContent>
                                 </Card>
                             </TabsContent>

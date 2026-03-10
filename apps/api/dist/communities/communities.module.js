@@ -10,7 +10,6 @@ exports.CommunitiesModule = void 0;
 const common_1 = require("@nestjs/common");
 const communities_service_1 = require("./communities.service");
 const communities_controller_1 = require("./communities.controller");
-const prisma_service_1 = require("../prisma.service");
 const access_module_1 = require("../access/access.module");
 const stripe_module_1 = require("../stripe/stripe.module");
 let CommunitiesModule = class CommunitiesModule {
@@ -20,7 +19,7 @@ exports.CommunitiesModule = CommunitiesModule = __decorate([
     (0, common_1.Module)({
         imports: [access_module_1.AccessModule, stripe_module_1.StripeModule],
         controllers: [communities_controller_1.CommunitiesController],
-        providers: [communities_service_1.CommunitiesService, prisma_service_1.PrismaService],
+        providers: [communities_service_1.CommunitiesService],
         exports: [communities_service_1.CommunitiesService]
     })
 ], CommunitiesModule);
