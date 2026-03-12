@@ -11,6 +11,19 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Finix - Finanzas Sociales</title>
+  <script>
+    (() => {
+      const brands = navigator.userAgentData?.brands?.map(({ brand }) => brand) ?? [];
+      const hasChromeBrand = brands.includes('Google Chrome');
+      const userAgent = navigator.userAgent ?? '';
+      const looksLikeChrome = /\bChrome\/\d+/i.test(userAgent);
+      const isExcludedBrowser = /\bEdg\/|\bOPR\/|\bOpera\/|\bYaBrowser\/|\bSamsungBrowser\//i.test(userAgent);
+
+      if (hasChromeBrand || (looksLikeChrome && !isExcludedBrowser)) {
+        document.documentElement.classList.add('finix-chrome-desktop-zoom');
+      }
+    })();
+  </script>
 
 </head>
 

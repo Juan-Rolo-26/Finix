@@ -9,6 +9,19 @@
     /* ─── DARK MODE (default) ─── */
     :root {
         font-size: 15px;
+        --finix-desktop-zoom: 0.8;
+        --finix-viewport-scale: 1;
+        --finix-screen-width: calc(100vw * var(--finix-viewport-scale));
+        --finix-screen-height: calc(100vh * var(--finix-viewport-scale));
+        --finix-vh-50: calc(50vh * var(--finix-viewport-scale));
+        --finix-vh-72: calc(72vh * var(--finix-viewport-scale));
+        --finix-vh-78: calc(78vh * var(--finix-viewport-scale));
+        --finix-vh-84: calc(84vh * var(--finix-viewport-scale));
+        --finix-vh-85: calc(85vh * var(--finix-viewport-scale));
+        --finix-vh-88: calc(88vh * var(--finix-viewport-scale));
+        --finix-vh-90: calc(90vh * var(--finix-viewport-scale));
+        --finix-vh-92: calc(92vh * var(--finix-viewport-scale));
+        --finix-vh-97: calc(97vh * var(--finix-viewport-scale));
         --background: 220 24% 7%;
         --foreground: 210 40% 98%;
 
@@ -232,6 +245,65 @@
     @media (min-width: 1024px) {
         :root {
             font-size: 16px;
+        }
+
+        html.finix-chrome-desktop-zoom {
+            --finix-viewport-scale: calc(1 / var(--finix-desktop-zoom));
+            overflow-x: hidden;
+        }
+
+        html.finix-chrome-desktop-zoom body {
+            width: var(--finix-screen-width);
+            min-height: var(--finix-screen-height);
+            zoom: var(--finix-desktop-zoom);
+        }
+
+        html.finix-chrome-desktop-zoom #root {
+            min-height: inherit;
+        }
+
+        html.finix-chrome-desktop-zoom .min-h-screen {
+            min-height: var(--finix-screen-height);
+        }
+
+        html.finix-chrome-desktop-zoom .h-screen {
+            height: var(--finix-screen-height);
+        }
+
+        html.finix-chrome-desktop-zoom .w-screen {
+            width: var(--finix-screen-width);
+        }
+
+        html.finix-chrome-desktop-zoom .min-h-\[50vh\] {
+            min-height: var(--finix-vh-50);
+        }
+
+        html.finix-chrome-desktop-zoom .min-h-\[72vh\] {
+            min-height: var(--finix-vh-72);
+        }
+
+        html.finix-chrome-desktop-zoom .h-\[78vh\] {
+            height: var(--finix-vh-78);
+        }
+
+        html.finix-chrome-desktop-zoom .max-h-\[88vh\] {
+            max-height: var(--finix-vh-88);
+        }
+
+        html.finix-chrome-desktop-zoom .min-h-\[90vh\] {
+            min-height: var(--finix-vh-90);
+        }
+
+        html.finix-chrome-desktop-zoom .max-h-\[92vh\] {
+            max-height: var(--finix-vh-92);
+        }
+
+        html.finix-chrome-desktop-zoom .max-h-\[97vh\] {
+            max-height: var(--finix-vh-97);
+        }
+
+        html.finix-chrome-desktop-zoom .max-w-\[calc\(100vw-2rem\)\] {
+            max-width: calc(var(--finix-screen-width) - 2rem);
         }
     }
 
