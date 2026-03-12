@@ -178,9 +178,9 @@ export const pt = {
         forgotTitle: 'Recuperar Senha',
         loginDesc: 'Insira suas credenciais para continuar',
         registerDesc: 'Registre-se gratuitamente em menos de 1 minuto',
-        forgotDesc: 'Enviaremos as instruções para o seu e-mail',
+        forgotDesc: 'Enviaremos um código para o seu e-mail',
         emailSentTitle: 'E-mail Enviado!',
-        emailSentDesc: 'Enviamos um link de recuperação para',
+        emailSentDesc: 'Enviamos um código de recuperação para',
         checkInbox: 'Por favor, verifique sua caixa de entrada.',
         backLogin: 'Voltar ao Login',
         username: 'Nome de usuário',
@@ -189,7 +189,7 @@ export const pt = {
         forgotPassword: 'Esqueceu sua senha?',
         loginBtn: 'Entrar',
         createAccountBtn: 'Criar Conta',
-        sendLinkBtn: 'Enviar Link',
+        sendLinkBtn: 'Enviar Código',
         orContinue: 'Ou continue com',
         noAccount: 'Não tem uma conta?',
         register: 'Registre-se',
@@ -198,7 +198,7 @@ export const pt = {
         backToLogin: 'Voltar ao Login',
         errors: {
             googleNotConfigured: 'Login com Google ainda não configurado. Use e-mail e senha.',
-            invalidCredentials: 'Credenciais inválidas ou usuário já registrado.',
+            invalidCredentials: 'O e-mail ou a senha estão incorretos.',
             connectionError: 'Não foi possível conectar ao servidor. Verifique se a API está ativa.'
         }
     },

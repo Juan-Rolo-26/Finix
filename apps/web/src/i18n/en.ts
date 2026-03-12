@@ -178,9 +178,9 @@ export const en = {
         forgotTitle: 'Recover Password',
         loginDesc: 'Enter your credentials to continue',
         registerDesc: 'Register for free in less than a minute',
-        forgotDesc: 'We will send instructions to your email',
+        forgotDesc: 'We will send a code to your email',
         emailSentTitle: 'Email Sent!',
-        emailSentDesc: 'We have sent a recovery link to',
+        emailSentDesc: 'We have sent a recovery code to',
         checkInbox: 'Please check your inbox.',
         backLogin: 'Back to Login',
         username: 'Username',
@@ -189,7 +189,7 @@ export const en = {
         forgotPassword: 'Forgot your password?',
         loginBtn: 'Sign In',
         createAccountBtn: 'Create Account',
-        sendLinkBtn: 'Send Link',
+        sendLinkBtn: 'Send Code',
         orContinue: 'Or continue with',
         noAccount: 'Don\'t have an account?',
         register: 'Register',
@@ -198,7 +198,7 @@ export const en = {
         backToLogin: 'Back to Sign In',
         errors: {
             googleNotConfigured: 'Google Login not configured yet. Use email and password.',
-            invalidCredentials: 'Invalid credentials or user already registered.',
+            invalidCredentials: 'The email or password is incorrect.',
             connectionError: 'Could not connect to server. Check if API is running.'
         }
     },

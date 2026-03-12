@@ -211,6 +211,36 @@ export class AuthService {
         });
     }
 
+    async resendRegisterCode(email: string) {
+        const normalizedEmail = this.normalizeEmail(email);
+        const user = await this.prisma.user.findUnique({
+            where: { email: normalizedEmail },
+        });
+
+        if (!user || user.emailVerified) {
+            return {
+                message: 'Si tu cuenta todavia no esta verificada, te reenviamos un nuevo codigo.',
+                email: normalizedEmail,
+            };
+        }
+
+        const code = this.generateCode();
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                emailVerificationCode: this.hashCode(code),
+                emailVerificationExpires: this.expiresIn(EMAIL_VERIFICATION_TTL_MINUTES),
+            },
+        });
+
+        return this.deliverAuthCode({
+            email: normalizedEmail,
+            code,
+            successMessage: 'Te reenviamos un nuevo codigo de verificacion.',
+            send: () => this.mailService.sendVerificationCode(normalizedEmail, code),
+        });
+    }
+
     async verifyRegisterCode(email: string, code: string) {
         const normalizedEmail = this.normalizeEmail(email);
         const user = await this.prisma.user.findUnique({
@@ -235,6 +265,40 @@ export class AuthService {
         return this.buildAuthResponse(updatedUser);
     }
 
+    async login(email: string, password: string) {
+        const normalizedEmail = this.normalizeEmail(email);
+        const user = await this.prisma.user.findUnique({
+            where: { email: normalizedEmail },
+        });
+
+        if (!user) {
+            throw new UnauthorizedException('El correo o la contrasena no son correctos.');
+        }
+
+        const managedPasswordHash = this.getManagedPasswordHash(user);
+        if (!managedPasswordHash) {
+            throw new BadRequestException('Esta cuenta todavia no tiene una contrasena Finix. Usa "Olvide mi contrasena" para crearla.');
+        }
+
+        const isPasswordValid = await argon2.verify(managedPasswordHash, password);
+        if (!isPasswordValid) {
+            throw new UnauthorizedException('El correo o la contrasena no son correctos.');
+        }
+
+        if (!user.emailVerified) {
+            throw new BadRequestException('Primero verifica tu correo para terminar de crear la cuenta.');
+        }
+
+        const updatedUser = await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                lastLogin: new Date(),
+            },
+        });
+
+        return this.buildAuthResponse(updatedUser);
+    }
+
     async requestLoginCode(email: string, password: string) {
         const normalizedEmail = this.normalizeEmail(email);
         const user = await this.prisma.user.findUnique({
@@ -242,7 +306,7 @@ export class AuthService {
         });
 
         if (!user) {
-            throw new UnauthorizedException('Credenciales invalidas.');
+            throw new UnauthorizedException('El correo o la contrasena no son correctos.');
         }
 
         const managedPasswordHash = this.getManagedPasswordHash(user);
@@ -252,7 +316,7 @@ export class AuthService {
 
         const isPasswordValid = await argon2.verify(managedPasswordHash, password);
         if (!isPasswordValid) {
-            throw new UnauthorizedException('Credenciales invalidas.');
+            throw new UnauthorizedException('El correo o la contrasena no son correctos.');
         }
 
         if (!user.emailVerified) {

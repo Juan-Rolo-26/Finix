@@ -16,6 +16,7 @@ exports.EventsGateway = void 0;
 const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const jwt = require("jsonwebtoken");
+const allowed_origins_1 = require("./config/allowed-origins");
 const messages_service_1 = require("./messages/messages.service");
 let EventsGateway = class EventsGateway {
     constructor(messagesService) {
@@ -158,7 +159,10 @@ __decorate([
 ], EventsGateway.prototype, "handleSendDirectMessage", null);
 exports.EventsGateway = EventsGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
-        cors: { origin: '*' },
+        cors: {
+            origin: (origin, callback) => callback(null, (0, allowed_origins_1.isAllowedOrigin)(origin)),
+            credentials: true,
+        },
     }),
     __metadata("design:paramtypes", [messages_service_1.MessagesService])
 ], EventsGateway);

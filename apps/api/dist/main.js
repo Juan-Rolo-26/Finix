@@ -6,6 +6,7 @@ const app_module_1 = require("./app.module");
 const bodyParser = require("body-parser");
 const common_1 = require("@nestjs/common");
 const cookieParser = require("cookie-parser");
+const allowed_origins_1 = require("./config/allowed-origins");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule, {
         bodyParser: false,
@@ -20,17 +21,9 @@ async function bootstrap() {
         forbidNonWhitelisted: true,
         transform: true,
     }));
-    const allowedOrigins = new Set([
-        process.env.FRONTEND_URL,
-        process.env.ADMIN_URL,
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:4173',
-        'http://localhost:4174',
-    ].filter(Boolean));
     app.enableCors({
         origin: (origin, callback) => {
-            if (!origin || allowedOrigins.has(origin)) {
+            if ((0, allowed_origins_1.isAllowedOrigin)(origin)) {
                 callback(null, true);
                 return;
             }
@@ -44,7 +37,7 @@ async function bootstrap() {
     const express = require('express');
     app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
     const port = Number(process.env.PORT || 3001);
-    await app.listen(port);
+    await app.listen(port, '0.0.0.0');
 }
 bootstrap();
 //# sourceMappingURL=main.js.map

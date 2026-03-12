@@ -32,9 +32,9 @@ export declare class MessagesController {
             };
             sharedPost: {
                 id: string;
-                createdAt: Date;
                 type: string;
                 content: string;
+                createdAt: Date;
                 assetSymbol: string;
                 analysisType: string;
                 riskLevel: string;
@@ -47,15 +47,15 @@ export declare class MessagesController {
                 media: {
                     id: string;
                     createdAt: Date;
-                    postId: string;
                     url: string;
                     mediaType: string;
                     order: number;
+                    postId: string;
                 }[];
             };
             id: string;
-            createdAt: Date;
             content: string;
+            createdAt: Date;
             conversationId: string;
             senderId: string;
             attachmentType: string | null;
@@ -97,9 +97,9 @@ export declare class MessagesController {
             };
             sharedPost: {
                 id: string;
-                createdAt: Date;
                 type: string;
                 content: string;
+                createdAt: Date;
                 assetSymbol: string;
                 analysisType: string;
                 riskLevel: string;
@@ -112,15 +112,15 @@ export declare class MessagesController {
                 media: {
                     id: string;
                     createdAt: Date;
-                    postId: string;
                     url: string;
                     mediaType: string;
                     order: number;
+                    postId: string;
                 }[];
             };
             id: string;
-            createdAt: Date;
             content: string;
+            createdAt: Date;
             conversationId: string;
             senderId: string;
             attachmentType: string | null;
@@ -141,9 +141,9 @@ export declare class MessagesController {
         };
         sharedPost: {
             id: string;
-            createdAt: Date;
             type: string;
             content: string;
+            createdAt: Date;
             assetSymbol: string;
             analysisType: string;
             riskLevel: string;
@@ -156,15 +156,15 @@ export declare class MessagesController {
             media: {
                 id: string;
                 createdAt: Date;
-                postId: string;
                 url: string;
                 mediaType: string;
                 order: number;
+                postId: string;
             }[];
         };
         id: string;
-        createdAt: Date;
         content: string;
+        createdAt: Date;
         conversationId: string;
         senderId: string;
         attachmentType: string | null;
@@ -190,9 +190,9 @@ export declare class MessagesController {
         };
         sharedPost: {
             id: string;
-            createdAt: Date;
             type: string;
             content: string;
+            createdAt: Date;
             assetSymbol: string;
             analysisType: string;
             riskLevel: string;
@@ -205,15 +205,15 @@ export declare class MessagesController {
             media: {
                 id: string;
                 createdAt: Date;
-                postId: string;
                 url: string;
                 mediaType: string;
                 order: number;
+                postId: string;
             }[];
         };
         id: string;
-        createdAt: Date;
         content: string;
+        createdAt: Date;
         conversationId: string;
         senderId: string;
         attachmentType: string | null;
@@ -227,10 +227,10 @@ export declare class MessagesController {
         count: number;
     }>;
     searchUsers(q: string, req: any): Promise<{
+        title: string;
         id: string;
         username: string;
         avatarUrl: string;
         isVerified: boolean;
-        title: string;
     }[]>;
 }

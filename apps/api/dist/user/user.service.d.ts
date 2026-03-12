@@ -26,8 +26,10 @@ export declare class UserService {
         totalReturn: number;
         winRate: number;
         riskScore: number;
-        id: string;
         email: string;
+        title: string;
+        id: string;
+        createdAt: Date;
         username: string;
         bio: string;
         bioLong: string;
@@ -38,7 +40,6 @@ export declare class UserService {
         accountType: string;
         plan: string;
         subscriptionStatus: string;
-        title: string;
         company: string;
         location: string;
         website: string;
@@ -53,7 +54,6 @@ export declare class UserService {
         showPortfolio: boolean;
         showStats: boolean;
         acceptingFollowers: boolean;
-        createdAt: Date;
         _count: {
             posts: number;
             followedBy: number;
@@ -94,8 +94,10 @@ export declare class UserService {
         totalReturn: number;
         winRate: number;
         riskScore: number;
-        id: string;
         email: string;
+        title: string;
+        id: string;
+        createdAt: Date;
         username: string;
         bio: string;
         bioLong: string;
@@ -106,7 +108,6 @@ export declare class UserService {
         accountType: string;
         plan: string;
         subscriptionStatus: string;
-        title: string;
         company: string;
         location: string;
         website: string;
@@ -121,7 +122,6 @@ export declare class UserService {
         showPortfolio: boolean;
         showStats: boolean;
         acceptingFollowers: boolean;
-        createdAt: Date;
         _count: {
             posts: number;
             followedBy: number;
@@ -130,8 +130,10 @@ export declare class UserService {
     }>;
     private normalizeNullableText;
     updateProfile(userId: string, updateData: any): Promise<{
-        id: string;
         email: string;
+        title: string;
+        id: string;
+        createdAt: Date;
         username: string;
         bio: string;
         bioLong: string;
@@ -142,7 +144,6 @@ export declare class UserService {
         accountType: string;
         plan: string;
         subscriptionStatus: string;
-        title: string;
         company: string;
         location: string;
         website: string;
@@ -160,7 +161,6 @@ export declare class UserService {
         showPortfolio: boolean;
         showStats: boolean;
         acceptingFollowers: boolean;
-        createdAt: Date;
         _count: {
             posts: number;
             followedBy: number;
@@ -193,12 +193,12 @@ export declare class UserService {
         company: string;
     }[]>;
     searchUsers(query: string): Promise<{
+        title: string;
         id: string;
         username: string;
         bio: string;
         avatarUrl: string;
         isVerified: boolean;
-        title: string;
         company: string;
         totalReturn: number;
         winRate: number;

@@ -21,9 +21,9 @@ export declare class NotificationsService {
     private formatHistoryDate;
     private resolveHistoryStart;
     createNotification(input: CreateNotificationInput): Promise<{
+        title: string;
         id: string;
         type: string;
-        title: string;
         content: string | null;
         isRead: boolean;
         link: string | null;

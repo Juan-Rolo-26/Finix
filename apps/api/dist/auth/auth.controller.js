@@ -24,17 +24,20 @@ let AuthController = class AuthController {
     requestRegisterCode(body) {
         return this.authService.requestRegisterCode(body.email, body.username, body.password);
     }
+    resendRegisterCode(body) {
+        return this.authService.resendRegisterCode(body.email);
+    }
     verifyRegisterCode(body) {
         return this.authService.verifyRegisterCode(body.email, body.code);
+    }
+    login(body) {
+        return this.authService.login(body.email, body.password);
     }
     requestLoginCode(body) {
         return this.authService.requestLoginCode(body.email, body.password);
     }
     verifyLoginCode(body) {
         return this.authService.verifyLoginCode(body.email, body.code);
-    }
-    loginAsDemo() {
-        return this.authService.loginAsDemo();
     }
     requestPasswordResetCode(body) {
         return this.authService.requestPasswordResetCode(body.email);
@@ -60,12 +63,28 @@ __decorate([
 ], AuthController.prototype, "requestRegisterCode", null);
 __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.Post)('register/resend-code'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_1.EmailRequestDto]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "resendRegisterCode", null);
+__decorate([
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, common_1.Post)('register/verify-code'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [auth_dto_1.EmailCodeDto]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "verifyRegisterCode", null);
+__decorate([
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.Post)('login'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_1.LoginRequestDto]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "login", null);
 __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, common_1.Post)('login/request-code'),
@@ -82,13 +101,6 @@ __decorate([
     __metadata("design:paramtypes", [auth_dto_1.EmailCodeDto]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "verifyLoginCode", null);
-__decorate([
-    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, common_1.Post)('demo-login'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], AuthController.prototype, "loginAsDemo", null);
 __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, common_1.Post)('forgot/request-code'),

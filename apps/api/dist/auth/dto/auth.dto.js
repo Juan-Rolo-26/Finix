@@ -9,8 +9,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ForgotPasswordResetDto = exports.ForgotPasswordRequestDto = exports.EmailCodeDto = exports.LoginRequestDto = exports.RegisterRequestDto = void 0;
+exports.ForgotPasswordResetDto = exports.ForgotPasswordRequestDto = exports.EmailCodeDto = exports.LoginRequestDto = exports.RegisterRequestDto = exports.EmailRequestDto = void 0;
 const class_validator_1 = require("class-validator");
+class EmailRequestDto {
+}
+exports.EmailRequestDto = EmailRequestDto;
+__decorate([
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], EmailRequestDto.prototype, "email", void 0);
 class RegisterRequestDto {
 }
 exports.RegisterRequestDto = RegisterRequestDto;
@@ -44,13 +51,9 @@ __decorate([
     (0, class_validator_1.MinLength)(8),
     __metadata("design:type", String)
 ], LoginRequestDto.prototype, "password", void 0);
-class EmailCodeDto {
+class EmailCodeDto extends EmailRequestDto {
 }
 exports.EmailCodeDto = EmailCodeDto;
-__decorate([
-    (0, class_validator_1.IsEmail)(),
-    __metadata("design:type", String)
-], EmailCodeDto.prototype, "email", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.Matches)(/^\d{6}$/, {
@@ -58,13 +61,9 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], EmailCodeDto.prototype, "code", void 0);
-class ForgotPasswordRequestDto {
+class ForgotPasswordRequestDto extends EmailRequestDto {
 }
 exports.ForgotPasswordRequestDto = ForgotPasswordRequestDto;
-__decorate([
-    (0, class_validator_1.IsEmail)(),
-    __metadata("design:type", String)
-], ForgotPasswordRequestDto.prototype, "email", void 0);
 class ForgotPasswordResetDto extends EmailCodeDto {
 }
 exports.ForgotPasswordResetDto = ForgotPasswordResetDto;

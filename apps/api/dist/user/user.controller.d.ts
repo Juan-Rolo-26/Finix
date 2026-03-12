@@ -6,8 +6,10 @@ export declare class UserController {
         totalReturn: number;
         winRate: number;
         riskScore: number;
-        id: string;
         email: string;
+        title: string;
+        id: string;
+        createdAt: Date;
         username: string;
         bio: string;
         bioLong: string;
@@ -18,7 +20,6 @@ export declare class UserController {
         accountType: string;
         plan: string;
         subscriptionStatus: string;
-        title: string;
         company: string;
         location: string;
         website: string;
@@ -33,7 +34,6 @@ export declare class UserController {
         showPortfolio: boolean;
         showStats: boolean;
         acceptingFollowers: boolean;
-        createdAt: Date;
         _count: {
             posts: number;
             followedBy: number;
@@ -41,8 +41,10 @@ export declare class UserController {
         };
     }>;
     updateProfile(req: any, updateData: any): Promise<{
-        id: string;
         email: string;
+        title: string;
+        id: string;
+        createdAt: Date;
         username: string;
         bio: string;
         bioLong: string;
@@ -53,7 +55,6 @@ export declare class UserController {
         accountType: string;
         plan: string;
         subscriptionStatus: string;
-        title: string;
         company: string;
         location: string;
         website: string;
@@ -71,7 +72,6 @@ export declare class UserController {
         showPortfolio: boolean;
         showStats: boolean;
         acceptingFollowers: boolean;
-        createdAt: Date;
         _count: {
             posts: number;
             followedBy: number;
@@ -124,12 +124,12 @@ export declare class UserController {
         company: string;
     }[]>;
     searchUsers(query: string): Promise<{
+        title: string;
         id: string;
         username: string;
         bio: string;
         avatarUrl: string;
         isVerified: boolean;
-        title: string;
         company: string;
         totalReturn: number;
         winRate: number;
@@ -154,8 +154,10 @@ export declare class UserController {
         totalReturn: number;
         winRate: number;
         riskScore: number;
-        id: string;
         email: string;
+        title: string;
+        id: string;
+        createdAt: Date;
         username: string;
         bio: string;
         bioLong: string;
@@ -166,7 +168,6 @@ export declare class UserController {
         accountType: string;
         plan: string;
         subscriptionStatus: string;
-        title: string;
         company: string;
         location: string;
         website: string;
@@ -181,7 +182,6 @@ export declare class UserController {
         showPortfolio: boolean;
         showStats: boolean;
         acceptingFollowers: boolean;
-        createdAt: Date;
         _count: {
             posts: number;
             followedBy: number;

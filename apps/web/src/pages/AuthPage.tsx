@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { apiFetch } from '@/lib/api';
+import { normalizeAuthError, readApiError } from '@/lib/api-errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import BackButton from '@/components/BackButton';
@@ -57,6 +58,19 @@ export default function AuthPage() {
         { icon: BarChart3, label: 'Mercados' },
     ];
 
+    const infoLinks = [
+        { label: 'Características', to: '/info/features' },
+        { label: 'Cómo funciona', to: '/info/how' },
+        { label: 'Sobre nosotros', to: '/info/about' },
+    ];
+
+    const legalAndSocialLinks = [
+        { label: t.legal.privacy, to: '/legal/privacy' },
+        { label: t.legal.terms, to: '/legal/terms' },
+        { label: 'Instagram', href: 'https://instagram.com/fiinixarg' },
+        { label: 'Contacto', href: 'mailto:finixarg@gmail.com' },
+    ];
+
     const highlights = [
         { icon: Shield, title: 'Seguro y privado', desc: 'Tus datos financieros siempre protegidos.' },
         { icon: Zap, title: 'Tiempo real', desc: 'Datos de mercado actualizados al instante.' },
@@ -82,42 +96,6 @@ export default function AuthPage() {
         }
     };
 
-    const readApiError = async (response: Response) => {
-        try {
-            const data = await response.clone().json();
-            if (typeof data?.message === 'string') {
-                return data.message;
-            }
-            if (Array.isArray(data?.message)) {
-                return data.message.join(', ');
-            }
-            return null;
-        } catch {
-            return null;
-        }
-    };
-
-    const finishSupabaseLogin = async (accessToken: string, requestedUsername?: string) => {
-        localStorage.setItem('token', accessToken);
-
-        let response = await apiFetch('/auth/me');
-        if (response.status === 401) {
-            response = await apiFetch('/auth/sync-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestedUsername ? { username: requestedUsername } : {}),
-            });
-        }
-
-        if (!response.ok) {
-            throw new Error((await readApiError(response)) || t.auth.errors.connectionError);
-        }
-
-        const user = await response.json();
-        login(accessToken, user);
-        navigate(user.onboardingCompleted ? '/dashboard' : '/onboarding');
-    };
-
     const loginGoogle = async () => {
         setIsLoading(true);
         clearMessages();
@@ -130,71 +108,84 @@ export default function AuthPage() {
         });
 
         if (error) {
-            setAuthError(error.message);
+            setAuthError(normalizeAuthError(error.message, t.auth.errors.googleNotConfigured));
             setIsLoading(false);
         }
     };
 
     const handleLogin = async () => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email.trim(),
-            password,
+        const response = await apiFetch('/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: email.trim().toLowerCase(),
+                password,
+            }),
         });
 
-        if (error) {
-            setAuthError(error.message || t.auth.errors.invalidCredentials);
+        if (!response.ok) {
+            setAuthError(
+                normalizeAuthError(
+                    await readApiError(response),
+                    t.auth.errors.invalidCredentials,
+                ),
+            );
             return;
         }
 
-        if (!data.session?.access_token) {
-            setAuthError('No se pudo iniciar la sesión.');
-            return;
-        }
-
-        await finishSupabaseLogin(data.session.access_token);
+        const data = await response.json();
+        login(data.token, data.user);
+        navigate(data.user.onboardingCompleted ? '/dashboard' : '/onboarding');
     };
 
     const handleRegister = async () => {
         const normalizedEmail = email.trim().toLowerCase();
         const normalizedUsername = username.trim();
 
-        const { data, error } = await supabase.auth.signUp({
-            email: normalizedEmail,
-            password,
-            options: {
-                emailRedirectTo: `${window.location.origin}/auth/callback`,
-                data: {
-                    username: normalizedUsername,
-                },
-            },
+        const response = await apiFetch('/auth/register/request-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: normalizedEmail,
+                username: normalizedUsername,
+                password,
+            }),
         });
 
-        if (error) {
-            setAuthError(error.message || t.auth.errors.invalidCredentials);
+        if (!response.ok) {
+            setAuthError(
+                normalizeAuthError(
+                    await readApiError(response),
+                    t.auth.errors.invalidCredentials,
+                ),
+            );
             return;
         }
 
-        if (data.session?.access_token) {
-            await finishSupabaseLogin(data.session.access_token, normalizedUsername);
-            return;
-        }
-
-        navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`);
+        navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
     };
 
     const handleForgotPassword = async () => {
         const normalizedEmail = email.trim().toLowerCase();
-        const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-            redirectTo: `${window.location.origin}/reset-password`,
+        const response = await apiFetch('/auth/forgot/request-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: normalizedEmail,
+            }),
         });
 
-        if (error) {
-            setAuthError(error.message || t.auth.errors.connectionError);
+        if (!response.ok) {
+            setAuthError(
+                normalizeAuthError(
+                    await readApiError(response),
+                    t.auth.errors.connectionError,
+                ),
+            );
             return;
         }
 
-        setSuccessMessage(`Te enviamos el enlace de recuperación a ${normalizedEmail}.`);
-        setInfoMessage('Revisá tu correo y seguí el enlace para definir una nueva contraseña.');
+        navigate(`/reset-password?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -230,19 +221,20 @@ export default function AuthPage() {
     const description = view === 'login'
         ? 'Ingresá con tu correo y contraseña para entrar a Finix.'
         : view === 'register'
-            ? 'Creá tu cuenta con correo y contraseña. Luego confirmás el email desde Supabase.'
-            : 'Te enviaremos un enlace para restablecer tu contraseña.';
+            ? 'Creá tu cuenta y te mandamos un codigo de verificacion por correo.'
+            : 'Te enviaremos un codigo para restablecer tu contrasena.';
 
     return (
-        <div className="auth-shell relative overflow-hidden min-h-screen flex flex-col bg-background">
+        <LazyMotion features={domAnimation}>
+            <div className="auth-shell relative overflow-hidden min-h-screen flex flex-col bg-background">
             <div className="absolute inset-0 pointer-events-none z-0">
-                <motion.div
+                <m.div
                     className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full"
                     style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.18) 0%, transparent 70%)' }}
                     animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
                     transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
                 />
-                <motion.div
+                <m.div
                     className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full"
                     style={{ background: 'radial-gradient(circle, hsl(160 80% 40% / 0.12) 0%, transparent 70%)' }}
                     animate={{ scale: [1.1, 1, 1.1] }}
@@ -260,7 +252,7 @@ export default function AuthPage() {
             <div className="flex-1 grid lg:grid-cols-2 relative z-10">
                 <div className="auth-hero-panel relative hidden lg:flex flex-col justify-center items-center p-12">
                     <div className="relative z-10 max-w-md w-full space-y-10">
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0, y: -20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.7 }}
@@ -274,9 +266,9 @@ export default function AuthPage() {
                                 <h1 className="text-4xl font-heading font-extrabold text-foreground tracking-tight">Finix</h1>
                                 <p className="text-sm text-primary font-medium tracking-widest uppercase">Finanzas Sociales</p>
                             </div>
-                        </motion.div>
+                        </m.div>
 
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2, duration: 0.7 }}
@@ -290,9 +282,9 @@ export default function AuthPage() {
                             <p className="auth-hero-copy text-base leading-relaxed">
                                 La red social financiera donde compartís análisis, gestionás tu portafolio y aprendés de los mejores inversores.
                             </p>
-                        </motion.div>
+                        </m.div>
 
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.4 }}
@@ -309,9 +301,9 @@ export default function AuthPage() {
                                     </div>
                                 </div>
                             ))}
-                        </motion.div>
+                        </m.div>
 
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.7 }}
@@ -320,16 +312,8 @@ export default function AuthPage() {
                             {features.map(({ icon, label }) => (
                                 <FeaturePill key={label} icon={icon} label={label} />
                             ))}
-                        </motion.div>
+                        </m.div>
 
-                        <motion.p
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.85 }}
-                            className="auth-hero-badge w-fit rounded-full px-3 py-1.5 text-xs font-semibold"
-                        >
-                            Finix es 100% gratis y te podés registrar gratis.
-                        </motion.p>
                     </div>
                 </div>
 
@@ -345,7 +329,7 @@ export default function AuthPage() {
                             <p className="text-sm text-muted-foreground">{description}</p>
                         </div>
 
-                        <motion.form
+                        <m.form
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             onSubmit={handleSubmit}
@@ -479,7 +463,7 @@ export default function AuthPage() {
                                     </Button>
                                 </>
                             ) : null}
-                        </motion.form>
+                        </m.form>
 
                         <div className="text-center text-sm border-t border-border/30 pt-4">
                             {view === 'login' ? (
@@ -510,29 +494,30 @@ export default function AuthPage() {
 
             <footer className="auth-footer border-t border-border/30 px-4 py-6">
                 <div className="max-w-4xl mx-auto">
-                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
-                        {[
-                            { label: 'Características', href: '/info/features' },
-                            { label: 'Cómo funciona', href: '/info/how' },
-                            { label: 'Sobre nosotros', href: '/info/about' },
-                        ].map(({ label, href }) => (
-                            <Link key={label} to={href} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4 lg:flex-nowrap lg:items-center lg:gap-x-8">
+                        {infoLinks.map(({ label, to }) => (
+                            <Link key={label} to={to} className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
                                 {label}
                             </Link>
                         ))}
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <Link to="/legal/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                            {t.legal.privacy}
-                        </Link>
-                        <Link to="/legal/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                            {t.legal.terms}
-                        </Link>
-                        <a href="https://instagram.com/fiinixarg" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                            Instagram
-                        </a>
-                        <a href="mailto:finixarg@gmail.com" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                            Contacto
-                        </a>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">•</span>
+                        {legalAndSocialLinks.map(({ label, to, href }) => (
+                            to ? (
+                                <Link key={label} to={to} className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
+                                    {label}
+                                </Link>
+                            ) : (
+                                <a
+                                    key={label}
+                                    href={href}
+                                    target={href?.startsWith('http') ? '_blank' : undefined}
+                                    rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
+                                    className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+                                >
+                                    {label}
+                                </a>
+                            )
+                        ))}
                     </div>
                     <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/50">
                         <Sparkles className="w-3 h-3" />
@@ -540,6 +525,7 @@ export default function AuthPage() {
                     </div>
                 </div>
             </footer>
-        </div>
+            </div>
+        </LazyMotion>
     );
 }

@@ -14,18 +14,16 @@ const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const argon2 = require("argon2");
 const crypto_1 = require("crypto");
-const demo_user_service_1 = require("../demo-user.service");
 const mail_service_1 = require("../mail/mail.service");
 const prisma_service_1 = require("../prisma.service");
 const EMAIL_VERIFICATION_TTL_MINUTES = 15;
 const LOGIN_CODE_TTL_MINUTES = 10;
 const RESET_PASSWORD_TTL_MINUTES = 15;
 let AuthService = class AuthService {
-    constructor(prisma, jwtService, mailService, demoUserService) {
+    constructor(prisma, jwtService, mailService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
         this.mailService = mailService;
-        this.demoUserService = demoUserService;
     }
     normalizeEmail(email) {
         return email.trim().toLowerCase();
@@ -124,38 +122,13 @@ let AuthService = class AuthService {
         }
         return user.password;
     }
-    canUseInlineCodeFallback() {
-        return process.env.NODE_ENV !== 'production' || process.env.AUTH_CODE_FALLBACK === 'inline';
-    }
-    canUseDemoLogin() {
-        return process.env.NODE_ENV !== 'production' || process.env.AUTH_ALLOW_DEMO_LOGIN === '1';
-    }
-    isMailSandboxError(error) {
-        if (!(error instanceof common_1.BadRequestException)) {
-            return false;
-        }
-        return error.message.includes('modo prueba');
-    }
     async deliverAuthCode(params) {
         const { email, code, successMessage, send } = params;
-        try {
-            await send();
-            return {
-                message: successMessage,
-                email,
-            };
-        }
-        catch (error) {
-            if (this.canUseInlineCodeFallback() && this.isMailSandboxError(error)) {
-                return {
-                    message: `${successMessage} El correo de Finix sigue en modo prueba, así que te mostramos el código directo para desarrollo.`,
-                    email,
-                    devCode: code,
-                    delivery: 'inline-fallback',
-                };
-            }
-            throw error;
-        }
+        await send();
+        return {
+            message: successMessage,
+            email,
+        };
     }
     async requestRegisterCode(email, username, password) {
         const normalizedEmail = this.normalizeEmail(email);
@@ -210,6 +183,32 @@ let AuthService = class AuthService {
             send: () => this.mailService.sendVerificationCode(normalizedEmail, code),
         });
     }
+    async resendRegisterCode(email) {
+        const normalizedEmail = this.normalizeEmail(email);
+        const user = await this.prisma.user.findUnique({
+            where: { email: normalizedEmail },
+        });
+        if (!user || user.emailVerified) {
+            return {
+                message: 'Si tu cuenta todavia no esta verificada, te reenviamos un nuevo codigo.',
+                email: normalizedEmail,
+            };
+        }
+        const code = this.generateCode();
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                emailVerificationCode: this.hashCode(code),
+                emailVerificationExpires: this.expiresIn(EMAIL_VERIFICATION_TTL_MINUTES),
+            },
+        });
+        return this.deliverAuthCode({
+            email: normalizedEmail,
+            code,
+            successMessage: 'Te reenviamos un nuevo codigo de verificacion.',
+            send: () => this.mailService.sendVerificationCode(normalizedEmail, code),
+        });
+    }
     async verifyRegisterCode(email, code) {
         const normalizedEmail = this.normalizeEmail(email);
         const user = await this.prisma.user.findUnique({
@@ -230,13 +229,40 @@ let AuthService = class AuthService {
         });
         return this.buildAuthResponse(updatedUser);
     }
+    async login(email, password) {
+        const normalizedEmail = this.normalizeEmail(email);
+        const user = await this.prisma.user.findUnique({
+            where: { email: normalizedEmail },
+        });
+        if (!user) {
+            throw new common_1.UnauthorizedException('El correo o la contrasena no son correctos.');
+        }
+        const managedPasswordHash = this.getManagedPasswordHash(user);
+        if (!managedPasswordHash) {
+            throw new common_1.BadRequestException('Esta cuenta todavia no tiene una contrasena Finix. Usa "Olvide mi contrasena" para crearla.');
+        }
+        const isPasswordValid = await argon2.verify(managedPasswordHash, password);
+        if (!isPasswordValid) {
+            throw new common_1.UnauthorizedException('El correo o la contrasena no son correctos.');
+        }
+        if (!user.emailVerified) {
+            throw new common_1.BadRequestException('Primero verifica tu correo para terminar de crear la cuenta.');
+        }
+        const updatedUser = await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                lastLogin: new Date(),
+            },
+        });
+        return this.buildAuthResponse(updatedUser);
+    }
     async requestLoginCode(email, password) {
         const normalizedEmail = this.normalizeEmail(email);
         const user = await this.prisma.user.findUnique({
             where: { email: normalizedEmail },
         });
         if (!user) {
-            throw new common_1.UnauthorizedException('Credenciales invalidas.');
+            throw new common_1.UnauthorizedException('El correo o la contrasena no son correctos.');
         }
         const managedPasswordHash = this.getManagedPasswordHash(user);
         if (!managedPasswordHash) {
@@ -244,7 +270,7 @@ let AuthService = class AuthService {
         }
         const isPasswordValid = await argon2.verify(managedPasswordHash, password);
         if (!isPasswordValid) {
-            throw new common_1.UnauthorizedException('Credenciales invalidas.');
+            throw new common_1.UnauthorizedException('El correo o la contrasena no son correctos.');
         }
         if (!user.emailVerified) {
             throw new common_1.BadRequestException('Antes de ingresar tenés que verificar tu email.');
@@ -281,27 +307,6 @@ let AuthService = class AuthService {
             },
         });
         return this.buildAuthResponse(updatedUser);
-    }
-    async loginAsDemo() {
-        if (!this.canUseDemoLogin()) {
-            throw new common_1.UnauthorizedException('El acceso demo solo está disponible en desarrollo.');
-        }
-        const demoUser = await this.demoUserService.getOrCreateDemoUser();
-        const updatedUser = await this.prisma.user.update({
-            where: { id: demoUser.id },
-            data: {
-                lastLogin: new Date(),
-                emailVerified: true,
-                isVerified: true,
-                onboardingCompleted: true,
-                onboardingStep: 5,
-            },
-        });
-        return {
-            ...(await this.buildAuthResponse(updatedUser)),
-            demo: true,
-            credentials: this.demoUserService.getDemoCredentials(),
-        };
     }
     async requestPasswordResetCode(email) {
         const normalizedEmail = this.normalizeEmail(email);
@@ -414,7 +419,6 @@ exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         jwt_1.JwtService,
-        mail_service_1.MailService,
-        demo_user_service_1.DemoUserService])
+        mail_service_1.MailService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

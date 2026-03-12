@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import {
     EmailCodeDto,
+    EmailRequestDto,
     ForgotPasswordRequestDto,
     ForgotPasswordResetDto,
     LoginRequestDto,
@@ -20,9 +21,21 @@ export class AuthController {
     }
 
     @HttpCode(HttpStatus.OK)
+    @Post('register/resend-code')
+    resendRegisterCode(@Body() body: EmailRequestDto) {
+        return this.authService.resendRegisterCode(body.email);
+    }
+
+    @HttpCode(HttpStatus.OK)
     @Post('register/verify-code')
     verifyRegisterCode(@Body() body: EmailCodeDto) {
         return this.authService.verifyRegisterCode(body.email, body.code);
+    }
+
+    @HttpCode(HttpStatus.OK)
+    @Post('login')
+    login(@Body() body: LoginRequestDto) {
+        return this.authService.login(body.email, body.password);
     }
 
     @HttpCode(HttpStatus.OK)
