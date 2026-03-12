@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import * as bodyParser from 'body-parser';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
+import { isAllowedOrigin } from './config/allowed-origins';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
@@ -24,20 +25,9 @@ async function bootstrap() {
         transform: true,
     }));
 
-    const allowedOrigins = new Set(
-        [
-            process.env.FRONTEND_URL,
-            process.env.ADMIN_URL,
-            'http://localhost:5173',
-            'http://localhost:5174',
-            'http://localhost:4173',
-            'http://localhost:4174',
-        ].filter(Boolean),
-    );
-
     app.enableCors({
         origin: (origin, callback) => {
-            if (!origin || allowedOrigins.has(origin)) {
+            if (isAllowedOrigin(origin)) {
                 callback(null, true);
                 return;
             }
@@ -55,6 +45,6 @@ async function bootstrap() {
     app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
     const port = Number(process.env.PORT || 3001);
-    await app.listen(port);
+    await app.listen(port, '0.0.0.0');
 }
 bootstrap();

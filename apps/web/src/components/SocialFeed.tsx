@@ -73,11 +73,10 @@ interface SocialFeedProps {
 const getFileUrl = (path: string) => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
-    const base = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-    // If base ends with /api, remove it. If it doesn't, assume it's root + /api or just root.
-    // Actually, usually VITE_API_URL includes /api. 
-    // But serving static files is usually at root.
-    const cleanBase = base.replace(/\/api\/?$/, '');
+    const base = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : '/api');
+    const cleanBase = base === '/api'
+        ? (typeof window !== 'undefined' ? window.location.origin : '')
+        : base.replace(/\/api\/?$/, '');
     return `${cleanBase}${path.startsWith('/') ? '' : '/'}${path}`;
 };
 

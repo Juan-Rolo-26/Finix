@@ -38,12 +38,6 @@ export class AuthController {
     }
 
     @HttpCode(HttpStatus.OK)
-    @Post('demo-login')
-    loginAsDemo() {
-        return this.authService.loginAsDemo();
-    }
-
-    @HttpCode(HttpStatus.OK)
     @Post('forgot/request-code')
     requestPasswordResetCode(@Body() body: ForgotPasswordRequestDto) {
         return this.authService.requestPasswordResetCode(body.email);

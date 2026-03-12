@@ -3,24 +3,41 @@ import { MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 export default function VerifyEmail() {
+    const [searchParams] = useSearchParams();
+    const emailFromUrl = searchParams.get('email') || '';
     const [resending, setResending] = useState(false);
     const [resent, setResent] = useState(false);
+    const [error, setError] = useState('');
 
     const handleResend = async () => {
         setResending(true);
-        // Get the email from the pending Supabase signup
+        setError('');
+
         const { data } = await supabase.auth.getUser();
-        if (data.user?.email) {
-            await supabase.auth.resend({
-                type: 'signup',
-                email: data.user.email,
-                options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-            });
+        const targetEmail = emailFromUrl || data.user?.email || '';
+
+        if (!targetEmail) {
+            setError('No encontramos el correo para reenviar la verificación.');
+            setResending(false);
+            return;
         }
-        setResent(true);
+
+        const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
+            email: targetEmail,
+            options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        });
+
+        if (resendError) {
+            setError(resendError.message || 'No se pudo reenviar el correo.');
+        } else {
+            setResent(true);
+        }
+
         setResending(false);
     };
 
@@ -38,6 +55,9 @@ export default function VerifyEmail() {
                 <p className="text-sm text-muted-foreground">
                     Te enviamos un enlace de confirmacion. Revisa tu bandeja de entrada y hace clic en el enlace para activar tu cuenta.
                 </p>
+                {emailFromUrl ? (
+                    <p className="text-xs text-primary">{emailFromUrl}</p>
+                ) : null}
                 <p className="text-xs text-muted-foreground/60">
                     Si no lo ves, revisa la carpeta de correo no deseado.
                 </p>
@@ -55,6 +75,7 @@ export default function VerifyEmail() {
                         {resending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reenviar correo'}
                     </Button>
                 )}
+                {error ? <p className="text-sm text-red-400">{error}</p> : null}
             </motion.div>
         </div>
     );

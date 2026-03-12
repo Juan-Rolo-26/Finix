@@ -2,7 +2,6 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { createHash, randomInt } from 'crypto';
-import { DemoUserService } from '../demo-user.service';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma.service';
 
@@ -16,7 +15,6 @@ export class AuthService {
         private prisma: PrismaService,
         private jwtService: JwtService,
         private mailService: MailService,
-        private demoUserService: DemoUserService,
     ) {}
 
     private normalizeEmail(email: string) {
@@ -136,21 +134,6 @@ export class AuthService {
         return user.password;
     }
 
-    private canUseInlineCodeFallback() {
-        return process.env.NODE_ENV !== 'production' || process.env.AUTH_CODE_FALLBACK === 'inline';
-    }
-
-    private canUseDemoLogin() {
-        return process.env.NODE_ENV !== 'production' || process.env.AUTH_ALLOW_DEMO_LOGIN === '1';
-    }
-
-    private isMailSandboxError(error: unknown) {
-        if (!(error instanceof BadRequestException)) {
-            return false;
-        }
-        return error.message.includes('modo prueba');
-    }
-
     private async deliverAuthCode(params: {
         email: string;
         code: string;
@@ -159,24 +142,11 @@ export class AuthService {
     }) {
         const { email, code, successMessage, send } = params;
 
-        try {
-            await send();
-            return {
-                message: successMessage,
-                email,
-            };
-        } catch (error) {
-            if (this.canUseInlineCodeFallback() && this.isMailSandboxError(error)) {
-                return {
-                    message: `${successMessage} El correo de Finix sigue en modo prueba, así que te mostramos el código directo para desarrollo.`,
-                    email,
-                    devCode: code,
-                    delivery: 'inline-fallback',
-                };
-            }
-
-            throw error;
-        }
+        await send();
+        return {
+            message: successMessage,
+            email,
+        };
     }
 
     async requestRegisterCode(email: string, username: string, password: string) {
@@ -326,30 +296,6 @@ export class AuthService {
         });
 
         return this.buildAuthResponse(updatedUser);
-    }
-
-    async loginAsDemo() {
-        if (!this.canUseDemoLogin()) {
-            throw new UnauthorizedException('El acceso demo solo está disponible en desarrollo.');
-        }
-
-        const demoUser = await this.demoUserService.getOrCreateDemoUser();
-        const updatedUser = await this.prisma.user.update({
-            where: { id: demoUser.id },
-            data: {
-                lastLogin: new Date(),
-                emailVerified: true,
-                isVerified: true,
-                onboardingCompleted: true,
-                onboardingStep: 5,
-            },
-        });
-
-        return {
-            ...(await this.buildAuthResponse(updatedUser)),
-            demo: true,
-            credentials: this.demoUserService.getDemoCredentials(),
-        };
     }
 
     async requestPasswordResetCode(email: string) {

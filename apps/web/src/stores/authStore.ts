@@ -44,9 +44,6 @@ async function syncBackendUser(username?: string) {
 }
 
 const persistedToken = localStorage.getItem('token');
-if (persistedToken && !persistedToken.startsWith('demo-')) {
-    localStorage.removeItem('demo_mode');
-}
 
 export const useAuthStore = create<AuthState>((set) => ({
     token: persistedToken,
@@ -70,13 +67,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         await supabase.auth.signOut();
         persistToken(null);
         persistUser(null);
-        localStorage.removeItem('demo_mode');
         set({ token: null, user: null });
     },
 
     syncFromSession: async () => {
         const existingToken = localStorage.getItem('token');
-        if (existingToken && !existingToken.startsWith('demo-')) {
+        if (existingToken) {
             persistToken(existingToken);
             try {
                 const existingSessionRes = await apiFetch('/auth/me');

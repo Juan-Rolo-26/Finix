@@ -71,7 +71,7 @@ export class MailService {
                 )
             ) {
                 throw new BadRequestException(
-                    'El mail de Finix está en modo prueba. Para enviar códigos a cualquier usuario hay que verificar un dominio en Resend y usarlo en EMAIL_FROM.',
+                    'El correo saliente de Finix todavía no está listo para producción. Verificá tu dominio en Resend y usalo en EMAIL_FROM.',
                 );
             }
             if (!errMsg.includes('550')) {
@@ -173,7 +173,7 @@ export class MailService {
                 )
             ) {
                 throw new BadRequestException(
-                    'El mail de Finix está en modo prueba. Para enviar notificaciones a cualquier usuario hay que verificar un dominio en Resend y usarlo en EMAIL_FROM.',
+                    'El correo saliente de Finix todavía no está listo para producción. Verificá tu dominio en Resend y usalo en EMAIL_FROM.',
                 );
             }
             this.logger.error(`Error sending notification email: ${error}`);

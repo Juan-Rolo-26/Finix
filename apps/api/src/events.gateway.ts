@@ -9,10 +9,14 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import * as jwt from 'jsonwebtoken';
+import { isAllowedOrigin } from './config/allowed-origins';
 import { MessagesService } from './messages/messages.service';
 
 @WebSocketGateway({
-    cors: { origin: '*' },
+    cors: {
+        origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+        credentials: true,
+    },
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()

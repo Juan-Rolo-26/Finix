@@ -3,7 +3,8 @@ const defaultBases = Array.from(
         [
             '/api',
             import.meta.env.VITE_API_URL,
-            'http://localhost:3001/api',
+            typeof window !== 'undefined' ? `${window.location.origin}/api` : null,
+            import.meta.env.DEV ? 'http://localhost:3001/api' : null,
         ].filter(Boolean)
     )
 ) as string[];
@@ -22,7 +23,6 @@ const clearAuthAndRedirect = () => {
     if (typeof window === 'undefined') return;
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    localStorage.removeItem('demo_mode');
 
     if (window.location.pathname !== '/') {
         const target = '/?reason=session-expired';

@@ -8,6 +8,8 @@ import DashboardLayout from './layouts/DashboardLayout';
 // ─── Lazy Loaded Pages ────────────────────────────────────────────────────────
 const AuthPage = lazy(() => import('./pages/AuthPage'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const PortfolioPage = lazy(() => import('./pages/Portfolio'));
 const InfoPage = lazy(() => import('./pages/InfoPage'));
@@ -127,9 +129,8 @@ export default function App() {
                     {/* Supabase auth callback (email verification + OAuth) */}
                     <Route path="/auth/callback" element={<AuthCallback />} />
 
-                    {/* Legacy routes now fold back into the main auth screen */}
-                    <Route path="/verify-email" element={<Navigate to="/" replace />} />
-                    <Route path="/reset-password" element={<Navigate to="/" replace />} />
+                    <Route path="/verify-email" element={<VerifyEmail />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
 
                     {/* Onboarding wizard (requires auth, skips if already completed) */}
                     <Route

@@ -94,9 +94,21 @@ interface NewConversationSelection {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PRIMARY = 'hsl(158 100% 45%)';
-const SOCKET_URL =
-    (import.meta.env.VITE_API_URL as string | undefined)?.replace('/api', '') ||
-    'http://localhost:3001';
+const SOCKET_URL = (() => {
+    const configuredApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+
+    if (!configuredApiUrl || configuredApiUrl === '/api') {
+        return typeof window !== 'undefined' ? window.location.origin : '';
+    }
+
+    if (/^https?:\/\//i.test(configuredApiUrl)) {
+        return configuredApiUrl.replace(/\/api\/?$/, '');
+    }
+
+    return typeof window !== 'undefined'
+        ? window.location.origin
+        : configuredApiUrl.replace(/\/api\/?$/, '');
+})();
 
 const EMOJI_FONT_STACK = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif';
 const EMOJI_GROUPS = [
