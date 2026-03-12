@@ -30,8 +30,12 @@ export class UserController {
 
     @UseGuards(JwtAuthGuard)
     @Get('me/notifications')
-    async getMyNotifications(@Request() req) {
-        return this.userService.getNotifications(req.user.id);
+    async getMyNotifications(@Request() req, @Query('days') days?: string) {
+        const parsedDays = Number.parseInt(days ?? '', 10);
+        return this.userService.getNotifications(
+            req.user.id,
+            Number.isFinite(parsedDays) ? parsedDays : undefined,
+        );
     }
 
     @UseGuards(JwtAuthGuard)

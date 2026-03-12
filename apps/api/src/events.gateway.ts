@@ -119,7 +119,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
             conversationId: string;
             content?: string;
             attachment?: {
-                type: 'image' | 'post' | 'chart';
+                type: 'image' | 'post' | 'chart' | 'story';
                 url?: string;
                 postId?: string;
                 meta?: Record<string, any>;
@@ -140,7 +140,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
             );
 
             // Broadcast to everyone in the conversation room (including sender)
-            this.emitNewMessage(data.conversationId, message);
+            await this.emitNewMessage(data.conversationId, message);
         } catch (err) {
             client.emit('error', { message: 'Error al enviar mensaje' });
         }
@@ -148,15 +148,34 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // ─── Emit helpers (called from REST controller) ──────────────────────────
 
-    emitNewMessage(conversationId: string, message: any) {
+    async emitConversationCreated(conversationId: string) {
         if (!this.server) {
             return;
         }
 
+        const participantIds = await this.messagesService.getConversationParticipantIds(conversationId);
+        for (const participantId of participantIds) {
+            this.server.to(`user:${participantId}`).emit('conversationCreated', { conversationId });
+        }
+    }
+
+    async emitNewMessage(conversationId: string, message: any) {
+        if (!this.server) {
+            return;
+        }
+
+        const participantIds = await this.messagesService.getConversationParticipantIds(conversationId);
         this.server.to(`conv:${conversationId}`).emit('newDirectMessage', message);
         this.server.to(`conv:${conversationId}`).emit('conversationUpdated', {
             conversationId,
             lastMessage: message,
         });
+
+        for (const participantId of participantIds) {
+            this.server.to(`user:${participantId}`).emit('conversationUpdated', {
+                conversationId,
+                lastMessage: message,
+            });
+        }
     }
 }

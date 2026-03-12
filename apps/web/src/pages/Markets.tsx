@@ -397,24 +397,24 @@ export default function Markets() {
 
             <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-4 md:px-6 lg:px-8">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="grid h-auto w-full grid-cols-3 rounded-[24px] border border-border/50 bg-card/50 p-1.5">
+                    <TabsList className="grid h-auto w-full grid-cols-3 rounded-[24px] border border-border/40 bg-secondary/30 p-1.5 backdrop-blur-sm">
                         <TabsTrigger
                             value="overview"
-                            className="gap-2 rounded-[18px] py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                            className="gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                         >
                             <Activity className="h-4 w-4" />
                             {t.markets.tabs.overview}
                         </TabsTrigger>
                         <TabsTrigger
                             value="chart"
-                            className="gap-2 rounded-[18px] py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                            className="gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                         >
                             <LineChart className="h-4 w-4" />
                             {t.markets.tabs.chart}
                         </TabsTrigger>
                         <TabsTrigger
                             value="news"
-                            className="gap-2 rounded-[18px] py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                            className="gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                         >
                             <Newspaper className="h-4 w-4" />
                             {t.markets.tabs.news}
@@ -529,8 +529,8 @@ export default function Markets() {
                                                 className={cn(
                                                     'rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
                                                     chartInterval === interval.value
-                                                        ? 'border-primary/40 bg-primary text-primary-foreground'
-                                                        : 'border-border/60 bg-background/50 text-muted-foreground hover:border-primary/30 hover:text-foreground'
+                                                        ? 'border-foreground/20 bg-foreground text-background shadow-sm'
+                                                        : 'border-border/60 bg-background/50 text-muted-foreground hover:border-foreground/30 hover:text-foreground'
                                                 )}
                                             >
                                                 {interval.label}

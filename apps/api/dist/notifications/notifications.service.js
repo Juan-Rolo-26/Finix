@@ -38,6 +38,35 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             month: 'short',
         });
     }
+    formatDateKey(value) {
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    formatHistoryDate(value) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const target = new Date(value);
+        target.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((today.getTime() - target.getTime()) / 86400000);
+        if (diffDays === 0)
+            return 'Hoy';
+        if (diffDays === 1)
+            return 'Ayer';
+        const label = value.toLocaleDateString('es-AR', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'short',
+        });
+        return label.charAt(0).toUpperCase() + label.slice(1);
+    }
+    resolveHistoryStart(days) {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        start.setDate(start.getDate() - (days - 1));
+        return start;
+    }
     async createNotification(input) {
         if (!input.userId)
             return null;
@@ -77,11 +106,23 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
         }
         return notification;
     }
-    async getNotifications(userId) {
+    async getNotifications(userId, input = {}) {
+        const parsedDays = Number.isFinite(input.days)
+            ? Math.max(1, Math.min(30, Math.trunc(input.days)))
+            : undefined;
         const notifications = await this.prisma.notification.findMany({
-            where: { userId },
+            where: {
+                userId,
+                ...(parsedDays
+                    ? {
+                        createdAt: {
+                            gte: this.resolveHistoryStart(parsedDays),
+                        },
+                    }
+                    : {}),
+            },
             orderBy: { createdAt: 'desc' },
-            take: 30,
+            take: parsedDays ? 100 : 30,
         });
         return notifications.map((notification) => ({
             id: notification.id,
@@ -92,6 +133,8 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             isRead: notification.isRead,
             time: this.formatRelativeTime(notification.createdAt),
             createdAt: notification.createdAt,
+            dateKey: this.formatDateKey(notification.createdAt),
+            dateLabel: this.formatHistoryDate(notification.createdAt),
         }));
     }
     async countUnread(userId) {

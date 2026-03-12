@@ -1,4 +1,4 @@
-import { ReactNode, useMemo } from 'react';
+import React, { ReactNode, useMemo } from 'react';
 import {
     PieChart,
     Pie,
@@ -18,15 +18,21 @@ import { cn } from '@/lib/utils';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1'];
 
-const TOOLTIP_STYLE = {
-    backgroundColor: '#111827',
-    borderColor: 'rgba(75, 85, 99, 0.9)',
-    borderRadius: '12px',
-    color: '#f3f4f6',
+const TOOLTIP_STYLE: React.CSSProperties = {
+    backgroundColor: 'hsl(var(--popover) / 0.97)',
+    border: '1px solid hsl(var(--border) / 0.8)',
+    borderRadius: '14px',
+    color: 'hsl(var(--popover-foreground))',
+    boxShadow: '0 16px 40px hsl(var(--foreground) / 0.08)',
+    padding: '12px 16px',
+    fontSize: '13px',
+    fontFamily: '"Satoshi", system-ui, sans-serif',
+    lineHeight: '1.5',
+    minWidth: '160px',
 };
 
 const AXIS_TICK = {
-    fill: 'rgba(229, 231, 235, 0.72)',
+    fill: 'rgba(100, 116, 139, 0.88)',
     fontSize: 12,
 };
 
@@ -179,9 +185,9 @@ export const AllocationChart = ({
                                     cy="50%"
                                     innerRadius={72}
                                     outerRadius={96}
-                                    paddingAngle={3}
-                                    stroke="rgba(17, 24, 39, 0.95)"
-                                    strokeWidth={2}
+                                    paddingAngle={chartData.length === 1 ? 0 : 5}
+                                    stroke={chartData.length === 1 ? 'none' : 'hsl(var(--card))'}
+                                    strokeWidth={chartData.length === 1 ? 0 : 4}
                                     dataKey="value"
                                 >
                                     {chartData.map((entry, index) => (
@@ -194,6 +200,8 @@ export const AllocationChart = ({
                                 <RechartsTooltip
                                     formatter={(value: number) => [formatCurrency(value), 'Valor']}
                                     contentStyle={TOOLTIP_STYLE}
+                                    labelStyle={{ color: 'hsl(var(--muted-foreground))', fontWeight: 600, marginBottom: 4 }}
+                                    itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: 500 }}
                                 />
                             </PieChart>
                         </ResponsiveContainer>
@@ -273,8 +281,10 @@ export const TopAssetsChart = ({
                                     tickFormatter={(value: string) => truncateLabel(value, 18)}
                                 />
                                 <RechartsTooltip
-                                    cursor={{ fill: 'rgba(16, 185, 129, 0.08)' }}
+                                    cursor={{ fill: 'hsl(var(--foreground) / 0.05)' }}
                                     contentStyle={TOOLTIP_STYLE}
+                                    labelStyle={{ color: 'hsl(var(--muted-foreground))', fontWeight: 600, marginBottom: 4 }}
+                                    itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: 500 }}
                                     formatter={(value: number) => [formatCurrency(value), 'Valor']}
                                     labelFormatter={(label: string) => label}
                                 />
@@ -355,6 +365,8 @@ export const CapitalEvolutionChart = ({
                             />
                             <RechartsTooltip
                                 contentStyle={TOOLTIP_STYLE}
+                                labelStyle={{ color: 'hsl(var(--muted-foreground))', fontWeight: 600, marginBottom: 4 }}
+                                itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: 500 }}
                                 formatter={(value: number) => [formatCurrency(value), 'Capital acumulado']}
                             />
                             <Area

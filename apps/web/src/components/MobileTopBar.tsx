@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Bell,
@@ -13,21 +13,13 @@ import {
 import { useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
 import { apiFetch } from '../lib/api';
+import { NOTIFICATION_HISTORY_DAYS, type NotificationItem, groupNotificationsByDay } from '../lib/notifications';
 
 const PRIMARY = 'hsl(var(--primary))';
 
-interface NotificationItem {
-    id: string;
-    type: string;
-    title: string;
-    content?: string | null;
-    link?: string | null;
-    isRead?: boolean;
-    time: string;
-}
-
 export function MobileTopBar() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useAuthStore();
     const { theme, setTheme } = usePreferencesStore();
 
@@ -38,39 +30,29 @@ export function MobileTopBar() {
 
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
 
-    const popoverStyle: React.CSSProperties = {
-        background: 'hsl(var(--popover))',
-        border: '1px solid hsl(var(--border))',
-        color: 'hsl(var(--popover-foreground))',
-    };
+    const isMessages = location.pathname.startsWith('/messages');
 
     useEffect(() => {
-        if (isNotifsOpen) {
-            const fetchNotifications = async () => {
-                setIsNotifsLoading(true);
-                try {
-                    const res = await apiFetch('/users/me/notifications');
-                    const data = res.ok ? await res.json() : [];
-                    setNotifications(Array.isArray(data) ? data : []);
-
-                    const readRes = await apiFetch('/users/me/notifications/read-all', {
-                        method: 'PATCH',
-                    });
-                    if (readRes.ok) {
-                        setUnreadNotifs(0);
-                    }
-                } catch {
-                    setNotifications([]);
-                } finally {
-                    setIsNotifsLoading(false);
-                }
-            };
-
-            fetchNotifications();
-        }
-    }, [isNotifsOpen]);
+        if (isMessages || !isNotifsOpen) return;
+        const fetchNotifications = async () => {
+            setIsNotifsLoading(true);
+            try {
+                const res = await apiFetch(`/users/me/notifications?days=${NOTIFICATION_HISTORY_DAYS}`);
+                const data = res.ok ? await res.json() : [];
+                setNotifications(Array.isArray(data) ? data : []);
+                const readRes = await apiFetch('/users/me/notifications/read-all', { method: 'PATCH' });
+                if (readRes.ok) setUnreadNotifs(0);
+            } catch {
+                setNotifications([]);
+            } finally {
+                setIsNotifsLoading(false);
+            }
+        };
+        fetchNotifications();
+    }, [isNotifsOpen, isMessages]);
 
     useEffect(() => {
+        if (isMessages) return;
         const loadUnreadCount = async () => {
             try {
                 const res = await apiFetch('/users/me/notifications/unread-count');
@@ -80,11 +62,19 @@ export function MobileTopBar() {
                 }
             } catch { }
         };
-
         loadUnreadCount();
         const iv = setInterval(loadUnreadCount, 30_000);
         return () => clearInterval(iv);
-    }, []);
+    }, [isMessages]);
+
+    // Messages has its own full-screen header — render nothing
+    if (isMessages) return null;
+
+    const popoverStyle: React.CSSProperties = {
+        background: 'hsl(var(--popover))',
+        border: '1px solid hsl(var(--border))',
+        color: 'hsl(var(--popover-foreground))',
+    };
 
     const handleNotificationClick = (notification: NotificationItem) => {
         if (notification.link) {
@@ -92,6 +82,8 @@ export function MobileTopBar() {
         }
         setIsNotifsOpen(false);
     };
+
+    const notificationGroups = groupNotificationsByDay(notifications);
 
     return (
         <div
@@ -103,17 +95,12 @@ export function MobileTopBar() {
             }}
         >
             {/* Logo */}
-            <div className="flex items-center gap-2" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
-                <div
-                    className="h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{
-                        background: `linear-gradient(135deg, hsl(var(--sidebar-logo-bg-from)) 0%, hsl(var(--sidebar-logo-bg-to)) 100%)`,
-                        border: `1px solid hsl(var(--sidebar-logo-border))`,
-                        boxShadow: `0 0 12px hsl(var(--primary) / 0.2)`,
-                    }}
-                >
-                    <img src="/logo.png" alt="Finix" className="h-5 w-5 object-contain" />
-                </div>
+            <div className="flex items-center gap-2.5" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
+                <img
+                    src="/logo.png"
+                    alt="Finix"
+                    className="h-8 w-8 object-contain flex-shrink-0"
+                />
                 <span
                     className="text-[17px] font-black tracking-[0.12em] uppercase"
                     style={{ color: 'hsl(var(--foreground))' }}
@@ -183,46 +170,63 @@ export function MobileTopBar() {
                                         className="px-4 py-3 flex items-center justify-between"
                                         style={{ borderBottom: '1px solid hsl(var(--border))' }}
                                     >
-                                        <h3 className="font-bold text-sm">Notificaciones</h3>
+                                        <div>
+                                            <h3 className="font-bold text-sm">Notificaciones</h3>
+                                            <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                                Ultimos {NOTIFICATION_HISTORY_DAYS} dias
+                                            </p>
+                                        </div>
                                     </div>
                                     <div className="max-h-72 overflow-y-auto p-2 space-y-1">
                                         {isNotifsLoading ? (
                                             <div className="flex justify-center py-6" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                                 <Loader2 className="w-5 h-5 animate-spin" />
                                             </div>
-                                        ) : notifications.length > 0 ? (
-                                            notifications.map((n, i) => (
-                                                <div
-                                                    key={n.id || i}
-                                                    className="flex items-start gap-3 p-2.5 rounded-xl cursor-pointer transition-colors"
-                                                    style={{ borderBottom: i < notifications.length - 1 ? '1px solid hsl(var(--border) / 0.4)' : 'none' }}
-                                                    onClick={() => handleNotificationClick(n)}
-                                                >
-                                                    <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden"
-                                                        style={{ background: n.type === 'follow' ? 'hsl(var(--primary) / 0.15)' : 'hsl(var(--secondary))' }}>
-                                                        {n.type === 'follow'
-                                                            ? <User className="w-4 h-4" style={{ color: PRIMARY }} />
-                                                            : <TrendingUp className="w-4 h-4 text-emerald-500" />
-                                                        }
+                                        ) : notificationGroups.length > 0 ? (
+                                            notificationGroups.map((group) => (
+                                                <div key={group.dateKey} className="space-y-1">
+                                                    <div className="px-2 pt-2 pb-1">
+                                                        <p
+                                                            className="text-[10px] font-bold uppercase tracking-[0.18em]"
+                                                            style={{ color: 'hsl(var(--muted-foreground))' }}
+                                                        >
+                                                            {group.label}
+                                                        </p>
                                                     </div>
-                                                    <div className="flex-1 text-[12px] leading-snug">
-                                                        <p className="font-medium">{n.title}</p>
-                                                        {n.content && (
-                                                            <p className="mt-1 text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                                {n.content}
-                                                            </p>
-                                                        )}
-                                                        <span className="text-[10px] mt-1 inline-block font-bold" style={{ color: 'hsl(var(--primary) / 0.7)' }}>
-                                                            {n.time}
-                                                        </span>
-                                                    </div>
+                                                    {group.items.map((n, i) => (
+                                                        <div
+                                                            key={n.id}
+                                                            className="flex items-start gap-3 p-2.5 rounded-xl cursor-pointer transition-colors"
+                                                            style={{ borderBottom: i < group.items.length - 1 ? '1px solid hsl(var(--border) / 0.4)' : 'none' }}
+                                                            onClick={() => handleNotificationClick(n)}
+                                                        >
+                                                            <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden"
+                                                                style={{ background: n.type === 'follow' ? 'hsl(var(--primary) / 0.15)' : 'hsl(var(--secondary))' }}>
+                                                                {n.type === 'follow'
+                                                                    ? <User className="w-4 h-4" style={{ color: PRIMARY }} />
+                                                                    : <TrendingUp className="w-4 h-4 text-emerald-500" />
+                                                                }
+                                                            </div>
+                                                            <div className="flex-1 text-[12px] leading-snug">
+                                                                <p className="font-medium">{n.title}</p>
+                                                                {n.content && (
+                                                                    <p className="mt-1 text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                                                        {n.content}
+                                                                    </p>
+                                                                )}
+                                                                <span className="text-[10px] mt-1 inline-block font-bold" style={{ color: 'hsl(var(--primary) / 0.7)' }}>
+                                                                    {n.time}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             ))
                                         ) : (
                                             <div className="text-center py-8 px-4">
                                                 <Bell className="w-7 h-7 mx-auto mb-2" style={{ color: 'hsl(var(--muted-foreground) / 0.3)' }} />
                                                 <p className="text-sm font-semibold">Sin notificaciones</p>
-                                                <p className="text-xs mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Aqui veras seguidores, likes, comentarios y actividad relevante.</p>
+                                                <p className="text-xs mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Aqui veras el historial de la ultima semana con seguidores, likes y actividad relevante.</p>
                                             </div>
                                         )}
                                     </div>

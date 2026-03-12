@@ -134,7 +134,7 @@ const StepWelcome = ({ username }: { username: string }) => (
         <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto">
             {[
                 { emoji: '📊', label: 'Portafolio' },
-                { emoji: '💬', label: 'Feed' },
+                { emoji: '💬', label: 'Comunidad' },
                 { emoji: '🌐', label: 'Mercado' },
             ].map(({ emoji, label }) => (
                 <div key={label} className="rounded-xl border border-border/50 bg-card/30 p-3 text-center">
@@ -253,7 +253,7 @@ const StepPreferences = ({
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="es-AR">Español (AR)</SelectItem>
-                        <SelectItem value="en-US">English (US)</SelectItem>
+                        <SelectItem value="en-US">Ingles (EE. UU.)</SelectItem>
                         <SelectItem value="pt-BR">Português (BR)</SelectItem>
                     </SelectContent>
                 </Select>
@@ -341,16 +341,16 @@ const StepDone = ({ username }: { username: string }) => (
                 ¡Todo listo, <span className="text-primary">{username}</span>!
             </h2>
             <p className="text-muted-foreground leading-relaxed max-w-sm mx-auto">
-                Tu cuenta está configurada. Ahora podés explorar el feed, gestionar tu portafolio y conectar con otros inversores.
+                Tu cuenta esta configurada. Ahora podes explorar la actividad, gestionar tu portafolio y conectar con otros inversores.
             </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto text-left">
             {[
-                { emoji: '📊', title: 'Dashboard', desc: 'Tu resumen financiero' },
+                { emoji: '📊', title: 'Resumen', desc: 'Tu resumen financiero' },
                 { emoji: '💼', title: 'Portafolio', desc: 'Tus inversiones' },
                 { emoji: '🌐', title: 'Mercados', desc: 'Datos en tiempo real' },
-                { emoji: '💬', title: 'Feed', desc: 'Ideas de inversión' },
+                { emoji: '💬', title: 'Comunidad', desc: 'Ideas de inversion' },
             ].map(({ emoji, title, desc }) => (
                 <div key={title} className="rounded-xl border border-border/50 bg-card/30 p-3">
                     <div className="text-xl mb-1">{emoji}</div>

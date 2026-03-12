@@ -129,11 +129,13 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Messaging
-  conversations1 Conversation[]  @relation("ConvParticipant1")
-  conversations2 Conversation[]  @relation("ConvParticipant2")
-  sentMessages   DirectMessage[] @relation("SentMessages")
-  stories        Story[]
-  storyViews     StoryView[]
+  conversations1          Conversation[]            @relation("ConvParticipant1")
+  conversations2          Conversation[]            @relation("ConvParticipant2")
+  conversationMemberships ConversationParticipant[]
+  createdConversations    Conversation[]            @relation("ConversationCreator")
+  sentMessages            DirectMessage[]           @relation("SentMessages")
+  stories                 Story[]
+  storyViews              StoryView[]
 
   // Admin relations
   adminLogs      AdminAuditLog[] @relation("AdminActor")
@@ -733,18 +735,38 @@ model Payout {
 // ============================================
 
 model Conversation {
-  id             String          @id @default(uuid())
-  participant1Id String
-  participant2Id String
-  participant1   User            @relation("ConvParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
-  participant2   User            @relation("ConvParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  id             String                    @id @default(uuid())
+  participant1Id String?
+  participant2Id String?
+  participant1   User?                     @relation("ConvParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2   User?                     @relation("ConvParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  isGroup        Boolean                   @default(false)
+  title          String?
+  createdById    String?
+  createdBy      User?                     @relation("ConversationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  participants   ConversationParticipant[]
   messages       DirectMessage[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
 
   @@unique([participant1Id, participant2Id])
   @@index([participant1Id])
   @@index([participant2Id])
+  @@index([createdById])
+  @@index([isGroup, updatedAt])
+}
+
+model ConversationParticipant {
+  conversationId String
+  userId         String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime?
+
+  @@id([conversationId, userId])
+  @@index([userId, joinedAt])
+  @@index([conversationId, lastReadAt])
 }
 
 model DirectMessage {

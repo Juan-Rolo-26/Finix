@@ -28,6 +28,22 @@ export declare class PostsController {
     createPost(req: any, body: any): Promise<any>;
     getPost(req: any, id: string): Promise<any>;
     updatePost(req: any, id: string, content: string): Promise<{
+        likes: {
+            userId: string;
+        }[];
+        reposts: {
+            userId: string;
+        }[];
+        saves: {
+            userId: string;
+        }[];
+        _count: {
+            likes: number;
+            reposts: number;
+            saves: number;
+            replies: number;
+            quotes: number;
+        };
         author: {
             id: string;
             username: string;
@@ -49,8 +65,10 @@ export declare class PostsController {
             };
         } & {
             id: string;
-            content: string;
             type: string;
+            content: string;
+            createdAt: Date;
+            updatedAt: Date;
             visibility: string;
             deletedAt: Date | null;
             assetSymbol: string | null;
@@ -59,8 +77,6 @@ export declare class PostsController {
             contentEditedAt: Date | null;
             tickers: string;
             viewCount: number;
-            createdAt: Date;
-            updatedAt: Date;
             authorId: string;
             parentId: string | null;
             quotedPostId: string | null;
@@ -85,8 +101,10 @@ export declare class PostsController {
             }[];
         } & {
             id: string;
-            content: string;
             type: string;
+            content: string;
+            createdAt: Date;
+            updatedAt: Date;
             visibility: string;
             deletedAt: Date | null;
             assetSymbol: string | null;
@@ -95,8 +113,6 @@ export declare class PostsController {
             contentEditedAt: Date | null;
             tickers: string;
             viewCount: number;
-            createdAt: Date;
-            updatedAt: Date;
             authorId: string;
             parentId: string | null;
             quotedPostId: string | null;
@@ -109,26 +125,12 @@ export declare class PostsController {
             order: number;
             postId: string;
         }[];
-        likes: {
-            userId: string;
-        }[];
-        reposts: {
-            userId: string;
-        }[];
-        saves: {
-            userId: string;
-        }[];
-        _count: {
-            replies: number;
-            quotes: number;
-            likes: number;
-            reposts: number;
-            saves: number;
-        };
     } & {
         id: string;
-        content: string;
         type: string;
+        content: string;
+        createdAt: Date;
+        updatedAt: Date;
         visibility: string;
         deletedAt: Date | null;
         assetSymbol: string | null;
@@ -137,8 +139,6 @@ export declare class PostsController {
         contentEditedAt: Date | null;
         tickers: string;
         viewCount: number;
-        createdAt: Date;
-        updatedAt: Date;
         authorId: string;
         parentId: string | null;
         quotedPostId: string | null;

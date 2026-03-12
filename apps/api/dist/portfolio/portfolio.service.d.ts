@@ -10,7 +10,30 @@ export declare class PortfolioService {
     private assertPortfolioOwner;
     private normalizeMovementType;
     private normalizeTicker;
+    private normalizeCurrency;
+    private sortTransactionsChronologically;
+    private addToBalanceMap;
+    private sumBalanceMap;
+    private getTransactionCashDelta;
     private getLiveQuoteMap;
+    private toMonthKey;
+    private shiftUtcMonth;
+    private getTrailingMonthlyWindows;
+    private getHistoricalMonthEndPriceMap;
+    private getHistoricalMonthEndPriceMaps;
+    private buildCurrentHoldingMap;
+    private buildCurrentCashMap;
+    private buildBaselineHoldingMap;
+    private buildBaselineCashMap;
+    private buildSyntheticFundingEvents;
+    private buildCashEventTimeline;
+    private buildHoldingMapAtDate;
+    private buildCashMapAtDate;
+    private buildHoldingCostMap;
+    private calculatePortfolioValueForMonth;
+    private buildEffectiveCashState;
+    private buildFallbackPriceMap;
+    private buildMonthlyReturns;
     private toLegacyAsset;
     private toLegacyMovement;
     private toLegacyPortfolio;
@@ -25,6 +48,17 @@ export declare class PortfolioService {
         esPrincipal: any;
         admiteBienesRaices: any;
         assets: any;
+        cash: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
+        cashAccounts: {
+            currency: string;
+            balance: number;
+        }[];
+        assetsValue: number;
+        totalValue: number;
         movements: any;
         createdAt: any;
         updatedAt: any;
@@ -40,6 +74,17 @@ export declare class PortfolioService {
         esPrincipal: any;
         admiteBienesRaices: any;
         assets: any;
+        cash: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
+        cashAccounts: {
+            currency: string;
+            balance: number;
+        }[];
+        assetsValue: number;
+        totalValue: number;
         movements: any;
         createdAt: any;
         updatedAt: any;
@@ -57,6 +102,17 @@ export declare class PortfolioService {
         esPrincipal: any;
         admiteBienesRaices: any;
         assets: any;
+        cash: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
+        cashAccounts: {
+            currency: string;
+            balance: number;
+        }[];
+        assetsValue: number;
+        totalValue: number;
         movements: any;
         createdAt: any;
         updatedAt: any;
@@ -72,6 +128,17 @@ export declare class PortfolioService {
         esPrincipal: any;
         admiteBienesRaices: any;
         assets: any;
+        cash: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
+        cashAccounts: {
+            currency: string;
+            balance: number;
+        }[];
+        assetsValue: number;
+        totalValue: number;
         movements: any;
         createdAt: any;
         updatedAt: any;
@@ -88,6 +155,17 @@ export declare class PortfolioService {
         esPrincipal: any;
         admiteBienesRaices: any;
         assets: any;
+        cash: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
+        cashAccounts: {
+            currency: string;
+            balance: number;
+        }[];
+        assetsValue: number;
+        totalValue: number;
         movements: any;
         createdAt: any;
         updatedAt: any;
@@ -147,6 +225,7 @@ export declare class PortfolioService {
         ppc: number;
         montoInvertido: number;
         precioActual: number;
+        value: number;
         precioTiempoReal: boolean;
         precioFuente: string;
         precioActualizadoEn: string;
@@ -161,21 +240,45 @@ export declare class PortfolioService {
     private buildPortfolioMetrics;
     getPortfolioMetrics(portfolioId: string, userId: string): Promise<{
         capitalTotal: number;
+        capitalInvertido: number;
+        assetsValue: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
         valorActual: number;
+        totalValue: number;
         gananciaTotal: number;
         variacionPorcentual: number;
         diversificacionPorClase: Record<string, number>;
         diversificacionPorActivo: Record<string, number>;
         cantidadActivos: number;
+        retornosMensuales: {
+            monthKey: string;
+            label: string;
+            value: number;
+        }[];
     }>;
     getPublicPortfolioMetrics(portfolioId: string): Promise<{
         capitalTotal: number;
+        capitalInvertido: number;
+        assetsValue: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
         valorActual: number;
+        totalValue: number;
         gananciaTotal: number;
         variacionPorcentual: number;
         diversificacionPorClase: Record<string, number>;
         diversificacionPorActivo: Record<string, number>;
         cantidadActivos: number;
+        retornosMensuales: {
+            monthKey: string;
+            label: string;
+            value: number;
+        }[];
     }>;
     updateAsset(assetId: string, userId: string, dto: UpdateAssetDto): Promise<void>;
     getPortfolioMovements(portfolioId: string, userId: string, filters?: any): Promise<{

@@ -25,8 +25,14 @@ let MessagesController = class MessagesController {
     getConversations(req) {
         return this.messagesService.getConversations(req.user.id);
     }
-    createOrGetConversation(req, body) {
-        return this.messagesService.getOrCreateConversation(req.user.id, body.userId);
+    async createOrGetConversation(req, body) {
+        const conversation = await this.messagesService.createConversation(req.user.id, body);
+        try {
+            await this.eventsGateway.emitConversationCreated(conversation.id);
+        }
+        catch {
+        }
+        return conversation;
     }
     getMessages(id, req, cursor) {
         return this.messagesService.getMessages(id, req.user.id, cursor);
@@ -34,7 +40,7 @@ let MessagesController = class MessagesController {
     async sendMessage(id, req, body) {
         const message = await this.messagesService.sendMessage(req.user.id, id, body);
         try {
-            this.eventsGateway.emitNewMessage(id, message);
+            await this.eventsGateway.emitNewMessage(id, message);
         }
         catch {
         }
@@ -64,7 +70,7 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], MessagesController.prototype, "createOrGetConversation", null);
 __decorate([
     (0, common_1.Get)('conversations/:id/messages'),

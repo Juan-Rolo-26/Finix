@@ -76,19 +76,19 @@ interface DirectMessage {
 
 interface ConversationItem {
     id: string;
-    otherUser: MsgUser;
+    isGroup: boolean;
+    title: string;
+    otherUser: MsgUser | null;
+    participants: MsgUser[];
+    participantCount: number;
     lastMessage: DirectMessage | null;
     updatedAt: string;
     unreadCount: number;
 }
 
-interface ConversationApiRecord {
-    id: string;
-    participant1Id: string;
-    participant2Id: string;
-    participant1: MsgUser;
-    participant2: MsgUser;
-    updatedAt: string;
+interface NewConversationSelection {
+    userIds: string[];
+    title?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -146,6 +146,77 @@ function UserAvatar({ user, size = 40, online = false }: { user: MsgUser; size?:
     );
 }
 
+function getConversationMembers(conversation: ConversationItem, currentUserId?: string) {
+    return conversation.participants.filter((participant) => participant.id !== currentUserId);
+}
+
+function ConversationAvatar({
+    conversation,
+    currentUserId,
+    size = 40,
+    onlineUsers,
+}: {
+    conversation: ConversationItem;
+    currentUserId?: string;
+    size?: number;
+    onlineUsers: Set<string>;
+}) {
+    if (!conversation.isGroup && conversation.otherUser) {
+        return (
+            <UserAvatar
+                user={conversation.otherUser}
+                size={size}
+                online={onlineUsers.has(conversation.otherUser.id)}
+            />
+        );
+    }
+
+    const members = getConversationMembers(conversation, currentUserId).slice(0, 3);
+    const tileSize = size < 44 ? Math.max(16, Math.floor(size * 0.48)) : Math.floor(size * 0.54);
+
+    return (
+        <div
+            className="relative flex-shrink-0 rounded-full overflow-hidden border"
+            style={{
+                width: size,
+                height: size,
+                borderColor: 'hsl(158 100% 45% / 0.18)',
+                background: 'linear-gradient(135deg, hsl(210 25% 96%) 0%, hsl(158 45% 92%) 100%)',
+            }}
+        >
+            <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-[2px] p-[2px]">
+                {Array.from({ length: 4 }).map((_, index) => {
+                    const member = members[index];
+                    const initials = member?.username?.[0]?.toUpperCase() || '+';
+
+                    return member?.avatarUrl ? (
+                        <img
+                            key={`${conversation.id}-${member.id}`}
+                            src={member.avatarUrl}
+                            alt={member.username}
+                            className="h-full w-full rounded-full object-cover"
+                        />
+                    ) : (
+                        <div
+                            key={`${conversation.id}-slot-${index}`}
+                            className="flex h-full w-full items-center justify-center rounded-full font-bold"
+                            style={{
+                                background: member
+                                    ? 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)'
+                                    : 'hsl(210 16% 90%)',
+                                color: member ? '#041008' : 'hsl(220 10% 42%)',
+                                fontSize: Math.max(10, tileSize * 0.42),
+                            }}
+                        >
+                            {initials}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
 function getChartIntervalLabel(value?: string) {
     if (!value) return '1D';
     return CHART_INTERVAL_LABELS[value] || value;
@@ -184,24 +255,35 @@ function getMessagePreview(message: DirectMessage | null) {
     return text || 'Mensaje';
 }
 
+function getConversationName(conversation: ConversationItem) {
+    if (!conversation.isGroup) {
+        return conversation.otherUser?.username || conversation.title || 'Conversación';
+    }
+
+    return conversation.title || 'Grupo';
+}
+
+function getConversationSecondaryText(conversation: ConversationItem, currentUserId?: string) {
+    if (!conversation.isGroup) {
+        return conversation.otherUser?.title || 'Chat directo';
+    }
+
+    const members = getConversationMembers(conversation, currentUserId).map((participant) => participant.username);
+    if (members.length === 0) {
+        return 'Solo vos';
+    }
+
+    const preview = members.slice(0, 3).join(', ');
+    const extra = members.length > 3 ? ` +${members.length - 3}` : '';
+    return `${conversation.participantCount} participantes · ${preview}${extra}`;
+}
+
 function sortConversations(items: ConversationItem[]) {
     return [...items].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 }
 
 function upsertConversation(items: ConversationItem[], conversation: ConversationItem) {
     return sortConversations([conversation, ...items.filter((item) => item.id !== conversation.id)]);
-}
-
-function buildConversationFromApiRecord(record: ConversationApiRecord, currentUserId: string): ConversationItem {
-    const otherUser = record.participant1Id === currentUserId ? record.participant2 : record.participant1;
-
-    return {
-        id: record.id,
-        otherUser,
-        lastMessage: null,
-        updatedAt: record.updatedAt,
-        unreadCount: 0,
-    };
 }
 
 function applyConversationMessageUpdate(
@@ -225,17 +307,7 @@ function applyConversationMessageUpdate(
         });
     }
 
-    if (lastMessage.senderId === currentUserId) {
-        return items;
-    }
-
-    return upsertConversation(items, {
-        id: conversationId,
-        otherUser: lastMessage.sender,
-        lastMessage,
-        updatedAt: lastMessage.createdAt,
-        unreadCount,
-    });
+    return items;
 }
 
 function SharedPostCard({
@@ -524,11 +596,13 @@ function NewMessageModal({
     onSelect,
 }: {
     onClose: () => void;
-    onSelect: (userId: string) => void;
+    onSelect: (selection: NewConversationSelection) => void;
 }) {
     const [q, setQ] = useState('');
     const [results, setResults] = useState<MsgUser[]>([]);
     const [loading, setLoading] = useState(false);
+    const [selectedUsers, setSelectedUsers] = useState<MsgUser[]>([]);
+    const [groupTitle, setGroupTitle] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => { inputRef.current?.focus(); }, []);
@@ -547,12 +621,34 @@ function NewMessageModal({
         return () => clearTimeout(t);
     }, [q]);
 
+    const selectedIds = new Set(selectedUsers.map((user) => user.id));
+    const isGroup = selectedUsers.length > 1 || groupTitle.trim().length > 0;
+
+    const toggleUser = (user: MsgUser) => {
+        setSelectedUsers((current) => {
+            const exists = current.some((item) => item.id === user.id);
+            if (exists) {
+                return current.filter((item) => item.id !== user.id);
+            }
+
+            return [...current, user];
+        });
+    };
+
+    const handleSubmit = () => {
+        if (selectedUsers.length === 0) return;
+        onSelect({
+            userIds: selectedUsers.map((user) => user.id),
+            title: groupTitle.trim() || undefined,
+        });
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={onClose}
         >
             <motion.div
@@ -560,16 +656,51 @@ function NewMessageModal({
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.93, y: 24 }}
                 transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-                className="bg-card border border-border/50 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden"
+                className="bg-card border border-border/50 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
-                    <h2 className="font-bold text-lg">Nuevo mensaje</h2>
+                    <div>
+                        <h2 className="font-bold text-lg">Nuevo mensaje o grupo</h2>
+                        <p className="text-xs text-muted-foreground mt-0.5">Seleccioná una o varias personas</p>
+                    </div>
                     <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/50 transition-colors">
                         <X className="w-4 h-4" />
                     </button>
                 </div>
+
+                {selectedUsers.length > 0 && (
+                    <div className="px-5 pt-4 space-y-3">
+                        <div className="flex flex-wrap gap-2">
+                            {selectedUsers.map((selectedUser) => (
+                                <button
+                                    key={selectedUser.id}
+                                    type="button"
+                                    onClick={() => toggleUser(selectedUser)}
+                                    className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
+                                >
+                                    <span>{selectedUser.username}</span>
+                                    <X className="w-3 h-3" />
+                                </button>
+                            ))}
+                        </div>
+
+                        {selectedUsers.length > 1 && (
+                            <div className="space-y-1.5">
+                                <label htmlFor="group-title" className="text-xs font-semibold text-muted-foreground">Nombre del grupo</label>
+                                <input
+                                    id="group-title"
+                                    type="text"
+                                    placeholder="Ej: Equipo Finix"
+                                    value={groupTitle}
+                                    onChange={(e) => setGroupTitle(e.target.value)}
+                                    className="w-full rounded-xl border border-border/50 bg-secondary/20 px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary/40"
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Search */}
                 <div className="px-5 py-3">
@@ -592,23 +723,48 @@ function NewMessageModal({
                     {results.length === 0 && q.trim().length > 0 && !loading ? (
                         <p className="text-sm text-muted-foreground text-center py-8">No se encontraron usuarios</p>
                     ) : results.length === 0 && !q.trim() ? (
-                        <p className="text-xs text-muted-foreground text-center py-6">Comenzá a escribir para buscar</p>
+                        <p className="text-xs text-muted-foreground text-center py-6">Comenzá a escribir para buscar contactos</p>
                     ) : (
                         results.map((u) => (
-                            <button key={u.id} onClick={() => onSelect(u.id)}
+                            <button
+                                key={u.id}
+                                onClick={() => toggleUser(u)}
                                 className="w-full flex items-center gap-3 px-5 py-3 hover:bg-secondary/40 transition-colors"
                             >
                                 <UserAvatar user={u} size={40} />
-                                <div className="text-left">
+                                <div className="text-left flex-1 min-w-0">
                                     <div className="flex items-center gap-1">
                                         <span className="font-semibold text-sm">{u.username}</span>
                                         {u.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-primary" />}
                                     </div>
                                     {u.title && <p className="text-xs text-muted-foreground">{u.title}</p>}
                                 </div>
+                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                                    selectedIds.has(u.id)
+                                        ? 'border-primary bg-primary text-black'
+                                        : 'border-border/60 text-transparent'
+                                }`}>
+                                    <Check className="w-3.5 h-3.5" />
+                                </div>
                             </button>
                         ))
                     )}
+                </div>
+
+                <div className="border-t border-border/40 px-5 py-4">
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={selectedUsers.length === 0}
+                        className="w-full rounded-2xl px-4 py-3 text-sm font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                        style={{
+                            background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)',
+                            color: '#041008',
+                            boxShadow: '0 8px 24px hsl(158 100% 45% / 0.22)',
+                        }}
+                    >
+                        {isGroup ? 'Crear grupo' : 'Abrir chat'}
+                    </button>
                 </div>
             </motion.div>
         </motion.div>
@@ -655,6 +811,7 @@ export default function MessagesPage() {
     const prevConvRef = useRef<string | null>(null);
     const activeConvIdRef = useRef<string | null>(null);
     const conversationsRef = useRef<ConversationItem[]>([]);
+    const pendingAttachmentRef = useRef<ComposerAttachment | null>(null);
 
     const activeConv = conversations.find((c) => c.id === activeConvId) ?? null;
 
@@ -683,6 +840,10 @@ export default function MessagesPage() {
     useEffect(() => {
         conversationsRef.current = conversations;
     }, [conversations]);
+
+    useEffect(() => {
+        pendingAttachmentRef.current = pendingAttachment;
+    }, [pendingAttachment]);
 
     useEffect(() => {
         if (!inputText && inputRef.current) {
@@ -718,10 +879,16 @@ export default function MessagesPage() {
             setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
         });
 
+        socket.on('conversationCreated', () => {
+            void loadConversations();
+        });
+
         socket.on('conversationUpdated', ({ conversationId, lastMessage }: { conversationId: string; lastMessage: DirectMessage }) => {
-            const shouldReloadConversations =
-                lastMessage.senderId === user?.id &&
-                !conversationsRef.current.some((conversation) => conversation.id === conversationId);
+            const exists = conversationsRef.current.some((conversation) => conversation.id === conversationId);
+            if (!exists) {
+                void loadConversations();
+                return;
+            }
 
             setConversations((prev) => {
                 return applyConversationMessageUpdate(
@@ -732,10 +899,6 @@ export default function MessagesPage() {
                     activeConvIdRef.current,
                 );
             });
-
-            if (shouldReloadConversations) {
-                void loadConversations();
-            }
         });
 
         socket.on('userTyping', ({ userId, isTyping }: { userId: string; isTyping: boolean }) => {
@@ -751,7 +914,7 @@ export default function MessagesPage() {
 
     // ── Handlers ───────────────────────────────────────────────────────────
 
-    const resetComposer = () => {
+    const resetComposer = useCallback(() => {
         setInputText('');
         setPendingAttachment(null);
         setShowAttachMenu(false);
@@ -760,9 +923,9 @@ export default function MessagesPage() {
         if (inputRef.current) {
             inputRef.current.style.height = 'auto';
         }
-    };
+    }, []);
 
-    const handleReturnToInbox = () => {
+    const handleReturnToInbox = useCallback(() => {
         setActiveConvId(null);
         setMessages([]);
         setShowMobileList(true);
@@ -770,49 +933,71 @@ export default function MessagesPage() {
         setShowPostPicker(false);
         setShowChartPicker(false);
         resetComposer();
-    };
+    }, [resetComposer]);
 
-    const handleSelectConv = (convId: string) => {
-        const currentAttachment = pendingAttachment;
-        const shouldPreserveAttachment = Boolean(currentAttachment && !activeConvId);
+    const handleSelectConv = useCallback((convId: string) => {
+        const currentAttachment = pendingAttachmentRef.current;
+        const shouldPreserveAttachment = Boolean(currentAttachment && !activeConvIdRef.current);
+
         setActiveConvId(convId);
+        setMessages([]);
         setShowMobileList(false);
         setTypingUsers(new Set());
         setShowPostPicker(false);
         setShowChartPicker(false);
         resetComposer();
+
         if (shouldPreserveAttachment && currentAttachment) {
             setPendingAttachment(currentAttachment);
         }
-    };
+    }, [resetComposer]);
 
-    const handleStartConversation = useCallback(async (otherUserId: string, clearUserSearchParam = false) => {
-        const currentAttachment = pendingAttachment;
-        const existing = conversations.find((c) => c.otherUser.id === otherUserId);
-        if (existing) {
-            handleSelectConv(existing.id);
-            if (currentAttachment) {
-                setPendingAttachment(currentAttachment);
+    const handleStartConversation = useCallback(async (
+        selection: string | NewConversationSelection,
+        clearUserSearchParam = false,
+    ) => {
+        // Close modal immediately so the user sees instant feedback
+        setShowNewMsg(false);
+
+        const currentAttachment = pendingAttachmentRef.current;
+        const selectedUserIds = typeof selection === 'string'
+            ? [selection]
+            : Array.from(new Set(selection.userIds.map((id) => id.trim()).filter(Boolean)));
+        const groupTitle = typeof selection === 'string' ? undefined : selection.title?.trim();
+
+        if (selectedUserIds.length === 1) {
+            const directUserId = selectedUserIds[0];
+            const existing = conversationsRef.current.find((conversation) => (
+                !conversation.isGroup
+                && (
+                    conversation.otherUser?.id === directUserId
+                    || conversation.participants.some((participant) => participant.id === directUserId)
+                )
+            ));
+            if (existing) {
+                handleSelectConv(existing.id);
+                if (currentAttachment) {
+                    setPendingAttachment(currentAttachment);
+                }
+                if (clearUserSearchParam) {
+                    navigate('/messages', { replace: true });
+                }
+                return;
             }
-            setShowNewMsg(false);
-            if (clearUserSearchParam) {
-                navigate('/messages', { replace: true });
-            }
-            return;
         }
 
         try {
+            const payload = selectedUserIds.length === 1
+                ? { userId: selectedUserIds[0] }
+                : { userIds: selectedUserIds, title: groupTitle || undefined };
             const res = await apiFetch('/messages/conversations', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: otherUserId }),
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
             });
             if (res.ok) {
-                const data: ConversationApiRecord = await res.json();
-
-                if (user?.id) {
-                    setConversations((prev) => upsertConversation(prev, buildConversationFromApiRecord(data, user.id)));
-                }
-
+                const data: ConversationItem = await res.json();
+                setConversations((prev) => upsertConversation(prev, data));
                 handleSelectConv(data.id);
                 if (currentAttachment) {
                     setPendingAttachment(currentAttachment);
@@ -824,9 +1009,7 @@ export default function MessagesPage() {
         if (clearUserSearchParam) {
             navigate('/messages', { replace: true });
         }
-
-        setShowNewMsg(false);
-    }, [conversations, loadConversations, navigate, pendingAttachment, user?.id]);
+    }, [handleSelectConv, loadConversations, navigate]);
 
     // ── Open conversation from URL param ───────────────────────────────────
 
@@ -979,9 +1162,16 @@ export default function MessagesPage() {
     // ── Helpers ────────────────────────────────────────────────────────────
 
     const filteredConvs = convSearch.trim()
-        ? conversations.filter((c) => c.otherUser.username.toLowerCase().includes(convSearch.toLowerCase()))
+        ? conversations.filter((conversation) => {
+            const query = convSearch.toLowerCase();
+            return getConversationName(conversation).toLowerCase().includes(query)
+                || conversation.participants.some((participant) => participant.username.toLowerCase().includes(query));
+        })
         : conversations;
     const canSendMessage = Boolean((inputText.trim() || pendingAttachment) && activeConvId && !isSending && !isUploadingAttachment);
+    const activeTypingUsers = activeConv
+        ? activeConv.participants.filter((participant) => typingUsers.has(participant.id) && participant.id !== user?.id)
+        : [];
 
     const formatTime = (iso: string) => {
         const d = new Date(iso), diffH = (Date.now() - d.getTime()) / 36e5;
@@ -991,30 +1181,36 @@ export default function MessagesPage() {
     };
 
     const formatMsgTime = (iso: string) => new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    const typingLabel = activeTypingUsers.length === 0
+        ? ''
+        : activeTypingUsers.length === 1
+            ? `${activeTypingUsers[0].username} está escribiendo...`
+            : `${activeTypingUsers.length} personas están escribiendo...`;
 
     // ─── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <div className="flex flex-col flex-1 overflow-hidden">
-            <AnimatePresence>
-                {showNewMsg && (
-                    <NewMessageModal onClose={() => setShowNewMsg(false)} onSelect={handleStartConversation} />
-                )}
-                {showPostPicker && (
-                    <PostPickerModal
-                        currentUsername={user?.username}
-                        onClose={() => setShowPostPicker(false)}
-                        onSelect={handleAttachmentSelect}
-                    />
-                )}
-                {showChartPicker && (
-                    <ChartAttachmentModal
-                        onClose={() => setShowChartPicker(false)}
-                        onSelect={handleAttachmentSelect}
-                    />
-                )}
-            </AnimatePresence>
+        <>
+        <AnimatePresence>
+            {showNewMsg && (
+                <NewMessageModal onClose={() => setShowNewMsg(false)} onSelect={handleStartConversation} />
+            )}
+            {showPostPicker && (
+                <PostPickerModal
+                    currentUsername={user?.username}
+                    onClose={() => setShowPostPicker(false)}
+                    onSelect={handleAttachmentSelect}
+                />
+            )}
+            {showChartPicker && (
+                <ChartAttachmentModal
+                    onClose={() => setShowChartPicker(false)}
+                    onSelect={handleAttachmentSelect}
+                />
+            )}
+        </AnimatePresence>
 
+        <div className="flex flex-col flex-1 overflow-hidden">
             <input
                 ref={imageInputRef}
                 type="file"
@@ -1023,44 +1219,70 @@ export default function MessagesPage() {
                 onChange={handleImageAttachmentChange}
             />
 
-            <div className="flex flex-1 h-full overflow-hidden" style={{ background: bgPage }}>
+            <div className="relative flex flex-1 h-full overflow-hidden" style={{ background: bgPage }}>
 
                 {/* ══ LEFT COLUMN – Conversation list ══════════════════════════════ */}
                 <AnimatePresence initial={false}>
                     {(showMobileList || !activeConvId) && (
                         <motion.aside
                             key="conv-list"
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: -20, opacity: 0 }}
-                            transition={{ duration: 0.22 }}
-                            className="flex flex-col w-full lg:w-[340px] flex-shrink-0 h-full"
+                            initial={{ x: '-100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '-100%' }}
+                            transition={{ duration: 0.22, ease: 'easeInOut' }}
+                            className="flex flex-col lg:relative lg:w-[340px] lg:flex-shrink-0 absolute inset-0 z-10 lg:z-auto"
                             style={{
                                 borderRight: `1px solid ${borderColor}`,
                                 background: bgSidebar,
                                 boxShadow: isLight ? '2px 0 12px hsl(220 15% 10% / 0.04)' : 'none',
                             }}
                         >
-                            {/* Header */}
-                            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: `1px solid ${borderColor}` }}>
-                                <div>
-                                    <h1 className="text-lg font-black tracking-tight" style={{ color: textPrimary }}>Mensajes</h1>
-                                    <p className="text-[11px] mt-0.5 font-medium" style={{ color: 'hsl(158 100% 40% / 0.7)' }}>Red Finix</p>
+                            {/* Header — Instagram-style on mobile */}
+                            <div
+                                className="flex items-center justify-between px-5 lg:px-5"
+                                style={{
+                                    borderBottom: `1px solid ${borderColor}`,
+                                    paddingTop: '18px',
+                                    paddingBottom: '14px',
+                                }}
+                            >
+                                <div className="flex items-center gap-3">
+                                    {/* Finix logo pill — mobile only */}
+                                    <div
+                                        className="lg:hidden w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                                        style={{
+                                            background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 28%) 100%)',
+                                            boxShadow: '0 0 14px hsl(158 100% 45% / 0.35)',
+                                        }}
+                                    >
+                                        <img src="/logo.png" alt="Finix" className="w-5 h-5 object-contain" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-[17px] font-black tracking-tight" style={{ color: textPrimary }}>
+                                            {user?.username || 'Mensajes'}
+                                        </h1>
+                                        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'hsl(158 100% 40% / 0.65)' }}>
+                                            Red Finix
+                                        </p>
+                                    </div>
                                 </div>
                                 <button
                                     onClick={() => setShowNewMsg(true)}
-                                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
-                                    style={{ background: `linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)`, boxShadow: `0 4px 16px hsl(158 100% 45% / 0.35)` }}
+                                    className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                                    style={{
+                                        background: `linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 30%) 100%)`,
+                                        boxShadow: `0 4px 18px hsl(158 100% 45% / 0.4)`,
+                                    }}
                                     title="Nuevo mensaje"
                                 >
-                                    <Plus className="w-4 h-4 text-black" />
+                                    <Plus className="w-5 h-5 text-black" />
                                 </button>
                             </div>
 
                             {/* Search */}
-                            <div className="px-4 py-3">
-                                <div className="flex items-center gap-2 px-3 rounded-xl" style={{ background: searchBg, border: `1px solid ${searchBorder}` }}>
-                                    <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            <div className="px-4 py-2.5">
+                                <div className="flex items-center gap-2 px-3 rounded-2xl" style={{ background: searchBg, border: `1px solid ${searchBorder}` }}>
+                                    <Search className="w-4 h-4 flex-shrink-0" style={{ color: textMuted }} />
                                     <input
                                         type="text"
                                         placeholder="Buscar conversaciones..."
@@ -1069,7 +1291,11 @@ export default function MessagesPage() {
                                         className="flex-1 bg-transparent py-2.5 text-sm outline-none placeholder:text-muted-foreground"
                                         style={{ color: textPrimary }}
                                     />
-                                    {convSearch && <button onClick={() => setConvSearch('')}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>}
+                                    {convSearch && (
+                                        <button onClick={() => setConvSearch('')}>
+                                            <X className="w-3.5 h-3.5" style={{ color: textMuted }} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
@@ -1080,26 +1306,39 @@ export default function MessagesPage() {
                                         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                                     </div>
                                 ) : filteredConvs.length === 0 ? (
-                                    <div className="text-center py-16 px-6 space-y-4">
-                                        <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center"
-                                            style={{ background: 'hsl(158 100% 45% / 0.08)', border: '1px solid hsl(158 100% 45% / 0.15)' }}>
-                                            <MessageSquare className="w-7 h-7" style={{ color: 'hsl(158 100% 45%)' }} />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold" style={{ color: textPrimary }}>
+                                    <div className="flex flex-col items-center justify-center text-center px-6 py-16 gap-5">
+                                        <motion.div
+                                            animate={{ y: [0, -5, 0] }}
+                                            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                                            className="w-20 h-20 rounded-3xl flex items-center justify-center"
+                                            style={{
+                                                background: 'linear-gradient(135deg, hsl(158 100% 45% / 0.12) 0%, hsl(158 100% 45% / 0.04) 100%)',
+                                                border: '1px solid hsl(158 100% 45% / 0.2)',
+                                                boxShadow: '0 8px 32px hsl(158 100% 45% / 0.1)',
+                                            }}
+                                        >
+                                            <MessageSquare className="w-9 h-9" style={{ color: 'hsl(158 100% 45%)' }} />
+                                        </motion.div>
+                                        <div className="space-y-1.5">
+                                            <p className="text-base font-bold" style={{ color: textPrimary }}>
                                                 {convSearch ? 'Sin resultados' : 'Sin conversaciones aún'}
                                             </p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {convSearch ? 'Intentá con otro nombre' : 'Conectate con otros inversores'}
+                                            <p className="text-sm" style={{ color: textMuted }}>
+                                                {convSearch ? 'Intentá con otro nombre' : 'Conectate con otros inversores de la red'}
                                             </p>
                                         </div>
                                         {!convSearch && (
                                             <button
                                                 onClick={() => setShowNewMsg(true)}
-                                                className="text-sm font-bold px-4 py-2 rounded-xl transition-all hover:scale-105"
-                                                style={{ background: 'hsl(158 100% 45% / 0.1)', color: 'hsl(158 100% 45%)' }}
+                                                className="flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 30%) 100%)',
+                                                    color: '#030d06',
+                                                    boxShadow: '0 6px 20px hsl(158 100% 45% / 0.35)',
+                                                }}
                                             >
-                                                + Empezar conversación
+                                                <Plus className="w-4 h-4" />
+                                                Empezar chat o grupo
                                             </button>
                                         )}
                                     </div>
@@ -1107,13 +1346,12 @@ export default function MessagesPage() {
                                     <ul className="py-1">
                                         {filteredConvs.map((conv) => {
                                             const isActive = conv.id === activeConvId;
-                                            const isOnline = onlineUsers.has(conv.otherUser.id);
                                             return (
                                                 <motion.li key={conv.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                                                     <div className="relative group">
                                                         <button
                                                             onClick={() => handleSelectConv(conv.id)}
-                                                            className="w-full flex items-center gap-3 px-4 pr-12 py-3.5 transition-all text-left"
+                                                            className="w-full flex items-center gap-3 px-4 pr-12 py-4 lg:py-3.5 transition-all text-left"
                                                             style={{
                                                                 background: isActive ? 'hsl(158 100% 45% / 0.07)' : 'transparent',
                                                                 borderLeft: isActive ? '3px solid hsl(158 100% 45%)' : '3px solid transparent',
@@ -1121,13 +1359,18 @@ export default function MessagesPage() {
                                                             onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLElement).style.background = hoverBg; }}
                                                             onMouseLeave={(e) => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                                                         >
-                                                            <UserAvatar user={conv.otherUser} size={46} online={isOnline} />
+                                                            <ConversationAvatar
+                                                                conversation={conv}
+                                                                currentUserId={user?.id}
+                                                                size={46}
+                                                                onlineUsers={onlineUsers}
+                                                            />
 
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-center justify-between mb-0.5">
                                                                     <span className="text-sm font-semibold truncate" style={{ color: textPrimary }}>
-                                                                        {conv.otherUser.username}
-                                                                        {conv.otherUser.isVerified && (
+                                                                        {getConversationName(conv)}
+                                                                        {!conv.isGroup && conv.otherUser?.isVerified && (
                                                                             <span className="ml-1 text-[10px]" style={{ color: 'hsl(158 100% 45%)' }}>✓</span>
                                                                         )}
                                                                     </span>
@@ -1138,8 +1381,12 @@ export default function MessagesPage() {
                                                                 <div className="flex items-center justify-between">
                                                                     <p className="text-xs text-muted-foreground truncate max-w-[160px]">
                                                                         {conv.lastMessage
-                                                                            ? `${conv.lastMessage.senderId === user?.id ? 'Tu: ' : ''}${getMessagePreview(conv.lastMessage)}`
-                                                                            : 'Iniciar conversación'}
+                                                                            ? `${conv.lastMessage.senderId === user?.id
+                                                                                ? 'Tu: '
+                                                                                : conv.isGroup
+                                                                                    ? `${conv.lastMessage.sender.username}: `
+                                                                                    : ''}${getMessagePreview(conv.lastMessage)}`
+                                                                            : getConversationSecondaryText(conv, user?.id)}
                                                                     </p>
                                                                     {conv.unreadCount > 0 && (
                                                                         <span className="flex-shrink-0 ml-1 min-w-[20px] h-5 rounded-full text-[11px] font-bold flex items-center justify-center text-black px-1"
@@ -1160,7 +1407,7 @@ export default function MessagesPage() {
                                                                     }`}
                                                                     style={{ background: isActive ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
                                                                     title="Acciones del chat"
-                                                                    aria-label={`Acciones del chat con ${conv.otherUser.username}`}
+                                                                    aria-label={`Acciones del chat ${getConversationName(conv)}`}
                                                                 >
                                                                     <MoreHorizontal className="w-4 h-4" style={{ color: textMuted }} />
                                                                 </button>
@@ -1172,10 +1419,12 @@ export default function MessagesPage() {
                                                                     <MessageSquare className="w-4 h-4" />
                                                                     Abrir chat
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => navigate(`/profile/${conv.otherUser.username}`)}>
-                                                                    <ExternalLink className="w-4 h-4" />
-                                                                    Ver perfil
-                                                                </DropdownMenuItem>
+                                                                {!conv.isGroup && conv.otherUser && (
+                                                                    <DropdownMenuItem onClick={() => conv.otherUser && navigate(`/profile/${conv.otherUser.username}`)}>
+                                                                        <ExternalLink className="w-4 h-4" />
+                                                                        Ver perfil
+                                                                    </DropdownMenuItem>
+                                                                )}
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </div>
@@ -1190,7 +1439,7 @@ export default function MessagesPage() {
                 </AnimatePresence>
 
                 {/* ══ RIGHT COLUMN – Active chat ════════════════════════════════ */}
-                <div className="flex-1 flex flex-col h-full min-w-0" style={{ background: bgPage }}>
+                <div className="flex flex-col flex-1 h-full min-w-0" style={{ background: bgPage }}>
                     {!activeConvId ? (
                         /* ── Empty state ── */
                         <div className="flex-1 flex flex-col items-center justify-center gap-6 select-none px-8">
@@ -1221,7 +1470,7 @@ export default function MessagesPage() {
                             <div className="text-center space-y-2">
                                 <h2 className="text-2xl font-black" style={{ color: textPrimary }}>Tus mensajes</h2>
                                 <p className="text-sm leading-relaxed max-w-xs" style={{ color: textMuted }}>
-                                    Conectate con otros inversores de la red Finix y compartí ideas de mercado en privado
+                                    Conectate con otros inversores de la red Finix y armá chats privados o grupales
                                 </p>
                             </div>
 
@@ -1234,13 +1483,13 @@ export default function MessagesPage() {
                                 }}
                             >
                                 <Plus className="w-4 h-4" />
-                                Nuevo mensaje
+                                Nuevo mensaje o grupo
                             </button>
 
                             {/* Recent conversations hint */}
                             {conversations.length > 0 && (
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>Seleccioná una conversación a la izquierda</span>
+                                    <span>Seleccioná una conversación o grupo a la izquierda</span>
                                 </div>
                             )}
                         </div>
@@ -1248,84 +1497,113 @@ export default function MessagesPage() {
                         <>
                             {/* ── Chat header ── */}
                             <div
-                                className="flex items-center gap-3 px-5 py-3.5 flex-shrink-0"
-                                style={{ borderBottom: `1px solid ${borderColor}`, background: chatHeaderBg }}
+                                className="flex items-center gap-2 px-3 lg:px-5 flex-shrink-0"
+                                style={{
+                                    borderBottom: `1px solid ${borderColor}`,
+                                    background: chatHeaderBg,
+                                    paddingTop: '12px',
+                                    paddingBottom: '12px',
+                                    minHeight: '64px',
+                                }}
                             >
+                                {/* Back button */}
                                 <button
                                     onClick={handleReturnToInbox}
-                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl transition-all hover:bg-secondary/50"
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+                                    style={{ background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.07)' }}
                                 >
-                                    <ArrowLeft className="w-5 h-5 text-muted-foreground" />
-                                    <span className="hidden sm:inline text-sm font-semibold" style={{ color: textPrimary }}>
-                                        Volver a mensajes
-                                    </span>
+                                    <ArrowLeft className="w-5 h-5" style={{ color: textPrimary }} />
                                 </button>
 
                                 {activeConv && (
                                     <>
-                                        <Link to={`/profile/${activeConv.otherUser.username}`}>
-                                            <UserAvatar user={activeConv.otherUser} size={44} online={onlineUsers.has(activeConv.otherUser.id)} />
-                                        </Link>
+                                        {/* Avatar */}
+                                        {activeConv.isGroup ? (
+                                            <ConversationAvatar
+                                                conversation={activeConv}
+                                                currentUserId={user?.id}
+                                                size={40}
+                                                onlineUsers={onlineUsers}
+                                            />
+                                        ) : activeConv.otherUser && (
+                                            <Link to={`/profile/${activeConv.otherUser.username}`}>
+                                                <UserAvatar user={activeConv.otherUser} size={40} online={onlineUsers.has(activeConv.otherUser.id)} />
+                                            </Link>
+                                        )}
+
+                                        {/* Name + status */}
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-1.5">
-                                                <Link to={`/profile/${activeConv.otherUser.username}`}
-                                                    className="font-bold hover:text-primary transition-colors truncate text-sm"
-                                                    style={{ color: textPrimary }}>
-                                                    {activeConv.otherUser.username}
-                                                </Link>
-                                                {activeConv.otherUser.isVerified && (
+                                                {activeConv.isGroup ? (
+                                                    <span className="font-bold truncate text-[15px]" style={{ color: textPrimary }}>
+                                                        {getConversationName(activeConv)}
+                                                    </span>
+                                                ) : activeConv.otherUser && (
+                                                    <Link
+                                                        to={`/profile/${activeConv.otherUser.username}`}
+                                                        className="font-bold hover:text-primary transition-colors truncate text-[15px]"
+                                                        style={{ color: textPrimary }}
+                                                    >
+                                                        {activeConv.otherUser.username}
+                                                    </Link>
+                                                )}
+                                                {!activeConv.isGroup && activeConv.otherUser?.isVerified && (
                                                     <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
                                                 )}
                                             </div>
-                                            <p className="text-xs flex items-center gap-1.5" style={{ color: textMuted }}>
-                                                {typingUsers.size > 0 ? (
+                                            <p className="text-[12px] flex items-center gap-1.5" style={{ color: textMuted }}>
+                                                {activeTypingUsers.length > 0 ? (
                                                     <motion.span
                                                         animate={{ opacity: [1, 0.5, 1] }}
                                                         transition={{ duration: 1.2, repeat: Infinity }}
-                                                        className="font-medium" style={{ color: 'hsl(158 100% 40%)' }}>
-                                                        escribiendo...
+                                                        className="font-medium"
+                                                        style={{ color: 'hsl(158 100% 40%)' }}
+                                                    >
+                                                        {typingLabel}
                                                     </motion.span>
-                                                ) : onlineUsers.has(activeConv.otherUser.id) ? (
-                                                    <>
-                                                        <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'hsl(158 100% 42%)', boxShadow: '0 0 4px hsl(158 100% 45%)' }} />
+                                                ) : activeConv.isGroup ? (
+                                                    getConversationSecondaryText(activeConv, user?.id)
+                                                ) : activeConv.otherUser && onlineUsers.has(activeConv.otherUser.id) ? (
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'hsl(158 100% 42%)', boxShadow: '0 0 5px hsl(158 100% 45%)' }} />
                                                         En línea
-                                                    </>
+                                                    </span>
                                                 ) : 'Desconectado'}
                                             </p>
                                         </div>
 
-                                        {/* Header actions */}
-                                        <div className="flex items-center gap-1">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <button
-                                                        className="p-2 rounded-xl transition-all hover:bg-secondary/50"
-                                                        title="Acciones del chat"
-                                                        aria-label={`Acciones del chat con ${activeConv.otherUser.username}`}
-                                                    >
-                                                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                                                    </button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-52">
-                                                    <DropdownMenuLabel>Acciones del chat</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => navigate(`/profile/${activeConv.otherUser.username}`)}>
+                                        {/* Actions */}
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button
+                                                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+                                                    style={{ background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.07)' }}
+                                                    title="Acciones del chat"
+                                                >
+                                                    <MoreHorizontal className="w-4 h-4" style={{ color: textMuted }} />
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-52">
+                                                <DropdownMenuLabel>Acciones del chat</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                {!activeConv.isGroup && activeConv.otherUser && (
+                                                    <DropdownMenuItem onClick={() => activeConv.otherUser && navigate(`/profile/${activeConv.otherUser.username}`)}>
                                                         <ExternalLink className="w-4 h-4" />
                                                         Ver perfil
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={handleReturnToInbox}>
-                                                        <ArrowLeft className="w-4 h-4" />
-                                                        Volver a mensajes
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
+                                                )}
+                                                <DropdownMenuItem onClick={handleReturnToInbox}>
+                                                    <ArrowLeft className="w-4 h-4" />
+                                                    Volver a mensajes
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </>
                                 )}
                             </div>
 
                             {/* ── Messages area ── */}
-                            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-1">
+                            <div className="flex-1 overflow-y-auto px-4 lg:px-5 py-4 space-y-1">
                                 {isLoadingMsgs ? (
                                     <div className="flex justify-center py-10">
                                         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -1337,7 +1615,7 @@ export default function MessagesPage() {
                                             <MessageSquare className="w-6 h-6" style={{ color: 'hsl(158 100% 45%)' }} />
                                         </div>
                                         <p className="text-sm font-medium" style={{ color: textMuted }}>
-                                            Iniciá la conversación 👋
+                                            Iniciá el chat 👋
                                         </p>
                                     </div>
                                 ) : (
@@ -1377,13 +1655,18 @@ export default function MessagesPage() {
                                                         {/* Other user avatar */}
                                                         {!isMe && (
                                                             <div className="w-7 flex-shrink-0">
-                                                                {showAvatar && activeConv && (
-                                                                    <UserAvatar user={activeConv.otherUser} size={28} />
+                                                                {showAvatar && (
+                                                                    <UserAvatar user={msg.sender} size={28} />
                                                                 )}
                                                             </div>
                                                         )}
 
                                                         <div className={`flex flex-col max-w-[68%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                                            {!isMe && activeConv?.isGroup && isFirstInGroup && (
+                                                                <span className="mb-1 px-1 text-[11px] font-semibold" style={{ color: textMuted }}>
+                                                                    {msg.sender.username}
+                                                                </span>
+                                                            )}
                                                             {(() => {
                                                                 const hasAttachment = Boolean(msg.attachmentType);
                                                                 const hasText = Boolean(msg.content?.trim());
@@ -1441,16 +1724,20 @@ export default function MessagesPage() {
 
                                         {/* Typing indicator */}
                                         <AnimatePresence>
-                                            {typingUsers.size > 0 && (
+                                            {activeTypingUsers.length > 0 && (
                                                 <motion.div
                                                     initial={{ opacity: 0, y: 6 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     exit={{ opacity: 0, y: 6 }}
                                                     className="flex items-end gap-2 mt-2"
                                                 >
-                                                    {activeConv && <UserAvatar user={activeConv.otherUser} size={28} />}
-                                                    <div className="flex items-center gap-1 px-4 py-3 rounded-[4px_18px_18px_18px]"
+                                                    <UserAvatar user={activeTypingUsers[0]} size={28} />
+                                                    <div className="space-y-1 px-4 py-3 rounded-[4px_18px_18px_18px]"
                                                         style={{ background: bubbleBg }}>
+                                                        <p className="text-[11px] font-medium" style={{ color: textMuted }}>
+                                                            {typingLabel}
+                                                        </p>
+                                                        <div className="flex items-center gap-1">
                                                         {['typing-a', 'typing-b', 'typing-c'].map((dotId, i) => (
                                                             <motion.span key={dotId} className="w-1.5 h-1.5 rounded-full"
                                                                 style={{ background: textMuted }}
@@ -1458,6 +1745,7 @@ export default function MessagesPage() {
                                                                 transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
                                                             />
                                                         ))}
+                                                        </div>
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -1470,7 +1758,7 @@ export default function MessagesPage() {
 
                             {/* ── Message input ── */}
                             <div
-                                className="flex-shrink-0 px-4 py-4"
+                                className="flex-shrink-0 px-3 lg:px-4 py-3"
                                 style={{ borderTop: `1px solid ${borderColor}`, background: chatHeaderBg }}
                             >
                                 {pendingAttachment && (
@@ -1784,5 +2072,6 @@ export default function MessagesPage() {
                 </div>
             </div>
         </div>
+        </>
     );
 }

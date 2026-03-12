@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { apiFetch } from '@/lib/api';
 import { uploadProfileImage } from '@/lib/profileMedia';
@@ -100,12 +100,43 @@ interface PortfolioData {
 
 interface PortfolioMetricsData {
     capitalTotal: number;
+    capitalInvertido?: number;
+    assetsValue?: number;
+    cashBalance?: number;
     valorActual: number;
+    totalValue?: number;
     gananciaTotal: number;
     variacionPorcentual: number;
     diversificacionPorClase: Record<string, number>;
     diversificacionPorActivo: Record<string, number>;
     cantidadActivos: number;
+    retornosMensuales?: Array<{
+        monthKey: string;
+        label: string;
+        value: number;
+    }>;
+}
+
+function normalizeAllocationLabel(value: string) {
+    const normalized = value.trim().toLowerCase();
+
+    if (normalized.includes('cedear')) return 'Acciones';
+    if (normalized.includes('accion') || normalized.includes('stock') || normalized.includes('equity')) return 'Acciones';
+    if (normalized.includes('cripto') || normalized.includes('crypto')) return 'Cripto';
+    if (normalized.includes('etf')) return 'ETFs';
+    if (normalized.includes('bond') || normalized.includes('bono') || normalized.includes('fijo') || normalized.includes('fija') || normalized.includes('renta fija')) return 'Bonos';
+    if (normalized === 'cash' || normalized.includes('efectivo')) return 'Efectivo';
+    if (normalized.includes('commodity') || normalized.includes('materias primas')) return 'Commodities';
+
+    return value;
+}
+
+function formatSignedPercentage(value?: number | null, fractionDigits = 2) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return '—';
+    }
+
+    return `${value >= 0 ? '+' : ''}${value.toFixed(fractionDigits)}%`;
 }
 
 // ─── Mini Pie Chart ───────────────────────────────────────────────────────────
@@ -145,27 +176,35 @@ function MiniPieChart({ data }: { data: { label: string; value: number; color: s
 
 // ─── Monthly Return Bars ──────────────────────────────────────────────────────
 
-function MonthlyBars({ returnsMap }: { returnsMap?: Record<string, number> }) {
-    const months = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
-    // If no real data, generate plausible demo values
-    const values = months.map((_, i) => {
-        if (returnsMap) {
-            const key = Object.keys(returnsMap)[i];
-            return returnsMap[key] ?? (Math.random() * 10 - 3);
-        }
-        const demo = [2.1, -0.8, 4.3, 1.2, 3.8, -1.4, 5.2, 2.9, -0.3, 6.1, 3.4, 4.7];
-        return demo[i];
-    });
+function MonthlyBars({
+    returns,
+}: {
+    returns?: Array<{
+        monthKey: string;
+        label: string;
+        value: number;
+    }>;
+}) {
+    if (!returns || returns.length === 0) {
+        return (
+            <div className="flex h-28 items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/30 px-4 text-center text-xs text-muted-foreground">
+                Sin historial suficiente para mostrar retornos mensuales reales.
+            </div>
+        );
+    }
+
+    const values = returns.map((entry) => entry.value);
     const maxAbs = Math.max(...values.map(Math.abs), 1);
 
     return (
         <div className="w-full">
             <div className="flex items-end gap-1 h-24 mb-1">
-                {values.map((v, i) => {
+                {returns.map(({ monthKey, value }, i) => {
+                    const v = value;
                     const isPos = v >= 0;
                     const heightPct = Math.abs(v) / maxAbs * 100;
                     return (
-                        <div key={i} className="flex-1 flex flex-col items-center justify-end group relative" style={{ height: '96px' }}>
+                        <div key={monthKey} className="flex-1 flex flex-col items-center justify-end group relative" style={{ height: '96px' }}>
                             <div
                                 className="w-full rounded-t transition-all duration-500"
                                 style={{
@@ -186,8 +225,8 @@ function MonthlyBars({ returnsMap }: { returnsMap?: Record<string, number> }) {
                 })}
             </div>
             <div className="flex justify-between">
-                {months.map((m) => (
-                    <span key={m} className="text-[9px] text-muted-foreground flex-1 text-center">{m}</span>
+                {returns.map(({ monthKey, label }) => (
+                    <span key={monthKey} className="text-[9px] text-muted-foreground flex-1 text-center">{label}</span>
                 ))}
             </div>
         </div>
@@ -349,7 +388,7 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
     const fmt = (n: number, cur = 'USD') =>
         new Intl.NumberFormat('es-AR', { style: 'currency', currency: cur, maximumFractionDigits: 2 }).format(n);
 
-    const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+    const fmtPct = (n: number) => formatSignedPercentage(n);
 
     const PIE_COLORS = ['hsl(158 100% 45%)', '#3b82f6', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316'];
     const riskLabels: Record<string, string> = {
@@ -360,16 +399,22 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
     const hasTotalReturn = typeof totalReturn === 'number' && Number.isFinite(totalReturn);
     const hasWinRate = typeof winRate === 'number' && Number.isFinite(winRate);
     const hasRiskScore = typeof riskScore === 'number' && Number.isFinite(riskScore);
+    const resolvedTotalReturn = hasTotalReturn ? totalReturn : metrics?.variacionPorcentual;
+    const totalReturnDisplay = formatSignedPercentage(resolvedTotalReturn);
+    const totalReturnColor =
+        typeof resolvedTotalReturn === 'number' && Number.isFinite(resolvedTotalReturn) && resolvedTotalReturn < 0
+            ? 'hsl(0 90% 58%)'
+            : PRIMARY;
     const statsCards = [
         {
             label: 'Retorno Total',
-            value: hasTotalReturn ? fmtPct(totalReturn) : metrics ? fmtPct(metrics.variacionPorcentual) : '—',
-            color: PRIMARY,
+            value: totalReturnDisplay,
+            color: totalReturnColor,
             icon: TrendingUp,
         },
         hasWinRate
             ? {
-                label: 'Win Rate',
+                label: 'Tasa de acierto',
                 value: `${winRate.toFixed(0)}%`,
                 color: '#3b82f6',
                 icon: Target,
@@ -382,7 +427,7 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
             },
         hasRiskScore
             ? {
-                label: 'Risk Score',
+                label: 'Puntaje de riesgo',
                 value: riskScore.toFixed(1),
                 color: '#f59e0b',
                 icon: Activity,
@@ -400,8 +445,8 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
         return (
             <div className="rounded-2xl py-12 text-center space-y-3" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px dashed hsl(var(--border))' }}>
                 <Lock className="w-8 h-8 mx-auto text-muted-foreground opacity-40" />
-                <p className="text-sm font-semibold text-foreground">Portfolio privado</p>
-                <p className="text-xs text-muted-foreground">Este usuario mantiene su portfolio oculto</p>
+                <p className="text-sm font-semibold text-foreground">Portafolio privado</p>
+                <p className="text-xs text-muted-foreground">Este usuario mantiene su portafolio oculto</p>
             </div>
         );
     }
@@ -421,13 +466,13 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
             <div className="rounded-2xl py-12 text-center space-y-3" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px dashed hsl(var(--border))' }}>
                 <Wallet className="w-8 h-8 mx-auto text-muted-foreground opacity-40" />
                 <p className="text-sm font-semibold text-foreground">
-                    {isOwnProfile ? 'Aún no tenés portfolios' : 'Sin portfolios públicos'}
+                    {isOwnProfile ? 'Aun no tenes portafolios' : 'Sin portafolios publicos'}
                 </p>
                 {isOwnProfile && (
-                    <a href="/portfolio" className="inline-block text-xs font-bold px-4 py-1.5 rounded-xl"
+                    <Link to="/portfolio" className="inline-block text-xs font-bold px-4 py-1.5 rounded-xl"
                         style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}>
-                        + Crear portfolio
-                    </a>
+                        + Crear portafolio
+                    </Link>
                 )}
             </div>
         );
@@ -435,7 +480,7 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
 
     // Build pie data from diversificacionPorClase
     const pieData = metrics
-        ? Object.entries(metrics.diversificacionPorClase).map(([label, value], i) => ({ label, value, color: PIE_COLORS[i % PIE_COLORS.length] }))
+        ? Object.entries(metrics.diversificacionPorClase).map(([label, value], i) => ({ label: normalizeAllocationLabel(label), value, color: PIE_COLORS[i % PIE_COLORS.length] }))
         : [];
 
     const totalValue = metrics?.valorActual ?? 0;
@@ -509,16 +554,16 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
                                     <h4 className="text-sm font-bold text-foreground">Rendimiento Mensual</h4>
                                     <p className="text-[11px] text-muted-foreground">Últimos 12 meses</p>
                                 </div>
-                                {metrics && (
+                                {totalReturnDisplay !== '—' && (
                                     <div className="text-right">
-                                        <div className="text-lg font-black" style={{ color: metrics.variacionPorcentual >= 0 ? PRIMARY : 'hsl(0 90% 58%)' }}>
-                                            {fmtPct(metrics.variacionPorcentual)}
+                                        <div className="text-lg font-black" style={{ color: totalReturnColor }}>
+                                            {totalReturnDisplay}
                                         </div>
                                         <div className="text-[10px] text-muted-foreground">Retorno total</div>
                                     </div>
                                 )}
                             </div>
-                            <MonthlyBars />
+                            <MonthlyBars returns={metrics?.retornosMensuales} />
                         </div>
 
                         {/* Diversification + Stats */}
@@ -659,7 +704,7 @@ function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, t
                         ) : (
                             <div className="rounded-2xl py-10 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px dashed hsl(var(--border))' }}>
                                 <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                                <p className="text-xs text-muted-foreground">Sin activos en este portfolio</p>
+                                <p className="text-xs text-muted-foreground">Sin activos en este portafolio</p>
                             </div>
                         )}
                     </motion.div>
@@ -801,7 +846,7 @@ export default function Profile() {
     };
 
     const buildFallback = (u: any): UserProfile => ({
-        id: u.id || '1', username: u.username || 'User', email: u.email || '',
+        id: u.id || '1', username: u.username || 'Usuario', email: u.email || '',
         bio: u.bio || 'Finix Investor', avatarUrl: u.avatarUrl,
         isInfluencer: false, isVerified: false, accountType: 'BASIC',
         isProfilePublic: true, showPortfolio: false, showStats: false, acceptingFollowers: true,
@@ -1109,8 +1154,8 @@ export default function Profile() {
     const certifications = parseJsonArray(profile.certifications);
 
     const tabs: { id: 'posts' | 'portfolio' | 'saved'; label: string; count?: number; icon?: JSX.Element }[] = [
-        { id: 'posts', label: 'Posts', count: profile._count?.posts },
-        { id: 'portfolio', label: 'Portfolio', icon: <PieChart className="w-3.5 h-3.5" /> },
+        { id: 'posts', label: 'Publicaciones', count: profile._count?.posts },
+        { id: 'portfolio', label: 'Portafolio', icon: <PieChart className="w-3.5 h-3.5" /> },
         ...(isOwnProfile ? [{ id: 'saved' as const, label: 'Guardados' }] : []),
     ];
 
@@ -1347,17 +1392,44 @@ export default function Profile() {
                             { value: profile._count?.followedBy?.toLocaleString() || '0', label: 'Seguidores' },
                             { value: profile._count?.following?.toLocaleString() || '0', label: 'Siguiendo' },
                             {
-                                value: profile.totalReturn ? `+${profile.totalReturn.toFixed(1)}%` : '+0.0%',
+                                value: formatSignedPercentage(profile.totalReturn, 1),
                                 label: 'Retorno Total',
-                                green: true,
+                                tone:
+                                    typeof profile.totalReturn === 'number' && Number.isFinite(profile.totalReturn)
+                                        ? profile.totalReturn >= 0
+                                            ? 'positive'
+                                            : 'negative'
+                                        : 'neutral',
                             },
                         ].map((s, i) => (
                             <div key={i} className="rounded-2xl p-4 text-center"
                                 style={{
-                                    background: s.green ? 'linear-gradient(135deg, hsl(158 100% 45% / 0.12) 0%, hsl(158 100% 45% / 0.04) 100%)' : 'hsl(var(--secondary) / 0.5)',
-                                    border: s.green ? `1px solid ${PRIMARY_BRD}` : '1px solid hsl(var(--border))',
+                                    background:
+                                        s.tone === 'positive'
+                                            ? 'linear-gradient(135deg, hsl(158 100% 45% / 0.12) 0%, hsl(158 100% 45% / 0.04) 100%)'
+                                            : s.tone === 'negative'
+                                                ? 'linear-gradient(135deg, hsl(0 90% 58% / 0.12) 0%, hsl(0 90% 58% / 0.04) 100%)'
+                                                : 'hsl(var(--secondary) / 0.5)',
+                                    border:
+                                        s.tone === 'positive'
+                                            ? `1px solid ${PRIMARY_BRD}`
+                                            : s.tone === 'negative'
+                                                ? '1px solid hsl(0 90% 58% / 0.2)'
+                                                : '1px solid hsl(var(--border))',
                                 }}>
-                                <div className="text-xl font-black mb-0.5" style={{ color: s.green ? PRIMARY : 'hsl(var(--foreground))' }}>{s.value}</div>
+                                <div
+                                    className="text-xl font-black mb-0.5"
+                                    style={{
+                                        color:
+                                            s.tone === 'positive'
+                                                ? PRIMARY
+                                                : s.tone === 'negative'
+                                                    ? 'hsl(0 90% 58%)'
+                                                    : 'hsl(var(--foreground))',
+                                    }}
+                                >
+                                    {s.value}
+                                </div>
                                 <div className="text-[11px] uppercase tracking-widest text-muted-foreground">{s.label}</div>
                             </div>
                         ))}

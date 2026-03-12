@@ -8,12 +8,18 @@ interface CreateNotificationInput {
     content?: string;
     link?: string;
 }
+interface GetNotificationsInput {
+    days?: number;
+}
 export declare class NotificationsService {
     private prisma;
     private mailService;
     private readonly logger;
     constructor(prisma: PrismaService, mailService: MailService);
     private formatRelativeTime;
+    private formatDateKey;
+    private formatHistoryDate;
+    private resolveHistoryStart;
     createNotification(input: CreateNotificationInput): Promise<{
         id: string;
         type: string;
@@ -24,7 +30,7 @@ export declare class NotificationsService {
         createdAt: Date;
         userId: string;
     }>;
-    getNotifications(userId: string): Promise<{
+    getNotifications(userId: string, input?: GetNotificationsInput): Promise<{
         id: string;
         type: string;
         title: string;
@@ -33,6 +39,8 @@ export declare class NotificationsService {
         isRead: boolean;
         time: string;
         createdAt: Date;
+        dateKey: string;
+        dateLabel: string;
     }[]>;
     countUnread(userId: string): Promise<{
         count: number;

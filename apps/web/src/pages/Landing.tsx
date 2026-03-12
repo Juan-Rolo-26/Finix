@@ -850,7 +850,7 @@ const Showcase = () => {
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                                        <span className="text-sm font-medium">Top 5%</span>
+                                        <span className="text-sm font-medium">5% superior</span>
                                     </div>
                                 </div>
 
@@ -869,7 +869,7 @@ const Showcase = () => {
                                     >
                                         <p className="text-xs text-muted-foreground mb-1.5">{t.landing.showcase.totalGain}</p>
                                         <p className="text-3xl font-heading font-bold text-emerald-400">+$8,420</p>
-                                        <p className="text-xs text-emerald-400 mt-1">+7.25% YTD</p>
+                                        <p className="text-xs text-emerald-400 mt-1">+7.25% en el ano</p>
                                     </motion.div>
                                 </div>
 
@@ -1068,7 +1068,7 @@ const Footer = () => {
                     <div className="flex gap-6">
                         <a href="https://instagram.com/fiinixarg" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-white transition-colors">Instagram</a>
                         <a href="https://tiktok.com/@finixarg" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-white transition-colors">TikTok</a>
-                        <a href="mailto:finiixarg@gmail.com" className="text-muted-foreground hover:text-white transition-colors">Email</a>
+                        <a href="mailto:finiixarg@gmail.com" className="text-muted-foreground hover:text-white transition-colors">Correo</a>
                     </div>
                 </div>
             </div>

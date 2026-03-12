@@ -86,21 +86,37 @@ let EventsGateway = class EventsGateway {
                 content: data.content,
                 attachment: data.attachment,
             });
-            this.emitNewMessage(data.conversationId, message);
+            await this.emitNewMessage(data.conversationId, message);
         }
         catch (err) {
             client.emit('error', { message: 'Error al enviar mensaje' });
         }
     }
-    emitNewMessage(conversationId, message) {
+    async emitConversationCreated(conversationId) {
         if (!this.server) {
             return;
         }
+        const participantIds = await this.messagesService.getConversationParticipantIds(conversationId);
+        for (const participantId of participantIds) {
+            this.server.to(`user:${participantId}`).emit('conversationCreated', { conversationId });
+        }
+    }
+    async emitNewMessage(conversationId, message) {
+        if (!this.server) {
+            return;
+        }
+        const participantIds = await this.messagesService.getConversationParticipantIds(conversationId);
         this.server.to(`conv:${conversationId}`).emit('newDirectMessage', message);
         this.server.to(`conv:${conversationId}`).emit('conversationUpdated', {
             conversationId,
             lastMessage: message,
         });
+        for (const participantId of participantIds) {
+            this.server.to(`user:${participantId}`).emit('conversationUpdated', {
+                conversationId,
+                lastMessage: message,
+            });
+        }
     }
 };
 exports.EventsGateway = EventsGateway;

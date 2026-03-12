@@ -7,7 +7,6 @@ import {
     Flame,
     Globe2,
     Landmark,
-    TrendingDown,
     TrendingUp,
     Users,
 } from 'lucide-react';
@@ -263,6 +262,7 @@ function AssetTile({
 }
 
 function DollarTile({ item }: { item: MarketDollarRate }) {
+    const isUp = (item.spreadPct ?? 0) >= 0;
     return (
         <div className="rounded-[24px] border border-border/60 bg-background/35 p-5">
             <div className="flex items-start justify-between gap-3">
@@ -270,8 +270,15 @@ function DollarTile({ item }: { item: MarketDollarRate }) {
                     <p className="text-sm font-semibold text-foreground">{item.label}</p>
                     <p className="mt-1 text-xs text-muted-foreground">Actualizacion {formatRelativeTime(item.updatedAt).toLowerCase()}</p>
                 </div>
-                <Badge variant="outline" className="border-border/60 bg-background/60 text-xs uppercase tracking-[0.18em]">
-                    Spread {formatChange(item.spreadPct)}
+                <Badge
+                    variant="outline"
+                    className="border-0 text-xs font-bold tracking-wide"
+                    style={{
+                        background: isUp ? 'hsl(142 70% 45% / 0.12)' : 'hsl(0 72% 50% / 0.12)',
+                        color: isUp ? 'hsl(142 70% 35%)' : 'hsl(0 72% 45%)',
+                    }}
+                >
+                    {formatChange(item.spreadPct)}
                 </Badge>
             </div>
 
@@ -289,81 +296,7 @@ function DollarTile({ item }: { item: MarketDollarRate }) {
     );
 }
 
-function LeadersColumn({
-    title,
-    items,
-    positive,
-    onSelectSymbol,
-}: {
-    title: string;
-    items: MarketDashboardAsset[];
-    positive: boolean;
-    onSelectSymbol?: (symbol: string) => void;
-}) {
-    return (
-        <div className="space-y-4">
-            <div className="flex items-center gap-2">
-                {positive ? <TrendingUp className="market-tone-positive h-4 w-4" /> : <TrendingDown className="market-tone-negative h-4 w-4" />}
-                <p className="text-sm font-semibold text-foreground">{title}</p>
-            </div>
 
-            {items.length > 0 ? items.map((item) => (
-                <button
-                    key={`${title}-${item.id}`}
-                    type="button"
-                    onClick={() => onSelectSymbol?.(item.symbol)}
-                    className="flex w-full items-center justify-between rounded-2xl border border-border/60 bg-background/35 px-5 py-4 text-left transition-all hover:border-primary/30 hover:bg-background/50"
-                >
-                    <div>
-                        <p className="font-semibold text-foreground">{item.label}</p>
-                        <p className="text-xs text-muted-foreground">{formatValue(item)}</p>
-                    </div>
-                    <span className={cn('text-sm font-semibold', positive ? 'market-tone-positive' : 'market-tone-negative')}>
-                        {formatChange(item.change)}
-                    </span>
-                </button>
-            )) : (
-                <div className="rounded-2xl border border-border/60 bg-background/35 px-5 py-6 text-sm text-muted-foreground">
-                    Sin datos suficientes todavia.
-                </div>
-            )}
-        </div>
-    );
-}
-
-function CommunityTile({
-    item,
-    onSelectSymbol,
-}: {
-    item: MarketCommunityTrend;
-    onSelectSymbol?: (symbol: string) => void;
-}) {
-    const positive = (item.change ?? 0) > 0;
-    const negative = (item.change ?? 0) < 0;
-
-    return (
-        <button
-            type="button"
-            onClick={() => onSelectSymbol?.(item.symbol)}
-            className="flex w-full items-center justify-between gap-4 rounded-2xl border border-border/60 bg-background/35 px-5 py-4 text-left transition-all hover:border-primary/30 hover:bg-background/50"
-        >
-            <div className="min-w-0">
-                <p className="truncate font-semibold text-foreground">{item.label}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                    {formatCount(item.mentions)} menciones · {formatCount(item.engagement)} interacciones
-                </p>
-            </div>
-            <div className="text-right">
-                <p className="text-sm font-semibold text-foreground">
-                    {item.price !== null ? formatValue({ format: 'currency', currency: 'USD', price: item.price }) : 'Sin datos'}
-                </p>
-                <p className={cn('mt-1 text-xs font-semibold', positive ? 'market-tone-positive' : negative ? 'market-tone-negative' : 'text-muted-foreground')}>
-                    {formatChange(item.change)}
-                </p>
-            </div>
-        </button>
-    );
-}
 
 function SectionCard({
     sectionKey,
@@ -427,7 +360,7 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol 
         return (
             <Card className="rounded-[30px] border-border/60 bg-card/60 backdrop-blur-xl">
                 <CardContent className="px-6 py-12 text-center text-muted-foreground">
-                    No pudimos cargar el dashboard del mercado en este momento.
+                    No pudimos cargar el panel del mercado en este momento.
                 </CardContent>
             </Card>
         );
@@ -465,7 +398,7 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol 
                             <DollarSign className="h-5 w-5 text-primary" />
                             Brecha cambiaria
                         </CardTitle>
-                        <CardDescription>Blue vs oficial</CardDescription>
+                        <CardDescription>Dolar blue vs oficial</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <p className="text-2xl font-bold text-foreground">
@@ -531,7 +464,7 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol 
                                     {formatCount(topCommunity.mentions)} menciones y {formatCount(topCommunity.engagement)} interacciones.
                                 </p>
                                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/70">
-                                    Top comunidad esta semana
+                                    Comunidad destacada esta semana
                                 </p>
                             </>
                         ) : (
@@ -572,37 +505,8 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol 
                 <SectionCard sectionKey="commodities" items={data.sections.commodities} onSelectSymbol={onSelectSymbol} />
             </div>
 
-            <div className="grid gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
+            <div className="grid gap-8">
                 <SectionCard sectionKey="indicators" items={data.sections.indicators} onSelectSymbol={onSelectSymbol} />
-
-                <div className="space-y-8">
-                    <Card className="rounded-[30px] border-border/60 bg-card/60 backdrop-blur-xl">
-                        <CardHeader className="pb-6">
-                            <CardTitle className="text-xl">Movimientos destacados</CardTitle>
-                            <CardDescription>Ganadores y perdedores dentro del tablero general.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid gap-6 md:grid-cols-2 xl:grid-cols-1">
-                            <LeadersColumn title="Mas suben" items={data.leaders.gainers} positive onSelectSymbol={onSelectSymbol} />
-                            <LeadersColumn title="Mas bajan" items={data.leaders.losers} positive={false} onSelectSymbol={onSelectSymbol} />
-                        </CardContent>
-                    </Card>
-
-                    <Card className="rounded-[30px] border-border/60 bg-card/60 backdrop-blur-xl">
-                        <CardHeader className="pb-6">
-                            <CardTitle className="text-xl">Comunidad Finix</CardTitle>
-                            <CardDescription>Activos mas comentados dentro de la red social.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {data.community.length > 0 ? data.community.map((item) => (
-                                <CommunityTile key={`community-${item.symbol}`} item={item} onSelectSymbol={onSelectSymbol} />
-                            )) : (
-                                <div className="rounded-2xl border border-border/60 bg-background/35 px-5 py-6 text-sm text-muted-foreground">
-                                    Todavia no hay suficiente actividad social para mostrar tendencias.
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
             </div>
         </div>
     );

@@ -60,6 +60,68 @@ export class PortfolioService {
         return String(value || '').trim().toUpperCase();
     }
 
+    private normalizeCurrency(value?: string | null) {
+        return String(value || 'USD').trim().toUpperCase() || 'USD';
+    }
+
+    private sortTransactionsChronologically<T extends { date?: Date | string | null; createdAt?: Date | string | null; id?: string | null }>(transactions: T[]) {
+        return [...transactions].sort((left, right) => {
+            const leftDate = left?.date ? new Date(left.date).getTime() : 0;
+            const rightDate = right?.date ? new Date(right.date).getTime() : 0;
+
+            if (leftDate !== rightDate) {
+                return leftDate - rightDate;
+            }
+
+            const leftCreatedAt = left?.createdAt ? new Date(left.createdAt).getTime() : leftDate;
+            const rightCreatedAt = right?.createdAt ? new Date(right.createdAt).getTime() : rightDate;
+
+            if (leftCreatedAt !== rightCreatedAt) {
+                return leftCreatedAt - rightCreatedAt;
+            }
+
+            return String(left?.id || '').localeCompare(String(right?.id || ''));
+        });
+    }
+
+    private addToBalanceMap(target: Map<string, number>, currency: string, amount: number) {
+        if (!currency || !Number.isFinite(amount) || Math.abs(amount) <= 1e-8) {
+            return;
+        }
+
+        target.set(currency, (target.get(currency) ?? 0) + amount);
+    }
+
+    private sumBalanceMap(target: Map<string, number>) {
+        return Array.from(target.values()).reduce((total, value) => total + (Number.isFinite(value) ? value : 0), 0);
+    }
+
+    private getTransactionCashDelta(transaction: any) {
+        const type = String(transaction?.type ?? '').toUpperCase();
+        const total = Number(transaction?.total ?? 0);
+        const fee = Number(transaction?.fee ?? 0);
+        const currency = this.normalizeCurrency(transaction?.currency);
+
+        let amount = 0;
+        if (type === 'BUY') amount = -(total + fee);
+        if (type === 'SELL') amount = total - fee;
+        if (type === 'DIVIDEND') amount = total;
+        if (type === 'DEPOSIT') amount = total;
+        if (type === 'WITHDRAW') amount = -total;
+        if (type === 'FEE') amount = -total;
+
+        if (!Number.isFinite(amount) || Math.abs(amount) <= 1e-8) {
+            return null;
+        }
+
+        return {
+            currency,
+            amount,
+            type,
+            date: transaction?.date ? new Date(transaction.date) : new Date(),
+        };
+    }
+
     private async getLiveQuoteMap(holdings: any[]) {
         const quoteMap = new Map<string, MarketQuote>();
         const tickers = Array.from(
@@ -88,12 +150,514 @@ export class PortfolioService {
         return quoteMap;
     }
 
+    private toMonthKey(date: Date) {
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+    }
+
+    private shiftUtcMonth(date: Date, offset: number) {
+        return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + offset, 1));
+    }
+
+    private getTrailingMonthlyWindows() {
+        const now = new Date();
+        const currentMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+        return Array.from({ length: 12 }, (_, index) => {
+            const start = this.shiftUtcMonth(currentMonthStart, index - 11);
+            const isCurrentMonth = start.getUTCFullYear() === now.getUTCFullYear() && start.getUTCMonth() === now.getUTCMonth();
+            const end = isCurrentMonth
+                ? now
+                : new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+            const daysInMonth = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0)).getUTCDate();
+            const label = new Intl.DateTimeFormat('es-AR', { month: 'short', timeZone: 'UTC' })
+                .format(start)
+                .replace('.', '')
+                .toUpperCase();
+
+            return {
+                monthKey: this.toMonthKey(start),
+                previousMonthKey: this.toMonthKey(this.shiftUtcMonth(start, -1)),
+                start,
+                end,
+                daysInMonth,
+                label,
+            };
+        });
+    }
+
+    private async getHistoricalMonthEndPriceMap(ticker: string, startDate: Date, endDate: Date) {
+        const normalizedTicker = this.normalizeTicker(ticker);
+        const monthEndPrices = new Map<string, number>();
+
+        if (!normalizedTicker) {
+            return monthEndPrices;
+        }
+
+        const period1 = Math.floor(startDate.getTime() / 1000);
+        const period2 = Math.floor((endDate.getTime() + 24 * 60 * 60 * 1000) / 1000);
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(normalizedTicker)}?interval=1d&period1=${period1}&period2=${period2}&includePrePost=false&events=div%2Csplits`;
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    Accept: 'application/json',
+                    'User-Agent': 'Mozilla/5.0',
+                },
+            });
+
+            if (!response.ok) {
+                return monthEndPrices;
+            }
+
+            const payload = await response.json() as any;
+            const result = payload?.chart?.result?.[0];
+            const timestamps = result?.timestamp;
+            const closes = result?.indicators?.quote?.[0]?.close;
+
+            if (!Array.isArray(timestamps) || !Array.isArray(closes)) {
+                return monthEndPrices;
+            }
+
+            for (let index = 0; index < timestamps.length; index += 1) {
+                const timestamp = timestamps[index];
+                const close = closes[index];
+
+                if (!Number.isFinite(timestamp) || !Number.isFinite(close)) {
+                    continue;
+                }
+
+                monthEndPrices.set(this.toMonthKey(new Date(timestamp * 1000)), Number(close));
+            }
+        } catch (error) {
+            console.error(`[PortfolioService] Failed to load historical prices for ${normalizedTicker}:`, error);
+        }
+
+        return monthEndPrices;
+    }
+
+    private async getHistoricalMonthEndPriceMaps(tickers: string[], startDate: Date, endDate: Date) {
+        const uniqueTickers = Array.from(new Set(tickers.map((ticker) => this.normalizeTicker(ticker)).filter(Boolean)));
+        const histories = await Promise.all(
+            uniqueTickers.map(async (ticker) => ([ticker, await this.getHistoricalMonthEndPriceMap(ticker, startDate, endDate)] as const)),
+        );
+
+        return new Map(histories);
+    }
+
+    private buildCurrentHoldingMap(holdings: any[]) {
+        const currentHoldings = new Map<string, number>();
+
+        for (const holding of holdings ?? []) {
+            const ticker = this.normalizeTicker(holding?.asset?.ticker);
+            if (!ticker) continue;
+
+            currentHoldings.set(ticker, Number(holding.quantity ?? 0));
+        }
+
+        return currentHoldings;
+    }
+
+    private buildCurrentCashMap(cashAccounts: any[]) {
+        const currentCash = new Map<string, number>();
+
+        for (const account of cashAccounts ?? []) {
+            const currency = this.normalizeCurrency(account?.currency);
+            if (!currency) continue;
+
+            this.addToBalanceMap(currentCash, currency, Number(account?.balance ?? 0));
+        }
+
+        return currentCash;
+    }
+
+    private buildBaselineHoldingMap(holdings: any[], transactions: any[]) {
+        const currentHoldings = this.buildCurrentHoldingMap(holdings);
+        const transactionHoldings = new Map<string, number>();
+
+        for (const transaction of transactions ?? []) {
+            const ticker = this.normalizeTicker(transaction?.asset?.ticker);
+            if (!ticker) continue;
+
+            const quantity = Number(transaction.quantity ?? 0);
+            const current = transactionHoldings.get(ticker) ?? 0;
+
+            if (transaction.type === 'BUY') {
+                transactionHoldings.set(ticker, current + quantity);
+            } else if (transaction.type === 'SELL') {
+                transactionHoldings.set(ticker, current - quantity);
+            }
+        }
+
+        const baseline = new Map<string, number>();
+        const tickers = new Set([...currentHoldings.keys(), ...transactionHoldings.keys()]);
+
+        tickers.forEach((ticker) => {
+            const diff = (currentHoldings.get(ticker) ?? 0) - (transactionHoldings.get(ticker) ?? 0);
+            if (Math.abs(diff) > 1e-8) {
+                baseline.set(ticker, diff);
+            }
+        });
+
+        return baseline;
+    }
+
+    private buildBaselineCashMap(cashAccounts: any[], transactions: any[]) {
+        const baselineCash = this.buildCurrentCashMap(cashAccounts);
+
+        for (const transaction of transactions ?? []) {
+            const delta = this.getTransactionCashDelta(transaction);
+            if (!delta) continue;
+
+            this.addToBalanceMap(baselineCash, delta.currency, -delta.amount);
+        }
+
+        return baselineCash;
+    }
+
+    private buildSyntheticFundingEvents(transactions: any[], baselineCash: Map<string, number>) {
+        const runningBalances = new Map<string, number>();
+        const syntheticEvents: Array<{ date: Date; currency: string; amount: number; synthetic: true }> = [];
+        const sortedTransactions = this.sortTransactionsChronologically(transactions ?? []);
+        const initialEventDate = sortedTransactions[0]?.date ? new Date(sortedTransactions[0].date) : new Date(0);
+
+        baselineCash.forEach((balance, currency) => {
+            if (!Number.isFinite(balance)) {
+                return;
+            }
+
+            if (balance < 0) {
+                syntheticEvents.push({
+                    date: initialEventDate,
+                    currency,
+                    amount: Math.abs(balance),
+                    synthetic: true,
+                });
+                runningBalances.set(currency, 0);
+                return;
+            }
+
+            runningBalances.set(currency, balance);
+        });
+
+        for (const transaction of sortedTransactions) {
+            const delta = this.getTransactionCashDelta(transaction);
+            if (!delta) continue;
+
+            const currentBalance = runningBalances.get(delta.currency) ?? 0;
+            const nextBalance = currentBalance + delta.amount;
+
+            if (nextBalance < 0) {
+                syntheticEvents.push({
+                    date: new Date(delta.date),
+                    currency: delta.currency,
+                    amount: Math.abs(nextBalance),
+                    synthetic: true,
+                });
+                runningBalances.set(delta.currency, 0);
+                continue;
+            }
+
+            runningBalances.set(delta.currency, nextBalance);
+        }
+
+        return syntheticEvents;
+    }
+
+    private buildCashEventTimeline(
+        transactions: any[],
+        syntheticFundingEvents: Array<{ date: Date; currency: string; amount: number; synthetic: true }>,
+    ) {
+        const actualEvents = (transactions ?? [])
+            .map((transaction) => {
+                const delta = this.getTransactionCashDelta(transaction);
+                if (!delta) {
+                    return null;
+                }
+
+                return {
+                    date: new Date(delta.date),
+                    currency: delta.currency,
+                    amount: delta.amount,
+                    synthetic: false as const,
+                };
+            })
+            .filter(Boolean) as Array<{ date: Date; currency: string; amount: number; synthetic: false }>;
+
+        return [...syntheticFundingEvents, ...actualEvents].sort((left, right) => {
+            const leftTime = left.date.getTime();
+            const rightTime = right.date.getTime();
+
+            if (leftTime !== rightTime) {
+                return leftTime - rightTime;
+            }
+
+            if (left.synthetic !== right.synthetic) {
+                return left.synthetic ? -1 : 1;
+            }
+
+            return 0;
+        });
+    }
+
+    private buildHoldingMapAtDate(transactions: any[], baselineHoldings: Map<string, number>, cutoffMs: number, inclusive: boolean) {
+        const holdings = new Map(baselineHoldings);
+
+        for (const transaction of transactions ?? []) {
+            const transactionMs = new Date(transaction.date).getTime();
+            const shouldApply = inclusive ? transactionMs <= cutoffMs : transactionMs < cutoffMs;
+
+            if (!shouldApply) {
+                break;
+            }
+
+            const ticker = this.normalizeTicker(transaction?.asset?.ticker);
+            if (!ticker) continue;
+
+            const quantity = Number(transaction.quantity ?? 0);
+            const current = holdings.get(ticker) ?? 0;
+
+            if (transaction.type === 'BUY') {
+                holdings.set(ticker, current + quantity);
+            } else if (transaction.type === 'SELL') {
+                holdings.set(ticker, current - quantity);
+            }
+        }
+
+        return holdings;
+    }
+
+    private buildCashMapAtDate(
+        cashEvents: Array<{ date: Date; currency: string; amount: number; synthetic: boolean }>,
+        baselineCash: Map<string, number>,
+        cutoffMs: number,
+        inclusive: boolean,
+    ) {
+        const cashBalances = new Map(baselineCash);
+
+        for (const event of cashEvents ?? []) {
+            const eventMs = event.date.getTime();
+            const shouldApply = inclusive ? eventMs <= cutoffMs : eventMs < cutoffMs;
+
+            if (!shouldApply) {
+                break;
+            }
+
+            this.addToBalanceMap(cashBalances, event.currency, event.amount);
+        }
+
+        return cashBalances;
+    }
+
+    private buildHoldingCostMap(holdings: any[], transactions: any[], quoteMap: Map<string, MarketQuote>) {
+        const holdingCostMap = new Map<string, number>();
+
+        for (const holding of holdings ?? []) {
+            const ticker = this.normalizeTicker(holding?.asset?.ticker);
+            if (!ticker) continue;
+
+            const averageCost = Number(holding?.averageCost ?? 0);
+            if (averageCost > 0) {
+                holdingCostMap.set(ticker, averageCost);
+                continue;
+            }
+
+            const livePrice = quoteMap.get(ticker)?.price;
+            if (typeof livePrice === 'number' && livePrice > 0) {
+                holdingCostMap.set(ticker, livePrice);
+            }
+        }
+
+        for (const transaction of this.sortTransactionsChronologically(transactions ?? [])) {
+            const ticker = this.normalizeTicker(transaction?.asset?.ticker);
+            if (!ticker || holdingCostMap.has(ticker)) continue;
+
+            const pricePerUnit = Number(transaction?.pricePerUnit ?? 0);
+            if (pricePerUnit > 0) {
+                holdingCostMap.set(ticker, pricePerUnit);
+            }
+        }
+
+        return holdingCostMap;
+    }
+
+    private calculatePortfolioValueForMonth(
+        holdings: Map<string, number>,
+        monthKey: string,
+        historicalPriceMaps: Map<string, Map<string, number>>,
+        quoteMap: Map<string, MarketQuote>,
+        fallbackPriceMap: Map<string, number>,
+    ) {
+        let totalValue = 0;
+
+        holdings.forEach((quantity, ticker) => {
+            if (!Number.isFinite(quantity) || quantity <= 0) {
+                return;
+            }
+
+            const historicalPrice = historicalPriceMaps.get(ticker)?.get(monthKey);
+            const livePrice = quoteMap.get(ticker)?.price;
+            const fallbackPrice = fallbackPriceMap.get(ticker);
+            const price = historicalPrice ?? livePrice ?? fallbackPrice ?? 0;
+
+            totalValue += quantity * price;
+        });
+
+        return totalValue;
+    }
+
+    private buildEffectiveCashState(portfolio: { cashAccounts?: any[]; transactions?: any[] }) {
+        const transactions = this.sortTransactionsChronologically(
+            (portfolio.transactions ?? []).filter((transaction: any) => transaction?.date),
+        );
+        const baselineCash = this.buildBaselineCashMap(portfolio.cashAccounts ?? [], transactions);
+        const syntheticFundingEvents = this.buildSyntheticFundingEvents(transactions, baselineCash);
+        const cashEvents = this.buildCashEventTimeline(transactions, syntheticFundingEvents);
+        const currentCashMap = this.buildCashMapAtDate(cashEvents, baselineCash, Number.MAX_SAFE_INTEGER, true);
+
+        return {
+            transactions,
+            baselineCash,
+            syntheticFundingEvents,
+            cashEvents,
+            currentCashMap,
+            currentCashBalance: this.sumBalanceMap(currentCashMap),
+            cashByCurrency: Object.fromEntries(
+                Array.from(currentCashMap.entries())
+                    .filter(([, balance]) => Number.isFinite(balance) && Math.abs(balance) > 1e-8)
+                    .sort(([leftCurrency], [rightCurrency]) => leftCurrency.localeCompare(rightCurrency))
+                    .map(([currency, balance]) => [currency, Number(balance.toFixed(2))]),
+            ),
+            cashAccounts: Array.from(currentCashMap.entries())
+                .filter(([, balance]) => Number.isFinite(balance) && Math.abs(balance) > 1e-8)
+                .sort(([leftCurrency], [rightCurrency]) => leftCurrency.localeCompare(rightCurrency))
+                .map(([currency, balance]) => ({
+                    currency,
+                    balance: Number(balance.toFixed(2)),
+                })),
+        };
+    }
+
+    private buildFallbackPriceMap(holdings: any[], transactions: any[], quoteMap: Map<string, MarketQuote>) {
+        const fallbackPriceMap = new Map<string, number>();
+
+        for (const holding of holdings ?? []) {
+            const ticker = this.normalizeTicker(holding?.asset?.ticker);
+            if (!ticker) continue;
+
+            const livePrice = quoteMap.get(ticker)?.price;
+            const avgCost = Number(holding.averageCost ?? 0);
+            fallbackPriceMap.set(ticker, livePrice ?? avgCost);
+        }
+
+        for (const transaction of transactions ?? []) {
+            const ticker = this.normalizeTicker(transaction?.asset?.ticker);
+            if (!ticker) continue;
+
+            const pricePerUnit = Number(transaction.pricePerUnit ?? 0);
+            if (!fallbackPriceMap.has(ticker) && pricePerUnit > 0) {
+                fallbackPriceMap.set(ticker, pricePerUnit);
+            }
+        }
+
+        return fallbackPriceMap;
+    }
+
+    private async buildMonthlyReturns(
+        portfolio: {
+            holdings?: Array<{ quantity?: any; averageCost?: any; asset?: { ticker?: string } | null }>;
+            transactions?: Array<{ type?: string; date?: Date; createdAt?: Date; quantity?: any; total?: any; fee?: any; pricePerUnit?: any; currency?: string; asset?: { ticker?: string } | null }>;
+            cashAccounts?: Array<{ currency?: string; balance?: any }>;
+        },
+        quoteMap: Map<string, MarketQuote>,
+    ) {
+        const cashState = this.buildEffectiveCashState(portfolio);
+        const transactions = cashState.transactions;
+        const months = this.getTrailingMonthlyWindows();
+        const historyStart = this.shiftUtcMonth(months[0].start, -1);
+        const tickers = Array.from(new Set([
+            ...(portfolio.holdings ?? []).map((holding) => holding?.asset?.ticker ?? ''),
+            ...transactions.map((transaction) => transaction?.asset?.ticker ?? ''),
+        ].map((ticker) => this.normalizeTicker(ticker)).filter(Boolean)));
+        const historicalPriceMaps = await this.getHistoricalMonthEndPriceMaps(tickers, historyStart, new Date());
+        const fallbackPriceMap = this.buildFallbackPriceMap(portfolio.holdings ?? [], transactions, quoteMap);
+        const baselineHoldings = this.buildBaselineHoldingMap(portfolio.holdings ?? [], transactions);
+
+        return months.map((month) => {
+            const startHoldings = this.buildHoldingMapAtDate(transactions, baselineHoldings, month.start.getTime(), false);
+            const endHoldings = this.buildHoldingMapAtDate(transactions, baselineHoldings, month.end.getTime(), true);
+            const startCash = this.buildCashMapAtDate(cashState.cashEvents, cashState.baselineCash, month.start.getTime(), false);
+            const endCash = this.buildCashMapAtDate(cashState.cashEvents, cashState.baselineCash, month.end.getTime(), true);
+            const startValue = this.calculatePortfolioValueForMonth(
+                startHoldings,
+                month.previousMonthKey,
+                historicalPriceMaps,
+                quoteMap,
+                fallbackPriceMap,
+            ) + this.sumBalanceMap(startCash);
+            const endValue = this.calculatePortfolioValueForMonth(
+                endHoldings,
+                month.monthKey,
+                historicalPriceMaps,
+                quoteMap,
+                fallbackPriceMap,
+            ) + this.sumBalanceMap(endCash);
+
+            let netFlows = 0;
+            let weightedFlows = 0;
+
+            for (const transaction of transactions) {
+                const transactionDate = new Date(transaction.date!);
+                if (transactionDate < month.start || transactionDate > month.end) {
+                    continue;
+                }
+
+                const type = String(transaction.type ?? '').toUpperCase();
+                const total = Number(transaction.total ?? 0);
+                const dayWeight = (month.daysInMonth - transactionDate.getUTCDate() + 1) / month.daysInMonth;
+
+                if (type === 'DEPOSIT' || type === 'WITHDRAW') {
+                    const flow = type === 'DEPOSIT' ? total : -total;
+                    netFlows += flow;
+                    weightedFlows += flow * dayWeight;
+                }
+            }
+
+            for (const fundingEvent of cashState.syntheticFundingEvents) {
+                if (fundingEvent.date < month.start || fundingEvent.date > month.end) {
+                    continue;
+                }
+
+                const dayWeight = (month.daysInMonth - fundingEvent.date.getUTCDate() + 1) / month.daysInMonth;
+                netFlows += fundingEvent.amount;
+                weightedFlows += fundingEvent.amount * dayWeight;
+            }
+
+            const numerator = endValue - startValue - netFlows;
+            const denominator = startValue + weightedFlows;
+            const fallbackBase = Math.abs(weightedFlows) > 1e-6 ? Math.abs(weightedFlows) : Math.max(startValue, endValue, 0);
+            const rawReturn = Math.abs(denominator) > 1e-6
+                ? (numerator / denominator) * 100
+                : fallbackBase > 1e-6
+                    ? (numerator / fallbackBase) * 100
+                    : 0;
+
+            return {
+                monthKey: month.monthKey,
+                label: month.label,
+                value: Number((Number.isFinite(rawReturn) ? rawReturn : 0).toFixed(2)),
+            };
+        });
+    }
+
     private toLegacyAsset(holding: any, portfolioCreatedAt?: Date, quoteMap?: Map<string, MarketQuote>) {
         const cantidad = Number(holding.quantity ?? 0);
         const ppc = Number(holding.averageCost ?? 0);
         const ticker = holding.asset?.ticker ?? 'N/A';
         const quote = quoteMap?.get(this.normalizeTicker(ticker));
         const precioActual = quote && typeof quote.price === 'number' ? quote.price : ppc;
+        const value = cantidad * precioActual;
 
         return {
             id: holding.assetId,
@@ -103,6 +667,7 @@ export class PortfolioService {
             ppc,
             montoInvertido: cantidad * ppc,
             precioActual,
+            value,
             precioTiempoReal: Boolean(quote && typeof quote.price === 'number'),
             precioFuente: quote?.symbol || null,
             precioActualizadoEn: quote?.updatedAt || null,
@@ -125,7 +690,11 @@ export class PortfolioService {
 
     private toLegacyPortfolio(portfolio: any, quoteMap?: Map<string, MarketQuote>) {
         const assets = (portfolio.holdings ?? []).map((holding: any) => this.toLegacyAsset(holding, portfolio.createdAt, quoteMap));
-        const movements = (portfolio.transactions ?? []).map((transaction: any) => this.toLegacyMovement(transaction));
+        const movements = (portfolio.transactions ?? []).slice(0, 200).map((transaction: any) => this.toLegacyMovement(transaction));
+        const cashState = this.buildEffectiveCashState(portfolio);
+        const assetsValue = assets.reduce((total: number, asset: any) => total + Number(asset.value ?? 0), 0);
+        const cashBalance = cashState.currentCashBalance;
+        const totalValue = assetsValue + cashBalance;
 
         return {
             id: portfolio.id,
@@ -138,6 +707,12 @@ export class PortfolioService {
             esPrincipal: portfolio.esPrincipal,
             admiteBienesRaices: portfolio.admiteBienesRaices,
             assets,
+            cash: Number(cashBalance.toFixed(2)),
+            cashBalance: Number(cashBalance.toFixed(2)),
+            cashByCurrency: cashState.cashByCurrency,
+            cashAccounts: cashState.cashAccounts,
+            assetsValue: Number(assetsValue.toFixed(2)),
+            totalValue: Number(totalValue.toFixed(2)),
             movements,
             createdAt: portfolio.createdAt,
             updatedAt: portfolio.updatedAt,
@@ -178,7 +753,8 @@ export class PortfolioService {
             where: { userId },
             include: {
                 holdings: { include: { asset: true } },
-                transactions: { include: { asset: true }, orderBy: { date: 'desc' }, take: 100 },
+                transactions: { include: { asset: true }, orderBy: { date: 'desc' } },
+                cashAccounts: true,
             },
             orderBy: [
                 { esPrincipal: 'desc' },
@@ -214,12 +790,12 @@ export class PortfolioService {
             where: { userId },
             include: {
                 holdings: { include: { asset: true } },
+                cashAccounts: true,
                 ...(includeTransactions
                     ? {
                         transactions: {
                             include: { asset: true },
                             orderBy: { date: 'desc' as const },
-                            take: 100,
                         },
                     }
                     : {}),
@@ -256,7 +832,8 @@ export class PortfolioService {
             where: { id: portfolioId, userId },
             include: {
                 holdings: { include: { asset: true } },
-                transactions: { include: { asset: true }, orderBy: { date: 'desc' }, take: 200 },
+                transactions: { include: { asset: true }, orderBy: { date: 'desc' } },
+                cashAccounts: true,
             },
         });
 
@@ -555,11 +1132,15 @@ export class PortfolioService {
 
     private async buildPortfolioMetrics(portfolio: {
         holdings: Array<{ quantity: any; averageCost: any; asset?: { ticker?: string; type?: string } | null }>;
+        transactions?: Array<{ type?: string; date?: Date; createdAt?: Date; quantity?: any; total?: any; fee?: any; pricePerUnit?: any; currency?: string; asset?: { ticker?: string; type?: string } | null }>;
+        cashAccounts?: Array<{ currency?: string; balance?: any }>;
     }) {
         const quoteMap = await this.getLiveQuoteMap(portfolio.holdings ?? []);
-        let capitalTotal = 0;
-        let valorActual = 0;
-        let gananciaTotal = 0;
+        const cashState = this.buildEffectiveCashState(portfolio);
+        const baselineHoldings = this.buildBaselineHoldingMap(portfolio.holdings ?? [], cashState.transactions);
+        const holdingCostMap = this.buildHoldingCostMap(portfolio.holdings ?? [], cashState.transactions, quoteMap);
+        let capitalInvertido = 0;
+        let assetsValue = 0;
         const diversificacionPorClase: Record<string, number> = {};
         const diversificacionPorActivo: Record<string, number> = {};
 
@@ -573,22 +1154,62 @@ export class PortfolioService {
             const currentValue = qty * currentPrice;
             const assetType = holding.asset?.type || 'UNKNOWN';
 
-            capitalTotal += invested;
-            valorActual += currentValue;
-            gananciaTotal += (currentValue - invested);
+            capitalInvertido += invested;
+            assetsValue += currentValue;
 
             diversificacionPorClase[assetType] = (diversificacionPorClase[assetType] || 0) + currentValue;
             diversificacionPorActivo[ticker] = (diversificacionPorActivo[ticker] || 0) + currentValue;
         }
 
+        if (cashState.currentCashBalance > 0) {
+            diversificacionPorClase.CASH = (diversificacionPorClase.CASH || 0) + cashState.currentCashBalance;
+        }
+
+        let initialHoldingsContribution = 0;
+        baselineHoldings.forEach((quantity, ticker) => {
+            if (!Number.isFinite(quantity) || quantity <= 0) {
+                return;
+            }
+
+            const unitCost = holdingCostMap.get(ticker) ?? 0;
+            if (unitCost > 0) {
+                initialHoldingsContribution += quantity * unitCost;
+            }
+        });
+
+        const initialCashContribution = Array.from(cashState.baselineCash.values()).reduce((total, balance) => (
+            balance > 0 ? total + balance : total
+        ), 0);
+
+        const explicitNetDeposits = cashState.transactions.reduce((total, transaction) => {
+            const type = String(transaction?.type ?? '').toUpperCase();
+            const amount = Number(transaction?.total ?? 0);
+
+            if (type === 'DEPOSIT') return total + amount;
+            if (type === 'WITHDRAW') return total - amount;
+            return total;
+        }, 0);
+
+        const syntheticFundingTotal = cashState.syntheticFundingEvents.reduce((total, event) => total + event.amount, 0);
+        const capitalTotal = initialHoldingsContribution + initialCashContribution + explicitNetDeposits + syntheticFundingTotal;
+        const totalValue = assetsValue + cashState.currentCashBalance;
+        const gananciaTotal = totalValue - capitalTotal;
+        const retornosMensuales = await this.buildMonthlyReturns(portfolio, quoteMap);
+
         return {
-            capitalTotal,
-            valorActual,
-            gananciaTotal,
+            capitalTotal: Number(capitalTotal.toFixed(2)),
+            capitalInvertido: Number(capitalInvertido.toFixed(2)),
+            assetsValue: Number(assetsValue.toFixed(2)),
+            cashBalance: Number(cashState.currentCashBalance.toFixed(2)),
+            cashByCurrency: cashState.cashByCurrency,
+            valorActual: Number(totalValue.toFixed(2)),
+            totalValue: Number(totalValue.toFixed(2)),
+            gananciaTotal: Number(gananciaTotal.toFixed(2)),
             variacionPorcentual: capitalTotal > 0 ? (gananciaTotal / capitalTotal) * 100 : 0,
             diversificacionPorClase,
             diversificacionPorActivo,
             cantidadActivos: portfolio.holdings.length,
+            retornosMensuales,
         };
     }
 
@@ -597,6 +1218,8 @@ export class PortfolioService {
             where: { id: portfolioId, userId },
             include: {
                 holdings: { include: { asset: true } },
+                transactions: { include: { asset: true } },
+                cashAccounts: true,
             },
         });
 
@@ -608,7 +1231,7 @@ export class PortfolioService {
     }
 
     async getPublicPortfolioMetrics(portfolioId: string) {
-        const portfolio = await this.getPublicPortfolioRecord(portfolioId);
+        const portfolio = await this.getPublicPortfolioRecord(portfolioId, true);
         return this.buildPortfolioMetrics(portfolio);
     }
 

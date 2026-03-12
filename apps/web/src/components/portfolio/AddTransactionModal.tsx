@@ -17,6 +17,8 @@ interface AddTransactionModalProps {
     portfolioId: string;
     onSuccess: () => void;
     initialSymbol?: string;
+    mode?: 'BUY' | 'SELL';
+    portfolioAssets?: { ticker: string; tipoActivo: string; cantidad: number }[];
 }
 
 interface AssetResult {
@@ -108,7 +110,7 @@ const parseTradingViewSymbolInput = (value: string): AssetResult | null => {
     };
 };
 
-export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess, initialSymbol }: AddTransactionModalProps) {
+export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess, initialSymbol, mode = 'BUY', portfolioAssets = [] }: AddTransactionModalProps) {
     const [step, setStep] = useState<'search' | 'details'>('search');
 
     // Search State
@@ -121,7 +123,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
     const [selectedAsset, setSelectedAsset] = useState<AssetResult | null>(null);
     const [baseAsset, setBaseAsset] = useState<AssetResult | null>(null);
     const [isCedear, setIsCedear] = useState(false);
-    const [transactionType, setTransactionType] = useState('BUY');
+    const [transactionType, setTransactionType] = useState<string>(mode);
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [quantity, setQuantity] = useState('');
     const [price, setPrice] = useState('');
@@ -141,7 +143,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
         setSelectedAsset(null);
         setBaseAsset(null);
         setIsCedear(false);
-        setTransactionType('BUY');
+        setTransactionType(mode);
         setDate(new Date().toISOString().split('T')[0]);
         setQuantity('');
         setPrice('');
@@ -162,7 +164,20 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
             return;
         }
         resetState(initialSymbol || '');
-    }, [open, initialSymbol]);
+
+        if (mode === 'SELL' && initialSymbol) {
+            const assetToSell = portfolioAssets.find(a => a.ticker === initialSymbol);
+            if (assetToSell) {
+                void handleSelectAsset({
+                    symbol: assetToSell.ticker,
+                    name: assetToSell.ticker,
+                    type: assetToSell.tipoActivo,
+                    exchange: '',
+                    matchScore: 100
+                });
+            }
+        }
+    }, [open, initialSymbol, mode, portfolioAssets]);
 
     // Debounced Search
     useEffect(() => {
@@ -351,86 +366,117 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
 
                 <div className="p-6 pt-2">
                     {step === 'search' ? (
-                        <div className="space-y-4">
-                            <Input
-                                placeholder="Buscar... (ej: NASDAQ:TSLA, BYBIT:BTCUSDT)"
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                autoFocus
-                                className="text-lg h-12"
-                            />
-                            <div className="max-h-[300px] overflow-y-auto space-y-2">
-                                {isSearching && (
-                                    <div className="text-center text-muted-foreground py-4">Buscando en TradingView...</div>
-                                )}
-                                {!isSearching && searchError && (
-                                    <div className="text-center text-red-400 py-4">{searchError}</div>
-                                )}
-                                {!isSearching && trimmedQuery.length < 1 && (
-                                    <div className="text-center text-muted-foreground py-4">
-                                        Escribe al menos 1 caracter para buscar en TradingView.
-                                    </div>
-                                )}
-                                {!isSearching && !searchError && trimmedQuery.length >= 1 && searchResults.map((asset, index) => (
-                                    <button
-                                        key={`${asset.symbol}-${asset.exchange || 'na'}-${asset.type || 'na'}-${index}`}
-                                        className="w-full flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
-                                        onClick={() => handleSelectAsset(asset)}
-                                    >
-                                        <div>
-                                            <div className="font-bold">{asset.symbol}</div>
-                                            <div className="text-sm text-muted-foreground">{asset.name}</div>
+                        mode === 'SELL' ? (
+                            <div className="space-y-4">
+                                <div className="text-sm text-foreground mb-4">Selecciona el activo de tu portafolio que deseas vender:</div>
+                                <div className="max-h-[300px] overflow-y-auto space-y-2">
+                                    {portfolioAssets.length === 0 ? (
+                                        <div className="text-center text-muted-foreground py-4">
+                                            No hay activos en este portafolio aún.
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            {asset.exchange && (
-                                                <Badge variant="secondary" className="uppercase text-[10px]">
-                                                    {asset.exchange}
-                                                </Badge>
-                                            )}
-                                            <Badge variant="outline">{formatAssetType(asset.type)}</Badge>
-                                        </div>
-                                    </button>
-                                ))}
-                                {!isSearching && !searchError && trimmedQuery.length >= 1 && searchResults.length === 0 && (
-                                    <div className="text-center text-muted-foreground py-4">
-                                        No se encontraron resultados en TradingView.
-                                        <Button
-                                            variant="link"
-                                            onClick={() =>
-                                                handleSelectAsset({
-                                                    symbol: trimmedQuery.toUpperCase(),
-                                                    name: trimmedQuery.toUpperCase(),
-                                                    type: 'custom',
-                                                })
-                                            }
-                                        >
-                                            Crear "{trimmedQuery.toUpperCase()}" manualmente
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="pt-3 border-t border-border/60">
-                                <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                                    Recomendados · 7 Magníficas
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {MAG7_RECOMMENDATIONS.map((asset) => (
+                                    ) : portfolioAssets.filter(a => a.cantidad > 0).map((asset, index) => (
                                         <button
-                                            key={asset.symbol}
-                                            className="flex flex-col items-start gap-1 rounded-lg border border-border/70 p-3 text-left transition-colors hover:bg-muted"
-                                            onClick={() => handleSelectAsset(asset)}
+                                            key={`portfolio-asset-${asset.ticker}-${index}`}
+                                            className="w-full flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
+                                            onClick={() => handleSelectAsset({
+                                                symbol: asset.ticker,
+                                                name: asset.ticker,
+                                                type: asset.tipoActivo,
+                                                exchange: '',
+                                                matchScore: 100
+                                            })}
                                         >
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-semibold">{asset.name}</span>
-                                                <Badge variant="outline" className="uppercase text-[10px]">
-                                                    {formatAssetType(asset.type)}
-                                                </Badge>
+                                            <div>
+                                                <div className="font-bold">{asset.ticker}</div>
+                                                <div className="text-sm text-muted-foreground mt-0.5">Cantidad disponible: <span className="font-semibold text-foreground/80">{asset.cantidad.toFixed(4)}</span></div>
                                             </div>
+                                            <Badge variant="outline">{formatAssetType(asset.tipoActivo)}</Badge>
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <Input
+                                    placeholder="Buscar... (ej: NASDAQ:TSLA, BYBIT:BTCUSDT)"
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                    autoFocus
+                                    className="text-lg h-12"
+                                />
+                                <div className="max-h-[300px] overflow-y-auto space-y-2">
+                                    {isSearching && (
+                                        <div className="text-center text-muted-foreground py-4">Buscando en TradingView...</div>
+                                    )}
+                                    {!isSearching && searchError && (
+                                        <div className="text-center text-red-400 py-4">{searchError}</div>
+                                    )}
+                                    {!isSearching && trimmedQuery.length < 1 && (
+                                        <div className="text-center text-muted-foreground py-4">
+                                            Escribe al menos 1 caracter para buscar en TradingView.
+                                        </div>
+                                    )}
+                                    {!isSearching && !searchError && trimmedQuery.length >= 1 && searchResults.map((asset, index) => (
+                                        <button
+                                            key={`${asset.symbol}-${asset.exchange || 'na'}-${asset.type || 'na'}-${index}`}
+                                            className="w-full flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
+                                            onClick={() => handleSelectAsset(asset)}
+                                        >
+                                            <div>
+                                                <div className="font-bold">{asset.symbol}</div>
+                                                <div className="text-sm text-muted-foreground">{asset.name}</div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {asset.exchange && (
+                                                    <Badge variant="secondary" className="uppercase text-[10px]">
+                                                        {asset.exchange}
+                                                    </Badge>
+                                                )}
+                                                <Badge variant="outline">{formatAssetType(asset.type)}</Badge>
+                                            </div>
+                                        </button>
+                                    ))}
+                                    {!isSearching && !searchError && trimmedQuery.length >= 1 && searchResults.length === 0 && (
+                                        <div className="text-center text-muted-foreground py-4">
+                                            No se encontraron resultados en TradingView.
+                                            <Button
+                                                variant="link"
+                                                onClick={() =>
+                                                    handleSelectAsset({
+                                                        symbol: trimmedQuery.toUpperCase(),
+                                                        name: trimmedQuery.toUpperCase(),
+                                                        type: 'custom',
+                                                    })
+                                                }
+                                            >
+                                                Crear "{trimmedQuery.toUpperCase()}" manualmente
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="pt-3 border-t border-border/60">
+                                    <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                                        Recomendados · 7 Magníficas
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {MAG7_RECOMMENDATIONS.map((asset) => (
+                                            <button
+                                                key={asset.symbol}
+                                                className="flex flex-col items-start gap-1 rounded-lg border border-border/70 p-3 text-left transition-colors hover:bg-muted"
+                                                onClick={() => handleSelectAsset(asset)}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold">{asset.name}</span>
+                                                    <Badge variant="outline" className="uppercase text-[10px]">
+                                                        {formatAssetType(asset.type)}
+                                                    </Badge>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )
                     ) : (
                         <div className="space-y-4">
                             <div className="flex flex-col gap-3 rounded-lg border border-border/70 p-3">

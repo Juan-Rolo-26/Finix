@@ -63,7 +63,7 @@ interface TreemapNodeRendererProps {
 const subtypeOptions: Array<{ value: HeatmapSubtype; label: string }> = [
     { value: 'd1', label: 'Día' },
     { value: 'w1', label: 'Semana' },
-    { value: 'ytd', label: 'YTD' },
+    { value: 'ytd', label: 'Ano corrido' },
 ];
 
 const FINVIZ_NULL_COLOR = '#2f323d';
@@ -365,7 +365,7 @@ export default function FinvizHeatmap() {
 
             <div className="grid gap-4 xl:grid-cols-3">
                 <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Top Gainers</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Mayores subas</p>
                     <div className="mt-3 space-y-2">
                         {gainers.slice(0, 5).map((ticker) => (
                             <div key={`gain-${ticker.name}`} className="flex items-center justify-between text-sm">
@@ -377,7 +377,7 @@ export default function FinvizHeatmap() {
                 </div>
 
                 <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Top Losers</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Mayores bajas</p>
                     <div className="mt-3 space-y-2">
                         {losers.slice(0, 5).map((ticker) => (
                             <div key={`loss-${ticker.name}`} className="flex items-center justify-between text-sm">
@@ -389,7 +389,7 @@ export default function FinvizHeatmap() {
                 </div>
 
                 <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Snapshot del Mercado</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Panorama del mercado</p>
                     <div className="mt-3 space-y-2 text-sm">
                         <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">Sectores</span>
@@ -404,7 +404,7 @@ export default function FinvizHeatmap() {
                             <span className="font-semibold">{formatMarketCap(data?.stats?.totalMarketCap || 0)}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Breadth</span>
+                            <span className="text-muted-foreground">Amplitud</span>
                             <span className="font-semibold text-emerald-400">{marketBreadth}</span>
                         </div>
                     </div>

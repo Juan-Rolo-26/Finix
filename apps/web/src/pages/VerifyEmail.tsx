@@ -36,14 +36,14 @@ export default function VerifyEmail() {
                 </div>
                 <h2 className="text-xl font-bold">Verificá tu correo</h2>
                 <p className="text-sm text-muted-foreground">
-                    Te enviamos un enlace de confirmación. Revisá tu bandeja de entrada y hacé click en el enlace para activar tu cuenta.
+                    Te enviamos un enlace de confirmacion. Revisa tu bandeja de entrada y hace clic en el enlace para activar tu cuenta.
                 </p>
                 <p className="text-xs text-muted-foreground/60">
-                    Si no lo ves, revisá la carpeta de spam.
+                    Si no lo ves, revisa la carpeta de correo no deseado.
                 </p>
 
                 {resent ? (
-                    <p className="text-sm text-emerald-400">¡Email reenviado!</p>
+                    <p className="text-sm text-emerald-400">¡Correo reenviado!</p>
                 ) : (
                     <Button
                         variant="outline"
@@ -52,7 +52,7 @@ export default function VerifyEmail() {
                         disabled={resending}
                         className="mt-2"
                     >
-                        {resending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reenviar email'}
+                        {resending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reenviar correo'}
                     </Button>
                 )}
             </motion.div>

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthStore } from '@/stores/authStore';
@@ -98,16 +97,16 @@ export default function SocialFeed({ initialPosts, onPostCreated }: SocialFeedPr
     };
 
     return (
-        <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="space-y-4 max-w-2xl mx-auto">
             {/* Create Post Widget */}
             <CreatePostWidget onPostCreated={handlePostCreated} />
 
             {/* Feed Stream */}
-            <div className="space-y-6">
+            <div className="space-y-3">
                 {posts.length === 0 ? (
-                    <div className="text-center py-12 opacity-50">
-                        <MessageSquare className="w-12 h-12 mx-auto mb-2" />
-                        <p>No hay publicaciones aún. ¡Sé el primero!</p>
+                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground/50 gap-3">
+                        <MessageSquare className="w-10 h-10 opacity-40" />
+                        <p className="text-sm font-medium">No hay publicaciones aún. ¡Sé el primero!</p>
                     </div>
                 ) : (
                     posts.map((post) => (
@@ -222,77 +221,88 @@ function FeedItem({ post }: { post: Post }) {
     };
 
     return (
-        <Card className="border-border/50 overflow-hidden bg-card/50 hover:bg-card/80 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <article
+            className="group rounded-[20px] border border-border/50 bg-card/60 hover:bg-card/80 hover:border-border/80 transition-all duration-200 overflow-hidden animate-in fade-in slide-in-from-bottom-1 duration-400"
+            style={{ boxShadow: '0 1px 4px hsl(220 42% 3% / 0.05)' }}
+            onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px hsl(220 42% 3% / 0.09)';
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px hsl(220 42% 3% / 0.05)';
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+            }}
+        >
             <div className="p-5 pb-0">
-                {/* Author Header */}
+                {/* ── Author Header ── */}
                 <div className="flex items-center justify-between mb-4">
-                    <Link to={`/profile/${post.author.username}`} className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10 border border-primary/20">
+                    <Link to={`/profile/${post.author.username}`} className="flex items-center gap-3 group/author">
+                        <Avatar className="w-9 h-9 ring-1 ring-border/50 ring-offset-1 ring-offset-card">
                             <AvatarImage src={post.author.avatarUrl} />
-                            <AvatarFallback className="bg-gradient-to-tr from-blue-600 to-cyan-500 text-white font-bold">
+                            <AvatarFallback className="bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 text-primary font-bold text-[13px]">
                                 {post.author.username[0].toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <h4 className="font-bold text-sm text-foreground">{post.author.username}</h4>
+                            <div className="flex items-center gap-1.5">
+                                <h4 className="text-[14px] font-semibold text-foreground leading-tight group-hover/author:text-primary transition-colors">
+                                    {post.author.username}
+                                </h4>
                                 {post.author.isInfluencer && (
-                                    <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold uppercase tracking-wider border border-amber-500/20">
-                                        Pro Analyst
+                                    <span className="px-1.5 py-px rounded-md bg-amber-500/15 text-amber-500 text-[9px] font-bold uppercase tracking-wider border border-amber-500/20">
+                                        PRO
                                     </span>
                                 )}
                             </div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-[11px] text-muted-foreground/70 mt-0.5">
                                 {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: es })}
                             </p>
                         </div>
                     </Link>
+
                     <div className="relative">
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-muted-foreground"
+                            className="h-8 w-8 text-muted-foreground/50 hover:text-foreground hover:bg-secondary/80 rounded-xl"
                             onClick={() => setShowMenu((prev) => !prev)}
                         >
                             <MoreHorizontal className="w-4 h-4" />
                         </Button>
                         {showMenu && (
                             <div
-                                className="absolute right-0 top-10 z-20 min-w-[170px] rounded-xl border border-border/50 bg-card shadow-xl overflow-hidden"
+                                className="absolute right-0 top-10 z-20 min-w-[172px] rounded-2xl border border-border/60 bg-card shadow-xl shadow-black/10 overflow-hidden backdrop-blur-sm"
                                 onMouseLeave={() => setShowMenu(false)}
                             >
                                 <button
-                                    onClick={() => {
-                                        navigate(`/profile/${post.author.username}`);
-                                        setShowMenu(false);
-                                    }}
-                                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm hover:bg-secondary/50 transition-colors"
+                                    onClick={() => { navigate(`/profile/${post.author.username}`); setShowMenu(false); }}
+                                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[13px] font-medium hover:bg-secondary/60 transition-colors text-foreground/80 hover:text-foreground"
                                 >
-                                    <ExternalLink className="w-4 h-4" />
+                                    <ExternalLink className="w-3.5 h-3.5" />
                                     Ver perfil
                                 </button>
                                 <button
                                     onClick={handleCopyLink}
-                                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm hover:bg-secondary/50 transition-colors"
+                                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[13px] font-medium hover:bg-secondary/60 transition-colors text-foreground/80 hover:text-foreground"
                                 >
-                                    <Share2 className="w-4 h-4" />
+                                    <Share2 className="w-3.5 h-3.5" />
                                     Copiar enlace
                                 </button>
                                 {isOwner ? (
                                     <button
                                         onClick={handleDelete}
-                                        className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[13px] font-medium text-red-500 hover:bg-red-500/8 transition-colors"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-3.5 h-3.5" />
                                         Eliminar
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => setShowMenu(false)}
-                                        className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-orange-400 hover:bg-orange-500/10 transition-colors"
+                                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-secondary/60 transition-colors"
                                     >
-                                        <Flag className="w-4 h-4" />
-                                        Cerrar menu
+                                        <Flag className="w-3.5 h-3.5" />
+                                        Cerrar
                                     </button>
                                 )}
                             </div>
@@ -300,124 +310,117 @@ function FeedItem({ post }: { post: Post }) {
                     </div>
                 </div>
 
-                {/* Content */}
+                {/* ── Content ── */}
                 <div className="space-y-4">
-                    <p className="text-base leading-relaxed whitespace-pre-wrap text-foreground/90">
+                    <p className="text-[14.5px] leading-[1.65] text-foreground/90 whitespace-pre-wrap">
                         {post.content}
                     </p>
 
-                    {/* Render Image (Static Chart / drawing) */}
                     {mediaUrl && (
-                        <div className="rounded-xl overflow-hidden border border-border/40 shadow-inner">
+                        <div className="rounded-2xl overflow-hidden border border-border/30">
                             <img
                                 src={getFileUrl(mediaUrl)}
                                 alt="Post attachment"
-                                className="w-full h-auto max-h-[500px] object-cover"
+                                className="w-full h-auto max-h-[480px] object-cover"
                             />
                         </div>
                     )}
 
-                    {/* Render Chart if Ticker Present AND no image (or both? stick to requirements: static non-editable) */}
-                    {/* User requirement: "los graficos de los post no pueden ser editables". A live chart IS editable (interaction).
-                        But "el usuario antes de subirlos le puede hacer lineas". This implies the image upload.
-                        Maybe we should HIDE the live chart if an image is provided? Or keep both?
-                        Let's keep both, as live chart provides current context, image provides the "analysis".
-                    */}
                     {!mediaUrl && tvSymbol && (
-                        <div className="h-[350px] w-full bg-background rounded-xl border border-border/40 overflow-hidden shadow-inner">
+                        <div className="h-[340px] w-full bg-background rounded-2xl border border-border/30 overflow-hidden">
                             <TradingViewWidget symbol={tvSymbol} autosize={true} />
                         </div>
                     )}
 
-                    {/* Quoted Post (Quote Tweet equivalent) */}
                     {post.quotedPost && (
                         <button
                             type="button"
                             onClick={() => navigate(`/posts/${post.quotedPost!.id}`)}
-                            className="mt-2 w-full text-left rounded-xl border border-border/50 bg-background/30 p-4 hover:bg-muted/10 transition-colors"
+                            className="w-full text-left rounded-2xl border border-border/50 bg-background/40 hover:bg-background/60 hover:border-border/80 p-4 transition-all group/quote"
                         >
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-2 mb-2.5">
                                 <Avatar className="w-5 h-5">
                                     <AvatarImage src={post.quotedPost.author.avatarUrl} />
-                                    <AvatarFallback className="bg-secondary text-[10px]">{post.quotedPost.author.username[0]}</AvatarFallback>
+                                    <AvatarFallback className="bg-secondary text-[9px]">{post.quotedPost.author.username[0]}</AvatarFallback>
                                 </Avatar>
-                                <span className="font-bold text-sm">{post.quotedPost.author.username}</span>
-                                <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.quotedPost.createdAt), { locale: es })}</span>
+                                <span className="text-[12px] font-semibold group-hover/quote:text-primary transition-colors">{post.quotedPost.author.username}</span>
+                                <span className="text-[10px] text-muted-foreground/60">
+                                    {formatDistanceToNow(new Date(post.quotedPost.createdAt), { locale: es })}
+                                </span>
                             </div>
-                            <p className="text-sm line-clamp-3 mb-2">{post.quotedPost.content}</p>
-                            {/* Short media preview if quoted post has media */}
+                            <p className="text-[13px] leading-relaxed text-foreground/80 line-clamp-3">{post.quotedPost.content}</p>
                             {getPrimaryMedia(post.quotedPost) && (
-                                <img src={getFileUrl(getPrimaryMedia(post.quotedPost) as string)} className="w-full h-32 object-cover rounded-lg" alt="Quote media" />
+                                <img src={getFileUrl(getPrimaryMedia(post.quotedPost) as string)} className="w-full h-28 object-cover rounded-xl mt-2.5" alt="Quote media" />
                             )}
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Actions Bar */}
-            <div className="p-3 mt-4 flex items-center justify-between text-sm text-muted-foreground border-t border-border/30 bg-muted/20">
-                <div className="flex gap-1 md:gap-4">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`gap-2 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-400'} hover:bg-red-400/10`}
-                        onClick={handleLike}
-                    >
-                        <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                        <span className="font-medium">{likes}</span>
-                    </Button>
+            {/* ── Actions Bar ── */}
+            <div className="px-3 py-1 mt-3 flex items-center gap-1 border-t border-border/20">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`gap-1.5 h-9 px-3 rounded-xl text-[13px] font-medium transition-all ${isLiked
+                        ? 'text-rose-500 hover:text-rose-600 hover:bg-rose-500/8'
+                        : 'text-muted-foreground/60 hover:text-rose-400 hover:bg-rose-500/8'
+                        }`}
+                    onClick={handleLike}
+                >
+                    <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                    <span>{likes > 0 ? likes : ''}</span>
+                </Button>
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-2 hover:text-blue-400 hover:bg-blue-400/10"
-                        onClick={() => setShowComments(!showComments)}
-                    >
-                        <MessageSquare className="w-4 h-4" />
-                        <span className="font-medium">{commentsCount}</span>
-                    </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 h-9 px-3 rounded-xl text-[13px] font-medium text-muted-foreground/60 hover:text-sky-400 hover:bg-sky-500/8 transition-all"
+                    onClick={() => setShowComments(!showComments)}
+                >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>{commentsCount > 0 ? commentsCount : ''}</span>
+                </Button>
 
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`gap-1.5 h-9 px-3 rounded-xl text-[13px] font-medium transition-all ${isReposted
+                        ? 'text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/8'
+                        : 'text-muted-foreground/60 hover:text-emerald-400 hover:bg-emerald-500/8'
+                        }`}
+                    onClick={() => setShowQuoteBox(!showQuoteBox)}
+                    disabled={isReposting}
+                >
+                    <Repeat2 className="w-4 h-4" />
+                    {repostsCount > 0 ? <span>{repostsCount}</span> : null}
+                </Button>
+            </div>
+
+            {/* Quote Box */}
+            {showQuoteBox && (
+                <div className="px-4 pb-4 border-t border-border/20 pt-3 space-y-3 bg-muted/20">
                     <Button
-                        variant="ghost"
+                        variant="default"
                         size="sm"
-                        className={`gap-2 hover:bg-green-400/10 ${isReposted ? 'text-green-400 hover:text-green-300' : 'hover:text-green-400'}`}
-                        onClick={() => setShowQuoteBox(!showQuoteBox)}
+                        className="w-full gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+                        onClick={handleRepost}
                         disabled={isReposting}
                     >
                         <Repeat2 className="w-4 h-4" />
-                        {repostsCount > 0 ? <span className="font-medium">{repostsCount}</span> : null}
+                        {isReposted ? 'Quitar repost' : 'Repost simple'}
                     </Button>
-                </div>
-            </div>
-
-            {/* Quick Quote / Reply Actions */}
-            {showQuoteBox && (
-                <div className="p-4 bg-muted/20 border-t border-border/30">
-                    <div className="flex gap-4 items-center mb-4">
-                        <Button
-                            variant="default"
-                            size="sm"
-                            className="bg-green-500 hover:bg-green-600 text-white w-full gap-2"
-                            onClick={handleRepost}
-                            disabled={isReposting}
-                        >
-                            <Repeat2 className="w-4 h-4" /> {isReposted ? 'Quitar repost' : 'Repost simple'}
-                        </Button>
-                    </div>
-                    <div className="text-xs text-muted-foreground mb-2 font-bold uppercase tracking-wider">O citar publicación:</div>
+                    <div className="divider-label text-[9px]">O citar publicación</div>
                     <CreatePostWidget
                         isReply={true}
                         quotedPostId={post.id}
                         placeholder="Añade un comentario a este repost..."
-                        onPostCreated={() => {
-                            setShowQuoteBox(false);
-                            // handle locally
-                        }}
+                        onPostCreated={() => setShowQuoteBox(false)}
                     />
                 </div>
             )}
 
-            {/* Comments / Replies Section */}
+            {/* Comments */}
             {showComments && (
                 <CommentsPanel
                     postId={post.id}
@@ -425,6 +428,6 @@ function FeedItem({ post }: { post: Post }) {
                     onCountChange={setCommentsCount}
                 />
             )}
-        </Card>
+        </article>
     );
 }

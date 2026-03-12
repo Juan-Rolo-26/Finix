@@ -30,8 +30,9 @@ let UserController = class UserController {
     async updatePassword(req, body) {
         return this.userService.changePassword(req.user.id, body.currentPassword || '', body.newPassword || '');
     }
-    async getMyNotifications(req) {
-        return this.userService.getNotifications(req.user.id);
+    async getMyNotifications(req, days) {
+        const parsedDays = Number.parseInt(days ?? '', 10);
+        return this.userService.getNotifications(req.user.id, Number.isFinite(parsedDays) ? parsedDays : undefined);
     }
     async getMyUnreadNotificationsCount(req) {
         return this.userService.getUnreadNotificationsCount(req.user.id);
@@ -86,8 +87,9 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('me/notifications'),
     __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('days')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], UserController.prototype, "getMyNotifications", null);
 __decorate([

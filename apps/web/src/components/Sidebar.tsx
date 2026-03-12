@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { apiFetch } from '../lib/api';
+import { NOTIFICATION_HISTORY_DAYS, type NotificationItem, groupNotificationsByDay } from '../lib/notifications';
 import { usePreferencesStore } from '../stores/preferencesStore';
 
 /* ─── Brand token (always green accent) ───────────────────────── */
@@ -34,16 +35,6 @@ interface PinnedAsset {
     change: number;
     changePercent: number;
     price: number;
-}
-
-interface NotificationItem {
-    id: string;
-    type: string;
-    title: string;
-    content?: string | null;
-    link?: string | null;
-    isRead?: boolean;
-    time: string;
 }
 
 interface SidebarNavLinkProps {
@@ -180,7 +171,7 @@ export function Sidebar() {
             const fetchNotifs = async () => {
                 setIsNotifsLoading(true);
                 try {
-                    const res = await apiFetch('/users/me/notifications');
+                    const res = await apiFetch(`/users/me/notifications?days=${NOTIFICATION_HISTORY_DAYS}`);
                     if (res.ok) {
                         const data = await res.json();
                         setNotifications(Array.isArray(data) ? data : []);
@@ -310,6 +301,8 @@ export function Sidebar() {
         }
         setIsNotifsOpen(false);
     };
+
+    const notificationGroups = groupNotificationsByDay(notifications);
 
     return (
         <motion.aside
@@ -445,7 +438,7 @@ export function Sidebar() {
                                                             )}
                                                         </div>
                                                         <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                            {u.title || u.company || (u.winRate ? `${u.winRate.toFixed(0)}% Win Rate` : 'Ver perfil')}
+                                                            {u.title || u.company || (u.winRate ? `${u.winRate.toFixed(0)}% de acierto` : 'Ver perfil')}
                                                         </p>
                                                     </div>
                                                     <div className="px-2.5 py-1 rounded-lg text-[10px] font-bold"
@@ -501,49 +494,66 @@ export function Sidebar() {
                                             background: 'hsl(var(--popover))',
                                             borderBottom: '1px solid hsl(var(--border))',
                                         }}>
-                                        <h3 className="font-bold text-sm">Notificaciones</h3>
+                                        <div>
+                                            <h3 className="font-bold text-sm">Notificaciones</h3>
+                                            <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                                Ultimos {NOTIFICATION_HISTORY_DAYS} dias
+                                            </p>
+                                        </div>
                                     </div>
                                     <div className="max-h-80 overflow-y-auto p-2 space-y-1 relative">
                                         {isNotifsLoading ? (
                                             <div className="flex justify-center py-6" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                                 <Loader2 className="w-5 h-5 animate-spin" />
                                             </div>
-                                        ) : notifications.length > 0 ? (
-                                            notifications.map((n, i) => (
-                                                <div
-                                                    key={n.id || i}
-                                                    className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors group"
-                                                    onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
-                                                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                                    onClick={() => handleNotificationClick(n)}
-                                                >
-                                                    <div
-                                                        className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center"
-                                                        style={{
-                                                            background: n.type === 'follow' ? 'hsl(var(--primary) / 0.15)' : 'hsl(var(--secondary))',
-                                                            border: n.type === 'follow' ? 'none' : '1px solid hsl(var(--border))',
-                                                        }}
-                                                    >
-                                                        {n.type === 'follow'
-                                                            ? <User className="w-5 h-5" style={{ color: PRIMARY }} />
-                                                            : <TrendingUp className="w-4 h-4 text-emerald-500" />
-                                                        }
+                                        ) : notificationGroups.length > 0 ? (
+                                            notificationGroups.map((group) => (
+                                                <div key={group.dateKey} className="space-y-1.5">
+                                                    <div className="px-2 pt-2 pb-1">
+                                                        <p
+                                                            className="text-[10px] font-bold uppercase tracking-[0.18em]"
+                                                            style={{ color: 'hsl(var(--muted-foreground))' }}
+                                                        >
+                                                            {group.label}
+                                                        </p>
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-[13px] font-medium leading-snug break-words">{n.title}</p>
-                                                        {n.content && (
-                                                            <p
-                                                                className="mt-1 text-[11px] leading-snug break-words"
-                                                                style={{ color: 'hsl(var(--muted-foreground))' }}
+                                                    {group.items.map((n) => (
+                                                        <div
+                                                            key={n.id}
+                                                            className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors group"
+                                                            onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
+                                                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                                            onClick={() => handleNotificationClick(n)}
+                                                        >
+                                                            <div
+                                                                className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center"
+                                                                style={{
+                                                                    background: n.type === 'follow' ? 'hsl(var(--primary) / 0.15)' : 'hsl(var(--secondary))',
+                                                                    border: n.type === 'follow' ? 'none' : '1px solid hsl(var(--border))',
+                                                                }}
                                                             >
-                                                                {n.content}
-                                                            </p>
-                                                        )}
-                                                        <span className="text-[10px] mt-1 inline-block font-bold" style={{ color: 'hsl(var(--primary) / 0.7)' }}>
-                                                            {n.time}
-                                                        </span>
-                                                    </div>
-                                                    {n.link && <ChevronRight className="w-4 h-4 shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }} />}
+                                                                {n.type === 'follow'
+                                                                    ? <User className="w-5 h-5" style={{ color: PRIMARY }} />
+                                                                    : <TrendingUp className="w-4 h-4 text-emerald-500" />
+                                                                }
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-[13px] font-medium leading-snug break-words">{n.title}</p>
+                                                                {n.content && (
+                                                                    <p
+                                                                        className="mt-1 text-[11px] leading-snug break-words"
+                                                                        style={{ color: 'hsl(var(--muted-foreground))' }}
+                                                                    >
+                                                                        {n.content}
+                                                                    </p>
+                                                                )}
+                                                                <span className="text-[10px] mt-1 inline-block font-bold" style={{ color: 'hsl(var(--primary) / 0.7)' }}>
+                                                                    {n.time}
+                                                                </span>
+                                                            </div>
+                                                            {n.link && <ChevronRight className="w-4 h-4 shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }} />}
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             ))
                                         ) : (
@@ -551,7 +561,7 @@ export function Sidebar() {
                                                 <Bell className="w-8 h-8 mx-auto mb-3" style={{ color: 'hsl(var(--muted-foreground) / 0.3)' }} />
                                                 <p className="text-sm font-semibold">No tienes notificaciones</p>
                                                 <p className="text-xs mt-1 leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                    Aqui veras seguidores, likes, comentarios y actividad relevante.
+                                                    Aqui veras el historial de la ultima semana con seguidores, likes y actividad relevante.
                                                 </p>
                                             </div>
                                         )}

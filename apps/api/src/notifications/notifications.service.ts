@@ -12,6 +12,10 @@ interface CreateNotificationInput {
     link?: string;
 }
 
+interface GetNotificationsInput {
+    days?: number;
+}
+
 @Injectable()
 export class NotificationsService {
     private readonly logger = new Logger(NotificationsService.name);
@@ -38,6 +42,42 @@ export class NotificationsService {
             day: '2-digit',
             month: 'short',
         });
+    }
+
+    private formatDateKey(value: Date) {
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    }
+
+    private formatHistoryDate(value: Date) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const target = new Date(value);
+        target.setHours(0, 0, 0, 0);
+
+        const diffDays = Math.round((today.getTime() - target.getTime()) / 86400000);
+
+        if (diffDays === 0) return 'Hoy';
+        if (diffDays === 1) return 'Ayer';
+
+        const label = value.toLocaleDateString('es-AR', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'short',
+        });
+
+        return label.charAt(0).toUpperCase() + label.slice(1);
+    }
+
+    private resolveHistoryStart(days: number) {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        start.setDate(start.getDate() - (days - 1));
+        return start;
     }
 
     async createNotification(input: CreateNotificationInput) {
@@ -80,11 +120,24 @@ export class NotificationsService {
         return notification;
     }
 
-    async getNotifications(userId: string) {
+    async getNotifications(userId: string, input: GetNotificationsInput = {}) {
+        const parsedDays = Number.isFinite(input.days)
+            ? Math.max(1, Math.min(30, Math.trunc(input.days as number)))
+            : undefined;
+
         const notifications = await this.prisma.notification.findMany({
-            where: { userId },
+            where: {
+                userId,
+                ...(parsedDays
+                    ? {
+                        createdAt: {
+                            gte: this.resolveHistoryStart(parsedDays),
+                        },
+                    }
+                    : {}),
+            },
             orderBy: { createdAt: 'desc' },
-            take: 30,
+            take: parsedDays ? 100 : 30,
         });
 
         return notifications.map((notification) => ({
@@ -96,6 +149,8 @@ export class NotificationsService {
             isRead: notification.isRead,
             time: this.formatRelativeTime(notification.createdAt),
             createdAt: notification.createdAt,
+            dateKey: this.formatDateKey(notification.createdAt),
+            dateLabel: this.formatHistoryDate(notification.createdAt),
         }));
     }
 

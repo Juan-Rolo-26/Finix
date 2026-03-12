@@ -1,11 +1,31 @@
+import { MarketService } from '../market/market.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma.service';
 export declare class UserService {
     private prisma;
     private notificationsService;
-    constructor(prisma: PrismaService, notificationsService: NotificationsService);
+    private marketService;
+    constructor(prisma: PrismaService, notificationsService: NotificationsService, marketService: MarketService);
+    private normalizeTicker;
+    private roundMetric;
+    private normalizeCurrency;
+    private sortTransactionsChronologically;
+    private addToBalanceMap;
+    private sumBalanceMap;
+    private getTransactionCashDelta;
+    private buildCurrentHoldingMap;
+    private buildBaselineHoldingMap;
+    private buildCurrentCashMap;
+    private buildBaselineCashMap;
+    private buildSyntheticFundingTotal;
+    private buildQuotePriceMap;
+    private calculateRiskScore;
+    private computePortfolioStatsFromPortfolios;
     private getProfileSelect;
     getCurrentUserProfile(userId: string): Promise<{
+        totalReturn: number;
+        winRate: number;
+        riskScore: number;
         id: string;
         email: string;
         username: string;
@@ -29,9 +49,6 @@ export declare class UserService {
         yearsExperience: number;
         specializations: string;
         certifications: string;
-        totalReturn: number;
-        winRate: number;
-        riskScore: number;
         isProfilePublic: boolean;
         showPortfolio: boolean;
         showStats: boolean;
@@ -43,7 +60,7 @@ export declare class UserService {
             following: number;
         };
     }>;
-    getNotifications(userId: string): Promise<{
+    getNotifications(userId: string, days?: number): Promise<{
         id: string;
         type: string;
         title: string;
@@ -52,6 +69,8 @@ export declare class UserService {
         isRead: boolean;
         time: string;
         createdAt: Date;
+        dateKey: string;
+        dateLabel: string;
     }[]>;
     getUnreadNotificationsCount(userId: string): Promise<{
         count: number;
@@ -72,6 +91,9 @@ export declare class UserService {
         isFollowedByMe: boolean;
     } | {
         isFollowedByMe: boolean;
+        totalReturn: number;
+        winRate: number;
+        riskScore: number;
         id: string;
         email: string;
         username: string;
@@ -95,9 +117,6 @@ export declare class UserService {
         yearsExperience: number;
         specializations: string;
         certifications: string;
-        totalReturn: number;
-        winRate: number;
-        riskScore: number;
         isProfilePublic: boolean;
         showPortfolio: boolean;
         showStats: boolean;
@@ -164,41 +183,14 @@ export declare class UserService {
     private calculatePortfolioStats;
     getTopTraders(): Promise<{
         id: string;
-        email: string;
         username: string;
-        bio: string;
-        bioLong: string;
         avatarUrl: string;
-        bannerUrl: string;
-        isInfluencer: boolean;
-        isVerified: boolean;
-        accountType: string;
-        plan: string;
-        subscriptionStatus: string;
-        title: string;
-        company: string;
-        location: string;
-        website: string;
-        linkedinUrl: string;
-        twitterUrl: string;
-        youtubeUrl: string;
-        instagramUrl: string;
-        yearsExperience: number;
-        specializations: string;
-        certifications: string;
         totalReturn: number;
         winRate: number;
         riskScore: number;
-        isProfilePublic: boolean;
-        showPortfolio: boolean;
-        showStats: boolean;
-        acceptingFollowers: boolean;
-        createdAt: Date;
-        _count: {
-            posts: number;
-            followedBy: number;
-            following: number;
-        };
+        isVerified: boolean;
+        title: string;
+        company: string;
     }[]>;
     searchUsers(query: string): Promise<{
         id: string;

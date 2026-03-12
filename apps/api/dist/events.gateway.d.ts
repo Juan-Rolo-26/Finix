@@ -24,11 +24,12 @@ export declare class EventsGateway implements OnGatewayConnection, OnGatewayDisc
         conversationId: string;
         content?: string;
         attachment?: {
-            type: 'image' | 'post' | 'chart';
+            type: 'image' | 'post' | 'chart' | 'story';
             url?: string;
             postId?: string;
             meta?: Record<string, any>;
         } | null;
     }): Promise<void>;
-    emitNewMessage(conversationId: string, message: any): void;
+    emitConversationCreated(conversationId: string): Promise<void>;
+    emitNewMessage(conversationId: string, message: any): Promise<void>;
 }

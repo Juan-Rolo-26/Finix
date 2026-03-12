@@ -1,29 +1,28 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import AuthPage from './pages/AuthPage';
-import AuthCallback from './pages/AuthCallback';
-import Dashboard from './pages/Dashboard';
-import PortfolioPage from './pages/Portfolio';
 import { useAuthStore } from './stores/authStore';
 import { usePreferencesStore } from './stores/preferencesStore';
 import { supabase } from './lib/supabase';
-
-import InfoPage from './pages/InfoPage';
-import OnboardingWizard from './pages/OnboardingWizard';
-
-import Privacy from './pages/legal/Privacy';
-import Terms from './pages/legal/Terms';
-import ResponsibleUse from './pages/legal/ResponsibleUse';
-import About from './pages/About';
-import Help from './pages/Help';
-import Markets from './pages/Markets';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
-
-import Explore from './pages/Explore';
-import Messages from './pages/Messages';
-import PostDetail from './pages/PostDetail';
 import DashboardLayout from './layouts/DashboardLayout';
+
+// ─── Lazy Loaded Pages ────────────────────────────────────────────────────────
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const PortfolioPage = lazy(() => import('./pages/Portfolio'));
+const InfoPage = lazy(() => import('./pages/InfoPage'));
+const OnboardingWizard = lazy(() => import('./pages/OnboardingWizard'));
+const Privacy = lazy(() => import('./pages/legal/Privacy'));
+const Terms = lazy(() => import('./pages/legal/Terms'));
+const ResponsibleUse = lazy(() => import('./pages/legal/ResponsibleUse'));
+const About = lazy(() => import('./pages/About'));
+const Help = lazy(() => import('./pages/Help'));
+const Markets = lazy(() => import('./pages/Markets'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Explore = lazy(() => import('./pages/Explore'));
+const Messages = lazy(() => import('./pages/Messages'));
+const PostDetail = lazy(() => import('./pages/PostDetail'));
 
 // ─── Theme Applier ────────────────────────────────────────────────────────────
 
@@ -101,73 +100,85 @@ export default function App() {
     return (
         <>
             <ThemeApplier />
-            <Routes>
-                {/* Root: auth page. If logged in → onboarding or dashboard */}
-                <Route
-                    path="/"
-                    element={
-                        !token
-                            ? <AuthPage />
-                            : onboardingCompleted
-                                ? <Navigate to="/dashboard" replace />
-                                : <Navigate to="/onboarding" replace />
-                    }
-                />
+            <Suspense
+                fallback={
+                    <div className="flex h-screen w-screen items-center justify-center bg-background">
+                        <div
+                            className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin"
+                            role="status"
+                            aria-label="Cargando"
+                        />
+                    </div>
+                }
+            >
+                <Routes>
+                    {/* Root: auth page. If logged in → onboarding or dashboard */}
+                    <Route
+                        path="/"
+                        element={
+                            !token
+                                ? <AuthPage />
+                                : onboardingCompleted
+                                    ? <Navigate to="/dashboard" replace />
+                                    : <Navigate to="/onboarding" replace />
+                        }
+                    />
 
-                {/* Supabase auth callback (email verification + OAuth) */}
-                <Route path="/auth/callback" element={<AuthCallback />} />
+                    {/* Supabase auth callback (email verification + OAuth) */}
+                    <Route path="/auth/callback" element={<AuthCallback />} />
 
-                {/* Legacy routes now fold back into the main auth screen */}
-                <Route path="/verify-email" element={<Navigate to="/" replace />} />
-                <Route path="/reset-password" element={<Navigate to="/" replace />} />
+                    {/* Legacy routes now fold back into the main auth screen */}
+                    <Route path="/verify-email" element={<Navigate to="/" replace />} />
+                    <Route path="/reset-password" element={<Navigate to="/" replace />} />
 
-                {/* Onboarding wizard (requires auth, skips if already completed) */}
-                <Route
-                    path="/onboarding"
-                    element={
-                        !token
-                            ? <Navigate to="/" replace />
-                            : onboardingCompleted
-                                ? <Navigate to="/dashboard" replace />
-                                : <OnboardingWizard />
-                    }
-                />
+                    {/* Onboarding wizard (requires auth, skips if already completed) */}
+                    <Route
+                        path="/onboarding"
+                        element={
+                            !token
+                                ? <Navigate to="/" replace />
+                                : onboardingCompleted
+                                    ? <Navigate to="/dashboard" replace />
+                                    : <OnboardingWizard />
+                        }
+                    />
 
-                {/* Info page: simple info with back button, no landing */}
-                <Route path="/info" element={<InfoPage />} />
-                <Route path="/info/:section" element={<InfoPage />} />
+                    {/* Info page: simple info with back button, no landing */}
+                    <Route path="/info" element={<InfoPage />} />
+                    <Route path="/info/:section" element={<InfoPage />} />
 
-                {/* Protected Routes (require auth + completed onboarding) */}
-                <Route
-                    element={
-                        <RequireOnboarding>
-                            <DashboardLayout />
-                        </RequireOnboarding>
-                    }
-                >
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/portfolio" element={<PortfolioPage />} />
-                    <Route path="/market" element={<Markets />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/profile/:username" element={<Profile />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/explore" element={<Explore />} />
-                    <Route path="/posts/:id" element={<PostDetail />} />
-                    <Route path="/messages" element={<Messages />} />
-                </Route>
+                    {/* Protected Routes (require auth + completed onboarding) */}
+                    <Route
+                        element={
+                            <RequireOnboarding>
+                                <DashboardLayout />
+                            </RequireOnboarding>
+                        }
+                    >
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/portfolio" element={<PortfolioPage />} />
+                        <Route path="/market" element={<Markets />} />
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/profile/:username" element={<Profile />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/explore" element={<Explore />} />
+                        <Route path="/posts/:id" element={<PostDetail />} />
+                        <Route path="/messages" element={<Messages />} />
+                    </Route>
 
-                {/* Info & Legal Routes */}
-                <Route path="/about" element={<About />} />
-                <Route path="/help" element={<Help />} />
-                <Route path="/legal/privacy" element={<Privacy />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/legal/terms" element={<Terms />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/legal/responsible" element={<ResponsibleUse />} />
+                    {/* Info & Legal Routes */}
+                    <Route path="/about" element={<About />} />
+                    <Route path="/help" element={<Help />} />
+                    <Route path="/legal/privacy" element={<Privacy />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/legal/terms" element={<Terms />} />
+                    <Route path="/terms" element={<Terms />} />
+                    <Route path="/legal/responsible" element={<ResponsibleUse />} />
 
-                {/* Catch-all */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                    {/* Catch-all */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </Suspense>
         </>
     );
 }

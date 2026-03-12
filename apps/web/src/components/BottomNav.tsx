@@ -277,7 +277,7 @@ export function BottomNav() {
                                                                     {u.isVerified && <span className="text-[10px] font-bold" style={{ color: PRIMARY }}>✓</span>}
                                                                 </div>
                                                                 <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                                    {u.title || u.company || (u.winRate ? `${u.winRate.toFixed(0)}% Win Rate` : 'Ver perfil')}
+                                                                    {u.title || u.company || (u.winRate ? `${u.winRate.toFixed(0)}% de acierto` : 'Ver perfil')}
                                                                 </p>
                                                             </div>
                                                             <div className="px-2.5 py-1 rounded-lg text-[10px] font-bold"

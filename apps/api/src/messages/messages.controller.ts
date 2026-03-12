@@ -28,8 +28,19 @@ export class MessagesController {
 
     /** POST /api/messages/conversations - create or get conversation with another user */
     @Post('conversations')
-    createOrGetConversation(@Request() req: any, @Body() body: { userId: string }) {
-        return this.messagesService.getOrCreateConversation(req.user.id, body.userId);
+    async createOrGetConversation(
+        @Request() req: any,
+        @Body() body: { userId?: string; userIds?: string[]; title?: string },
+    ) {
+        const conversation = await this.messagesService.createConversation(req.user.id, body);
+
+        try {
+            await this.eventsGateway.emitConversationCreated(conversation.id);
+        } catch {
+            // The conversation is already persisted; realtime delivery is best-effort.
+        }
+
+        return conversation;
     }
 
     /** GET /api/messages/conversations/:id/messages */
@@ -60,7 +71,7 @@ export class MessagesController {
         const message = await this.messagesService.sendMessage(req.user.id, id, body);
 
         try {
-            this.eventsGateway.emitNewMessage(id, message);
+            await this.eventsGateway.emitNewMessage(id, message);
         } catch {
             // The message is already persisted; realtime delivery is best-effort.
         }

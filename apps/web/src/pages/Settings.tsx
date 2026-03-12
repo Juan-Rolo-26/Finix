@@ -526,7 +526,7 @@ export default function Settings() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="s-email">Email (solo lectura)</Label>
+                                    <Label htmlFor="s-email">Correo electronico (solo lectura)</Label>
                                     <Input
                                         id="s-email"
                                         type="email"
@@ -908,7 +908,7 @@ export default function Settings() {
                                         <SelectTrigger className="bg-secondary/30"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="es-AR">🇦🇷 Español (AR)</SelectItem>
-                                            <SelectItem value="en-US">🇺🇸 English (US)</SelectItem>
+                                            <SelectItem value="en-US">🇺🇸 Ingles (EE. UU.)</SelectItem>
                                             <SelectItem value="pt-BR">🇧🇷 Português (BR)</SelectItem>
                                         </SelectContent>
                                     </Select>

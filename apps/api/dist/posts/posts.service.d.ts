@@ -33,6 +33,22 @@ export declare class PostsService {
     }>;
     getPostById(postId: string, userId?: string): Promise<any>;
     updatePost(postId: string, userId: string, content: string): Promise<{
+        likes: {
+            userId: string;
+        }[];
+        reposts: {
+            userId: string;
+        }[];
+        saves: {
+            userId: string;
+        }[];
+        _count: {
+            likes: number;
+            reposts: number;
+            saves: number;
+            replies: number;
+            quotes: number;
+        };
         author: {
             id: string;
             username: string;
@@ -54,8 +70,10 @@ export declare class PostsService {
             };
         } & {
             id: string;
-            content: string;
             type: string;
+            content: string;
+            createdAt: Date;
+            updatedAt: Date;
             visibility: string;
             deletedAt: Date | null;
             assetSymbol: string | null;
@@ -64,8 +82,6 @@ export declare class PostsService {
             contentEditedAt: Date | null;
             tickers: string;
             viewCount: number;
-            createdAt: Date;
-            updatedAt: Date;
             authorId: string;
             parentId: string | null;
             quotedPostId: string | null;
@@ -90,8 +106,10 @@ export declare class PostsService {
             }[];
         } & {
             id: string;
-            content: string;
             type: string;
+            content: string;
+            createdAt: Date;
+            updatedAt: Date;
             visibility: string;
             deletedAt: Date | null;
             assetSymbol: string | null;
@@ -100,8 +118,6 @@ export declare class PostsService {
             contentEditedAt: Date | null;
             tickers: string;
             viewCount: number;
-            createdAt: Date;
-            updatedAt: Date;
             authorId: string;
             parentId: string | null;
             quotedPostId: string | null;
@@ -114,26 +130,12 @@ export declare class PostsService {
             order: number;
             postId: string;
         }[];
-        likes: {
-            userId: string;
-        }[];
-        reposts: {
-            userId: string;
-        }[];
-        saves: {
-            userId: string;
-        }[];
-        _count: {
-            replies: number;
-            quotes: number;
-            likes: number;
-            reposts: number;
-            saves: number;
-        };
     } & {
         id: string;
-        content: string;
         type: string;
+        content: string;
+        createdAt: Date;
+        updatedAt: Date;
         visibility: string;
         deletedAt: Date | null;
         assetSymbol: string | null;
@@ -142,8 +144,6 @@ export declare class PostsService {
         contentEditedAt: Date | null;
         tickers: string;
         viewCount: number;
-        createdAt: Date;
-        updatedAt: Date;
         authorId: string;
         parentId: string | null;
         quotedPostId: string | null;

@@ -200,7 +200,7 @@ export default function AuthPage() {
             setCode('');
             setDevCode(typeof data?.devCode === 'string' ? data.devCode : '');
             setInfoMessage(
-                data?.message || `Te enviamos un codigo a ${email}. Revisalo para continuar.`,
+                data?.message || `Te enviamos un codigo a tu correo, ${email}. Revisalo para continuar.`,
             );
         } catch {
             setAuthError(t.auth.errors.connectionError);
@@ -243,7 +243,7 @@ export default function AuthPage() {
             }
 
             if (view === 'forgot') {
-                setSuccessMessage('Contrasena actualizada. Ahora iniciá sesión y validá tu codigo.');
+                setSuccessMessage('Contrasena actualizada. Ahora inicia sesion y valida tu codigo.');
                 setPassword('');
                 setNewPassword('');
                 setCode('');
@@ -276,7 +276,7 @@ export default function AuthPage() {
 
             const data = await response.json();
             setDevCode(typeof data?.devCode === 'string' ? data.devCode : '');
-            setInfoMessage(data?.message || `Te reenviamos un codigo a ${email}.`);
+            setInfoMessage(data?.message || `Te reenviamos un codigo a tu correo, ${email}.`);
         } catch {
             setAuthError(t.auth.errors.connectionError);
         } finally {
@@ -300,16 +300,16 @@ export default function AuthPage() {
         ? view === 'login'
             ? 'Ingresá el codigo de 6 digitos que te mandamos para terminar el inicio de sesión.'
             : view === 'register'
-                ? 'Confirmá tu email con el codigo de 6 digitos para activar la cuenta.'
+                ? 'Confirma tu correo con el codigo de 6 digitos para activar la cuenta.'
                 : 'Ingresá el codigo de 6 digitos y elegí tu nueva contrasena.'
         : view === 'login'
-            ? 'Ingresá tu email y contraseña. Finix te va a pedir un codigo antes de entrar.'
+            ? 'Ingresa tu correo y contrasena. Finix te va a pedir un codigo antes de entrar.'
             : view === 'register'
-                ? 'Creá tu cuenta y activala con un codigo enviado por Finix a tu email.'
-                : 'Te enviaremos un codigo por email para cambiar la contrasena sin salir de esta pantalla.';
+                ? 'Crea tu cuenta y activala con un codigo enviado por Finix a tu correo.'
+                : 'Te enviaremos un codigo por correo para cambiar la contrasena sin salir de esta pantalla.';
 
     const features = [
-        { icon: TrendingUp, label: 'Feed Social' },
+        { icon: TrendingUp, label: 'Comunidad social' },
         { icon: Wallet, label: 'Portafolios' },
         { icon: Sparkles, label: 'Herramientas' },
         { icon: BarChart3, label: 'Mercados' },
@@ -322,31 +322,30 @@ export default function AuthPage() {
     ];
 
     return (
-        <div className="auth-shell min-h-screen flex flex-col bg-background">
-            <div className="flex-1 grid lg:grid-cols-2">
-                <div className="auth-hero-panel relative hidden lg:flex flex-col justify-center items-center overflow-hidden border-r border-border/40 p-12">
-                    <div className="absolute inset-0 pointer-events-none">
-                        <motion.div
-                            className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full"
-                            style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.18) 0%, transparent 70%)' }}
-                            animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
-                            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-                        />
-                        <motion.div
-                            className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full"
-                            style={{ background: 'radial-gradient(circle, hsl(160 80% 40% / 0.12) 0%, transparent 70%)' }}
-                            animate={{ scale: [1.1, 1, 1.1] }}
-                            transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-                        />
-                        <div
-                            className="absolute inset-0 opacity-[0.025]"
-                            style={{
-                                backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
-                                backgroundSize: '50px 50px',
-                            }}
-                        />
-                    </div>
-
+        <div className="auth-shell relative overflow-hidden min-h-screen flex flex-col bg-background">
+            <div className="absolute inset-0 pointer-events-none z-0">
+                <motion.div
+                    className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full"
+                    style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.18) 0%, transparent 70%)' }}
+                    animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
+                    transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                <motion.div
+                    className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full"
+                    style={{ background: 'radial-gradient(circle, hsl(160 80% 40% / 0.12) 0%, transparent 70%)' }}
+                    animate={{ scale: [1.1, 1, 1.1] }}
+                    transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                <div
+                    className="absolute inset-0 opacity-[0.025]"
+                    style={{
+                        backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
+                        backgroundSize: '50px 50px',
+                    }}
+                />
+            </div>
+            <div className="flex-1 grid lg:grid-cols-2 relative z-10">
+                <div className="auth-hero-panel relative hidden lg:flex flex-col justify-center items-center p-12">
                     <div className="relative z-10 max-w-md w-full space-y-10">
                         <motion.div
                             initial={{ opacity: 0, y: -20 }}
@@ -449,7 +448,7 @@ export default function AuthPage() {
                                     </div>
                                 ) : null}
 
-                {infoMessage ? (
+                                {infoMessage ? (
                                     <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-foreground flex gap-3">
                                         <KeyRound className="w-5 h-5 shrink-0 mt-0.5 text-primary" />
                                         <span>
@@ -721,6 +720,6 @@ export default function AuthPage() {
                     </div>
                 </div>
             </footer>
-        </div>
+        </div >
     );
 }

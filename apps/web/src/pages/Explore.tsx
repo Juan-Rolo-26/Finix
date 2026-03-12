@@ -91,7 +91,7 @@ const SORT_TABS = [
 
 const TYPE_FILTERS = [
     { key: '', label: 'Todo', icon: LayoutGrid },
-    { key: 'post', label: 'Posts', icon: PenSquare },
+    { key: 'post', label: 'Publicaciones', icon: PenSquare },
     { key: 'image', label: 'Imágenes', icon: Image },
     { key: 'reel', label: 'Ediciones', icon: Film },
     { key: 'chart', label: 'Gráficos', icon: BarChart2 },
@@ -232,13 +232,13 @@ export default function ExplorePage() {
                                         variant="outline"
                                         className="w-fit border-primary/20 bg-primary/10 text-primary"
                                     >
-                                        {showSaved ? 'Colección personal' : 'Feed de mercado'}
+                                        {showSaved ? 'Coleccion personal' : 'Actividad de mercado'}
                                     </Badge>
                                     <div className="space-y-2">
                                         <h1 className="text-3xl font-semibold tracking-tight">Explorar</h1>
                                         <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
                                             Descubrí ideas, publicaciones, ediciones y gráficos con una superficie más amplia,
-                                            limpia y profesional para navegar el feed de Finix.
+                                            limpia y profesional para navegar la actividad de Finix.
                                         </p>
                                     </div>
                                 </div>
@@ -250,7 +250,7 @@ export default function ExplorePage() {
                                         className={`gap-2 ${showSaved ? 'text-primary' : ''}`}
                                     >
                                         <Bookmark className={`w-5 h-5 ${showSaved ? 'fill-primary' : ''}`} />
-                                        <span>{showSaved ? 'Volver al feed' : 'Guardados'}</span>
+                                        <span>{showSaved ? 'Volver a la actividad' : 'Guardados'}</span>
                                     </Button>
                                     <Button
                                         variant="ghost"
@@ -417,7 +417,7 @@ export default function ExplorePage() {
                                 </div>
                             )}
                             {!isLoading && !hasMore && posts.length > 0 && (
-                                <p className="text-xs text-muted-foreground">Fin del feed</p>
+                                <p className="text-xs text-muted-foreground">Fin de la actividad</p>
                             )}
                         </div>
                 </div>

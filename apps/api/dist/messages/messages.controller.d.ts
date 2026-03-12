@@ -6,13 +6,23 @@ export declare class MessagesController {
     constructor(messagesService: MessagesService, eventsGateway: EventsGateway);
     getConversations(req: any): Promise<{
         id: string;
+        isGroup: boolean;
+        title: string;
         otherUser: {
             id: string;
             username: string;
             avatarUrl: string;
             isVerified: boolean;
         };
+        participants: {
+            id: string;
+            username: string;
+            avatarUrl: string;
+            isVerified: boolean;
+        }[];
+        participantCount: number;
         lastMessage: {
+            isRead: boolean;
             attachmentMeta: any;
             sender: {
                 id: string;
@@ -23,8 +33,8 @@ export declare class MessagesController {
             sharedPost: {
                 id: string;
                 createdAt: Date;
-                content: string;
                 type: string;
+                content: string;
                 assetSymbol: string;
                 analysisType: string;
                 riskLevel: string;
@@ -45,40 +55,83 @@ export declare class MessagesController {
             };
             id: string;
             createdAt: Date;
+            content: string;
             conversationId: string;
             senderId: string;
-            content: string;
             attachmentType: string | null;
             attachmentUrl: string | null;
             sharedPostId: string | null;
-            isRead: boolean;
         };
         updatedAt: Date;
         unreadCount: number;
     }[]>;
     createOrGetConversation(req: any, body: {
-        userId: string;
+        userId?: string;
+        userIds?: string[];
+        title?: string;
     }): Promise<{
-        participant1: {
-            id: string;
-            username: string;
-            avatarUrl: string;
-            isVerified: boolean;
-        };
-        participant2: {
-            id: string;
-            username: string;
-            avatarUrl: string;
-            isVerified: boolean;
-        };
-    } & {
         id: string;
-        participant1Id: string;
-        participant2Id: string;
-        createdAt: Date;
+        isGroup: boolean;
+        title: string;
+        otherUser: {
+            id: string;
+            username: string;
+            avatarUrl: string;
+            isVerified: boolean;
+        };
+        participants: {
+            id: string;
+            username: string;
+            avatarUrl: string;
+            isVerified: boolean;
+        }[];
+        participantCount: number;
+        lastMessage: {
+            isRead: boolean;
+            attachmentMeta: any;
+            sender: {
+                id: string;
+                username: string;
+                avatarUrl: string;
+                isVerified: boolean;
+            };
+            sharedPost: {
+                id: string;
+                createdAt: Date;
+                type: string;
+                content: string;
+                assetSymbol: string;
+                analysisType: string;
+                riskLevel: string;
+                author: {
+                    id: string;
+                    username: string;
+                    avatarUrl: string;
+                    isVerified: boolean;
+                };
+                media: {
+                    id: string;
+                    createdAt: Date;
+                    postId: string;
+                    url: string;
+                    mediaType: string;
+                    order: number;
+                }[];
+            };
+            id: string;
+            createdAt: Date;
+            content: string;
+            conversationId: string;
+            senderId: string;
+            attachmentType: string | null;
+            attachmentUrl: string | null;
+            sharedPostId: string | null;
+        };
         updatedAt: Date;
+        unreadCount: number;
     }>;
     getMessages(id: string, req: any, cursor?: string): Promise<{
+        isRead: boolean;
         attachmentMeta: any;
         sender: {
             id: string;
@@ -89,8 +142,8 @@ export declare class MessagesController {
         sharedPost: {
             id: string;
             createdAt: Date;
-            content: string;
             type: string;
+            content: string;
             assetSymbol: string;
             analysisType: string;
             riskLevel: string;
@@ -111,13 +164,12 @@ export declare class MessagesController {
         };
         id: string;
         createdAt: Date;
+        content: string;
         conversationId: string;
         senderId: string;
-        content: string;
         attachmentType: string | null;
         attachmentUrl: string | null;
         sharedPostId: string | null;
-        isRead: boolean;
     }[]>;
     sendMessage(id: string, req: any, body: {
         content?: string;
@@ -128,6 +180,7 @@ export declare class MessagesController {
             meta?: Record<string, any>;
         } | null;
     }): Promise<{
+        isRead: boolean;
         attachmentMeta: any;
         sender: {
             id: string;
@@ -138,8 +191,8 @@ export declare class MessagesController {
         sharedPost: {
             id: string;
             createdAt: Date;
-            content: string;
             type: string;
+            content: string;
             assetSymbol: string;
             analysisType: string;
             riskLevel: string;
@@ -160,13 +213,12 @@ export declare class MessagesController {
         };
         id: string;
         createdAt: Date;
+        content: string;
         conversationId: string;
         senderId: string;
-        content: string;
         attachmentType: string | null;
         attachmentUrl: string | null;
         sharedPostId: string | null;
-        isRead: boolean;
     }>;
     markAsRead(id: string, req: any): Promise<{
         success: boolean;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { StoryComposerModal } from './StoryComposerModal';
@@ -77,15 +77,6 @@ export function StoriesRail() {
     return (
         <>
             <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                    <div>
-                        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <Sparkles className="h-4 w-4 text-primary" />
-                            Historias
-                        </div>
-                        <p className="text-xs text-muted-foreground">Actualizaciones rapidas que desaparecen en 24 horas.</p>
-                    </div>
-                </div>
 
                 <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
                     <button

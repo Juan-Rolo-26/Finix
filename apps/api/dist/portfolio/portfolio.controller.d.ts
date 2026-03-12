@@ -45,6 +45,17 @@ export declare class PortfolioController {
         esPrincipal: any;
         admiteBienesRaices: any;
         assets: any;
+        cash: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
+        cashAccounts: {
+            currency: string;
+            balance: number;
+        }[];
+        assetsValue: number;
+        totalValue: number;
         movements: any;
         createdAt: any;
         updatedAt: any;
@@ -60,6 +71,17 @@ export declare class PortfolioController {
         esPrincipal: any;
         admiteBienesRaices: any;
         assets: any;
+        cash: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
+        cashAccounts: {
+            currency: string;
+            balance: number;
+        }[];
+        assetsValue: number;
+        totalValue: number;
         movements: any;
         createdAt: any;
         updatedAt: any;
@@ -75,18 +97,41 @@ export declare class PortfolioController {
         esPrincipal: any;
         admiteBienesRaices: any;
         assets: any;
+        cash: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
+        cashAccounts: {
+            currency: string;
+            balance: number;
+        }[];
+        assetsValue: number;
+        totalValue: number;
         movements: any;
         createdAt: any;
         updatedAt: any;
     }[]>;
     getPublicPortfolioMetrics(id: string): Promise<{
         capitalTotal: number;
+        capitalInvertido: number;
+        assetsValue: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
         valorActual: number;
+        totalValue: number;
         gananciaTotal: number;
         variacionPorcentual: number;
         diversificacionPorClase: Record<string, number>;
         diversificacionPorActivo: Record<string, number>;
         cantidadActivos: number;
+        retornosMensuales: {
+            monthKey: string;
+            label: string;
+            value: number;
+        }[];
     }>;
     getPublicPortfolioMovements(id: string): Promise<{
         id: any;
@@ -109,18 +154,41 @@ export declare class PortfolioController {
         esPrincipal: any;
         admiteBienesRaices: any;
         assets: any;
+        cash: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
+        cashAccounts: {
+            currency: string;
+            balance: number;
+        }[];
+        assetsValue: number;
+        totalValue: number;
         movements: any;
         createdAt: any;
         updatedAt: any;
     }>;
     getPortfolioMetrics(req: any, id: string): Promise<{
         capitalTotal: number;
+        capitalInvertido: number;
+        assetsValue: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
         valorActual: number;
+        totalValue: number;
         gananciaTotal: number;
         variacionPorcentual: number;
         diversificacionPorClase: Record<string, number>;
         diversificacionPorActivo: Record<string, number>;
         cantidadActivos: number;
+        retornosMensuales: {
+            monthKey: string;
+            label: string;
+            value: number;
+        }[];
     }>;
     updatePortfolio(req: any, id: string, dto: UpdatePortfolioDto): Promise<{
         id: any;
@@ -133,6 +201,17 @@ export declare class PortfolioController {
         esPrincipal: any;
         admiteBienesRaices: any;
         assets: any;
+        cash: number;
+        cashBalance: number;
+        cashByCurrency: {
+            [k: string]: number;
+        };
+        cashAccounts: {
+            currency: string;
+            balance: number;
+        }[];
+        assetsValue: number;
+        totalValue: number;
         movements: any;
         createdAt: any;
         updatedAt: any;
@@ -170,6 +249,7 @@ export declare class PortfolioController {
         ppc: number;
         montoInvertido: number;
         precioActual: number;
+        value: number;
         precioTiempoReal: boolean;
         precioFuente: string;
         precioActualizadoEn: string;

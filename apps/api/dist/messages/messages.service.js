@@ -36,74 +36,122 @@ const MESSAGE_INCLUDE = client_1.Prisma.validator()({
     sender: { select: USER_SELECT },
     sharedPost: { select: SHARED_POST_SELECT },
 });
+const CONVERSATION_INCLUDE = client_1.Prisma.validator()({
+    participants: {
+        orderBy: { joinedAt: 'asc' },
+        include: {
+            user: { select: USER_SELECT },
+        },
+    },
+    messages: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        include: MESSAGE_INCLUDE,
+    },
+});
+const CONVERSATION_ACCESS_INCLUDE = client_1.Prisma.validator()({
+    participants: {
+        orderBy: { joinedAt: 'asc' },
+        include: {
+            user: { select: USER_SELECT },
+        },
+    },
+});
 let MessagesService = class MessagesService {
     constructor(prisma) {
         this.prisma = prisma;
     }
+    async createConversation(userId, payload) {
+        const requestedIds = [
+            ...(Array.isArray(payload.userIds) ? payload.userIds : []),
+            ...(payload.userId ? [payload.userId] : []),
+        ];
+        const participantIds = this.normalizeParticipantIds(userId, requestedIds);
+        if (participantIds.length === 0) {
+            throw new common_1.BadRequestException('Debes seleccionar al menos un usuario');
+        }
+        if (participantIds.length === 1) {
+            return this.getOrCreateConversation(userId, participantIds[0]);
+        }
+        return this.createGroupConversation(userId, participantIds, payload.title);
+    }
     async getOrCreateConversation(userId, otherUserId) {
+        if (!otherUserId || otherUserId === userId) {
+            throw new common_1.BadRequestException('Debes seleccionar otro usuario');
+        }
         const [p1, p2] = [userId, otherUserId].sort();
         let conversation = await this.prisma.conversation.findUnique({
             where: { participant1Id_participant2Id: { participant1Id: p1, participant2Id: p2 } },
-            include: {
-                participant1: { select: USER_SELECT },
-                participant2: { select: USER_SELECT },
-            },
+            include: CONVERSATION_INCLUDE,
         });
         if (!conversation) {
             conversation = await this.prisma.conversation.create({
-                data: { participant1Id: p1, participant2Id: p2 },
-                include: {
-                    participant1: { select: USER_SELECT },
-                    participant2: { select: USER_SELECT },
+                data: {
+                    participant1Id: p1,
+                    participant2Id: p2,
+                    isGroup: false,
+                    participants: {
+                        create: [
+                            { userId: p1, lastReadAt: new Date() },
+                            { userId: p2, lastReadAt: new Date() },
+                        ],
+                    },
                 },
+                include: CONVERSATION_INCLUDE,
             });
         }
-        return conversation;
+        return this.serializeConversationSummary(conversation, userId, 0);
+    }
+    async createGroupConversation(userId, participantIds, title) {
+        const normalizedIds = this.normalizeParticipantIds(userId, participantIds);
+        if (normalizedIds.length < 2) {
+            throw new common_1.BadRequestException('Un grupo necesita al menos dos usuarios adicionales');
+        }
+        const members = [userId, ...normalizedIds];
+        const distinctMembers = Array.from(new Set(members));
+        const users = await this.prisma.user.findMany({
+            where: { id: { in: distinctMembers } },
+            select: { id: true },
+        });
+        if (users.length !== distinctMembers.length) {
+            throw new common_1.NotFoundException('Uno o más usuarios no existen');
+        }
+        const safeTitle = typeof title === 'string' ? title.trim().slice(0, 80) : '';
+        const conversation = await this.prisma.conversation.create({
+            data: {
+                isGroup: true,
+                title: safeTitle || null,
+                createdById: userId,
+                participants: {
+                    create: distinctMembers.map((memberId) => ({
+                        userId: memberId,
+                        lastReadAt: new Date(),
+                    })),
+                },
+            },
+            include: CONVERSATION_INCLUDE,
+        });
+        return this.serializeConversationSummary(conversation, userId, 0);
     }
     async getConversations(userId) {
         const conversations = await this.prisma.conversation.findMany({
             where: {
-                OR: [{ participant1Id: userId }, { participant2Id: userId }],
-            },
-            include: {
-                participant1: { select: USER_SELECT },
-                participant2: { select: USER_SELECT },
-                messages: {
-                    orderBy: { createdAt: 'desc' },
-                    take: 1,
-                    include: MESSAGE_INCLUDE,
+                participants: {
+                    some: { userId },
                 },
             },
+            include: CONVERSATION_INCLUDE,
             orderBy: { updatedAt: 'desc' },
         });
         const result = await Promise.all(conversations.map(async (conv) => {
-            const otherUser = conv.participant1Id === userId ? conv.participant2 : conv.participant1;
-            const unreadCount = await this.prisma.directMessage.count({
-                where: {
-                    conversationId: conv.id,
-                    senderId: { not: userId },
-                    isRead: false,
-                },
-            });
-            return {
-                id: conv.id,
-                otherUser,
-                lastMessage: conv.messages[0] ? this.serializeMessage(conv.messages[0]) : null,
-                updatedAt: conv.updatedAt,
-                unreadCount,
-            };
+            const currentParticipant = conv.participants.find((participant) => participant.userId === userId) ?? null;
+            const unreadCount = await this.countUnreadMessages(conv.id, userId, currentParticipant?.lastReadAt ?? null);
+            return this.serializeConversationSummary(conv, userId, unreadCount);
         }));
         return result;
     }
     async getMessages(conversationId, userId, cursor) {
-        const conv = await this.prisma.conversation.findFirst({
-            where: {
-                id: conversationId,
-                OR: [{ participant1Id: userId }, { participant2Id: userId }],
-            },
-        });
-        if (!conv)
-            throw new common_1.ForbiddenException('No tienes acceso a esta conversación');
+        const conv = await this.getConversationForMember(conversationId, userId);
         const messages = await this.prisma.directMessage.findMany({
             where: { conversationId },
             include: MESSAGE_INCLUDE,
@@ -111,72 +159,87 @@ let MessagesService = class MessagesService {
             ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
             take: 50,
         });
-        return messages.map((message) => this.serializeMessage(message));
+        return messages.map((message) => this.serializeMessage(message, conv));
     }
     async sendMessage(senderId, conversationId, payload) {
-        const conv = await this.prisma.conversation.findFirst({
-            where: {
-                id: conversationId,
-                OR: [{ participant1Id: senderId }, { participant2Id: senderId }],
-            },
-        });
-        if (!conv)
-            throw new common_1.ForbiddenException('No tienes acceso a esta conversación');
+        const conv = await this.getConversationForMember(conversationId, senderId);
         const content = typeof payload.content === 'string' ? payload.content.trim() : '';
         const attachment = await this.prepareAttachment(payload.attachment);
         if (!content && !attachment) {
             throw new common_1.BadRequestException('El mensaje debe tener texto o un adjunto');
         }
-        const message = await this.prisma.directMessage.create({
-            data: {
-                conversationId,
-                senderId,
-                content,
-                attachmentType: attachment?.attachmentType ?? null,
-                attachmentUrl: attachment?.attachmentUrl ?? null,
-                attachmentData: attachment?.attachmentData ?? null,
-                sharedPostId: attachment?.sharedPostId ?? null,
-            },
-            include: MESSAGE_INCLUDE,
+        const message = await this.prisma.$transaction(async (tx) => {
+            const createdMessage = await tx.directMessage.create({
+                data: {
+                    conversationId,
+                    senderId,
+                    content,
+                    attachmentType: attachment?.attachmentType ?? null,
+                    attachmentUrl: attachment?.attachmentUrl ?? null,
+                    attachmentData: attachment?.attachmentData ?? null,
+                    sharedPostId: attachment?.sharedPostId ?? null,
+                },
+                include: MESSAGE_INCLUDE,
+            });
+            await tx.conversation.update({
+                where: { id: conversationId },
+                data: { updatedAt: new Date() },
+            });
+            await tx.conversationParticipant.update({
+                where: {
+                    conversationId_userId: {
+                        conversationId,
+                        userId: senderId,
+                    },
+                },
+                data: { lastReadAt: createdMessage.createdAt },
+            });
+            return createdMessage;
         });
-        await this.prisma.conversation.update({
-            where: { id: conversationId },
-            data: { updatedAt: new Date() },
-        });
-        return this.serializeMessage(message);
+        const conversationContext = {
+            ...conv,
+            participants: conv.participants.map((participant) => (participant.userId === senderId
+                ? { ...participant, lastReadAt: message.createdAt }
+                : participant)),
+        };
+        return this.serializeMessage(message, conversationContext);
     }
     async markAsRead(conversationId, userId) {
-        const conv = await this.prisma.conversation.findFirst({
-            where: {
-                id: conversationId,
-                OR: [{ participant1Id: userId }, { participant2Id: userId }],
-            },
-        });
-        if (!conv)
-            throw new common_1.ForbiddenException('No tienes acceso a esta conversación');
-        await this.prisma.directMessage.updateMany({
-            where: {
-                conversationId,
-                senderId: { not: userId },
-                isRead: false,
-            },
-            data: { isRead: true },
+        const conv = await this.getConversationForMember(conversationId, userId);
+        const now = new Date();
+        await this.prisma.$transaction(async (tx) => {
+            await tx.conversationParticipant.update({
+                where: {
+                    conversationId_userId: {
+                        conversationId,
+                        userId,
+                    },
+                },
+                data: { lastReadAt: now },
+            });
+            if (!conv.isGroup) {
+                await tx.directMessage.updateMany({
+                    where: {
+                        conversationId,
+                        senderId: { not: userId },
+                        isRead: false,
+                    },
+                    data: { isRead: true },
+                });
+            }
         });
         return { success: true };
     }
     async getUnreadCount(userId) {
-        const conversations = await this.prisma.conversation.findMany({
-            where: { OR: [{ participant1Id: userId }, { participant2Id: userId }] },
-            select: { id: true },
-        });
-        const count = await this.prisma.directMessage.count({
-            where: {
-                conversationId: { in: conversations.map((c) => c.id) },
-                senderId: { not: userId },
-                isRead: false,
+        const memberships = await this.prisma.conversationParticipant.findMany({
+            where: { userId },
+            select: {
+                conversationId: true,
+                lastReadAt: true,
             },
         });
-        return { count };
+        const counts = await Promise.all(memberships.map((membership) => (this.countUnreadMessages(membership.conversationId, userId, membership.lastReadAt))));
+        return { count: counts.reduce((sum, value) => sum + value, 0) };
     }
     async searchUsers(query, userId) {
         if (!query || query.trim().length < 1)
@@ -200,25 +263,79 @@ let MessagesService = class MessagesService {
             take: 10,
         });
     }
+    async getConversationParticipantIds(conversationId) {
+        const participants = await this.prisma.conversationParticipant.findMany({
+            where: { conversationId },
+            select: { userId: true },
+        });
+        return participants.map((participant) => participant.userId);
+    }
     async getOtherParticipant(conversationId, userId) {
+        const conv = await this.getConversationForMember(conversationId, userId);
+        if (conv.isGroup) {
+            return null;
+        }
+        return conv.participants.find((participant) => participant.userId !== userId)?.user ?? null;
+    }
+    async getConversationForMember(conversationId, userId) {
         const conv = await this.prisma.conversation.findFirst({
             where: {
                 id: conversationId,
-                OR: [{ participant1Id: userId }, { participant2Id: userId }],
+                participants: {
+                    some: { userId },
+                },
             },
-            include: {
-                participant1: { select: USER_SELECT },
-                participant2: { select: USER_SELECT },
+            include: CONVERSATION_ACCESS_INCLUDE,
+        });
+        if (!conv) {
+            throw new common_1.ForbiddenException('No tienes acceso a esta conversación');
+        }
+        return conv;
+    }
+    async countUnreadMessages(conversationId, userId, lastReadAt) {
+        return this.prisma.directMessage.count({
+            where: {
+                conversationId,
+                senderId: { not: userId },
+                ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
             },
         });
-        if (!conv)
-            throw new common_1.ForbiddenException('No tienes acceso');
-        return conv.participant1Id === userId ? conv.participant2 : conv.participant1;
     }
-    serializeMessage(message) {
-        const { attachmentData, ...rest } = message;
+    normalizeParticipantIds(userId, ids) {
+        return Array.from(new Set(ids.map((id) => id?.trim()).filter(Boolean))).filter((id) => id !== userId);
+    }
+    serializeConversationSummary(conversation, userId, unreadCount) {
+        const participants = conversation.participants.map((participant) => participant.user);
+        const otherUser = conversation.isGroup
+            ? null
+            : participants.find((participant) => participant.id !== userId) ?? participants[0] ?? null;
+        const visibleMembers = participants.filter((participant) => participant.id !== userId);
+        const title = conversation.isGroup
+            ? conversation.title?.trim() || visibleMembers.map((participant) => participant.username).join(', ') || 'Grupo sin nombre'
+            : otherUser?.username || 'Conversación';
+        const lastMessageRecord = 'messages' in conversation ? conversation.messages[0] ?? null : null;
+        return {
+            id: conversation.id,
+            isGroup: conversation.isGroup,
+            title,
+            otherUser,
+            participants,
+            participantCount: participants.length,
+            lastMessage: lastMessageRecord ? this.serializeMessage(lastMessageRecord, conversation) : null,
+            updatedAt: conversation.updatedAt,
+            unreadCount,
+        };
+    }
+    serializeMessage(message, conversation) {
+        const { attachmentData, isRead, ...rest } = message;
+        let resolvedIsRead = isRead;
+        if (conversation?.isGroup) {
+            const otherParticipants = conversation.participants.filter((participant) => participant.userId !== message.senderId);
+            resolvedIsRead = otherParticipants.length > 0 && otherParticipants.every((participant) => (participant.lastReadAt ? participant.lastReadAt >= message.createdAt : false));
+        }
         return {
             ...rest,
+            isRead: resolvedIsRead,
             attachmentMeta: this.parseAttachmentData(attachmentData),
         };
     }

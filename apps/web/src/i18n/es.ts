@@ -9,7 +9,7 @@ export const es = {
         analyzing: 'Analizando...'
     },
     nav: {
-        dashboard: 'Dashboard',
+        dashboard: 'Inicio',
         portfolio: 'Portafolio',
         market: 'Mercado',
         analysis: 'Análisis',
@@ -119,9 +119,9 @@ export const es = {
             subtitle: 'Información principal de tu cuenta y perfil público.',
             username: 'Usuario',
             usernamePlaceholder: 'Tu nombre de usuario',
-            email: 'Email',
+            email: 'Correo electronico',
             titleProf: 'Título profesional',
-            titlePlaceholder: 'Ej: Trading Analyst',
+            titlePlaceholder: 'Ej: Analista de mercados',
             company: 'Compañía',
             location: 'Ubicación',
             yearsExp: 'Años de experiencia',
@@ -136,7 +136,7 @@ export const es = {
             subtitle: 'Definí qué información pública puede ver el resto de usuarios.',
             publicProfile: 'Perfil público',
             publicProfileDesc: 'Permite que otros usuarios encuentren y vean tu perfil.',
-            showPortfolio: 'Mostrar portfolio',
+            showPortfolio: 'Mostrar portafolio',
             showPortfolioDesc: 'Expone tu composición de cartera en el perfil público.',
             showStats: 'Mostrar estadísticas',
             showStatsDesc: 'Publica métricas agregadas como rendimiento y riesgo.',
@@ -180,11 +180,11 @@ export const es = {
         forgotTitle: 'Recuperar Contraseña',
         loginDesc: 'Ingresa tus credenciales para continuar',
         registerDesc: 'Regístrate gratis en menos de 1 minuto',
-        forgotDesc: 'Te enviaremos las instrucciones a tu email',
+        forgotDesc: 'Te enviaremos las instrucciones a tu correo',
         emailSentTitle: '¡Correo Enviado!',
         emailSentDesc: 'Hemos enviado un enlace de recuperación a',
         checkInbox: 'Por favor revisa tu bandeja de entrada.',
-        backLogin: 'Volver al Login',
+        backLogin: 'Volver al inicio de sesion',
         username: 'Nombre de usuario',
         email: 'Correo electrónico',
         password: 'Contraseña',
@@ -199,7 +199,7 @@ export const es = {
         login: 'Inicia Sesión',
         backToLogin: 'Volver al Inicio de Sesión',
         errors: {
-            googleNotConfigured: 'Login con Google no está configurado todavía. Usa email y contraseña.',
+            googleNotConfigured: 'El acceso con Google no esta configurado todavia. Usa correo y contrasena.',
             invalidCredentials: 'Credenciales inválidas o usuario ya registrado.',
             connectionError: 'No se pudo conectar con el servidor. Verifica que la API esté levantada.'
         }
@@ -251,7 +251,7 @@ export const es = {
             subtitle: 'Una plataforma completa que combina lo mejor de las redes sociales con herramientas financieras profesionales',
             cards: {
                 socialFeed: {
-                    title: 'Feed Social Financiero',
+                    title: 'Comunidad financiera',
                     desc: 'Como Instagram, pero con contenido financiero. Ideas de trading, análisis técnico, gráficos incrustados y opiniones de la comunidad.'
                 },
                 smartPortfolios: {
@@ -291,11 +291,11 @@ export const es = {
             cards: {
                 step1: {
                     title: 'Crea tu Cuenta',
-                    desc: 'Regístrate gratis en segundos con tu email o redes sociales. Sin tarjeta de crédito requerida.'
+                    desc: 'Registrate gratis en segundos con tu correo o redes sociales. Sin tarjeta de credito requerida.'
                 },
                 step2: {
                     title: 'Configura tu Perfil',
-                    desc: 'Define tu estrategia de inversión, intereses y nivel de experiencia para personalizar tu feed.'
+                    desc: 'Define tu estrategia de inversion, intereses y nivel de experiencia para personalizar tu inicio.'
                 },
                 step3: {
                     title: 'Carga tu Portafolio',
@@ -315,12 +315,12 @@ export const es = {
             title: 'Experiencia de',
             titleSuffix: 'Usuario',
             subtitle: 'Diseñada para que cualquier inversor pueda navegar con facilidad',
-            feedTitle: 'Feed en Tiempo Real',
+            feedTitle: 'Actividad en tiempo real',
             feedSubtitle: 'Ideas de la comunidad',
             sharedAnalysis: 'compartió análisis',
             postedIdea: 'publicó idea',
             updatedPortfolio: 'actualizó portafolio',
-            myPortfolio: 'Mi Portafolio',
+            myPortfolio: 'Mi portafolio',
             realtimePerformance: 'Rendimiento en tiempo real',
             totalValue: 'Valor Total',
             totalGain: 'Ganancia Total',
@@ -514,7 +514,7 @@ export const es = {
     },
     profile: {
         notFound: 'Perfil no encontrado',
-        backDashboard: 'Volver al Dashboard',
+        backDashboard: 'Volver al inicio',
         edit: 'Editar Perfil',
         cancel: 'Cancelar',
         save: 'Guardar',
@@ -525,13 +525,13 @@ export const es = {
         followers: 'seguidores',
         stats: {
             totalReturn: 'Retorno Total',
-            winRate: 'Win Rate',
+            winRate: 'Tasa de acierto',
             risk: 'Riesgo'
         },
         tabs: {
             overview: 'Resumen',
-            posts: 'Posts',
-            portfolio: 'Portfolio',
+            posts: 'Publicaciones',
+            portfolio: 'Portafolio',
             about: 'Sobre Mí'
         },
         about: {
@@ -547,14 +547,14 @@ export const es = {
             website: 'Sitio Web',
             accountDetails: 'Detalles de la Cuenta',
             memberSince: 'Miembro desde',
-            privatePortfolio: 'Este portfolio es privado',
-            privatePortfolioOwn: 'Tu portfolio está privado. Actívalo en configuración para compartirlo.'
+            privatePortfolio: 'Este portafolio es privado',
+            privatePortfolioOwn: 'Tu portafolio esta privado. Activalo en configuracion para compartirlo.'
         }
     },
     dashboard: {
         welcome: 'Hola,',
         subtitle: 'Aquí está tu resumen del mercado hoy.',
-        newTrade: '+ Nuevo Trade',
+        newTrade: '+ Nueva operacion',
         trends: 'Tendencias',
         noTrends: 'Sin tendencias aún.',
         mentions: 'menciones',
