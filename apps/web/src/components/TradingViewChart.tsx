@@ -82,7 +82,7 @@ function TradingViewChart({
             <CardContent className="p-0">
                 <div
                     ref={containerRef}
-                    style={{ height: `clamp(640px, var(--finix-vh-84), ${height}px)`, width: '100%' }}
+                    style={{ height: `clamp(640px, 84vh, ${height}px)`, width: '100%' }}
                     className="tradingview-widget-container min-h-[640px] md:min-h-[760px] lg:min-h-[860px]"
                 />
             </CardContent>

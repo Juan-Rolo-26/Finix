@@ -181,7 +181,7 @@ export function BottomNav() {
                                 background: 'hsl(var(--sidebar-bg))',
                                 borderTop: '1px solid hsl(var(--sidebar-border))',
                                 paddingBottom: 'calc(env(safe-area-inset-bottom) + 64px)',
-                                maxHeight: 'var(--finix-vh-85)',
+                                maxHeight: '85vh',
                             }}
                             initial={{ y: '100%' }}
                             animate={{ y: 0 }}
@@ -193,7 +193,7 @@ export function BottomNav() {
                                 <div className="w-10 h-1 rounded-full" style={{ background: 'hsl(var(--border))' }} />
                             </div>
 
-                            <div className="overflow-y-auto" style={{ maxHeight: 'calc(var(--finix-vh-85) - 60px)' }}>
+                            <div className="overflow-y-auto" style={{ maxHeight: 'calc(85vh - 60px)' }}>
                                 {/* Header */}
                                 <div className="flex items-center justify-between px-5 py-3">
                                     <div
