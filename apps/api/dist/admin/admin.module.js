@@ -15,6 +15,7 @@ const admin_guard_1 = require("./admin.guard");
 const admin_auth_service_1 = require("./admin-auth.service");
 const permissions_guard_1 = require("./permissions.guard");
 const admin_audit_service_1 = require("./admin-audit.service");
+const admin_management_service_1 = require("./admin-management.service");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
@@ -26,7 +27,7 @@ exports.AdminModule = AdminModule = __decorate([
             }),
         ],
         controllers: [admin_controller_1.AdminController, admin_auth_controller_1.AdminAuthController],
-        providers: [admin_guard_1.AdminGuard, permissions_guard_1.AdminPermissionsGuard, admin_audit_service_1.AdminAuditService, admin_auth_service_1.AdminAuthService],
+        providers: [admin_guard_1.AdminGuard, permissions_guard_1.AdminPermissionsGuard, admin_audit_service_1.AdminAuditService, admin_auth_service_1.AdminAuthService, admin_management_service_1.AdminManagementService],
         exports: [admin_guard_1.AdminGuard],
     })
 ], AdminModule);

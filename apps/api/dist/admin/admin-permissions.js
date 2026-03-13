@@ -6,9 +6,11 @@ var AdminPermission;
     AdminPermission["DASHBOARD_READ"] = "dashboard:read";
     AdminPermission["USERS_READ"] = "users:read";
     AdminPermission["USERS_MODERATE"] = "users:moderate";
+    AdminPermission["USERS_DELETE"] = "users:delete";
     AdminPermission["USERS_ROLE_CHANGE"] = "users:role:change";
     AdminPermission["POSTS_READ"] = "posts:read";
     AdminPermission["POSTS_MODERATE"] = "posts:moderate";
+    AdminPermission["POSTS_DELETE"] = "posts:delete";
     AdminPermission["REPORTS_READ"] = "reports:read";
     AdminPermission["REPORTS_RESOLVE"] = "reports:resolve";
     AdminPermission["LOGS_READ"] = "logs:read";
@@ -17,8 +19,10 @@ const ADMIN_PERMISSIONS = [
     AdminPermission.DASHBOARD_READ,
     AdminPermission.USERS_READ,
     AdminPermission.USERS_MODERATE,
+    AdminPermission.USERS_DELETE,
     AdminPermission.POSTS_READ,
     AdminPermission.POSTS_MODERATE,
+    AdminPermission.POSTS_DELETE,
     AdminPermission.REPORTS_READ,
     AdminPermission.REPORTS_RESOLVE,
     AdminPermission.LOGS_READ,

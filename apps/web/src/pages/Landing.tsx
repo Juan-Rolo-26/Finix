@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import ContactFormSection from '@/components/ContactFormSection';
 import {
     TrendingUp,
     Users,
@@ -323,7 +324,7 @@ const MVPExplanation = () => {
                             variant="outline"
                             className="border-primary/30 text-primary bg-transparent hover:bg-primary hover:text-primary-foreground transition-all duration-300 font-medium px-8"
                             onClick={() => {
-                                window.location.href = "mailto:finixarg@gmail.com?subject=Feedback%20Finix%20MVP&body=Hola%20equipo%20de%20Finix,%20tengo%20el%20siguiente%20feedback:";
+                                document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                             }}
                         >
                             {t.landing.mvp.feedback.btn}
@@ -1048,10 +1049,10 @@ const Footer = () => {
                     <div>
                         <h4 className="font-bold text-white mb-4">{t.landing.footer.platform}</h4>
                         <ul className="space-y-3 text-sm text-muted-foreground">
-                            <li><a href="#" className="hover:text-primary transition-colors">{t.landing.footer.about}</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">Mercados</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">{t.landing.footer.rules}</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">{t.landing.footer.contact}</a></li>
+                            <li><Link to="/info/about" className="hover:text-primary transition-colors">{t.landing.footer.about}</Link></li>
+                            <li><Link to="/info/features" className="hover:text-primary transition-colors">Mercados</Link></li>
+                            <li><Link to="/legal/responsible" className="hover:text-primary transition-colors">{t.landing.footer.rules}</Link></li>
+                            <li><a href="#contacto" className="hover:text-primary transition-colors">{t.landing.footer.contact}</a></li>
                         </ul>
                     </div>
                     <div>
@@ -1068,7 +1069,7 @@ const Footer = () => {
                     <div className="flex gap-6">
                         <a href="https://instagram.com/fiinixarg" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-white transition-colors">Instagram</a>
                         <a href="https://tiktok.com/@finixarg" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-white transition-colors">TikTok</a>
-                        <a href="mailto:finiixarg@gmail.com" className="text-muted-foreground hover:text-white transition-colors">Correo</a>
+                        <a href="#contacto" className="text-muted-foreground hover:text-white transition-colors">Correo</a>
                     </div>
                 </div>
             </div>
@@ -1087,6 +1088,15 @@ const Landing = () => {
             <Steps />
             <Showcase />
             <CTA />
+            <section className="px-4 pb-20 md:px-6">
+                <div className="container mx-auto max-w-6xl">
+                    <ContactFormSection
+                        id="contacto"
+                        title="Escribinos sobre Finix"
+                        description="Usá el formulario y tu mensaje llega directo al correo de contacto de Finix: finiixarg@gmail.com."
+                    />
+                </div>
+            </section>
             <Footer />
         </div>
     );

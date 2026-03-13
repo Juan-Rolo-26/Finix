@@ -10,6 +10,7 @@ import {
     X,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import type { ComposerAttachment, SharedPostPreview } from './messageTypes';
 
 const TYPE_ICONS = {
@@ -207,7 +208,7 @@ export default function PostPickerModal({
                                             <div className="flex items-center gap-3">
                                                 {post.author.avatarUrl ? (
                                                     <img
-                                                        src={post.author.avatarUrl}
+                                                        src={resolveMediaUrl(post.author.avatarUrl)}
                                                         alt={post.author.username}
                                                         className="w-10 h-10 rounded-full object-cover"
                                                     />
@@ -243,7 +244,7 @@ export default function PostPickerModal({
                                             {firstMedia && (
                                                 <div className="rounded-2xl overflow-hidden border border-border/30 bg-black/20">
                                                     <img
-                                                        src={firstMedia.url}
+                                                        src={resolveMediaUrl(firstMedia.url)}
                                                         alt="Vista previa"
                                                         className="w-full max-h-72 object-cover"
                                                         loading="lazy"

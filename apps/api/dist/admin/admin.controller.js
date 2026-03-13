@@ -21,10 +21,12 @@ const permissions_guard_1 = require("./permissions.guard");
 const permissions_decorator_1 = require("./permissions.decorator");
 const admin_permissions_1 = require("./admin-permissions");
 const admin_audit_service_1 = require("./admin-audit.service");
+const admin_management_service_1 = require("./admin-management.service");
 let AdminController = class AdminController {
-    constructor(prisma, adminAuditService) {
+    constructor(prisma, adminAuditService, adminManagementService) {
         this.prisma = prisma;
         this.adminAuditService = adminAuditService;
+        this.adminManagementService = adminManagementService;
     }
     async getKPIs() {
         const totalUsers = await this.prisma.user.count();
@@ -125,6 +127,37 @@ let AdminController = class AdminController {
         });
         return { data: updatedUser };
     }
+    async deleteUser(id, req) {
+        const adminUser = req.user;
+        if (!adminUser?.id) {
+            throw new common_1.ForbiddenException('Sesión admin inválida');
+        }
+        const targetUser = await this.prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                email: true,
+                username: true,
+                role: true,
+            },
+        });
+        if (!targetUser) {
+            throw new common_1.BadRequestException('Usuario no encontrado');
+        }
+        this.assertCanDeleteUser(adminUser, targetUser);
+        const auditData = this.adminAuditService.buildAuditData(req, {
+            action: 'DELETE_USER_PERMANENT',
+            targetId: id,
+            metadata: {
+                username: targetUser.username,
+                email: targetUser.email,
+                role: targetUser.role,
+                mode: 'permanent',
+            },
+        });
+        const deletedUser = await this.adminManagementService.deleteUserPermanently(id, auditData);
+        return { data: deletedUser };
+    }
     async getPosts(query) {
         const whereClause = { deletedAt: null };
         if (query.search) {
@@ -181,6 +214,30 @@ let AdminController = class AdminController {
             return post;
         });
         return { data: updatedPost };
+    }
+    async deletePost(id, req) {
+        const existingPost = await this.prisma.post.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                authorId: true,
+                content: true,
+            },
+        });
+        if (!existingPost) {
+            throw new common_1.BadRequestException('Publicación no encontrada');
+        }
+        const auditData = this.adminAuditService.buildAuditData(req, {
+            action: 'DELETE_POST_PERMANENT',
+            targetId: id,
+            metadata: {
+                authorId: existingPost.authorId,
+                contentPreview: existingPost.content.slice(0, 140),
+                mode: 'permanent',
+            },
+        });
+        const deletedPost = await this.adminManagementService.deletePostPermanently(id, auditData);
+        return { data: deletedPost };
     }
     async getReports() {
         const reports = await this.prisma.report.findMany({
@@ -278,6 +335,17 @@ let AdminController = class AdminController {
         const normalized = role.toUpperCase();
         return normalized === 'ADMIN' || normalized === 'SUPER_ADMIN';
     }
+    assertCanDeleteUser(adminUser, targetUser) {
+        if (targetUser.id === adminUser.id) {
+            throw new common_1.ForbiddenException('No puedes eliminar tu propia cuenta admin');
+        }
+        if (this.isOwner(targetUser)) {
+            throw new common_1.ForbiddenException('No puedes eliminar la cuenta owner');
+        }
+        if (this.isAdminRole(targetUser.role) && !this.isOwner(adminUser)) {
+            throw new common_1.ForbiddenException('Solo el owner puede eliminar otras cuentas admin');
+        }
+    }
 };
 exports.AdminController = AdminController;
 __decorate([
@@ -306,6 +374,15 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "updateUser", null);
 __decorate([
+    (0, common_1.Delete)('users/:id'),
+    (0, permissions_decorator_1.RequireAdminPermissions)(admin_permissions_1.AdminPermission.USERS_DELETE),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "deleteUser", null);
+__decorate([
     (0, common_1.Get)('posts'),
     (0, permissions_decorator_1.RequireAdminPermissions)(admin_permissions_1.AdminPermission.POSTS_READ),
     __param(0, (0, common_1.Query)()),
@@ -323,6 +400,15 @@ __decorate([
     __metadata("design:paramtypes", [String, admin_management_dto_1.AdminUpdatePostDto, Object]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "updatePost", null);
+__decorate([
+    (0, common_1.Delete)('posts/:id'),
+    (0, permissions_decorator_1.RequireAdminPermissions)(admin_permissions_1.AdminPermission.POSTS_DELETE),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "deletePost", null);
 __decorate([
     (0, common_1.Get)('reports'),
     (0, permissions_decorator_1.RequireAdminPermissions)(admin_permissions_1.AdminPermission.REPORTS_READ),
@@ -352,6 +438,7 @@ exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)('admin'),
     (0, common_1.UseGuards)(admin_guard_1.AdminGuard, permissions_guard_1.AdminPermissionsGuard),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        admin_audit_service_1.AdminAuditService])
+        admin_audit_service_1.AdminAuditService,
+        admin_management_service_1.AdminManagementService])
 ], AdminController);
 //# sourceMappingURL=admin.controller.js.map

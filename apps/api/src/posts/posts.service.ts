@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma.service';
+import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -200,7 +201,7 @@ export class PostsService {
                 media: dto.mediaUrls?.length
                     ? {
                         create: dto.mediaUrls.map((m, i) => ({
-                            url: m.url,
+                            url: normalizeStoredUploadUrl(m.url) ?? m.url,
                             mediaType: m.mediaType,
                             order: i,
                         })),

@@ -54,3 +54,20 @@ export async function adminFetch(path: string, init?: RequestInit) {
 
     return response;
 }
+
+export async function readAdminErrorMessage(response: Response, fallback: string) {
+    const data = await response.json().catch(() => null);
+
+    if (typeof data?.message === 'string' && data.message.trim()) {
+        return data.message;
+    }
+
+    if (Array.isArray(data?.message)) {
+        const first = data.message.find((value: unknown) => typeof value === 'string' && value.trim());
+        if (typeof first === 'string') {
+            return first;
+        }
+    }
+
+    return fallback;
+}

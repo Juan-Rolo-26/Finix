@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StoriesService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const upload_url_util_1 = require("../uploads/upload-url.util");
 const STORY_DURATION_MS = 24 * 60 * 60 * 1000;
 const STORY_CONTENT_LIMIT = 220;
 const STORY_AUTHOR_SELECT = {
@@ -78,7 +79,7 @@ let StoriesService = class StoriesService {
     async createStory(userId, payload) {
         await this.pruneExpiredStories();
         const content = sanitizeStoryText(payload.content);
-        const mediaUrl = normalizeOptionalText(payload.mediaUrl, 500);
+        const mediaUrl = (0, upload_url_util_1.normalizeStoredUploadUrl)(normalizeOptionalText(payload.mediaUrl, 500));
         const background = normalizeOptionalText(payload.background, 160);
         const textColor = normalizeOptionalText(payload.textColor, 40) || '#ffffff';
         if (!content && !mediaUrl) {

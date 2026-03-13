@@ -5,6 +5,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 const STORY_DURATION_MS = 24 * 60 * 60 * 1000;
 const STORY_CONTENT_LIMIT = 220;
@@ -84,7 +85,7 @@ export class StoriesService {
         await this.pruneExpiredStories();
 
         const content = sanitizeStoryText(payload.content);
-        const mediaUrl = normalizeOptionalText(payload.mediaUrl, 500);
+        const mediaUrl = normalizeStoredUploadUrl(normalizeOptionalText(payload.mediaUrl, 500));
         const background = normalizeOptionalText(payload.background, 160);
         const textColor = normalizeOptionalText(payload.textColor, 40) || '#ffffff';
 

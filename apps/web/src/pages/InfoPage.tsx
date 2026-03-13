@@ -1,14 +1,13 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowRight,
   BadgeCheck,
   BarChart3,
   BookOpen,
   Building2,
   Globe2,
   Heart,
-  Mail,
   Rocket,
   Shield,
   TrendingUp,
@@ -17,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
+import ContactFormSection from '@/components/ContactFormSection';
 
 type SectionKey = 'features' | 'how' | 'about';
 
@@ -460,32 +460,13 @@ function AboutSection() {
         </motion.article>
       </div>
 
-      <motion.a
-        variants={sectionVariants}
-        href="mailto:finixarg@gmail.com"
-        className="xl:col-span-12"
-      >
-        <Panel className="rounded-[30px] px-6 py-5 md:px-7">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10">
-                <Mail className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                  Contacto
-                </p>
-                <p className="text-base font-semibold text-foreground">finixarg@gmail.com</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <span>Escribinos para consultas, feedback o alianzas.</span>
-              <ArrowRight className="h-4 w-4 text-primary" />
-            </div>
-          </div>
-        </Panel>
-      </motion.a>
+      <motion.div variants={sectionVariants} className="xl:col-span-12">
+        <ContactFormSection
+          id="contacto"
+          title="Contacto Finix"
+          description="Mandanos tu mensaje y el equipo lo recibe directamente por correo en finiixarg@gmail.com."
+        />
+      </motion.div>
     </section>
   );
 }
@@ -493,9 +474,23 @@ function AboutSection() {
 export default function InfoPage() {
   const { section } = useParams<{ section?: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const activeSection = (section && section in SECTION_META ? section : 'features') as SectionKey;
   const content = SECTION_META[activeSection];
+
+  useEffect(() => {
+    if (!location.hash) {
+      return;
+    }
+
+    const id = location.hash.slice(1);
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.hash, activeSection]);
 
   return (
     <div className="finix-marketing-shell min-h-screen">

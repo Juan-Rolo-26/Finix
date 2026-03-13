@@ -98,7 +98,7 @@ const termsSections = [
     {
         title: '13. Contacto',
         paragraphs: [
-            'Si tenés consultas legales, reportes de abuso o dudas sobre estos Términos y Condiciones, podés escribirnos a finixarg@gmail.com.',
+            'Si tenés consultas legales, reportes de abuso o dudas sobre estos Términos y Condiciones, podés escribirnos a finiixarg@gmail.com.',
         ],
     },
 ];

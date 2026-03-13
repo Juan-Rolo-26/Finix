@@ -1,6 +1,7 @@
 import {
     BadRequestException,
     Controller,
+    Delete,
     ForbiddenException,
     Get,
     Patch,
@@ -25,6 +26,7 @@ import { AdminPermissionsGuard } from './permissions.guard';
 import { RequireAdminPermissions } from './permissions.decorator';
 import { AdminPermission, hasAdminPermission } from './admin-permissions';
 import { AdminAuditService } from './admin-audit.service';
+import { AdminManagementService } from './admin-management.service';
 
 type AdminRequest = Request & {
     user?: {
@@ -41,6 +43,7 @@ export class AdminController {
     constructor(
         private readonly prisma: PrismaService,
         private readonly adminAuditService: AdminAuditService,
+        private readonly adminManagementService: AdminManagementService,
     ) { }
 
     @Get('kpis')
@@ -158,6 +161,45 @@ export class AdminController {
         return { data: updatedUser };
     }
 
+    @Delete('users/:id')
+    @RequireAdminPermissions(AdminPermission.USERS_DELETE)
+    async deleteUser(@Param('id') id: string, @Req() req: AdminRequest) {
+        const adminUser = req.user;
+        if (!adminUser?.id) {
+            throw new ForbiddenException('Sesión admin inválida');
+        }
+
+        const targetUser = await this.prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                email: true,
+                username: true,
+                role: true,
+            },
+        });
+
+        if (!targetUser) {
+            throw new BadRequestException('Usuario no encontrado');
+        }
+
+        this.assertCanDeleteUser(adminUser, targetUser);
+
+        const auditData = this.adminAuditService.buildAuditData(req, {
+            action: 'DELETE_USER_PERMANENT',
+            targetId: id,
+            metadata: {
+                username: targetUser.username,
+                email: targetUser.email,
+                role: targetUser.role,
+                mode: 'permanent',
+            },
+        });
+
+        const deletedUser = await this.adminManagementService.deleteUserPermanently(id, auditData);
+        return { data: deletedUser };
+    }
+
     @Get('posts')
     @RequireAdminPermissions(AdminPermission.POSTS_READ)
     async getPosts(@Query() query: AdminPostsQueryDto) {
@@ -227,6 +269,36 @@ export class AdminController {
         });
 
         return { data: updatedPost };
+    }
+
+    @Delete('posts/:id')
+    @RequireAdminPermissions(AdminPermission.POSTS_DELETE)
+    async deletePost(@Param('id') id: string, @Req() req: AdminRequest) {
+        const existingPost = await this.prisma.post.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                authorId: true,
+                content: true,
+            },
+        });
+
+        if (!existingPost) {
+            throw new BadRequestException('Publicación no encontrada');
+        }
+
+        const auditData = this.adminAuditService.buildAuditData(req, {
+            action: 'DELETE_POST_PERMANENT',
+            targetId: id,
+            metadata: {
+                authorId: existingPost.authorId,
+                contentPreview: existingPost.content.slice(0, 140),
+                mode: 'permanent',
+            },
+        });
+
+        const deletedPost = await this.adminManagementService.deletePostPermanently(id, auditData);
+        return { data: deletedPost };
     }
 
     @Get('reports')
@@ -350,5 +422,22 @@ export class AdminController {
     private isAdminRole(role: string) {
         const normalized = role.toUpperCase();
         return normalized === 'ADMIN' || normalized === 'SUPER_ADMIN';
+    }
+
+    private assertCanDeleteUser(
+        adminUser: { id: string; email: string; role: string },
+        targetUser: { id: string; email: string; role: string },
+    ) {
+        if (targetUser.id === adminUser.id) {
+            throw new ForbiddenException('No puedes eliminar tu propia cuenta admin');
+        }
+
+        if (this.isOwner(targetUser)) {
+            throw new ForbiddenException('No puedes eliminar la cuenta owner');
+        }
+
+        if (this.isAdminRole(targetUser.role) && !this.isOwner(adminUser)) {
+            throw new ForbiddenException('Solo el owner puede eliminar otras cuentas admin');
+        }
     }
 }

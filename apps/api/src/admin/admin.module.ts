@@ -6,6 +6,7 @@ import { AdminGuard } from './admin.guard';
 import { AdminAuthService } from './admin-auth.service';
 import { AdminPermissionsGuard } from './permissions.guard';
 import { AdminAuditService } from './admin-audit.service';
+import { AdminManagementService } from './admin-management.service';
 
 @Module({
     imports: [
@@ -14,7 +15,7 @@ import { AdminAuditService } from './admin-audit.service';
         }),
     ],
     controllers: [AdminController, AdminAuthController],
-    providers: [AdminGuard, AdminPermissionsGuard, AdminAuditService, AdminAuthService],
+    providers: [AdminGuard, AdminPermissionsGuard, AdminAuditService, AdminAuthService, AdminManagementService],
     exports: [AdminGuard],
 })
 export class AdminModule { }

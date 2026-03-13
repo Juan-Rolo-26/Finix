@@ -21,6 +21,7 @@ const fs_1 = require("fs");
 const posts_service_1 = require("./posts.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const optional_jwt_guard_1 = require("../auth/optional-jwt.guard");
+const upload_url_util_1 = require("../uploads/upload-url.util");
 const ALLOWED_IMAGE = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const ALLOWED_VIDEO = ['video/mp4', 'video/webm', 'video/quicktime'];
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -98,9 +99,8 @@ let PostsController = class PostsController {
     uploadMedia(files) {
         if (!files || files.length === 0)
             throw new common_1.BadRequestException('No se recibieron archivos');
-        const apiBase = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
         return files.map((file) => ({
-            url: `${apiBase}/uploads/posts/${file.filename}`,
+            url: (0, upload_url_util_1.buildUploadPublicPath)('posts', file.filename),
             mediaType: ALLOWED_VIDEO.includes(file.mimetype) ? 'video' : 'image',
             originalName: file.originalname,
             size: file.size,

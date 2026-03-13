@@ -34,6 +34,9 @@ let MailService = MailService_1 = class MailService {
     getEmailFrom() {
         return process.env.EMAIL_FROM || 'Finix <onboarding@resend.dev>';
     }
+    getContactEmailTo() {
+        return process.env.CONTACT_EMAIL_TO?.trim() || 'finiixarg@gmail.com';
+    }
     buildAppLink(path, searchParams) {
         const url = new URL(path, `${this.getAppUrl()}/`);
         if (searchParams) {
@@ -81,6 +84,7 @@ let MailService = MailService_1 = class MailService {
                 subject: params.subject,
                 text: params.text,
                 html: params.html,
+                reply_to: params.replyTo,
             }),
         });
         const body = await response.json().catch(() => ({}));
@@ -181,6 +185,51 @@ let MailService = MailService_1 = class MailService {
                     >
                         Ver notificacion
                     </a>
+                </div>
+            `,
+        });
+    }
+    async sendContactMessage(params) {
+        const safeName = this.escapeHtml(params.name);
+        const safeEmail = this.escapeHtml(params.email);
+        const safeSubject = this.escapeHtml(params.subject);
+        const safeMessage = this.escapeHtml(params.message).replace(/\n/g, '<br />');
+        const safeIpAddress = params.ipAddress ? this.escapeHtml(params.ipAddress) : 'unknown';
+        const safeUserAgent = params.userAgent ? this.escapeHtml(params.userAgent) : 'unknown';
+        const destination = this.getContactEmailTo();
+        return this.sendEmail({
+            to: destination,
+            replyTo: params.email,
+            subject: `[Contacto Finix] ${params.subject}`,
+            text: [
+                'Nuevo mensaje desde el formulario de contacto de Finix.',
+                '',
+                `Nombre: ${params.name}`,
+                `Email: ${params.email}`,
+                `Asunto: ${params.subject}`,
+                '',
+                params.message,
+                '',
+                `IP: ${params.ipAddress || 'unknown'}`,
+                `User-Agent: ${params.userAgent || 'unknown'}`,
+            ].join('\n'),
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #0f172a;">
+                    <p style="margin: 0; font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase; color: #16a34a; font-weight: 700;">Finix Contacto</p>
+                    <h1 style="margin: 12px 0 20px; font-size: 28px; line-height: 1.2;">${safeSubject}</h1>
+                    <div style="padding: 18px 20px; border-radius: 18px; background: #f8fafc; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                        <p style="margin: 0 0 8px; font-size: 14px;"><strong>Nombre:</strong> ${safeName}</p>
+                        <p style="margin: 0 0 8px; font-size: 14px;"><strong>Email:</strong> ${safeEmail}</p>
+                        <p style="margin: 0; font-size: 14px;"><strong>Asunto:</strong> ${safeSubject}</p>
+                    </div>
+                    <div style="padding: 20px; border-radius: 18px; background: #ffffff; border: 1px solid #e2e8f0;">
+                        <p style="margin: 0 0 10px; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #64748b;">Mensaje</p>
+                        <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #334155;">${safeMessage}</p>
+                    </div>
+                    <div style="margin-top: 20px; font-size: 12px; line-height: 1.7; color: #64748b;">
+                        <p style="margin: 0;"><strong>IP:</strong> ${safeIpAddress}</p>
+                        <p style="margin: 4px 0 0;"><strong>User-Agent:</strong> ${safeUserAgent}</p>
+                    </div>
                 </div>
             `,
         });

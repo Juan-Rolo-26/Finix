@@ -3,6 +3,7 @@ import { BadgeCheck, ChevronLeft, ChevronRight, Eye, MessageSquare, Trash2, X } 
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import type { StoryGroup, StoryItem } from './storyTypes';
 import type { ComposerAttachment } from '@/components/messages/messageTypes';
 
@@ -320,7 +321,7 @@ export function StoryViewerModal({
                                     <div className="h-10 w-10 overflow-hidden rounded-full border border-white/15 bg-black/30">
                                         {currentStory.author.avatarUrl ? (
                                             <img
-                                                src={currentStory.author.avatarUrl}
+                                                src={resolveMediaUrl(currentStory.author.avatarUrl)}
                                                 alt={currentStory.author.username}
                                                 className="h-full w-full object-cover"
                                             />
@@ -371,7 +372,7 @@ export function StoryViewerModal({
                             >
                                 {currentStory.mediaUrl ? (
                                     <img
-                                        src={currentStory.mediaUrl}
+                                        src={resolveMediaUrl(currentStory.mediaUrl)}
                                         alt={`Historia de ${currentStory.author.username}`}
                                         className="absolute inset-0 h-full w-full object-cover"
                                     />
@@ -457,7 +458,7 @@ export function StoryViewerModal({
                                     >
                                         <div className={`h-12 w-12 overflow-hidden rounded-full border-2 ${group.hasUnseen ? 'border-primary' : 'border-white/20'}`}>
                                             {group.author.avatarUrl ? (
-                                                <img src={group.author.avatarUrl} alt={group.author.username} className="h-full w-full object-cover" />
+                                                <img src={resolveMediaUrl(group.author.avatarUrl)} alt={group.author.username} className="h-full w-full object-cover" />
                                             ) : (
                                                 <div className="flex h-full w-full items-center justify-center bg-black/30 text-sm font-bold uppercase text-white">
                                                     {group.author.username[0]}

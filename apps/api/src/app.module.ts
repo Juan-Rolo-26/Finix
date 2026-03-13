@@ -21,11 +21,13 @@ import { AdminModule } from './admin/admin.module';
 import { StoriesModule } from './stories/stories.module';
 import { PrismaModule } from './prisma.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ContactModule } from './contact/contact.module';
 
 @Module({
     imports: [
         ScheduleModule.forRoot(),
         PrismaModule,
+        ContactModule,
         NotificationsModule,
         AuthModule,
         MarketModule,

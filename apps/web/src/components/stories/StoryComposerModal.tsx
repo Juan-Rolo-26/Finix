@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { apiFetch } from '@/lib/api';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { uploadChatFile } from '@/components/messages/mediaUpload';
 import type { StoryAuthor, StoryItem } from './storyTypes';
 
@@ -146,7 +147,7 @@ export function StoryComposerModal({
                         >
                             {mediaUrl ? (
                                 <img
-                                    src={mediaUrl}
+                                    src={resolveMediaUrl(mediaUrl)}
                                     alt="Preview de historia"
                                     className="absolute inset-0 h-full w-full object-cover"
                                 />
@@ -157,7 +158,7 @@ export function StoryComposerModal({
                             <div className="absolute left-4 top-4 flex items-center gap-3 rounded-full bg-black/35 px-3 py-2 backdrop-blur">
                                 <div className="h-9 w-9 overflow-hidden rounded-full border border-white/15 bg-black/30">
                                     {currentUser?.avatarUrl ? (
-                                        <img src={currentUser.avatarUrl} alt={currentUser.username} className="h-full w-full object-cover" />
+                                        <img src={resolveMediaUrl(currentUser.avatarUrl)} alt={currentUser.username} className="h-full w-full object-cover" />
                                     ) : (
                                         <div className="flex h-full w-full items-center justify-center text-sm font-bold uppercase text-white">
                                             {currentUser?.username?.[0] || '?'}

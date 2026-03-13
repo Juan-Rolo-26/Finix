@@ -29,6 +29,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import CommentsPanel from './CommentsPanel';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -90,7 +91,7 @@ function MediaCarousel({ media }: { media: Post['media'] }) {
                 <div className="relative">
                     <video
                         ref={videoRef}
-                        src={current.url}
+                        src={resolveMediaUrl(current.url)}
                         className="w-full max-h-[500px] object-contain"
                         autoPlay
                         loop
@@ -115,7 +116,7 @@ function MediaCarousel({ media }: { media: Post['media'] }) {
                 </div>
             ) : (
                 <img
-                    src={current.url}
+                    src={resolveMediaUrl(current.url)}
                     alt="Post media"
                     className="w-full max-h-[500px] object-contain"
                     loading="lazy"
@@ -305,8 +306,8 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
             <div className="flex items-start justify-between p-4 pb-3">
                 <Link to={`/profile/${post.author.username}`} className="flex items-center gap-3 group">
                     {post.author.avatarUrl ? (
-                        <img
-                            src={post.author.avatarUrl}
+                            <img
+                            src={resolveMediaUrl(post.author.avatarUrl)}
                             alt={post.author.username}
                             className="w-10 h-10 rounded-full object-cover border-2 border-border/50 group-hover:border-primary/50 transition-colors"
                         />
@@ -452,7 +453,7 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
                         <div className="flex items-center gap-2 mb-2">
                             {post.quotedPost.author.avatarUrl ? (
                                 <img
-                                    src={post.quotedPost.author.avatarUrl}
+                                    src={resolveMediaUrl(post.quotedPost.author.avatarUrl)}
                                     alt={post.quotedPost.author.username}
                                     className="w-5 h-5 rounded-full object-cover"
                                 />
@@ -467,7 +468,7 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
                         <p className="text-sm line-clamp-3 mb-2">{post.quotedPost.content}</p>
                         {quotedMediaUrl && (
                             <img
-                                src={quotedMediaUrl}
+                                src={resolveMediaUrl(quotedMediaUrl)}
                                 alt="Vista previa del post citado"
                                 className="w-full h-32 object-cover rounded-lg"
                                 loading="lazy"
@@ -503,7 +504,7 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
             {/* Legacy single media */}
             {!post.media?.length && post.mediaUrl && (
                 <div className="px-4 pb-3">
-                    <img src={post.mediaUrl} alt="Post" className="w-full rounded-xl max-h-[500px] object-contain" loading="lazy" />
+                    <img src={resolveMediaUrl(post.mediaUrl)} alt="Post" className="w-full rounded-xl max-h-[500px] object-contain" loading="lazy" />
                 </div>
             )}
 

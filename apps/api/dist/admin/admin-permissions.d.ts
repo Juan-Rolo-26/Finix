@@ -2,9 +2,11 @@ export declare enum AdminPermission {
     DASHBOARD_READ = "dashboard:read",
     USERS_READ = "users:read",
     USERS_MODERATE = "users:moderate",
+    USERS_DELETE = "users:delete",
     USERS_ROLE_CHANGE = "users:role:change",
     POSTS_READ = "posts:read",
     POSTS_MODERATE = "posts:moderate",
+    POSTS_DELETE = "posts:delete",
     REPORTS_READ = "reports:read",
     REPORTS_RESOLVE = "reports:resolve",
     LOGS_READ = "logs:read"

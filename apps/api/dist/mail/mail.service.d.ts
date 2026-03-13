@@ -4,6 +4,7 @@ export declare class MailService {
     private getAppUrl;
     private getResendApiKey;
     private getEmailFrom;
+    private getContactEmailTo;
     private buildAppLink;
     private renderCodeEmail;
     private sendEmail;
@@ -16,5 +17,13 @@ export declare class MailService {
         title: string;
         content?: string | null;
         link?: string | null;
+    }): Promise<any>;
+    sendContactMessage(params: {
+        name: string;
+        email: string;
+        subject: string;
+        message: string;
+        ipAddress?: string;
+        userAgent?: string;
     }): Promise<any>;
 }

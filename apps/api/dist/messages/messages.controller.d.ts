@@ -32,12 +32,12 @@ export declare class MessagesController {
             };
             sharedPost: {
                 id: string;
-                type: string;
                 content: string;
-                createdAt: Date;
+                type: string;
                 assetSymbol: string;
                 analysisType: string;
                 riskLevel: string;
+                createdAt: Date;
                 author: {
                     id: string;
                     username: string;
@@ -97,12 +97,12 @@ export declare class MessagesController {
             };
             sharedPost: {
                 id: string;
-                type: string;
                 content: string;
-                createdAt: Date;
+                type: string;
                 assetSymbol: string;
                 analysisType: string;
                 riskLevel: string;
+                createdAt: Date;
                 author: {
                     id: string;
                     username: string;
@@ -141,12 +141,12 @@ export declare class MessagesController {
         };
         sharedPost: {
             id: string;
-            type: string;
             content: string;
-            createdAt: Date;
+            type: string;
             assetSymbol: string;
             analysisType: string;
             riskLevel: string;
+            createdAt: Date;
             author: {
                 id: string;
                 username: string;
@@ -190,12 +190,12 @@ export declare class MessagesController {
         };
         sharedPost: {
             id: string;
-            type: string;
             content: string;
-            createdAt: Date;
+            type: string;
             assetSymbol: string;
             analysisType: string;
             riskLevel: string;
+            createdAt: Date;
             author: {
                 id: string;
                 username: string;
@@ -227,10 +227,10 @@ export declare class MessagesController {
         count: number;
     }>;
     searchUsers(q: string, req: any): Promise<{
-        title: string;
         id: string;
         username: string;
         avatarUrl: string;
         isVerified: boolean;
+        title: string;
     }[]>;
 }

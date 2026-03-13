@@ -13,6 +13,7 @@ exports.MessagesService = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../prisma.service");
+const upload_url_util_1 = require("../uploads/upload-url.util");
 const USER_SELECT = {
     id: true,
     username: true,
@@ -405,13 +406,13 @@ let MessagesService = class MessagesService {
             }
             return {
                 attachmentType: 'story',
-                attachmentUrl: sharedStory.mediaUrl ?? null,
+                attachmentUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(sharedStory.mediaUrl) ?? sharedStory.mediaUrl ?? null,
                 attachmentData: this.stringifyMeta({
                     storyId: sharedStory.id,
                     story: {
                         id: sharedStory.id,
                         content: sharedStory.content,
-                        mediaUrl: sharedStory.mediaUrl,
+                        mediaUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(sharedStory.mediaUrl) ?? sharedStory.mediaUrl,
                         background: sharedStory.background,
                         textColor: sharedStory.textColor,
                         createdAt: sharedStory.createdAt,
@@ -438,7 +439,7 @@ let MessagesService = class MessagesService {
                 : null;
             return {
                 attachmentType: 'image',
-                attachmentUrl: input.url,
+                attachmentUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(input.url) ?? input.url,
                 attachmentData: this.stringifyMeta(meta),
                 sharedPostId: null,
             };
@@ -450,7 +451,7 @@ let MessagesService = class MessagesService {
         }
         return {
             attachmentType: 'chart',
-            attachmentUrl: input.url,
+            attachmentUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(input.url) ?? input.url,
             attachmentData: this.stringifyMeta({
                 symbol,
                 interval: typeof meta.interval === 'string' ? meta.interval : 'D',

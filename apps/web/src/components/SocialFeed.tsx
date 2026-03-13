@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthStore } from '@/stores/authStore';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import {
     Heart,
     MessageSquare,
@@ -69,16 +70,6 @@ interface SocialFeedProps {
     initialPosts: Post[];
     onPostCreated: (post: Post) => void;
 }
-
-const getFileUrl = (path: string) => {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-    const base = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : '/api');
-    const cleanBase = base === '/api'
-        ? (typeof window !== 'undefined' ? window.location.origin : '')
-        : base.replace(/\/api\/?$/, '');
-    return `${cleanBase}${path.startsWith('/') ? '' : '/'}${path}`;
-};
 
 export default function SocialFeed({ initialPosts, onPostCreated }: SocialFeedProps) {
     const [posts, setPosts] = useState<Post[]>(initialPosts);
@@ -318,7 +309,7 @@ function FeedItem({ post }: { post: Post }) {
                     {mediaUrl && (
                         <div className="rounded-2xl overflow-hidden border border-border/30">
                             <img
-                                src={getFileUrl(mediaUrl)}
+                                src={resolveMediaUrl(mediaUrl)}
                                 alt="Post attachment"
                                 className="w-full h-auto max-h-[480px] object-cover"
                             />
@@ -349,7 +340,7 @@ function FeedItem({ post }: { post: Post }) {
                             </div>
                             <p className="text-[13px] leading-relaxed text-foreground/80 line-clamp-3">{post.quotedPost.content}</p>
                             {getPrimaryMedia(post.quotedPost) && (
-                                <img src={getFileUrl(getPrimaryMedia(post.quotedPost) as string)} className="w-full h-28 object-cover rounded-xl mt-2.5" alt="Quote media" />
+                                <img src={resolveMediaUrl(getPrimaryMedia(post.quotedPost) as string)} className="w-full h-28 object-cover rounded-xl mt-2.5" alt="Quote media" />
                             )}
                         </button>
                     )}

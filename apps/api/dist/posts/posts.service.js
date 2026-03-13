@@ -13,6 +13,7 @@ exports.PostsService = void 0;
 const common_1 = require("@nestjs/common");
 const notifications_service_1 = require("../notifications/notifications.service");
 const prisma_service_1 = require("../prisma.service");
+const upload_url_util_1 = require("../uploads/upload-url.util");
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
 const BANNED_WORDS = ['spam', 'scam', 'estafa'];
 const AUTHOR_SELECT = {
@@ -158,7 +159,7 @@ let PostsService = class PostsService {
                 media: dto.mediaUrls?.length
                     ? {
                         create: dto.mediaUrls.map((m, i) => ({
-                            url: m.url,
+                            url: (0, upload_url_util_1.normalizeStoredUploadUrl)(m.url) ?? m.url,
                             mediaType: m.mediaType,
                             order: i,
                         })),

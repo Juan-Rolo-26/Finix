@@ -29,6 +29,7 @@ import {
     Sparkles,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import ChartAttachmentModal from '@/components/messages/ChartAttachmentModal';
 import PostPickerModal from '@/components/messages/PostPickerModal';
 import { uploadChatFile } from '@/components/messages/mediaUpload';
@@ -91,6 +92,23 @@ interface NewConversationSelection {
     title?: string;
 }
 
+async function readApiErrorMessage(response: Response, fallback: string) {
+    const data = await response.json().catch(() => null);
+
+    if (typeof data?.message === 'string' && data.message.trim()) {
+        return data.message;
+    }
+
+    if (Array.isArray(data?.message)) {
+        const firstMessage = data.message.find((value: unknown) => typeof value === 'string' && value.trim());
+        if (typeof firstMessage === 'string') {
+            return firstMessage;
+        }
+    }
+
+    return fallback;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PRIMARY = 'hsl(158 100% 45%)';
@@ -130,7 +148,7 @@ function UserAvatar({ user, size = 40, online = false }: { user: MsgUser; size?:
     return (
         <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
             {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt={user.username} className="rounded-full object-cover w-full h-full" />
+                <img src={resolveMediaUrl(user.avatarUrl)} alt={user.username} className="rounded-full object-cover w-full h-full" />
             ) : (
                 <div
                     className="rounded-full flex items-center justify-center font-bold"
@@ -204,7 +222,7 @@ function ConversationAvatar({
                     return member?.avatarUrl ? (
                         <img
                             key={`${conversation.id}-${member.id}`}
-                            src={member.avatarUrl}
+                            src={resolveMediaUrl(member.avatarUrl)}
                             alt={member.username}
                             className="h-full w-full rounded-full object-cover"
                         />
@@ -349,7 +367,7 @@ function SharedPostCard({
                 <div className="flex items-center gap-2.5">
                     {post.author.avatarUrl ? (
                         <img
-                            src={post.author.avatarUrl}
+                            src={resolveMediaUrl(post.author.avatarUrl)}
                             alt={post.author.username}
                             className="w-9 h-9 rounded-full object-cover"
                         />
@@ -382,7 +400,7 @@ function SharedPostCard({
                 {firstMedia?.url && (
                     <div className="rounded-2xl overflow-hidden border" style={{ borderColor }}>
                         <img
-                            src={firstMedia.url}
+                            src={resolveMediaUrl(firstMedia.url)}
                             alt="Publicacion compartida"
                             className="w-full max-h-80 object-cover"
                             loading="lazy"
@@ -421,7 +439,7 @@ function SharedStoryCard({
                 <div className="flex items-center gap-2.5">
                     {story.author.avatarUrl ? (
                         <img
-                            src={story.author.avatarUrl}
+                            src={resolveMediaUrl(story.author.avatarUrl)}
                             alt={story.author.username}
                             className="w-9 h-9 rounded-full object-cover"
                         />
@@ -447,7 +465,7 @@ function SharedStoryCard({
                 {story.mediaUrl ? (
                     <div className="rounded-2xl overflow-hidden border" style={{ borderColor }}>
                         <img
-                            src={story.mediaUrl}
+                            src={resolveMediaUrl(story.mediaUrl)}
                             alt={`Historia de ${story.author.username}`}
                             className="w-full max-h-80 object-cover"
                             loading="lazy"
@@ -502,7 +520,7 @@ function MessageAttachmentCard({
         return (
             <div className="space-y-2">
                 <img
-                    src={message.attachmentUrl}
+                    src={resolveMediaUrl(message.attachmentUrl)}
                     alt="Foto enviada"
                     className="w-full max-w-[320px] max-h-[300px] object-cover rounded-2xl"
                     loading="lazy"
@@ -545,7 +563,7 @@ function MessageAttachmentCard({
                 }}
             >
                 <img
-                    src={message.attachmentUrl}
+                    src={resolveMediaUrl(message.attachmentUrl)}
                     alt={`Grafico ${symbol}`}
                     className="w-full max-h-80 object-cover"
                     loading="lazy"
@@ -606,9 +624,13 @@ function MessageAttachmentCard({
 function NewMessageModal({
     onClose,
     onSelect,
+    isSubmitting,
+    errorMessage,
 }: {
     onClose: () => void;
     onSelect: (selection: NewConversationSelection) => void;
+    isSubmitting: boolean;
+    errorMessage: string;
 }) {
     const [q, setQ] = useState('');
     const [results, setResults] = useState<MsgUser[]>([]);
@@ -677,10 +699,23 @@ function NewMessageModal({
                         <h2 className="font-bold text-lg">Nuevo mensaje o grupo</h2>
                         <p className="text-xs text-muted-foreground mt-0.5">Seleccioná una o varias personas</p>
                     </div>
-                    <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/50 transition-colors">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={isSubmitting}
+                        className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                    >
                         <X className="w-4 h-4" />
                     </button>
                 </div>
+
+                {errorMessage && (
+                    <div className="px-5 pt-4">
+                        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                            {errorMessage}
+                        </div>
+                    </div>
+                )}
 
                 {selectedUsers.length > 0 && (
                     <div className="px-5 pt-4 space-y-3">
@@ -690,6 +725,7 @@ function NewMessageModal({
                                     key={selectedUser.id}
                                     type="button"
                                     onClick={() => toggleUser(selectedUser)}
+                                    disabled={isSubmitting}
                                     className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
                                 >
                                     <span>{selectedUser.username}</span>
@@ -707,6 +743,7 @@ function NewMessageModal({
                                     placeholder="Ej: Equipo Finix"
                                     value={groupTitle}
                                     onChange={(e) => setGroupTitle(e.target.value)}
+                                    disabled={isSubmitting}
                                     className="w-full rounded-xl border border-border/50 bg-secondary/20 px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary/40"
                                 />
                             </div>
@@ -724,6 +761,7 @@ function NewMessageModal({
                             placeholder="Buscar usuario..."
                             value={q}
                             onChange={(e) => setQ(e.target.value)}
+                            disabled={isSubmitting}
                             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                         />
                         {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
@@ -741,6 +779,7 @@ function NewMessageModal({
                             <button
                                 key={u.id}
                                 onClick={() => toggleUser(u)}
+                                disabled={isSubmitting}
                                 className="w-full flex items-center gap-3 px-5 py-3 hover:bg-secondary/40 transition-colors"
                             >
                                 <UserAvatar user={u} size={40} />
@@ -767,7 +806,7 @@ function NewMessageModal({
                     <button
                         type="button"
                         onClick={handleSubmit}
-                        disabled={selectedUsers.length === 0}
+                        disabled={selectedUsers.length === 0 || isSubmitting}
                         className="w-full rounded-2xl px-4 py-3 text-sm font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50"
                         style={{
                             background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)',
@@ -775,7 +814,14 @@ function NewMessageModal({
                             boxShadow: '0 8px 24px hsl(158 100% 45% / 0.22)',
                         }}
                     >
-                        {isGroup ? 'Crear grupo' : 'Abrir chat'}
+                        {isSubmitting ? (
+                            <span className="inline-flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Creando...
+                            </span>
+                        ) : (
+                            isGroup ? 'Crear grupo' : 'Abrir chat'
+                        )}
                     </button>
                 </div>
             </motion.div>
@@ -810,6 +856,8 @@ export default function MessagesPage() {
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
     const [composerError, setComposerError] = useState('');
     const [showNewMsg, setShowNewMsg] = useState(false);
+    const [conversationError, setConversationError] = useState('');
+    const [isCreatingConversation, setIsCreatingConversation] = useState(false);
     const [isLoadingConvs, setIsLoadingConvs] = useState(true);
     const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
     const [isSending, setIsSending] = useState(false);
@@ -947,6 +995,20 @@ export default function MessagesPage() {
         resetComposer();
     }, [resetComposer]);
 
+    const handleCloseNewMessage = useCallback(() => {
+        if (isCreatingConversation) {
+            return;
+        }
+
+        setConversationError('');
+        setShowNewMsg(false);
+    }, [isCreatingConversation]);
+
+    const handleOpenNewMessage = useCallback(() => {
+        setConversationError('');
+        setShowNewMsg(true);
+    }, []);
+
     const handleSelectConv = useCallback((convId: string) => {
         const currentAttachment = pendingAttachmentRef.current;
         const shouldPreserveAttachment = Boolean(currentAttachment && !activeConvIdRef.current);
@@ -968,14 +1030,13 @@ export default function MessagesPage() {
         selection: string | NewConversationSelection,
         clearUserSearchParam = false,
     ) => {
-        // Close modal immediately so the user sees instant feedback
-        setShowNewMsg(false);
-
         const currentAttachment = pendingAttachmentRef.current;
         const selectedUserIds = typeof selection === 'string'
             ? [selection]
             : Array.from(new Set(selection.userIds.map((id) => id.trim()).filter(Boolean)));
         const groupTitle = typeof selection === 'string' ? undefined : selection.title?.trim();
+
+        setConversationError('');
 
         if (selectedUserIds.length === 1) {
             const directUserId = selectedUserIds[0];
@@ -988,6 +1049,7 @@ export default function MessagesPage() {
             ));
             if (existing) {
                 handleSelectConv(existing.id);
+                setShowNewMsg(false);
                 if (currentAttachment) {
                     setPendingAttachment(currentAttachment);
                 }
@@ -999,6 +1061,7 @@ export default function MessagesPage() {
         }
 
         try {
+            setIsCreatingConversation(true);
             const payload = selectedUserIds.length === 1
                 ? { userId: selectedUserIds[0] }
                 : { userIds: selectedUserIds, title: groupTitle || undefined };
@@ -1007,16 +1070,24 @@ export default function MessagesPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
-            if (res.ok) {
-                const data: ConversationItem = await res.json();
-                setConversations((prev) => upsertConversation(prev, data));
-                handleSelectConv(data.id);
-                if (currentAttachment) {
-                    setPendingAttachment(currentAttachment);
-                }
-                void loadConversations();
+
+            if (!res.ok) {
+                throw new Error(await readApiErrorMessage(res, 'No se pudo crear el chat'));
             }
-        } catch { /* noop */ }
+
+            const data: ConversationItem = await res.json();
+            setConversations((prev) => upsertConversation(prev, data));
+            handleSelectConv(data.id);
+            setShowNewMsg(false);
+            if (currentAttachment) {
+                setPendingAttachment(currentAttachment);
+            }
+            void loadConversations();
+        } catch (error: any) {
+            setConversationError(error?.message || 'No se pudo crear el chat');
+        } finally {
+            setIsCreatingConversation(false);
+        }
 
         if (clearUserSearchParam) {
             navigate('/messages', { replace: true });
@@ -1042,7 +1113,7 @@ export default function MessagesPage() {
         setShowEmojiPicker(false);
 
         if (!activeConvId && state.openNewMessage !== false && !searchParams.get('user')) {
-            setShowNewMsg(true);
+            handleOpenNewMessage();
             setShowMobileList(true);
         }
 
@@ -1050,7 +1121,7 @@ export default function MessagesPage() {
             replace: true,
             state: null,
         });
-    }, [activeConvId, location.pathname, location.search, location.state, navigate, searchParams]);
+    }, [activeConvId, handleOpenNewMessage, location.pathname, location.search, location.state, navigate, searchParams]);
 
     // ── Load messages when active conversation changes ─────────────────────
 
@@ -1205,7 +1276,12 @@ export default function MessagesPage() {
         <>
         <AnimatePresence>
             {showNewMsg && (
-                <NewMessageModal onClose={() => setShowNewMsg(false)} onSelect={handleStartConversation} />
+                <NewMessageModal
+                    onClose={handleCloseNewMessage}
+                    onSelect={handleStartConversation}
+                    isSubmitting={isCreatingConversation}
+                    errorMessage={conversationError}
+                />
             )}
             {showPostPicker && (
                 <PostPickerModal
@@ -1279,7 +1355,7 @@ export default function MessagesPage() {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => setShowNewMsg(true)}
+                                    onClick={handleOpenNewMessage}
                                     className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
                                     style={{
                                         background: `linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 30%) 100%)`,
@@ -1341,7 +1417,7 @@ export default function MessagesPage() {
                                         </div>
                                         {!convSearch && (
                                             <button
-                                                onClick={() => setShowNewMsg(true)}
+                                                onClick={handleOpenNewMessage}
                                                 className="flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95"
                                                 style={{
                                                     background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 30%) 100%)',
@@ -1487,7 +1563,7 @@ export default function MessagesPage() {
                             </div>
 
                             <button
-                                onClick={() => setShowNewMsg(true)}
+                                onClick={handleOpenNewMessage}
                                 className="flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-sm font-bold text-black transition-all hover:scale-105 active:scale-95"
                                 style={{
                                     background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)',
@@ -1784,7 +1860,7 @@ export default function MessagesPage() {
                                         <div className="flex items-start gap-3">
                                             {pendingAttachment.type === 'image' && pendingAttachment.url && (
                                                 <img
-                                                    src={pendingAttachment.url}
+                                                    src={resolveMediaUrl(pendingAttachment.url)}
                                                     alt="Foto lista para enviar"
                                                     className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
                                                 />
@@ -1792,7 +1868,7 @@ export default function MessagesPage() {
 
                                             {pendingAttachment.type === 'chart' && pendingAttachment.url && (
                                                 <img
-                                                    src={pendingAttachment.url}
+                                                    src={resolveMediaUrl(pendingAttachment.url)}
                                                     alt="Grafico listo para enviar"
                                                     className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
                                                 />
@@ -1807,7 +1883,7 @@ export default function MessagesPage() {
                                             {pendingAttachment.type === 'story' && (
                                                 pendingAttachment.sharedStory?.mediaUrl ? (
                                                     <img
-                                                        src={pendingAttachment.sharedStory.mediaUrl}
+                                                        src={resolveMediaUrl(pendingAttachment.sharedStory.mediaUrl)}
                                                         alt="Historia lista para enviar"
                                                         className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
                                                     />

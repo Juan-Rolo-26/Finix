@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { useAuthStore } from '@/stores/authStore';
 import { StoryComposerModal } from './StoryComposerModal';
 import { StoryViewerModal } from './StoryViewerModal';
@@ -94,7 +95,7 @@ export function StoriesRail() {
                         <div className={`relative h-20 w-20 rounded-full p-[3px] ${currentUserStory ? 'bg-gradient-to-br from-primary via-emerald-300 to-teal-400' : 'border-2 border-dashed border-primary/60 bg-primary/8'}`}>
                             <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-border/70 bg-card">
                                 {currentUser?.avatarUrl && currentUserStory ? (
-                                    <img src={currentUser.avatarUrl} alt={currentUser.username} className="h-full w-full object-cover" />
+                                    <img src={resolveMediaUrl(currentUser.avatarUrl)} alt={currentUser.username} className="h-full w-full object-cover" />
                                 ) : (
                                     <Plus className="h-7 w-7 text-primary" />
                                 )}
@@ -142,7 +143,7 @@ export function StoriesRail() {
                                             }`}>
                                             <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-background bg-card">
                                                 {group.author.avatarUrl ? (
-                                                    <img src={group.author.avatarUrl} alt={group.author.username} className="h-full w-full object-cover" />
+                                                    <img src={resolveMediaUrl(group.author.avatarUrl)} alt={group.author.username} className="h-full w-full object-cover" />
                                                 ) : (
                                                     <span className="text-xl font-bold uppercase text-foreground">{group.author.username[0]}</span>
                                                 )}

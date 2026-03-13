@@ -47,7 +47,7 @@ const Help = () => {
                     <section>
                         <h2 className="text-2xl font-bold text-white mb-4">Soporte y Contacto</h2>
                         <p className="mb-4">
-                            Si tienes problemas adicionales u observaciones, por favor no dudes en enviarnos un mensaje directamente a nuestro equipo a la dirección <strong>finixarg@gmail.com</strong> y trataremos de asistirte en menor tiempo posible.
+                            Si tienes problemas adicionales u observaciones, por favor no dudes en enviarnos un mensaje directamente a nuestro equipo a la dirección <strong>finiixarg@gmail.com</strong> y trataremos de asistirte en menor tiempo posible.
                         </p>
                     </section>
                 </div>

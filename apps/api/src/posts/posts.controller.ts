@@ -22,6 +22,7 @@ import { Response } from 'express';
 import { PostsService } from './posts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
+import { buildUploadPublicPath } from '../uploads/upload-url.util';
 
 // ─── Multer config ────────────────────────────────────────────────────────────
 
@@ -163,9 +164,8 @@ export class PostsController {
     uploadMedia(@UploadedFiles() files: Express.Multer.File[]) {
         if (!files || files.length === 0) throw new BadRequestException('No se recibieron archivos');
 
-        const apiBase = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
         return files.map((file) => ({
-            url: `${apiBase}/uploads/posts/${file.filename}`,
+            url: buildUploadPublicPath('posts', file.filename),
             mediaType: ALLOWED_VIDEO.includes(file.mimetype) ? 'video' : 'image',
             originalName: file.originalname,
             size: file.size,

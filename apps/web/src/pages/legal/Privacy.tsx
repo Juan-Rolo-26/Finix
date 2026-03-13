@@ -74,7 +74,7 @@ const privacySections = [
         title: '8. Tus derechos y controles',
         paragraphs: [
             'Según la legislación que resulte aplicable, podés solicitar acceso, rectificación, actualización, supresión y, cuando corresponda, oposición, limitación o portabilidad de tus datos.',
-            'Además, dentro de Finix podés administrar parte de tu visibilidad mediante la configuración de privacidad. Si querés pedir la eliminación de tu cuenta o ejercer derechos sobre tus datos, escribinos a finixarg@gmail.com.',
+            'Además, dentro de Finix podés administrar parte de tu visibilidad mediante la configuración de privacidad. Si querés pedir la eliminación de tu cuenta o ejercer derechos sobre tus datos, escribinos a finiixarg@gmail.com.',
             'Si te encontrás en Argentina y la normativa aplicable lo permite, la Agencia de Acceso a la Información Pública actúa como autoridad de control en materia de protección de datos personales.',
         ],
     },
@@ -93,7 +93,7 @@ const privacySections = [
     {
         title: '11. Contacto',
         paragraphs: [
-            'Si tenés preguntas sobre privacidad, tratamiento de datos o querés ejercer tus derechos, podés escribirnos a finixarg@gmail.com.',
+            'Si tenés preguntas sobre privacidad, tratamiento de datos o querés ejercer tus derechos, podés escribirnos a finiixarg@gmail.com.',
         ],
     },
 ];

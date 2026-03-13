@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 type MessageAttachmentType = 'image' | 'post' | 'chart' | 'story';
 type MessageAttachmentInput =
@@ -510,13 +511,13 @@ export class MessagesService {
 
             return {
                 attachmentType: 'story' as const,
-                attachmentUrl: sharedStory.mediaUrl ?? null,
+                attachmentUrl: normalizeStoredUploadUrl(sharedStory.mediaUrl) ?? sharedStory.mediaUrl ?? null,
                 attachmentData: this.stringifyMeta({
                     storyId: sharedStory.id,
                     story: {
                         id: sharedStory.id,
                         content: sharedStory.content,
-                        mediaUrl: sharedStory.mediaUrl,
+                        mediaUrl: normalizeStoredUploadUrl(sharedStory.mediaUrl) ?? sharedStory.mediaUrl,
                         background: sharedStory.background,
                         textColor: sharedStory.textColor,
                         createdAt: sharedStory.createdAt,
@@ -548,7 +549,7 @@ export class MessagesService {
 
             return {
                 attachmentType: 'image' as const,
-                attachmentUrl: input.url,
+                attachmentUrl: normalizeStoredUploadUrl(input.url) ?? input.url,
                 attachmentData: this.stringifyMeta(meta),
                 sharedPostId: null,
             };
@@ -562,7 +563,7 @@ export class MessagesService {
 
         return {
             attachmentType: 'chart' as const,
-            attachmentUrl: input.url,
+            attachmentUrl: normalizeStoredUploadUrl(input.url) ?? input.url,
             attachmentData: this.stringifyMeta({
                 symbol,
                 interval: typeof meta.interval === 'string' ? meta.interval : 'D',

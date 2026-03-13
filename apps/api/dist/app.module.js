@@ -30,6 +30,7 @@ const admin_module_1 = require("./admin/admin.module");
 const stories_module_1 = require("./stories/stories.module");
 const prisma_module_1 = require("./prisma.module");
 const notifications_module_1 = require("./notifications/notifications.module");
+const contact_module_1 = require("./contact/contact.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -38,6 +39,7 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             schedule_1.ScheduleModule.forRoot(),
             prisma_module_1.PrismaModule,
+            contact_module_1.ContactModule,
             notifications_module_1.NotificationsModule,
             auth_module_1.AuthModule,
             market_module_1.MarketModule,

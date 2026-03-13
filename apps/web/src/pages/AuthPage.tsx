@@ -68,7 +68,7 @@ export default function AuthPage() {
         { label: t.legal.privacy, to: '/legal/privacy' },
         { label: t.legal.terms, to: '/legal/terms' },
         { label: 'Instagram', href: 'https://instagram.com/fiinixarg' },
-        { label: 'Contacto', href: 'mailto:finixarg@gmail.com' },
+        { label: 'Contacto', to: '/info/about#contacto' },
     ];
 
     const highlights = [

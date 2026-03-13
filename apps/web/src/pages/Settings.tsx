@@ -781,7 +781,7 @@ export default function Settings() {
                                             size="sm"
                                             disabled={deleteConfirm !== 'ELIMINAR'}
                                             className="bg-red-600 hover:bg-red-700 text-white"
-                                            onClick={() => showToast('Contactá a soporte para eliminar tu cuenta: finixarg@gmail.com', 'error')}
+                                            onClick={() => showToast('Contactá a soporte para eliminar tu cuenta: finiixarg@gmail.com', 'error')}
                                         >
                                             Confirmar eliminación
                                         </Button>
