@@ -1,0 +1,38 @@
+# Example nginx config for finixarg.com
+# Both the frontend (static build) and /api are served here.
+# The /api proxy covers /api/uploads too, so images work without
+# a separate /uploads location.
+
+server {
+    listen 80;
+    server_name finixarg.com www.finixarg.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name finixarg.com www.finixarg.com;
+
+    ssl_certificate     /etc/letsencrypt/live/finixarg.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/finixarg.com/privkey.pem;
+
+    # Frontend static build
+    root /var/www/finix/dist;
+    index index.html;
+
+    # Proxy ALL /api requests (including /api/uploads for images)
+    location /api/ {
+        proxy_pass http://127.0.0.1:3010;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Allow large uploads (avatar + post media)
+        client_max_body_size 15M;
+    }
+
+    # SPA fallback for frontend routes
+    location / {
+        try_files $uri /index.html;
+    }
+}

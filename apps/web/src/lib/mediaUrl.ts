@@ -1,21 +1,12 @@
 const LOCAL_UPLOAD_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
 
-function getUploadsBaseUrl() {
-    const configuredApiUrl = import.meta.env.VITE_API_URL as string | undefined;
-
-    if (!configuredApiUrl || configuredApiUrl === '/api') {
-        return typeof window !== 'undefined' ? window.location.origin : '';
+// Rewrite a /uploads/... path to /api/uploads/... so it flows through
+// the existing /api proxy in both Vite (dev) and nginx (production).
+function rewriteUploadsPath(pathname: string): string {
+    if (pathname.startsWith('/uploads/')) {
+        return pathname.replace(/^\/uploads\//, '/api/uploads/');
     }
-
-    if (/^https?:\/\//i.test(configuredApiUrl)) {
-        return configuredApiUrl.replace(/\/api\/?$/, '');
-    }
-
-    if (configuredApiUrl.startsWith('/')) {
-        return typeof window !== 'undefined' ? window.location.origin : '';
-    }
-
-    return configuredApiUrl.replace(/\/api\/?$/, '');
+    return pathname;
 }
 
 export function resolveMediaUrl(value?: string | null) {
@@ -28,27 +19,31 @@ export function resolveMediaUrl(value?: string | null) {
         return trimmed;
     }
 
-    const uploadsBaseUrl = getUploadsBaseUrl();
-
+    // Absolute URL — if pointing to a local upload host, rewrite the path
+    // so it goes through the /api proxy. Otherwise return as-is.
     if (/^https?:\/\//i.test(trimmed)) {
         try {
             const parsed = new URL(trimmed);
-            if (parsed.pathname.startsWith('/uploads/') && LOCAL_UPLOAD_HOSTS.has(parsed.hostname.toLowerCase())) {
-                return `${uploadsBaseUrl.replace(/\/$/, '')}${parsed.pathname}${parsed.search}${parsed.hash}`;
+            if (LOCAL_UPLOAD_HOSTS.has(parsed.hostname.toLowerCase()) && parsed.pathname.startsWith('/uploads/')) {
+                return rewriteUploadsPath(parsed.pathname) + parsed.search + parsed.hash;
             }
         } catch {
-            return trimmed;
+            // fall through
         }
-
         return trimmed;
     }
 
     const normalizedPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-    if (!normalizedPath.startsWith('/uploads/')) {
-        return trimmed;
+
+    // /uploads/... → /api/uploads/... (proxied by Vite in dev, nginx in prod)
+    if (normalizedPath.startsWith('/uploads/')) {
+        return rewriteUploadsPath(normalizedPath);
     }
 
-    return uploadsBaseUrl
-        ? `${uploadsBaseUrl.replace(/\/$/, '')}${normalizedPath}`
-        : normalizedPath;
+    // Already /api/uploads/... — return as-is (relative, proxied)
+    if (normalizedPath.startsWith('/api/uploads/')) {
+        return normalizedPath;
+    }
+
+    return trimmed;
 }

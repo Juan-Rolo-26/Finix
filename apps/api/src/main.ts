@@ -41,8 +41,14 @@ async function bootstrap() {
 
     // Serve static files (avatars, post media, etc.)
     const { join } = require('path');
+    const { existsSync, mkdirSync } = require('fs');
     const express = require('express');
-    app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
+    const uploadsDir = join(process.cwd(), 'uploads');
+    // Ensure uploads directory exists (VPS fresh deploy)
+    if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+    // Serve at both /uploads (direct) and /api/uploads (via nginx /api proxy)
+    app.use('/uploads', express.static(uploadsDir));
+    app.use('/api/uploads', express.static(uploadsDir));
 
     const port = Number(process.env.PORT || 3001);
     await app.listen(port, '0.0.0.0');
