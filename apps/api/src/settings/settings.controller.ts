@@ -16,6 +16,7 @@ import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { SettingsService } from './settings.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { buildUploadPublicPath } from '../uploads/upload-url.util';
 
 // ─── Multer config ────────────────────────────────────────────────────────────
 
@@ -99,9 +100,7 @@ export class SettingsController {
     ) {
         if (!file) throw new BadRequestException('No se recibió ningún archivo');
 
-        // Build the public URL
-        const apiBase = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
-        const avatarUrl = `${apiBase}/uploads/avatars/${file.filename}`;
+        const avatarUrl = buildUploadPublicPath('avatars', file.filename);
 
         // Persist to DB
         await this.settingsService.saveAvatarUrl(req.user.id, avatarUrl);
@@ -128,8 +127,7 @@ export class SettingsController {
     ) {
         if (!file) throw new BadRequestException('No se recibió ningún archivo');
 
-        const apiBase = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
-        const bannerUrl = `${apiBase}/uploads/banners/${file.filename}`;
+        const bannerUrl = buildUploadPublicPath('banners', file.filename);
 
         await this.settingsService.saveBannerUrl(req.user.id, bannerUrl);
 

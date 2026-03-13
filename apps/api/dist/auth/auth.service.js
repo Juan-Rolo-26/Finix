@@ -16,6 +16,7 @@ const argon2 = require("argon2");
 const crypto_1 = require("crypto");
 const mail_service_1 = require("../mail/mail.service");
 const prisma_service_1 = require("../prisma.service");
+const upload_url_util_1 = require("../uploads/upload-url.util");
 const EMAIL_VERIFICATION_TTL_MINUTES = 15;
 const LOGIN_CODE_TTL_MINUTES = 10;
 const RESET_PASSWORD_TTL_MINUTES = 15;
@@ -407,7 +408,7 @@ let AuthService = class AuthService {
             isVerified: user.isVerified,
             isCreator: user.isCreator,
             bio: user.bio ?? null,
-            avatarUrl: user.avatarUrl ?? null,
+            avatarUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(user.avatarUrl) ?? null,
             onboardingCompleted: user.onboardingCompleted,
             onboardingStep: user.onboardingStep,
             createdAt: user.createdAt,

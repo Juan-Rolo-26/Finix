@@ -42,7 +42,7 @@ export declare class AuthService {
             isVerified: any;
             isCreator: any;
             bio: any;
-            avatarUrl: any;
+            avatarUrl: string;
             onboardingCompleted: any;
             onboardingStep: any;
             createdAt: any;
@@ -63,7 +63,7 @@ export declare class AuthService {
             isVerified: any;
             isCreator: any;
             bio: any;
-            avatarUrl: any;
+            avatarUrl: string;
             onboardingCompleted: any;
             onboardingStep: any;
             createdAt: any;
@@ -88,7 +88,7 @@ export declare class AuthService {
             isVerified: any;
             isCreator: any;
             bio: any;
-            avatarUrl: any;
+            avatarUrl: string;
             onboardingCompleted: any;
             onboardingStep: any;
             createdAt: any;
@@ -116,7 +116,7 @@ export declare class AuthService {
         isVerified: any;
         isCreator: any;
         bio: any;
-        avatarUrl: any;
+        avatarUrl: string;
         onboardingCompleted: any;
         onboardingStep: any;
         createdAt: any;
@@ -134,7 +134,7 @@ export declare class AuthService {
         isVerified: any;
         isCreator: any;
         bio: any;
-        avatarUrl: any;
+        avatarUrl: string;
         onboardingCompleted: any;
         onboardingStep: any;
         createdAt: any;

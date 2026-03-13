@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { Link } from 'react-router-dom';
 import { Heart, Trash2, Reply, ChevronDown, Loader2, BadgeCheck, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -118,7 +119,7 @@ function CommentItem({
                 {/* Avatar */}
                 <Link to={`/profile/${comment.author.username}`} className="shrink-0">
                     {comment.author.avatarUrl ? (
-                        <img src={comment.author.avatarUrl} alt={comment.author.username} className="w-8 h-8 rounded-full object-cover" />
+                        <img src={resolveMediaUrl(comment.author.avatarUrl)} alt={comment.author.username} className="w-8 h-8 rounded-full object-cover" />
                     ) : (
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center text-black text-xs font-bold">
                             {comment.author.username[0].toUpperCase()}

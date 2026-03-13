@@ -26,7 +26,7 @@ export declare class AuthController {
             isVerified: any;
             isCreator: any;
             bio: any;
-            avatarUrl: any;
+            avatarUrl: string;
             onboardingCompleted: any;
             onboardingStep: any;
             createdAt: any;
@@ -47,7 +47,7 @@ export declare class AuthController {
             isVerified: any;
             isCreator: any;
             bio: any;
-            avatarUrl: any;
+            avatarUrl: string;
             onboardingCompleted: any;
             onboardingStep: any;
             createdAt: any;
@@ -72,7 +72,7 @@ export declare class AuthController {
             isVerified: any;
             isCreator: any;
             bio: any;
-            avatarUrl: any;
+            avatarUrl: string;
             onboardingCompleted: any;
             onboardingStep: any;
             createdAt: any;
@@ -102,7 +102,7 @@ export declare class AuthController {
         isVerified: any;
         isCreator: any;
         bio: any;
-        avatarUrl: any;
+        avatarUrl: string;
         onboardingCompleted: any;
         onboardingStep: any;
         createdAt: any;
@@ -120,7 +120,7 @@ export declare class AuthController {
         isVerified: any;
         isCreator: any;
         bio: any;
-        avatarUrl: any;
+        avatarUrl: string;
         onboardingCompleted: any;
         onboardingStep: any;
         createdAt: any;

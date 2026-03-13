@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -503,7 +504,7 @@ export default function Settings() {
                             {settings?.avatarUrl && (
                                 <div className="flex items-center gap-4 p-4 rounded-xl border border-border/40 bg-card/20">
                                     <img
-                                        src={settings.avatarUrl}
+                                        src={resolveMediaUrl(settings.avatarUrl)}
                                         alt="Avatar"
                                         className="w-16 h-16 rounded-full object-cover border-2 border-primary/30"
                                     />
@@ -617,7 +618,7 @@ export default function Settings() {
                                         <div className="relative h-28 overflow-hidden rounded-2xl border border-border/50 bg-secondary/30">
                                             {profileForm.bannerUrl ? (
                                                 <img
-                                                    src={profileForm.bannerUrl}
+                                                    src={resolveMediaUrl(profileForm.bannerUrl)}
                                                     alt="Banner del perfil"
                                                     className="h-full w-full object-cover"
                                                 />

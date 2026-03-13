@@ -4,6 +4,7 @@ import * as argon2 from 'argon2';
 import { MarketService } from '../market/market.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma.service';
+import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 @Injectable()
 export class UserService {
@@ -12,6 +13,14 @@ export class UserService {
         private notificationsService: NotificationsService,
         private marketService: MarketService,
     ) { }
+
+    private normalizeUserMedia<T extends { avatarUrl?: string | null; bannerUrl?: string | null }>(user: T): T {
+        return {
+            ...user,
+            avatarUrl: normalizeStoredUploadUrl(user.avatarUrl) ?? null,
+            bannerUrl: normalizeStoredUploadUrl(user.bannerUrl) ?? null,
+        };
+    }
 
     private normalizeTicker(value?: string | null) {
         return String(value || '').trim().toUpperCase();
@@ -439,7 +448,7 @@ export class UserService {
         // Always compute live stats for own profile
         const liveStats = await this.calculatePortfolioStats(userId);
         return {
-            ...user,
+            ...this.normalizeUserMedia(user),
             totalReturn: liveStats.totalReturn,
             winRate: liveStats.winRate,
             riskScore: liveStats.riskScore,
@@ -482,7 +491,7 @@ export class UserService {
             : false;
 
         if (!user.isProfilePublic) {
-            return {
+            return this.normalizeUserMedia({
                 id: user.id,
                 username: user.username,
                 bio: user.bio,
@@ -493,14 +502,14 @@ export class UserService {
                 plan: user.plan,
                 isProfilePublic: false,
                 isFollowedByMe,
-            };
+            });
         }
 
         // Compute live portfolio stats if the user has showStats enabled
         if (user.showStats) {
             const liveStats = await this.calculatePortfolioStats(user.id);
             return {
-                ...user,
+                ...this.normalizeUserMedia(user),
                 isFollowedByMe,
                 totalReturn: liveStats.totalReturn,
                 winRate: liveStats.winRate,
@@ -509,7 +518,7 @@ export class UserService {
         }
 
         return {
-            ...user,
+            ...this.normalizeUserMedia(user),
             isFollowedByMe,
             totalReturn: null,
             winRate: null,
@@ -575,7 +584,9 @@ export class UserService {
             if (updateData[field] !== undefined) {
                 const normalized = this.normalizeNullableText(updateData[field], maxLen);
                 if (normalized !== undefined) {
-                    filteredData[field] = normalized;
+                    filteredData[field] = field === 'avatarUrl' || field === 'bannerUrl'
+                        ? normalizeStoredUploadUrl(normalized)
+                        : normalized;
                 }
             }
         }
@@ -609,7 +620,7 @@ export class UserService {
                 data: filteredData,
                 select: this.getProfileSelect(),
             });
-            return updated;
+            return this.normalizeUserMedia(updated);
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
                 throw new BadRequestException('El username o email ya está en uso');
@@ -811,7 +822,7 @@ export class UserService {
                 return {
                     id: trader.id,
                     username: trader.username,
-                    avatarUrl: trader.avatarUrl,
+                    avatarUrl: normalizeStoredUploadUrl(trader.avatarUrl) ?? null,
                     totalReturn: stats.totalReturn,
                     winRate: stats.winRate,
                     riskScore: stats.riskScore,
@@ -827,7 +838,7 @@ export class UserService {
 
     async searchUsers(query: string) {
         if (!query || query.length < 2) return [];
-        return this.prisma.user.findMany({
+        const users = await this.prisma.user.findMany({
             where: {
                 username: {
                     contains: query,
@@ -848,6 +859,8 @@ export class UserService {
                 totalReturn: true,
             },
         });
+
+        return users.map((user) => this.normalizeUserMedia(user));
     }
 
     async toggleFollow(followerId: string, username: string) {

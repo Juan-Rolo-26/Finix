@@ -44,17 +44,6 @@ type DistributionEntry = {
     color: string;
 };
 
-type PieLabelProps = {
-    cx?: number;
-    cy?: number;
-    midAngle?: number;
-    outerRadius?: number;
-    x?: number;
-    y?: number;
-    name?: string;
-    percent?: number;
-};
-
 function formatCurrency(value: number) {
     return new Intl.NumberFormat('es-AR', {
         style: 'currency',
@@ -126,22 +115,6 @@ function buildDistribution(
         .sort((a, b) => b.value - a.value);
 }
 
-function renderPieLabel({ cx = 0, x = 0, y = 0, name = '', percent = 0 }: PieLabelProps) {
-    const textAnchor = x >= cx ? 'start' : 'end';
-    const safePercent = Math.min(percent * 100, 100);
-
-    return (
-        <text x={x} y={y} fill="rgba(71, 85, 105, 0.95)" textAnchor={textAnchor}>
-            <tspan x={x} dy="-0.25em" fontSize="12" fontWeight={600}>
-                {truncateLabel(name, 22)}
-            </tspan>
-            <tspan x={x} dy="1.35em" fontSize="11" fill="rgba(100, 116, 139, 0.95)">
-                {formatPercent(safePercent)}
-            </tspan>
-        </text>
-    );
-}
-
 function EmptyState({ message }: { message: string }) {
     return (
         <div className="flex h-[360px] items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/20 px-6 text-center text-sm text-muted-foreground">
@@ -163,6 +136,8 @@ function DistributionCard({
     data: DistributionEntry[];
     emptyMessage: string;
 }) {
+    const leadingEntry = data[0];
+
     return (
         <Card className="border-border shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
             <CardHeader className="space-y-3">
@@ -177,22 +152,20 @@ function DistributionCard({
                     <EmptyState message={emptyMessage} />
                 ) : (
                     <div className="space-y-6">
-                        <div className="h-[360px] w-full">
+                        <div className="h-[340px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <PieChart margin={{ top: 18, right: 80, bottom: 18, left: 80 }}>
+                                <PieChart margin={{ top: 12, right: 12, bottom: 12, left: 12 }}>
                                     <Pie
                                         data={data}
                                         dataKey="value"
                                         nameKey="name"
                                         cx="50%"
                                         cy="50%"
-                                        outerRadius={108}
-                                        innerRadius={0}
-                                        paddingAngle={data.length === 1 ? 0 : 4}
+                                        outerRadius={112}
+                                        innerRadius={68}
+                                        paddingAngle={data.length === 1 ? 0 : 3}
                                         stroke={data.length === 1 ? 'none' : 'hsl(var(--card))'}
                                         strokeWidth={data.length === 1 ? 0 : 4}
-                                        labelLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1.2 }}
-                                        label={renderPieLabel}
                                         isAnimationActive={false}
                                     >
                                         {data.map((entry) => (
@@ -208,6 +181,32 @@ function DistributionCard({
                                         labelStyle={{ color: 'hsl(var(--muted-foreground))', fontWeight: 600, marginBottom: 4 }}
                                         itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: 500 }}
                                     />
+                                    {leadingEntry ? (
+                                        <>
+                                            <text
+                                                x="50%"
+                                                y="48%"
+                                                textAnchor="middle"
+                                                dominantBaseline="middle"
+                                                fill="hsl(var(--foreground))"
+                                                fontSize={16}
+                                                fontWeight={700}
+                                            >
+                                                {truncateLabel(leadingEntry.name, 16)}
+                                            </text>
+                                            <text
+                                                x="50%"
+                                                y="57%"
+                                                textAnchor="middle"
+                                                dominantBaseline="middle"
+                                                fill="hsl(var(--muted-foreground))"
+                                                fontSize={13}
+                                                fontWeight={600}
+                                            >
+                                                {formatPercent(leadingEntry.share)}
+                                            </text>
+                                        </>
+                                    ) : null}
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>

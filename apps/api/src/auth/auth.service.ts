@@ -4,6 +4,7 @@ import * as argon2 from 'argon2';
 import { createHash, randomInt } from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma.service';
+import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 const EMAIL_VERIFICATION_TTL_MINUTES = 15;
 const LOGIN_CODE_TTL_MINUTES = 10;
@@ -484,7 +485,7 @@ export class AuthService {
             isVerified: user.isVerified,
             isCreator: user.isCreator,
             bio: user.bio ?? null,
-            avatarUrl: user.avatarUrl ?? null,
+            avatarUrl: normalizeStoredUploadUrl(user.avatarUrl) ?? null,
             onboardingCompleted: user.onboardingCompleted,
             onboardingStep: user.onboardingStep,
             createdAt: user.createdAt,

@@ -69,6 +69,25 @@ const extractBaseSymbol = (symbol: string) => {
     return parts[parts.length - 1] || trimmed;
 };
 
+const buildQuoteRequestCandidates = (symbol: string) => {
+    const normalized = symbol.trim().toUpperCase();
+    if (!normalized) return [];
+
+    const candidates = [normalized];
+    const exchangeMatch = normalized.match(/^([A-Z0-9._-]+):(.*)$/);
+
+    if (exchangeMatch) {
+        const [, exchange, ticker] = exchangeMatch;
+        if (exchange === 'BYMA') {
+            candidates.push(`BCBA:${ticker}`);
+        }
+    } else {
+        candidates.push(`BCBA:${normalized}`);
+    }
+
+    return Array.from(new Set(candidates));
+};
+
 const isCedearSymbol = (symbol?: string) => {
     if (!symbol) return false;
     return symbol.toUpperCase().startsWith('BCBA:');
@@ -237,8 +256,14 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
         setPriceError(null);
         setHasLivePrice(false);
         try {
-            const res = await apiFetch(`/market/quote?symbol=${encodeURIComponent(symbol)}`);
-            if (res.ok) {
+            const candidates = buildQuoteRequestCandidates(symbol);
+
+            for (const candidate of candidates) {
+                const res = await apiFetch(`/market/quote?symbol=${encodeURIComponent(candidate)}`);
+                if (!res.ok) {
+                    continue;
+                }
+
                 const data = await res.json();
                 if (typeof data?.price === 'number' && Number.isFinite(data.price) && data.price > 0) {
                     setPrice(String(data.price));
@@ -246,6 +271,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                     return;
                 }
             }
+
             setPriceError('No se pudo obtener precio en vivo. Puedes ingresarlo manualmente.');
         } catch (err) {
             console.error(err);

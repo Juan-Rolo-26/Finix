@@ -176,45 +176,45 @@ export declare class PortfolioService {
     createTransaction(portfolioId: string, userId: string, dto: CreateTransactionDto): Promise<{
         asset: {
             id: string;
-            name: string;
-            type: string;
             currency: string;
+            name: string;
             ticker: string;
+            type: string;
         };
     } & {
         id: string;
+        currency: string;
         createdAt: Date;
-        date: Date;
         portfolioId: string;
         assetId: string | null;
-        type: string;
         quantity: import("@prisma/client/runtime/library").Decimal;
+        type: string;
+        date: Date;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
         fee: import("@prisma/client/runtime/library").Decimal;
         total: import("@prisma/client/runtime/library").Decimal;
-        currency: string;
         notes: string | null;
     }>;
     addAsset(portfolioId: string, userId: string, dto: CreateAssetDto): Promise<{
         asset: {
             id: string;
-            name: string;
-            type: string;
             currency: string;
+            name: string;
             ticker: string;
+            type: string;
         };
     } & {
         id: string;
+        currency: string;
         createdAt: Date;
-        date: Date;
         portfolioId: string;
         assetId: string | null;
-        type: string;
         quantity: import("@prisma/client/runtime/library").Decimal;
+        type: string;
+        date: Date;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
         fee: import("@prisma/client/runtime/library").Decimal;
         total: import("@prisma/client/runtime/library").Decimal;
-        currency: string;
         notes: string | null;
     }>;
     getPortfolioAssets(portfolioId: string, userId: string): Promise<{
@@ -304,15 +304,15 @@ export declare class PortfolioService {
     getWatchlists(userId: string): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         name: string;
+        userId: string;
         tickers: string;
     }[]>;
     createWatchlist(userId: string, name: string, tickers: string): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         name: string;
+        userId: string;
         tickers: string;
     }>;
     updateWatchlist(id: string, userId: string, data: {
@@ -321,8 +321,8 @@ export declare class PortfolioService {
     }): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         name: string;
+        userId: string;
         tickers: string;
     }>;
     deleteWatchlist(id: string, userId: string): Promise<{

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { usePreferencesStore } from '@/stores/preferencesStore';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import {
     X, BarChart2, PenSquare,
     Upload, Loader2, Trash2, Camera, Search, ChevronDown,
@@ -358,7 +359,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                 <div className="sticky top-0 bg-card/95 backdrop-blur-sm border-b border-border/30 px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
                     <div className="flex items-center gap-3">
                         {user?.avatarUrl
-                            ? <img src={user.avatarUrl} alt={user.username} className="w-9 h-9 rounded-full object-cover" />
+                            ? <img src={resolveMediaUrl(user.avatarUrl)} alt={user.username} className="w-9 h-9 rounded-full object-cover" />
                             : <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center text-black font-bold text-sm">{user?.username?.[0]?.toUpperCase()}</div>
                         }
                         <div>

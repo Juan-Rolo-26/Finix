@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { apiFetch } from '../lib/api';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { NOTIFICATION_HISTORY_DAYS, type NotificationItem, groupNotificationsByDay } from '../lib/notifications';
 import { usePreferencesStore } from '../stores/preferencesStore';
 
@@ -426,7 +427,7 @@ export function Sidebar() {
                                                     <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shrink-0"
                                                         style={{ background: 'hsl(var(--primary) / 0.15)' }}>
                                                         {u.avatarUrl
-                                                            ? <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
+                                                            ? <img src={resolveMediaUrl(u.avatarUrl)} alt={u.username} className="w-full h-full object-cover" />
                                                             : <User className="w-4 h-4" style={{ color: PRIMARY }} />
                                                         }
                                                     </div>

@@ -1,9 +1,18 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 @Injectable()
 export class SettingsService {
     constructor(private prisma: PrismaService) { }
+
+    private normalizeUserMedia<T extends { avatarUrl?: string | null; bannerUrl?: string | null }>(user: T): T {
+        return {
+            ...user,
+            avatarUrl: normalizeStoredUploadUrl(user.avatarUrl) ?? null,
+            bannerUrl: normalizeStoredUploadUrl(user.bannerUrl) ?? null,
+        };
+    }
 
     // ─── GET ALL SETTINGS ───────────────────────────────────────────────────────
     async getSettings(userId: string) {
@@ -58,7 +67,7 @@ export class SettingsService {
         });
 
         if (!user) throw new NotFoundException('Usuario no encontrado');
-        return user;
+        return this.normalizeUserMedia(user);
     }
 
     // ─── PRIVACY ────────────────────────────────────────────────────────────────
@@ -182,7 +191,9 @@ export class SettingsService {
             data.location = typeof dto.location === 'string' ? dto.location.trim().slice(0, 120) : null;
         }
         if (dto.avatarUrl !== undefined) {
-            data.avatarUrl = typeof dto.avatarUrl === 'string' ? dto.avatarUrl.trim().slice(0, 500) : null;
+            data.avatarUrl = typeof dto.avatarUrl === 'string'
+                ? normalizeStoredUploadUrl(dto.avatarUrl.trim().slice(0, 500))
+                : null;
         }
 
         await this.prisma.user.update({ where: { id: userId }, data });
@@ -208,7 +219,7 @@ export class SettingsService {
     async saveAvatarUrl(userId: string, avatarUrl: string) {
         await this.prisma.user.update({
             where: { id: userId },
-            data: { avatarUrl },
+            data: { avatarUrl: normalizeStoredUploadUrl(avatarUrl) ?? avatarUrl },
         });
         return { success: true };
     }
@@ -216,7 +227,7 @@ export class SettingsService {
     async saveBannerUrl(userId: string, bannerUrl: string) {
         await this.prisma.user.update({
             where: { id: userId },
-            data: { bannerUrl },
+            data: { bannerUrl: normalizeStoredUploadUrl(bannerUrl) ?? bannerUrl },
         });
         return { success: true };
     }

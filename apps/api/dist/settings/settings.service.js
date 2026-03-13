@@ -12,9 +12,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SettingsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const upload_url_util_1 = require("../uploads/upload-url.util");
 let SettingsService = class SettingsService {
     constructor(prisma) {
         this.prisma = prisma;
+    }
+    normalizeUserMedia(user) {
+        return {
+            ...user,
+            avatarUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(user.avatarUrl) ?? null,
+            bannerUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(user.bannerUrl) ?? null,
+        };
     }
     async getSettings(userId) {
         const user = await this.prisma.user.findUnique({
@@ -65,7 +73,7 @@ let SettingsService = class SettingsService {
         });
         if (!user)
             throw new common_1.NotFoundException('Usuario no encontrado');
-        return user;
+        return this.normalizeUserMedia(user);
     }
     async updatePrivacy(userId, dto) {
         const data = {};
@@ -159,7 +167,9 @@ let SettingsService = class SettingsService {
             data.location = typeof dto.location === 'string' ? dto.location.trim().slice(0, 120) : null;
         }
         if (dto.avatarUrl !== undefined) {
-            data.avatarUrl = typeof dto.avatarUrl === 'string' ? dto.avatarUrl.trim().slice(0, 500) : null;
+            data.avatarUrl = typeof dto.avatarUrl === 'string'
+                ? (0, upload_url_util_1.normalizeStoredUploadUrl)(dto.avatarUrl.trim().slice(0, 500))
+                : null;
         }
         await this.prisma.user.update({ where: { id: userId }, data });
         if (dto.portfolioName && dto.portfolioCurrency) {
@@ -179,14 +189,14 @@ let SettingsService = class SettingsService {
     async saveAvatarUrl(userId, avatarUrl) {
         await this.prisma.user.update({
             where: { id: userId },
-            data: { avatarUrl },
+            data: { avatarUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(avatarUrl) ?? avatarUrl },
         });
         return { success: true };
     }
     async saveBannerUrl(userId, bannerUrl) {
         await this.prisma.user.update({
             where: { id: userId },
-            data: { bannerUrl },
+            data: { bannerUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(bannerUrl) ?? bannerUrl },
         });
         return { success: true };
     }

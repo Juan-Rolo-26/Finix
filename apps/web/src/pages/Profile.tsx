@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { apiFetch } from '@/lib/api';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { uploadProfileImage } from '@/lib/profileMedia';
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '@/components/posts/PostCard';
@@ -1172,7 +1173,7 @@ export default function Profile() {
                     }}
                 >
                     {profile.bannerUrl && (
-                        <img src={profile.bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                        <img src={resolveMediaUrl(profile.bannerUrl)} alt="Banner" className="w-full h-full object-cover" />
                     )}
                     {/* Overlay gradient */}
                     <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, hsl(var(--background) / 0.92) 100%)' }} />
@@ -1211,7 +1212,7 @@ export default function Profile() {
                             }}
                         >
                             {profile.avatarUrl ? (
-                                <img src={profile.avatarUrl} alt={profile.username} className="w-full h-full object-cover" />
+                                <img src={resolveMediaUrl(profile.avatarUrl)} alt={profile.username} className="w-full h-full object-cover" />
                             ) : (
                                 profile.username[0].toUpperCase()
                             )}

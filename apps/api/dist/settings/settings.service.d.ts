@@ -2,6 +2,7 @@ import { PrismaService } from '../prisma.service';
 export declare class SettingsService {
     private prisma;
     constructor(prisma: PrismaService);
+    private normalizeUserMedia;
     getSettings(userId: string): Promise<{
         id: string;
         email: string;

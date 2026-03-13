@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Loader2, Upload, X, Camera } from 'lucide-react';
 import { uploadProfileImage } from '@/lib/profileMedia';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 
 interface AvatarUploadProps {
     currentUrl?: string | null;
@@ -16,16 +17,17 @@ const SIZES = {
 
 export default function AvatarUpload({ currentUrl, onUploaded, size = 'md' }: AvatarUploadProps) {
     const inputRef = useRef<HTMLInputElement>(null);
-    const [preview, setPreview] = useState<string | null>(currentUrl || null);
+    const [localPreview, setLocalPreview] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState('');
     const s = SIZES[size];
+    const preview = localPreview || currentUrl || null;
 
     const handleFile = async (file: File) => {
         setError('');
         // Show local preview immediately
         const objectUrl = URL.createObjectURL(file);
-        setPreview(objectUrl);
+        setLocalPreview(objectUrl);
 
         setIsUploading(true);
         try {
@@ -34,10 +36,10 @@ export default function AvatarUpload({ currentUrl, onUploaded, size = 'md' }: Av
                 throw new Error('No se recibió la URL del avatar');
             }
             onUploaded(avatarUrl);
-            setPreview(avatarUrl);
+            setLocalPreview(null);
         } catch (e: any) {
             setError(e.message || 'No se pudo subir la imagen');
-            setPreview(currentUrl || null);
+            setLocalPreview(null);
         } finally {
             setIsUploading(false);
         }
@@ -67,7 +69,7 @@ export default function AvatarUpload({ currentUrl, onUploaded, size = 'md' }: Av
             >
                 {preview ? (
                     <img
-                        src={preview}
+                        src={resolveMediaUrl(preview)}
                         alt="Avatar"
                         className={`${s.container} rounded-full object-cover border-2 border-primary/40 group-hover:border-primary transition-all`}
                     />
@@ -92,7 +94,7 @@ export default function AvatarUpload({ currentUrl, onUploaded, size = 'md' }: Av
                         type="button"
                         onClick={(e) => {
                             e.stopPropagation();
-                            setPreview(null);
+                            setLocalPreview(null);
                             onUploaded('');
                         }}
                         className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 border-2 border-background flex items-center justify-center hover:bg-red-600 transition-colors"

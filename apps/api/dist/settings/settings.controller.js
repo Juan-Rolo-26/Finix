@@ -20,6 +20,7 @@ const path_1 = require("path");
 const fs_1 = require("fs");
 const settings_service_1 = require("./settings.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const upload_url_util_1 = require("../uploads/upload-url.util");
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 const avatarStorage = (0, multer_1.diskStorage)({
@@ -68,16 +69,14 @@ let SettingsController = class SettingsController {
     async uploadAvatar(req, file) {
         if (!file)
             throw new common_1.BadRequestException('No se recibió ningún archivo');
-        const apiBase = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
-        const avatarUrl = `${apiBase}/uploads/avatars/${file.filename}`;
+        const avatarUrl = (0, upload_url_util_1.buildUploadPublicPath)('avatars', file.filename);
         await this.settingsService.saveAvatarUrl(req.user.id, avatarUrl);
         return { avatarUrl };
     }
     async uploadBanner(req, file) {
         if (!file)
             throw new common_1.BadRequestException('No se recibió ningún archivo');
-        const apiBase = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
-        const bannerUrl = `${apiBase}/uploads/banners/${file.filename}`;
+        const bannerUrl = (0, upload_url_util_1.buildUploadPublicPath)('banners', file.filename);
         await this.settingsService.saveBannerUrl(req.user.id, bannerUrl);
         return { bannerUrl };
     }

@@ -19,6 +19,7 @@ import {
     X,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
 
@@ -267,7 +268,7 @@ export function BottomNav() {
                                                             <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
                                                                 style={{ background: 'hsl(var(--primary) / 0.15)' }}>
                                                                 {u.avatarUrl
-                                                                    ? <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
+                                                                    ? <img src={resolveMediaUrl(u.avatarUrl)} alt={u.username} className="w-full h-full object-cover" />
                                                                     : <User className="w-4 h-4" style={{ color: PRIMARY }} />
                                                                 }
                                                             </div>

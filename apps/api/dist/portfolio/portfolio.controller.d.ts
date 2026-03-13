@@ -7,8 +7,8 @@ export declare class PortfolioController {
     getWatchlists(req: any): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         name: string;
+        userId: string;
         tickers: string;
     }[]>;
     createWatchlist(req: any, body: {
@@ -17,8 +17,8 @@ export declare class PortfolioController {
     }): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         name: string;
+        userId: string;
         tickers: string;
     }>;
     updateWatchlist(req: any, id: string, body: {
@@ -27,8 +27,8 @@ export declare class PortfolioController {
     }): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         name: string;
+        userId: string;
         tickers: string;
     }>;
     deleteWatchlist(req: any, id: string): Promise<{
@@ -222,23 +222,23 @@ export declare class PortfolioController {
     addAsset(req: any, portfolioId: string, dto: CreateAssetDto): Promise<{
         asset: {
             id: string;
-            name: string;
-            type: string;
             currency: string;
+            name: string;
             ticker: string;
+            type: string;
         };
     } & {
         id: string;
+        currency: string;
         createdAt: Date;
-        date: Date;
         portfolioId: string;
         assetId: string | null;
-        type: string;
         quantity: import("@prisma/client/runtime/library").Decimal;
+        type: string;
+        date: Date;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
         fee: import("@prisma/client/runtime/library").Decimal;
         total: import("@prisma/client/runtime/library").Decimal;
-        currency: string;
         notes: string | null;
     }>;
     getPortfolioAssets(req: any, portfolioId: string): Promise<{
@@ -275,23 +275,23 @@ export declare class PortfolioController {
     createTransaction(req: any, portfolioId: string, dto: CreateTransactionDto): Promise<{
         asset: {
             id: string;
-            name: string;
-            type: string;
             currency: string;
+            name: string;
             ticker: string;
+            type: string;
         };
     } & {
         id: string;
+        currency: string;
         createdAt: Date;
-        date: Date;
         portfolioId: string;
         assetId: string | null;
-        type: string;
         quantity: import("@prisma/client/runtime/library").Decimal;
+        type: string;
+        date: Date;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
         fee: import("@prisma/client/runtime/library").Decimal;
         total: import("@prisma/client/runtime/library").Decimal;
-        currency: string;
         notes: string | null;
     }>;
 }

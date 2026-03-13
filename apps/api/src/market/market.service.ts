@@ -809,13 +809,35 @@ export class MarketService {
     }
 
     private normalizeQuoteInputSymbol(symbol: string) {
-        return (symbol || '').trim().toUpperCase();
+        const normalized = (symbol || '').trim().toUpperCase();
+        if (!normalized) return '';
+
+        const [exchange, ...rest] = normalized.split(':');
+        if (rest.length === 0) {
+            return normalized;
+        }
+
+        const ticker = rest.join(':');
+        if (exchange === 'BYMA') {
+            return `BCBA:${ticker}`;
+        }
+
+        return normalized;
     }
 
     private buildSymbolCandidates(rawSymbol: string) {
         const cleaned = this.normalizeQuoteInputSymbol(rawSymbol);
         if (!cleaned) return [];
-        if (cleaned.includes(':')) return [cleaned];
+        if (cleaned.includes(':')) {
+            const [exchange, ...rest] = cleaned.split(':');
+            const ticker = rest.join(':');
+
+            if (exchange === 'BCBA') {
+                return [cleaned, `BYMA:${ticker}`];
+            }
+
+            return [cleaned];
+        }
 
         const cryptoAliases: Record<string, string[]> = {
             BTC: ['BINANCE:BTCUSDT', 'CRYPTO:BTCUSD'],
@@ -836,7 +858,7 @@ export class MarketService {
             return [`BINANCE:${cleaned}`];
         }
 
-        return [`NASDAQ:${cleaned}`, `NYSE:${cleaned}`, `AMEX:${cleaned}`];
+        return [`NASDAQ:${cleaned}`, `NYSE:${cleaned}`, `AMEX:${cleaned}`, `BCBA:${cleaned}`];
     }
 
     private async fetchScannerQuotes(tickers: string[]) {

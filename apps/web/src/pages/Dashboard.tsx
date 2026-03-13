@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { formatCurrency } from '../lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, Award, ArrowUpRight, ArrowDownRight } from 'lucide-react';
@@ -111,7 +112,7 @@ export default function Dashboard() {
                                                 <div className="relative">
                                                     <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 ring-1 ring-border/40">
                                                         {trader.avatarUrl ? (
-                                                            <img src={trader.avatarUrl} alt={trader.username} className="w-full h-full object-cover" />
+                                                            <img src={resolveMediaUrl(trader.avatarUrl)} alt={trader.username} className="w-full h-full object-cover" />
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center text-[13px] font-bold text-primary">
                                                                 {trader.username[0].toUpperCase()}
@@ -264,7 +265,7 @@ export default function Dashboard() {
                                                 {/* Avatar */}
                                                 <div className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-primary/10 ring-1 ring-border/40">
                                                     {trader.avatarUrl ? (
-                                                        <img src={trader.avatarUrl} alt={trader.username} className="w-full h-full object-cover" />
+                                                        <img src={resolveMediaUrl(trader.avatarUrl)} alt={trader.username} className="w-full h-full object-cover" />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-[11px] font-bold text-primary">
                                                             {trader.username[0].toUpperCase()}

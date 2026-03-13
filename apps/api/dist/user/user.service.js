@@ -16,11 +16,19 @@ const argon2 = require("argon2");
 const market_service_1 = require("../market/market.service");
 const notifications_service_1 = require("../notifications/notifications.service");
 const prisma_service_1 = require("../prisma.service");
+const upload_url_util_1 = require("../uploads/upload-url.util");
 let UserService = class UserService {
     constructor(prisma, notificationsService, marketService) {
         this.prisma = prisma;
         this.notificationsService = notificationsService;
         this.marketService = marketService;
+    }
+    normalizeUserMedia(user) {
+        return {
+            ...user,
+            avatarUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(user.avatarUrl) ?? null,
+            bannerUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(user.bannerUrl) ?? null,
+        };
     }
     normalizeTicker(value) {
         return String(value || '').trim().toUpperCase();
@@ -322,7 +330,7 @@ let UserService = class UserService {
         }
         const liveStats = await this.calculatePortfolioStats(userId);
         return {
-            ...user,
+            ...this.normalizeUserMedia(user),
             totalReturn: liveStats.totalReturn,
             winRate: liveStats.winRate,
             riskScore: liveStats.riskScore,
@@ -357,7 +365,7 @@ let UserService = class UserService {
             }).then(Boolean)
             : false;
         if (!user.isProfilePublic) {
-            return {
+            return this.normalizeUserMedia({
                 id: user.id,
                 username: user.username,
                 bio: user.bio,
@@ -368,12 +376,12 @@ let UserService = class UserService {
                 plan: user.plan,
                 isProfilePublic: false,
                 isFollowedByMe,
-            };
+            });
         }
         if (user.showStats) {
             const liveStats = await this.calculatePortfolioStats(user.id);
             return {
-                ...user,
+                ...this.normalizeUserMedia(user),
                 isFollowedByMe,
                 totalReturn: liveStats.totalReturn,
                 winRate: liveStats.winRate,
@@ -381,7 +389,7 @@ let UserService = class UserService {
             };
         }
         return {
-            ...user,
+            ...this.normalizeUserMedia(user),
             isFollowedByMe,
             totalReturn: null,
             winRate: null,
@@ -444,7 +452,9 @@ let UserService = class UserService {
             if (updateData[field] !== undefined) {
                 const normalized = this.normalizeNullableText(updateData[field], maxLen);
                 if (normalized !== undefined) {
-                    filteredData[field] = normalized;
+                    filteredData[field] = field === 'avatarUrl' || field === 'bannerUrl'
+                        ? (0, upload_url_util_1.normalizeStoredUploadUrl)(normalized)
+                        : normalized;
                 }
             }
         }
@@ -475,7 +485,7 @@ let UserService = class UserService {
                 data: filteredData,
                 select: this.getProfileSelect(),
             });
-            return updated;
+            return this.normalizeUserMedia(updated);
         }
         catch (error) {
             if (error instanceof client_1.Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -659,7 +669,7 @@ let UserService = class UserService {
             return {
                 id: trader.id,
                 username: trader.username,
-                avatarUrl: trader.avatarUrl,
+                avatarUrl: (0, upload_url_util_1.normalizeStoredUploadUrl)(trader.avatarUrl) ?? null,
                 totalReturn: stats.totalReturn,
                 winRate: stats.winRate,
                 riskScore: stats.riskScore,
@@ -675,7 +685,7 @@ let UserService = class UserService {
     async searchUsers(query) {
         if (!query || query.length < 2)
             return [];
-        return this.prisma.user.findMany({
+        const users = await this.prisma.user.findMany({
             where: {
                 username: {
                     contains: query,
@@ -696,6 +706,7 @@ let UserService = class UserService {
                 totalReturn: true,
             },
         });
+        return users.map((user) => this.normalizeUserMedia(user));
     }
     async toggleFollow(followerId, username) {
         const [targetUser, follower] = await Promise.all([
