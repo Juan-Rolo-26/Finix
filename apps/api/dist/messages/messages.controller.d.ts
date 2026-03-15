@@ -32,12 +32,12 @@ export declare class MessagesController {
             };
             sharedPost: {
                 id: string;
-                content: string;
+                createdAt: Date;
                 type: string;
+                content: string;
                 assetSymbol: string;
                 analysisType: string;
                 riskLevel: string;
-                createdAt: Date;
                 author: {
                     id: string;
                     username: string;
@@ -47,15 +47,15 @@ export declare class MessagesController {
                 media: {
                     id: string;
                     createdAt: Date;
+                    postId: string;
                     url: string;
                     mediaType: string;
                     order: number;
-                    postId: string;
                 }[];
             };
             id: string;
-            content: string;
             createdAt: Date;
+            content: string;
             conversationId: string;
             senderId: string;
             attachmentType: string | null;
@@ -97,12 +97,12 @@ export declare class MessagesController {
             };
             sharedPost: {
                 id: string;
-                content: string;
+                createdAt: Date;
                 type: string;
+                content: string;
                 assetSymbol: string;
                 analysisType: string;
                 riskLevel: string;
-                createdAt: Date;
                 author: {
                     id: string;
                     username: string;
@@ -112,15 +112,15 @@ export declare class MessagesController {
                 media: {
                     id: string;
                     createdAt: Date;
+                    postId: string;
                     url: string;
                     mediaType: string;
                     order: number;
-                    postId: string;
                 }[];
             };
             id: string;
-            content: string;
             createdAt: Date;
+            content: string;
             conversationId: string;
             senderId: string;
             attachmentType: string | null;
@@ -141,12 +141,12 @@ export declare class MessagesController {
         };
         sharedPost: {
             id: string;
-            content: string;
+            createdAt: Date;
             type: string;
+            content: string;
             assetSymbol: string;
             analysisType: string;
             riskLevel: string;
-            createdAt: Date;
             author: {
                 id: string;
                 username: string;
@@ -156,15 +156,15 @@ export declare class MessagesController {
             media: {
                 id: string;
                 createdAt: Date;
+                postId: string;
                 url: string;
                 mediaType: string;
                 order: number;
-                postId: string;
             }[];
         };
         id: string;
-        content: string;
         createdAt: Date;
+        content: string;
         conversationId: string;
         senderId: string;
         attachmentType: string | null;
@@ -190,12 +190,12 @@ export declare class MessagesController {
         };
         sharedPost: {
             id: string;
-            content: string;
+            createdAt: Date;
             type: string;
+            content: string;
             assetSymbol: string;
             analysisType: string;
             riskLevel: string;
-            createdAt: Date;
             author: {
                 id: string;
                 username: string;
@@ -205,15 +205,15 @@ export declare class MessagesController {
             media: {
                 id: string;
                 createdAt: Date;
+                postId: string;
                 url: string;
                 mediaType: string;
                 order: number;
-                postId: string;
             }[];
         };
         id: string;
-        content: string;
         createdAt: Date;
+        content: string;
         conversationId: string;
         senderId: string;
         attachmentType: string | null;

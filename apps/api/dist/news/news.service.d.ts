@@ -106,8 +106,8 @@ export declare class NewsService {
         id: string;
         createdAt: Date;
         name: string;
-        description: string | null;
         slug: string;
+        description: string | null;
         color: string | null;
         icon: string | null;
     }[]>;

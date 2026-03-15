@@ -50,6 +50,7 @@ export declare class PostsController {
         } & {
             id: string;
             content: string;
+            authorId: string;
             type: string;
             visibility: string;
             deletedAt: Date | null;
@@ -58,12 +59,11 @@ export declare class PostsController {
             riskLevel: string | null;
             contentEditedAt: Date | null;
             tickers: string;
+            parentId: string | null;
+            quotedPostId: string | null;
             viewCount: number;
             createdAt: Date;
             updatedAt: Date;
-            authorId: string;
-            parentId: string | null;
-            quotedPostId: string | null;
         };
         quotedPost: {
             author: {
@@ -78,14 +78,15 @@ export declare class PostsController {
             media: {
                 id: string;
                 createdAt: Date;
+                postId: string;
                 url: string;
                 mediaType: string;
                 order: number;
-                postId: string;
             }[];
         } & {
             id: string;
             content: string;
+            authorId: string;
             type: string;
             visibility: string;
             deletedAt: Date | null;
@@ -94,20 +95,19 @@ export declare class PostsController {
             riskLevel: string | null;
             contentEditedAt: Date | null;
             tickers: string;
+            parentId: string | null;
+            quotedPostId: string | null;
             viewCount: number;
             createdAt: Date;
             updatedAt: Date;
-            authorId: string;
-            parentId: string | null;
-            quotedPostId: string | null;
         };
         media: {
             id: string;
             createdAt: Date;
+            postId: string;
             url: string;
             mediaType: string;
             order: number;
-            postId: string;
         }[];
         likes: {
             userId: string;
@@ -128,6 +128,7 @@ export declare class PostsController {
     } & {
         id: string;
         content: string;
+        authorId: string;
         type: string;
         visibility: string;
         deletedAt: Date | null;
@@ -136,12 +137,11 @@ export declare class PostsController {
         riskLevel: string | null;
         contentEditedAt: Date | null;
         tickers: string;
+        parentId: string | null;
+        quotedPostId: string | null;
         viewCount: number;
         createdAt: Date;
         updatedAt: Date;
-        authorId: string;
-        parentId: string | null;
-        quotedPostId: string | null;
     }>;
     deletePost(req: any, id: string): Promise<{
         success: boolean;

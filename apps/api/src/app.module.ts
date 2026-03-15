@@ -22,6 +22,7 @@ import { StoriesModule } from './stories/stories.module';
 import { PrismaModule } from './prisma.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ContactModule } from './contact/contact.module';
+import { HubModule } from './hub/hub.module';
 
 @Module({
     imports: [
@@ -48,6 +49,7 @@ import { ContactModule } from './contact/contact.module';
         StoriesModule,
         AdminModule,
         MailModule,
+        HubModule,
     ],
     controllers: [],
     providers: [],

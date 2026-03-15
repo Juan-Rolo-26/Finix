@@ -877,9 +877,9 @@ export default function MessagesPage() {
 
     // ── Theme-aware colors ─────────────────────────────────────────────────
 
-    const bgPage = isLight ? 'hsl(0 0% 97%)' : '#0a0a0a';
-    const bgSidebar = isLight ? 'hsl(0 0% 100%)' : 'linear-gradient(180deg, #0d0d0d 0%, #0a0a0a 100%)';
-    const borderColor = isLight ? 'hsl(214 18% 88%)' : 'hsl(0 0% 100% / 0.07)';
+    const bgPage = isLight ? 'hsl(0 0% 97%)' : 'hsl(var(--background))';
+    const bgSidebar = isLight ? 'hsl(0 0% 100%)' : 'hsl(var(--sidebar-bg))';
+    const borderColor = isLight ? 'hsl(214 18% 88%)' : 'hsl(var(--border))';
     const textPrimary = isLight ? 'hsl(220 15% 10%)' : 'hsl(0 0% 97%)';
     const textMuted = isLight ? 'hsl(220 10% 48%)' : 'rgba(255,255,255,0.4)';
     const bubbleBg = isLight ? 'hsl(210 14% 93%)' : 'hsl(0 0% 100% / 0.07)';

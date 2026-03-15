@@ -25,6 +25,8 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Explore = lazy(() => import('./pages/Explore'));
 const Messages = lazy(() => import('./pages/Messages'));
 const PostDetail = lazy(() => import('./pages/PostDetail'));
+const Comunidad = lazy(() => import('./pages/Comunidad'));
+const NewsPage = lazy(() => import('./pages/News'));
 
 // ─── Theme Applier ────────────────────────────────────────────────────────────
 
@@ -165,6 +167,8 @@ export default function App() {
                         <Route path="/explore" element={<Explore />} />
                         <Route path="/posts/:id" element={<PostDetail />} />
                         <Route path="/messages" element={<Messages />} />
+                        <Route path="/comunidad" element={<Comunidad />} />
+                        <Route path="/news" element={<NewsPage />} />
                     </Route>
 
                     {/* Info & Legal Routes */}

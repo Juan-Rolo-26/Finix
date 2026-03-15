@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard,
-    PieChart,
     Settings,
     LogOut,
     User,
@@ -19,6 +18,8 @@ import {
     Loader2,
     Sun,
     Moon,
+    Users,
+    Newspaper,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { apiFetch } from '../lib/api';
@@ -270,10 +271,12 @@ export function Sidebar() {
             label: 'Plataforma',
             links: [
                 { name: 'Inicio', path: '/dashboard', icon: LayoutDashboard, badge: 0 },
-                { name: 'Portafolio', path: '/portfolio', icon: PieChart, badge: 0 },
+                { name: 'Comunidad', path: '/comunidad', icon: Users, badge: 0 },
                 { name: 'Mercado', path: '/market', icon: TrendingUp, badge: 0 },
+                { name: 'Noticias', path: '/news', icon: Newspaper, badge: 0 },
                 { name: 'Explorar', path: '/explore', icon: Compass, badge: 0 },
                 { name: 'Mensajes', path: '/messages', icon: MessageSquare, badge: unreadMsgs },
+                // Portafolio oculto visualmente — código preservado en /pages/Portfolio.tsx y ruta /portfolio
             ],
         },
         {

@@ -43,7 +43,9 @@ async function bootstrap() {
     const { join } = require('path');
     const { existsSync, mkdirSync } = require('fs');
     const express = require('express');
-    const uploadsDir = join(process.cwd(), 'uploads');
+    // __dirname = dist/ at runtime (outDir:"./dist", no rootDir → src/ stripped)
+    // → one level up reaches apps/api/ root
+    const uploadsDir = join(__dirname, '..', 'uploads');
     // Ensure uploads directory exists (VPS fresh deploy)
     if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
     // Serve at both /uploads (direct) and /api/uploads (via nginx /api proxy)

@@ -12,11 +12,25 @@ let NewsFetcherService = class NewsFetcherService {
     constructor() {
         this.GNEWS_API_KEY = 'YOUR_GNEWS_API_KEY_HERE';
         this.RSS_FEEDS = [
+            { url: 'https://cointelegraph.com/rss', name: 'CoinTelegraph', country: 'US' },
+            { url: 'https://coindesk.com/arc/outboundfeeds/rss/', name: 'CoinDesk', country: 'US' },
+            { url: 'https://decrypt.co/feed', name: 'Decrypt', country: 'US' },
+            { url: 'https://cryptonews.com/news/feed/', name: 'CryptoNews', country: 'US' },
             { url: 'https://finance.yahoo.com/news/rssindex', name: 'Yahoo Finance', country: 'US' },
-            { url: 'https://www.nasdaq.com/feed/rssoutbound?category=Commodities', name: 'NASDAQ', country: 'US' },
+            { url: 'https://www.nasdaq.com/feed/rssoutbound?category=Stocks', name: 'NASDAQ', country: 'US' },
+            { url: 'https://feeds.marketwatch.com/marketwatch/topstories', name: 'MarketWatch', country: 'US' },
+            { url: 'https://www.investing.com/rss/news.rss', name: 'Investing.com', country: 'US' },
+            { url: 'https://feeds.reuters.com/reuters/businessNews', name: 'Reuters Business', country: 'US' },
+            { url: 'https://feeds.bbci.co.uk/news/business/rss.xml', name: 'BBC Business', country: 'UK' },
+            { url: 'https://rss.nytimes.com/services/xml/rss/nyt/Economy.xml', name: 'NYT Economy', country: 'US' },
+            { url: 'https://www.ft.com/?format=rss', name: 'Financial Times', country: 'UK' },
+            { url: 'https://feeds.a.dj.com/rss/RSSWorldNews.xml', name: 'Wall Street Journal', country: 'US' },
             { url: 'https://www.ambito.com/rss/economia.xml', name: 'Ámbito Financiero', country: 'AR' },
             { url: 'https://www.cronista.com/rss/economia/', name: 'El Cronista', country: 'AR' },
             { url: 'https://www.infobae.com/feeds/rss/', name: 'Infobae', country: 'AR' },
+            { url: 'https://feeds.lanacion.com.ar/lanacion/economia', name: 'La Nación', country: 'AR' },
+            { url: 'https://www.iprofesional.com/feed', name: 'iProfesional', country: 'AR' },
+            { url: 'https://www.ambito.com/rss/finanzas.xml', name: 'Ámbito Finanzas', country: 'AR' },
         ];
     }
     async fetchAllNews() {
@@ -115,7 +129,7 @@ let NewsFetcherService = class NewsFetcherService {
                     imageUrl: imageUrl || undefined,
                     source: sourceName,
                     publishedAt: pubDate ? new Date(pubDate) : new Date(),
-                    language: sourceName.includes('Ámbito') || sourceName.includes('Cronista') || sourceName.includes('Infobae') ? 'es' : 'en',
+                    language: ['Ámbito Financiero', 'Ámbito Finanzas', 'El Cronista', 'Infobae', 'La Nación', 'iProfesional'].includes(sourceName) ? 'es' : 'en',
                 });
             }
         }

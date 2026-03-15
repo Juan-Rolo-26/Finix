@@ -815,13 +815,6 @@ export default function Settings() {
                                 onChange={(v) => updatePrivacy('acceptingFollowers', v)}
                             />
                             <ToggleRow
-                                label="Mostrar portafolio"
-                                description="Expone tu composición de cartera en el perfil público."
-                                checked={privacyForm.showPortfolio}
-                                onChange={(v) => updatePrivacy('showPortfolio', v)}
-                                disabled={!privacyForm.isProfilePublic}
-                            />
-                            <ToggleRow
                                 label="Mostrar estadísticas"
                                 description="Publica métricas agregadas como rendimiento y riesgo."
                                 checked={privacyForm.showStats}

@@ -34,8 +34,13 @@ async function bootstrap() {
     });
     app.setGlobalPrefix('api');
     const { join } = require('path');
+    const { existsSync, mkdirSync } = require('fs');
     const express = require('express');
-    app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
+    const uploadsDir = join(__dirname, '..', 'uploads');
+    if (!existsSync(uploadsDir))
+        mkdirSync(uploadsDir, { recursive: true });
+    app.use('/uploads', express.static(uploadsDir));
+    app.use('/api/uploads', express.static(uploadsDir));
     const port = Number(process.env.PORT || 3001);
     await app.listen(port, '0.0.0.0');
 }

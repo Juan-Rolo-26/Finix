@@ -7,7 +7,7 @@ import {
     Compass,
     MessageSquare,
     MoreHorizontal,
-    PieChart,
+    Users,
     User,
     Settings,
     Search,
@@ -17,6 +17,7 @@ import {
     Plus,
     Loader2,
     X,
+    Newspaper,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
@@ -27,10 +28,10 @@ const PRIMARY = 'hsl(var(--primary))';
 
 /* ── 5 main tabs ──────────────────────────────────────────── */
 const mainTabs = [
-    { path: '/dashboard', icon: LayoutDashboard },
-    { path: '/market',    icon: TrendingUp },
-    { path: '/explore',   icon: Compass },
-    { path: '/messages',  icon: MessageSquare },
+    { path: '/dashboard',  icon: LayoutDashboard },
+    { path: '/comunidad',  icon: Users },
+    { path: '/explore',    icon: Compass },
+    { path: '/messages',   icon: MessageSquare },
 ];
 
 export function BottomNav() {
@@ -85,11 +86,13 @@ export function BottomNav() {
         location.pathname === p ||
         (p !== '/dashboard' && location.pathname.startsWith(`${p}/`));
 
-    const moreActive = ['/portfolio', '/profile', '/settings'].some(p => isActive(p));
+    const moreActive = ['/market', '/news', '/profile', '/settings'].some(p => isActive(p));
 
     /* ── Quick links inside "More" panel ─────────────────── */
+    // Portafolio oculto visualmente — código preservado en /pages/Portfolio.tsx
     const moreLinks = [
-        { label: 'Portafolio',     path: '/portfolio', icon: PieChart },
+        { label: 'Mercado',        path: '/market',    icon: TrendingUp },
+        { label: 'Noticias',       path: '/news',      icon: Newspaper },
         { label: 'Mi Perfil',      path: '/profile',   icon: User },
         { label: 'Configuración',  path: '/settings',  icon: Settings },
     ];

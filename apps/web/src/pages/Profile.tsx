@@ -11,7 +11,7 @@ import {
     User, MapPin, Briefcase, Calendar, Award, TrendingUp,
     Linkedin, Twitter, Youtube, Instagram,
     Edit, Check, X, Camera, Globe, Shield,
-    BarChart3, Target, PieChart, MessageSquare, UserPlus,
+    BarChart3, Target, MessageSquare, UserPlus,
     Star, Search, Plus, Wallet, DollarSign,
     ArrowUpRight, ArrowDownRight, Layers, Activity, Loader2, Lock,
 } from 'lucide-react';
@@ -271,7 +271,7 @@ interface ProfilePortfolioSectionProps {
     showStats?: boolean;
 }
 
-function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, totalReturn, winRate, riskScore, showStats }: ProfilePortfolioSectionProps) {
+export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, totalReturn, winRate, riskScore, showStats }: ProfilePortfolioSectionProps) {
     const [portfolios, setPortfolios] = useState<PortfolioData[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [metrics, setMetrics] = useState<PortfolioMetricsData | null>(null);
@@ -780,7 +780,7 @@ export default function Profile() {
     const [editForm, setEditForm] = useState<Partial<UserProfile>>({});
     const [uploadingImage, setUploadingImage] = useState<'avatar' | 'banner' | null>(null);
     const [imageUploadError, setImageUploadError] = useState('');
-    const [activeTab, setActiveTab] = useState<'posts' | 'portfolio' | 'saved'>('posts');
+    const [activeTab, setActiveTab] = useState<'posts' | 'saved'>('posts');
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowSubmitting, setIsFollowSubmitting] = useState(false);
     const [profilePosts, setProfilePosts] = useState<Post[]>([]);
@@ -814,6 +814,7 @@ export default function Profile() {
         if (!isOwnProfile && activeTab === 'saved') {
             setActiveTab('posts');
         }
+        // activeTab is always valid (posts/saved)
     }, [isOwnProfile, activeTab]);
 
     /* ── Load profile ────────────────────────────── */
@@ -1154,9 +1155,8 @@ export default function Profile() {
     const specializations = parseJsonArray(profile.specializations);
     const certifications = parseJsonArray(profile.certifications);
 
-    const tabs: { id: 'posts' | 'portfolio' | 'saved'; label: string; count?: number; icon?: JSX.Element }[] = [
+    const tabs: { id: 'posts' | 'saved'; label: string; count?: number; icon?: JSX.Element }[] = [
         { id: 'posts', label: 'Publicaciones', count: profile._count?.posts },
-        { id: 'portfolio', label: 'Portafolio', icon: <PieChart className="w-3.5 h-3.5" /> },
         ...(isOwnProfile ? [{ id: 'saved' as const, label: 'Guardados' }] : []),
     ];
 
@@ -1607,24 +1607,6 @@ export default function Profile() {
                 {/* ── TAB CONTENT ───────────────────────────────── */}
                 <div className="px-6 py-6">
                     <AnimatePresence mode="wait">
-                        {activeTab === 'portfolio' && (
-                            <motion.div key="portfolio"
-                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-                                className="space-y-5"
-                            >
-                                <ProfilePortfolioSection
-                                    key={`${profile.id}-${isOwnProfile ? 'own' : 'public'}`}
-                                    profileUserId={profile.id}
-                                    isOwnProfile={isOwnProfile}
-                                    showPortfolio={profile.showPortfolio}
-                                    totalReturn={profile.totalReturn}
-                                    winRate={profile.winRate}
-                                    riskScore={profile.riskScore}
-                                    showStats={profile.showStats}
-                                />
-                            </motion.div>
-                        )}
-
                         {activeTab === 'posts' && (
                             <motion.div key="posts" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                                 {isLoadingPosts ? (

@@ -28,7 +28,7 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 const postMediaStorage = (0, multer_1.diskStorage)({
     destination: (_req, _file, cb) => {
-        const dir = (0, path_1.join)(process.cwd(), 'uploads', 'posts');
+        const dir = (0, path_1.join)(__dirname, '..', '..', 'uploads', 'posts');
         if (!(0, fs_1.existsSync)(dir))
             (0, fs_1.mkdirSync)(dir, { recursive: true });
         cb(null, dir);

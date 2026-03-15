@@ -31,6 +31,7 @@ const stories_module_1 = require("./stories/stories.module");
 const prisma_module_1 = require("./prisma.module");
 const notifications_module_1 = require("./notifications/notifications.module");
 const contact_module_1 = require("./contact/contact.module");
+const hub_module_1 = require("./hub/hub.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -60,6 +61,7 @@ exports.AppModule = AppModule = __decorate([
             stories_module_1.StoriesModule,
             admin_module_1.AdminModule,
             mail_module_1.MailModule,
+            hub_module_1.HubModule,
         ],
         controllers: [],
         providers: [],

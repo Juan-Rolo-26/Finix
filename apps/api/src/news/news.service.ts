@@ -39,6 +39,8 @@ export class NewsService {
             { name: 'Real Estate', slug: 'real-estate', icon: 'Home', color: '#10b981' },
             { name: 'Commodities', slug: 'commodities', icon: 'TrendingUp', color: '#eab308' },
             { name: 'ETFs', slug: 'etfs', icon: 'PieChart', color: '#6366f1' },
+            { name: 'Economía', slug: 'economia', icon: 'TrendingUp', color: '#10b981' },
+            { name: 'Acciones', slug: 'acciones', icon: 'BarChart2', color: '#a855f7' },
         ];
 
         for (const cat of categories) {
@@ -367,16 +369,18 @@ export class NewsService {
 
         const categories = await this.prisma.newsCategory.findMany();
 
-        // Category keywords
+        // Category keywords — order matters (first match wins)
         const categoryMap: Record<string, string[]> = {
-            'argentina': ['argentina', 'peso', 'bcra', 'ypf', 'galicia', 'mercado libre', 'buenos aires', 'milei'],
-            'empresas': ['apple', 'tesla', 'nvidia', 'microsoft', 'amazon', 'google', 'meta', 'earnings', 'ceo', 'company', 'empresa'],
-            'cripto': ['bitcoin', 'ethereum', 'crypto', 'blockchain', 'btc', 'eth', 'binance', 'coinbase', 'criptomoneda'],
-            'global': ['fed', 'inflation', 'gdp', 'recession', 'central bank', 'economy', 'economía', 'global'],
-            'mercados': ['market', 'nasdaq', 's&p', 'trading', 'investor', 'wall street', 'bolsa', 'mercado'],
+            'cripto': ['bitcoin', 'ethereum', 'crypto', 'blockchain', 'btc', 'eth', 'binance', 'coinbase', 'criptomoneda', 'defi', 'nft', 'altcoin', 'solana', 'ripple', 'xrp', 'stablecoin'],
+            'argentina': ['argentina', 'argentino', 'peso', 'bcra', 'ypf', 'galicia', 'mercado libre', 'buenos aires', 'milei', 'vaca muerta', 'dolar blue', 'cepo', 'indec', 'inflacion argentina'],
+            'economia': ['fed', 'inflation', 'inflación', 'gdp', 'pib', 'recession', 'recesión', 'central bank', 'banco central', 'interest rate', 'tasa de interés', 'tasa de interes', 'fiscal', 'presupuesto', 'budget', 'deuda publica', 'deuda externa', 'monetary policy', 'política monetaria', 'imf', 'fmi', 'world bank', 'banco mundial', 'economy', 'economía', 'macroeconomia'],
+            'acciones': ['stock', 'acción', 'accion', 'shares', 'equity', 'nyse', 'nasdaq', 's&p 500', 'wall street', 'earnings', 'ganancias trimestrales', 'ipo', 'dividendo', 'bolsa de valores', 'dow jones', 'ticker', 'cotización bursátil'],
+            'empresas': ['apple', 'tesla', 'nvidia', 'microsoft', 'amazon', 'google', 'meta', 'ceo', 'company', 'empresa', 'corporation', 'quarterly results', 'resultados trimestrales'],
+            'global': ['global', 'world', 'international', 'geopolit', 'guerra', 'war', 'trade war', 'europa', 'china', 'asia', 'eeuu', 'united states', 'g7', 'g20', 'sanciones'],
             'real-estate': ['real estate', 'property', 'housing', 'inmobiliario', 'vivienda'],
-            'commodities': ['gold', 'oil', 'commodity', 'oro', 'petróleo'],
-            'etfs': ['etf', 'fund', 'index', 'fondo'],
+            'commodities': ['gold', 'oil', 'commodity', 'oro', 'petróleo', 'crude', 'wheat', 'trigo', 'soja', 'soybean'],
+            'etfs': ['etf', 'index fund', 'fondo indexado', 'spy', 'qqq', 'vti'],
+            'mercados': ['market', 'trading', 'investor', 'bolsa', 'mercado financiero'],
         };
 
         for (const [slug, keywords] of Object.entries(categoryMap)) {
@@ -385,8 +389,8 @@ export class NewsService {
             }
         }
 
-        // Default to mercados
-        return categories.find(c => c.slug === 'mercados');
+        // Default to global
+        return categories.find(c => c.slug === 'global');
     }
 
     /**

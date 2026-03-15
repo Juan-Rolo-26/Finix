@@ -25,7 +25,7 @@ const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 const avatarStorage = diskStorage({
     destination: (_req, _file, cb) => {
-        const dir = join(process.cwd(), 'uploads', 'avatars');
+        const dir = join(__dirname, '..', '..', 'uploads', 'avatars');
         if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
         cb(null, dir);
     },
@@ -37,7 +37,7 @@ const avatarStorage = diskStorage({
 
 const bannerStorage = diskStorage({
     destination: (_req, _file, cb) => {
-        const dir = join(process.cwd(), 'uploads', 'banners');
+        const dir = join(__dirname, '..', '..', 'uploads', 'banners');
         if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
         cb(null, dir);
     },

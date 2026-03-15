@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,7 +18,6 @@ import {
     User,
     Shield,
     Globe,
-    Wallet,
     Rocket,
     Loader2,
     SkipForward,
@@ -35,7 +33,6 @@ interface OnboardingData {
     // Step 3: Privacy
     isProfilePublic: boolean;
     acceptingFollowers: boolean;
-    showPortfolio: boolean;
     showStats: boolean;
     // Step 4: Preferences
     language: string;
@@ -43,9 +40,6 @@ interface OnboardingData {
     autoRefreshMarket: boolean;
     compactTables: boolean;
     showAdvancedMetrics: boolean;
-    // Step 5: Portfolio
-    portfolioName: string;
-    portfolioCurrency: string;
 }
 
 const STEPS = [
@@ -53,8 +47,7 @@ const STEPS = [
     { id: 1, title: 'Tu Perfil', icon: User, optional: false },
     { id: 2, title: 'Privacidad', icon: Shield, optional: true },
     { id: 3, title: 'Preferencias', icon: Globe, optional: true },
-    { id: 4, title: 'Primer Portafolio', icon: Wallet, optional: true },
-    { id: 5, title: '¡Listo!', icon: Rocket, optional: false },
+    { id: 4, title: '¡Listo!', icon: Rocket, optional: false },
 ];
 
 // ─── Toggle Row ───────────────────────────────────────────────────────────────
@@ -133,9 +126,9 @@ const StepWelcome = ({ username }: { username: string }) => (
 
         <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto">
             {[
-                { emoji: '📊', label: 'Portafolio' },
                 { emoji: '💬', label: 'Comunidad' },
                 { emoji: '🌐', label: 'Mercado' },
+                { emoji: '📈', label: 'Análisis' },
             ].map(({ emoji, label }) => (
                 <div key={label} className="rounded-xl border border-border/50 bg-card/30 p-3 text-center">
                     <div className="text-2xl mb-1">{emoji}</div>
@@ -208,7 +201,6 @@ const StepPrivacy = ({
             onChange={(v) => {
                 onChange('isProfilePublic', v);
                 if (!v) {
-                    onChange('showPortfolio', false);
                     onChange('showStats', false);
                 }
             }}
@@ -218,13 +210,6 @@ const StepPrivacy = ({
             description="Permite que otros usuarios te sigan."
             checked={data.acceptingFollowers}
             onChange={(v) => onChange('acceptingFollowers', v)}
-        />
-        <ToggleRow
-            label="Mostrar portafolio"
-            description="Expone tu composición de cartera en el perfil público."
-            checked={data.showPortfolio}
-            onChange={(v) => onChange('showPortfolio', v)}
-            disabled={!data.isProfilePublic}
         />
         <ToggleRow
             label="Mostrar estadísticas"
@@ -282,48 +267,6 @@ const StepPreferences = ({
     </div>
 );
 
-const StepPortfolio = ({
-    data,
-    onChange,
-}: {
-    data: OnboardingData;
-    onChange: (key: keyof OnboardingData, value: any) => void;
-}) => (
-    <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-            Creá tu primer portafolio para empezar a trackear tus inversiones. Podés saltear este paso.
-        </p>
-
-        <div className="space-y-2">
-            <Label htmlFor="ob-portfolio-name">Nombre del portafolio</Label>
-            <Input
-                id="ob-portfolio-name"
-                placeholder="Ej: Mi Portafolio Principal"
-                value={data.portfolioName}
-                onChange={(e) => onChange('portfolioName', e.target.value)}
-                className="bg-secondary/30 border-border/50"
-            />
-        </div>
-
-        <div className="space-y-2">
-            <Label>Moneda base</Label>
-            <Select value={data.portfolioCurrency} onValueChange={(v) => onChange('portfolioCurrency', v)}>
-                <SelectTrigger className="bg-secondary/30 border-border/50">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="USD">USD – Dólar</SelectItem>
-                    <SelectItem value="ARS">ARS – Peso AR</SelectItem>
-                    <SelectItem value="EUR">EUR – Euro</SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
-            💡 Podés agregar activos a tu portafolio desde la sección <strong className="text-foreground">Portafolio</strong> una vez que ingreses.
-        </div>
-    </div>
-);
 
 const StepDone = ({ username }: { username: string }) => (
     <div className="text-center space-y-6 py-4">
@@ -341,16 +284,16 @@ const StepDone = ({ username }: { username: string }) => (
                 ¡Todo listo, <span className="text-primary">{username}</span>!
             </h2>
             <p className="text-muted-foreground leading-relaxed max-w-sm mx-auto">
-                Tu cuenta esta configurada. Ahora podes explorar la actividad, gestionar tu portafolio y conectar con otros inversores.
+                Tu cuenta está configurada. Ahora podés explorar el mercado, participar en la comunidad y conectar con otros inversores.
             </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto text-left">
             {[
                 { emoji: '📊', title: 'Resumen', desc: 'Tu resumen financiero' },
-                { emoji: '💼', title: 'Portafolio', desc: 'Tus inversiones' },
+                { emoji: '💬', title: 'Comunidad', desc: 'Ideas de inversión' },
                 { emoji: '🌐', title: 'Mercados', desc: 'Datos en tiempo real' },
-                { emoji: '💬', title: 'Comunidad', desc: 'Ideas de inversion' },
+                { emoji: '📰', title: 'Explorar', desc: 'Posts e insights' },
             ].map(({ emoji, title, desc }) => (
                 <div key={title} className="rounded-xl border border-border/50 bg-card/30 p-3">
                     <div className="text-xl mb-1">{emoji}</div>
@@ -378,15 +321,12 @@ export default function OnboardingWizard() {
         avatarUrl: '',
         isProfilePublic: true,
         acceptingFollowers: true,
-        showPortfolio: false,
         showStats: false,
         language: 'es-AR',
         currency: 'USD',
         autoRefreshMarket: true,
         compactTables: false,
         showAdvancedMetrics: false,
-        portfolioName: '',
-        portfolioCurrency: 'USD',
     });
 
     const handleChange = useCallback((key: keyof OnboardingData, value: any) => {
@@ -412,7 +352,7 @@ export default function OnboardingWizard() {
                     body: JSON.stringify({
                         isProfilePublic: data.isProfilePublic,
                         acceptingFollowers: data.acceptingFollowers,
-                        showPortfolio: data.showPortfolio,
+                        showPortfolio: false,
                         showStats: data.showStats,
                     }),
                 });
@@ -429,10 +369,6 @@ export default function OnboardingWizard() {
                         showAdvancedMetrics: data.showAdvancedMetrics,
                     }),
                 });
-            }
-            if (step >= 4 && data.portfolioName) {
-                payload.portfolioName = data.portfolioName;
-                payload.portfolioCurrency = data.portfolioCurrency;
             }
 
             await apiFetch('/me/onboarding', {
@@ -522,8 +458,7 @@ export default function OnboardingWizard() {
                                 {currentStep === 1 && <StepProfile data={data} onChange={handleChange} />}
                                 {currentStep === 2 && <StepPrivacy data={data} onChange={handleChange} />}
                                 {currentStep === 3 && <StepPreferences data={data} onChange={handleChange} />}
-                                {currentStep === 4 && <StepPortfolio data={data} onChange={handleChange} />}
-                                {currentStep === 5 && <StepDone username={user?.username || 'Inversor'} />}
+                                {currentStep === 4 && <StepDone username={user?.username || 'Inversor'} />}
                             </motion.div>
                         </AnimatePresence>
                     </div>

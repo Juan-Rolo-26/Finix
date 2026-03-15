@@ -33,7 +33,7 @@ const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100 MB
 
 const postMediaStorage = diskStorage({
     destination: (_req, _file, cb) => {
-        const dir = join(process.cwd(), 'uploads', 'posts');
+        const dir = join(__dirname, '..', '..', 'uploads', 'posts');
         if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
         cb(null, dir);
     },

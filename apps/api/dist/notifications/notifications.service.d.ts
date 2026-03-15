@@ -21,14 +21,14 @@ export declare class NotificationsService {
     private formatHistoryDate;
     private resolveHistoryStart;
     createNotification(input: CreateNotificationInput): Promise<{
-        title: string;
         id: string;
+        title: string;
+        createdAt: Date;
+        link: string | null;
         type: string;
         content: string | null;
-        isRead: boolean;
-        link: string | null;
-        createdAt: Date;
         userId: string;
+        isRead: boolean;
     }>;
     getNotifications(userId: string, input?: GetNotificationsInput): Promise<{
         id: string;

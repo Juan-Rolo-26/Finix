@@ -27,7 +27,6 @@ export declare class AdminController {
     getUsers(query: AdminUsersQueryDto): Promise<{
         data: {
             id: string;
-            createdAt: Date;
             email: string;
             username: string;
             role: string;
@@ -35,6 +34,7 @@ export declare class AdminController {
             shadowbanned: boolean;
             lastLogin: Date;
             flags: string;
+            createdAt: Date;
         }[];
         total: number;
         page: number;
@@ -43,8 +43,6 @@ export declare class AdminController {
     updateUser(id: string, body: AdminUpdateUserDto, req: AdminRequest): Promise<{
         data: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             email: string;
             username: string;
             stripeCustomerId: string | null;
@@ -112,6 +110,8 @@ export declare class AdminController {
             onboardingCompleted: boolean;
             onboardingStep: number;
             isCreator: boolean;
+            createdAt: Date;
+            updatedAt: Date;
         };
     }>;
     deleteUser(id: string, req: AdminRequest): Promise<{
@@ -130,21 +130,23 @@ export declare class AdminController {
     }>;
     getPosts(query: AdminPostsQueryDto): Promise<{
         data: ({
+            _count: {
+                comments: number;
+                likes: number;
+                reports: number;
+            };
             author: {
                 id: string;
                 username: string;
                 avatarUrl: string;
             };
-            _count: {
-                likes: number;
-                comments: number;
-                reports: number;
-            };
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            type: string;
             content: string;
             authorId: string;
-            type: string;
             visibility: string;
             deletedAt: Date | null;
             assetSymbol: string | null;
@@ -155,8 +157,6 @@ export declare class AdminController {
             parentId: string | null;
             quotedPostId: string | null;
             viewCount: number;
-            createdAt: Date;
-            updatedAt: Date;
         })[];
         total: number;
         page: number;
@@ -165,9 +165,11 @@ export declare class AdminController {
     updatePost(id: string, body: AdminUpdatePostDto, req: AdminRequest): Promise<{
         data: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            type: string;
             content: string;
             authorId: string;
-            type: string;
             visibility: string;
             deletedAt: Date | null;
             assetSymbol: string | null;
@@ -178,8 +180,6 @@ export declare class AdminController {
             parentId: string | null;
             quotedPostId: string | null;
             viewCount: number;
-            createdAt: Date;
-            updatedAt: Date;
         };
     }>;
     deletePost(id: string, req: AdminRequest): Promise<{
@@ -197,26 +197,26 @@ export declare class AdminController {
             };
         } & {
             id: string;
+            status: string;
             createdAt: Date;
             updatedAt: Date;
-            status: string;
-            reporterId: string;
-            targetType: string;
-            targetId: string;
             reason: string;
+            targetId: string;
+            targetType: string;
+            reporterId: string;
             resolutionNote: string | null;
         })[];
     }>;
     resolveReport(id: string, body: AdminResolveReportDto, req: AdminRequest): Promise<{
         data: {
             id: string;
+            status: string;
             createdAt: Date;
             updatedAt: Date;
-            status: string;
-            reporterId: string;
-            targetType: string;
-            targetId: string;
             reason: string;
+            targetId: string;
+            targetType: string;
+            reporterId: string;
             resolutionNote: string | null;
         };
     }>;
@@ -231,13 +231,13 @@ export declare class AdminController {
         } & {
             id: string;
             createdAt: Date;
-            targetId: string | null;
-            action: string;
-            actorId: string;
-            sessionId: string | null;
-            ipAddress: string | null;
             userAgent: string | null;
+            ipAddress: string | null;
+            action: string;
+            targetId: string | null;
+            sessionId: string | null;
             metadata: string | null;
+            actorId: string;
         })[];
         total: number;
         page: number;

@@ -25,7 +25,7 @@ const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 const avatarStorage = (0, multer_1.diskStorage)({
     destination: (_req, _file, cb) => {
-        const dir = (0, path_1.join)(process.cwd(), 'uploads', 'avatars');
+        const dir = (0, path_1.join)(__dirname, '..', '..', 'uploads', 'avatars');
         if (!(0, fs_1.existsSync)(dir))
             (0, fs_1.mkdirSync)(dir, { recursive: true });
         cb(null, dir);
@@ -37,7 +37,7 @@ const avatarStorage = (0, multer_1.diskStorage)({
 });
 const bannerStorage = (0, multer_1.diskStorage)({
     destination: (_req, _file, cb) => {
-        const dir = (0, path_1.join)(process.cwd(), 'uploads', 'banners');
+        const dir = (0, path_1.join)(__dirname, '..', '..', 'uploads', 'banners');
         if (!(0, fs_1.existsSync)(dir))
             (0, fs_1.mkdirSync)(dir, { recursive: true });
         cb(null, dir);

@@ -178,20 +178,20 @@ export declare class PortfolioService {
             id: string;
             currency: string;
             name: string;
-            ticker: string;
             type: string;
+            ticker: string;
         };
     } & {
         id: string;
         currency: string;
         createdAt: Date;
+        type: string;
+        fee: import("@prisma/client/runtime/library").Decimal;
+        date: Date;
         portfolioId: string;
         assetId: string | null;
         quantity: import("@prisma/client/runtime/library").Decimal;
-        type: string;
-        date: Date;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
-        fee: import("@prisma/client/runtime/library").Decimal;
         total: import("@prisma/client/runtime/library").Decimal;
         notes: string | null;
     }>;
@@ -200,20 +200,20 @@ export declare class PortfolioService {
             id: string;
             currency: string;
             name: string;
-            ticker: string;
             type: string;
+            ticker: string;
         };
     } & {
         id: string;
         currency: string;
         createdAt: Date;
+        type: string;
+        fee: import("@prisma/client/runtime/library").Decimal;
+        date: Date;
         portfolioId: string;
         assetId: string | null;
         quantity: import("@prisma/client/runtime/library").Decimal;
-        type: string;
-        date: Date;
         pricePerUnit: import("@prisma/client/runtime/library").Decimal;
-        fee: import("@prisma/client/runtime/library").Decimal;
         total: import("@prisma/client/runtime/library").Decimal;
         notes: string | null;
     }>;
@@ -305,15 +305,15 @@ export declare class PortfolioService {
         id: string;
         createdAt: Date;
         name: string;
-        userId: string;
         tickers: string;
+        userId: string;
     }[]>;
     createWatchlist(userId: string, name: string, tickers: string): Promise<{
         id: string;
         createdAt: Date;
         name: string;
-        userId: string;
         tickers: string;
+        userId: string;
     }>;
     updateWatchlist(id: string, userId: string, data: {
         name?: string;
@@ -322,8 +322,8 @@ export declare class PortfolioService {
         id: string;
         createdAt: Date;
         name: string;
-        userId: string;
         tickers: string;
+        userId: string;
     }>;
     deleteWatchlist(id: string, userId: string): Promise<{
         ok: boolean;

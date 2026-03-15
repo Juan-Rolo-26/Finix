@@ -20,8 +20,8 @@ export declare class CommunitiesService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        price: import("@prisma/client/runtime/library").Decimal;
         description: string;
+        price: import("@prisma/client/runtime/library").Decimal;
         creatorId: string;
         category: string;
         imageUrl: string | null;
@@ -47,8 +47,8 @@ export declare class CommunitiesService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        price: import("@prisma/client/runtime/library").Decimal;
         description: string;
+        price: import("@prisma/client/runtime/library").Decimal;
         creatorId: string;
         category: string;
         imageUrl: string | null;
@@ -89,8 +89,8 @@ export declare class CommunitiesService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        price: import("@prisma/client/runtime/library").Decimal;
         description: string;
+        price: import("@prisma/client/runtime/library").Decimal;
         creatorId: string;
         category: string;
         imageUrl: string | null;
@@ -127,8 +127,8 @@ export declare class CommunitiesService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        price: import("@prisma/client/runtime/library").Decimal;
         description: string;
+        price: import("@prisma/client/runtime/library").Decimal;
         creatorId: string;
         category: string;
         imageUrl: string | null;
@@ -175,8 +175,8 @@ export declare class CommunitiesService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        price: import("@prisma/client/runtime/library").Decimal;
         description: string;
+        price: import("@prisma/client/runtime/library").Decimal;
         creatorId: string;
         category: string;
         imageUrl: string | null;
@@ -224,8 +224,8 @@ export declare class CommunitiesService {
         title: string;
         createdAt: Date;
         updatedAt: Date;
-        authorId: string | null;
         description: string | null;
+        authorId: string | null;
         communityId: string;
         isPublic: boolean;
         resourceUrl: string;
@@ -235,8 +235,8 @@ export declare class CommunitiesService {
         title: string;
         createdAt: Date;
         updatedAt: Date;
-        authorId: string | null;
         description: string | null;
+        authorId: string | null;
         communityId: string;
         isPublic: boolean;
         resourceUrl: string;
