@@ -130,7 +130,7 @@ const MEDIA_CONFIG: Record<MediaType, { label: string; icon: typeof Video; color
 
 function Disclaimer() {
     return (
-        <div className="flex items-start gap-2 rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-3 py-2 text-xs text-yellow-400/80">
+        <div className="flex items-start gap-2 rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-3 py-2 text-xl text-yellow-400/80">
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>
                 Todo el contenido es <strong>educativo e informativo</strong>. Nada de lo que se comparte constituye
@@ -241,7 +241,7 @@ function MediaPlayerModal({ resource, onClose }: { resource: HubResource; onClos
                             const Icon = cfg.icon;
                             return <Icon className={`h-4 w-4 shrink-0 ${cfg.color.split(' ')[0]}`} />;
                         })()}
-                        <p className="font-semibold text-sm truncate">{resource.title}</p>
+                        <p className="font-semibold text-lg truncate">{resource.title}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                         <a
@@ -261,7 +261,7 @@ function MediaPlayerModal({ resource, onClose }: { resource: HubResource; onClos
                 <div className="p-4">
                     {renderPlayer()}
                     {resource.description && (
-                        <p className="mt-3 text-sm text-muted-foreground">{resource.description}</p>
+                        <p className="mt-3 text-lg text-muted-foreground">{resource.description}</p>
                     )}
                 </div>
             </motion.div>
@@ -356,11 +356,11 @@ function ResourceCard({
 
             {/* Content */}
             <div className="flex flex-1 flex-col p-3">
-                <p className="font-semibold text-sm text-foreground line-clamp-2 leading-snug mb-1">
+                <p className="font-semibold text-lg text-foreground line-clamp-2 leading-snug mb-1">
                     {resource.title}
                 </p>
                 {resource.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2 flex-1">
+                    <p className="text-lg text-muted-foreground line-clamp-2 flex-1">
                         {resource.description}
                     </p>
                 )}
@@ -506,7 +506,7 @@ function LibraryView({ currentUserRole }: { currentUserRole?: string }) {
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
                         <input
-                            className="w-full rounded-xl bg-muted pl-8 pr-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/50"
+                            className="w-full rounded-xl bg-muted pl-8 pr-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/50"
                             placeholder="Buscar en la biblioteca..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
@@ -515,7 +515,7 @@ function LibraryView({ currentUserRole }: { currentUserRole?: string }) {
                     {isAdmin(currentUserRole) && (
                         <button
                             onClick={() => setShowCreate(v => !v)}
-                            className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shrink-0"
+                            className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-lg font-medium text-primary-foreground shrink-0"
                         >
                             <Plus className="h-4 w-4" />
                             <span className="hidden sm:inline">Agregar</span>
@@ -532,7 +532,7 @@ function LibraryView({ currentUserRole }: { currentUserRole?: string }) {
                             <button
                                 key={f.key}
                                 onClick={() => setFilterType(f.key)}
-                                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${active
+                                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-lg font-medium transition-colors ${active
                                     ? 'bg-primary text-primary-foreground'
                                     : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
                                     }`}
@@ -561,15 +561,15 @@ function LibraryView({ currentUserRole }: { currentUserRole?: string }) {
                     >
                         <div className="px-4 py-4 space-y-3 max-w-2xl mx-auto">
                             <div className="flex items-center justify-between">
-                                <p className="font-semibold text-sm">Nuevo recurso</p>
+                                <p className="font-semibold text-lg">Nuevo recurso</p>
                                 <button onClick={() => setShowCreate(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
                             </div>
 
                             {/* URL first — auto-detect */}
                             <div className="space-y-1">
-                                <label className="text-xs text-muted-foreground">URL del recurso *</label>
+                                <label className="text-lg text-muted-foreground">URL del recurso *</label>
                                 <input
-                                    className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
+                                    className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
                                     placeholder="https://youtube.com/watch?v=... o cualquier URL"
                                     value={form.url}
                                     onChange={e => handleUrlChange(e.target.value)}
@@ -585,18 +585,18 @@ function LibraryView({ currentUserRole }: { currentUserRole?: string }) {
 
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="col-span-2 sm:col-span-1 space-y-1">
-                                    <label className="text-xs text-muted-foreground">Título *</label>
+                                    <label className="text-lg text-muted-foreground">Título *</label>
                                     <input
-                                        className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
+                                        className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
                                         placeholder="Título del recurso"
                                         value={form.title}
                                         onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-muted-foreground">Tipo de media</label>
+                                    <label className="text-lg text-muted-foreground">Tipo de media</label>
                                     <select
-                                        className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
+                                        className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary"
                                         value={form.mediaType}
                                         onChange={e => setForm(f => ({ ...f, mediaType: e.target.value as MediaType }))}
                                     >
@@ -608,7 +608,7 @@ function LibraryView({ currentUserRole }: { currentUserRole?: string }) {
                             </div>
 
                             <textarea
-                                className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary resize-none placeholder:text-muted-foreground/60"
+                                className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary resize-none placeholder:text-muted-foreground/60"
                                 placeholder="Descripción breve (opcional)"
                                 rows={2}
                                 value={form.description}
@@ -617,9 +617,9 @@ function LibraryView({ currentUserRole }: { currentUserRole?: string }) {
 
                             <div className="grid grid-cols-3 gap-2">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-muted-foreground">Categoría</label>
+                                    <label className="text-lg text-muted-foreground">Categoría</label>
                                     <select
-                                        className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
+                                        className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary"
                                         value={form.category}
                                         onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                                     >
@@ -628,18 +628,18 @@ function LibraryView({ currentUserRole }: { currentUserRole?: string }) {
                                     </select>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-muted-foreground">Duración (opcional)</label>
+                                    <label className="text-lg text-muted-foreground">Duración (opcional)</label>
                                     <input
-                                        className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
+                                        className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
                                         placeholder="ej: 45:30"
                                         value={form.duration}
                                         onChange={e => setForm(f => ({ ...f, duration: e.target.value }))}
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-muted-foreground">Thumbnail URL</label>
+                                    <label className="text-lg text-muted-foreground">Thumbnail URL</label>
                                     <input
-                                        className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
+                                        className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
                                         placeholder="https://..."
                                         value={form.thumbnailUrl}
                                         onChange={e => setForm(f => ({ ...f, thumbnailUrl: e.target.value }))}
@@ -655,18 +655,18 @@ function LibraryView({ currentUserRole }: { currentUserRole?: string }) {
                                         alt=""
                                         className="h-12 w-20 object-cover rounded-lg border border-border"
                                     />
-                                    <p className="text-xs text-muted-foreground">Vista previa del thumbnail</p>
+                                    <p className="text-lg text-muted-foreground">Vista previa del thumbnail</p>
                                 </div>
                             )}
 
                             <div className="flex justify-end gap-2">
-                                <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground">
+                                <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 text-lg text-muted-foreground hover:text-foreground">
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={createResource}
                                     disabled={creating || !form.title.trim() || !form.url.trim()}
-                                    className="rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-40"
+                                    className="rounded-lg bg-primary px-4 py-1.5 text-lg font-medium text-primary-foreground disabled:opacity-40"
                                 >
                                     {creating ? 'Agregando...' : 'Agregar recurso'}
                                 </button>
@@ -682,13 +682,13 @@ function LibraryView({ currentUserRole }: { currentUserRole?: string }) {
                     {filtered.length === 0 && (
                         <div className="flex flex-col items-center gap-3 py-20 text-muted-foreground/50">
                             <BookOpen className="h-10 w-10" />
-                            <p className="text-sm">
+                            <p className="text-lg">
                                 {search || filterType !== 'all' ? 'No hay resultados para esa búsqueda' : 'La biblioteca está vacía'}
                             </p>
                             {isAdmin(currentUserRole) && !showCreate && filterType === 'all' && !search && (
                                 <button
                                     onClick={() => setShowCreate(true)}
-                                    className="mt-1 flex items-center gap-1.5 text-sm text-primary"
+                                    className="mt-1 flex items-center gap-1.5 text-lg text-primary"
                                 >
                                     <Plus className="h-4 w-4" /> Agregar el primer recurso
                                 </button>
@@ -761,7 +761,7 @@ function MessageBubble({
                     )}
                     <span className="text-[10px] text-muted-foreground/50">{fmtTime(msg.createdAt)}</span>
                 </div>
-                <div className={`rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${isMine ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted text-foreground rounded-tl-sm'}`}>
+                <div className={`rounded-2xl px-3.5 py-2 text-lg leading-relaxed ${isMine ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted text-foreground rounded-tl-sm'}`}>
                     {msg.content}
                     {msg.mediaUrl && (
                         <img src={resolveMediaUrl(msg.mediaUrl)} alt="" className="mt-2 rounded-lg max-h-48 object-cover" />
@@ -775,7 +775,7 @@ function MessageBubble({
                             href={ytUrl!}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 bg-muted px-3 py-2 text-xs hover:bg-muted/80 transition-colors"
+                            className="flex items-center gap-2 bg-muted px-3 py-2 text-lg hover:bg-muted/80 transition-colors"
                         >
                             <Play className="h-3 w-3 text-red-500" />
                             <span className="truncate text-foreground/80">Ver en YouTube</span>
@@ -819,26 +819,26 @@ function PostCard({
             className="rounded-xl border border-border bg-card p-4 hover:border-border/80 transition-colors"
         >
             {post.isPinned && (
-                <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-primary">
+                <div className="mb-2 flex items-center gap-1.5 text-lg font-medium text-primary">
                     <Pin className="h-3 w-3" /> Publicación fijada
                 </div>
             )}
             <div className="flex items-start gap-3">
                 <Avatar className="h-9 w-9 shrink-0">
                     <AvatarImage src={post.author.avatarUrl} />
-                    <AvatarFallback className="text-xs">{post.author.username[0]?.toUpperCase()}</AvatarFallback>
+                    <AvatarFallback className="text-lg">{post.author.username[0]?.toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="text-sm font-semibold">@{post.author.username}</span>
+                        <span className="text-lg font-semibold">@{post.author.username}</span>
                         <AuthorBadge role={post.author.role} />
                         {post.channel && (
-                            <span className="text-xs text-muted-foreground">{post.channel.icon} {post.channel.name}</span>
+                            <span className="text-lg text-muted-foreground">{post.channel.icon} {post.channel.name}</span>
                         )}
-                        <span className="text-xs text-muted-foreground/50 ml-auto">{fmtDate(post.createdAt)}</span>
+                        <span className="text-lg text-muted-foreground/50 ml-auto">{fmtDate(post.createdAt)}</span>
                     </div>
-                    {post.title && <h3 className="font-semibold text-base mb-1">{post.title}</h3>}
-                    <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line line-clamp-5">
+                    {post.title && <h3 className="font-semibold text-lg mb-1">{post.title}</h3>}
+                    <p className="text-lg text-foreground/85 leading-relaxed whitespace-pre-line line-clamp-5">
                         {post.content}
                     </p>
                     {post.mediaUrl && (
@@ -860,24 +860,24 @@ function PostCard({
                                     </div>
                                 </a>
                             </div>
-                            <div className="bg-muted px-3 py-2 text-xs text-muted-foreground flex items-center gap-1">
+                            <div className="bg-muted px-3 py-2 text-lg text-muted-foreground flex items-center gap-1">
                                 <Play className="h-3 w-3 text-red-500" /> YouTube
                             </div>
                         </div>
                     )}
                     <div className="mt-3 flex items-center gap-3">
-                        <button onClick={() => onSelect(post)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors">
+                        <button onClick={() => onSelect(post)} className="flex items-center gap-1.5 text-lg text-muted-foreground hover:text-primary transition-colors">
                             <MessageSquare className="h-3.5 w-3.5" />
                             {post._count?.comments ?? 0} comentarios
                         </button>
                         {canPin && (
-                            <button onClick={() => onPin(post.id, !post.isPinned)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                            <button onClick={() => onPin(post.id, !post.isPinned)} className="flex items-center gap-1 text-lg text-muted-foreground hover:text-primary transition-colors">
                                 <Pin className="h-3.5 w-3.5" />
                                 {post.isPinned ? 'Desfijar' : 'Fijar'}
                             </button>
                         )}
                         {canDelete && (
-                            <button onClick={() => onDelete(post.id)} className="flex items-center gap-1 text-xs text-destructive/70 hover:text-destructive transition-colors ml-auto">
+                            <button onClick={() => onDelete(post.id)} className="flex items-center gap-1 text-lg text-destructive/70 hover:text-destructive transition-colors ml-auto">
                                 <Trash2 className="h-3.5 w-3.5" /> Eliminar
                             </button>
                         )}
@@ -933,7 +933,7 @@ function PostDetailModal({
                 onClick={e => e.stopPropagation()}
             >
                 <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/95 backdrop-blur px-5 py-3">
-                    <span className="font-semibold text-sm">Publicación</span>
+                    <span className="font-semibold text-lg">Publicación</span>
                     <button onClick={onClose} className="rounded-full p-1.5 hover:bg-muted transition-colors"><X className="h-4 w-4" /></button>
                 </div>
                 <div className="p-5 space-y-4">
@@ -946,16 +946,16 @@ function PostDetailModal({
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="font-semibold">@{post.author.username}</span>
                                 <AuthorBadge role={post.author.role} />
-                                <span className="text-xs text-muted-foreground">{fmtDate(post.createdAt)}</span>
+                                <span className="text-lg text-muted-foreground">{fmtDate(post.createdAt)}</span>
                             </div>
                             {post.title && <h2 className="font-bold text-lg mb-2">{post.title}</h2>}
-                            <p className="text-sm leading-relaxed whitespace-pre-line">{post.content}</p>
+                            <p className="text-lg leading-relaxed whitespace-pre-line">{post.content}</p>
                             {post.mediaUrl && <img src={resolveMediaUrl(post.mediaUrl)} alt="" className="mt-3 w-full rounded-xl" />}
                         </div>
                     </div>
                     <Disclaimer />
                     <div>
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                        <p className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                             {comments.length} comentario{comments.length !== 1 ? 's' : ''}
                         </p>
                         <div className="space-y-3">
@@ -967,7 +967,7 @@ function PostDetailModal({
                                     </Avatar>
                                     <div className="flex-1 rounded-xl bg-muted px-3 py-2">
                                         <div className="flex items-center gap-2 mb-0.5">
-                                            <span className="text-xs font-semibold">@{c.author.username}</span>
+                                            <span className="text-lg font-semibold">@{c.author.username}</span>
                                             <AuthorBadge role={c.author.role} />
                                             <span className="text-[10px] text-muted-foreground/50">{fmtTime(c.createdAt)}</span>
                                             {(c.author.id === currentUserId || isAdmin(currentUserRole)) && (
@@ -976,16 +976,16 @@ function PostDetailModal({
                                                 </button>
                                             )}
                                         </div>
-                                        <p className="text-sm">{c.content}</p>
+                                        <p className="text-lg">{c.content}</p>
                                     </div>
                                 </div>
                             ))}
-                            {comments.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sé el primero en comentar</p>}
+                            {comments.length === 0 && <p className="text-lg text-muted-foreground text-center py-4">Sé el primero en comentar</p>}
                         </div>
                     </div>
                     <div className="flex gap-2 pt-2 border-t border-border">
                         <input
-                            className="flex-1 rounded-xl bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-primary"
+                            className="flex-1 rounded-xl bg-muted px-3 py-2 text-lg outline-none placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-primary"
                             placeholder="Escribí tu comentario..."
                             value={newComment}
                             onChange={e => setNewComment(e.target.value)}
@@ -995,7 +995,7 @@ function PostDetailModal({
                         <button
                             onClick={submit}
                             disabled={sending || !newComment.trim()}
-                            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
+                            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-lg font-medium text-primary-foreground disabled:opacity-40"
                         >
                             <Send className="h-3.5 w-3.5" />
                         </button>
@@ -1063,7 +1063,7 @@ function ChatView({ channel, currentUserId, currentUserRole }: {
                 {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground/50">
                         <MessageSquare className="h-8 w-8" />
-                        <p className="text-sm">Sé el primero en escribir en #{channel.name}</p>
+                        <p className="text-lg">Sé el primero en escribir en #{channel.name}</p>
                     </div>
                 )}
                 {messages.map(msg => (
@@ -1079,7 +1079,7 @@ function ChatView({ channel, currentUserId, currentUserRole }: {
             <div className="px-4 pb-4 pt-2">
                 <div className="flex gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2">
                     <input
-                        className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
+                        className="flex-1 bg-transparent text-lg outline-none placeholder:text-muted-foreground/50"
                         placeholder={`Mensaje en #${channel.name}...`}
                         value={input}
                         onChange={e => setInput(e.target.value)}
@@ -1160,21 +1160,21 @@ function FeedView({ channel, currentUserId, currentUserRole }: {
                 {isAdmin(currentUserRole) && channel && (
                     <div>
                         {!showCreate ? (
-                            <button onClick={() => setShowCreate(true)} className="flex w-full items-center gap-2.5 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm text-primary/70 hover:border-primary/60 hover:text-primary transition-colors">
+                            <button onClick={() => setShowCreate(true)} className="flex w-full items-center gap-2.5 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-lg text-primary/70 hover:border-primary/60 hover:text-primary transition-colors">
                                 <Plus className="h-4 w-4" /> Nueva publicación en {channel.icon} {channel.name}
                             </button>
                         ) : (
                             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-semibold">Nueva publicación</span>
+                                    <span className="text-lg font-semibold">Nueva publicación</span>
                                     <button onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
                                 </div>
-                                <input className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-primary" placeholder="Título (opcional)" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-                                <textarea className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-primary resize-none" placeholder="Contenido... (podés pegar links de YouTube y se embeden automáticamente)" rows={5} value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} />
+                                <input className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-primary" placeholder="Título (opcional)" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+                                <textarea className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-primary resize-none" placeholder="Contenido... (podés pegar links de YouTube y se embeden automáticamente)" rows={5} value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} />
                                 <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Play className="h-2.5 w-2.5 text-red-500" /> Los links de YouTube se muestran como previews automáticamente</p>
                                 <div className="flex gap-2 justify-end">
-                                    <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground">Cancelar</button>
-                                    <button onClick={createPost} disabled={creating || !form.content.trim()} className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-40">
+                                    <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 text-lg text-muted-foreground hover:text-foreground">Cancelar</button>
+                                    <button onClick={createPost} disabled={creating || !form.content.trim()} className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-lg font-medium text-primary-foreground disabled:opacity-40">
                                         {creating ? 'Publicando...' : 'Publicar'}
                                     </button>
                                 </div>
@@ -1185,7 +1185,7 @@ function FeedView({ channel, currentUserId, currentUserRole }: {
                 {posts.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground/50">
                         <FileText className="h-8 w-8" />
-                        <p className="text-sm">No hay publicaciones aún</p>
+                        <p className="text-lg">No hay publicaciones aún</p>
                     </div>
                 )}
                 {posts.map(post => (
@@ -1254,31 +1254,31 @@ function EventsView({ currentUserRole }: { currentUserRole?: string }) {
                 {isAdmin(currentUserRole) && (
                     <div>
                         {!showCreate ? (
-                            <button onClick={() => setShowCreate(true)} className="flex w-full items-center gap-2 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm text-primary/70 hover:border-primary/60 hover:text-primary transition-colors">
+                            <button onClick={() => setShowCreate(true)} className="flex w-full items-center gap-2 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-lg text-primary/70 hover:border-primary/60 hover:text-primary transition-colors">
                                 <Plus className="h-4 w-4" /> Crear evento
                             </button>
                         ) : (
                             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <span className="font-semibold text-sm">Nuevo evento</span>
+                                    <span className="font-semibold text-lg">Nuevo evento</span>
                                     <button onClick={() => setShowCreate(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
                                 </div>
-                                <input className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="Título del evento *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-                                <textarea className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary resize-none placeholder:text-muted-foreground/60" placeholder="Descripción" rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                                <input className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="Título del evento *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+                                <textarea className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary resize-none placeholder:text-muted-foreground/60" placeholder="Descripción" rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="text-xs text-muted-foreground mb-1 block">Inicio *</label>
-                                        <input type="datetime-local" className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary" value={form.startsAt} onChange={e => setForm(f => ({ ...f, startsAt: e.target.value }))} />
+                                        <label className="text-lg text-muted-foreground mb-1 block">Inicio *</label>
+                                        <input type="datetime-local" className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary" value={form.startsAt} onChange={e => setForm(f => ({ ...f, startsAt: e.target.value }))} />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-muted-foreground mb-1 block">Fin</label>
-                                        <input type="datetime-local" className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary" value={form.endsAt} onChange={e => setForm(f => ({ ...f, endsAt: e.target.value }))} />
+                                        <label className="text-lg text-muted-foreground mb-1 block">Fin</label>
+                                        <input type="datetime-local" className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary" value={form.endsAt} onChange={e => setForm(f => ({ ...f, endsAt: e.target.value }))} />
                                     </div>
                                 </div>
-                                <input className="w-full rounded-lg bg-muted px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="Link del evento (Zoom, Meet, etc.)" value={form.link} onChange={e => setForm(f => ({ ...f, link: e.target.value }))} />
+                                <input className="w-full rounded-lg bg-muted px-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="Link del evento (Zoom, Meet, etc.)" value={form.link} onChange={e => setForm(f => ({ ...f, link: e.target.value }))} />
                                 <div className="flex justify-end gap-2">
-                                    <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground">Cancelar</button>
-                                    <button onClick={createEvent} disabled={creating || !form.title.trim() || !form.startsAt} className="rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-40">
+                                    <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 text-lg text-muted-foreground hover:text-foreground">Cancelar</button>
+                                    <button onClick={createEvent} disabled={creating || !form.title.trim() || !form.startsAt} className="rounded-lg bg-primary px-4 py-1.5 text-lg font-medium text-primary-foreground disabled:opacity-40">
                                         {creating ? 'Creando...' : 'Crear evento'}
                                     </button>
                                 </div>
@@ -1290,13 +1290,13 @@ function EventsView({ currentUserRole }: { currentUserRole?: string }) {
                 {events.length === 0 && (
                     <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground/50">
                         <Calendar className="h-8 w-8" />
-                        <p className="text-sm">No hay eventos próximos</p>
+                        <p className="text-lg">No hay eventos próximos</p>
                     </div>
                 )}
 
                 {Object.entries(grouped).map(([month, evs]) => (
                     <div key={month}>
-                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50 mb-3 capitalize">{month}</p>
+                        <p className="text-lg font-semibold uppercase tracking-widest text-muted-foreground/50 mb-3 capitalize">{month}</p>
                         <div className="space-y-2">
                             {evs.map(ev => {
                                 const d = new Date(ev.startsAt);
@@ -1315,12 +1315,12 @@ function EventsView({ currentUserRole }: { currentUserRole?: string }) {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div>
-                                                        <p className="font-semibold text-sm">{ev.title}</p>
-                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                        <p className="font-semibold text-lg">{ev.title}</p>
+                                                        <p className="text-lg text-muted-foreground mt-0.5">
                                                             {fmtDateShort(ev.startsAt)} · {fmtTime(ev.startsAt)}
                                                             {ev.endsAt && ` → ${fmtTime(ev.endsAt)}`}
                                                         </p>
-                                                        {ev.description && <p className="text-xs text-foreground/70 mt-1">{ev.description}</p>}
+                                                        {ev.description && <p className="text-lg text-foreground/70 mt-1">{ev.description}</p>}
                                                     </div>
                                                     {isAdmin(currentUserRole) && (
                                                         <button onClick={() => deleteEvent(ev.id)} className="shrink-0 rounded p-1 hover:bg-destructive/10 transition-colors">
@@ -1330,7 +1330,7 @@ function EventsView({ currentUserRole }: { currentUserRole?: string }) {
                                                 </div>
                                                 {ev.link && (
                                                     <a href={ev.link} target="_blank" rel="noopener noreferrer"
-                                                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+                                                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-lg font-medium text-primary hover:bg-primary/20 transition-colors"
                                                     >
                                                         <ExternalLink className="h-3 w-3" /> Unirse al evento
                                                     </a>
@@ -1444,7 +1444,7 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
     const StatCard = ({ label, value, icon: Icon, color = 'text-primary' }: { label: string; value?: number; icon: typeof FileText; color?: string }) => (
         <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center justify-between mb-2">
-                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-lg text-muted-foreground">{label}</p>
                 <Icon className={`h-4 w-4 ${color}`} />
             </div>
             {value !== undefined
@@ -1457,7 +1457,7 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
     const TabBtn = ({ tab, label, icon: Icon }: { tab: AdminTab; label: string; icon: typeof Shield }) => (
         <button
             onClick={() => setAdminTab(tab)}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${adminTab === tab
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-lg font-medium transition-colors ${adminTab === tab
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
         >
@@ -1506,13 +1506,13 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                         <div className="rounded-xl border border-border bg-card p-5 space-y-3">
                             <div className="flex items-center gap-2">
                                 <Settings2 className="h-4 w-4 text-primary" />
-                                <h3 className="font-semibold text-sm">Inicializar canales por defecto</h3>
+                                <h3 className="font-semibold text-lg">Inicializar canales por defecto</h3>
                             </div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-lg text-muted-foreground">
                                 Crea los 8 canales predeterminados (General, Noticias, Argentina, Crypto, Acciones USA, ETFs, Macro, Principiantes).
                                 Es idempotente — no duplica canales existentes.
                             </p>
-                            <button onClick={seedChannels} disabled={seeding} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40">
+                            <button onClick={seedChannels} disabled={seeding} className="rounded-lg bg-primary px-4 py-2 text-lg font-medium text-primary-foreground disabled:opacity-40">
                                 {seeding ? 'Inicializando...' : '🚀 Inicializar canales'}
                             </button>
                         </div>
@@ -1521,23 +1521,23 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                         <div className="grid grid-cols-2 gap-3">
                             <button onClick={() => setAdminTab('channels')} className="rounded-xl border border-border bg-card p-4 text-left hover:border-primary/40 transition-colors group">
                                 <Hash className="h-5 w-5 text-primary mb-2" />
-                                <p className="font-medium text-sm">Gestionar canales</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">Crear, editar y eliminar canales</p>
+                                <p className="font-medium text-lg">Gestionar canales</p>
+                                <p className="text-lg text-muted-foreground mt-0.5">Crear, editar y eliminar canales</p>
                             </button>
                             <button onClick={() => setAdminTab('posts')} className="rounded-xl border border-border bg-card p-4 text-left hover:border-primary/40 transition-colors group">
                                 <FileText className="h-5 w-5 text-primary mb-2" />
-                                <p className="font-medium text-sm">Moderar publicaciones</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">Fijar y eliminar posts</p>
+                                <p className="font-medium text-lg">Moderar publicaciones</p>
+                                <p className="text-lg text-muted-foreground mt-0.5">Fijar y eliminar posts</p>
                             </button>
                             <button onClick={() => setAdminTab('members')} className="rounded-xl border border-border bg-card p-4 text-left hover:border-primary/40 transition-colors group">
                                 <Users className="h-5 w-5 text-primary mb-2" />
-                                <p className="font-medium text-sm">Ver miembros</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">{stats?.totalMembers ?? '—'} usuarios registrados</p>
+                                <p className="font-medium text-lg">Ver miembros</p>
+                                <p className="text-lg text-muted-foreground mt-0.5">{stats?.totalMembers ?? '—'} usuarios registrados</p>
                             </button>
                             <div className="rounded-xl border border-border bg-card p-4">
                                 <BookOpen className="h-5 w-5 text-muted-foreground mb-2" />
-                                <p className="font-medium text-sm text-muted-foreground">Biblioteca y Eventos</p>
-                                <p className="text-xs text-muted-foreground/60 mt-0.5">Gestionarlos desde sus secciones en el sidebar</p>
+                                <p className="font-medium text-lg text-muted-foreground">Biblioteca y Eventos</p>
+                                <p className="text-lg text-muted-foreground/60 mt-0.5">Gestionarlos desde sus secciones en el sidebar</p>
                             </div>
                         </div>
                     </div>
@@ -1547,10 +1547,10 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                 {adminTab === 'channels' && (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold">{channels.length} canales activos</p>
+                            <p className="text-lg font-semibold">{channels.length} canales activos</p>
                             <button
                                 onClick={() => setShowCreateChannel(v => !v)}
-                                className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+                                className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-lg font-medium text-primary hover:bg-primary/20 transition-colors"
                             >
                                 <Plus className="h-3 w-3" /> Nuevo canal
                             </button>
@@ -1560,23 +1560,23 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                             {showCreateChannel && (
                                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                                     <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-4">
-                                        <p className="text-xs font-semibold text-primary">Nuevo canal</p>
+                                        <p className="text-lg font-semibold text-primary">Nuevo canal</p>
                                         <div className="grid grid-cols-2 gap-2">
-                                            <input className="rounded-lg bg-background px-3 py-1.5 text-sm border border-border outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="slug (ej: opciones)" value={channelForm.slug} onChange={e => setChannelForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))} />
-                                            <input className="rounded-lg bg-background px-3 py-1.5 text-sm border border-border outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="Nombre visible" value={channelForm.name} onChange={e => setChannelForm(f => ({ ...f, name: e.target.value }))} />
+                                            <input className="rounded-lg bg-background px-3 py-1.5 text-lg border border-border outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="slug (ej: opciones)" value={channelForm.slug} onChange={e => setChannelForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))} />
+                                            <input className="rounded-lg bg-background px-3 py-1.5 text-lg border border-border outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="Nombre visible" value={channelForm.name} onChange={e => setChannelForm(f => ({ ...f, name: e.target.value }))} />
                                         </div>
                                         <div className="grid grid-cols-3 gap-2">
-                                            <input className="rounded-lg bg-background px-3 py-1.5 text-sm border border-border outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="Emoji 📈" value={channelForm.icon} onChange={e => setChannelForm(f => ({ ...f, icon: e.target.value }))} />
-                                            <select className="rounded-lg bg-background px-3 py-1.5 text-sm border border-border outline-none focus:ring-1 focus:ring-primary" value={channelForm.type} onChange={e => setChannelForm(f => ({ ...f, type: e.target.value }))}>
+                                            <input className="rounded-lg bg-background px-3 py-1.5 text-lg border border-border outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="Emoji 📈" value={channelForm.icon} onChange={e => setChannelForm(f => ({ ...f, icon: e.target.value }))} />
+                                            <select className="rounded-lg bg-background px-3 py-1.5 text-lg border border-border outline-none focus:ring-1 focus:ring-primary" value={channelForm.type} onChange={e => setChannelForm(f => ({ ...f, type: e.target.value }))}>
                                                 <option value="CHAT">💬 Chat</option>
                                                 <option value="FEED">📰 Feed</option>
                                             </select>
-                                            <input type="number" className="rounded-lg bg-background px-3 py-1.5 text-sm border border-border outline-none focus:ring-1 focus:ring-primary" placeholder="Orden" value={channelForm.order} onChange={e => setChannelForm(f => ({ ...f, order: Number(e.target.value) }))} />
+                                            <input type="number" className="rounded-lg bg-background px-3 py-1.5 text-lg border border-border outline-none focus:ring-1 focus:ring-primary" placeholder="Orden" value={channelForm.order} onChange={e => setChannelForm(f => ({ ...f, order: Number(e.target.value) }))} />
                                         </div>
-                                        <input className="w-full rounded-lg bg-background px-3 py-1.5 text-sm border border-border outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="Descripción del canal" value={channelForm.description} onChange={e => setChannelForm(f => ({ ...f, description: e.target.value }))} />
+                                        <input className="w-full rounded-lg bg-background px-3 py-1.5 text-lg border border-border outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60" placeholder="Descripción del canal" value={channelForm.description} onChange={e => setChannelForm(f => ({ ...f, description: e.target.value }))} />
                                         <div className="flex justify-end gap-2">
-                                            <button onClick={() => setShowCreateChannel(false)} className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground">Cancelar</button>
-                                            <button onClick={createChannel} disabled={creatingChannel || !channelForm.slug || !channelForm.name} className="rounded-lg bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-40">
+                                            <button onClick={() => setShowCreateChannel(false)} className="px-3 py-1.5 text-lg text-muted-foreground hover:text-foreground">Cancelar</button>
+                                            <button onClick={createChannel} disabled={creatingChannel || !channelForm.slug || !channelForm.name} className="rounded-lg bg-primary px-4 py-1.5 text-lg font-medium text-primary-foreground disabled:opacity-40">
                                                 {creatingChannel ? 'Creando...' : 'Crear canal'}
                                             </button>
                                         </div>
@@ -1591,28 +1591,28 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                                     {editingChannelId === ch.id ? (
                                         <div className="p-3 space-y-2 bg-muted/30">
                                             <div className="grid grid-cols-2 gap-2">
-                                                <input className="rounded-lg bg-background px-3 py-1.5 text-sm border border-border outline-none focus:ring-1 focus:ring-primary" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} placeholder="Nombre" />
-                                                <input className="rounded-lg bg-background px-3 py-1.5 text-sm border border-border outline-none focus:ring-1 focus:ring-primary" value={editForm.icon} onChange={e => setEditForm(f => ({ ...f, icon: e.target.value }))} placeholder="Emoji" />
+                                                <input className="rounded-lg bg-background px-3 py-1.5 text-lg border border-border outline-none focus:ring-1 focus:ring-primary" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} placeholder="Nombre" />
+                                                <input className="rounded-lg bg-background px-3 py-1.5 text-lg border border-border outline-none focus:ring-1 focus:ring-primary" value={editForm.icon} onChange={e => setEditForm(f => ({ ...f, icon: e.target.value }))} placeholder="Emoji" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <select className="rounded-lg bg-background px-3 py-1.5 text-sm border border-border outline-none focus:ring-1 focus:ring-primary" value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}>
+                                                <select className="rounded-lg bg-background px-3 py-1.5 text-lg border border-border outline-none focus:ring-1 focus:ring-primary" value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}>
                                                     <option value="CHAT">💬 Chat</option>
                                                     <option value="FEED">📰 Feed</option>
                                                 </select>
-                                                <input type="number" className="rounded-lg bg-background px-3 py-1.5 text-sm border border-border outline-none focus:ring-1 focus:ring-primary" value={editForm.order} onChange={e => setEditForm(f => ({ ...f, order: Number(e.target.value) }))} placeholder="Orden" />
+                                                <input type="number" className="rounded-lg bg-background px-3 py-1.5 text-lg border border-border outline-none focus:ring-1 focus:ring-primary" value={editForm.order} onChange={e => setEditForm(f => ({ ...f, order: Number(e.target.value) }))} placeholder="Orden" />
                                             </div>
-                                            <input className="w-full rounded-lg bg-background px-3 py-1.5 text-sm border border-border outline-none focus:ring-1 focus:ring-primary" value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} placeholder="Descripción" />
+                                            <input className="w-full rounded-lg bg-background px-3 py-1.5 text-lg border border-border outline-none focus:ring-1 focus:ring-primary" value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} placeholder="Descripción" />
                                             <div className="flex justify-end gap-2">
-                                                <button onClick={() => setEditingChannelId(null)} className="px-3 py-1 text-xs text-muted-foreground hover:text-foreground">Cancelar</button>
-                                                <button onClick={() => saveEditChannel(ch.id)} className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">Guardar cambios</button>
+                                                <button onClick={() => setEditingChannelId(null)} className="px-3 py-1 text-lg text-muted-foreground hover:text-foreground">Cancelar</button>
+                                                <button onClick={() => saveEditChannel(ch.id)} className="rounded-lg bg-primary px-3 py-1 text-lg font-medium text-primary-foreground">Guardar cambios</button>
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-3 px-3 py-2.5">
                                             <span className="text-xl w-8 text-center shrink-0">{ch.icon || '#'}</span>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium">{ch.name}</p>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-lg font-medium">{ch.name}</p>
+                                                <p className="text-lg text-muted-foreground">
                                                     #{ch.slug} · {ch.type === 'CHAT' ? '💬 Chat' : '📰 Feed'} · orden {ch.order}
                                                 </p>
                                                 {ch.description && <p className="text-[11px] text-muted-foreground/60 truncate mt-0.5">{ch.description}</p>}
@@ -1632,8 +1632,8 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                             {channels.length === 0 && (
                                 <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground/50">
                                     <Hash className="h-8 w-8" />
-                                    <p className="text-sm">No hay canales. Usá "Inicializar canales" en Resumen.</p>
-                                    <button onClick={() => setAdminTab('overview')} className="text-xs text-primary">Ir a Resumen →</button>
+                                    <p className="text-lg">No hay canales. Usá "Inicializar canales" en Resumen.</p>
+                                    <button onClick={() => setAdminTab('overview')} className="text-lg text-primary">Ir a Resumen →</button>
                                 </div>
                             )}
                         </div>
@@ -1645,7 +1645,7 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 flex-wrap">
                             <select
-                                className="rounded-lg bg-muted px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+                                className="rounded-lg bg-muted px-3 py-1.5 text-lg outline-none focus:ring-1 focus:ring-primary"
                                 value={postsChannelFilter}
                                 onChange={e => setPostsChannelFilter(e.target.value)}
                             >
@@ -1654,7 +1654,7 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                                     <option key={ch.id} value={ch.id}>{ch.icon} {ch.name}</option>
                                 ))}
                             </select>
-                            <span className="text-xs text-muted-foreground">{filteredPosts.length} publicaciones</span>
+                            <span className="text-lg text-muted-foreground">{filteredPosts.length} publicaciones</span>
                             <button onClick={() => { setPostsLoaded(false); setPostsLoading(true); apiFetch('/hub/posts?limit=100').then(r => r.json()).then(d => { setAllPosts(d.posts ?? []); setPostsLoaded(true); }).finally(() => setPostsLoading(false)); }} className="ml-auto rounded-lg p-1.5 hover:bg-muted transition-colors" title="Actualizar">
                                 <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
                             </button>
@@ -1665,7 +1665,7 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                         ) : filteredPosts.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground/50">
                                 <FileText className="h-8 w-8" />
-                                <p className="text-sm">No hay publicaciones en este canal</p>
+                                <p className="text-lg">No hay publicaciones en este canal</p>
                             </div>
                         ) : (
                             <div className="space-y-2">
@@ -1678,7 +1678,7 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                                             </Avatar>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                                                    <span className="text-xs font-semibold">@{post.author.username}</span>
+                                                    <span className="text-lg font-semibold">@{post.author.username}</span>
                                                     {post.channel && (
                                                         <span className="text-[10px] rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground">
                                                             {post.channel.icon} {post.channel.name}
@@ -1691,8 +1691,8 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                                                     )}
                                                     <span className="text-[10px] text-muted-foreground/50 ml-auto">{fmtDate(post.createdAt)}</span>
                                                 </div>
-                                                {post.title && <p className="text-sm font-semibold mb-0.5">{post.title}</p>}
-                                                <p className="text-xs text-foreground/70 line-clamp-3 leading-relaxed">{post.content}</p>
+                                                {post.title && <p className="text-lg font-semibold mb-0.5">{post.title}</p>}
+                                                <p className="text-lg text-foreground/70 line-clamp-3 leading-relaxed">{post.content}</p>
                                                 <div className="flex items-center gap-1 mt-2">
                                                     <span className="text-[10px] text-muted-foreground mr-auto">
                                                         {post._count?.comments ?? 0} comentarios
@@ -1726,7 +1726,7 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                             <div className="relative flex-1">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
                                 <input
-                                    className="w-full rounded-xl bg-muted pl-8 pr-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/50"
+                                    className="w-full rounded-xl bg-muted pl-8 pr-3 py-2 text-lg outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/50"
                                     placeholder="Buscar por usuario..."
                                     value={memberSearch}
                                     onChange={e => setMemberSearch(e.target.value)}
@@ -1741,22 +1741,22 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                             <div className="flex items-center justify-center py-16"><div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>
                         ) : (
                             <>
-                                <p className="text-xs text-muted-foreground">{filteredMembers.length} de {members.length} miembros</p>
+                                <p className="text-lg text-muted-foreground">{filteredMembers.length} de {members.length} miembros</p>
                                 <div className="space-y-1.5">
                                     {filteredMembers.map(m => (
                                         <div key={m.id} className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5">
                                             <Avatar className="h-9 w-9 shrink-0">
                                                 <AvatarImage src={m.avatarUrl} />
-                                                <AvatarFallback className="text-xs">{m.username[0]?.toUpperCase()}</AvatarFallback>
+                                                <AvatarFallback className="text-lg">{m.username[0]?.toUpperCase()}</AvatarFallback>
                                             </Avatar>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-1.5">
-                                                    <span className="text-sm font-medium">@{m.username}</span>
+                                                    <span className="text-lg font-medium">@{m.username}</span>
                                                     {isAdmin(m.role) && <AuthorBadge role={m.role} />}
                                                 </div>
                                                 <p className="text-[11px] text-muted-foreground">Se unió {fmtDate(m.createdAt)}</p>
                                             </div>
-                                            <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
+                                            <div className="flex items-center gap-3 text-lg text-muted-foreground shrink-0">
                                                 <span className="flex items-center gap-0.5" title="Mensajes">
                                                     <MessageSquare className="h-3 w-3" />{m._count.hubMessages}
                                                 </span>
@@ -1772,7 +1772,7 @@ function AdminPanelView({ channels, onRefreshChannels }: { channels: HubChannel[
                                     {filteredMembers.length === 0 && (
                                         <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground/50">
                                             <Users className="h-8 w-8" />
-                                            <p className="text-sm">{memberSearch ? 'Sin resultados' : 'No hay miembros registrados'}</p>
+                                            <p className="text-lg">{memberSearch ? 'Sin resultados' : 'No hay miembros registrados'}</p>
                                         </div>
                                     )}
                                 </div>
@@ -1812,7 +1812,7 @@ function ChannelSidebar({
         <button
             key={view.type === 'channel' ? (view as { type: 'channel'; channel: HubChannel }).channel.id : view.type}
             onClick={() => { onSelect(view); onMobileSelect?.(); }}
-            className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${isActive(view)
+            className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-lg transition-colors ${isActive(view)
                 ? 'bg-primary/15 text-primary font-medium'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
@@ -1830,8 +1830,7 @@ function ChannelSidebar({
                         <img src="/logo.png" alt="Finix" className="h-5 w-5 object-contain" />
                     </div>
                     <div>
-                        <p className="text-sm font-bold">Comunidad de Finix</p>
-                        <p className="text-[10px] text-muted-foreground/60">Red social</p>
+                        <p className="text-base font-bold leading-tight">Comunidad de Finix</p>
                     </div>
                 </div>
             </div>
@@ -1845,7 +1844,7 @@ function ChannelSidebar({
                     <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">Canales</p>
                     {channels.map(ch => btn(
                         { type: 'channel', channel: ch },
-                        <span className="text-sm shrink-0 w-4 text-center">{ch.icon || <Hash className="h-3.5 w-3.5" />}</span>,
+                        <span className="text-lg shrink-0 w-4 text-center">{ch.icon || <Hash className="h-3.5 w-3.5" />}</span>,
                         ch.name,
                     ))}
                 </div>
@@ -1906,7 +1905,7 @@ export default function Comunidad() {
     };
 
     return (
-        <div className="flex h-[calc(100vh)] overflow-hidden">
+        <div className="flex h-[calc(100vh)] overflow-hidden text-lg">
             {/* Desktop sidebar */}
             <aside className="hidden lg:flex w-56 shrink-0 flex-col border-r border-border bg-background/60 backdrop-blur-sm">
                 <ChannelSidebar
@@ -1950,18 +1949,18 @@ export default function Comunidad() {
                         <Hash className="h-4 w-4 text-muted-foreground" />
                     </button>
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-sm font-bold leading-none">{viewTitle()}</h1>
+                        <h1 className="text-lg font-bold leading-none">{viewTitle()}</h1>
                         {viewDescription() && (
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{viewDescription()}</p>
+                            <p className="text-lg text-muted-foreground mt-0.5 truncate">{viewDescription()}</p>
                         )}
                     </div>
                     {activeView.type === 'channel' && activeView.channel.type === 'CHAT' && (
-                        <span className="text-xs text-muted-foreground/60 flex items-center gap-1 shrink-0">
+                        <span className="text-lg text-muted-foreground/60 flex items-center gap-1 shrink-0">
                             <MessageSquare className="h-3 w-3" /> Chat
                         </span>
                     )}
                     {activeView.type === 'library' && (
-                        <span className="text-xs text-muted-foreground/60 flex items-center gap-1 shrink-0">
+                        <span className="text-lg text-muted-foreground/60 flex items-center gap-1 shrink-0">
                             <BookOpen className="h-3 w-3" /> Biblioteca
                         </span>
                     )}
