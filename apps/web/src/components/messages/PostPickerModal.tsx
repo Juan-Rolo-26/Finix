@@ -64,7 +64,7 @@ export default function PostPickerModal({
     onClose,
     onSelect,
 }: PostPickerModalProps) {
-    const [activeTab, setActiveTab] = useState<'mine' | 'recent'>(currentUsername ? 'mine' : 'recent');
+    const [activeTab, setActiveTab] = useState<'mine' | 'recent'>('recent');
     const [minePosts, setMinePosts] = useState<SharedPostPreview[]>([]);
     const [recentPosts, setRecentPosts] = useState<SharedPostPreview[]>([]);
     const [loading, setLoading] = useState(true);
@@ -148,6 +148,16 @@ export default function PostPickerModal({
 
                 <div className="p-5 space-y-4">
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setActiveTab('recent')}
+                            className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
+                                activeTab === 'recent'
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'
+                            }`}
+                        >
+                            Comunidad
+                        </button>
                         {currentUsername && (
                             <button
                                 onClick={() => setActiveTab('mine')}
@@ -160,16 +170,6 @@ export default function PostPickerModal({
                                 Mis publicaciones
                             </button>
                         )}
-                        <button
-                            onClick={() => setActiveTab('recent')}
-                            className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
-                                activeTab === 'recent'
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'
-                            }`}
-                        >
-                            Recientes
-                        </button>
                     </div>
 
                     {loading ? (

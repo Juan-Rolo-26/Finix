@@ -69,31 +69,31 @@ const Hero = () => {
                 <motion.div
                     className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full"
                     style={{
-                        background: "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)",
+                        background: "radial-gradient(circle, hsl(var(--primary) / 0.25) 0%, transparent 70%)",
                     }}
                     animate={{
-                        scale: [1, 1.2, 1],
-                        x: [0, 50, 0],
-                        y: [0, -30, 0],
+                        scale: [1, 1.25, 1],
+                        x: [0, 60, 0],
+                        y: [0, -40, 0],
                     }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
                 />
                 <motion.div
                     className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full"
                     style={{
-                        background: "radial-gradient(circle, hsl(var(--primary) / 0.1) 0%, transparent 70%)",
+                        background: "radial-gradient(circle, hsl(var(--primary) / 0.2) 0%, transparent 70%)",
                     }}
                     animate={{
                         scale: [1.2, 1, 1.2],
-                        x: [0, -30, 0],
-                        y: [0, 50, 0],
+                        x: [0, -40, 0],
+                        y: [0, 60, 0],
                     }}
-                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
                 />
 
                 {/* Grid Pattern */}
                 <div
-                    className="absolute inset-0 opacity-[0.03]"
+                    className="absolute inset-0 opacity-[0.06]"
                     style={{
                         backgroundImage: `
               linear-gradient(hsl(var(--primary)) 1px, transparent 1px),
@@ -113,9 +113,9 @@ const Hero = () => {
 
                     {/* Main Heading */}
                     <motion.div
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 24 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.7, delay: 0.2 }}
+                        transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
                         className="space-y-4"
                     >
                         <h1 className="text-5xl md:text-7xl lg:text-8xl font-heading font-extrabold tracking-tight leading-[0.9]">
@@ -131,8 +131,8 @@ const Hero = () => {
                                 </motion.span>
                                 <motion.div
                                     className="absolute -inset-4 bg-gradient-primary-glow blur-3xl -z-10"
-                                    animate={{ opacity: [0.4, 0.7, 0.4] }}
-                                    transition={{ duration: 3, repeat: Infinity }}
+                                    animate={{ opacity: [0.5, 0.85, 0.5] }}
+                                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
                                 />
                             </span>
                         </h1>

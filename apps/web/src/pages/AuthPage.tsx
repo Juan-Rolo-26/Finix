@@ -230,18 +230,18 @@ export default function AuthPage() {
             <div className="absolute inset-0 pointer-events-none z-0">
                 <m.div
                     className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full"
-                    style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.18) 0%, transparent 70%)' }}
-                    animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
-                    transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+                    style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.28) 0%, transparent 70%)' }}
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
                 />
                 <m.div
                     className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full"
-                    style={{ background: 'radial-gradient(circle, hsl(160 80% 40% / 0.12) 0%, transparent 70%)' }}
-                    animate={{ scale: [1.1, 1, 1.1] }}
-                    transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+                    style={{ background: 'radial-gradient(circle, hsl(160 80% 40% / 0.22) 0%, transparent 70%)' }}
+                    animate={{ scale: [1.1, 1.25, 1.1] }}
+                    transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
                 />
                 <div
-                    className="absolute inset-0 opacity-[0.025]"
+                    className="absolute inset-0 opacity-[0.06]"
                     style={{
                         backgroundImage: 'linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)',
                         backgroundSize: '50px 50px',
@@ -255,7 +255,7 @@ export default function AuthPage() {
                         <m.div
                             initial={{ opacity: 0, y: -20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.7 }}
+                            transition={{ duration: 0.6, ease: 'easeOut' }}
                             className="flex items-center gap-4"
                         >
                             <div className="relative">
@@ -330,8 +330,9 @@ export default function AuthPage() {
                         </div>
 
                         <m.form
-                            initial={{ opacity: 0, x: 20 }}
+                            initial={{ opacity: 0, x: 16 }}
                             animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.5, ease: 'easeOut' }}
                             onSubmit={handleSubmit}
                             className="space-y-3"
                             key={view}

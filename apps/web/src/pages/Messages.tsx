@@ -1597,10 +1597,15 @@ export default function MessagesPage() {
                                 {/* Back button */}
                                 <button
                                     onClick={handleReturnToInbox}
-                                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+                                    className="h-9 rounded-xl inline-flex items-center gap-2 px-3 flex-shrink-0 transition-all active:scale-90"
                                     style={{ background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.07)' }}
+                                    title="Volver a mensajes"
+                                    aria-label="Volver a mensajes"
                                 >
-                                    <ArrowLeft className="w-5 h-5" style={{ color: textPrimary }} />
+                                    <ArrowLeft className="w-4 h-4" style={{ color: textPrimary }} />
+                                    <span className="text-[13px] font-semibold whitespace-nowrap" style={{ color: textPrimary }}>
+                                        Mensajes
+                                    </span>
                                 </button>
 
                                 {activeConv && (
@@ -1966,6 +1971,42 @@ export default function MessagesPage() {
                                     </div>
                                 )}
 
+                                <div className="mb-3 flex flex-wrap items-center gap-2">
+                                    <span className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: textMuted }}>
+                                        Enviar
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => imageInputRef.current?.click()}
+                                        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/60"
+                                        style={{ borderColor, color: textPrimary }}
+                                    >
+                                        <ImageIcon className="w-3.5 h-3.5 text-primary" />
+                                        Foto
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPostPicker(true)}
+                                        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/60"
+                                        style={{ borderColor, color: textPrimary }}
+                                    >
+                                        <Newspaper className="w-3.5 h-3.5 text-primary" />
+                                        Post
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowChartPicker(true)}
+                                        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/60"
+                                        style={{ borderColor, color: textPrimary }}
+                                    >
+                                        <BarChart2 className="w-3.5 h-3.5 text-primary" />
+                                        Grafico
+                                    </button>
+                                    <span className="text-xs" style={{ color: textMuted }}>
+                                        Texto desde el cuadro de abajo
+                                    </span>
+                                </div>
+
                                 <div
                                     className="flex items-end gap-2 rounded-2xl px-3 py-2.5 transition-all"
                                     style={{
@@ -2113,7 +2154,7 @@ export default function MessagesPage() {
                                         value={inputText}
                                         onChange={(e) => handleInputChange(e.target.value)}
                                         onKeyDown={handleKeyDown}
-                                        placeholder={pendingAttachment ? 'Agrega un texto opcional...' : 'Escribi un mensaje...'}
+                                        placeholder={pendingAttachment ? 'Agrega un texto opcional...' : 'Escribi un mensaje, o comparti una foto, post o grafico...'}
                                         rows={1}
                                         className="flex-1 bg-transparent text-sm resize-none outline-none py-1.5 max-h-32 leading-relaxed placeholder:text-muted-foreground"
                                         style={{

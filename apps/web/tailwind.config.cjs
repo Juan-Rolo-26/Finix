@@ -18,8 +18,8 @@ module.exports = {
         },
         extend: {
             fontFamily: {
-                sans: ['Satoshi', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"', 'sans-serif'],
-                heading: ['Satoshi', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+                sans: ['Raleway', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"', 'sans-serif'],
+                heading: ['Raleway', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
                 mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
             },
             colors: {
@@ -94,10 +94,15 @@ module.exports = {
                     from: { height: "var(--radix-accordion-content-height)" },
                     to: { height: "0" },
                 },
+                "spin-slow": {
+                    from: { transform: "rotate(0deg)" },
+                    to: { transform: "rotate(360deg)" },
+                },
             },
             animation: {
                 "accordion-down": "accordion-down 0.2s ease-out",
                 "accordion-up": "accordion-up 0.2s ease-out",
+                "spin-slow": "spin-slow 3s linear infinite",
             },
         },
     },
