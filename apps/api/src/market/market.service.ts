@@ -130,6 +130,7 @@ export interface MarketDashboardPayload {
 export class MarketService {
     private finvizBaseCache: { data: FinvizBaseNode; fetchedAt: number } | null = null;
     private finvizHeatmapCache = new Map<string, { data: unknown; fetchedAt: number }>();
+    private searchCache = new Map<string, { data: any[]; fetchedAt: number }>();
     private marketNewsCache: { data: NewsItem[]; fetchedAt: number } | null = null;
     private readonly finvizBaseTtlMs = 6 * 60 * 60 * 1000;
     private readonly finvizHeatmapTtlMs = 60 * 1000;
@@ -660,6 +661,8 @@ export class MarketService {
                     updatedAt: quote?.updatedAt || new Date().toISOString(),
                 };
             });
+
+            return finalResults;
         } catch (error) {
             console.error('[MarketService] Community trends failed:', error);
             return [];
@@ -737,6 +740,12 @@ export class MarketService {
         );
 
         // Try TradingView as backup (with timeout and error handling)
+        const cacheKey = qLower;
+        const cached = this.searchCache.get(cacheKey);
+        if (cached && Date.now() - cached.fetchedAt < 24 * 60 * 60 * 1000) {
+            return cached.data;
+        }
+
         let tvResults: any[] = [];
         try {
             console.log('[MarketService] Trying TradingView search...');
@@ -801,10 +810,13 @@ export class MarketService {
 
         if (deduped.length > 0) {
             console.log(`[MarketService] Returning ${deduped.length} symbol results`);
-            return deduped.slice(0, 30);
+            const answer = deduped.slice(0, 30);
+            this.searchCache.set(cacheKey, { data: answer, fetchedAt: Date.now() });
+            return answer;
         }
 
         console.log('[MarketService] Returning empty results');
+        this.searchCache.set(cacheKey, { data: directSymbolResult, fetchedAt: Date.now() });
         return directSymbolResult;
     }
 

@@ -27,25 +27,7 @@ let NewsTranslationService = class NewsTranslationService {
         if (!text || !this.isEnglish(text)) {
             return text;
         }
-        try {
-            const translated = await this.translateWithLibreTranslate(text);
-            if (translated && translated !== text) {
-                return translated;
-            }
-        }
-        catch (error) {
-            console.warn('[Translation] LibreTranslate failed:', error.message);
-        }
-        try {
-            const translated = await this.translateWithMyMemory(text);
-            if (translated && translated !== text) {
-                return translated;
-            }
-        }
-        catch (error) {
-            console.warn('[Translation] MyMemory failed:', error.message);
-        }
-        return text;
+        return this.basicFinancialTranslation(text);
     }
     async translateWithLibreTranslate(text) {
         try {

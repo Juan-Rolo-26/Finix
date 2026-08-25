@@ -123,17 +123,7 @@ export declare class UserController {
         title: string;
         company: string;
     }[]>;
-    searchUsers(query: string): Promise<{
-        id: string;
-        username: string;
-        bio: string;
-        avatarUrl: string;
-        isVerified: boolean;
-        title: string;
-        company: string;
-        totalReturn: number;
-        winRate: number;
-    }[]>;
+    searchUsers(query: string): Promise<any[]>;
     toggleFollow(username: string, req: any): Promise<{
         following: boolean;
         followersCount: number;

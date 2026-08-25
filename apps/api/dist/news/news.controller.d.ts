@@ -2,26 +2,7 @@ import { NewsService } from './news.service';
 export declare class NewsController {
     private newsService;
     constructor(newsService: NewsService);
-    getNews(query: any): Promise<{
-        id: any;
-        title: any;
-        titleOriginal: any;
-        summary: any;
-        content: any;
-        url: any;
-        image: any;
-        source: any;
-        category: any;
-        categorySlug: any;
-        author: any;
-        sentiment: any;
-        sentimentScore: any;
-        impactLevel: any;
-        tickers: any;
-        publishedAt: any;
-        wasTranslated: any;
-        language: any;
-    }[]>;
+    getNews(query: any): Promise<any>;
     getNewsByTicker(ticker: string, query: any): Promise<{
         id: any;
         title: any;
@@ -82,26 +63,7 @@ export declare class NewsController {
         wasTranslated: any;
         language: any;
     }[]>;
-    getNewsByCategory(slug: string, query: any): Promise<{
-        id: any;
-        title: any;
-        titleOriginal: any;
-        summary: any;
-        content: any;
-        url: any;
-        image: any;
-        source: any;
-        category: any;
-        categorySlug: any;
-        author: any;
-        sentiment: any;
-        sentimentScore: any;
-        impactLevel: any;
-        tickers: any;
-        publishedAt: any;
-        wasTranslated: any;
-        language: any;
-    }[]>;
+    getNewsByCategory(slug: string, query: any): Promise<any>;
     triggerFetch(): Promise<{
         processed: number;
         skipped: number;

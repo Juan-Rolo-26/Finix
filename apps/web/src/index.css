@@ -9,6 +9,7 @@
     /* ─── DARK MODE (default) ─── */
     :root {
         font-size: 15px;
+        /* +15% scale */
         --background: 220 24% 7%;
         --foreground: 210 40% 98%;
 

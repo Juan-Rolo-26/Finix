@@ -82,6 +82,7 @@ export declare class MarketService {
     private prisma;
     private finvizBaseCache;
     private finvizHeatmapCache;
+    private searchCache;
     private marketNewsCache;
     private readonly finvizBaseTtlMs;
     private readonly finvizHeatmapTtlMs;

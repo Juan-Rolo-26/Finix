@@ -39,28 +39,9 @@ export class NewsTranslationService {
             return text;
         }
 
-        try {
-            // Try LibreTranslate first (community instance)
-            const translated = await this.translateWithLibreTranslate(text);
-            if (translated && translated !== text) {
-                return translated;
-            }
-        } catch (error) {
-            console.warn('[Translation] LibreTranslate failed:', error.message);
-        }
-
-        try {
-            // Fallback to MyMemory (free tier)
-            const translated = await this.translateWithMyMemory(text);
-            if (translated && translated !== text) {
-                return translated;
-            }
-        } catch (error) {
-            console.warn('[Translation] MyMemory failed:', error.message);
-        }
-
-        // If all fails, return original
-        return text;
+        // ULTRAFAST BYPASS: Free APIs take 10+ minutes and crash.
+        // We use our basic financial dict and return instantly.
+        return this.basicFinancialTranslation(text);
     }
 
     /**

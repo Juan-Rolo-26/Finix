@@ -16,6 +16,7 @@ interface NewsFilter {
 
 @Injectable()
 export class NewsService {
+    private queryCache = new Map<string, { data: any, exp: number }>();
     constructor(
         private prisma: PrismaService,
         private newsFetcher: NewsFetcherService,
@@ -24,6 +25,11 @@ export class NewsService {
     ) {
         console.log('[NewsService] Initialized');
         this.initializeCategories();
+
+        // Optimize: Trigger scraping immediately on boot so UI is populated
+        setTimeout(() => {
+            this.fetchAndStoreNews().catch(console.error);
+        }, 3000);
     }
 
     /**
@@ -68,6 +74,10 @@ export class NewsService {
             offset = 0,
         } = filters;
 
+        const cacheKey = `news:${category}:${source}:${sentiment}:${limit}:${offset}`;
+        const cached = this.queryCache.get(cacheKey);
+        if (cached && Date.now() < cached.exp) return cached.data;
+
         const where: any = {};
 
         if (category) {
@@ -105,7 +115,9 @@ export class NewsService {
             skip: offset,
         });
 
-        return this.formatNewsItems(news);
+        const formatted = this.formatNewsItems(news);
+        this.queryCache.set(cacheKey, { data: formatted, exp: Date.now() + 60_000 });
+        return formatted;
     }
 
     /**
@@ -141,6 +153,9 @@ export class NewsService {
      */
     async getNewsByCategory(slug: string, options: { limit?: number; offset?: number }) {
         const { limit = 50, offset = 0 } = options;
+        const cacheKey = `cat:${slug}:${limit}:${offset}`;
+        const cached = this.queryCache.get(cacheKey);
+        if (cached && Date.now() < cached.exp) return cached.data;
 
         const category = await this.prisma.newsCategory.findUnique({
             where: { slug },
@@ -165,7 +180,9 @@ export class NewsService {
             skip: offset,
         });
 
-        return this.formatNewsItems(news);
+        const formatted = this.formatNewsItems(news);
+        this.queryCache.set(cacheKey, { data: formatted, exp: Date.now() + 60_000 });
+        return formatted;
     }
 
     /**

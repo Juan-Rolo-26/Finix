@@ -16,11 +16,11 @@ interface NewsItem {
 }
 
 const SECTIONS = [
-    { slug: 'cripto',    label: 'Cripto',    icon: Bitcoin,    color: '#f59e0b' },
-    { slug: 'argentina', label: 'Argentina', icon: MapPin,     color: '#3b82f6' },
-    { slug: 'global',    label: 'Global',    icon: Globe,      color: '#06b6d4' },
-    { slug: 'economia',  label: 'Economía',  icon: TrendingUp, color: '#10b981' },
-    { slug: 'acciones',  label: 'Acciones',  icon: BarChart2,  color: '#a855f7' },
+    { slug: 'cripto', label: 'Cripto', icon: Bitcoin, color: '#f59e0b' },
+    { slug: 'argentina', label: 'Argentina', icon: MapPin, color: '#3b82f6' },
+    { slug: 'global', label: 'Global', icon: Globe, color: '#06b6d4' },
+    { slug: 'economia', label: 'Economía', icon: TrendingUp, color: '#10b981' },
+    { slug: 'acciones', label: 'Acciones', icon: BarChart2, color: '#a855f7' },
 ] as const;
 
 type SectionSlug = typeof SECTIONS[number]['slug'];
@@ -149,7 +149,7 @@ export default function News() {
     const isLoading = loadingSet.has(activeSection);
 
     return (
-        <div className="mx-auto max-w-3xl px-4 py-6 space-y-5">
+        <div className="page-enter mx-auto w-full max-w-6xl p-4 md:p-6 lg:p-8 space-y-5">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -207,7 +207,7 @@ export default function News() {
                     transition={{ duration: 0.18 }}
                 >
                     {isLoading || news === undefined ? (
-                        <div className="space-y-2.5">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
                             {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
                         </div>
                     ) : news.length === 0 ? (
@@ -237,14 +237,16 @@ export default function News() {
                             </button>
                         </div>
                     ) : (
-                        <div className="space-y-2.5">
+                        <div className="space-y-3">
                             <p className="text-xs px-1"
                                 style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
                                 {news.length} artículos · {section.label}
                             </p>
-                            {news.map(item => (
-                                <NewsCard key={item.id} item={item} />
-                            ))}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
+                                {news.map(item => (
+                                    <NewsCard key={item.id} item={item} />
+                                ))}
+                            </div>
                         </div>
                     )}
                 </motion.div>

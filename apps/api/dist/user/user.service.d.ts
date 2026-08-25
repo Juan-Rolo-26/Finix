@@ -193,17 +193,8 @@ export declare class UserService {
         title: string;
         company: string;
     }[]>;
-    searchUsers(query: string): Promise<{
-        id: string;
-        username: string;
-        bio: string;
-        avatarUrl: string;
-        isVerified: boolean;
-        title: string;
-        company: string;
-        totalReturn: number;
-        winRate: number;
-    }[]>;
+    private searchCache;
+    searchUsers(query: string): Promise<any[]>;
     toggleFollow(followerId: string, username: string): Promise<{
         following: boolean;
         followersCount: number;

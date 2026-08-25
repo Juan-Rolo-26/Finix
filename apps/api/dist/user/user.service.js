@@ -22,6 +22,7 @@ let UserService = class UserService {
         this.prisma = prisma;
         this.notificationsService = notificationsService;
         this.marketService = marketService;
+        this.searchCache = new Map();
     }
     normalizeUserMedia(user) {
         return {
@@ -685,6 +686,11 @@ let UserService = class UserService {
     async searchUsers(query) {
         if (!query || query.length < 2)
             return [];
+        const cacheKey = query.toLowerCase();
+        const cached = this.searchCache.get(cacheKey);
+        if (cached && Date.now() - cached.fetchedAt < 60_000) {
+            return cached.data;
+        }
         const users = await this.prisma.user.findMany({
             where: {
                 username: {
@@ -706,7 +712,9 @@ let UserService = class UserService {
                 totalReturn: true,
             },
         });
-        return users.map((user) => this.normalizeUserMedia(user));
+        const formatted = users.map((user) => this.normalizeUserMedia(user));
+        this.searchCache.set(cacheKey, { data: formatted, fetchedAt: Date.now() });
+        return formatted;
     }
     async toggleFollow(followerId, username) {
         const [targetUser, follower] = await Promise.all([

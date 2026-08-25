@@ -17,6 +17,7 @@ let MarketService = class MarketService {
         this.prisma = prisma;
         this.finvizBaseCache = null;
         this.finvizHeatmapCache = new Map();
+        this.searchCache = new Map();
         this.marketNewsCache = null;
         this.finvizBaseTtlMs = 6 * 60 * 60 * 1000;
         this.finvizHeatmapTtlMs = 60 * 1000;
@@ -484,6 +485,7 @@ let MarketService = class MarketService {
                     updatedAt: quote?.updatedAt || new Date().toISOString(),
                 };
             });
+            return finalResults;
         }
         catch (error) {
             console.error('[MarketService] Community trends failed:', error);
@@ -546,6 +548,11 @@ let MarketService = class MarketService {
         const qLower = q.toLowerCase();
         const localResults = this.symbolCatalog.filter((item) => item.symbol.toLowerCase().includes(qLower) ||
             item.name.toLowerCase().includes(qLower));
+        const cacheKey = qLower;
+        const cached = this.searchCache.get(cacheKey);
+        if (cached && Date.now() - cached.fetchedAt < 24 * 60 * 60 * 1000) {
+            return cached.data;
+        }
         let tvResults = [];
         try {
             console.log('[MarketService] Trying TradingView search...');
@@ -604,9 +611,12 @@ let MarketService = class MarketService {
         const deduped = merged.filter((item, idx, arr) => arr.findIndex((x) => x.symbol === item.symbol) === idx);
         if (deduped.length > 0) {
             console.log(`[MarketService] Returning ${deduped.length} symbol results`);
-            return deduped.slice(0, 30);
+            const answer = deduped.slice(0, 30);
+            this.searchCache.set(cacheKey, { data: answer, fetchedAt: Date.now() });
+            return answer;
         }
         console.log('[MarketService] Returning empty results');
+        this.searchCache.set(cacheKey, { data: directSymbolResult, fetchedAt: Date.now() });
         return directSymbolResult;
     }
     normalizeQuoteInputSymbol(symbol) {

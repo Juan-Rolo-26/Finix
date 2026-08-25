@@ -836,8 +836,16 @@ export class UserService {
             .slice(0, 10);
     }
 
+    private searchCache = new Map<string, { data: any[]; fetchedAt: number }>();
+
     async searchUsers(query: string) {
         if (!query || query.length < 2) return [];
+        const cacheKey = query.toLowerCase();
+        const cached = this.searchCache.get(cacheKey);
+        if (cached && Date.now() - cached.fetchedAt < 60_000) {
+            return cached.data;
+        }
+
         const users = await this.prisma.user.findMany({
             where: {
                 username: {
@@ -860,7 +868,9 @@ export class UserService {
             },
         });
 
-        return users.map((user) => this.normalizeUserMedia(user));
+        const formatted = users.map((user) => this.normalizeUserMedia(user));
+        this.searchCache.set(cacheKey, { data: formatted, fetchedAt: Date.now() });
+        return formatted;
     }
 
     async toggleFollow(followerId: string, username: string) {

@@ -14,28 +14,10 @@ export declare class NewsService {
     private newsFetcher;
     private translator;
     private sentimentAnalyzer;
+    private queryCache;
     constructor(prisma: PrismaService, newsFetcher: NewsFetcherService, translator: NewsTranslationService, sentimentAnalyzer: NewsSentimentService);
     private initializeCategories;
-    getNews(filters: NewsFilter): Promise<{
-        id: any;
-        title: any;
-        titleOriginal: any;
-        summary: any;
-        content: any;
-        url: any;
-        image: any;
-        source: any;
-        category: any;
-        categorySlug: any;
-        author: any;
-        sentiment: any;
-        sentimentScore: any;
-        impactLevel: any;
-        tickers: any;
-        publishedAt: any;
-        wasTranslated: any;
-        language: any;
-    }[]>;
+    getNews(filters: NewsFilter): Promise<any>;
     getNewsByTicker(ticker: string, options: {
         limit?: number;
         offset?: number;
@@ -62,26 +44,7 @@ export declare class NewsService {
     getNewsByCategory(slug: string, options: {
         limit?: number;
         offset?: number;
-    }): Promise<{
-        id: any;
-        title: any;
-        titleOriginal: any;
-        summary: any;
-        content: any;
-        url: any;
-        image: any;
-        source: any;
-        category: any;
-        categorySlug: any;
-        author: any;
-        sentiment: any;
-        sentimentScore: any;
-        impactLevel: any;
-        tickers: any;
-        publishedAt: any;
-        wasTranslated: any;
-        language: any;
-    }[]>;
+    }): Promise<any>;
     getTrendingNews(limit?: number): Promise<{
         id: any;
         title: any;

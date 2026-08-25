@@ -1,4 +1,8 @@
 export async function readApiError(response: Response) {
+    if (response.status === 502 || response.status === 503 || response.status === 504) {
+        return 'El servidor no está disponible temporalmente. Intenta de nuevo más tarde.';
+    }
+
     try {
         const data = await response.clone().json();
         if (typeof data?.message === 'string') {

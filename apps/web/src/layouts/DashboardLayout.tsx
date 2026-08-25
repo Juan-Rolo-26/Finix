@@ -6,6 +6,7 @@ import { MobileTopBar } from '../components/MobileTopBar';
 export default function DashboardLayout() {
     const location = useLocation();
     const isMessages = location.pathname.startsWith('/messages');
+    const isComunidad = location.pathname.startsWith('/comunidad');
 
     return (
         <div className="min-h-screen bg-background text-foreground flex">
@@ -17,11 +18,10 @@ export default function DashboardLayout() {
 
             {/* Main Content Area */}
             {/* pt-[52px] = mobile topbar height | pb-14 = mobile bottom nav | lg: reset both */}
-            {/* On /messages: no top padding (page has its own header), keep bottom nav space */}
+            {/* On /messages and /comunidad: no top padding (page has its own header), keep bottom nav space */}
             <div
-                className={`flex-1 lg:ml-[300px] transition-all duration-300 flex flex-col min-h-screen lg:pt-0 lg:pb-0 ${
-                    isMessages ? 'pt-0 pb-14' : 'pt-[52px] pb-14'
-                }`}
+                className={`flex-1 lg:ml-[300px] transition-all duration-300 flex flex-col min-h-screen lg:pt-0 lg:pb-0 ${(isMessages || isComunidad) ? 'pt-0 pb-14' : 'pt-[52px] pb-14'
+                    }`}
             >
                 <main className="flex-1 flex flex-col w-full">
                     <Outlet />

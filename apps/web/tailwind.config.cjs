@@ -17,6 +17,21 @@ module.exports = {
             },
         },
         extend: {
+            fontSize: {
+                xs: ['0.86rem', { lineHeight: '1.2rem' }],
+                sm: ['1rem', { lineHeight: '1.4rem' }],
+                base: ['1.15rem', { lineHeight: '1.7rem' }],
+                lg: ['1.3rem', { lineHeight: '1.9rem' }],
+                xl: ['1.43rem', { lineHeight: '2rem' }],
+                '2xl': ['1.72rem', { lineHeight: '2.2rem' }],
+                '3xl': ['2.15rem', { lineHeight: '2.5rem' }],
+                '4xl': ['2.58rem', { lineHeight: '1' }],
+                '5xl': ['3.45rem', { lineHeight: '1' }],
+                '6xl': ['4.31rem', { lineHeight: '1' }],
+                '7xl': ['5.17rem', { lineHeight: '1' }],
+                '8xl': ['6.9rem', { lineHeight: '1' }],
+                '9xl': ['9.2rem', { lineHeight: '1' }],
+            },
             fontFamily: {
                 sans: ['Raleway', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"', 'sans-serif'],
                 heading: ['Raleway', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],

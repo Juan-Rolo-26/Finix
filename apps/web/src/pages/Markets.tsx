@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     Activity,
-    ExternalLink,
     LineChart,
-    Newspaper,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -29,15 +27,6 @@ interface QuoteData {
     change: number | null;
     updatedAt: string;
     unavailable?: boolean;
-}
-
-interface MarketNewsItem {
-    title: string;
-    link: string;
-    publishedAt: string;
-    source: string;
-    summary: string;
-    image?: string;
 }
 
 const DEFAULT_ASSET: MarketAsset = {
@@ -151,52 +140,7 @@ function formatQuoteChange(value: number | null) {
     }).format(value)}%`;
 }
 
-function NewsListItem({
-    item,
-    compact = false,
-}: {
-    item: MarketNewsItem;
-    compact?: boolean;
-}) {
-    const shouldShowSummary = !compact && item.summary && item.summary.trim().toLowerCase() !== item.title.trim().toLowerCase();
 
-    return (
-        <a
-            href={item.link || '#'}
-            target="_blank"
-            rel="noreferrer"
-            className={cn(
-                'group flex gap-3 rounded-2xl border border-border/50 bg-background/30 p-3 transition-all hover:border-primary/30 hover:bg-background/50',
-                compact ? 'items-start' : 'flex-col sm:flex-row'
-            )}
-        >
-            {item.image && (
-                <div className={cn('overflow-hidden rounded-xl bg-secondary', compact ? 'h-16 w-16 shrink-0' : 'h-32 w-full sm:h-24 sm:w-40 sm:shrink-0')}>
-                    <img
-                        src={item.image}
-                        alt={item.title}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                </div>
-            )}
-
-            <div className="min-w-0 space-y-2">
-                <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
-                    <span>{item.source}</span>
-                    <span className="text-border">/</span>
-                    <span>{formatRelativeTime(item.publishedAt)}</span>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                    <h3 className={cn('font-semibold leading-tight text-foreground transition-colors group-hover:text-primary', compact ? 'text-sm' : 'text-base')}>
-                        {item.title}
-                    </h3>
-                    <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
-                </div>
-                {shouldShowSummary && <p className="text-sm leading-6 text-muted-foreground">{item.summary}</p>}
-            </div>
-        </a>
-    );
-}
 
 export default function Markets() {
     const t = useTranslation();
@@ -211,8 +155,6 @@ export default function Markets() {
     const [dashboardData, setDashboardData] = useState<MarketDashboardData | null>(null);
     const [isDashboardLoading, setIsDashboardLoading] = useState(false);
     const [quoteData, setQuoteData] = useState<QuoteData | null>(null);
-    const [marketNews, setMarketNews] = useState<MarketNewsItem[]>([]);
-    const [isNewsLoading, setIsNewsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState(initialSymbolParam ? 'chart' : 'overview');
     const [chartInterval, setChartInterval] = useState('D');
 
@@ -347,40 +289,7 @@ export default function Markets() {
         };
     }, [selectedAsset]);
 
-    useEffect(() => {
-        let cancelled = false;
-        const controller = new AbortController();
 
-        const fetchNews = async () => {
-            try {
-                setIsNewsLoading(true);
-                const res = await apiFetch('/market/news', {
-                    signal: controller.signal,
-                });
-
-                if (!controller.signal.aborted && !cancelled) {
-                    const data = res.ok ? await res.json() : [];
-                    setMarketNews(Array.isArray(data) ? data.slice(0, 10) : []);
-                }
-            } catch (error) {
-                if (!controller.signal.aborted && !cancelled) {
-                    console.error('Market news error:', error);
-                    setMarketNews([]);
-                }
-            } finally {
-                if (!controller.signal.aborted && !cancelled) {
-                    setIsNewsLoading(false);
-                }
-            }
-        };
-
-        fetchNews();
-
-        return () => {
-            cancelled = true;
-            controller.abort();
-        };
-    }, []);
 
     const handleOpenMarketSymbol = (symbol: string) => {
         if (!symbol) return;
@@ -397,7 +306,7 @@ export default function Markets() {
 
             <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-4 md:px-6 lg:px-8">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="grid h-auto w-full grid-cols-3 rounded-[24px] border border-border/40 bg-secondary/30 p-1.5 backdrop-blur-sm">
+                    <TabsList className="grid h-auto w-full max-w-xl mx-auto mb-4 grid-cols-2 rounded-[24px] border border-border/40 bg-secondary/30 p-1.5 backdrop-blur-sm">
                         <TabsTrigger
                             value="overview"
                             className="gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
@@ -412,13 +321,7 @@ export default function Markets() {
                             <LineChart className="h-4 w-4" />
                             {t.markets.tabs.chart}
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="news"
-                            className="gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                        >
-                            <Newspaper className="h-4 w-4" />
-                            {t.markets.tabs.news}
-                        </TabsTrigger>
+
                     </TabsList>
 
                     <TabsContent value="overview" className="space-y-4">
@@ -550,41 +453,7 @@ export default function Markets() {
                         )}
                     </TabsContent>
 
-                    <TabsContent value="news" className="space-y-4">
-                        <Card className="rounded-[30px] border-border/60 bg-card/60 backdrop-blur-xl">
-                            <CardHeader className="pb-4">
-                                <div className="flex flex-wrap items-start justify-between gap-4">
-                                    <div>
-                                        <CardTitle className="text-2xl">Noticias de mercado</CardTitle>
-                                        <CardDescription className="mt-2 text-base">
-                                            Argentina primero, algunas del exterior y siempre en espanol.
-                                        </CardDescription>
-                                    </div>
-                                    <Badge variant="outline" className="border-border/60 bg-background/50 uppercase tracking-[0.18em]">
-                                        {marketNews.length} items
-                                    </Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {isNewsLoading ? (
-                                    Array.from({ length: 4 }).map((_, index) => (
-                                        <div
-                                            key={`news-full-skeleton-${index}`}
-                                            className="h-36 animate-pulse rounded-3xl border border-border/50 bg-secondary/30"
-                                        />
-                                    ))
-                                ) : marketNews.length > 0 ? (
-                                    marketNews.map((item) => (
-                                        <NewsListItem key={`full-${item.link}-${item.title}`} item={item} />
-                                    ))
-                                ) : (
-                                    <div className="rounded-3xl border border-border/60 bg-background/40 px-5 py-10 text-center text-muted-foreground">
-                                        No encontramos noticias recientes del mercado.
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
+
                 </Tabs>
             </div>
         </div>

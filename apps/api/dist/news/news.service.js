@@ -23,8 +23,12 @@ let NewsService = class NewsService {
         this.newsFetcher = newsFetcher;
         this.translator = translator;
         this.sentimentAnalyzer = sentimentAnalyzer;
+        this.queryCache = new Map();
         console.log('[NewsService] Initialized');
         this.initializeCategories();
+        setTimeout(() => {
+            this.fetchAndStoreNews().catch(console.error);
+        }, 3000);
     }
     async initializeCategories() {
         const categories = [
@@ -53,6 +57,10 @@ let NewsService = class NewsService {
     }
     async getNews(filters) {
         const { category, source, sentiment, limit = 50, offset = 0, } = filters;
+        const cacheKey = `news:${category}:${source}:${sentiment}:${limit}:${offset}`;
+        const cached = this.queryCache.get(cacheKey);
+        if (cached && Date.now() < cached.exp)
+            return cached.data;
         const where = {};
         if (category) {
             const cat = await this.prisma.newsCategory.findUnique({
@@ -85,7 +93,9 @@ let NewsService = class NewsService {
             take: limit,
             skip: offset,
         });
-        return this.formatNewsItems(news);
+        const formatted = this.formatNewsItems(news);
+        this.queryCache.set(cacheKey, { data: formatted, exp: Date.now() + 60_000 });
+        return formatted;
     }
     async getNewsByTicker(ticker, options) {
         const { limit = 20, offset = 0 } = options;
@@ -110,6 +120,10 @@ let NewsService = class NewsService {
     }
     async getNewsByCategory(slug, options) {
         const { limit = 50, offset = 0 } = options;
+        const cacheKey = `cat:${slug}:${limit}:${offset}`;
+        const cached = this.queryCache.get(cacheKey);
+        if (cached && Date.now() < cached.exp)
+            return cached.data;
         const category = await this.prisma.newsCategory.findUnique({
             where: { slug },
         });
@@ -130,7 +144,9 @@ let NewsService = class NewsService {
             take: limit,
             skip: offset,
         });
-        return this.formatNewsItems(news);
+        const formatted = this.formatNewsItems(news);
+        this.queryCache.set(cacheKey, { data: formatted, exp: Date.now() + 60_000 });
+        return formatted;
     }
     async getTrendingNews(limit = 10) {
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
