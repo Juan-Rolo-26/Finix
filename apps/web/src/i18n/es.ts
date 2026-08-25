@@ -200,6 +200,7 @@ export const es = {
         backToLogin: 'Volver al Inicio de Sesión',
         errors: {
             googleNotConfigured: 'El acceso con Google no esta configurado todavia. Usa correo y contrasena.',
+            githubNotConfigured: 'El acceso con GitHub no esta configurado todavia. Usa correo y contrasena.',
             invalidCredentials: 'El correo o la contrasena no son correctos.',
             connectionError: 'No se pudo conectar con el servidor. Verifica que la API esté levantada.'
         }

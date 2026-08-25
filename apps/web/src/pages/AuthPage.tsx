@@ -113,6 +113,23 @@ export default function AuthPage() {
         }
     };
 
+    const loginGithub = async () => {
+        setIsLoading(true);
+        clearMessages();
+
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'github',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+            },
+        });
+
+        if (error) {
+            setAuthError(normalizeAuthError(error.message, t.auth.errors.githubNotConfigured));
+            setIsLoading(false);
+        }
+    };
+
     const handleLogin = async () => {
         const response = await apiFetch('/auth/login', {
             method: 'POST',
@@ -227,305 +244,321 @@ export default function AuthPage() {
     return (
         <LazyMotion features={domAnimation}>
             <div className="auth-shell relative overflow-hidden min-h-screen flex flex-col bg-background">
-            <div className="absolute inset-0 pointer-events-none z-0">
-                <m.div
-                    className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full"
-                    style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.28) 0%, transparent 70%)' }}
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
-                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-                />
-                <m.div
-                    className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full"
-                    style={{ background: 'radial-gradient(circle, hsl(160 80% 40% / 0.22) 0%, transparent 70%)' }}
-                    animate={{ scale: [1.1, 1.25, 1.1] }}
-                    transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-                />
-                <div
-                    className="absolute inset-0 opacity-[0.06]"
-                    style={{
-                        backgroundImage: 'linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)',
-                        backgroundSize: '50px 50px',
-                    }}
-                />
-            </div>
-
-            <div className="flex-1 grid lg:grid-cols-2 relative z-10">
-                <div className="auth-hero-panel relative hidden lg:flex flex-col justify-center items-center p-12">
-                    <div className="relative z-10 max-w-md w-full space-y-10">
-                        <m.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, ease: 'easeOut' }}
-                            className="flex items-center gap-4"
-                        >
-                            <div className="relative">
-                                <div className="absolute -inset-3 rounded-2xl bg-primary/20 blur-xl" />
-                                <img src="/logo.png" alt="Finix" className="relative h-16 w-16 object-contain drop-shadow-[0_0_20px_rgba(34,197,94,0.5)]" />
-                            </div>
-                            <div>
-                                <h1 className="text-4xl font-heading font-extrabold text-foreground tracking-tight">Finix</h1>
-                                <p className="text-sm text-primary font-medium tracking-widest uppercase">Finanzas Sociales</p>
-                            </div>
-                        </m.div>
-
-                        <m.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2, duration: 0.7 }}
-                        >
-                            <h2 className="text-3xl lg:text-4xl font-heading font-bold text-foreground leading-tight mb-4">
-                                Invertí mejor.<br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">
-                                    Conectá con inversores.
-                                </span>
-                            </h2>
-                            <p className="auth-hero-copy text-base leading-relaxed">
-                                La red social financiera donde compartís análisis, gestionás tu portafolio y aprendés de los mejores inversores.
-                            </p>
-                        </m.div>
-
-                        <m.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className="space-y-3"
-                        >
-                            {highlights.map(({ icon: Icon, title: highlightTitle, desc }) => (
-                                <div key={highlightTitle} className="auth-hero-card flex items-start gap-3 rounded-xl p-3">
-                                    <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
-                                        <Icon className="w-4 h-4 text-primary" />
-                                    </div>
-                                    <div>
-                                        <p className="auth-hero-card-title text-sm font-semibold">{highlightTitle}</p>
-                                        <p className="auth-hero-card-copy text-xs">{desc}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </m.div>
-
-                        <m.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.7 }}
-                            className="flex flex-wrap gap-2"
-                        >
-                            {features.map(({ icon, label }) => (
-                                <FeaturePill key={label} icon={icon} label={label} />
-                            ))}
-                        </m.div>
-
-                    </div>
+                <div className="absolute inset-0 pointer-events-none z-0">
+                    <m.div
+                        className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full"
+                        style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.28) 0%, transparent 70%)' }}
+                        animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
+                        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <m.div
+                        className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full"
+                        style={{ background: 'radial-gradient(circle, hsl(160 80% 40% / 0.22) 0%, transparent 70%)' }}
+                        animate={{ scale: [1.1, 1.25, 1.1] }}
+                        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <div
+                        className="absolute inset-0 opacity-[0.06]"
+                        style={{
+                            backgroundImage: 'linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)',
+                            backgroundSize: '50px 50px',
+                        }}
+                    />
                 </div>
 
-                <div className="flex flex-col justify-center items-center p-6 lg:p-12 relative min-h-screen lg:min-h-0">
-                    <div className="lg:hidden flex items-center gap-3 mb-10">
-                        <img src="/logo.png" alt="Finix" className="h-12 w-12 object-contain" />
-                        <span className="text-2xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">Finix</span>
-                    </div>
-
-                    <div className="auth-form-panel w-full max-w-sm space-y-6 rounded-[2rem] border p-6 shadow-[var(--shadow-card)] backdrop-blur-xl lg:max-w-md lg:p-8">
-                        <div className="text-center space-y-1">
-                            <h2 className="text-2xl font-heading font-bold tracking-tight">{title}</h2>
-                            <p className="text-sm text-muted-foreground">{description}</p>
-                        </div>
-
-                        <m.form
-                            initial={{ opacity: 0, x: 16 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, ease: 'easeOut' }}
-                            onSubmit={handleSubmit}
-                            className="space-y-3"
-                            key={view}
-                        >
-                            {successMessage ? (
-                                <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm text-emerald-500 flex gap-3">
-                                    <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
-                                    <span>{successMessage}</span>
-                                </div>
-                            ) : null}
-
-                            {infoMessage ? (
-                                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-foreground">
-                                    {infoMessage}
-                                </div>
-                            ) : null}
-
-                            {view === 'register' ? (
-                                <div className="relative">
-                                    <User className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                                    <Input
-                                        placeholder={t.auth.username}
-                                        className="pl-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
-                                        value={username}
-                                        onChange={(e) => setUsername(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                            ) : null}
-
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                                <Input
-                                    type="email"
-                                    placeholder={t.auth.email}
-                                    className="pl-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
-
-                            {view !== 'forgot' ? (
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                                    <Input
-                                        type={showPassword ? 'text' : 'password'}
-                                        placeholder={t.auth.password}
-                                        className="pl-10 pr-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword((current) => !current)}
-                                        className="absolute right-3 top-3 text-muted-foreground hover:text-foreground focus:outline-none"
-                                    >
-                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                    </button>
-                                </div>
-                            ) : null}
-
-                            {view === 'login' ? (
-                                <div className="flex justify-end">
-                                    <button
-                                        type="button"
-                                        onClick={() => switchView('forgot')}
-                                        className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-                                    >
-                                        {t.auth.forgotPassword}
-                                    </button>
-                                </div>
-                            ) : null}
-
-                            <Button
-                                type="submit"
-                                size="lg"
-                                className="w-full text-base font-bold shadow-glow hover:shadow-intense transition-all"
-                                disabled={
-                                    isLoading ||
-                                    (view !== 'forgot' && password.length < 8) ||
-                                    (view === 'register' && username.trim().length < 3)
-                                }
+                <div className="flex-1 grid lg:grid-cols-2 relative z-10">
+                    <div className="auth-hero-panel relative hidden lg:flex flex-col justify-center items-center p-12">
+                        <div className="relative z-10 max-w-md w-full space-y-10">
+                            <m.div
+                                initial={{ opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6, ease: 'easeOut' }}
+                                className="flex items-center gap-4"
                             >
-                                {isLoading ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                    <>
-                                        {view === 'login' && t.auth.loginBtn}
-                                        {view === 'register' && t.auth.createAccountBtn}
-                                        {view === 'forgot' && t.auth.sendLinkBtn}
-                                        <ArrowRight className="w-5 h-5 ml-2" />
-                                    </>
-                                )}
-                            </Button>
+                                <div className="relative">
+                                    <div className="absolute -inset-3 rounded-2xl bg-primary/20 blur-xl" />
+                                    <img src="/logo.png" alt="Finix" className="relative h-16 w-16 object-contain drop-shadow-[0_0_20px_rgba(34,197,94,0.5)]" />
+                                </div>
+                                <div>
+                                    <h1 className="text-4xl font-heading font-extrabold text-foreground tracking-tight">Finix</h1>
+                                    <p className="text-sm text-primary font-medium tracking-widest uppercase">Finanzas Sociales</p>
+                                </div>
+                            </m.div>
 
-                            {authError ? (
-                                <p className="text-sm text-red-400 text-center">{authError}</p>
-                            ) : null}
+                            <m.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2, duration: 0.7 }}
+                            >
+                                <h2 className="text-3xl lg:text-4xl font-heading font-bold text-foreground leading-tight mb-4">
+                                    Invertí mejor.<br />
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">
+                                        Conectá con inversores.
+                                    </span>
+                                </h2>
+                                <p className="auth-hero-copy text-base leading-relaxed">
+                                    La red social financiera donde compartís análisis, gestionás tu portafolio y aprendés de los mejores inversores.
+                                </p>
+                            </m.div>
 
-                            {view !== 'forgot' ? (
-                                <>
-                                    <div className="relative my-2">
-                                        <div className="absolute inset-0 flex items-center">
-                                            <span className="w-full border-t border-muted/30" />
+                            <m.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.4 }}
+                                className="space-y-3"
+                            >
+                                {highlights.map(({ icon: Icon, title: highlightTitle, desc }) => (
+                                    <div key={highlightTitle} className="auth-hero-card flex items-start gap-3 rounded-xl p-3">
+                                        <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
+                                            <Icon className="w-4 h-4 text-primary" />
                                         </div>
-                                        <div className="relative flex justify-center text-xs uppercase">
-                                            <span className="bg-card px-2 text-muted-foreground/60">{t.auth.orContinue}</span>
+                                        <div>
+                                            <p className="auth-hero-card-title text-sm font-semibold">{highlightTitle}</p>
+                                            <p className="auth-hero-card-copy text-xs">{desc}</p>
                                         </div>
                                     </div>
+                                ))}
+                            </m.div>
 
-                                    <Button
-                                        variant="outline"
-                                        type="button"
-                                        className="w-full relative py-5 border-muted/40 hover:bg-muted/50 transition-all font-medium"
-                                        onClick={loginGoogle}
-                                        disabled={isLoading}
-                                    >
-                                        <div className="absolute left-4">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                                            </svg>
+                            <m.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.7 }}
+                                className="flex flex-wrap gap-2"
+                            >
+                                {features.map(({ icon, label }) => (
+                                    <FeaturePill key={label} icon={icon} label={label} />
+                                ))}
+                            </m.div>
+
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col justify-center items-center p-6 lg:p-12 relative min-h-screen lg:min-h-0">
+                        <div className="lg:hidden flex items-center gap-3 mb-10">
+                            <img src="/logo.png" alt="Finix" className="h-12 w-12 object-contain" />
+                            <span className="text-2xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">Finix</span>
+                        </div>
+
+                        <div className="auth-form-panel w-full max-w-sm space-y-6 rounded-[2rem] border p-6 shadow-[var(--shadow-card)] backdrop-blur-xl lg:max-w-md lg:p-8">
+                            <div className="text-center space-y-1">
+                                <h2 className="text-2xl font-heading font-bold tracking-tight">{title}</h2>
+                                <p className="text-sm text-muted-foreground">{description}</p>
+                            </div>
+
+                            <m.form
+                                initial={{ opacity: 0, x: 16 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.5, ease: 'easeOut' }}
+                                onSubmit={handleSubmit}
+                                className="space-y-3"
+                                key={view}
+                            >
+                                {successMessage ? (
+                                    <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm text-emerald-500 flex gap-3">
+                                        <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                                        <span>{successMessage}</span>
+                                    </div>
+                                ) : null}
+
+                                {infoMessage ? (
+                                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-foreground">
+                                        {infoMessage}
+                                    </div>
+                                ) : null}
+
+                                {view === 'register' ? (
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                                        <Input
+                                            placeholder={t.auth.username}
+                                            className="pl-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
+                                            value={username}
+                                            onChange={(e) => setUsername(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                ) : null}
+
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                                    <Input
+                                        type="email"
+                                        placeholder={t.auth.email}
+                                        className="pl-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                    />
+                                </div>
+
+                                {view !== 'forgot' ? (
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                                        <Input
+                                            type={showPassword ? 'text' : 'password'}
+                                            placeholder={t.auth.password}
+                                            className="pl-10 pr-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword((current) => !current)}
+                                            className="absolute right-3 top-3 text-muted-foreground hover:text-foreground focus:outline-none"
+                                        >
+                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                ) : null}
+
+                                {view === 'login' ? (
+                                    <div className="flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => switchView('forgot')}
+                                            className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                                        >
+                                            {t.auth.forgotPassword}
+                                        </button>
+                                    </div>
+                                ) : null}
+
+                                <Button
+                                    type="submit"
+                                    size="lg"
+                                    className="w-full text-base font-bold shadow-glow hover:shadow-intense transition-all"
+                                    disabled={
+                                        isLoading ||
+                                        (view !== 'forgot' && password.length < 8) ||
+                                        (view === 'register' && username.trim().length < 3)
+                                    }
+                                >
+                                    {isLoading ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <>
+                                            {view === 'login' && t.auth.loginBtn}
+                                            {view === 'register' && t.auth.createAccountBtn}
+                                            {view === 'forgot' && t.auth.sendLinkBtn}
+                                            <ArrowRight className="w-5 h-5 ml-2" />
+                                        </>
+                                    )}
+                                </Button>
+
+                                {authError ? (
+                                    <p className="text-sm text-red-400 text-center">{authError}</p>
+                                ) : null}
+
+                                {view !== 'forgot' ? (
+                                    <>
+                                        <div className="relative my-2">
+                                            <div className="absolute inset-0 flex items-center">
+                                                <span className="w-full border-t border-muted/30" />
+                                            </div>
+                                            <div className="relative flex justify-center text-xs uppercase">
+                                                <span className="bg-card px-2 text-muted-foreground/60">{t.auth.orContinue}</span>
+                                            </div>
                                         </div>
-                                        <span className="flex-1 text-center">Google</span>
-                                    </Button>
-                                </>
-                            ) : null}
-                        </m.form>
 
-                        <div className="text-center text-sm border-t border-border/30 pt-4">
-                            {view === 'login' ? (
-                                <p className="text-muted-foreground">
-                                    {t.auth.noAccount}{' '}
-                                    <button onClick={() => switchView('register')} className="font-bold text-foreground hover:text-primary transition-colors underline-offset-4 hover:underline">
-                                        {t.auth.register}
-                                    </button>
-                                </p>
-                            ) : view === 'register' ? (
-                                <p className="text-muted-foreground">
-                                    {t.auth.hasAccount}{' '}
-                                    <button onClick={() => switchView('login')} className="font-bold text-foreground hover:text-primary transition-colors underline-offset-4 hover:underline">
-                                        {t.auth.login}
-                                    </button>
-                                </p>
-                            ) : (
-                                <BackButton
-                                    onClick={() => switchView('login')}
-                                    label={t.auth.backToLogin}
-                                    className="w-full justify-center"
-                                />
-                            )}
+                                        <div className="flex gap-2 w-full">
+                                            <Button
+                                                variant="outline"
+                                                type="button"
+                                                className="flex-1 relative py-5 border-muted/40 hover:bg-muted/50 transition-all font-medium"
+                                                onClick={loginGoogle}
+                                                disabled={isLoading}
+                                            >
+                                                <div className="absolute left-4">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                                                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                                                    </svg>
+                                                </div>
+                                                <span className="flex-1 text-center">Google</span>
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                type="button"
+                                                className="flex-1 relative py-5 border-muted/40 hover:bg-muted/50 transition-all font-medium"
+                                                onClick={loginGithub}
+                                                disabled={isLoading}
+                                            >
+                                                <div className="absolute left-4">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                                        <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                                                    </svg>
+                                                </div>
+                                                <span className="flex-1 text-center">GitHub</span>
+                                            </Button>
+                                        </div>
+                                    </>
+                                ) : null}
+                            </m.form>
+
+                            <div className="text-center text-sm border-t border-border/30 pt-4">
+                                {view === 'login' ? (
+                                    <p className="text-muted-foreground">
+                                        {t.auth.noAccount}{' '}
+                                        <button onClick={() => switchView('register')} className="font-bold text-foreground hover:text-primary transition-colors underline-offset-4 hover:underline">
+                                            {t.auth.register}
+                                        </button>
+                                    </p>
+                                ) : view === 'register' ? (
+                                    <p className="text-muted-foreground">
+                                        {t.auth.hasAccount}{' '}
+                                        <button onClick={() => switchView('login')} className="font-bold text-foreground hover:text-primary transition-colors underline-offset-4 hover:underline">
+                                            {t.auth.login}
+                                        </button>
+                                    </p>
+                                ) : (
+                                    <BackButton
+                                        onClick={() => switchView('login')}
+                                        label={t.auth.backToLogin}
+                                        className="w-full justify-center"
+                                    />
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <footer className="auth-footer border-t border-border/30 px-4 py-6">
-                <div className="max-w-4xl mx-auto">
-                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4 lg:flex-nowrap lg:items-center lg:gap-x-8">
-                        {infoLinks.map(({ label, to }) => (
-                            <Link key={label} to={to} className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
-                                {label}
-                            </Link>
-                        ))}
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">•</span>
-                        {legalAndSocialLinks.map(({ label, to, href }) => (
-                            to ? (
+                <footer className="auth-footer border-t border-border/30 px-4 py-6">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4 lg:flex-nowrap lg:items-center lg:gap-x-8">
+                            {infoLinks.map(({ label, to }) => (
                                 <Link key={label} to={to} className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
                                     {label}
                                 </Link>
-                            ) : (
-                                <a
-                                    key={label}
-                                    href={href}
-                                    target={href?.startsWith('http') ? '_blank' : undefined}
-                                    rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
-                                    className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-                                >
-                                    {label}
-                                </a>
-                            )
-                        ))}
+                            ))}
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">•</span>
+                            {legalAndSocialLinks.map(({ label, to, href }) => (
+                                to ? (
+                                    <Link key={label} to={to} className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
+                                        {label}
+                                    </Link>
+                                ) : (
+                                    <a
+                                        key={label}
+                                        href={href}
+                                        target={href?.startsWith('http') ? '_blank' : undefined}
+                                        rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
+                                        className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+                                    >
+                                        {label}
+                                    </a>
+                                )
+                            ))}
+                        </div>
+                        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/50">
+                            <Sparkles className="w-3 h-3" />
+                            <span>© 2026 Finix · Finanzas Sociales</span>
+                        </div>
                     </div>
-                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/50">
-                        <Sparkles className="w-3 h-3" />
-                        <span>© 2026 Finix · Finanzas Sociales</span>
-                    </div>
-                </div>
-            </footer>
+                </footer>
             </div>
         </LazyMotion>
     );

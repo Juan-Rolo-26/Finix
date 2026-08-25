@@ -1,0 +1,7 @@
+name = "finix"
+compatibility_date = "2024-08-25"
+main = "apps/web/worker.js"
+
+[assets]
+directory = "apps/web/dist"
+binding = "ASSETS"
