@@ -3,8 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useNavigate, Link } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
-import { apiFetch } from '@/lib/api';
-import { normalizeAuthError, readApiError } from '@/lib/api-errors';
+import { normalizeAuthError } from '@/lib/api-errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import BackButton from '@/components/BackButton';
@@ -131,51 +130,51 @@ export default function AuthPage() {
     };
 
     const handleLogin = async () => {
-        const response = await apiFetch('/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: email.trim().toLowerCase(),
-                password,
-            }),
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email.trim().toLowerCase(),
+            password,
         });
 
-        if (!response.ok) {
-            setAuthError(
-                normalizeAuthError(
-                    await readApiError(response),
-                    t.auth.errors.invalidCredentials,
-                ),
-            );
+        if (error) {
+            setAuthError(normalizeAuthError(error.message, t.auth.errors.invalidCredentials));
             return;
         }
 
-        const data = await response.json();
-        login(data.token, data.user);
-        navigate(data.user.onboardingCompleted ? '/dashboard' : '/onboarding');
+        if (data.session && data.user) {
+            const mappedUser: any = {
+                id: data.user.id,
+                email: data.user.email,
+                username: data.user.user_metadata?.username || data.user.email?.split('@')[0],
+                onboardingCompleted: data.user.user_metadata?.onboardingCompleted || false,
+                role: 'USER',
+                plan: 'FREE',
+                accountType: 'STANDARD',
+                isInfluencer: false,
+                isCreator: false,
+                isVerified: true,
+                emailVerified: true,
+            };
+            login(data.session.access_token, mappedUser);
+            navigate(mappedUser.onboardingCompleted ? '/dashboard' : '/onboarding');
+        }
     };
 
     const handleRegister = async () => {
         const normalizedEmail = email.trim().toLowerCase();
         const normalizedUsername = username.trim();
 
-        const response = await apiFetch('/auth/register/request-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: normalizedEmail,
-                username: normalizedUsername,
-                password,
-            }),
+        const { error } = await supabase.auth.signUp({
+            email: normalizedEmail,
+            password,
+            options: {
+                data: {
+                    username: normalizedUsername,
+                }
+            }
         });
 
-        if (!response.ok) {
-            setAuthError(
-                normalizeAuthError(
-                    await readApiError(response),
-                    t.auth.errors.invalidCredentials,
-                ),
-            );
+        if (error) {
+            setAuthError(normalizeAuthError(error.message, t.auth.errors.invalidCredentials));
             return;
         }
 
@@ -184,21 +183,12 @@ export default function AuthPage() {
 
     const handleForgotPassword = async () => {
         const normalizedEmail = email.trim().toLowerCase();
-        const response = await apiFetch('/auth/forgot/request-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: normalizedEmail,
-            }),
+        const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+            redirectTo: `${window.location.origin}/reset-password`,
         });
 
-        if (!response.ok) {
-            setAuthError(
-                normalizeAuthError(
-                    await readApiError(response),
-                    t.auth.errors.connectionError,
-                ),
-            );
+        if (error) {
+            setAuthError(normalizeAuthError(error.message, t.auth.errors.connectionError));
             return;
         }
 

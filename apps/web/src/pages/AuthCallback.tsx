@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { apiFetch } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { Loader2 } from 'lucide-react';
 
@@ -27,32 +26,22 @@ export default function AuthCallback() {
             const token = session.access_token;
             localStorage.setItem('token', token);
 
-            // Get the username from Supabase user metadata (set during signup)
-            const username = session.user.user_metadata?.username as string | undefined;
+            const mappedUser: any = {
+                id: session.user.id,
+                email: session.user.email,
+                username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+                onboardingCompleted: session.user.user_metadata?.onboardingCompleted || false,
+                role: 'USER',
+                plan: 'FREE',
+                accountType: 'STANDARD',
+                isInfluencer: false,
+                isCreator: false,
+                isVerified: true,
+                emailVerified: true,
+            };
 
-            // Sync/create the Prisma user
-            const syncRes = await apiFetch('/auth/sync-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username }),
-            });
-
-            if (!syncRes.ok) {
-                // User already exists — just fetch profile
-                const profileRes = await apiFetch('/auth/me');
-                if (profileRes.ok) {
-                    const user = await profileRes.json();
-                    login(token, user);
-                    navigate(user.onboardingCompleted ? '/dashboard' : '/onboarding');
-                } else {
-                    navigate('/');
-                }
-                return;
-            }
-
-            const user = await syncRes.json();
-            login(token, user);
-            navigate(user.onboardingCompleted ? '/dashboard' : '/onboarding');
+            login(token, mappedUser);
+            navigate(mappedUser.onboardingCompleted ? '/dashboard' : '/onboarding');
         };
 
         handle();

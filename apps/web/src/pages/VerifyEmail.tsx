@@ -4,9 +4,9 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Loader2, MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { apiFetch } from '@/lib/api';
-import { normalizeAuthError, readApiError } from '@/lib/api-errors';
+import { normalizeAuthError } from '@/lib/api-errors';
 import { useAuthStore } from '@/stores/authStore';
+import { supabase } from '@/lib/supabase';
 
 export default function VerifyEmail() {
     const [searchParams] = useSearchParams();
@@ -31,34 +31,35 @@ export default function VerifyEmail() {
         setMessage('');
 
         const normalizedEmail = email.trim().toLowerCase();
-        const response = await apiFetch('/auth/register/verify-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: normalizedEmail,
-                code,
-            }),
+        const { data, error: supaError } = await supabase.auth.verifyOtp({
+            email: normalizedEmail,
+            token: code,
+            type: 'email',
         });
 
-        if (!response.ok) {
-            setError(
-                normalizeAuthError(
-                    await readApiError(response),
-                    'No pudimos verificar el codigo. Proba otra vez.',
-                ),
-            );
+        if (supaError) {
+            setError(normalizeAuthError(supaError.message, 'No pudimos verificar el codigo. Proba otra vez.'));
             setIsLoading(false);
             return;
         }
 
-        let data;
-        try {
-            data = await response.json();
-            login(data.token, data.user);
-            navigate(data.user.onboardingCompleted ? '/dashboard' : '/onboarding');
-        } catch (e) {
-            setError('Error de conexion con el servidor. El backend no esta activo.');
-        } finally {
+        if (data.session && data.user) {
+            const mappedUser: any = {
+                id: data.user.id,
+                email: data.user.email,
+                username: data.user.user_metadata?.username || data.user.email?.split('@')[0],
+                onboardingCompleted: data.user.user_metadata?.onboardingCompleted || false,
+                role: 'USER',
+                plan: 'FREE',
+                accountType: 'STANDARD',
+                isInfluencer: false,
+                isCreator: false,
+                isVerified: true,
+                emailVerified: true,
+            };
+            login(data.session.access_token, mappedUser);
+            navigate(mappedUser.onboardingCompleted ? '/dashboard' : '/onboarding');
+        } else {
             setIsLoading(false);
         }
     };
@@ -74,32 +75,19 @@ export default function VerifyEmail() {
         setError('');
         setMessage('');
 
-        const response = await apiFetch('/auth/register/resend-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: normalizedEmail,
-            }),
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email: normalizedEmail,
         });
 
-        if (!response.ok) {
-            let errorMsg = 'No pudimos reenviar el codigo.';
-            try {
-                errorMsg = normalizeAuthError(await readApiError(response), errorMsg);
-            } catch (e) { /* ignore */ }
-            setError(errorMsg);
+        if (error) {
+            setError(normalizeAuthError(error.message, 'No pudimos reenviar el codigo.'));
             setResending(false);
             return;
         }
 
-        try {
-            const data = await response.json();
-            setMessage(data.message || 'Te reenviamos un nuevo codigo de verificacion.');
-        } catch (e) {
-            setError('Error de conexion con el servidor. El API no esta disponible.');
-        } finally {
-            setResending(false);
-        }
+        setMessage('Te reenviamos un nuevo codigo de verificacion.');
+        setResending(false);
     };
 
     return (
