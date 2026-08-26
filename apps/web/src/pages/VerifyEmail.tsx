@@ -51,9 +51,16 @@ export default function VerifyEmail() {
             return;
         }
 
-        const data = await response.json();
-        login(data.token, data.user);
-        navigate(data.user.onboardingCompleted ? '/dashboard' : '/onboarding');
+        let data;
+        try {
+            data = await response.json();
+            login(data.token, data.user);
+            navigate(data.user.onboardingCompleted ? '/dashboard' : '/onboarding');
+        } catch (e) {
+            setError('Error de conexion con el servidor. El backend no esta activo.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleResend = async () => {
@@ -76,19 +83,23 @@ export default function VerifyEmail() {
         });
 
         if (!response.ok) {
-            setError(
-                normalizeAuthError(
-                    await readApiError(response),
-                    'No pudimos reenviar el codigo.',
-                ),
-            );
+            let errorMsg = 'No pudimos reenviar el codigo.';
+            try {
+                errorMsg = normalizeAuthError(await readApiError(response), errorMsg);
+            } catch (e) { /* ignore */ }
+            setError(errorMsg);
             setResending(false);
             return;
         }
 
-        const data = await response.json();
-        setMessage(data.message || 'Te reenviamos un nuevo codigo de verificacion.');
-        setResending(false);
+        try {
+            const data = await response.json();
+            setMessage(data.message || 'Te reenviamos un nuevo codigo de verificacion.');
+        } catch (e) {
+            setError('Error de conexion con el servidor. El API no esta disponible.');
+        } finally {
+            setResending(false);
+        }
     };
 
     return (
