@@ -163,13 +163,14 @@ export default function AuthPage() {
         const normalizedEmail = email.trim().toLowerCase();
         const normalizedUsername = username.trim();
 
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
             email: normalizedEmail,
             password,
             options: {
                 data: {
                     username: normalizedUsername,
-                }
+                },
+                emailRedirectTo: `${window.location.origin}/auth/callback`,
             }
         });
 
@@ -178,7 +179,35 @@ export default function AuthPage() {
             return;
         }
 
+        // Supabase devuelve el usuario pero con identities vacío si el correo ya existe
+        if (data?.user && data.user.identities && data.user.identities.length === 0) {
+            setAuthError('Este correo electrónico ya está registrado. Por favor, iniciá sesión.');
+            setIsLoading(false);
+            return;
+        }
+
+        if (data?.session && data?.user) {
+            const mappedUser: any = {
+                id: data.user.id,
+                email: data.user.email,
+                username: data.user.user_metadata?.username || data.user.email?.split('@')[0],
+                onboardingCompleted: data.user.user_metadata?.onboardingCompleted || false,
+                role: 'USER',
+                plan: 'FREE',
+                accountType: 'STANDARD',
+                isInfluencer: false,
+                isCreator: false,
+                isVerified: true,
+                emailVerified: true,
+            };
+            login(data.session.access_token, mappedUser);
+            navigate(mappedUser.onboardingCompleted ? '/dashboard' : '/onboarding');
+            return;
+        }
+
         navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
+
+
     };
 
     const handleForgotPassword = async () => {
