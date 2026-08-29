@@ -16,14 +16,32 @@ export default function DashboardLayout() {
             {/* Top Bar — mobile only (hidden on /messages) */}
             <MobileTopBar />
 
-            {/* Main Content Area */}
-            {/* pt-[52px] = mobile topbar height | pb-14 = mobile bottom nav | lg: reset both */}
-            {/* On /messages and /comunidad: no top padding (page has its own header), keep bottom nav space */}
+            {/*
+             * Main Content Area
+             * pt-[52px] = mobile topbar height
+             * pb-[60px] = mobile bottom nav height (updated to 60px)
+             * lg: sidebar is 276px expanded, 72px collapsed.
+             *     We use a wide margin and let content scroll. The sidebar manages its own width.
+             */}
             <div
-                className={`flex-1 lg:ml-[300px] transition-all duration-300 flex flex-col min-h-screen lg:pt-0 lg:pb-0 ${(isMessages || isComunidad) ? 'pt-0 pb-14' : 'pt-[52px] pb-14'
+                className={`flex-1 min-w-0 transition-all duration-300 flex flex-col min-h-screen lg:pt-0 lg:pb-0 ${(isMessages || isComunidad) ? 'pt-0 pb-[60px]' : 'pt-[52px] pb-[60px]'
                     }`}
+                style={{
+                    marginLeft: 0,
+                }}
             >
-                <main className="flex-1 flex flex-col w-full">
+                {/* The sidebar is fixed, so we add padding-left on desktop to avoid overlap.
+                    We use lg:pl-[276px] as the default (expanded). When sidebar collapses it updates
+                    to pl-[72px] via inline style – but since sidebar is fixed-position, we don't
+                    need to track this here. The content naturally fills the remaining space.
+                    We use a simpler approach: just set a permanent lg margin. */}
+                <div className="hidden lg:block flex-shrink-0" style={{ width: 0, minWidth: '276px', display: 'none' }} />
+                <main
+                    className="flex-1 flex flex-col w-full lg:pl-[276px]"
+                    style={{
+                        transition: 'padding-left 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                >
                     <Outlet />
                 </main>
             </div>

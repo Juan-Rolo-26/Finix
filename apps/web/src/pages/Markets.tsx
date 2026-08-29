@@ -448,7 +448,7 @@ export default function Markets() {
                             <TradingViewChart
                                 symbol={selectedAsset.symbol}
                                 interval={chartInterval}
-                                height={1320}
+                                height={760}
                             />
                         )}
                     </TabsContent>

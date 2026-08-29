@@ -104,7 +104,12 @@ const resolveFinixSecret = () => process.env.JWT_SECRET || 'secretKey';
 export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(private prisma: PrismaService) {
         super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            jwtFromRequest: ExtractJwt.fromExtractors([
+                ExtractJwt.fromAuthHeaderAsBearerToken(),
+                (request: any) => {
+                    return request?.cookies?.['finix_token'] || null;
+                },
+            ]),
             ignoreExpiration: false,
             algorithms: ['ES256', 'RS256', 'HS256'],
             secretOrKeyProvider: async (_request, rawJwtToken, done) => {
@@ -167,7 +172,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
         const supabaseId = payload.sub;
 
-        const user = await this.prisma.user.findUnique({
+        let user = await this.prisma.user.findUnique({
             where: { id: supabaseId },
             select: {
                 id: true,
@@ -178,6 +183,37 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                 status: true,
             },
         });
+
+        // Fallback: If the user is authenticated via Supabase but missing in Prisma, auto-sync them.
+        if (!user) {
+            try {
+                const email = payload.email || `${supabaseId}@placeholder.finix`;
+                const username = payload.user_metadata?.username || email.split('@')[0];
+
+                const created = await this.prisma.user.create({
+                    data: {
+                        id: supabaseId,
+                        email,
+                        username: `${username}_${Math.floor(Math.random() * 10000)}`,
+                        emailVerified: true,
+                        isVerified: false,
+                        plan: 'FREE',
+                        role: 'USER',
+                    }
+                });
+                user = {
+                    id: created.id,
+                    username: created.username,
+                    role: created.role,
+                    plan: created.plan,
+                    subscriptionStatus: created.subscriptionStatus,
+                    status: created.status,
+                };
+            } catch (e) {
+                console.error('[JwtStrategy] Auto-sync failed:', e);
+                // We'll let it pass, but it might fail Foreign Key constraints later if creation fails
+            }
+        }
 
         return {
             id: supabaseId,

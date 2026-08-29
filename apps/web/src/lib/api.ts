@@ -55,14 +55,15 @@ export const apiUrl = (path: string) => buildUrl(activeBase ?? '', path);
 export const apiFetch = async (path: string, init?: RequestInit) => {
     const authToken = localStorage.getItem('token');
     const withAuth = (requestInit?: RequestInit) => {
+        const enhancedInit = { ...requestInit, credentials: 'include' as RequestCredentials };
         if (!authToken) {
-            return requestInit;
+            return enhancedInit;
         }
-        const headers = new Headers(requestInit?.headers || {});
+        const headers = new Headers(enhancedInit.headers || {});
         if (!headers.has('Authorization')) {
             headers.set('Authorization', `Bearer ${authToken}`);
         }
-        return { ...requestInit, headers };
+        return { ...enhancedInit, headers };
     };
 
     const candidates = activeBase

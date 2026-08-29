@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import {
     LayoutDashboard,
-    TrendingUp,
     Compass,
     MessageSquare,
     MoreHorizontal,
@@ -18,6 +17,9 @@ import {
     Loader2,
     X,
     Newspaper,
+    TrendingUp,
+    Briefcase,
+    BookOpen,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
@@ -26,22 +28,23 @@ import { usePreferencesStore } from '../stores/preferencesStore';
 
 const PRIMARY = 'hsl(var(--primary))';
 
-/* ── 5 main tabs ──────────────────────────────────────────── */
+/* ── 4 main tabs + 1 create slot ──────────────────────────────── */
 const mainTabs = [
-    { path: '/dashboard',  icon: LayoutDashboard },
-    { path: '/comunidad',  icon: Users },
-    { path: '/explore',    icon: Compass },
-    { path: '/messages',   icon: MessageSquare },
+    { path: '/dashboard', icon: LayoutDashboard },
+    { path: '/comunidad', icon: Users },
+    // CENTER: create button
+    { path: '/explore', icon: Compass },
+    { path: '/messages', icon: MessageSquare },
 ];
 
 export function BottomNav() {
-    const location  = useLocation();
-    const navigate  = useNavigate();
+    const location = useLocation();
+    const navigate = useNavigate();
     const { logout, user } = useAuthStore();
     const { theme, setTheme } = usePreferencesStore();
 
-    const [unreadMsgs, setUnreadMsgs]  = useState(0);
-    const [isMoreOpen, setIsMoreOpen]  = useState(false);
+    const [unreadMsgs, setUnreadMsgs] = useState(0);
+    const [isMoreOpen, setIsMoreOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearchLoading, setIsSearchLoading] = useState(false);
@@ -86,94 +89,152 @@ export function BottomNav() {
         location.pathname === p ||
         (p !== '/dashboard' && location.pathname.startsWith(`${p}/`));
 
-    const moreActive = ['/market', '/news', '/profile', '/settings'].some(p => isActive(p));
+    const moreActive = ['/market', '/portfolio', '/news', '/learn', '/profile', '/settings', '/notifications'].some(p => isActive(p));
 
-    /* ── Quick links inside "More" panel ─────────────────── */
-    // Portafolio oculto visualmente — código preservado en /pages/Portfolio.tsx
     const moreLinks = [
-        { label: 'Mercado',        path: '/market',    icon: TrendingUp },
-        { label: 'Noticias',       path: '/news',      icon: Newspaper },
-        { label: 'Mi Perfil',      path: '/profile',   icon: User },
-        { label: 'Configuración',  path: '/settings',  icon: Settings },
+        { label: 'Mercado', path: '/market', icon: TrendingUp },
+        { label: 'Portafolio', path: '/portfolio', icon: Briefcase },
+        { label: 'Noticias', path: '/news', icon: Newspaper },
+        { label: 'Aprender', path: '/learn', icon: BookOpen },
+        { label: 'Mi Perfil', path: '/profile', icon: User },
+        { label: 'Ajustes', path: '/settings', icon: Settings },
     ];
+
+    const LEFT_TABS = mainTabs.slice(0, 2);   // Dashboard, Comunidad
+    const RIGHT_TABS = mainTabs.slice(2);       // Explore, Messages
 
     return (
         <>
-            {/* ── BOTTOM BAR ────────────────────────────────── */}
+            {/* ── BOTTOM BAR ──────────────────────────────── */}
             <nav
-                className="fixed bottom-0 left-0 right-0 z-50 lg:hidden flex items-center justify-around px-1"
+                className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
                 style={{
                     background: 'hsl(var(--sidebar-bg))',
                     borderTop: '1px solid hsl(var(--sidebar-border))',
-                    height: '56px',
                     paddingBottom: 'env(safe-area-inset-bottom)',
+                    height: '60px',
                 }}
             >
-                {/* Main tabs */}
-                {mainTabs.map(({ path, icon: Icon }) => {
-                    const active = isActive(path);
-                    const badge  = path === '/messages' ? unreadMsgs : 0;
-                    return (
-                        <Link
-                            key={path}
-                            to={path}
-                            className="relative flex items-center justify-center w-12 h-12 rounded-xl"
-                        >
-                            <AnimatePresence>
-                                {active && (
-                                    <motion.div
-                                        layoutId="bottom-active"
-                                        className="absolute inset-0 rounded-xl"
-                                        style={{ background: `hsl(var(--sidebar-active-bg-from) / 0.55)`, border: `1px solid hsl(var(--sidebar-active-border))` }}
-                                        initial={false}
-                                        transition={{ type: 'spring', stiffness: 400, damping: 34 }}
-                                    />
-                                )}
-                            </AnimatePresence>
-                            <Icon
-                                className="w-[22px] h-[22px] relative z-10 transition-colors"
-                                style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
-                            />
-                            {badge > 0 && (
-                                <motion.span
-                                    initial={{ scale: 0 }} animate={{ scale: 1 }}
-                                    className="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] rounded-full text-[9px] font-bold flex items-center justify-center px-0.5 z-20"
-                                    style={{ background: PRIMARY, color: 'hsl(var(--primary-foreground))' }}
-                                >
-                                    {badge > 9 ? '9+' : badge}
-                                </motion.span>
-                            )}
-                        </Link>
-                    );
-                })}
+                <div className="flex items-center justify-around h-full px-1">
+                    {/* Left tabs */}
+                    {LEFT_TABS.map(({ path, icon: Icon }) => {
+                        const active = isActive(path);
+                        return (
+                            <Link
+                                key={path}
+                                to={path}
+                                className="relative flex items-center justify-center w-12 h-12 rounded-xl"
+                            >
+                                <AnimatePresence>
+                                    {active && (
+                                        <motion.div
+                                            layoutId="bottom-active"
+                                            className="absolute inset-0 rounded-xl"
+                                            style={{
+                                                background: `hsl(var(--sidebar-active-bg-from))`,
+                                                border: `1px solid hsl(var(--sidebar-active-border))`,
+                                            }}
+                                            initial={false}
+                                            transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                                        />
+                                    )}
+                                </AnimatePresence>
+                                <Icon
+                                    className="w-5 h-5 relative z-10 transition-colors"
+                                    style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
+                                />
+                            </Link>
+                        );
+                    })}
 
-                {/* More button */}
-                <button
-                    className="relative flex items-center justify-center w-12 h-12 rounded-xl"
-                    onClick={() => setIsMoreOpen(v => !v)}
-                >
-                    {(moreActive || isMoreOpen) && (
-                        <motion.div
-                            className="absolute inset-0 rounded-xl"
-                            style={{ background: `hsl(var(--sidebar-active-bg-from) / 0.55)`, border: `1px solid hsl(var(--sidebar-active-border))` }}
-                            initial={false}
+                    {/* ── CENTER CREATE BUTTON ──────────────── */}
+                    <button
+                        className="relative flex items-center justify-center w-12 h-12 rounded-full transition-all active:scale-90"
+                        style={{
+                            background: `linear-gradient(135deg, ${PRIMARY} 0%, hsl(var(--primary) / 0.72) 100%)`,
+                            boxShadow: `0 4px 18px hsl(var(--primary) / 0.32), 0 2px 6px hsl(var(--primary) / 0.22)`,
+                            marginBottom: '2px',
+                        }}
+                        onClick={() => navigate('/explore?create=true')}
+                        aria-label="Crear publicación"
+                    >
+                        <Plus className="w-5 h-5" style={{ color: 'hsl(var(--primary-foreground))' }} />
+                    </button>
+
+                    {/* Right tabs */}
+                    {RIGHT_TABS.map(({ path, icon: Icon }) => {
+                        const active = isActive(path);
+                        const badge = path === '/messages' ? unreadMsgs : 0;
+                        return (
+                            <Link
+                                key={path}
+                                to={path}
+                                className="relative flex items-center justify-center w-12 h-12 rounded-xl"
+                            >
+                                <AnimatePresence>
+                                    {active && (
+                                        <motion.div
+                                            layoutId="bottom-active"
+                                            className="absolute inset-0 rounded-xl"
+                                            style={{
+                                                background: `hsl(var(--sidebar-active-bg-from))`,
+                                                border: `1px solid hsl(var(--sidebar-active-border))`,
+                                            }}
+                                            initial={false}
+                                            transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                                        />
+                                    )}
+                                </AnimatePresence>
+                                <Icon
+                                    className="w-5 h-5 relative z-10 transition-colors"
+                                    style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
+                                />
+                                {badge > 0 && (
+                                    <motion.span
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        className="absolute top-1.5 right-1.5 min-w-[15px] h-[15px] rounded-full text-[9px] font-bold flex items-center justify-center px-0.5 z-20"
+                                        style={{ background: PRIMARY, color: 'hsl(var(--primary-foreground))' }}
+                                    >
+                                        {badge > 9 ? '9+' : badge}
+                                    </motion.span>
+                                )}
+                            </Link>
+                        );
+                    })}
+
+                    {/* More button */}
+                    <button
+                        className="relative flex items-center justify-center w-12 h-12 rounded-xl"
+                        onClick={() => setIsMoreOpen(v => !v)}
+                        aria-label="Más opciones"
+                    >
+                        {(moreActive || isMoreOpen) && (
+                            <motion.div
+                                className="absolute inset-0 rounded-xl"
+                                style={{
+                                    background: `hsl(var(--sidebar-active-bg-from))`,
+                                    border: `1px solid hsl(var(--sidebar-active-border))`,
+                                }}
+                                initial={false}
+                            />
+                        )}
+                        <MoreHorizontal
+                            className="w-5 h-5 relative z-10 transition-colors"
+                            style={{ color: moreActive || isMoreOpen ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                         />
-                    )}
-                    <MoreHorizontal
-                        className="w-[22px] h-[22px] relative z-10 transition-colors"
-                        style={{ color: moreActive || isMoreOpen ? PRIMARY : 'hsl(var(--muted-foreground))' }}
-                    />
-                </button>
+                    </button>
+                </div>
             </nav>
 
-            {/* ── MORE PANEL (slide-up sheet) ────────────────── */}
+            {/* ── MORE PANEL (slide-up sheet) ──────────────── */}
             <AnimatePresence>
                 {isMoreOpen && (
                     <>
                         {/* Backdrop */}
                         <motion.div
                             className="fixed inset-0 z-40 lg:hidden"
-                            style={{ background: 'hsl(0 0% 0% / 0.55)', backdropFilter: 'blur(2px)' }}
+                            style={{ background: 'hsl(0 0% 0% / 0.5)', backdropFilter: 'blur(3px)' }}
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             onClick={() => setIsMoreOpen(false)}
                         />
@@ -184,8 +245,8 @@ export function BottomNav() {
                             style={{
                                 background: 'hsl(var(--sidebar-bg))',
                                 borderTop: '1px solid hsl(var(--sidebar-border))',
-                                paddingBottom: 'calc(env(safe-area-inset-bottom) + 64px)',
-                                maxHeight: '85vh',
+                                paddingBottom: 'calc(env(safe-area-inset-bottom) + 68px)',
+                                maxHeight: '88vh',
                             }}
                             initial={{ y: '100%' }}
                             animate={{ y: 0 }}
@@ -193,11 +254,11 @@ export function BottomNav() {
                             transition={{ type: 'spring', stiffness: 340, damping: 36 }}
                         >
                             {/* Handle */}
-                            <div className="flex justify-center pt-3 pb-1">
+                            <div className="flex justify-center pt-3 pb-2">
                                 <div className="w-10 h-1 rounded-full" style={{ background: 'hsl(var(--border))' }} />
                             </div>
 
-                            <div className="overflow-y-auto" style={{ maxHeight: 'calc(85vh - 60px)' }}>
+                            <div className="overflow-y-auto scrollbar-hide" style={{ maxHeight: 'calc(88vh - 64px)' }}>
                                 {/* Header */}
                                 <div className="flex items-center justify-between px-5 py-3">
                                     <div
@@ -205,22 +266,26 @@ export function BottomNav() {
                                         onClick={() => navigate('/profile')}
                                     >
                                         <div
-                                            className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-[14px] flex-shrink-0"
+                                            className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-[13px] flex-shrink-0 overflow-hidden"
                                             style={{
-                                                background: `linear-gradient(135deg, ${PRIMARY} 0%, hsl(var(--primary) / 0.7) 100%)`,
+                                                background: user?.avatarUrl ? undefined : `linear-gradient(135deg, ${PRIMARY} 0%, hsl(var(--primary) / 0.7) 100%)`,
                                                 color: 'hsl(var(--primary-foreground))',
-                                                boxShadow: `0 0 12px hsl(var(--primary) / 0.35)`,
                                             }}
                                         >
-                                            {user?.username?.[0]?.toUpperCase() || 'F'}
+                                            {user?.avatarUrl
+                                                ? <img src={resolveMediaUrl(user.avatarUrl)} alt={user.username} className="w-full h-full object-cover" />
+                                                : (user?.username?.[0]?.toUpperCase() || 'F')
+                                            }
                                         </div>
                                         <div>
-                                            <p className="font-bold text-[14px] leading-tight">{user?.username || 'Usuario'}</p>
-                                            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'hsl(var(--primary) / 0.65)' }}>Ver perfil →</p>
+                                            <p className="font-bold text-[13.5px] leading-tight">{user?.username || 'Usuario'}</p>
+                                            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'hsl(var(--primary) / 0.6)' }}>
+                                                Ver perfil →
+                                            </p>
                                         </div>
                                     </div>
                                     <button
-                                        className="w-8 h-8 rounded-xl flex items-center justify-center"
+                                        className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
                                         style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}
                                         onClick={() => setIsMoreOpen(false)}
                                     >
@@ -229,13 +294,13 @@ export function BottomNav() {
                                 </div>
 
                                 {/* Search */}
-                                <div className="px-4 pb-2">
+                                <div className="px-4 pb-3">
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
                                         <input
                                             type="text"
                                             placeholder="Buscar usuarios..."
-                                            className="w-full text-sm pl-9 pr-4 py-2.5 rounded-xl outline-none"
+                                            className="w-full text-[13px] pl-9 pr-4 py-2.5 rounded-xl outline-none"
                                             style={{
                                                 background: 'hsl(var(--secondary))',
                                                 color: 'hsl(var(--foreground))',
@@ -255,43 +320,38 @@ export function BottomNav() {
                                                 style={{ background: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}
                                             >
                                                 {isSearchLoading ? (
-                                                    <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin" style={{ color: 'hsl(var(--muted-foreground))' }} /></div>
+                                                    <div className="flex justify-center py-4">
+                                                        <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                                                    </div>
                                                 ) : searchResults.length > 0 ? (
                                                     searchResults.map(u => (
                                                         <div
                                                             key={u.id}
-                                                            className="flex items-center gap-3 px-3 py-3 cursor-pointer"
-                                                            style={{ borderBottom: '1px solid hsl(var(--border) / 0.4)' }}
+                                                            className="flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors"
+                                                            style={{ borderBottom: '1px solid hsl(var(--border) / 0.3)' }}
                                                             onClick={() => {
                                                                 navigate(`/profile/${u.username}`);
                                                                 setIsMoreOpen(false);
                                                                 setSearchQuery('');
                                                             }}
                                                         >
-                                                            <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
-                                                                style={{ background: 'hsl(var(--primary) / 0.15)' }}>
+                                                            <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0"
+                                                                style={{ background: 'hsl(var(--primary) / 0.12)' }}>
                                                                 {u.avatarUrl
                                                                     ? <img src={resolveMediaUrl(u.avatarUrl)} alt={u.username} className="w-full h-full object-cover" />
-                                                                    : <User className="w-4 h-4" style={{ color: PRIMARY }} />
+                                                                    : <User className="w-4 h-4 m-auto mt-2" style={{ color: PRIMARY }} />
                                                                 }
                                                             </div>
                                                             <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <p className="text-sm font-bold truncate">{u.username}</p>
-                                                                    {u.isVerified && <span className="text-[10px] font-bold" style={{ color: PRIMARY }}>✓</span>}
-                                                                </div>
+                                                                <p className="text-[13px] font-semibold truncate">{u.username}</p>
                                                                 <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                                    {u.title || u.company || (u.winRate ? `${u.winRate.toFixed(0)}% de acierto` : 'Ver perfil')}
+                                                                    {u.title || u.company || 'Ver perfil'}
                                                                 </p>
-                                                            </div>
-                                                            <div className="px-2.5 py-1 rounded-lg text-[10px] font-bold"
-                                                                style={{ background: 'hsl(var(--primary) / 0.1)', color: PRIMARY }}>
-                                                                Ver
                                                             </div>
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <p className="text-xs text-center py-3" style={{ color: 'hsl(var(--muted-foreground))' }}>Sin resultados</p>
+                                                    <p className="text-[12px] text-center py-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Sin resultados</p>
                                                 )}
                                             </motion.div>
                                         )}
@@ -299,7 +359,7 @@ export function BottomNav() {
                                 </div>
 
                                 {/* Quick links grid */}
-                                <div className="grid grid-cols-3 gap-3 px-4 pb-3">
+                                <div className="grid grid-cols-3 gap-2.5 px-4 pb-3">
                                     {moreLinks.map(({ label, path, icon: Icon }) => {
                                         const active = isActive(path);
                                         return (
@@ -307,41 +367,26 @@ export function BottomNav() {
                                                 key={path}
                                                 className="flex flex-col items-center gap-2 py-4 rounded-2xl transition-all"
                                                 style={{
-                                                    background: active ? `hsl(var(--primary) / 0.12)` : 'hsl(var(--secondary))',
-                                                    border: `1px solid ${active ? `hsl(var(--primary) / 0.3)` : 'hsl(var(--border))'}`,
+                                                    background: active ? `hsl(var(--primary) / 0.1)` : 'hsl(var(--secondary))',
+                                                    border: `1px solid ${active ? `hsl(var(--primary) / 0.25)` : 'hsl(var(--border))'}`,
                                                     color: active ? PRIMARY : 'hsl(var(--foreground))',
                                                 }}
                                                 onClick={() => navigate(path)}
                                             >
-                                                <Icon className="w-5 h-5" style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }} />
+                                                <Icon className="w-4.5 h-4.5" style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }} />
                                                 <span className="text-[11px] font-semibold">{label}</span>
                                             </button>
                                         );
                                     })}
                                 </div>
 
-                                {/* Divider */}
-                                <div className="mx-4 mb-3" style={{ borderTop: '1px solid hsl(var(--border))' }} />
+                                <div className="mx-4 mb-3 h-px" style={{ background: 'hsl(var(--border) / 0.6)' }} />
 
                                 {/* Utility row */}
                                 <div className="px-4 pb-3 space-y-2">
-                                    {/* Create post */}
-                                    <button
-                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all"
-                                        style={{
-                                            background: `linear-gradient(135deg, ${PRIMARY} 0%, hsl(var(--primary) / 0.75) 100%)`,
-                                            color: 'hsl(var(--primary-foreground))',
-                                            boxShadow: `0 4px 16px hsl(var(--primary) / 0.25)`,
-                                        }}
-                                        onClick={() => navigate('/explore?create=true')}
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        Crear publicación
-                                    </button>
-
                                     {/* Theme toggle */}
                                     <button
-                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors"
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-colors"
                                         style={{
                                             background: 'hsl(var(--secondary))',
                                             border: '1px solid hsl(var(--border))',
@@ -358,10 +403,10 @@ export function BottomNav() {
 
                                     {/* Logout */}
                                     <button
-                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors"
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-colors"
                                         style={{
-                                            background: 'hsl(0 60% 50% / 0.08)',
-                                            border: '1px solid hsl(0 60% 50% / 0.2)',
+                                            background: 'hsl(0 60% 50% / 0.07)',
+                                            border: '1px solid hsl(0 60% 50% / 0.18)',
                                             color: 'hsl(0 68% 55%)',
                                         }}
                                         onClick={() => { logout(); setIsMoreOpen(false); }}

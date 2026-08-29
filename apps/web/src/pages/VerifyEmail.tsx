@@ -4,9 +4,8 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Loader2, MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { normalizeAuthError } from '@/lib/api-errors';
 import { useAuthStore } from '@/stores/authStore';
-import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api';
 
 export default function VerifyEmail() {
     const [searchParams] = useSearchParams();
@@ -31,35 +30,28 @@ export default function VerifyEmail() {
         setMessage('');
 
         const normalizedEmail = email.trim().toLowerCase();
-        const { data, error: supaError } = await supabase.auth.verifyOtp({
-            email: normalizedEmail,
-            token: code,
-            type: 'signup',
-        });
+        try {
+            const res = await apiFetch('/auth/register/verify-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail, code }),
+            });
+            const data = await res.json();
 
-        if (supaError) {
-            setError(normalizeAuthError(supaError.message, 'No pudimos verificar el codigo. Proba otra vez.'));
-            setIsLoading(false);
-            return;
-        }
+            if (!res.ok) {
+                setError(data.message || 'No pudimos verificar el codigo. Proba otra vez.');
+                setIsLoading(false);
+                return;
+            }
 
-        if (data.session && data.user) {
-            const mappedUser: any = {
-                id: data.user.id,
-                email: data.user.email,
-                username: data.user.user_metadata?.username || data.user.email?.split('@')[0],
-                onboardingCompleted: data.user.user_metadata?.onboardingCompleted || false,
-                role: 'USER',
-                plan: 'FREE',
-                accountType: 'STANDARD',
-                isInfluencer: false,
-                isCreator: false,
-                isVerified: true,
-                emailVerified: true,
-            };
-            login(data.session.access_token, mappedUser);
-            navigate(mappedUser.onboardingCompleted ? '/dashboard' : '/onboarding');
-        } else {
+            if (data.token && data.user) {
+                login(data.token, data.user);
+                navigate(data.user.onboardingCompleted ? '/dashboard' : '/onboarding');
+            } else {
+                setIsLoading(false);
+            }
+        } catch (err) {
+            setError('Error de conexión con el servidor.');
             setIsLoading(false);
         }
     };
@@ -75,13 +67,21 @@ export default function VerifyEmail() {
         setError('');
         setMessage('');
 
-        const { error } = await supabase.auth.resend({
-            type: 'signup',
-            email: normalizedEmail,
-        });
+        try {
+            const res = await apiFetch('/auth/register/resend-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail }),
+            });
+            const data = await res.json();
 
-        if (error) {
-            setError(normalizeAuthError(error.message, 'No pudimos reenviar el codigo.'));
+            if (!res.ok) {
+                setError(data.message || 'No pudimos reenviar el codigo.');
+                setResending(false);
+                return;
+            }
+        } catch (err) {
+            setError('Error de conexión con el servidor.');
             setResending(false);
             return;
         }

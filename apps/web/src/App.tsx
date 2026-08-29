@@ -27,6 +27,8 @@ const Messages = lazy(() => import('./pages/Messages'));
 const PostDetail = lazy(() => import('./pages/PostDetail'));
 const Comunidad = lazy(() => import('./pages/Comunidad'));
 const NewsPage = lazy(() => import('./pages/News'));
+const NotificationsPage = lazy(() => import('./pages/Notifications'));
+const LearnPage = lazy(() => import('./pages/Learn'));
 
 // ─── Theme Applier ────────────────────────────────────────────────────────────
 
@@ -169,6 +171,8 @@ export default function App() {
                         <Route path="/messages" element={<Messages />} />
                         <Route path="/comunidad" element={<Comunidad />} />
                         <Route path="/news" element={<NewsPage />} />
+                        <Route path="/notifications" element={<NotificationsPage />} />
+                        <Route path="/learn" element={<LearnPage />} />
                     </Route>
 
                     {/* Info & Legal Routes */}

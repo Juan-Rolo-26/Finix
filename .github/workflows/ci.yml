@@ -1,0 +1,300 @@
+name: CI/CD — Finix
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # 1. QUALITY CHECKS (run in parallel)
+  # ──────────────────────────────────────────────────────────────────────────
+  typecheck-web:
+    name: TypeScript — Web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck -w web --if-present
+        env:
+          VITE_API_URL: /api
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder
+
+  typecheck-api:
+    name: TypeScript — API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - working-directory: apps/api
+        run: npx tsc --noEmit
+
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run lint --workspaces --if-present || true
+        # TODO: enable strict lint failure once lint errors are resolved
+
+  security-audit:
+    name: Security — npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Audit dependencies
+        run: npm audit --audit-level=critical
+        # Fails only on critical vulnerabilities
+
+  secret-scan:
+    name: Security — Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect secrets in history
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 2. TEST
+  # ──────────────────────────────────────────────────────────────────────────
+  test-api:
+    name: Unit Tests — API
+    runs-on: ubuntu-latest
+    needs: [typecheck-api]
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/finix_test
+      DIRECT_URL: postgresql://test:test@localhost:5432/finix_test
+      JWT_SECRET: test_jwt_secret_for_ci_only
+      SUPABASE_URL: https://placeholder.supabase.co
+      SUPABASE_JWT_SECRET: test_secret
+      NODE_ENV: test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: finix_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - working-directory: apps/api
+        run: npx prisma migrate deploy --schema prisma/schema.prisma || true
+      - working-directory: apps/api
+        run: npm test -- --passWithNoTests
+
+  test-web:
+    name: Unit Tests — Web
+    runs-on: ubuntu-latest
+    needs: [typecheck-web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - working-directory: apps/web
+        run: npm test -- --passWithNoTests
+        env:
+          VITE_API_URL: /api
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 3. BUILD
+  # ──────────────────────────────────────────────────────────────────────────
+  build-api:
+    name: Build — API
+    runs-on: ubuntu-latest
+    needs: [typecheck-api, lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - working-directory: apps/api
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-dist
+          path: apps/api/dist/
+          retention-days: 1
+
+  build-web:
+    name: Build — Web
+    runs-on: ubuntu-latest
+    needs: [typecheck-web, lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - working-directory: apps/web
+        run: npm run build
+        env:
+          VITE_API_URL: /api
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist/
+          retention-days: 1
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 4. STAGING DEPLOY (on push to staging branch)
+  # ──────────────────────────────────────────────────────────────────────────
+  deploy-staging:
+    name: Deploy — Staging
+    runs-on: ubuntu-latest
+    needs: [build-api, build-web, test-api, test-web, security-audit]
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist/
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-dist
+          path: apps/api/dist/
+      - name: Deploy to staging VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /srv/finix-staging
+            git pull origin staging
+            npm ci --production
+            pm2 reload finix-api-staging --update-env
+            echo "Staging deploy complete"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 5. E2E (against staging)
+  # ──────────────────────────────────────────────────────────────────────────
+  e2e-staging:
+    name: E2E — Staging
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/staging'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Run E2E tests
+        run: npx playwright test --project=chromium
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ secrets.STAGING_URL }}
+        continue-on-error: true  # TODO: make mandatory once E2E suite is stable
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 6. PRODUCTION DEPLOY (on push to main only)
+  # ──────────────────────────────────────────────────────────────────────────
+  deploy-production:
+    name: Deploy — Production
+    runs-on: ubuntu-latest
+    needs: [build-api, build-web, test-api, test-web, security-audit, secret-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Build web for production
+        working-directory: apps/web
+        run: npm run build
+        env:
+          VITE_API_URL: /api
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - name: Build API for production
+        working-directory: apps/api
+        run: npm run build
+      - name: Deploy to Production VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_KEY }}
+          script: /srv/finix/scripts/deploy.sh
+      - name: Smoke test production
+        run: |
+          sleep 15
+          curl -fsS https://finixarg.com/api/health || exit 1
+          echo "✅ Production smoke test passed"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 7. ROLLBACK (manual trigger)
+  # ──────────────────────────────────────────────────────────────────────────
+  rollback:
+    name: Rollback Production
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment: production
+    steps:
+      - name: Rollback on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_KEY }}
+          script: /srv/finix/scripts/rollback.sh

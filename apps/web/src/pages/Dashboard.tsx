@@ -1,12 +1,22 @@
-import { type KeyboardEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { formatCurrency } from '../lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
-import { TrendingUp, Award, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import {
+    TrendingUp, TrendingDown,
+    Award,
+    ArrowUpRight,
+    ArrowDownRight,
+    ChevronRight,
+    Flame,
+    Users,
+    BarChart2,
+    Newspaper,
+} from 'lucide-react';
 import SocialFeed from '../components/SocialFeed';
 import { StoriesRail } from '@/components/stories/StoriesRail';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface User {
     id: string;
@@ -16,303 +26,416 @@ interface User {
     totalReturn?: number;
 }
 
-function formatPercent(value?: number | null, fractionDigits = 1) {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-        return '--';
-    }
+interface MarketTicker {
+    symbol: string;
+    price: number;
+    change: number;
+    changePercent?: number;
+}
 
+function formatPercent(value?: number | null, fractionDigits = 1) {
+    if (typeof value !== 'number' || Number.isNaN(value)) return '--';
     return `${value > 0 ? '+' : ''}${value.toFixed(fractionDigits)}%`;
 }
 
-function handleKeyboardAction(event: KeyboardEvent<HTMLElement>, action: () => void) {
-    if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        action();
-    }
+
+
+const FEED_TABS = [
+    { key: 'forYou', label: 'Para vos', icon: Flame },
+    { key: 'following', label: 'Siguiendo', icon: Users },
+    { key: 'trending', label: 'Tendencias', icon: BarChart2 },
+] as const;
+
+type FeedTab = typeof FEED_TABS[number]['key'];
+
+/* ── Ticker strip ───────────────────────────────────────────────── */
+function TickerItem({ t }: { t: MarketTicker }) {
+    const val = t.changePercent ?? t.change;
+    const isUp = val >= 0;
+    const sym = t.symbol.split(':').pop() || t.symbol;
+    const label = sym === 'BTCUSD' ? 'BTC' : sym === 'ETHUSD' ? 'ETH' : sym.replace('USD', '');
+
+    return (
+        <div className="flex items-center gap-2.5 px-4 py-2 border-r border-white/[0.06] last:border-r-0 flex-shrink-0 hover:bg-white/[0.03] transition-colors cursor-pointer">
+            <span className="text-[10.5px] font-bold tracking-widest uppercase" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>{label}</span>
+            <span className="text-[12.5px] font-bold num">{formatCurrency(t.price, 'USD')}</span>
+            <span className="flex items-center gap-0.5 text-[11px] font-bold num"
+                style={{ color: isUp ? 'hsl(142 70% 45%)' : 'hsl(0 68% 56%)' }}>
+                {isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                {isUp ? '+' : ''}{val.toFixed(2)}%
+            </span>
+        </div>
+    );
 }
 
-const cardVariants = {
-    hidden: { opacity: 0, y: 12 },
-    show: (i: number) =>
-    ({
-        opacity: 1,
-        y: 0,
-        transition: { delay: i * 0.07, duration: 0.36, ease: 'easeOut' },
-    } as const),
-};
+function MarketTicker({ tickers }: { tickers: MarketTicker[] }) {
+    if (tickers.length === 0) return null;
+    return (
+        <div className="rounded-2xl overflow-hidden flex-shrink-0"
+            style={{ background: 'hsl(220 28% 7%)', border: '1px solid hsl(220 20% 14%)' }}>
+            <div className="flex overflow-x-auto scrollbar-hide">
+                {/* Live indicator */}
+                <div className="flex items-center gap-2 px-4 py-2 border-r border-white/[0.06] flex-shrink-0">
+                    <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                    </span>
+                    <span className="text-[9.5px] font-bold tracking-widest uppercase text-emerald-500">Live</span>
+                </div>
+                {tickers.map(t => <TickerItem key={t.symbol} t={t} />)}
+            </div>
+        </div>
+    );
+}
 
+/* ── Feed Tabs ──────────────────────────────────────────────────── */
+function FeedTabs({ active, onChange }: { active: FeedTab; onChange: (t: FeedTab) => void }) {
+    return (
+        <div className="flex items-center gap-1 p-1 rounded-2xl"
+            style={{ background: 'hsl(var(--secondary) / 0.45)' }}>
+            {FEED_TABS.map((tab) => {
+                const isActive = tab.key === active;
+                const Icon = tab.icon;
+                return (
+                    <button
+                        key={tab.key}
+                        onClick={() => onChange(tab.key)}
+                        className="relative flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all select-none flex-1 justify-center"
+                        style={{
+                            color: isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+                            background: isActive ? 'hsl(var(--card))' : 'transparent',
+                            boxShadow: isActive ? '0 1px 8px hsl(220 42% 3% / 0.2)' : 'none',
+                        }}
+                    >
+                        {isActive && (
+                            <motion.div
+                                layoutId="tab-bg"
+                                className="absolute inset-0 rounded-xl"
+                                style={{ background: 'hsl(var(--card))', zIndex: 0 }}
+                                initial={false}
+                                transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+                            />
+                        )}
+                        <Icon className="w-3.5 h-3.5 relative z-10" style={{ color: isActive ? 'hsl(var(--primary))' : undefined }} />
+                        <span className="relative z-10">{tab.label}</span>
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
+/* ── Sidebar asset row ──────────────────────────────────────────── */
+function AssetRow({ item, onClick }: { item: any; onClick: () => void }) {
+    const isUp = item.change >= 0;
+    const sym = item.symbol?.split(':').pop() ?? item.symbol;
+    return (
+        <button
+            onClick={onClick}
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all hover:bg-white/[0.04] group"
+        >
+            <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-[9px] tracking-wider flex-shrink-0"
+                    style={{ background: isUp ? 'hsl(142 70% 45% / 0.12)' : 'hsl(0 68% 56% / 0.12)', color: isUp ? 'hsl(142 70% 50%)' : 'hsl(0 68% 60%)' }}>
+                    {sym?.slice(0, 3)}
+                </div>
+                <div className="text-left">
+                    <p className="text-[12.5px] font-semibold leading-tight group-hover:text-primary transition-colors">{sym}</p>
+                    <p className="text-[10px] font-medium" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>
+                        Vol {item.volume ? (item.volume / 1_000_000).toFixed(1) + 'M' : '--'}
+                    </p>
+                </div>
+            </div>
+            <div className="text-right">
+                <p className="text-[12.5px] font-bold num">{formatCurrency(item.price, 'USD')}</p>
+                <div className="flex items-center justify-end gap-0.5 mt-0.5">
+                    {isUp ? <TrendingUp className="w-2.5 h-2.5" style={{ color: 'hsl(142 70% 45%)' }} /> : <TrendingDown className="w-2.5 h-2.5" style={{ color: 'hsl(0 68% 56%)' }} />}
+                    <span className="text-[10.5px] font-bold num" style={{ color: isUp ? 'hsl(142 70% 45%)' : 'hsl(0 68% 56%)' }}>
+                        {item.change > 0 ? '+' : ''}{item.change.toFixed(2)}%
+                    </span>
+                </div>
+            </div>
+        </button>
+    );
+}
+
+/* ── Sidebar card shell ─────────────────────────────────────────── */
+function SideCard({ title, icon, iconColor, iconBg, to, toLabel, children, index }: {
+    title: string;
+    icon: React.ReactNode;
+    iconColor: string;
+    iconBg: string;
+    to?: string;
+    toLabel?: string;
+    children: React.ReactNode;
+    index: number;
+}) {
+    return (
+        <motion.div
+            custom={index}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0, transition: { delay: index * 0.08, duration: 0.35, ease: 'easeOut' } }}
+            className="rounded-2xl overflow-hidden"
+            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border) / 0.5)' }}
+        >
+            <div className="flex items-center justify-between px-4 pt-4 pb-3">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: iconBg }}>
+                        <span style={{ color: iconColor }}>{icon}</span>
+                    </div>
+                    <h3 className="text-[13px] font-bold">{title}</h3>
+                </div>
+                {to && (
+                    <Link to={to}
+                        className="text-[11.5px] font-semibold flex items-center gap-0.5 transition-colors"
+                        style={{ color: 'hsl(var(--primary) / 0.6)' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'hsl(var(--primary))')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'hsl(var(--primary) / 0.6)')}
+                    >
+                        {toLabel ?? 'Ver todo'}<ChevronRight className="w-3 h-3" />
+                    </Link>
+                )}
+            </div>
+            <div className="pb-2">{children}</div>
+        </motion.div>
+    );
+}
+
+/* ── Main Dashboard ─────────────────────────────────────────────── */
 export default function Dashboard() {
     const navigate = useNavigate();
     const [topAssets, setTopAssets] = useState<any[]>([]);
     const [topTraders, setTopTraders] = useState<User[]>([]);
     const [posts, setPosts] = useState<any[]>([]);
+    const [marketTickers, setMarketTickers] = useState<MarketTicker[]>([]);
+    const [activeTab, setActiveTab] = useState<FeedTab>('forYou');
 
     useEffect(() => {
         apiFetch('/market/tickers')
-            .then((res) => res.json())
-            .then((data) => {
-                let list = Array.isArray(data) ? data : [];
-                list.sort((a, b) => b.change - a.change);
-                setTopAssets(list.slice(0, 3));
+            .then(r => r.json())
+            .then((data: any) => {
+                const list = Array.isArray(data) ? data : [];
+                setMarketTickers(list.slice(0, 10).map((t: any) => ({
+                    symbol: t.symbol,
+                    price: t.price ?? 0,
+                    change: t.change ?? 0,
+                    changePercent: t.changePercent ?? t.change ?? 0,
+                })));
+                const sorted = [...list].sort((a: any, b: any) => Math.abs(b.change) - Math.abs(a.change));
+                setTopAssets(sorted.slice(0, 6));
             })
-            .catch(() => setTopAssets([]));
+            .catch(() => { });
 
         apiFetch('/users/top-traders')
-            .then(res => res.json())
-            .then(data => {
-                setTopTraders(Array.isArray(data) ? data : []);
-            })
-            .catch(() => setTopTraders([]));
+            .then(r => r.json())
+            .then(data => setTopTraders(Array.isArray(data) ? data : []))
+            .catch(() => { });
 
         apiFetch('/posts')
-            .then(res => res.json())
-            .then(data => {
-                const list = Array.isArray(data) ? data : data.posts || [];
-                setPosts(list);
-            })
-            .catch(() => setPosts([]));
+            .then(r => r.json())
+            .then(data => setPosts(Array.isArray(data) ? data : data?.posts ?? []))
+            .catch(() => { });
     }, []);
 
     return (
-        <div className="page-enter p-4 md:p-6 lg:p-8 w-full max-w-6xl mx-auto pt-2">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+        <div className="page-enter w-full max-w-[1920px] mx-auto px-4 py-6 md:px-6 xl:px-8">
+            {/* 
+              Responsive Grid:
+              - Mobile/Tablet: 1 column
+              - Desktop (lg): 2 columns (Feed + Right Sidebar)
+              - Ultrawide (2xl): 3 columns (Feed + Market + Connect/News) for perfect full-width distribution
+            */}
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_340px_340px] gap-6 xl:gap-8">
 
-                {/* ── Main Feed ── */}
-                <div className="space-y-4">
+                {/* ── Left Column: Main Feed ── */}
+                <div className="space-y-4 min-w-0 max-w-[800px] w-full mx-auto 2xl:mx-0 2xl:max-w-none">
+
+                    {/* Top stories */}
                     <StoriesRail />
 
-                    {/* ── Mobile-only: Top Assets + Top Traders horizontal strips ── */}
-                    <div className="lg:hidden space-y-3">
-
-
-                        {/* Top Traders — horizontal scroll */}
-                        {topTraders.length > 0 && (
-                            <div>
-                                <div className="flex items-center gap-2 mb-2 px-0.5">
-                                    <div className="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                                        <Award className="w-3.5 h-3.5 text-amber-500" />
-                                    </div>
-                                    <span className="text-[13px] font-semibold tracking-tight">Top trades</span>
-                                </div>
-                                <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
-                                    {topTraders.slice(0, 5).map((trader, index) => {
-                                        const isUp = (trader.totalReturn ?? 0) >= 0;
-                                        const rankColors = ['text-amber-500', 'text-slate-400', 'text-amber-700'];
-                                        return (
-                                            <motion.button
-                                                key={trader.id}
-                                                custom={index}
-                                                variants={cardVariants}
-                                                initial="hidden"
-                                                animate="show"
-                                                onClick={() => navigate(`/profile/${trader.username}`)}
-                                                className="flex-shrink-0 flex flex-col items-center gap-2 rounded-2xl border border-border/50 bg-card/80 px-4 py-3 text-center transition-all active:scale-95"
-                                                style={{ minWidth: '100px', boxShadow: '0 2px 8px hsl(220 42% 3% / 0.08)' }}
-                                            >
-                                                <div className="relative">
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 ring-1 ring-border/40">
-                                                        {trader.avatarUrl ? (
-                                                            <img src={resolveMediaUrl(trader.avatarUrl)} alt={trader.username} className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-[13px] font-bold text-primary">
-                                                                {trader.username[0].toUpperCase()}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <span className={`absolute -top-1 -left-1 text-[10px] font-black ${rankColors[index] ?? 'text-muted-foreground'}`}>
-                                                        #{index + 1}
-                                                    </span>
-                                                </div>
-                                                <p className="text-[11px] font-semibold truncate w-full">{trader.username}</p>
-                                                <span className={`data-pill ${isUp ? 'data-pill-up' : 'data-pill-down'}`}>
-                                                    {isUp ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
-                                                    {formatPercent(trader.totalReturn, 1)}
-                                                </span>
-                                            </motion.button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                    {/* Main Feed Container */}
+                    <div className="rounded-2xl border transition-all duration-300"
+                        style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border) / 0.5)', boxShadow: '0 4px 20px hsl(0 0% 0% / 0.1)' }}>
+                        <div className="p-3 pb-0 border-b" style={{ borderColor: 'hsl(var(--border) / 0.4)' }}>
+                            <FeedTabs active={activeTab} onChange={setActiveTab} />
+                        </div>
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeTab}
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -5 }}
+                                transition={{ duration: 0.18 }}
+                                className="p-4"
+                            >
+                                <SocialFeed
+                                    initialPosts={posts}
+                                    onPostCreated={(newPost) => setPosts([newPost, ...posts])}
+                                />
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
-
-                    <SocialFeed initialPosts={posts} onPostCreated={(newPost) => setPosts([newPost, ...posts])} />
                 </div>
 
-                {/* ── Right Sidebar ── */}
-                <aside className="space-y-5 hidden lg:block">
-
-                    {/* Trending Assets Card */}
-                    <motion.div
-                        custom={0}
-                        variants={cardVariants}
-                        initial="hidden"
-                        animate="show"
-                        className="rounded-[20px] border border-border/50 bg-card/70 backdrop-blur-sm overflow-hidden"
-                        style={{ boxShadow: '0 2px 12px hsl(220 42% 3% / 0.06)' }}
-                    >
-                        {/* Card Header */}
-                        <div className="flex items-center justify-between px-5 pt-5 pb-3">
-                            <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                                    <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                                </div>
-                                <h3 className="text-[13px] font-semibold tracking-tight text-foreground">
-                                    Mejor rendimiento
-                                </h3>
+                {/* ── Middle Column (or joined in Right on lg) ── */}
+                <aside className="hidden lg:flex flex-col gap-5">
+                    {/* Market Ticker (Desktop only) */}
+                    {marketTickers.length > 0 && (
+                        <div className="hidden 2xl:block overflow-hidden rounded-2xl"
+                            style={{ background: 'hsl(220 28% 7%)', border: '1px solid hsl(220 20% 14%)', boxShadow: '0 4px 15px hsl(0 0% 0% / 0.2)' }}>
+                            <div className="px-5 py-3 border-b flex items-center gap-2" style={{ borderColor: 'hsl(0 0% 100% / 0.08)' }}>
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                </span>
+                                <span className="text-[11px] font-black tracking-widest uppercase text-emerald-500">Live Market</span>
                             </div>
-                            <Link
-                                to="/market"
-                                className="text-[11px] font-semibold text-primary/60 hover:text-primary transition-colors flex items-center gap-0.5"
-                            >
-                                Ver todo
-                                <ArrowUpRight className="w-3 h-3" />
-                            </Link>
-                        </div>
-
-                        {/* Asset List */}
-                        <div className="px-2 pb-2">
-                            {topAssets.length === 0 ? (
-                                <div className="px-3 py-4 text-[12px] text-muted-foreground">
-                                    Sin datos disponibles
-                                </div>
-                            ) : (
-                                topAssets.map((item) => {
-                                    const isUp = item.change >= 0;
-                                    return (
-                                        <button
-                                            key={item.symbol}
-                                            type="button"
-                                            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl group transition-all hover:bg-primary/5 fintech-row"
-                                            onClick={() => navigate(`/market?symbol=${item.symbol}`)}
-                                            onKeyDown={(e) => handleKeyboardAction(e, () => navigate(`/market?symbol=${item.symbol}`))}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-primary font-black text-[10px] tracking-wide flex-shrink-0">
-                                                    {item.symbol.split(':').pop()?.slice(0, 4)}
-                                                </div>
-                                                <div className="text-left">
-                                                    <p className="text-[13px] font-semibold leading-tight group-hover:text-primary transition-colors">
-                                                        {item.symbol.split(':').pop()}
-                                                    </p>
-                                                    <p className="text-[10px] text-muted-foreground/70 mt-0.5 num">
-                                                        Vol {item.volume ? (item.volume / 1_000).toFixed(0) + 'k' : '--'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-[13px] font-bold tracking-tight num">
-                                                    {formatCurrency(item.price, 'USD')}
-                                                </p>
-                                                <span className={`data-pill mt-1 ${isUp ? 'data-pill-up' : 'data-pill-down'}`}>
-                                                    {isUp
-                                                        ? <ArrowUpRight className="w-2.5 h-2.5" />
-                                                        : <ArrowDownRight className="w-2.5 h-2.5" />
-                                                    }
-                                                    {item.change > 0 ? '+' : ''}{item.change.toFixed(2)}%
-                                                </span>
-                                            </div>
-                                        </button>
-                                    );
-                                })
-                            )}
-                        </div>
-                    </motion.div>
-
-                    {/* Top Traders Card */}
-                    <motion.div
-                        custom={1}
-                        variants={cardVariants}
-                        initial="hidden"
-                        animate="show"
-                        className="rounded-[20px] border border-border/50 bg-card/70 backdrop-blur-sm overflow-hidden"
-                        style={{ boxShadow: '0 2px 12px hsl(220 42% 3% / 0.06)' }}
-                    >
-                        {/* Card Header */}
-                        <div className="flex items-center gap-2 px-5 pt-5 pb-3">
-                            <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                                <Award className="w-3.5 h-3.5 text-amber-500" />
+                            <div className="flex flex-col divide-y divide-white/10 border-t border-white/10 mt-1">
+                                {marketTickers.slice(0, 5).map(t => <TickerItem key={t.symbol} t={t} />)}
                             </div>
-                            <h3 className="text-[13px] font-semibold tracking-tight text-foreground">
-                                Top traders
-                            </h3>
                         </div>
+                    )}
 
-                        {/* Traders List */}
-                        <div className="px-2 pb-2">
-                            {topTraders.length === 0 ? (
-                                <div className="mx-3 mb-3 rounded-xl border border-dashed border-border/50 bg-muted/20 px-4 py-5 text-center text-[12px] text-muted-foreground">
-                                    No hay traders con rendimiento disponible.
-                                </div>
-                            ) : (
-                                topTraders.slice(0, 3).map((trader, index) => {
+                    {/* Trending Assets */}
+                    <SideCard
+                        index={0}
+                        title="Mejores rendimientos"
+                        icon={<TrendingUp className="w-4 h-4" />}
+                        iconColor="hsl(142 70% 50%)"
+                        iconBg="hsl(142 70% 45% / 0.15)"
+                        to="/market"
+                        toLabel="Ver todos"
+                    >
+                        {topAssets.length === 0 ? (
+                            <p className="px-5 pb-4 text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>Sin datos disponibles</p>
+                        ) : (
+                            <div className="px-2 pb-2">
+                                {topAssets.map(item => (
+                                    <AssetRow
+                                        key={item.symbol}
+                                        item={item}
+                                        onClick={() => navigate(`/market?symbol=${item.symbol}`)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </SideCard>
+
+                    {/* News / Pulse (lg only, moved to right on 2xl) */}
+                    <div className="2xl:hidden">
+                        <SideCard
+                            index={2}
+                            title="Noticias y pulso"
+                            icon={<Newspaper className="w-4 h-4" />}
+                            iconColor="hsl(215 90% 65%)"
+                            iconBg="hsl(215 90% 65% / 0.15)"
+                            to="/news"
+                            toLabel="Abrir"
+                        >
+                            <div className="px-5 pb-4 pt-1">
+                                <p className="text-[13px] leading-relaxed mb-3" style={{ color: 'hsl(var(--muted-foreground) / 0.8)' }}>
+                                    Mercados, cripto y economía. Mantente un paso adelante.
+                                </p>
+                                <button onClick={() => navigate('/news')} className="w-full py-2.5 rounded-xl text-[12.5px] font-bold text-white transition-all hover:opacity-90"
+                                    style={{ background: 'linear-gradient(135deg, hsl(215 90% 55%), hsl(280 65% 55%))' }}>
+                                    Leer titulares
+                                </button>
+                            </div>
+                        </SideCard>
+                    </div>
+                </aside>
+
+                {/* ── Right Column (2xl only) ── */}
+                <aside className="hidden 2xl:flex flex-col gap-5">
+
+                    {/* Top Traders */}
+                    <SideCard
+                        index={1}
+                        title="Top Inversores"
+                        icon={<Award className="w-4 h-4" />}
+                        iconColor="hsl(38 100% 55%)"
+                        iconBg="hsl(38 100% 55% / 0.15)"
+                        to="/explore"
+                        toLabel="Ránking"
+                    >
+                        {topTraders.length === 0 ? (
+                            <p className="px-5 pb-4 text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>No hay traders disponibles</p>
+                        ) : (
+                            <div className="px-2 pb-2">
+                                {topTraders.slice(0, 6).map((trader, i) => {
                                     const isUp = (trader.totalReturn ?? 0) >= 0;
-                                    const rankColors = ['text-amber-500', 'text-slate-400', 'text-amber-700'];
-
+                                    const rankColors = ['hsl(38 100% 55%)', 'hsl(220 14% 70%)', 'hsl(30 70% 50%)'];
                                     return (
                                         <button
                                             key={trader.id}
-                                            type="button"
-                                            className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-primary/5 group fintech-row"
                                             onClick={() => navigate(`/profile/${trader.username}`)}
-                                            onKeyDown={(e) => handleKeyboardAction(e, () => navigate(`/profile/${trader.username}`))}
+                                            className="w-full flex items-center justify-between gap-3 px-3 py-3 rounded-xl transition-all hover:bg-white/[0.04] group"
                                         >
                                             <div className="flex items-center gap-3 min-w-0">
-                                                {/* Rank */}
-                                                <span className={`text-[11px] font-black w-4 text-right flex-shrink-0 ${rankColors[index] ?? 'text-muted-foreground'}`}>
-                                                    {index + 1}
+                                                <span className="text-[11.5px] font-black w-5 text-center flex-shrink-0" style={{ color: rankColors[i] ?? 'hsl(var(--muted-foreground))' }}>
+                                                    {i + 1}
                                                 </span>
-                                                {/* Avatar */}
-                                                <div className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-primary/10 ring-1 ring-border/40">
-                                                    {trader.avatarUrl ? (
-                                                        <img src={resolveMediaUrl(trader.avatarUrl)} alt={trader.username} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-[11px] font-bold text-primary">
+                                                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-background shadow-sm"
+                                                    style={{ background: 'hsl(var(--primary) / 0.15)' }}>
+                                                    {trader.avatarUrl
+                                                        ? <img src={resolveMediaUrl(trader.avatarUrl)} alt={trader.username} className="w-full h-full object-cover" />
+                                                        : <div className="w-full h-full flex items-center justify-center text-[12px] font-bold" style={{ color: 'hsl(var(--primary))' }}>
                                                             {trader.username[0].toUpperCase()}
                                                         </div>
-                                                    )}
+                                                    }
                                                 </div>
-                                                {/* Info */}
                                                 <div className="min-w-0 text-left">
-                                                    <p className="truncate text-[13px] font-semibold leading-tight group-hover:text-primary transition-colors">
-                                                        {trader.username}
-                                                    </p>
-                                                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                                                    <p className="text-[13.5px] font-bold truncate group-hover:text-primary transition-colors">{trader.username}</p>
+                                                    <p className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
                                                         {formatPercent(trader.winRate, 0)} acierto
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="shrink-0 text-right">
-                                                <span className={`data-pill ${isUp ? 'data-pill-up' : 'data-pill-down'}`}>
-                                                    {isUp ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
-                                                    {formatPercent(trader.totalReturn, 1)}
-                                                </span>
-                                            </div>
+                                            <span className="text-[12.5px] font-black num flex-shrink-0 px-2 py-1 rounded-lg"
+                                                style={{ background: isUp ? 'hsl(142 70% 45% / 0.12)' : 'hsl(0 68% 56% / 0.12)', color: isUp ? 'hsl(142 70% 50%)' : 'hsl(0 68% 60%)' }}>
+                                                {isUp ? '+' : ''}{formatPercent(trader.totalReturn)}
+                                            </span>
                                         </button>
                                     );
-                                })
-                            )}
-                        </div>
-                    </motion.div>
+                                })}
+                            </div>
+                        )}
+                    </SideCard>
 
-                    {/* Footer Links */}
-                    <motion.div
-                        custom={2}
-                        variants={cardVariants}
-                        initial="hidden"
-                        animate="show"
-                        className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[10px] text-muted-foreground/50 w-full px-2"
+                    {/* Dedicated News Card for 2xl */}
+                    <SideCard
+                        index={2}
+                        title="Titulares del día"
+                        icon={<Newspaper className="w-4 h-4" />}
+                        iconColor="hsl(215 90% 65%)"
+                        iconBg="hsl(215 90% 65% / 0.15)"
+                        to="/news"
+                        toLabel="Noticias"
                     >
-                        <Link to="/about" className="hover:text-primary/70 transition-colors">Sobre Finix</Link>
-                        <span className="text-border/50">·</span>
-                        <Link to="/help" className="hover:text-primary/70 transition-colors">Ayuda</Link>
-                        <span className="text-border/50">·</span>
-                        <Link to="/terms" className="hover:text-primary/70 transition-colors">Términos</Link>
-                        <span className="text-border/50">·</span>
-                        <Link to="/privacy" className="hover:text-primary/70 transition-colors">Privacidad</Link>
-                        <div className="w-full text-center mt-1 text-[9px]">© 2025 Finix Network</div>
-                    </motion.div>
+                        <div className="px-5 pb-5 pt-1 space-y-4">
+                            <div className="flex flex-col gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/news')}>
+                                <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: 'hsl(280 65% 65%)' }}>MARKETS</span>
+                                <h4 className="text-[13.5px] font-semibold leading-snug">El S&P 500 alcanza nuevo máximo histórico impulsado por tech</h4>
+                                <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>Hace 2h · Bloomberg</span>
+                            </div>
+                            <div className="flex flex-col gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/news')}>
+                                <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: 'hsl(38 88% 52%)' }}>CRYPTO</span>
+                                <h4 className="text-[13.5px] font-semibold leading-snug">Bitcoin consolida sobre resistencia clave, analistas prevén rally</h4>
+                                <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>Hace 5h · CoinDesk</span>
+                            </div>
+                        </div>
+                    </SideCard>
+
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-[11px] font-medium px-2 mt-2" style={{ color: 'hsl(var(--muted-foreground) / 0.45)' }}>
+                        {['Sobre Finix', 'Ayuda', 'Términos', 'Privacidad', 'Cookies'].map((item) => (
+                            <Link key={item} to={`/${item.toLowerCase().replace(' ', '-')}`} className="hover:text-primary/70 transition-colors">
+                                {item}
+                            </Link>
+                        ))}
+                        <div className="w-full mt-2 text-[10.5px]">© 2025 Finix Network Inc.</div>
+                    </div>
                 </aside>
+
             </div>
         </div>
     );

@@ -662,7 +662,6 @@ export class MarketService {
                 };
             });
 
-            return finalResults;
         } catch (error) {
             console.error('[MarketService] Community trends failed:', error);
             return [];

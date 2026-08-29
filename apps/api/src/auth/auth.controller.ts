@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Post, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import { Body, Controller, Get, Post, HttpCode, HttpStatus, UseGuards, Request, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import {
@@ -12,7 +13,7 @@ import {
 
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService) {}
+    constructor(private authService: AuthService) { }
 
     @HttpCode(HttpStatus.OK)
     @Post('register/request-code')
@@ -28,14 +29,28 @@ export class AuthController {
 
     @HttpCode(HttpStatus.OK)
     @Post('register/verify-code')
-    verifyRegisterCode(@Body() body: EmailCodeDto) {
-        return this.authService.verifyRegisterCode(body.email, body.code);
+    async verifyRegisterCode(@Body() body: EmailCodeDto, @Res({ passthrough: true }) res: Response) {
+        const data = await this.authService.verifyRegisterCode(body.email, body.code);
+        res.cookie('finix_token', data.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        return data;
     }
 
     @HttpCode(HttpStatus.OK)
     @Post('login')
-    login(@Body() body: LoginRequestDto) {
-        return this.authService.login(body.email, body.password);
+    async login(@Body() body: LoginRequestDto, @Res({ passthrough: true }) res: Response) {
+        const data = await this.authService.login(body.email, body.password);
+        res.cookie('finix_token', data.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        return data;
     }
 
     @HttpCode(HttpStatus.OK)
@@ -46,8 +61,15 @@ export class AuthController {
 
     @HttpCode(HttpStatus.OK)
     @Post('login/verify-code')
-    verifyLoginCode(@Body() body: EmailCodeDto) {
-        return this.authService.verifyLoginCode(body.email, body.code);
+    async verifyLoginCode(@Body() body: EmailCodeDto, @Res({ passthrough: true }) res: Response) {
+        const data = await this.authService.verifyLoginCode(body.email, body.code);
+        res.cookie('finix_token', data.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        return data;
     }
 
     @HttpCode(HttpStatus.OK)

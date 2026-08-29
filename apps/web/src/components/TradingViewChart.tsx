@@ -37,6 +37,7 @@ function TradingViewChart({
                     height: height,
                     symbol: symbol,
                     interval: interval,
+                    range: '6M',
                     timezone: 'America/Argentina/Buenos_Aires',
                     theme: theme,
                     style: '1',

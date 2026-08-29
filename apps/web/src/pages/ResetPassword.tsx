@@ -3,8 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { normalizeAuthError } from '@/lib/api-errors';
-import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api';
 import { Loader2, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function ResetPassword() {
@@ -32,33 +31,28 @@ export default function ResetPassword() {
 
         const normalizedEmail = email.trim().toLowerCase();
 
-        const { error: vError } = await supabase.auth.verifyOtp({
-            email: normalizedEmail,
-            token: code,
-            type: 'recovery',
-        });
+        try {
+            const res = await apiFetch('/auth/forgot/reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail, code, newPassword: password }),
+            });
+            const data = await res.json();
 
-        if (vError) {
-            setError(normalizeAuthError(vError.message, 'No pudimos verificar el codigo.'));
+            if (!res.ok) {
+                setError(data.message || 'No pudimos verificar el codigo o actualizar la contraseña.');
+                setIsLoading(false);
+                return;
+            }
+
+            setMessage('Tu contrasena fue actualizada. Ahora puedes iniciar sesion.');
+            setTimeout(() => {
+                navigate('/');
+            }, 2200);
+        } catch (err) {
+            setError('Error de conexión con el servidor.');
             setIsLoading(false);
-            return;
         }
-
-        const { error: pError } = await supabase.auth.updateUser({
-            password
-        });
-
-        if (pError) {
-            setError(normalizeAuthError(pError.message, 'No pudimos actualizar la contraseña.'));
-            setIsLoading(false);
-            return;
-        }
-
-        setMessage('Tu contrasena fue actualizada. Ahora puedes iniciar sesion.');
-        setTimeout(() => {
-            supabase.auth.signOut();
-            navigate('/');
-        }, 2200);
     };
 
     const handleResend = async () => {
@@ -72,18 +66,26 @@ export default function ResetPassword() {
         setError('');
         setMessage('');
 
-        const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-            redirectTo: `${window.location.origin}/reset-password`,
-        });
+        try {
+            const res = await apiFetch('/auth/forgot/request-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail }),
+            });
+            const data = await res.json();
 
-        if (error) {
-            setError(normalizeAuthError(error.message, 'No pudimos reenviar el codigo.'));
+            if (!res.ok) {
+                setError(data.message || 'No pudimos reenviar el codigo.');
+                setResending(false);
+                return;
+            }
+
+            setMessage('Te enviamos un nuevo codigo para restablecer tu contrasena.');
             setResending(false);
-            return;
+        } catch (err) {
+            setError('Error de conexión con el servidor.');
+            setResending(false);
         }
-
-        setMessage('Te enviamos un nuevo codigo para restablecer tu contrasena.');
-        setResending(false);
     };
 
     return (

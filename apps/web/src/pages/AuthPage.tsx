@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useNavigate, Link } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api';
 import { normalizeAuthError } from '@/lib/api-errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,32 +131,25 @@ export default function AuthPage() {
     };
 
     const handleLogin = async () => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email.trim().toLowerCase(),
-            password,
-        });
+        try {
+            const res = await apiFetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+            });
+            const data = await res.json();
 
-        if (error) {
-            setAuthError(normalizeAuthError(error.message, t.auth.errors.invalidCredentials));
-            return;
-        }
+            if (!res.ok) {
+                setAuthError(data.message || t.auth.errors.invalidCredentials);
+                return;
+            }
 
-        if (data.session && data.user) {
-            const mappedUser: any = {
-                id: data.user.id,
-                email: data.user.email,
-                username: data.user.user_metadata?.username || data.user.email?.split('@')[0],
-                onboardingCompleted: data.user.user_metadata?.onboardingCompleted || false,
-                role: 'USER',
-                plan: 'FREE',
-                accountType: 'STANDARD',
-                isInfluencer: false,
-                isCreator: false,
-                isVerified: true,
-                emailVerified: true,
-            };
-            login(data.session.access_token, mappedUser);
-            navigate(mappedUser.onboardingCompleted ? '/dashboard' : '/onboarding');
+            if (data.token && data.user) {
+                login(data.token, data.user);
+                navigate(data.user.onboardingCompleted ? '/dashboard' : '/onboarding');
+            }
+        } catch (err) {
+            setAuthError(t.auth.errors.connectionError || 'Error de conexión');
         }
     };
 
@@ -163,65 +157,43 @@ export default function AuthPage() {
         const normalizedEmail = email.trim().toLowerCase();
         const normalizedUsername = username.trim();
 
-        const { data, error } = await supabase.auth.signUp({
-            email: normalizedEmail,
-            password,
-            options: {
-                data: {
-                    username: normalizedUsername,
-                },
-                emailRedirectTo: `${window.location.origin}/auth/callback`,
+        try {
+            const res = await apiFetch('/auth/register/request-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail, username: normalizedUsername, password }),
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                setAuthError(data.message || 'Error al crear la cuenta. Intentá nuevamente.');
+                return;
             }
-        });
-
-        if (error) {
-            setAuthError(normalizeAuthError(error.message, t.auth.errors.invalidCredentials));
-            return;
+            navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
+        } catch (err) {
+            setAuthError(t.auth.errors.connectionError || 'Error de conexión');
         }
-
-        // Supabase devuelve el usuario pero con identities vacío si el correo ya existe
-        if (data?.user && data.user.identities && data.user.identities.length === 0) {
-            setAuthError('Este correo electrónico ya está registrado. Por favor, iniciá sesión.');
-            setIsLoading(false);
-            return;
-        }
-
-        if (data?.session && data?.user) {
-            const mappedUser: any = {
-                id: data.user.id,
-                email: data.user.email,
-                username: data.user.user_metadata?.username || data.user.email?.split('@')[0],
-                onboardingCompleted: data.user.user_metadata?.onboardingCompleted || false,
-                role: 'USER',
-                plan: 'FREE',
-                accountType: 'STANDARD',
-                isInfluencer: false,
-                isCreator: false,
-                isVerified: true,
-                emailVerified: true,
-            };
-            login(data.session.access_token, mappedUser);
-            navigate(mappedUser.onboardingCompleted ? '/dashboard' : '/onboarding');
-            return;
-        }
-
-        navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
-
-
     };
 
     const handleForgotPassword = async () => {
         const normalizedEmail = email.trim().toLowerCase();
-        const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-            redirectTo: `${window.location.origin}/reset-password`,
-        });
 
-        if (error) {
-            setAuthError(normalizeAuthError(error.message, t.auth.errors.connectionError));
-            return;
+        try {
+            const res = await apiFetch('/auth/forgot/request-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail }),
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                setAuthError(data.message || t.auth.errors.connectionError);
+                return;
+            }
+            navigate(`/reset-password?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
+        } catch (err) {
+            setAuthError(t.auth.errors.connectionError || 'Error de conexión');
         }
-
-        navigate(`/reset-password?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

@@ -1,0 +1,103 @@
+version: '3.9'
+
+# ─── Local Development Stack ──────────────────────────────────────────────────
+# Usage:
+#   cp apps/api/.env.example apps/api/.env   (fill in your secrets)
+#   docker compose up -d
+#
+# Services:
+#   web    → http://localhost:5173   (Vite dev server)
+#   api    → http://localhost:3010   (NestJS)
+#   db     → localhost:5432          (PostgreSQL)
+#   redis  → localhost:6379          (Redis)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: finix
+      POSTGRES_PASSWORD: finix_dev_password
+      POSTGRES_DB: finix_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U finix']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ───────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass finix_redis_dev
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'finix_redis_dev', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── API (NestJS) ─────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: builder   # Use builder stage for dev (hot-reload via volume)
+    restart: unless-stopped
+    env_file:
+      - apps/api/.env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://finix:finix_dev_password@db:5432/finix_dev
+      DIRECT_URL: postgresql://finix:finix_dev_password@db:5432/finix_dev
+      REDIS_URL: redis://:finix_redis_dev@redis:6379
+    ports:
+      - '3010:3010'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./apps/api/src:/app/apps/api/src:ro   # Hot-reload source
+      - api_uploads:/app/uploads               # Persistent uploads
+    command: ['npm', 'run', 'dev', '-w', 'api']
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:3010/api/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  # ── Web (Vite Dev Server) ────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: builder
+    restart: unless-stopped
+    env_file:
+      - apps/web/.env
+    environment:
+      VITE_API_URL: http://localhost:3010/api
+    ports:
+      - '5173:5173'
+    depends_on:
+      - api
+    volumes:
+      - ./apps/web/src:/app/apps/web/src:ro
+    command: ['npm', 'run', 'dev', '-w', 'web', '--', '--host']
+
+volumes:
+  postgres_data:
+  redis_data:
+  api_uploads:
