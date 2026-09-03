@@ -85,6 +85,10 @@ async function bootstrap() {
     const port = Number(process.env.PORT || 3010);
     await app.listen(port, '0.0.0.0');
 
+    console.log('\n\n=============================================');
+    console.log('===> LEVANTANDO BACKEND LOCAL <===');
+    console.log('=============================================\n\n');
+
     logger.log(`🚀 API running on port ${port} [${process.env.NODE_ENV ?? 'development'}]`);
     logger.log(`🏥 Health: http://localhost:${port}/health`);
 }

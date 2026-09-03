@@ -3,11 +3,32 @@ import { Sidebar } from '../components/Sidebar';
 import { BottomNav } from '../components/BottomNav';
 import { MobileTopBar } from '../components/MobileTopBar';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
+import { GlobalSearch } from '../components/GlobalSearch';
+import { useState, useEffect } from 'react';
 
 export default function DashboardLayout() {
     const location = useLocation();
     const isMessages = location.pathname.startsWith('/messages');
     const isComunidad = location.pathname.startsWith('/comunidad');
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsSearchOpen(true);
+            }
+        };
+        const handleCustomOpen = () => setIsSearchOpen(true);
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('finix:open-search', handleCustomOpen);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('finix:open-search', handleCustomOpen);
+        };
+    }, []);
 
     return (
         <div className="min-h-screen bg-background text-foreground flex">
@@ -50,6 +71,7 @@ export default function DashboardLayout() {
             {/* Bottom Nav — mobile only */}
             <BottomNav />
             <PWAInstallPrompt />
+            <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         </div>
     );
 }

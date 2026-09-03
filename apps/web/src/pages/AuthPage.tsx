@@ -61,14 +61,12 @@ export default function AuthPage() {
     const infoLinks = [
         { label: 'Características', to: '/info/features' },
         { label: 'Cómo funciona', to: '/info/how' },
-        { label: 'Sobre nosotros', to: '/info/about' },
+        { label: 'Sobre Finix', to: '/info/about' },
     ];
 
     const legalAndSocialLinks = [
         { label: t.legal.privacy, to: '/legal/privacy' },
         { label: t.legal.terms, to: '/legal/terms' },
-        { label: 'Instagram', href: 'https://instagram.com/fiinixarg' },
-        { label: 'Contacto', to: '/info/about#contacto' },
     ];
 
     const highlights = [
@@ -511,22 +509,10 @@ export default function AuthPage() {
                                 </Link>
                             ))}
                             <span className="text-xs text-muted-foreground whitespace-nowrap">•</span>
-                            {legalAndSocialLinks.map(({ label, to, href }) => (
-                                to ? (
-                                    <Link key={label} to={to} className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
-                                        {label}
-                                    </Link>
-                                ) : (
-                                    <a
-                                        key={label}
-                                        href={href}
-                                        target={href?.startsWith('http') ? '_blank' : undefined}
-                                        rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
-                                        className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-                                    >
-                                        {label}
-                                    </a>
-                                )
+                            {legalAndSocialLinks.map(({ label, to }) => (
+                                <Link key={label} to={to} className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
+                                    {label}
+                                </Link>
                             ))}
                         </div>
                         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/50">

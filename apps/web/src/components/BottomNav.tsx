@@ -292,69 +292,23 @@ export function BottomNav() {
                                     </button>
                                 </div>
 
-                                {/* Search */}
+                                {/* Search Trigger */}
                                 <div className="px-4 pb-3">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
-                                        <input
-                                            type="text"
-                                            placeholder="Buscar usuarios..."
-                                            className="w-full text-[13px] pl-9 pr-4 py-2.5 rounded-xl outline-none"
-                                            style={{
-                                                background: 'hsl(var(--secondary))',
-                                                color: 'hsl(var(--foreground))',
-                                                border: '1px solid hsl(var(--border))',
-                                            }}
-                                            value={searchQuery}
-                                            onChange={e => setSearchQuery(e.target.value)}
-                                        />
-                                    </div>
-                                    <AnimatePresence>
-                                        {(searchResults.length > 0 || isSearchLoading || searchQuery.length >= 2) && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                className="mt-1 rounded-xl overflow-hidden"
-                                                style={{ background: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}
-                                            >
-                                                {isSearchLoading ? (
-                                                    <div className="flex justify-center py-4">
-                                                        <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'hsl(var(--muted-foreground))' }} />
-                                                    </div>
-                                                ) : searchResults.length > 0 ? (
-                                                    searchResults.map(u => (
-                                                        <div
-                                                            key={u.id}
-                                                            className="flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors"
-                                                            style={{ borderBottom: '1px solid hsl(var(--border) / 0.3)' }}
-                                                            onClick={() => {
-                                                                navigate(`/profile/${u.username}`);
-                                                                setIsMoreOpen(false);
-                                                                setSearchQuery('');
-                                                            }}
-                                                        >
-                                                            <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0"
-                                                                style={{ background: 'hsl(var(--primary) / 0.12)' }}>
-                                                                {u.avatarUrl
-                                                                    ? <img src={resolveMediaUrl(u.avatarUrl)} alt={u.username} className="w-full h-full object-cover" />
-                                                                    : <User className="w-4 h-4 m-auto mt-2" style={{ color: PRIMARY }} />
-                                                                }
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="text-[13px] font-semibold truncate">{u.username}</p>
-                                                                <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                                    {u.title || u.company || 'Ver perfil'}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-[12px] text-center py-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Sin resultados</p>
-                                                )}
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                                    <button
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left"
+                                        style={{
+                                            background: 'hsl(var(--secondary))',
+                                            color: 'hsl(var(--muted-foreground))',
+                                            border: '1px solid hsl(var(--border))',
+                                        }}
+                                        onClick={() => {
+                                            setIsMoreOpen(false);
+                                            window.dispatchEvent(new Event('finix:open-search'));
+                                        }}
+                                    >
+                                        <Search className="w-4 h-4 ml-1" />
+                                        <span className="text-[13px]">Buscador Inteligente IA...</span>
+                                    </button>
                                 </div>
 
                                 {/* Quick links grid */}
