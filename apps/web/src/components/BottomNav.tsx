@@ -14,7 +14,6 @@ import {
     Sun,
     Moon,
     Plus,
-    Loader2,
     X,
     Newspaper,
     TrendingUp,
@@ -44,9 +43,6 @@ export function BottomNav() {
 
     const [unreadMsgs, setUnreadMsgs] = useState(0);
     const [isMoreOpen, setIsMoreOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<any[]>([]);
-    const [isSearchLoading, setIsSearchLoading] = useState(false);
 
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
 
@@ -69,20 +65,6 @@ export function BottomNav() {
 
     /* close panel on route change */
     useEffect(() => { setIsMoreOpen(false); }, [location.pathname]);
-
-    /* search debounce */
-    useEffect(() => {
-        if (searchQuery.length < 2) { setSearchResults([]); return; }
-        setIsSearchLoading(true);
-        const t = setTimeout(() => {
-            apiFetch(`/users/search?q=${searchQuery}`)
-                .then(r => r.json())
-                .then(d => setSearchResults(Array.isArray(d) ? d : []))
-                .catch(() => setSearchResults([]))
-                .finally(() => setIsSearchLoading(false));
-        }, 300);
-        return () => clearTimeout(t);
-    }, [searchQuery]);
 
     const isActive = (p: string) =>
         location.pathname === p ||
