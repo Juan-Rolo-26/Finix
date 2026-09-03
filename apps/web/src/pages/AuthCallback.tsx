@@ -41,7 +41,9 @@ export default function AuthCallback() {
             };
 
             login(token, mappedUser);
-            navigate(mappedUser.onboardingCompleted ? '/dashboard' : '/onboarding');
+
+            const isNewUser = session.user.created_at && (new Date().getTime() - new Date(session.user.created_at).getTime()) < 60000;
+            navigate(!mappedUser.onboardingCompleted && isNewUser ? '/onboarding' : '/dashboard');
         };
 
         handle();

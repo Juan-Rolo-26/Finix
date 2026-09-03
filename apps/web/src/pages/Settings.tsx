@@ -58,6 +58,8 @@ interface FullSettings {
     isVerified: boolean;
     isCreator: boolean;
     accountType: string;
+    // Notifications
+    notificationPrefs?: { email: boolean; push: boolean };
     // Privacy
     isProfilePublic: boolean;
     showPortfolio: boolean;
@@ -139,7 +141,7 @@ const SectionHeader = ({ icon, title, description }: { icon: React.ReactNode; ti
 
 export default function Settings() {
     const { user, updateUser } = useAuthStore();
-    const { setTheme: setGlobalTheme } = usePreferencesStore();
+    const { setTheme: setGlobalTheme, setLanguage: setGlobalLanguage, updatePreferences: setGlobalPreferences } = usePreferencesStore();
 
     const [isLoading, setIsLoading] = useState(true);
     const [settings, setSettings] = useState<FullSettings | null>(null);
@@ -160,6 +162,9 @@ export default function Settings() {
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const [isUploadingBanner, setIsUploadingBanner] = useState(false);
     const [bannerUploadError, setBannerUploadError] = useState('');
+
+    const [notificationPrefs, setNotificationPrefs] = useState({ email: true, push: true });
+
 
     // ── Privacy form state ──
     const [privacyForm, setPrivacyForm] = useState({
@@ -211,6 +216,9 @@ export default function Settings() {
                 if (!cancelled) {
                     setSettings(data);
                     setProfileForm(data);
+                    if (data.notificationPrefs) {
+                        setNotificationPrefs(data.notificationPrefs);
+                    }
                     setPrivacyForm({
                         isProfilePublic: data.isProfilePublic,
                         showPortfolio: data.showPortfolio,
@@ -292,6 +300,7 @@ export default function Settings() {
                     youtubeUrl: profileForm.youtubeUrl,
                     instagramUrl: profileForm.instagramUrl,
                     yearsExperience: profileForm.yearsExperience,
+                    notificationPrefs,
                 }),
             });
             if (!res.ok) {
@@ -301,6 +310,9 @@ export default function Settings() {
             const updated = await res.json();
             setSettings(updated);
             setProfileForm(updated);
+            if (updated.notificationPrefs) {
+                setNotificationPrefs(updated.notificationPrefs);
+            }
             updateUser({ username: updated.username, bio: updated.bio, avatarUrl: updated.avatarUrl });
             showToast('Perfil guardado correctamente');
         } catch (e: any) {
@@ -368,6 +380,10 @@ export default function Settings() {
         if (key === 'theme') {
             setGlobalTheme(value as 'dark' | 'light' | 'system');
         }
+        if (key === 'language') {
+            setGlobalLanguage(value as 'es-AR' | 'en-US' | 'pt-BR');
+        }
+        setGlobalPreferences({ [key]: value });
         setPrefsSaveStatus('saving');
         clearTimeout(prefsDebounce.current);
         prefsDebounce.current = setTimeout(async () => {
@@ -473,11 +489,12 @@ export default function Settings() {
 
             {/* Tabs */}
             <Tabs defaultValue="cuenta" className="space-y-6">
-                <TabsList className="grid h-auto w-full grid-cols-4 gap-1 p-1.5 bg-card/40 border border-border/40 rounded-2xl">
+                <TabsList className="grid h-auto w-full grid-cols-5 gap-1 p-1.5 bg-card/40 border border-border/40 rounded-2xl">
                     {[
                         { value: 'cuenta', label: 'Cuenta', icon: <User className="w-3.5 h-3.5" /> },
                         { value: 'privacidad', label: 'Privacidad', icon: <Shield className="w-3.5 h-3.5" /> },
                         { value: 'preferencias', label: 'Preferencias', icon: <Globe className="w-3.5 h-3.5" /> },
+                        { value: 'notificaciones', label: 'Notificaciones', icon: <Bell className="w-3.5 h-3.5" /> },
                         { value: 'seguridad', label: 'Seguridad', icon: <Lock className="w-3.5 h-3.5" /> },
                     ].map(({ value, label, icon }) => (
                         <TabsTrigger

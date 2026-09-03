@@ -1,4 +1,26 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsIn, Min, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsIn, Min, IsInt, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class CommunityPlanDto {
+    @IsString()
+    name: string;
+
+    @IsNumber()
+    @Min(0)
+    price: number;
+
+    @IsString()
+    @IsIn(['monthly', 'yearly', 'one_time'])
+    interval: string;
+
+    @IsArray()
+    @IsString({ each: true })
+    features: string[];
+
+    @IsInt()
+    @Min(0)
+    tierLevel: number;
+}
 
 export class CreateCommunityDto {
     @IsString()
@@ -8,20 +30,22 @@ export class CreateCommunityDto {
     description: string;
 
     @IsString()
-    category: string; // "Acciones", "Cripto", "ETFs", "Argentina", "USA"
-
-    @IsBoolean()
-    isPaid: boolean;
-
-    @IsNumber()
-    @IsOptional()
-    @Min(0)
-    price?: number;
+    category: string;
 
     @IsString()
     @IsOptional()
-    @IsIn(['monthly', 'yearly'])
-    billingType?: string;
+    @IsIn(['PUBLIC', 'PRIVATE', 'EXCLUSIVE'])
+    privacyType?: string;
+
+    @IsString()
+    @IsOptional()
+    rules?: string;
+
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => CommunityPlanDto)
+    plans?: CommunityPlanDto[];
 
     @IsString()
     @IsOptional()
@@ -50,14 +74,14 @@ export class UpdateCommunityDto {
     @IsOptional()
     category?: string;
 
-    @IsBoolean()
+    @IsString()
     @IsOptional()
-    isPaid?: boolean;
+    @IsIn(['PUBLIC', 'PRIVATE', 'EXCLUSIVE'])
+    privacyType?: string;
 
-    @IsNumber()
+    @IsString()
     @IsOptional()
-    @Min(0)
-    price?: number;
+    rules?: string;
 
     @IsString()
     @IsOptional()
@@ -65,8 +89,7 @@ export class UpdateCommunityDto {
 
     @IsString()
     @IsOptional()
-    @IsIn(['monthly', 'yearly'])
-    billingType?: string;
+    bannerUrl?: string;
 
     @IsInt()
     @IsOptional()
@@ -78,13 +101,18 @@ export class CreateCommunityPostDto {
     @IsString()
     content: string;
 
+    @IsArray()
+    @IsOptional()
+    mediaUrls?: any[];
+
     @IsString()
     @IsOptional()
-    mediaUrl?: string;
+    @IsIn(['PUBLIC', 'MEMBERS', 'PREMIUM_TIER'])
+    targetVisibility?: string;
 
-    @IsBoolean()
+    @IsInt()
     @IsOptional()
-    isPublic?: boolean;
+    requiredTierLevel?: number;
 }
 
 export class CreateCommunityResourceDto {
@@ -101,4 +129,8 @@ export class CreateCommunityResourceDto {
     @IsBoolean()
     @IsOptional()
     isPublic?: boolean;
+
+    @IsInt()
+    @IsOptional()
+    requiredTierLevel?: number;
 }

@@ -84,6 +84,13 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
         }
 
         if (response.status !== 404) {
+            const contentType = response.headers.get('content-type') || '';
+            // If the response is HTML, it's very likely the Cloudflare/Vite SPA fallback catching an API request
+            if (contentType.includes('text/html')) {
+                lastResponse = response;
+                continue;
+            }
+
             activeBase = base;
             if (shouldAutoLogoutOnUnauthorized(path, response.status)) {
                 clearAuthAndRedirect();

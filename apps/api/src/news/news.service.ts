@@ -330,9 +330,11 @@ export class NewsService {
                     // Get or create source
                     const source = await this.getOrCreateSource(item.source);
 
-                    // Store news
-                    await this.prisma.news.create({
-                        data: {
+                    // Store news with upsert to avoid Unique Constraint crash
+                    await this.prisma.news.upsert({
+                        where: { url: item.url },
+                        update: {}, // ignore existing
+                        create: {
                             title: item.title,
                             titleEs,
                             content: item.content,
@@ -360,8 +362,13 @@ export class NewsService {
                     // Rate limiting: wait between items
                     await new Promise(resolve => setTimeout(resolve, 500));
 
-                } catch (error) {
-                    console.error(`[NewsService] Error processing item:`, error.message);
+                } catch (error: any) {
+                    // P2002 is Prisma's unique constraint failed error
+                    if (error.code === 'P2002') {
+                        skipped++;
+                    } else {
+                        console.error(`[NewsService] Error processing item (${item.title}):`, error.message);
+                    }
                 }
             }
 

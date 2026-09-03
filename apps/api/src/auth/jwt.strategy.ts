@@ -116,6 +116,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                 try {
                     const header = decodeJwtHeader(rawJwtToken);
                     const payload = decodeJwtPayload(rawJwtToken);
+                    console.log('[JwtStrategy] decoding token:', { header, payload });
 
                     if (payload.iss === 'finix-api') {
                         done(null, resolveFinixSecret());
@@ -134,6 +135,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                     const key = await fetchSigningKey(header.kid);
                     done(null, key);
                 } catch (error) {
+                    console.error('[JwtStrategy] error in secretOrKeyProvider:', error);
                     done(error as Error);
                 }
             },
@@ -190,25 +192,41 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                 const email = payload.email || `${supabaseId}@placeholder.finix`;
                 const username = payload.user_metadata?.username || email.split('@')[0];
 
-                const created = await this.prisma.user.create({
-                    data: {
-                        id: supabaseId,
-                        email,
-                        username: `${username}_${Math.floor(Math.random() * 10000)}`,
-                        emailVerified: true,
-                        isVerified: false,
-                        plan: 'FREE',
-                        role: 'USER',
+                const existingEmailUser = await this.prisma.user.findUnique({
+                    where: { email },
+                    select: {
+                        id: true,
+                        username: true,
+                        role: true,
+                        plan: true,
+                        subscriptionStatus: true,
+                        status: true,
                     }
                 });
-                user = {
-                    id: created.id,
-                    username: created.username,
-                    role: created.role,
-                    plan: created.plan,
-                    subscriptionStatus: created.subscriptionStatus,
-                    status: created.status,
-                };
+
+                if (existingEmailUser) {
+                    user = existingEmailUser;
+                } else {
+                    const created = await this.prisma.user.create({
+                        data: {
+                            id: supabaseId,
+                            email,
+                            username: `${username}_${Math.floor(Math.random() * 10000)}`,
+                            emailVerified: true,
+                            isVerified: false,
+                            plan: 'FREE',
+                            role: 'USER',
+                        }
+                    });
+                    user = {
+                        id: created.id,
+                        username: created.username,
+                        role: created.role,
+                        plan: created.plan,
+                        subscriptionStatus: created.subscriptionStatus,
+                        status: created.status,
+                    };
+                }
             } catch (e) {
                 console.error('[JwtStrategy] Auto-sync failed:', e);
                 // We'll let it pass, but it might fail Foreign Key constraints later if creation fails
@@ -216,7 +234,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         }
 
         return {
-            id: supabaseId,
+            id: user?.id ?? supabaseId,
             email: payload.email,
             username: user?.username ?? (payload.user_metadata?.username ?? null),
             role: user?.role ?? 'USER',

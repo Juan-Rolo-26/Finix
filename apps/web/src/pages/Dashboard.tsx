@@ -48,7 +48,120 @@ const FEED_TABS = [
 
 type FeedTab = typeof FEED_TABS[number]['key'];
 
-/* ── Ticker strip ───────────────────────────────────────────────── */
+/* ── Symbol Logo ────────────────────────────────────────────────── */
+/**
+ * Resolves a TradingView-style symbol (e.g. "NASDAQ:TSLA") to the company
+ * logo URL from TradingView's public CDN, with a coloured-letter fallback.
+ */
+
+// Maps ticker → clearbit domain for well-known companies
+const DOMAIN_MAP: Record<string, string> = {
+    AAPL: 'apple.com', MSFT: 'microsoft.com', TSLA: 'tesla.com',
+    GOOGL: 'google.com', GOOG: 'google.com', AMZN: 'amazon.com',
+    META: 'meta.com', NVDA: 'nvidia.com', NFLX: 'netflix.com',
+    JPM: 'jpmorganchase.com', BAC: 'bankofamerica.com', V: 'visa.com',
+    MA: 'mastercard.com', DIS: 'disney.com', KO: 'coca-cola.com',
+    PEP: 'pepsico.com', WMT: 'walmart.com', PG: 'pg.com',
+    JNJ: 'jnj.com', XOM: 'exxonmobil.com', CVX: 'chevron.com',
+    SPX: 'spglobal.com', SPXUSD: 'spglobal.com', NSXUSD: 'nasdaq.com',
+};
+
+// TradingView crypto logo paths
+const CRYPTO_TV_MAP: Record<string, string> = {
+    BTC: 'bitcoin', ETH: 'ethereum', BNB: 'binance-coin',
+    SOL: 'solana', XRP: 'ripple', ADA: 'cardano', AVAX: 'avalanche',
+    DOGE: 'dogecoin', DOT: 'polkadot-new', MATIC: 'polygon',
+    LINK: 'chainlink', UNI: 'uniswap', LTC: 'litecoin',
+};
+
+// TradingView slug map for famous stocks
+const TV_SLUG_MAP: Record<string, string> = {
+    AAPL: 'apple', MSFT: 'microsoft', TSLA: 'tesla',
+    GOOGL: 'alphabet', GOOG: 'alphabet', AMZN: 'amazon',
+    META: 'meta', NVDA: 'nvidia', NFLX: 'netflix',
+    JPM: 'jpmorgan-chase', BAC: 'bank-of-america', V: 'visa',
+    MA: 'mastercard', DIS: 'walt-disney', KO: 'coca-cola',
+    PEP: 'pepsico', WMT: 'walmart', PG: 'procter-and-gamble',
+    JNJ: 'johnson-and-johnson', XOM: 'exxon-mobil', CVX: 'chevron',
+    SPY: 'sp-global', QQQ: 'invesco', DIA: 'sp-global',
+};
+
+function SymbolLogo({ symbol, size = 32 }: { symbol: string; size?: number }) {
+    const clean = symbol.split(':').pop() ?? symbol;
+    const normalized = clean.replace(/USD$/, '').replace(/USDT$/, '');
+    const upper = normalized.toUpperCase();
+
+    // Build ordered list of logo URLs to try
+    const getUrls = (): string[] => {
+        const urls: string[] = [];
+
+        // 1. TradingView CDN (works for crypto and exact mapped slugs)
+        const cryptoPath = CRYPTO_TV_MAP[upper];
+        if (cryptoPath) {
+            urls.push(`https://s3-symbol-logo.tradingview.com/crypto/XTVC${upper}--big.svg`);
+            urls.push(`https://s3-symbol-logo.tradingview.com/${cryptoPath}--big.svg`);
+        } else {
+            const tvSlug = TV_SLUG_MAP[upper];
+            if (tvSlug) urls.push(`https://s3-symbol-logo.tradingview.com/${tvSlug}--big.svg`);
+        }
+
+        // 2. Clearbit & Google Favicons Domains
+        const domain = DOMAIN_MAP[upper];
+        if (domain) {
+            urls.push(`https://logo.clearbit.com/${domain}`);
+            urls.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
+        }
+
+        // 3. Fallback generic lowercases
+        urls.push(`https://s3-symbol-logo.tradingview.com/${normalized.toLowerCase()}--big.svg`);
+        urls.push(`https://logo.clearbit.com/${normalized.toLowerCase()}.com`);
+        urls.push(`https://www.google.com/s2/favicons?domain=${normalized.toLowerCase()}.com&sz=128`);
+
+        return urls;
+    };
+
+    const urls = getUrls();
+    const [idx, setIdx] = useState(0);
+    const [failed, setFailed] = useState(false);
+
+    const letter = normalized.slice(0, 1).toUpperCase();
+
+    const handleError = () => {
+        if (idx + 1 < urls.length) {
+            setIdx(i => i + 1);
+        } else {
+            setFailed(true);
+        }
+    };
+
+    if (failed) {
+        return (
+            <div
+                className="flex items-center justify-center font-black rounded-lg flex-shrink-0"
+                style={{
+                    width: size,
+                    height: size,
+                    fontSize: size * 0.38,
+                    background: 'hsl(var(--primary) / 0.15)',
+                    color: 'hsl(var(--primary))',
+                }}
+            >
+                {letter}
+            </div>
+        );
+    }
+
+    return (
+        <img
+            key={idx}
+            src={urls[idx]}
+            alt={normalized}
+            onError={handleError}
+            style={{ width: size, height: size, borderRadius: size * 0.28, objectFit: 'contain', flexShrink: 0, background: 'hsl(var(--card))' }}
+        />
+    );
+}
+
 function TickerItem({ t }: { t: MarketTicker }) {
     const val = t.changePercent ?? t.change;
     const isUp = val >= 0;
@@ -56,10 +169,13 @@ function TickerItem({ t }: { t: MarketTicker }) {
     const label = sym === 'BTCUSD' ? 'BTC' : sym === 'ETHUSD' ? 'ETH' : sym.replace('USD', '');
 
     return (
-        <div className="flex items-center gap-2.5 px-4 py-2 border-r border-white/[0.06] last:border-r-0 flex-shrink-0 hover:bg-white/[0.03] transition-colors cursor-pointer">
-            <span className="text-[10.5px] font-bold tracking-widest uppercase" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>{label}</span>
-            <span className="text-[12.5px] font-bold num">{formatCurrency(t.price, 'USD')}</span>
-            <span className="flex items-center gap-0.5 text-[11px] font-bold num"
+        <div className="flex items-center gap-2.5 px-4 py-2.5 border-r border-border/40 last:border-r-0 flex-shrink-0 hover:bg-muted/30 transition-colors cursor-pointer">
+            <SymbolLogo symbol={t.symbol} size={26} />
+            <div className="flex flex-col">
+                <span className="text-[10.5px] font-bold tracking-widest uppercase" style={{ color: 'hsl(var(--muted-foreground))' }}>{label}</span>
+                <span className="text-[12px] font-bold num text-foreground">{formatCurrency(t.price, 'USD')}</span>
+            </div>
+            <span className="flex items-center gap-0.5 text-[11px] font-bold num ml-auto"
                 style={{ color: isUp ? 'hsl(142 70% 45%)' : 'hsl(0 68% 56%)' }}>
                 {isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                 {isUp ? '+' : ''}{val.toFixed(2)}%
@@ -72,10 +188,10 @@ function MarketTicker({ tickers }: { tickers: MarketTicker[] }) {
     if (tickers.length === 0) return null;
     return (
         <div className="rounded-2xl overflow-hidden flex-shrink-0"
-            style={{ background: 'hsl(220 28% 7%)', border: '1px solid hsl(220 20% 14%)' }}>
+            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border) / 0.5)' }}>
             <div className="flex overflow-x-auto scrollbar-hide">
                 {/* Live indicator */}
-                <div className="flex items-center gap-2 px-4 py-2 border-r border-white/[0.06] flex-shrink-0">
+                <div className="flex items-center gap-2 px-4 py-2 border-r flex-shrink-0" style={{ borderColor: 'hsl(var(--border) / 0.4)' }}>
                     <span className="relative flex h-1.5 w-1.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
@@ -135,10 +251,7 @@ function AssetRow({ item, onClick }: { item: any; onClick: () => void }) {
             className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all hover:bg-white/[0.04] group"
         >
             <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-[9px] tracking-wider flex-shrink-0"
-                    style={{ background: isUp ? 'hsl(142 70% 45% / 0.12)' : 'hsl(0 68% 56% / 0.12)', color: isUp ? 'hsl(142 70% 50%)' : 'hsl(0 68% 60%)' }}>
-                    {sym?.slice(0, 3)}
-                </div>
+                <SymbolLogo symbol={item.symbol ?? sym} size={32} />
                 <div className="text-left">
                     <p className="text-[12.5px] font-semibold leading-tight group-hover:text-primary transition-colors">{sym}</p>
                     <p className="text-[10px] font-medium" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>
@@ -207,7 +320,6 @@ export default function Dashboard() {
     const [topAssets, setTopAssets] = useState<any[]>([]);
     const [topTraders, setTopTraders] = useState<User[]>([]);
     const [posts, setPosts] = useState<any[]>([]);
-    const [marketTickers, setMarketTickers] = useState<MarketTicker[]>([]);
     const [activeTab, setActiveTab] = useState<FeedTab>('forYou');
 
     useEffect(() => {
@@ -215,12 +327,6 @@ export default function Dashboard() {
             .then(r => r.json())
             .then((data: any) => {
                 const list = Array.isArray(data) ? data : [];
-                setMarketTickers(list.slice(0, 10).map((t: any) => ({
-                    symbol: t.symbol,
-                    price: t.price ?? 0,
-                    change: t.change ?? 0,
-                    changePercent: t.changePercent ?? t.change ?? 0,
-                })));
                 const sorted = [...list].sort((a: any, b: any) => Math.abs(b.change) - Math.abs(a.change));
                 setTopAssets(sorted.slice(0, 6));
             })
@@ -279,22 +385,7 @@ export default function Dashboard() {
 
                 {/* ── Middle Column (or joined in Right on lg) ── */}
                 <aside className="hidden lg:flex flex-col gap-5">
-                    {/* Market Ticker (Desktop only) */}
-                    {marketTickers.length > 0 && (
-                        <div className="hidden 2xl:block overflow-hidden rounded-2xl"
-                            style={{ background: 'hsl(220 28% 7%)', border: '1px solid hsl(220 20% 14%)', boxShadow: '0 4px 15px hsl(0 0% 0% / 0.2)' }}>
-                            <div className="px-5 py-3 border-b flex items-center gap-2" style={{ borderColor: 'hsl(0 0% 100% / 0.08)' }}>
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                                </span>
-                                <span className="text-[11px] font-black tracking-widest uppercase text-emerald-500">Live Market</span>
-                            </div>
-                            <div className="flex flex-col divide-y divide-white/10 border-t border-white/10 mt-1">
-                                {marketTickers.slice(0, 5).map(t => <TickerItem key={t.symbol} t={t} />)}
-                            </div>
-                        </div>
-                    )}
+
 
                     {/* Trending Assets */}
                     <SideCard
@@ -343,6 +434,39 @@ export default function Dashboard() {
                             </div>
                         </SideCard>
                     </div>
+
+                    {/* Eventos Económicos */}
+                    <SideCard
+                        index={3}
+                        title="Calendario Económico"
+                        icon={<Award className="w-4 h-4" />}
+                        iconColor="hsl(280 65% 60%)"
+                        iconBg="hsl(280 65% 60% / 0.15)"
+                        to="/market"
+                        toLabel="Ver calendario"
+                    >
+                        <div className="px-5 pb-5 pt-1 space-y-4">
+                            {[
+                                { time: '10:30', flag: '🇺🇸', event: 'Índice de Precios al Consumidor (IPC)', impact: 'Alto', color: 'hsl(0 80% 60%)' },
+                                { time: '12:00', flag: '🇪🇺', event: 'Declaraciones de Lagarde (BCE)', impact: 'Medio', color: 'hsl(38 90% 55%)' },
+                                { time: '15:15', flag: '🇺🇸', event: 'Producción Industrial mensual', impact: 'Medio', color: 'hsl(38 90% 55%)' }
+                            ].map((evt, j) => (
+                                <div key={j} className="flex items-start gap-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/market')}>
+                                    <span className="text-[11.5px] font-bold text-foreground mt-0.5">{evt.time}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                            <span>{evt.flag}</span>
+                                            <span className="text-[9.5px] font-bold tracking-wider uppercase" style={{ color: evt.color }}>Impacto {evt.impact}</span>
+                                        </div>
+                                        <p className="text-[13px] font-medium leading-snug truncate" style={{ color: 'hsl(var(--foreground) / 0.8)' }}>
+                                            {evt.event}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </SideCard>
+
                 </aside>
 
                 {/* ── Right Column (2xl only) ── */}
@@ -423,16 +547,26 @@ export default function Dashboard() {
                                 <h4 className="text-[13.5px] font-semibold leading-snug">Bitcoin consolida sobre resistencia clave, analistas prevén rally</h4>
                                 <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>Hace 5h · CoinDesk</span>
                             </div>
+                            <div className="flex flex-col gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/news')}>
+                                <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: 'hsl(200 90% 60%)' }}>ECONOMÍA</span>
+                                <h4 className="text-[13.5px] font-semibold leading-snug">La Fed sugiere un recorte de tasas más leve en la próxima reunión</h4>
+                                <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>Hace 8h · Reuters</span>
+                            </div>
+                            <div className="flex flex-col gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/news')}>
+                                <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: 'hsl(350 75% 65%)' }}>EMPRESAS</span>
+                                <h4 className="text-[13.5px] font-semibold leading-snug">Nvidia anuncia resultados trimestrales récord y sorprende al mercado</h4>
+                                <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>Hace 11h · WSJ</span>
+                            </div>
                         </div>
                     </SideCard>
 
                     <div className="flex flex-wrap gap-x-4 gap-y-2 text-[11px] font-medium px-2 mt-2" style={{ color: 'hsl(var(--muted-foreground) / 0.45)' }}>
-                        {['Sobre Finix', 'Ayuda', 'Términos', 'Privacidad', 'Cookies'].map((item) => (
-                            <Link key={item} to={`/${item.toLowerCase().replace(' ', '-')}`} className="hover:text-primary/70 transition-colors">
-                                {item}
-                            </Link>
-                        ))}
-                        <div className="w-full mt-2 text-[10.5px]">© 2025 Finix Network Inc.</div>
+                        <Link to="/about" className="hover:text-primary/70 transition-colors">Sobre Finix</Link>
+                        <Link to="/help" className="hover:text-primary/70 transition-colors">Ayuda</Link>
+                        <Link to="/terms" className="hover:text-primary/70 transition-colors">Términos</Link>
+                        <Link to="/privacy" className="hover:text-primary/70 transition-colors">Privacidad</Link>
+                        <Link to="/cookies" className="hover:text-primary/70 transition-colors">Cookies</Link>
+                        <div className="w-full mt-2 text-[10.5px]">© 2026 Finix Network Inc.</div>
                     </div>
                 </aside>
 

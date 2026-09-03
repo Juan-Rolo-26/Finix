@@ -25,6 +25,7 @@ import { PrismaModule } from './prisma.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ContactModule } from './contact/contact.module';
 import { HubModule } from './hub/hub.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
     imports: [
@@ -47,6 +48,7 @@ import { HubModule } from './hub/hub.module';
         ]),
         ScheduleModule.forRoot(),
         PrismaModule,
+        HealthModule,
         ContactModule,
         NotificationsModule,
         AuthModule,

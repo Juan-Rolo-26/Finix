@@ -52,6 +52,8 @@ interface UserProfile {
     isProfilePublic: boolean;
     showPortfolio: boolean;
     showStats: boolean;
+    showExactReturns: boolean;
+    returnsVisibilityMode: string;
     acceptingFollowers: boolean;
     isFollowedByMe?: boolean;
     _count?: { posts: number; following: number; followedBy: number };
@@ -132,9 +134,19 @@ function normalizeAllocationLabel(value: string) {
     return value;
 }
 
-function formatSignedPercentage(value?: number | null, fractionDigits = 2) {
+function formatSignedPercentage(value?: number | null, fractionDigits = 2, returnsVisibilityMode = 'exact', showExactReturns = true) {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
         return '—';
+    }
+
+    if (!showExactReturns || returnsVisibilityMode === 'range') {
+        if (value > 50) return "+50%";
+        if (value > 20) return "20% - 50%";
+        if (value > 5) return "5% - 20%";
+        if (value > 0) return "0% - 5%";
+        if (value > -5) return "-5% - 0%";
+        if (value > -20) return "-20% - -5%";
+        return "Menos de -20%";
     }
 
     return `${value >= 0 ? '+' : ''}${value.toFixed(fractionDigits)}%`;
@@ -269,9 +281,11 @@ interface ProfilePortfolioSectionProps {
     winRate?: number;
     riskScore?: number;
     showStats?: boolean;
+    showExactReturns?: boolean;
+    returnsVisibilityMode?: string;
 }
 
-export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, totalReturn, winRate, riskScore, showStats }: ProfilePortfolioSectionProps) {
+export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, totalReturn, winRate, riskScore, showStats, showExactReturns, returnsVisibilityMode }: ProfilePortfolioSectionProps) {
     const [portfolios, setPortfolios] = useState<PortfolioData[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [metrics, setMetrics] = useState<PortfolioMetricsData | null>(null);
@@ -386,10 +400,12 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
         };
     }, [isOwnProfile, selectedId]);
 
-    const fmt = (n: number, cur = 'USD') =>
-        new Intl.NumberFormat('es-AR', { style: 'currency', currency: cur, maximumFractionDigits: 2 }).format(n);
+    const fmt = (n: number, cur = 'USD') => {
+        if (!isOwnProfile && (!showExactReturns || returnsVisibilityMode === 'range')) return '***';
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: cur, maximumFractionDigits: 2 }).format(n);
+    };
 
-    const fmtPct = (n: number) => formatSignedPercentage(n);
+    const fmtPct = (n: number) => isOwnProfile ? formatSignedPercentage(n) : formatSignedPercentage(n, 2, returnsVisibilityMode, showExactReturns);
 
     const PIE_COLORS = ['hsl(158 100% 45%)', '#3b82f6', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316'];
     const riskLabels: Record<string, string> = {
@@ -401,7 +417,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
     const hasWinRate = typeof winRate === 'number' && Number.isFinite(winRate);
     const hasRiskScore = typeof riskScore === 'number' && Number.isFinite(riskScore);
     const resolvedTotalReturn = hasTotalReturn ? totalReturn : metrics?.variacionPorcentual;
-    const totalReturnDisplay = formatSignedPercentage(resolvedTotalReturn);
+    const totalReturnDisplay = isOwnProfile ? formatSignedPercentage(resolvedTotalReturn) : formatSignedPercentage(resolvedTotalReturn, 2, returnsVisibilityMode, showExactReturns);
     const totalReturnColor =
         typeof resolvedTotalReturn === 'number' && Number.isFinite(resolvedTotalReturn) && resolvedTotalReturn < 0
             ? 'hsl(0 90% 58%)'
@@ -851,8 +867,14 @@ export default function Profile() {
         id: u.id || '1', username: u.username || 'Usuario', email: u.email || '',
         bio: u.bio || 'Finix Investor', avatarUrl: u.avatarUrl,
         isInfluencer: false, isVerified: false, accountType: 'BASIC',
-        isProfilePublic: true, showPortfolio: false, showStats: false, acceptingFollowers: true,
-        _count: { posts: 0, following: 0, followedBy: 0 },
+        isProfilePublic: true, showPortfolio: false, showStats: u.showStats ?? false, acceptingFollowers: u.acceptingFollowers ?? true,
+        showExactReturns: u.showExactReturns ?? true,
+        returnsVisibilityMode: u.returnsVisibilityMode || 'exact',
+        _count: {
+            followedBy: u._count?.followedBy || 0,
+            following: u._count?.following || 0,
+            posts: u._count?.posts || 0,
+        },
         createdAt: new Date().toISOString(),
     });
 
@@ -1609,42 +1631,55 @@ export default function Profile() {
                     <AnimatePresence mode="wait">
                         {activeTab === 'posts' && (
                             <motion.div key="posts" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                                {isLoadingPosts ? (
-                                    <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                        <Loader2 className="w-12 h-12 mx-auto mb-3 opacity-40 animate-spin" />
-                                        <p className="text-muted-foreground text-sm">Cargando publicaciones...</p>
-                                    </div>
-                                ) : profilePosts.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {profilePosts.map((post) => (
-                                            <PostCard
-                                                key={post.id}
-                                                post={post}
-                                                currentUserId={currentUser?.id}
-                                                onUpdated={(updatedPost) => {
-                                                    setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
-                                                    setSavedPosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
-                                                }}
-                                                onDeleted={(postId) => {
-                                                    setProfilePosts((prev) => prev.filter((item) => item.id !== postId));
-                                                    setSavedPosts((prev) => prev.filter((item) => item.id !== postId));
-                                                    setProfile((prev) => prev ? {
-                                                        ...prev,
-                                                        _count: prev._count ? {
-                                                            ...prev._count,
-                                                            posts: Math.max((prev._count.posts || 0) - 1, 0),
-                                                        } : prev._count,
-                                                    } : prev);
-                                                }}
-                                            />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                        <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                        <p className="text-muted-foreground text-sm">No hay publicaciones aún</p>
-                                    </div>
-                                )}
+                                <div className="space-y-4">
+                                    <ProfilePortfolioSection
+                                        profileUserId={profile.id}
+                                        isOwnProfile={isOwnProfile}
+                                        showPortfolio={profile.showPortfolio}
+                                        totalReturn={profile.totalReturn}
+                                        winRate={profile.winRate}
+                                        riskScore={profile.riskScore}
+                                        showStats={profile.showStats}
+                                        showExactReturns={profile.showExactReturns}
+                                        returnsVisibilityMode={profile.returnsVisibilityMode}
+                                    />
+                                    {isLoadingPosts ? (
+                                        <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
+                                            <Loader2 className="w-12 h-12 mx-auto mb-3 opacity-40 animate-spin" />
+                                            <p className="text-muted-foreground text-sm">Cargando publicaciones...</p>
+                                        </div>
+                                    ) : profilePosts.length > 0 ? (
+                                        <>
+                                            {profilePosts.map((post) => (
+                                                <PostCard
+                                                    key={post.id}
+                                                    post={post}
+                                                    currentUserId={currentUser?.id}
+                                                    onUpdated={(updatedPost) => {
+                                                        setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
+                                                        setSavedPosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
+                                                    }}
+                                                    onDeleted={(postId) => {
+                                                        setProfilePosts((prev) => prev.filter((item) => item.id !== postId));
+                                                        setSavedPosts((prev) => prev.filter((item) => item.id !== postId));
+                                                        setProfile((prev) => prev ? {
+                                                            ...prev,
+                                                            _count: prev._count ? {
+                                                                ...prev._count,
+                                                                posts: Math.max((prev._count.posts || 0) - 1, 0),
+                                                            } : prev._count,
+                                                        } : prev);
+                                                    }}
+                                                />
+                                            ))}
+                                        </>
+                                    ) : (
+                                        <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
+                                            <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                            <p className="text-muted-foreground text-sm">No hay publicaciones aún</p>
+                                        </div>
+                                    )}
+                                </div>
                             </motion.div>
                         )}
 

@@ -150,9 +150,8 @@ export class PostsController {
                 if (!allowed.includes(file.mimetype)) {
                     return cb(new BadRequestException(`Tipo no permitido: ${file.mimetype}`), false);
                 }
-                // Check if video is uploaded and return error (user explicitly requested no videos)
-                if (ALLOWED_VIDEO.includes(file.mimetype)) {
-                    return cb(new BadRequestException('No se permiten videos, solo imágenes o fotos.'), false);
+                if (ALLOWED_VIDEO.includes(file.mimetype) && file.size > MAX_VIDEO_BYTES) {
+                    return cb(new BadRequestException('Video demasiado grande (máx 100 MB)'), false);
                 }
                 if (ALLOWED_IMAGE.includes(file.mimetype) && file.size > MAX_IMAGE_BYTES) {
                     return cb(new BadRequestException('Imagen demasiado grande (máx 10 MB)'), false);

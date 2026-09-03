@@ -159,44 +159,28 @@ export class StripeService {
         };
     }
 
-    async createCommunityPayment(userId: string, communityId: string) {
+    async createCommunityPayment(userId: string, communityId: string, planId: string) {
         this.ensureStripeConfigured();
 
-        const [user, community] = await Promise.all([
+        const [user, community, plan] = await Promise.all([
             this.prisma.user.findUnique({
                 where: { id: userId },
-                select: {
-                    id: true,
-                    email: true,
-                    plan: true,
-                    subscriptionStatus: true,
-                    stripeCustomerId: true,
-                },
+                select: { id: true, email: true, plan: true, subscriptionStatus: true, stripeCustomerId: true },
             }),
             this.prisma.community.findUnique({
                 where: { id: communityId },
-                select: {
-                    id: true,
-                    name: true,
-                    creatorId: true,
-                    isPaid: true,
-                    price: true,
-                    billingType: true,
-                    maxMembers: true,
-                },
+                select: { id: true, name: true, creatorId: true, privacyType: true, maxMembers: true },
             }),
+            this.prisma.communityPlan.findUnique({
+                where: { id: planId }
+            })
         ]);
 
-        if (!user) {
-            throw new NotFoundException('Usuario no encontrado');
-        }
+        if (!user) throw new NotFoundException('Usuario no encontrado');
+        if (!community || !plan) throw new NotFoundException('Comunidad o plan no encontrado');
 
-        if (!community) {
-            throw new NotFoundException('Comunidad no encontrada');
-        }
-
-        if (!community.isPaid) {
-            throw new BadRequestException('La comunidad es gratuita, usa el endpoint de join.');
+        if (Number(plan.price) <= 0) {
+            throw new BadRequestException('El plan es gratuito, usa el endpoint de join.');
         }
 
         if (community.maxMembers) {
@@ -234,8 +218,8 @@ export class StripeService {
         }
 
         const customerId = await this.getOrCreateCustomer(user.id, user.email);
-        const interval = community.billingType === 'yearly' ? 'year' : 'month';
-        const unitAmount = Math.round(Number(community.price) * 100);
+        const interval = (plan.interval === 'yearly' || plan.interval === 'year') ? 'year' : 'month';
+        const unitAmount = Math.round(Number(plan.price) * 100);
 
         const session = await this.stripe.checkout.sessions.create({
             customer: customerId,
@@ -260,6 +244,7 @@ export class StripeService {
                 userId: user.id,
                 communityId: community.id,
                 creatorId: community.creatorId,
+                planId: plan.id,
             },
             subscription_data: {
                 metadata: {
@@ -269,8 +254,8 @@ export class StripeService {
                     creatorId: community.creatorId,
                 },
             },
-            success_url: `${this.frontendUrl}/communities/${community.id}?checkout=success`,
-            cancel_url: `${this.frontendUrl}/communities/${community.id}?checkout=cancel`,
+            success_url: `${this.frontendUrl}/comunidades?c=${community.id}&checkout=success`,
+            cancel_url: `${this.frontendUrl}/comunidades?c=${community.id}&checkout=cancel`,
         });
 
         return {

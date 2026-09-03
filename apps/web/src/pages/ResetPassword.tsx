@@ -1,27 +1,29 @@
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { apiFetch } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { Loader2, Lock, Eye, EyeOff } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function ResetPassword() {
-    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const initialEmail = searchParams.get('email') || '';
-    const [email, setEmail] = useState(initialEmail);
-    const [code, setCode] = useState(() => (searchParams.get('code') || '').replace(/\D/g, '').slice(0, 6));
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [resending, setResending] = useState(false);
-    const [message, setMessage] = useState(
-        searchParams.get('sent') === '1'
-            ? `Te enviamos un codigo para restablecer la contrasena a ${initialEmail || 'tu correo'}.`
-            : '',
-    );
+    const [message, setMessage] = useState('');
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        // En Supabase, el enlace mágico inicia una sesión de recuperación automáticamente.
+        // Validamos que haya una activa para permitir guardar la nueva contraseña.
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!session) {
+                setError('El enlace es inválido o expiró. Volvé a solicitar un restablecimiento desde el inicio de sesión.');
+            }
+        });
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -29,62 +31,28 @@ export default function ResetPassword() {
         setError('');
         setMessage('');
 
-        const normalizedEmail = email.trim().toLowerCase();
-
         try {
-            const res = await apiFetch('/auth/forgot/reset', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: normalizedEmail, code, newPassword: password }),
+            const { error: updateError } = await supabase.auth.updateUser({
+                password,
             });
-            const data = await res.json();
 
-            if (!res.ok) {
-                setError(data.message || 'No pudimos verificar el codigo o actualizar la contraseña.');
+            if (updateError) {
+                setError(updateError.message || 'Error al actualizar la contraseña.');
                 setIsLoading(false);
                 return;
             }
 
-            setMessage('Tu contrasena fue actualizada. Ahora puedes iniciar sesion.');
+            setMessage('Tu contraseña fue actualizada.');
+
+            // Sincronizar usuario con backend si es necesario post actualización
+            await useAuthStore.getState().syncFromSession();
+
             setTimeout(() => {
-                navigate('/');
+                navigate('/dashboard');
             }, 2200);
         } catch (err) {
-            setError('Error de conexión con el servidor.');
+            setError('Error de conexión.');
             setIsLoading(false);
-        }
-    };
-
-    const handleResend = async () => {
-        const normalizedEmail = email.trim().toLowerCase();
-        if (!normalizedEmail) {
-            setError('Ingresa tu correo para reenviar el codigo.');
-            return;
-        }
-
-        setResending(true);
-        setError('');
-        setMessage('');
-
-        try {
-            const res = await apiFetch('/auth/forgot/request-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: normalizedEmail }),
-            });
-            const data = await res.json();
-
-            if (!res.ok) {
-                setError(data.message || 'No pudimos reenviar el codigo.');
-                setResending(false);
-                return;
-            }
-
-            setMessage('Te enviamos un nuevo codigo para restablecer tu contrasena.');
-            setResending(false);
-        } catch (err) {
-            setError('Error de conexión con el servidor.');
-            setResending(false);
         }
     };
 
@@ -99,34 +67,16 @@ export default function ResetPassword() {
                     <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex justify-center items-center mb-6">
                         <Lock className="w-8 h-8" />
                     </div>
-                    <h2 className="text-xl font-bold mb-2 text-center">Restablecer contrasena</h2>
+                    <h2 className="text-xl font-bold mb-2 text-center">Definir nueva contraseña</h2>
                     <p className="text-sm text-muted-foreground text-center mb-6">
-                        Ingresa el codigo que te mando Finix por correo y define tu nueva contrasena.
+                        Ingresa y confirma tu nueva contraseña de Finix.
                     </p>
 
                     <form onSubmit={handleSubmit} className="w-full space-y-4">
-                        <Input
-                            type="email"
-                            placeholder="Correo electronico"
-                            className="h-11 bg-secondary/50"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-
-                        <Input
-                            inputMode="numeric"
-                            placeholder="Codigo de 6 digitos"
-                            className="h-11 bg-secondary/50 text-center text-lg tracking-[0.35em]"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                            required
-                        />
-
                         <div className="relative">
                             <Input
                                 type={showPassword ? 'text' : 'password'}
-                                placeholder="Nueva contrasena"
+                                placeholder="Nueva contraseña"
                                 className="pr-10 bg-secondary/50 h-11"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -146,20 +96,19 @@ export default function ResetPassword() {
 
                         <Button
                             type="submit"
-                            disabled={isLoading || password.length < 8 || code.length !== 6 || !email.trim()}
+                            disabled={isLoading || password.length < 8}
                             className="w-full shadow-glow"
                         >
-                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Guardar nueva contrasena'}
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Guardar nueva contraseña'}
                         </Button>
 
                         <Button
                             type="button"
                             variant="outline"
-                            disabled={resending}
-                            onClick={handleResend}
+                            onClick={() => navigate('/')}
                             className="w-full"
                         >
-                            {resending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reenviar codigo'}
+                            Volver al inicio
                         </Button>
                     </form>
                 </m.div>

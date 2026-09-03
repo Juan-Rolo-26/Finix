@@ -111,9 +111,7 @@ export class AdminManagementService {
                 await tx.communityResource.deleteMany({
                     where: { communityId: { in: createdCommunityIds } },
                 });
-                await tx.communityPost.deleteMany({
-                    where: { communityId: { in: createdCommunityIds } },
-                });
+
                 await tx.communityMember.deleteMany({
                     where: { communityId: { in: createdCommunityIds } },
                 });
@@ -142,9 +140,7 @@ export class AdminManagementService {
                 where: { authorId: userId },
                 data: { authorId: null },
             });
-            await tx.communityPost.deleteMany({
-                where: { authorId: userId },
-            });
+
             await tx.communityMember.deleteMany({
                 where: { userId },
             });

@@ -19,7 +19,6 @@ import {
     Moon,
     Users,
     Newspaper,
-    BookOpen,
     Briefcase,
     PanelLeftClose,
     PanelLeftOpen,
@@ -188,11 +187,11 @@ export function Sidebar() {
         const fetchNotifs = async () => {
             setIsNotifsLoading(true);
             try {
-                const res = await apiFetch(`/users/me/notifications?days=${NOTIFICATION_HISTORY_DAYS}`);
+                const res = await apiFetch(`/notifications?limit=25`);
                 if (res.ok) {
                     const data = await res.json();
-                    setNotifications(Array.isArray(data) ? data : []);
-                    await apiFetch('/users/me/notifications/read-all', { method: 'PATCH' });
+                    setNotifications(data.items || []);
+                    await apiFetch('/notifications/read-all', { method: 'PATCH' });
                     setUnreadNotifs(0);
                 }
             } catch {
@@ -207,7 +206,7 @@ export function Sidebar() {
     useEffect(() => {
         const load = async () => {
             try {
-                const res = await apiFetch('/users/me/notifications/unread-count');
+                const res = await apiFetch('/notifications/unread-count');
                 if (res.ok) { const d = await res.json(); setUnreadNotifs(d.count ?? 0); }
             } catch { }
         };
@@ -278,7 +277,7 @@ export function Sidebar() {
             links: [
                 { name: 'Inicio', path: '/dashboard', icon: LayoutDashboard, badge: 0 },
                 { name: 'Explorar', path: '/explore', icon: Compass, badge: 0 },
-                { name: 'Comunidad', path: '/comunidad', icon: Users, badge: 0 },
+                { name: 'Comunidades', path: '/comunidades', icon: Users, badge: 0 },
                 { name: 'Mensajes', path: '/messages', icon: MessageSquare, badge: unreadMsgs },
                 { name: 'Noticias', path: '/news', icon: Newspaper, badge: 0 },
             ],
@@ -288,7 +287,7 @@ export function Sidebar() {
             links: [
                 { name: 'Mercado', path: '/market', icon: TrendingUp, badge: 0 },
                 { name: 'Portafolio', path: '/portfolio', icon: Briefcase, badge: 0 },
-                { name: 'Aprender', path: '/learn', icon: BookOpen, badge: 0 },
+                // { name: 'Aprender', path: '/learn', icon: BookOpen, badge: 0 },
             ],
         },
         {
@@ -555,15 +554,15 @@ export function Sidebar() {
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className="text-[12.5px] font-medium leading-snug">{n.title}</p>
-                                                                    {n.content && (
+                                                                    {n.message && (
                                                                         <p className="mt-0.5 text-[11px] leading-snug truncate"
                                                                             style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                                            {n.content}
+                                                                            {n.message}
                                                                         </p>
                                                                     )}
                                                                     <span className="text-[10px] mt-1 inline-block font-semibold"
                                                                         style={{ color: 'hsl(var(--primary) / 0.65)' }}>
-                                                                        {n.time}
+                                                                        {n.timeLabel}
                                                                     </span>
                                                                 </div>
                                                                 {n.link && <ChevronRight className="w-3.5 h-3.5 shrink-0 mt-1"

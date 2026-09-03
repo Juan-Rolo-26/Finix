@@ -25,9 +25,9 @@ const AUTHOR_SELECT = {
 const POST_INCLUDE = (userId?: string) => ({
     author: { select: AUTHOR_SELECT },
     media: { orderBy: { order: 'asc' as const } },
-    likes: { select: { userId: true } },
-    reposts: { select: { userId: true } },
-    saves: { select: { userId: true } },
+    likes: userId ? { where: { userId }, select: { userId: true }, take: 1 } : false,
+    reposts: userId ? { where: { userId }, select: { userId: true }, take: 1 } : false,
+    saves: userId ? { where: { userId }, select: { userId: true }, take: 1 } : false,
     parent: {
         include: {
             author: { select: AUTHOR_SELECT },
@@ -42,11 +42,11 @@ const POST_INCLUDE = (userId?: string) => ({
     _count: { select: { likes: true, replies: true, reposts: true, saves: true, quotes: true } },
 });
 
-const COMMENT_INCLUDE = {
+const COMMENT_INCLUDE = (userId?: string) => ({
     author: { select: AUTHOR_SELECT },
-    likes: { select: { userId: true } },
+    likes: userId ? { where: { userId }, select: { userId: true }, take: 1 } : false,
     _count: { select: { likes: true, replies: true } },
-};
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -124,7 +124,7 @@ export class PostsService {
                     parentId: { in: frontier },
                 },
                 orderBy: { createdAt: 'asc' },
-                include: COMMENT_INCLUDE,
+                include: COMMENT_INCLUDE(),
             });
 
             if (replies.length === 0) {
@@ -372,7 +372,7 @@ export class PostsService {
             await this.notificationsService.createNotification({
                 userId: post.authorId,
                 actorId: userId,
-                type: 'post_like',
+                type: 'SOCIAL_LIKE',
                 title: `${actorUsername} le dio like a tu publicacion.`,
                 link: `/posts/${postId}`,
             });
@@ -411,7 +411,7 @@ export class PostsService {
 
         const comment = await this.prisma.comment.create({
             data: { postId, authorId: userId, content: sanitized, parentId: parentId || null },
-            include: COMMENT_INCLUDE,
+            include: COMMENT_INCLUDE(userId),
         });
 
         const shouldNotifyPostAuthor = post.authorId !== userId;
@@ -429,9 +429,9 @@ export class PostsService {
                 await this.notificationsService.createNotification({
                     userId: post.authorId,
                     actorId: userId,
-                    type: parentId ? 'comment_reply' : 'post_comment',
+                    type: parentId ? 'SOCIAL_REPLY' : 'SOCIAL_COMMENT',
                     title: `${actorUsername} comento tu publicacion.`,
-                    content: trimmedContent,
+                    message: trimmedContent,
                     link: `/posts/${postId}`,
                 });
             }
@@ -440,9 +440,9 @@ export class PostsService {
                 await this.notificationsService.createNotification({
                     userId: parentComment.authorId,
                     actorId: userId,
-                    type: 'comment_reply',
+                    type: 'SOCIAL_REPLY',
                     title: `${actorUsername} respondio tu comentario.`,
-                    content: trimmedContent,
+                    message: trimmedContent,
                     link: `/posts/${postId}`,
                 });
             }
@@ -461,7 +461,7 @@ export class PostsService {
                 take: limit + 1,
                 ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
                 orderBy: { createdAt: 'desc' },
-                include: COMMENT_INCLUDE,
+                include: COMMENT_INCLUDE(userId),
             }),
             this.prisma.comment.count({ where: { postId } }),
         ]);
@@ -530,7 +530,7 @@ export class PostsService {
             await this.notificationsService.createNotification({
                 userId: comment.authorId,
                 actorId: userId,
-                type: 'comment_like',
+                type: 'SOCIAL_LIKE',
                 title: `${actorUsername} le dio like a tu comentario.`,
                 link: `/posts/${comment.postId}`,
             });
@@ -570,7 +570,7 @@ export class PostsService {
             await this.notificationsService.createNotification({
                 userId: post.authorId,
                 actorId: userId,
-                type: 'post_repost',
+                type: 'SOCIAL_REPOST',
                 title: `${actorUsername} republico tu publicacion.`,
                 link: `/posts/${postId}`,
             });

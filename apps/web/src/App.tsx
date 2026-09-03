@@ -17,6 +17,7 @@ const OnboardingWizard = lazy(() => import('./pages/OnboardingWizard'));
 const Privacy = lazy(() => import('./pages/legal/Privacy'));
 const Terms = lazy(() => import('./pages/legal/Terms'));
 const ResponsibleUse = lazy(() => import('./pages/legal/ResponsibleUse'));
+const Cookies = lazy(() => import('./pages/legal/Cookies'));
 const About = lazy(() => import('./pages/About'));
 const Help = lazy(() => import('./pages/Help'));
 const Markets = lazy(() => import('./pages/Markets'));
@@ -25,10 +26,10 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Explore = lazy(() => import('./pages/Explore'));
 const Messages = lazy(() => import('./pages/Messages'));
 const PostDetail = lazy(() => import('./pages/PostDetail'));
-const Comunidad = lazy(() => import('./pages/Comunidad'));
+const Comunidad = lazy(() => import('./pages/legacy_Comunidad'));
+const Comunidades = lazy(() => import('./pages/Comunidades'));
 const NewsPage = lazy(() => import('./pages/News'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
-const LearnPage = lazy(() => import('./pages/Learn'));
 
 // ─── Theme Applier ────────────────────────────────────────────────────────────
 
@@ -68,18 +69,16 @@ function ThemeApplier() {
 // ─── Route Guards ─────────────────────────────────────────────────────────────
 
 function RequireOnboarding({ children }: { children: React.ReactNode }) {
-    const { token, user } = useAuthStore();
+    const { token } = useAuthStore();
     if (!token) return <Navigate to="/" replace />;
-    if (user && (user as any).onboardingCompleted === false) {
-        return <Navigate to="/onboarding" replace />;
-    }
+    // Guard removed: users who skipped onboarding can use the app and edit from profile
     return <>{children}</>;
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-    const { token, user, syncFromSession } = useAuthStore();
+    const { token, syncFromSession } = useAuthStore();
 
     // Restore session on app load and keep token in sync
     useEffect(() => {
@@ -101,8 +100,6 @@ export default function App() {
         return () => subscription.unsubscribe();
     }, []);
 
-    const onboardingCompleted = !user || (user as any).onboardingCompleted !== false;
-
     return (
         <>
             <ThemeApplier />
@@ -118,15 +115,13 @@ export default function App() {
                 }
             >
                 <Routes>
-                    {/* Root: auth page. If logged in → onboarding or dashboard */}
+                    {/* Root: auth page. If logged in → dashboard */}
                     <Route
                         path="/"
                         element={
                             !token
                                 ? <AuthPage />
-                                : onboardingCompleted
-                                    ? <Navigate to="/dashboard" replace />
-                                    : <Navigate to="/onboarding" replace />
+                                : <Navigate to="/dashboard" replace />
                         }
                     />
 
@@ -136,15 +131,13 @@ export default function App() {
                     <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
 
-                    {/* Onboarding wizard (requires auth, skips if already completed) */}
+                    {/* Onboarding wizard (requires auth) */}
                     <Route
                         path="/onboarding"
                         element={
                             !token
                                 ? <Navigate to="/" replace />
-                                : onboardingCompleted
-                                    ? <Navigate to="/dashboard" replace />
-                                    : <OnboardingWizard />
+                                : <OnboardingWizard />
                         }
                     />
 
@@ -170,9 +163,9 @@ export default function App() {
                         <Route path="/posts/:id" element={<PostDetail />} />
                         <Route path="/messages" element={<Messages />} />
                         <Route path="/comunidad" element={<Comunidad />} />
+                        <Route path="/comunidades" element={<Comunidades />} />
                         <Route path="/news" element={<NewsPage />} />
                         <Route path="/notifications" element={<NotificationsPage />} />
-                        <Route path="/learn" element={<LearnPage />} />
                     </Route>
 
                     {/* Info & Legal Routes */}
@@ -182,6 +175,8 @@ export default function App() {
                     <Route path="/privacy" element={<Privacy />} />
                     <Route path="/legal/terms" element={<Terms />} />
                     <Route path="/terms" element={<Terms />} />
+                    <Route path="/legal/cookies" element={<Cookies />} />
+                    <Route path="/cookies" element={<Cookies />} />
                     <Route path="/legal/responsible" element={<ResponsibleUse />} />
 
                     {/* Catch-all */}

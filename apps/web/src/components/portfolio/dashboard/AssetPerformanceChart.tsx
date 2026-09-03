@@ -9,11 +9,7 @@ interface AssetPerformanceChartProps {
     className?: string;
 }
 
-const SERIES = [
-    { key: 'return', label: 'Retorno', color: FINTECH_COLORS.positive },
-    { key: 'contribution', label: 'Aporte', color: FINTECH_COLORS.accent },
-    { key: 'weight', label: 'Peso', color: '#f59e0b' },
-] as const;
+
 
 function renderValueLabel(props: any) {
     const { value = 0, x = 0, y = 0, width = 0, height = 0 } = props;
@@ -51,7 +47,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                 {data.length > 0 ? (
                     <div className="h-[360px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={data} margin={{ top: 28, right: 12, bottom: 8, left: 0 }} barGap={10} barCategoryGap="18%">
+                            <BarChart data={data} margin={{ top: 28, right: 12, bottom: 8, left: 0 }} barGap={8} barCategoryGap="20%">
                                 <CartesianGrid stroke="rgba(148,163,184,0.16)" vertical={false} />
                                 <XAxis
                                     dataKey="asset"
@@ -61,19 +57,30 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                     tickMargin={10}
                                 />
                                 <YAxis
+                                    yAxisId="left"
                                     axisLine={false}
                                     tickLine={false}
                                     tick={CHART_AXIS_TICK}
                                     width={56}
                                     tickFormatter={(value: number) => formatPercent(value, 0)}
+                                    orientation="left"
                                 />
-                                <ReferenceLine y={0} stroke="rgba(100, 116, 139, 0.38)" />
+                                <YAxis
+                                    yAxisId="right"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={CHART_AXIS_TICK}
+                                    width={48}
+                                    tickFormatter={(value: number) => formatPercent(value, 0)}
+                                    orientation="right"
+                                />
+                                <ReferenceLine y={0} yAxisId="left" stroke="rgba(100, 116, 139, 0.38)" />
                                 <Legend
                                     verticalAlign="top"
                                     align="left"
-                                    iconType="square"
+                                    iconType="circle"
                                     wrapperStyle={{
-                                        paddingBottom: 14,
+                                        paddingBottom: 20,
                                         fontSize: '12px',
                                         color: 'rgba(71,85,105,0.94)',
                                     }}
@@ -86,18 +93,15 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                     cursor={{ fill: 'hsl(var(--foreground) / 0.05)' }}
                                 />
 
-                                {SERIES.map((series) => (
-                                    <Bar
-                                        key={series.key}
-                                        dataKey={series.key}
-                                        name={series.label}
-                                        fill={series.color}
-                                        radius={[8, 8, 0, 0]}
-                                        maxBarSize={26}
-                                    >
-                                        <LabelList dataKey={series.key} content={renderValueLabel} />
-                                    </Bar>
-                                ))}
+                                <Bar yAxisId="left" dataKey="return" name="Retorno" fill={FINTECH_COLORS.positive} radius={[4, 4, 0, 0]} maxBarSize={22}>
+                                    <LabelList dataKey="return" content={(p) => renderValueLabel({ ...p, yAxisId: 'left' })} />
+                                </Bar>
+                                <Bar yAxisId="left" dataKey="contribution" name="Aporte" fill={FINTECH_COLORS.accent} radius={[4, 4, 0, 0]} maxBarSize={22}>
+                                    <LabelList dataKey="contribution" content={(p) => renderValueLabel({ ...p, yAxisId: 'left' })} />
+                                </Bar>
+                                <Bar yAxisId="right" dataKey="weight" name="Peso" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={22}>
+                                    <LabelList dataKey="weight" content={(p) => renderValueLabel({ ...p, yAxisId: 'right' })} />
+                                </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

@@ -76,7 +76,7 @@ export class AccessControlService {
             select: {
                 id: true,
                 creatorId: true,
-                isPaid: true,
+                privacyType: true,
             },
         });
 
@@ -84,7 +84,7 @@ export class AccessControlService {
             throw new NotFoundException('Comunidad no encontrada');
         }
 
-        if (!community.isPaid || community.creatorId === userId) {
+        if (community.privacyType === 'PUBLIC' || (community.creatorId === userId)) {
             return true;
         }
 

@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -12,7 +12,7 @@ model User {
   id           String    @id @default(uuid())
   email        String    @unique
   username     String    @unique
-  password     String?  // Managed by Finix for email/password auth; Supabase remains for OAuth
+  password     String? // Managed by Finix for email/password auth; Supabase remains for OAuth
   role         String    @default("USER") // USER, CREATOR, ADMIN
   status       String    @default("ACTIVE") // ACTIVE, BANNED
   shadowbanned Boolean   @default(false)
@@ -94,6 +94,7 @@ model User {
   chartDensity        String  @default("normal") // "basic" | "normal" | "advanced"
   marketNotifications Boolean @default(false)
   timezone            String  @default("America/Argentina/Cordoba")
+  notificationPrefs   String? // JSON for notification preferences
 
   // Onboarding
   onboardingCompleted Boolean @default(false)
@@ -116,7 +117,6 @@ model User {
   // Relations: Communities
   createdCommunities   Community[]         @relation("CommunityCreator")
   communityMemberships CommunityMember[]
-  communityPosts       CommunityPost[]
   communityResources   CommunityResource[]
   communityPayments    CommunityPayment[]
   subscriptions        Subscription[]
@@ -143,7 +143,8 @@ model User {
   reportsCreated Report[]        @relation("Reporter")
 
   // Notifications
-  notifications  Notification[]  @relation("UserNotifications")
+  notifications       Notification[] @relation("UserNotifications")
+  notificationsCaused Notification[] @relation("NotificationActor")
 
   // Hub (Comunidad Finix)
   hubMessages  HubMessage[]  @relation("HubMessages")
@@ -215,17 +216,21 @@ model Post {
   viewCount Int @default(0)
 
   // Relations
-  media    PostMedia[]
-  likes    Like[]
-  comments Comment[] // Keep legacy comments for now if needed, but the new threading uses 'Post' referencing itself
-  reposts  Repost[]
-  saves    Save[]
-  reports  PostReport[]
+  media            PostMedia[]
+  likes            Like[]
+  comments         Comment[] // Keep legacy comments for now if needed, but the new threading uses 'Post' referencing itself
+  reposts          Repost[]
+  saves            Save[]
+  reports          PostReport[]
   sharedInMessages DirectMessage[] @relation("SharedPostMessages")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  Community   Community? @relation(fields: [communityId], references: [id])
+  communityId String?
+  
+  targetVisibility   String @default("PUBLIC") // PUBLIC, MEMBERS, PREMIUM_TIER
+  requiredTierLevel  Int    @default(0)
   @@index([createdAt])
   @@index([authorId])
   @@index([parentId])
@@ -236,7 +241,7 @@ model PostMedia {
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   url       String
-  mediaType String   // "image"
+  mediaType String // "image"
   order     Int      @default(0)
   createdAt DateTime @default(now())
 }
@@ -583,33 +588,62 @@ model Community {
   imageUrl  String?
   bannerUrl String?
 
-  isPaid      Boolean @default(false)
-  price       Decimal @default(0)
-  billingType String  @default("monthly") // monthly | yearly
+  privacyType String  @default("PUBLIC") // PUBLIC, PRIVATE, EXCLUSIVE
+  rules       String?
   maxMembers  Int? // nullable
 
-  members  CommunityMember[]
-  posts    CommunityPost[]
-  payments CommunityPayment[]
+  members   CommunityMember[]
+  posts     Post[]
+  events    CommunityEvent[]
+  plans     CommunityPlan[]
+  payments  CommunityPayment[]
+  resources CommunityResource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
 
-  resources CommunityResource[]
+model CommunityPlan {
+  id            String    @id @default(uuid())
+  communityId   String
+  community     Community @relation(fields: [communityId], references: [id])
+  name          String // Ej: "VIP", "Pro"
+  price         Decimal
+  interval      String    @default("monthly") // "monthly", "yearly" o "one_time"
+  features      String // JSON array beneficios
+  tierLevel     Int       @default(0) // 0 (Free), 10 (Pro), 20 (VIP)
+  stripePriceId String?
+
+  members CommunityMember[]
+}
+
+model CommunityEvent {
+  id                String    @id @default(uuid())
+  communityId       String
+  community         Community @relation(fields: [communityId], references: [id])
+  title             String
+  description       String?
+  eventDate         DateTime
+  requiredTierLevel Int       @default(0)
+  link              String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CommunityResource {
-  id          String    @id @default(uuid())
-  communityId String
-  community   Community @relation(fields: [communityId], references: [id])
-  title       String
-  description String?
-  resourceUrl String
-  isPublic    Boolean   @default(false)
-  authorId    String?
-  author      User?     @relation(fields: [authorId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                String    @id @default(uuid())
+  communityId       String
+  community         Community @relation(fields: [communityId], references: [id])
+  title             String
+  description       String?
+  resourceUrl       String
+  isPublic          Boolean   @default(false)
+  requiredTierLevel Int       @default(0)
+  authorId          String?
+  author            User?     @relation(fields: [authorId], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model CommunityMember {
@@ -626,26 +660,13 @@ model CommunityMember {
   stripeSubscriptionId String?
   expiresAt            DateTime?
 
+  planId String?
+  plan   CommunityPlan? @relation(fields: [planId], references: [id])
+
   joinedAt DateTime @default(now())
 
   @@unique([communityId, userId])
   @@index([userId, subscriptionStatus])
-}
-
-model CommunityPost {
-  id          String    @id @default(uuid())
-  communityId String
-  community   Community @relation(fields: [communityId], references: [id])
-  authorId    String
-  author      User      @relation(fields: [authorId], references: [id])
-
-  content  String
-  mediaUrl String?
-
-  isPublic Boolean @default(false) // Preview functionality
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model CommunityPayment {
@@ -813,11 +834,11 @@ model Story {
 }
 
 model StoryView {
-  storyId   String
-  viewerId  String
-  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
-  viewer    User     @relation(fields: [viewerId], references: [id], onDelete: Cascade)
-  viewedAt  DateTime @default(now())
+  storyId  String
+  viewerId String
+  story    Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewer   User     @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+  viewedAt DateTime @default(now())
 
   @@id([storyId, viewerId])
   @@index([viewerId, viewedAt])
@@ -901,17 +922,34 @@ model AdminAuditLog {
 }
 
 model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
-  type      String
-  title     String
-  content   String?
-  isRead    Boolean  @default(false)
-  link      String?
-  createdAt DateTime @default(now())
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  
+  type       String
+  priority   String    @default("NORMAL") // LOW, NORMAL, HIGH, CRITICAL
+  
+  title      String
+  message    String?
+  link       String?
+  
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  
+  entityType String?
+  entityId   String?
+  
+  actorId    String?
+  actor      User?     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  
+  metadata   String?   // JSON payload (e.g. grouped users, market data)
+  
+  createdAt  DateTime  @default(now())
 
+  // Indexes specific for querying
   @@index([userId, createdAt])
+  @@index([userId, isRead, createdAt]) // useful for unread count + fetch
+  @@index([type])
 }
 
 // ============================================
@@ -923,7 +961,7 @@ model HubChannel {
   slug        String   @unique
   name        String
   description String?
-  icon        String?  // emoji
+  icon        String? // emoji
   type        String   @default("CHAT") // CHAT | FEED
   order       Int      @default(0)
   createdAt   DateTime @default(now())
@@ -1003,7 +1041,7 @@ model HubResource {
   url          String
   mediaType    String   @default("link") // video | audio | pdf | image | article | link | file
   thumbnailUrl String?
-  duration     String?  // e.g. "1:23:45"
+  duration     String? // e.g. "1:23:45"
   category     String?
   authorId     String
   author       User     @relation("HubResources", fields: [authorId], references: [id], onDelete: Cascade)

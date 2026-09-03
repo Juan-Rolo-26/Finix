@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
@@ -167,7 +167,7 @@ interface PostCardProps {
     onDeleted: (postId: string) => void;
 }
 
-export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: PostCardProps) {
+const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }: PostCardProps) {
     const navigate = useNavigate();
     const [liked, setLiked] = useState(post.likedByMe);
     const [likesCount, setLikesCount] = useState(post.likesCount);
@@ -664,3 +664,5 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
         </motion.article>
     );
 }
+
+export default memo(PostCard, (prev, next) => prev.post.id === next.post.id && prev.post.likedByMe === next.post.likedByMe && prev.post.likesCount === next.post.likesCount && prev.post.repostedByMe === next.post.repostedByMe && prev.post.repostsCount === next.post.repostsCount && prev.post.savedByMe === next.post.savedByMe && prev.post.commentsCount === next.post.commentsCount && prev.post.content === next.post.content);

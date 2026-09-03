@@ -32,7 +32,7 @@ export const usePreferencesStore = create<PreferencesState>()(
             autoRefreshMarket: true,
             compactTables: false,
             showAdvancedMetrics: true,
-            theme: 'dark',
+            theme: 'light',
 
             setLanguage: (language) => set({ language }),
             setCurrency: (currency) => set({ currency }),
@@ -43,7 +43,7 @@ export const usePreferencesStore = create<PreferencesState>()(
             updatePreferences: (prefs) => set((state) => ({ ...state, ...prefs })),
         }),
         {
-            name: 'finix_app_preferences_v3',
+            name: 'finix_app_preferences_v4',
         }
     )
 );

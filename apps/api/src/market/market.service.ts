@@ -135,6 +135,8 @@ export class MarketService {
     private readonly finvizBaseTtlMs = 6 * 60 * 60 * 1000;
     private readonly finvizHeatmapTtlMs = 60 * 1000;
     private readonly marketNewsTtlMs = 5 * 60 * 1000;
+    private tickersCache: { data: any[]; fetchedAt: number } | null = null;
+    private readonly tickersTtlMs = 60 * 1000; // 1 minute
     private readonly finvizDefaultBaseScript = '/assets/dist-legacy/map_base_sec.v1.6b264ef1.js';
 
     constructor(private prisma: PrismaService) { }
@@ -692,10 +694,14 @@ export class MarketService {
     }
 
     async getTickers() {
+        if (this.tickersCache && Date.now() - this.tickersCache.fetchedAt < this.tickersTtlMs) {
+            return this.tickersCache.data;
+        }
+
         const defaultTickers = ['NASDAQ:TSLA', 'CRYPTO:BTCUSD', 'AMEX:SPY', 'NASDAQ:NVDA', 'NASDAQ:AAPL'];
         const quotes = await this.getQuotes(defaultTickers);
 
-        return quotes.map((q, i) => {
+        const result = quotes.map((q, i) => {
             const mockFallback = this.mockTickers[i % this.mockTickers.length];
             // Extraer el símbolo corto (ej: TSLA en lugar de NASDAQ:TSLA)
             const shortSymbol = q.inputSymbol.split(':')[1] || q.inputSymbol;
@@ -707,6 +713,9 @@ export class MarketService {
                 volume: Math.floor(Math.random() * 50000) + 10000 // Simulation for volume as real volume might be missing
             };
         });
+
+        this.tickersCache = { data: result, fetchedAt: Date.now() };
+        return result;
     }
 
     async searchSymbols(query: string) {

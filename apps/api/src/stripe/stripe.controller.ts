@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, HttpCode, HttpStatus, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, HttpCode, HttpStatus, Param, Post, Req, UseGuards, Body, BadRequestException } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { StripeService } from './stripe.service';
@@ -30,8 +30,9 @@ export class StripeController {
 
     @UseGuards(JwtAuthGuard)
     @Post('communities/:communityId/checkout')
-    createCommunityPayment(@Req() req: any, @Param('communityId') communityId: string) {
-        return this.stripeService.createCommunityPayment(req.user.id, communityId);
+    createCommunityPayment(@Req() req: any, @Param('communityId') communityId: string, @Body() body: { planId: string }) {
+        if (!body?.planId) throw new BadRequestException('Se requiere planId');
+        return this.stripeService.createCommunityPayment(req.user.id, communityId, body.planId);
     }
 
     @UseGuards(JwtAuthGuard)

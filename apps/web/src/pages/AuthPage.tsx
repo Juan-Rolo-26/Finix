@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useNavigate, Link } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
-import { apiFetch } from '@/lib/api';
+
 import { normalizeAuthError } from '@/lib/api-errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,7 +48,7 @@ export default function AuthPage() {
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
 
-    const { login } = useAuthStore();
+    const { } = useAuthStore();
     const navigate = useNavigate();
 
     const features = [
@@ -113,43 +113,32 @@ export default function AuthPage() {
         }
     };
 
-    const loginGithub = async () => {
-        setIsLoading(true);
-        clearMessages();
 
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'github',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-            },
-        });
-
-        if (error) {
-            setAuthError(normalizeAuthError(error.message, t.auth.errors.githubNotConfigured));
-            setIsLoading(false);
-        }
-    };
 
     const handleLogin = async () => {
         try {
-            const res = await apiFetch('/auth/login', {
+            const { apiFetch } = await import('@/lib/api');
+            const response = await apiFetch('/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+                body: JSON.stringify({
+                    email: email.trim().toLowerCase(),
+                    password,
+                }),
             });
-            const data = await res.json();
 
-            if (!res.ok) {
-                setAuthError(data.message || t.auth.errors.invalidCredentials);
-                return;
+            if (!response.ok) {
+                const errData = await response.json().catch(() => null);
+                throw new Error(errData?.message || t.auth.errors.invalidCredentials);
             }
 
-            if (data.token && data.user) {
-                login(data.token, data.user);
-                navigate(data.user.onboardingCompleted ? '/dashboard' : '/onboarding');
-            }
-        } catch (err) {
-            setAuthError(t.auth.errors.connectionError || 'Error de conexión');
+            const data = await response.json();
+
+            // data contains { token, user }
+            useAuthStore.getState().login(data.token, data.user);
+            navigate('/dashboard');
+        } catch (err: any) {
+            setAuthError(normalizeAuthError(err.message, t.auth.errors.invalidCredentials));
         }
     };
 
@@ -158,20 +147,27 @@ export default function AuthPage() {
         const normalizedUsername = username.trim();
 
         try {
-            const res = await apiFetch('/auth/register/request-code', {
+            const { apiFetch } = await import('@/lib/api');
+            const response = await apiFetch('/auth/register/request-code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: normalizedEmail, username: normalizedUsername, password }),
+                body: JSON.stringify({
+                    email: normalizedEmail,
+                    username: normalizedUsername,
+                    password,
+                }),
             });
-            const data = await res.json();
 
-            if (!res.ok) {
-                setAuthError(data.message || 'Error al crear la cuenta. Intentá nuevamente.');
-                return;
+            if (!response.ok) {
+                const errData = await response.json().catch(() => null);
+                throw new Error(errData?.message || 'Error al crear la cuenta. Intentá nuevamente.');
             }
-            navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
-        } catch (err) {
-            setAuthError(t.auth.errors.connectionError || 'Error de conexión');
+
+            setSuccessMessage('Te enviamos un código de verificación a tu correo. Por favor, revisalo.');
+            // En un flujo real redirigiríamos o mostraríamos input para el código.
+            //switchView('login'); 
+        } catch (err: any) {
+            setAuthError(normalizeAuthError(err.message, 'Error de conexión'));
         }
     };
 
@@ -179,20 +175,23 @@ export default function AuthPage() {
         const normalizedEmail = email.trim().toLowerCase();
 
         try {
-            const res = await apiFetch('/auth/forgot/request-code', {
+            const { apiFetch } = await import('@/lib/api');
+            const response = await apiFetch('/auth/forgot/request-code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: normalizedEmail }),
+                body: JSON.stringify({
+                    email: normalizedEmail,
+                }),
             });
-            const data = await res.json();
 
-            if (!res.ok) {
-                setAuthError(data.message || t.auth.errors.connectionError);
-                return;
+            if (!response.ok) {
+                const errData = await response.json().catch(() => null);
+                throw new Error(errData?.message || t.auth.errors.connectionError);
             }
-            navigate(`/reset-password?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
-        } catch (err) {
-            setAuthError(t.auth.errors.connectionError || 'Error de conexión');
+
+            setSuccessMessage('Te enviamos un correo con un enlace para restablecer tu contraseña.');
+        } catch (err: any) {
+            setAuthError(normalizeAuthError(err.message, t.auth.errors.connectionError));
         }
     };
 
@@ -457,7 +456,7 @@ export default function AuthPage() {
                                             <Button
                                                 variant="outline"
                                                 type="button"
-                                                className="flex-1 relative py-5 border-muted/40 hover:bg-muted/50 transition-all font-medium"
+                                                className="w-full relative py-5 border-muted/40 hover:bg-muted/50 transition-all font-medium"
                                                 onClick={loginGoogle}
                                                 disabled={isLoading}
                                             >
@@ -470,20 +469,6 @@ export default function AuthPage() {
                                                     </svg>
                                                 </div>
                                                 <span className="flex-1 text-center">Google</span>
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                type="button"
-                                                className="flex-1 relative py-5 border-muted/40 hover:bg-muted/50 transition-all font-medium"
-                                                onClick={loginGithub}
-                                                disabled={isLoading}
-                                            >
-                                                <div className="absolute left-4">
-                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                                        <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                                                    </svg>
-                                                </div>
-                                                <span className="flex-1 text-center">GitHub</span>
                                             </Button>
                                         </div>
                                     </>

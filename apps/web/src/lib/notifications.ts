@@ -3,14 +3,24 @@ export const NOTIFICATION_HISTORY_DAYS = 7;
 export interface NotificationItem {
     id: string;
     type: string;
+    category: string;
+    priority: string;
     title: string;
-    content?: string | null;
+    message?: string | null;
     link?: string | null;
-    isRead?: boolean;
-    time: string;
-    createdAt?: string;
-    dateKey?: string;
-    dateLabel?: string;
+    isRead: boolean;
+    readAt?: string | null;
+    timeLabel: string;
+    createdAt: string;
+    actor?: {
+        id: string;
+        username: string;
+        avatarUrl?: string | null;
+        isVerified?: boolean;
+    } | null;
+    entityType?: string | null;
+    entityId?: string | null;
+    metadata?: any | null;
 }
 
 interface NotificationGroup {
@@ -55,8 +65,8 @@ export function groupNotificationsByDay(notifications: NotificationItem[]): Noti
     for (const notification of notifications) {
         const createdAt = notification.createdAt ? new Date(notification.createdAt) : null;
         const hasValidDate = createdAt instanceof Date && !Number.isNaN(createdAt.getTime());
-        const dateKey = notification.dateKey || (hasValidDate ? formatDateKey(createdAt) : 'sin-fecha');
-        const label = notification.dateLabel || (hasValidDate ? formatDateLabel(createdAt) : 'Sin fecha');
+        const dateKey = hasValidDate ? formatDateKey(createdAt) : 'sin-fecha';
+        const label = hasValidDate ? formatDateLabel(createdAt) : 'Sin fecha';
 
         let group = byDay.get(dateKey);
         if (!group) {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { BadgeCheck, ChevronLeft, ChevronRight, Eye, MessageSquare, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@/lib/api';
@@ -277,7 +278,7 @@ export function StoryViewerModal({
         });
     };
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[90] bg-black/95">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.18),_transparent_38%)]" />
 
@@ -293,26 +294,26 @@ export function StoryViewerModal({
             <div className="mx-auto flex h-full max-w-7xl items-center justify-center p-3 md:p-6">
                 <div className="grid h-full w-full items-center gap-5 lg:grid-cols-[minmax(0,430px)_320px]">
                     <div className="relative mx-auto flex h-full w-full max-w-[430px] flex-col justify-center">
-                        <div className="mb-4 flex gap-1.5">
-                            {currentGroup.stories.map((story, index) => (
-                                <div key={story.id} className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/15">
-                                    <div
-                                        className="h-full rounded-full bg-white"
-                                        style={{
-                                            width:
-                                                index < storyIndex
-                                                    ? '100%'
-                                                    : index === storyIndex
-                                                        ? `${progress * 100}%`
-                                                        : '0%',
-                                        }}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-
                         <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#09110d] shadow-[0_30px_120px_rgba(0,0,0,0.55)]">
-                            <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between p-4">
+                            <div className="absolute inset-x-0 top-0 z-[60] flex gap-1.5 px-4 pt-4">
+                                {currentGroup.stories.map((story, index) => (
+                                    <div key={story.id} className="h-1 flex-1 overflow-hidden rounded-full bg-white/30 backdrop-blur-sm">
+                                        <div
+                                            className="h-full rounded-full bg-white transition-all duration-100 ease-linear"
+                                            style={{
+                                                width:
+                                                    index < storyIndex
+                                                        ? '100%'
+                                                        : index === storyIndex
+                                                            ? `${progress * 100}%`
+                                                            : '0%',
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-8 pb-4">
                                 <button
                                     type="button"
                                     onClick={handleOpenProfile}
@@ -479,6 +480,7 @@ export function StoryViewerModal({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

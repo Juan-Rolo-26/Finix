@@ -9,7 +9,6 @@ import { PortfolioChart } from './PortfolioChart';
 import { clamp, formatCurrency, formatPercent, titleCase } from './chartUtils';
 import {
     TIME_RANGES,
-    mockPortfolioDashboardData,
     type AllocationDatum,
     type AssetPerformanceDatum,
     type ComparisonDatum,
@@ -246,7 +245,7 @@ function buildAssetPerformanceData(metrics?: DashboardMetrics | null, assets: Da
             const pnl = currentValue - asset.montoInvertido;
 
             return {
-                asset: asset.ticker,
+                asset: asset.ticker.split(':').pop() || asset.ticker,
                 return: Number(getAssetReturn(asset).toFixed(1)),
                 contribution: Number((baseCapital > 0 ? (pnl / baseCapital) * 100 : 0).toFixed(1)),
                 weight: Number((totalValue > 0 ? (currentValue / totalValue) * 100 : 0).toFixed(1)),
@@ -353,23 +352,12 @@ function resolveData({
     assets,
     movements,
     data,
-    useMockData,
 }: {
     metrics?: DashboardMetrics | null;
     assets?: DashboardAsset[];
     movements?: DashboardMovement[];
     data?: Partial<PortfolioDashboardData>;
-    useMockData?: boolean;
 }): PortfolioDashboardData {
-    const hasRealInputs = Boolean(metrics) || Boolean(assets?.length) || Boolean(movements?.length);
-
-    if (useMockData || (!hasRealInputs && !data)) {
-        return {
-            ...mockPortfolioDashboardData,
-            ...data,
-        };
-    }
-
     const safeAssets = assets ?? [];
     const portfolioValueByRange = data?.portfolioValueByRange ?? buildPortfolioSeries(metrics, safeAssets, movements ?? []);
     const comparisonByRange = data?.comparisonByRange ?? normalizeComparisonSeries(portfolioValueByRange);
@@ -393,14 +381,13 @@ export function PortfolioDashboard({
     assets = [],
     movements = [],
     data,
-    useMockData = false,
     className,
 }: PortfolioDashboardProps) {
     const [selectedRange, setSelectedRange] = useState<TimeRange>('1Y');
 
     const resolvedData = useMemo(
-        () => resolveData({ metrics, assets, movements, data, useMockData }),
-        [metrics, assets, movements, data, useMockData],
+        () => resolveData({ metrics, assets, movements, data }),
+        [metrics, assets, movements, data],
     );
 
     const activePortfolioSeries = resolvedData.portfolioValueByRange[selectedRange];

@@ -1,13 +1,11 @@
 import { Module } from '@nestjs/common';
 import { CommunitiesService } from './communities.service';
 import { CommunitiesController } from './communities.controller';
-import { AccessModule } from '../access/access.module';
-import { StripeModule } from '../stripe/stripe.module';
 
 @Module({
-    imports: [AccessModule, StripeModule],
+    imports: [],
     controllers: [CommunitiesController],
     providers: [CommunitiesService],
-    exports: [CommunitiesService]
+    exports: [CommunitiesService],
 })
 export class CommunitiesModule { }

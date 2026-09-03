@@ -16,7 +16,7 @@ export class AuthService {
         private prisma: PrismaService,
         private jwtService: JwtService,
         private mailService: MailService,
-    ) {}
+    ) { }
 
     private normalizeEmail(email: string) {
         return email.trim().toLowerCase();
@@ -489,6 +489,9 @@ export class AuthService {
             onboardingCompleted: user.onboardingCompleted,
             onboardingStep: user.onboardingStep,
             createdAt: user.createdAt,
+            language: user.language,
+            currency: user.currency,
+            theme: user.theme,
         };
     }
 }

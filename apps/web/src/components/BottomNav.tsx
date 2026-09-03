@@ -19,7 +19,6 @@ import {
     Newspaper,
     TrendingUp,
     Briefcase,
-    BookOpen,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
@@ -31,7 +30,7 @@ const PRIMARY = 'hsl(var(--primary))';
 /* ── 4 main tabs + 1 create slot ──────────────────────────────── */
 const mainTabs = [
     { path: '/dashboard', icon: LayoutDashboard },
-    { path: '/comunidad', icon: Users },
+    { path: '/comunidades', icon: Users },
     // CENTER: create button
     { path: '/explore', icon: Compass },
     { path: '/messages', icon: MessageSquare },
@@ -95,7 +94,7 @@ export function BottomNav() {
         { label: 'Mercado', path: '/market', icon: TrendingUp },
         { label: 'Portafolio', path: '/portfolio', icon: Briefcase },
         { label: 'Noticias', path: '/news', icon: Newspaper },
-        { label: 'Aprender', path: '/learn', icon: BookOpen },
+        // { label: 'Aprender', path: '/learn', icon: BookOpen },
         { label: 'Mi Perfil', path: '/profile', icon: User },
         { label: 'Ajustes', path: '/settings', icon: Settings },
     ];

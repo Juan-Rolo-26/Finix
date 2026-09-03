@@ -10,6 +10,7 @@
         "prisma",
         "dist",
         "test",
-        "**/*.spec.ts"
+        "**/*.spec.ts",
+        "db-check.ts"
     ]
 }

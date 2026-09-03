@@ -389,7 +389,9 @@ const PortfolioPage = () => {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || "No se pudieron cargar los portafolios (Error del servidor)");
       }
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
+      if (!data) throw new Error("Respuesta inválida del servidor");
+
       const list: Portfolio[] = Array.isArray(data) ? data : [];
       setPortfolios(list);
       setErrorMessage(null);
@@ -412,7 +414,8 @@ const PortfolioPage = () => {
     try {
       const res = await apiFetch(`/portfolios/${id}/metrics`);
       if (!res.ok) throw new Error();
-      setMetrics(await res.json());
+      const data = await res.json().catch(() => null);
+      setMetrics(data || null);
     } catch {
       setMetrics(null);
     }
@@ -422,7 +425,7 @@ const PortfolioPage = () => {
     try {
       const res = await apiFetch(`/portfolios/${id}/movements`);
       if (!res.ok) throw new Error();
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       setMovements(Array.isArray(data) ? data : []);
     } catch {
       setMovements([]);

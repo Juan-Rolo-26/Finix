@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { User } from '@finix/shared';
 import { supabase } from '@/lib/supabase';
 import { apiFetch } from '@/lib/api';
-
+import { usePreferencesStore } from './preferencesStore';
 interface AuthState {
     token: string | null;
     user: User | null;
@@ -80,6 +80,18 @@ export const useAuthStore = create<AuthState>((set) => ({
                     const user: User = await existingSessionRes.json();
                     persistUser(user);
                     set({ token: existingToken, user });
+
+                    // Sync preferences globally
+                    const { language, theme, currency } = user as any;
+                    if (language || theme || currency) {
+                        usePreferencesStore.getState().updatePreferences({
+                            ...(language && { language }),
+                            ...(theme && { theme }),
+                            ...(currency && { currency }),
+                        });
+                        if (theme) usePreferencesStore.getState().setTheme(theme);
+                    }
+
                     return user;
                 }
             } catch {
@@ -101,12 +113,33 @@ export const useAuthStore = create<AuthState>((set) => ({
         try {
             const username = session.user.user_metadata?.username as string | undefined;
             const res = await syncBackendUser(username);
-            if (!res.ok) return null;
+
+            if (!res.ok) {
+                throw new Error('Backend sync failed');
+            }
+
             const user: User = await res.json();
             persistUser(user);
             set({ token: accessToken, user });
+
+            // Sync preferences globally
+            const { language, theme, currency } = user as any;
+            if (language || theme || currency) {
+                usePreferencesStore.getState().updatePreferences({
+                    ...(language && { language }),
+                    ...(theme && { theme }),
+                    ...(currency && { currency }),
+                });
+                if (theme) usePreferencesStore.getState().setTheme(theme);
+            }
+
             return user;
-        } catch {
+        } catch (error) {
+            // No fallback data: if backend sync fails, logout locally to protect state
+            persistToken(null);
+            persistUser(null);
+            set({ token: null, user: null });
+            await supabase.auth.signOut().catch(() => { });
             return null;
         }
     },

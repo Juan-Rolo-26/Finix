@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
@@ -276,7 +276,7 @@ const StepDone = ({ username }: { username: string }) => (
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
             className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.4)]"
         >
-            <CheckCircle2 className="w-12 h-12 text-black" />
+            <CheckCircle2 className="w-12 h-12 text-primary-foreground" />
         </motion.div>
 
         <div className="space-y-3">
@@ -332,6 +332,19 @@ export default function OnboardingWizard() {
     const handleChange = useCallback((key: keyof OnboardingData, value: any) => {
         setData((prev) => ({ ...prev, [key]: value }));
     }, []);
+
+    // Marca el onboarding como completado apenas entra a la pagina, 
+    // para cumplir con la regla de que si lo cierra, no se lo vuelva a pedir.
+    useEffect(() => {
+        if (user && !(user as any).onboardingCompleted) {
+            updateUser({ onboardingCompleted: true } as any);
+            apiFetch('/me/onboarding', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed: true }),
+            }).catch(() => { });
+        }
+    }, [user, updateUser]);
 
     const saveStep = async (step: number, completed = false) => {
         setIsSaving(true);
@@ -413,7 +426,7 @@ export default function OnboardingWizard() {
     const StepIcon = step.icon;
 
     return (
-        <div className="min-h-screen finix-unified-bg flex items-center justify-center p-4">
+        <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
             {/* Background glow */}
             <div className="fixed inset-0 pointer-events-none">
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
@@ -497,7 +510,7 @@ export default function OnboardingWizard() {
                                     onClick={handleFinish}
                                     disabled={isSaving}
                                     size="lg"
-                                    className="bg-gradient-to-r from-primary to-emerald-400 text-black font-bold px-8 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] transition-all"
+                                    className="bg-gradient-to-r from-primary to-emerald-400 text-primary-foreground font-bold px-8 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] transition-all"
                                 >
                                     {isSaving ? (
                                         <Loader2 className="w-4 h-4 animate-spin mr-2" />

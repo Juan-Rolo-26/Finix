@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { BottomNav } from '../components/BottomNav';
 import { MobileTopBar } from '../components/MobileTopBar';
+import PWAInstallPrompt from '../components/PWAInstallPrompt';
 
 export default function DashboardLayout() {
     const location = useLocation();
@@ -48,6 +49,7 @@ export default function DashboardLayout() {
 
             {/* Bottom Nav — mobile only */}
             <BottomNav />
+            <PWAInstallPrompt />
         </div>
     );
 }

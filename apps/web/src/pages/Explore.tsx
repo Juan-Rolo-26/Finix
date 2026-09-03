@@ -144,7 +144,12 @@ export default function ExplorePage() {
             const data = await res.json();
             const newPosts: Post[] = data.posts || [];
 
-            setPosts((prev) => reset ? newPosts : [...prev, ...newPosts]);
+            setPosts((prev) => {
+                if (reset) return newPosts;
+                const existingIds = new Set(prev.map((p) => p.id));
+                const uniqueNew = newPosts.filter((p) => !existingIds.has(p.id));
+                return [...prev, ...uniqueNew];
+            });
             setNextCursor(data.nextCursor || null);
             setHasMore(data.hasMore ?? false);
         } catch (e) {
@@ -337,89 +342,82 @@ export default function ExplorePage() {
                 </Card>
 
                 <div className="min-w-0 space-y-4">
-                        {isLoading && posts.length === 0 ? (
-                            <div className="space-y-4">
-                                {[0, 1, 2].map((item) => (
-                                    <Card key={item} className="border-border/60 bg-card/70 shadow-sm">
-                                        <CardContent className="space-y-5 p-6">
-                                            <div className="flex items-center gap-3">
-                                                <Skeleton className="h-11 w-11 rounded-full" />
-                                                <div className="space-y-2">
-                                                    <Skeleton className="h-4 w-32" />
-                                                    <Skeleton className="h-3 w-24" />
-                                                </div>
-                                            </div>
+                    {isLoading && posts.length === 0 ? (
+                        <div className="space-y-4">
+                            {[0, 1, 2].map((item) => (
+                                <Card key={item} className="border-border/60 bg-card/70 shadow-sm">
+                                    <CardContent className="space-y-5 p-6">
+                                        <div className="flex items-center gap-3">
+                                            <Skeleton className="h-11 w-11 rounded-full" />
                                             <div className="space-y-2">
-                                                <Skeleton className="h-4 w-full" />
-                                                <Skeleton className="h-4 w-[82%]" />
-                                                <Skeleton className="h-4 w-[68%]" />
+                                                <Skeleton className="h-4 w-32" />
+                                                <Skeleton className="h-3 w-24" />
                                             </div>
-                                            <Skeleton className="h-52 w-full rounded-2xl" />
-                                        </CardContent>
-                                    </Card>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-4 w-full" />
+                                            <Skeleton className="h-4 w-[82%]" />
+                                            <Skeleton className="h-4 w-[68%]" />
+                                        </div>
+                                        <Skeleton className="h-52 w-full rounded-2xl" />
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex flex-col gap-4">
+                                {posts.map((post) => (
+                                    <PostCard
+                                        key={post.id}
+                                        post={post}
+                                        currentUserId={user?.id}
+                                        onUpdated={handlePostUpdated}
+                                        onDeleted={handlePostDeleted}
+                                    />
                                 ))}
                             </div>
-                        ) : (
-                            <>
-                                <AnimatePresence mode="popLayout">
-                                    {posts.map((post, i) => (
-                                        <motion.div
-                                            key={post.id}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            transition={{ delay: i < 5 ? i * 0.05 : 0 }}
-                                        >
-                                            <PostCard
-                                                post={post}
-                                                currentUserId={user?.id}
-                                                onUpdated={handlePostUpdated}
-                                                onDeleted={handlePostDeleted}
-                                            />
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
 
-                                {!isLoading && posts.length === 0 && (
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                        <Card className="border-border/60 bg-card/70 shadow-sm">
-                                            <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-                                                <span className="emoji-glyph text-6xl">📭</span>
-                                                <div className="space-y-2">
-                                                    <h3 className="text-lg font-semibold">
-                                                        {showSaved ? 'No tenés publicaciones guardadas' : 'No hay publicaciones aún'}
-                                                    </h3>
-                                                    <p className="mx-auto max-w-md text-sm text-muted-foreground">
-                                                        {showSaved
-                                                            ? 'Guardá publicaciones para revisitarlas acá con una vista limpia y enfocada.'
-                                                            : sort === 'following'
-                                                                ? 'Seguí a otros usuarios para ver su contenido en esta vista.'
-                                                                : 'Todavía no hay contenido cargado para este filtro. Probá cambiar la vista o crear una publicación.'}
-                                                    </p>
-                                                </div>
-                                                {!showSaved && (
-                                                    <Button onClick={() => setShowCreate(true)} className="mt-2">
-                                                        Crear publicación
-                                                    </Button>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    </motion.div>
-                                )}
-                            </>
+                            {!isLoading && posts.length === 0 && (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                    <Card className="border-border/60 bg-card/70 shadow-sm">
+                                        <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+                                            <span className="emoji-glyph text-6xl">📭</span>
+                                            <div className="space-y-2">
+                                                <h3 className="text-lg font-semibold">
+                                                    {showSaved ? 'No tenés publicaciones guardadas' : 'No hay publicaciones aún'}
+                                                </h3>
+                                                <p className="mx-auto max-w-md text-sm text-muted-foreground">
+                                                    {showSaved
+                                                        ? 'Guardá publicaciones para revisitarlas acá con una vista limpia y enfocada.'
+                                                        : sort === 'following'
+                                                            ? 'Seguí a otros usuarios para ver su contenido en esta vista.'
+                                                            : 'Todavía no hay contenido cargado para este filtro. Probá cambiar la vista o crear una publicación.'}
+                                                </p>
+                                            </div>
+                                            {!showSaved && (
+                                                <Button onClick={() => setShowCreate(true)} className="mt-2">
+                                                    Crear publicación
+                                                </Button>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            )}
+                        </>
+                    )}
+
+                    <div ref={loaderRef} className="flex justify-center py-4">
+                        {isLoading && posts.length > 0 && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Cargando más publicaciones...
+                            </div>
                         )}
-
-                        <div ref={loaderRef} className="flex justify-center py-4">
-                            {isLoading && posts.length > 0 && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Cargando más publicaciones...
-                                </div>
-                            )}
-                            {!isLoading && !hasMore && posts.length > 0 && (
-                                <p className="text-xs text-muted-foreground">Fin de la actividad</p>
-                            )}
-                        </div>
+                        {!isLoading && !hasMore && posts.length > 0 && (
+                            <p className="text-xs text-muted-foreground">Fin de la actividad</p>
+                        )}
+                    </div>
                 </div>
             </div>
 

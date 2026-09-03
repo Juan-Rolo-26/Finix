@@ -181,7 +181,11 @@ export default function CreatePostWidget({
                             className="px-4 pb-2"
                         >
                             <div className="relative inline-block">
-                                <img src={preview} alt="Preview" className="h-36 rounded-xl object-cover border border-border/30" />
+                                {image?.type.startsWith('video/') ? (
+                                    <video src={preview} controls className="h-36 rounded-xl border border-border/30 object-contain bg-black/5" />
+                                ) : (
+                                    <img src={preview} alt="Preview" className="h-36 rounded-xl object-cover border border-border/30" />
+                                )}
                                 <button
                                     onClick={handleRemoveImage}
                                     className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow-md"
@@ -198,11 +202,11 @@ export default function CreatePostWidget({
                 <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t" style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
                     {/* Left tools */}
                     <div className="flex items-center gap-1">
-                        <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={handleImageSelect} />
+                        <input type="file" ref={fileRef} className="hidden" accept="image/*,video/*" onChange={handleImageSelect} />
                         <ToolBtn icon={<ImageIcon className="w-3.5 h-3.5" />} label="Media" onClick={() => fileRef.current?.click()} />
-                        <ToolBtn icon={<BarChart2 className="w-3.5 h-3.5" />} label="Chart" onClick={() => { }} />
-                        <ToolBtn icon={<Hash className="w-3.5 h-3.5" />} label="Tag" onClick={() => { setContent(c => c + ' $'); textRef.current?.focus(); }} />
-                        <ToolBtn icon={<Smile className="w-3.5 h-3.5" />} label="Emoji" onClick={() => { }} />
+                        <ToolBtn icon={<BarChart2 className="w-3.5 h-3.5" />} label="Chart" onClick={() => { setContent(c => c + ' $'); textRef.current?.focus(); }} />
+                        <ToolBtn icon={<Hash className="w-3.5 h-3.5" />} label="Tag" onClick={() => { setContent(c => c + ' #'); textRef.current?.focus(); }} />
+                        <ToolBtn icon={<Smile className="w-3.5 h-3.5" />} label="Emoji" onClick={() => { setContent(c => c + ' 🚀'); textRef.current?.focus(); }} />
                     </div>
 
                     {/* Right: type picker + post button */}

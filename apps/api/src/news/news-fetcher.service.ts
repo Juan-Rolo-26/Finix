@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import * as Parser from 'rss-parser';
+import * as cheerio from 'cheerio';
 
 interface RawNewsItem {
     title: string;
@@ -51,6 +53,16 @@ export class NewsFetcherService {
         { url: 'https://www.ambito.com/rss/finanzas.xml', name: 'Ámbito Finanzas', country: 'AR' },
     ];
 
+    private rssParser = new Parser({
+        customFields: {
+            item: [
+                ['media:content', 'mediaContent'],
+                ['content:encoded', 'contentEncoded'],
+                ['description', 'description'],
+            ],
+        }
+    });
+
     /**
      * Fetch news from all sources
      */
@@ -86,17 +98,17 @@ export class NewsFetcherService {
     }
 
     /**
-     * Fetch news from RSS feeds
+     * Fetch news from RSS feeds using rss-parser
      */
     private async fetchFromRSSFeeds(): Promise<RawNewsItem[]> {
         const allNews: RawNewsItem[] = [];
 
         for (const feed of this.RSS_FEEDS) {
             try {
+                // Fetch directly with standard JS fetch to control headers/timeout easily, 
+                // then parse the raw XML string using rss-parser.
                 const response = await fetch(feed.url, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    },
+                    headers: { 'User-Agent': 'Mozilla/5.0' },
                     signal: AbortSignal.timeout(10000),
                 });
 
@@ -106,15 +118,63 @@ export class NewsFetcherService {
                 }
 
                 const xml = await response.text();
-                const items = this.parseRSS(xml, feed.name);
-                allNews.push(...items);
+                const feedParsed = await this.rssParser.parseString(xml);
+                const items: RawNewsItem[] = [];
 
+                for (const item of feedParsed.items) {
+                    if (!item.title || !item.link) continue;
+
+                    // 1. Extract content safely using Cheerio if HTML exists
+                    let htmlContent = item.contentEncoded || item.content || item.description || '';
+                    let cleanSummary = '';
+                    let cleanContent = '';
+                    let imageUrl = '';
+
+                    if (htmlContent) {
+                        try {
+                            const $ = cheerio.load(htmlContent);
+                            // Extract image
+                            const img = $('img').first();
+                            if (img.length && img.attr('src')) {
+                                imageUrl = img.attr('src') as string;
+                            }
+
+                            // Extract pure text
+                            const text = $.text().replace(/\s+/g, ' ').trim();
+                            cleanSummary = text.substring(0, 300);
+                            cleanContent = text;
+                        } catch (e) {
+                            cleanSummary = htmlContent.replace(/<[^>]+>/g, '').substring(0, 300);
+                        }
+                    }
+
+                    // Fallback to custom media:content for images
+                    if (!imageUrl && item.mediaContent && item.mediaContent['$'] && item.mediaContent['$']['url']) {
+                        imageUrl = item.mediaContent['$']['url'];
+                    }
+
+                    items.push({
+                        title: item.title,
+                        summary: cleanSummary,
+                        content: cleanContent || cleanSummary,
+                        url: item.link,
+                        imageUrl: imageUrl || undefined,
+                        source: feed.name,
+                        author: item.creator || feed.name,
+                        publishedAt: item.isoDate ? new Date(item.isoDate) : new Date(item.pubDate || Date.now()),
+                        language: ['Ámbito Financiero', 'Ámbito Finanzas', 'El Cronista', 'Infobae', 'La Nación', 'iProfesional'].includes(feed.name) ? 'es' : 'en',
+                    });
+
+                    // Cap per feed to avoid overflowing the DB too fast
+                    if (items.length >= 20) break;
+                }
+
+                allNews.push(...items);
                 console.log(`[NewsFetcher] Fetched ${items.length} items from ${feed.name}`);
 
-                // Rate limiting
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 800));
 
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`[NewsFetcher] Error fetching ${feed.name}:`, error.message);
             }
         }
@@ -123,65 +183,44 @@ export class NewsFetcherService {
     }
 
     /**
-     * Parse RSS XML to news items
+     * Tool for robust HTML Scrapping (Web Scraping general)
+     * Useful for extracting full article text if RSS only provides a small summary
      */
-    private parseRSS(xml: string, sourceName: string): RawNewsItem[] {
-        const items: RawNewsItem[] = [];
-        const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-        let match;
+    async scrapeWebsitePage(url: string): Promise<{ text: string; image?: string; title?: string }> {
+        try {
+            const res = await fetch(url, {
+                headers: { 'User-Agent': 'Mozilla/5.0' },
+                signal: AbortSignal.timeout(15000),
+            });
+            if (!res.ok) throw new Error('Bad response');
+            const html = await res.text();
 
-        while ((match = itemRegex.exec(xml)) !== null) {
-            const itemContent = match[1];
+            const $ = cheerio.load(html);
 
-            const getTag = (tag: string) => {
-                const regex = new RegExp(`<${tag}.*?>([\\s\\S]*?)<\\/${tag}>`);
-                const complexMatch = itemContent.match(regex);
-                if (complexMatch) {
-                    return complexMatch[1]
-                        .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-                        .trim();
-                }
-                return '';
+            // Remove unnecessary tags
+            $('script, style, noscript, iframe, nav, footer, header').remove();
+
+            const title = $('title').text() || $('h1').first().text();
+
+            let ogImage = $('meta[property="og:image"]').attr('content');
+            if (!ogImage) ogImage = $('img').first().attr('src');
+
+            // Focus on paragraphs for article text
+            const paragraphs: string[] = [];
+            $('p').each((_, el) => {
+                const text = $(el).text().trim();
+                if (text.length > 20) paragraphs.push(text);
+            });
+
+            return {
+                title: title.trim(),
+                text: paragraphs.join('\n\n'),
+                image: ogImage,
             };
-
-            const title = getTag('title');
-            const link = getTag('link');
-            const pubDate = getTag('pubDate');
-            const description = getTag('description');
-            const content = getTag('content:encoded') || description;
-
-            // Extract image
-            let imageUrl = '';
-            const mediaRegex = /<media:content[^>]*url="([^"]*)"/i;
-            const mediaMatch = itemContent.match(mediaRegex);
-            if (mediaMatch) {
-                imageUrl = mediaMatch[1];
-            } else {
-                const imgRegex = /<img[^>]+src="([^"]+)"/i;
-                const imgMatch = description.match(imgRegex);
-                if (imgMatch) imageUrl = imgMatch[1];
-            }
-
-            // Clean HTML from description
-            const cleanSummary = description
-                .replace(/<[^>]+>/g, '')
-                .substring(0, 300);
-
-            if (title && link) {
-                items.push({
-                    title,
-                    summary: cleanSummary,
-                    content: content.replace(/<[^>]+>/g, ''),
-                    url: link,
-                    imageUrl: imageUrl || undefined,
-                    source: sourceName,
-                    publishedAt: pubDate ? new Date(pubDate) : new Date(),
-                    language: ['Ámbito Financiero', 'Ámbito Finanzas', 'El Cronista', 'Infobae', 'La Nación', 'iProfesional'].includes(sourceName) ? 'es' : 'en',
-                });
-            }
+        } catch (error: any) {
+            console.error(`[Scraper] Failed to scrape ${url}:`, error.message);
+            return { text: '' };
         }
-
-        return items;
     }
 
     /**

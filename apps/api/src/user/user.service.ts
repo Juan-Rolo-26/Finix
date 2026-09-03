@@ -8,6 +8,9 @@ import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 @Injectable()
 export class UserService {
+    private topTradersCache: { data: any[]; fetchedAt: number } | null = null;
+    private readonly topTradersTtlMs = 5 * 60 * 1000; // 5 minutes
+
     constructor(
         private prisma: PrismaService,
         private notificationsService: NotificationsService,
@@ -423,6 +426,8 @@ export class UserService {
             isProfilePublic: true,
             showPortfolio: true,
             showStats: true,
+            showExactReturns: true,
+            returnsVisibilityMode: true,
             acceptingFollowers: true,
             createdAt: true,
             _count: {
@@ -455,8 +460,8 @@ export class UserService {
         };
     }
 
-    async getNotifications(userId: string, days?: number) {
-        return this.notificationsService.getNotifications(userId, { days });
+    async getNotifications(userId: string, limit?: number) {
+        return this.notificationsService.getNotifications(userId, { limit });
     }
 
     async getUnreadNotificationsCount(userId: string) {
@@ -752,6 +757,10 @@ export class UserService {
     }
 
     async getTopTraders() {
+        if (this.topTradersCache && Date.now() - this.topTradersCache.fetchedAt < this.topTradersTtlMs) {
+            return this.topTradersCache.data;
+        }
+
         const traders = await this.prisma.user.findMany({
             where: {
                 isProfilePublic: true,
@@ -816,7 +825,7 @@ export class UserService {
         const traderHoldings = traders.flatMap((trader) => trader.portfolios.flatMap((portfolio) => portfolio.holdings));
         const quoteMap = await this.buildQuotePriceMap(traderHoldings);
 
-        return traders
+        const result = traders
             .map((trader) => {
                 const stats = this.computePortfolioStatsFromPortfolios(trader.portfolios, quoteMap);
                 return {
@@ -834,6 +843,9 @@ export class UserService {
             .filter((trader) => trader.totalReturn !== null)
             .sort((left, right) => (right.totalReturn ?? Number.NEGATIVE_INFINITY) - (left.totalReturn ?? Number.NEGATIVE_INFINITY))
             .slice(0, 10);
+
+        this.topTradersCache = { data: result, fetchedAt: Date.now() };
+        return result;
     }
 
     private searchCache = new Map<string, { data: any[]; fetchedAt: number }>();
@@ -949,8 +961,8 @@ export class UserService {
         await this.notificationsService.createNotification({
             userId: targetUser.id,
             actorId: followerId,
-            type: 'follow',
-            title: `${follower.username} empezo a seguirte.`,
+            type: 'SOCIAL_FOLLOW',
+            title: `${follower.username} te ha empezado a seguir.`,
             link: `/profile/${follower.username}`,
         });
 
