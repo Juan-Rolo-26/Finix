@@ -126,8 +126,19 @@ export default function AuthPage() {
             });
 
             if (!response.ok) {
-                const errData = await response.json().catch(() => null);
+                let errData;
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    errData = await response.json().catch(() => null);
+                } else if (contentType && contentType.includes("text/html")) {
+                    throw new Error("El servicio de autenticación no está disponible en este momento.");
+                }
                 throw new Error(errData?.message || t.auth.errors.invalidCredentials);
+            }
+
+            const successContentType = response.headers.get("content-type");
+            if (successContentType && successContentType.includes("text/html")) {
+                throw new Error("El servicio de autenticación no está disponible en este momento.");
             }
 
             const data = await response.json();
@@ -157,8 +168,19 @@ export default function AuthPage() {
             });
 
             if (!response.ok) {
-                const errData = await response.json().catch(() => null);
+                let errData;
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    errData = await response.json().catch(() => null);
+                } else if (contentType && contentType.includes("text/html")) {
+                    throw new Error("El servicio de autenticación no está disponible en este momento.");
+                }
                 throw new Error(errData?.message || 'Error al crear la cuenta. Intentá nuevamente.');
+            }
+
+            const successContentType = response.headers.get("content-type");
+            if (successContentType && successContentType.includes("text/html")) {
+                throw new Error("El servicio de autenticación no está disponible en este momento.");
             }
 
             setSuccessMessage('Te enviamos un código de verificación a tu correo. Por favor, revisalo.');
@@ -183,8 +205,19 @@ export default function AuthPage() {
             });
 
             if (!response.ok) {
-                const errData = await response.json().catch(() => null);
+                let errData;
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    errData = await response.json().catch(() => null);
+                } else if (contentType && contentType.includes("text/html")) {
+                    throw new Error("El servicio de autenticación no está disponible en este momento.");
+                }
                 throw new Error(errData?.message || t.auth.errors.connectionError);
+            }
+
+            const successContentType = response.headers.get("content-type");
+            if (successContentType && successContentType.includes("text/html")) {
+                throw new Error("El servicio de autenticación no está disponible en este momento.");
             }
 
             setSuccessMessage('Te enviamos un correo con un enlace para restablecer tu contraseña.');

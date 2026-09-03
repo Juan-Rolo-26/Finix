@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
  */
 export default function AuthCallback() {
     const navigate = useNavigate();
-    const { login } = useAuthStore();
+    const { syncFromSession } = useAuthStore();
 
     useEffect(() => {
         const handle = async () => {
@@ -23,27 +23,19 @@ export default function AuthCallback() {
                 return;
             }
 
-            const token = session.access_token;
-            localStorage.setItem('token', token);
+            // Remove any old local token to force checking Supabase's current session
+            localStorage.removeItem('token');
 
-            const mappedUser: any = {
-                id: session.user.id,
-                email: session.user.email,
-                username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
-                onboardingCompleted: session.user.user_metadata?.onboardingCompleted || false,
-                role: 'USER',
-                plan: 'FREE',
-                accountType: 'STANDARD',
-                isInfluencer: false,
-                isCreator: false,
-                isVerified: true,
-                emailVerified: true,
-            };
+            // Sync with NestJS backend
+            const user = await syncFromSession();
 
-            login(token, mappedUser);
+            if (!user) {
+                navigate('/?reason=auth-failed');
+                return;
+            }
 
             const isNewUser = session.user.created_at && (new Date().getTime() - new Date(session.user.created_at).getTime()) < 60000;
-            navigate(!mappedUser.onboardingCompleted && isNewUser ? '/onboarding' : '/dashboard');
+            navigate(!user.onboardingCompleted && isNewUser ? '/onboarding' : '/dashboard');
         };
 
         handle();
