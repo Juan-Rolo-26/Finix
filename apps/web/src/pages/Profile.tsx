@@ -838,7 +838,21 @@ export default function Profile() {
         setIsLoading(true);
         try {
             const targetUsername = username || currentUser?.username;
-            if (!targetUsername) { navigate('/auth'); return; }
+            if (!targetUsername) {
+                if (currentUser) {
+                    const fallback = buildFallback(currentUser);
+                    setProfile(fallback);
+                    setEditForm(fallback);
+                    setIsFollowing(false);
+                    if (isOwnProfile && !currentUser.username) {
+                        setIsEditing(true);
+                    }
+                } else {
+                    navigate('/auth');
+                }
+                setIsLoading(false);
+                return;
+            }
             const res = await apiFetch(`/users/${targetUsername}`);
             if (res.ok) {
                 const data = await res.json();
@@ -850,6 +864,9 @@ export default function Profile() {
                 setProfile(fallback);
                 setEditForm(fallback);
                 setIsFollowing(false);
+                if (isOwnProfile && !currentUser.username) {
+                    setIsEditing(true);
+                }
             }
         } catch {
             if (currentUser) {

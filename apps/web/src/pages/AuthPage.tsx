@@ -25,6 +25,7 @@ import {
     Shield,
     Zap,
     CheckCircle2,
+    Instagram,
 } from 'lucide-react';
 
 type AuthView = 'login' | 'register' | 'forgot';
@@ -62,6 +63,7 @@ export default function AuthPage() {
         { label: 'Características', to: '/info/features' },
         { label: 'Cómo funciona', to: '/info/how' },
         { label: 'Sobre Finix', to: '/info/about' },
+        { label: 'Contacto', to: '/info/contact' },
     ];
 
     const legalAndSocialLinks = [
@@ -115,36 +117,15 @@ export default function AuthPage() {
 
     const handleLogin = async () => {
         try {
-            const { apiFetch } = await import('@/lib/api');
-            const response = await apiFetch('/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: email.trim().toLowerCase(),
-                    password,
-                }),
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email.trim().toLowerCase(),
+                password,
             });
 
-            if (!response.ok) {
-                let errData;
-                const contentType = response.headers.get("content-type");
-                if (contentType && contentType.includes("application/json")) {
-                    errData = await response.json().catch(() => null);
-                } else if (contentType && contentType.includes("text/html")) {
-                    throw new Error("El servicio de autenticación no está disponible en este momento.");
-                }
-                throw new Error(errData?.message || t.auth.errors.invalidCredentials);
-            }
+            if (error) throw error;
+            if (!data.session || !data.user) throw new Error("No se pudo obtener la sesión.");
 
-            const successContentType = response.headers.get("content-type");
-            if (successContentType && successContentType.includes("text/html")) {
-                throw new Error("El servicio de autenticación no está disponible en este momento.");
-            }
-
-            const data = await response.json();
-
-            // data contains { token, user }
-            useAuthStore.getState().login(data.token, data.user);
+            useAuthStore.getState().login(data.session.access_token, data.user as any);
             navigate('/dashboard');
         } catch (err: any) {
             setAuthError(normalizeAuthError(err.message, t.auth.errors.invalidCredentials));
@@ -156,36 +137,19 @@ export default function AuthPage() {
         const normalizedUsername = username.trim();
 
         try {
-            const { apiFetch } = await import('@/lib/api');
-            const response = await apiFetch('/auth/register/request-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: normalizedEmail,
-                    username: normalizedUsername,
-                    password,
-                }),
+            const { error } = await supabase.auth.signUp({
+                email: normalizedEmail,
+                password,
+                options: {
+                    data: {
+                        username: normalizedUsername,
+                    },
+                },
             });
 
-            if (!response.ok) {
-                let errData;
-                const contentType = response.headers.get("content-type");
-                if (contentType && contentType.includes("application/json")) {
-                    errData = await response.json().catch(() => null);
-                } else if (contentType && contentType.includes("text/html")) {
-                    throw new Error("El servicio de autenticación no está disponible en este momento.");
-                }
-                throw new Error(errData?.message || 'Error al crear la cuenta. Intentá nuevamente.');
-            }
-
-            const successContentType = response.headers.get("content-type");
-            if (successContentType && successContentType.includes("text/html")) {
-                throw new Error("El servicio de autenticación no está disponible en este momento.");
-            }
+            if (error) throw error;
 
             setSuccessMessage('Te enviamos un código de verificación a tu correo. Por favor, revisalo.');
-            // En un flujo real redirigiríamos o mostraríamos input para el código.
-            //switchView('login'); 
         } catch (err: any) {
             setAuthError(normalizeAuthError(err.message, 'Error de conexión'));
         }
@@ -195,30 +159,11 @@ export default function AuthPage() {
         const normalizedEmail = email.trim().toLowerCase();
 
         try {
-            const { apiFetch } = await import('@/lib/api');
-            const response = await apiFetch('/auth/forgot/request-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: normalizedEmail,
-                }),
+            const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+                redirectTo: `${window.location.origin}/auth/callback`,
             });
 
-            if (!response.ok) {
-                let errData;
-                const contentType = response.headers.get("content-type");
-                if (contentType && contentType.includes("application/json")) {
-                    errData = await response.json().catch(() => null);
-                } else if (contentType && contentType.includes("text/html")) {
-                    throw new Error("El servicio de autenticación no está disponible en este momento.");
-                }
-                throw new Error(errData?.message || t.auth.errors.connectionError);
-            }
-
-            const successContentType = response.headers.get("content-type");
-            if (successContentType && successContentType.includes("text/html")) {
-                throw new Error("El servicio de autenticación no está disponible en este momento.");
-            }
+            if (error) throw error;
 
             setSuccessMessage('Te enviamos un correo con un enlace para restablecer tu contraseña.');
         } catch (err: any) {
@@ -551,6 +496,10 @@ export default function AuthPage() {
                         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/50">
                             <Sparkles className="w-3 h-3" />
                             <span>© 2026 Finix · Finanzas Sociales</span>
+                            <span className="mx-1">•</span>
+                            <a href="https://instagram.com/finixarg" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+                                <Instagram className="w-3.5 h-3.5" />
+                            </a>
                         </div>
                     </div>
                 </footer>

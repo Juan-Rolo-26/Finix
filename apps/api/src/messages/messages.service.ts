@@ -83,6 +83,7 @@ export class MessagesService {
             userId?: string;
             userIds?: string[];
             title?: string;
+            description?: string;
         },
     ) {
         const requestedIds = [
@@ -99,7 +100,7 @@ export class MessagesService {
             return this.getOrCreateConversation(userId, participantIds[0]);
         }
 
-        return this.createGroupConversation(userId, participantIds, payload.title);
+        return this.createGroupConversation(userId, participantIds, payload.title, payload.description);
     }
 
     /** Returns or creates a conversation between two users */
@@ -135,7 +136,7 @@ export class MessagesService {
         return this.serializeConversationSummary(conversation, userId, 0);
     }
 
-    async createGroupConversation(userId: string, participantIds: string[], title?: string) {
+    async createGroupConversation(userId: string, participantIds: string[], title?: string, description?: string) {
         const normalizedIds = this.normalizeParticipantIds(userId, participantIds);
         if (normalizedIds.length < 2) {
             throw new BadRequestException('Un grupo necesita al menos dos usuarios adicionales');
@@ -153,11 +154,13 @@ export class MessagesService {
         }
 
         const safeTitle = typeof title === 'string' ? title.trim().slice(0, 80) : '';
+        const safeDescription = typeof description === 'string' ? description.trim().slice(0, 500) : '';
 
         const conversation = await this.prisma.conversation.create({
             data: {
                 isGroup: true,
                 title: safeTitle || null,
+                description: safeDescription || null,
                 createdById: userId,
                 participants: {
                     create: distinctMembers.map((memberId) => ({
@@ -257,6 +260,9 @@ export class MessagesService {
             });
 
             return createdMessage;
+        }, { maxWait: 15000, timeout: 30000 }).catch(err => {
+            console.error("DEBUG MSG SERVICE ERROR:", err);
+            throw new BadRequestException(err.message || 'Unknown database error');
         });
 
         const conversationContext: ConversationAccessRecord = {
@@ -297,7 +303,7 @@ export class MessagesService {
                     data: { isRead: true },
                 });
             }
-        });
+        }, { maxWait: 15000, timeout: 30000 });
 
         return { success: true };
     }

@@ -90,6 +90,7 @@ interface ConversationItem {
 interface NewConversationSelection {
     userIds: string[];
     title?: string;
+    description?: string;
 }
 
 async function readApiErrorMessage(response: Response, fallback: string) {
@@ -637,6 +638,7 @@ function NewMessageModal({
     const [loading, setLoading] = useState(false);
     const [selectedUsers, setSelectedUsers] = useState<MsgUser[]>([]);
     const [groupTitle, setGroupTitle] = useState('');
+    const [groupDescription, setGroupDescription] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => { inputRef.current?.focus(); }, []);
@@ -674,6 +676,7 @@ function NewMessageModal({
         onSelect({
             userIds: selectedUsers.map((user) => user.id),
             title: groupTitle.trim() || undefined,
+            description: groupDescription.trim() || undefined,
         });
     };
 
@@ -735,17 +738,31 @@ function NewMessageModal({
                         </div>
 
                         {selectedUsers.length > 1 && (
-                            <div className="space-y-1.5">
-                                <label htmlFor="group-title" className="text-xs font-semibold text-muted-foreground">Nombre del grupo</label>
-                                <input
-                                    id="group-title"
-                                    type="text"
-                                    placeholder="Ej: Equipo Finix"
-                                    value={groupTitle}
-                                    onChange={(e) => setGroupTitle(e.target.value)}
-                                    disabled={isSubmitting}
-                                    className="w-full rounded-xl border border-border/50 bg-secondary/20 px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary/40"
-                                />
+                            <div className="space-y-3">
+                                <div className="space-y-1.5">
+                                    <label htmlFor="group-title" className="text-xs font-semibold text-muted-foreground">Nombre del grupo</label>
+                                    <input
+                                        id="group-title"
+                                        type="text"
+                                        placeholder="Ej: Equipo Finix"
+                                        value={groupTitle}
+                                        onChange={(e) => setGroupTitle(e.target.value)}
+                                        disabled={isSubmitting}
+                                        className="w-full rounded-xl border border-border/50 bg-secondary/20 px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary/40"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label htmlFor="group-description" className="text-xs font-semibold text-muted-foreground">Descripción (opcional)</label>
+                                    <input
+                                        id="group-description"
+                                        type="text"
+                                        placeholder="Ej: Grupo para hablar de inversiones"
+                                        disabled={isSubmitting}
+                                        className="w-full rounded-xl border border-border/50 bg-secondary/20 px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary/40"
+                                        value={groupDescription}
+                                        onChange={(e) => setGroupDescription(e.target.value)}
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>
@@ -790,11 +807,10 @@ function NewMessageModal({
                                     </div>
                                     {u.title && <p className="text-xs text-muted-foreground">{u.title}</p>}
                                 </div>
-                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
-                                    selectedIds.has(u.id)
-                                        ? 'border-primary bg-primary text-black'
-                                        : 'border-border/60 text-transparent'
-                                }`}>
+                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${selectedIds.has(u.id)
+                                    ? 'border-primary bg-primary text-black'
+                                    : 'border-border/60 text-transparent'
+                                    }`}>
                                     <Check className="w-3.5 h-3.5" />
                                 </div>
                             </button>
@@ -1035,6 +1051,7 @@ export default function MessagesPage() {
             ? [selection]
             : Array.from(new Set(selection.userIds.map((id) => id.trim()).filter(Boolean)));
         const groupTitle = typeof selection === 'string' ? undefined : selection.title?.trim();
+        const groupDescription = typeof selection === 'string' ? undefined : selection.description?.trim();
 
         setConversationError('');
 
@@ -1064,7 +1081,7 @@ export default function MessagesPage() {
             setIsCreatingConversation(true);
             const payload = selectedUserIds.length === 1
                 ? { userId: selectedUserIds[0] }
-                : { userIds: selectedUserIds, title: groupTitle || undefined };
+                : { userIds: selectedUserIds, title: groupTitle || undefined, description: groupDescription || undefined };
             const res = await apiFetch('/messages/conversations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1274,933 +1291,932 @@ export default function MessagesPage() {
 
     return (
         <>
-        <AnimatePresence>
-            {showNewMsg && (
-                <NewMessageModal
-                    onClose={handleCloseNewMessage}
-                    onSelect={handleStartConversation}
-                    isSubmitting={isCreatingConversation}
-                    errorMessage={conversationError}
-                />
-            )}
-            {showPostPicker && (
-                <PostPickerModal
-                    currentUsername={user?.username}
-                    onClose={() => setShowPostPicker(false)}
-                    onSelect={handleAttachmentSelect}
-                />
-            )}
-            {showChartPicker && (
-                <ChartAttachmentModal
-                    onClose={() => setShowChartPicker(false)}
-                    onSelect={handleAttachmentSelect}
-                />
-            )}
-        </AnimatePresence>
+            <AnimatePresence>
+                {showNewMsg && (
+                    <NewMessageModal
+                        onClose={handleCloseNewMessage}
+                        onSelect={handleStartConversation}
+                        isSubmitting={isCreatingConversation}
+                        errorMessage={conversationError}
+                    />
+                )}
+                {showPostPicker && (
+                    <PostPickerModal
+                        currentUsername={user?.username}
+                        onClose={() => setShowPostPicker(false)}
+                        onSelect={handleAttachmentSelect}
+                    />
+                )}
+                {showChartPicker && (
+                    <ChartAttachmentModal
+                        onClose={() => setShowChartPicker(false)}
+                        onSelect={handleAttachmentSelect}
+                    />
+                )}
+            </AnimatePresence>
 
-        <div className="flex flex-col flex-1 overflow-hidden">
-            <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                className="hidden"
-                onChange={handleImageAttachmentChange}
-            />
+            <div className="flex flex-col flex-1 overflow-hidden">
+                <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={handleImageAttachmentChange}
+                />
 
-            <div className="relative flex flex-1 h-full overflow-hidden" style={{ background: bgPage }}>
+                <div className="relative flex flex-1 h-full overflow-hidden" style={{ background: bgPage }}>
 
-                {/* ══ LEFT COLUMN – Conversation list ══════════════════════════════ */}
-                <AnimatePresence initial={false}>
-                    {(showMobileList || !activeConvId) && (
-                        <motion.aside
-                            key="conv-list"
-                            initial={{ x: '-100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '-100%' }}
-                            transition={{ duration: 0.22, ease: 'easeInOut' }}
-                            className="flex flex-col lg:relative lg:w-[340px] lg:flex-shrink-0 absolute inset-0 z-10 lg:z-auto"
-                            style={{
-                                borderRight: `1px solid ${borderColor}`,
-                                background: bgSidebar,
-                                boxShadow: isLight ? '2px 0 12px hsl(220 15% 10% / 0.04)' : 'none',
-                            }}
-                        >
-                            {/* Header — Instagram-style on mobile */}
-                            <div
-                                className="flex items-center justify-between px-5 lg:px-5"
+                    {/* ══ LEFT COLUMN – Conversation list ══════════════════════════════ */}
+                    <AnimatePresence initial={false}>
+                        {(showMobileList || !activeConvId) && (
+                            <motion.aside
+                                key="conv-list"
+                                initial={{ x: '-100%' }}
+                                animate={{ x: 0 }}
+                                exit={{ x: '-100%' }}
+                                transition={{ duration: 0.22, ease: 'easeInOut' }}
+                                className="flex flex-col lg:relative lg:w-[340px] lg:flex-shrink-0 absolute inset-0 z-10 lg:z-auto"
                                 style={{
-                                    borderBottom: `1px solid ${borderColor}`,
-                                    paddingTop: '18px',
-                                    paddingBottom: '14px',
+                                    borderRight: `1px solid ${borderColor}`,
+                                    background: bgSidebar,
+                                    boxShadow: isLight ? '2px 0 12px hsl(220 15% 10% / 0.04)' : 'none',
                                 }}
                             >
-                                <div className="flex items-center gap-3">
-                                    {/* Finix logo pill — mobile only */}
-                                    <div
-                                        className="lg:hidden w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                                        style={{
-                                            background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 28%) 100%)',
-                                            boxShadow: '0 0 14px hsl(158 100% 45% / 0.35)',
-                                        }}
-                                    >
-                                        <img src="/logo.png" alt="Finix" className="w-5 h-5 object-contain" />
-                                    </div>
-                                    <div>
-                                        <h1 className="text-[17px] font-black tracking-tight" style={{ color: textPrimary }}>
-                                            {user?.username || 'Mensajes'}
-                                        </h1>
-                                        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'hsl(158 100% 40% / 0.65)' }}>
-                                            Red Finix
-                                        </p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={handleOpenNewMessage}
-                                    className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                                {/* Header — Instagram-style on mobile */}
+                                <div
+                                    className="flex items-center justify-between px-5 lg:px-5"
                                     style={{
-                                        background: `linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 30%) 100%)`,
-                                        boxShadow: `0 4px 18px hsl(158 100% 45% / 0.4)`,
+                                        borderBottom: `1px solid ${borderColor}`,
+                                        paddingTop: '18px',
+                                        paddingBottom: '14px',
                                     }}
-                                    title="Nuevo mensaje"
                                 >
-                                    <Plus className="w-5 h-5 text-black" />
-                                </button>
-                            </div>
-
-                            {/* Search */}
-                            <div className="px-4 py-2.5">
-                                <div className="flex items-center gap-2 px-3 rounded-2xl" style={{ background: searchBg, border: `1px solid ${searchBorder}` }}>
-                                    <Search className="w-4 h-4 flex-shrink-0" style={{ color: textMuted }} />
-                                    <input
-                                        type="text"
-                                        placeholder="Buscar conversaciones..."
-                                        value={convSearch}
-                                        onChange={(e) => setConvSearch(e.target.value)}
-                                        className="flex-1 bg-transparent py-2.5 text-sm outline-none placeholder:text-muted-foreground"
-                                        style={{ color: textPrimary }}
-                                    />
-                                    {convSearch && (
-                                        <button onClick={() => setConvSearch('')}>
-                                            <X className="w-3.5 h-3.5" style={{ color: textMuted }} />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* List */}
-                            <div className="flex-1 overflow-y-auto">
-                                {isLoadingConvs ? (
-                                    <div className="flex justify-center py-10">
-                                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                                    </div>
-                                ) : filteredConvs.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center text-center px-6 py-16 gap-5">
-                                        <motion.div
-                                            animate={{ y: [0, -5, 0] }}
-                                            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                                            className="w-20 h-20 rounded-3xl flex items-center justify-center"
+                                    <div className="flex items-center gap-3">
+                                        {/* Finix logo pill — mobile only */}
+                                        <div
+                                            className="lg:hidden w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
                                             style={{
-                                                background: 'linear-gradient(135deg, hsl(158 100% 45% / 0.12) 0%, hsl(158 100% 45% / 0.04) 100%)',
-                                                border: '1px solid hsl(158 100% 45% / 0.2)',
-                                                boxShadow: '0 8px 32px hsl(158 100% 45% / 0.1)',
+                                                background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 28%) 100%)',
+                                                boxShadow: '0 0 14px hsl(158 100% 45% / 0.35)',
                                             }}
                                         >
-                                            <MessageSquare className="w-9 h-9" style={{ color: 'hsl(158 100% 45%)' }} />
-                                        </motion.div>
-                                        <div className="space-y-1.5">
-                                            <p className="text-base font-bold" style={{ color: textPrimary }}>
-                                                {convSearch ? 'Sin resultados' : 'Sin conversaciones aún'}
-                                            </p>
-                                            <p className="text-sm" style={{ color: textMuted }}>
-                                                {convSearch ? 'Intentá con otro nombre' : 'Conectate con otros inversores de la red'}
+                                            <img src="/logo.png" alt="Finix" className="w-5 h-5 object-contain" />
+                                        </div>
+                                        <div>
+                                            <h1 className="text-[17px] font-black tracking-tight" style={{ color: textPrimary }}>
+                                                {user?.username || 'Mensajes'}
+                                            </h1>
+                                            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'hsl(158 100% 40% / 0.65)' }}>
+                                                Red Finix
                                             </p>
                                         </div>
-                                        {!convSearch && (
-                                            <button
-                                                onClick={handleOpenNewMessage}
-                                                className="flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95"
-                                                style={{
-                                                    background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 30%) 100%)',
-                                                    color: '#030d06',
-                                                    boxShadow: '0 6px 20px hsl(158 100% 45% / 0.35)',
-                                                }}
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                                Empezar chat o grupo
+                                    </div>
+                                    <button
+                                        onClick={handleOpenNewMessage}
+                                        className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                                        style={{
+                                            background: `linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 30%) 100%)`,
+                                            boxShadow: `0 4px 18px hsl(158 100% 45% / 0.4)`,
+                                        }}
+                                        title="Nuevo mensaje"
+                                    >
+                                        <Plus className="w-5 h-5 text-black" />
+                                    </button>
+                                </div>
+
+                                {/* Search */}
+                                <div className="px-4 py-2.5">
+                                    <div className="flex items-center gap-2 px-3 rounded-2xl" style={{ background: searchBg, border: `1px solid ${searchBorder}` }}>
+                                        <Search className="w-4 h-4 flex-shrink-0" style={{ color: textMuted }} />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar conversaciones..."
+                                            value={convSearch}
+                                            onChange={(e) => setConvSearch(e.target.value)}
+                                            className="flex-1 bg-transparent py-2.5 text-sm outline-none placeholder:text-muted-foreground"
+                                            style={{ color: textPrimary }}
+                                        />
+                                        {convSearch && (
+                                            <button onClick={() => setConvSearch('')}>
+                                                <X className="w-3.5 h-3.5" style={{ color: textMuted }} />
                                             </button>
                                         )}
                                     </div>
-                                ) : (
-                                    <ul className="py-1">
-                                        {filteredConvs.map((conv) => {
-                                            const isActive = conv.id === activeConvId;
-                                            return (
-                                                <motion.li key={conv.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                                    <div className="relative group">
-                                                        <button
-                                                            onClick={() => handleSelectConv(conv.id)}
-                                                            className="w-full flex items-center gap-3 px-4 pr-12 py-4 lg:py-3.5 transition-all text-left"
-                                                            style={{
-                                                                background: isActive ? 'hsl(158 100% 45% / 0.07)' : 'transparent',
-                                                                borderLeft: isActive ? '3px solid hsl(158 100% 45%)' : '3px solid transparent',
-                                                            }}
-                                                            onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLElement).style.background = hoverBg; }}
-                                                            onMouseLeave={(e) => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                                                        >
-                                                            <ConversationAvatar
-                                                                conversation={conv}
-                                                                currentUserId={user?.id}
-                                                                size={46}
-                                                                onlineUsers={onlineUsers}
-                                                            />
+                                </div>
 
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center justify-between mb-0.5">
-                                                                    <span className="text-sm font-semibold truncate" style={{ color: textPrimary }}>
-                                                                        {getConversationName(conv)}
-                                                                        {!conv.isGroup && conv.otherUser?.isVerified && (
-                                                                            <span className="ml-1 text-[10px]" style={{ color: 'hsl(158 100% 45%)' }}>✓</span>
-                                                                        )}
-                                                                    </span>
-                                                                    <span className="text-[11px] text-muted-foreground ml-2 flex-shrink-0 font-medium">
-                                                                        {conv.lastMessage ? formatTime(conv.lastMessage.createdAt) : ''}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex items-center justify-between">
-                                                                    <p className="text-xs text-muted-foreground truncate max-w-[160px]">
-                                                                        {conv.lastMessage
-                                                                            ? `${conv.lastMessage.senderId === user?.id
-                                                                                ? 'Tu: '
-                                                                                : conv.isGroup
-                                                                                    ? `${conv.lastMessage.sender.username}: `
-                                                                                    : ''}${getMessagePreview(conv.lastMessage)}`
-                                                                            : getConversationSecondaryText(conv, user?.id)}
-                                                                    </p>
-                                                                    {conv.unreadCount > 0 && (
-                                                                        <span className="flex-shrink-0 ml-1 min-w-[20px] h-5 rounded-full text-[11px] font-bold flex items-center justify-center text-black px-1"
-                                                                            style={{ background: 'hsl(158 100% 45%)' }}>
-                                                                            {conv.unreadCount > 9 ? '9+' : conv.unreadCount}
+                                {/* List */}
+                                <div className="flex-1 overflow-y-auto">
+                                    {isLoadingConvs ? (
+                                        <div className="flex justify-center py-10">
+                                            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                        </div>
+                                    ) : filteredConvs.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center text-center px-6 py-16 gap-5">
+                                            <motion.div
+                                                animate={{ y: [0, -5, 0] }}
+                                                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                                                className="w-20 h-20 rounded-3xl flex items-center justify-center"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, hsl(158 100% 45% / 0.12) 0%, hsl(158 100% 45% / 0.04) 100%)',
+                                                    border: '1px solid hsl(158 100% 45% / 0.2)',
+                                                    boxShadow: '0 8px 32px hsl(158 100% 45% / 0.1)',
+                                                }}
+                                            >
+                                                <MessageSquare className="w-9 h-9" style={{ color: 'hsl(158 100% 45%)' }} />
+                                            </motion.div>
+                                            <div className="space-y-1.5">
+                                                <p className="text-base font-bold" style={{ color: textPrimary }}>
+                                                    {convSearch ? 'Sin resultados' : 'Sin conversaciones aún'}
+                                                </p>
+                                                <p className="text-sm" style={{ color: textMuted }}>
+                                                    {convSearch ? 'Intentá con otro nombre' : 'Conectate con otros inversores de la red'}
+                                                </p>
+                                            </div>
+                                            {!convSearch && (
+                                                <button
+                                                    onClick={handleOpenNewMessage}
+                                                    className="flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95"
+                                                    style={{
+                                                        background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 30%) 100%)',
+                                                        color: '#030d06',
+                                                        boxShadow: '0 6px 20px hsl(158 100% 45% / 0.35)',
+                                                    }}
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                    Empezar chat o grupo
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <ul className="py-1">
+                                            {filteredConvs.map((conv) => {
+                                                const isActive = conv.id === activeConvId;
+                                                return (
+                                                    <motion.li key={conv.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                                        <div className="relative group">
+                                                            <button
+                                                                onClick={() => handleSelectConv(conv.id)}
+                                                                className="w-full flex items-center gap-3 px-4 pr-12 py-4 lg:py-3.5 transition-all text-left"
+                                                                style={{
+                                                                    background: isActive ? 'hsl(158 100% 45% / 0.07)' : 'transparent',
+                                                                    borderLeft: isActive ? '3px solid hsl(158 100% 45%)' : '3px solid transparent',
+                                                                }}
+                                                                onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLElement).style.background = hoverBg; }}
+                                                                onMouseLeave={(e) => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                                                            >
+                                                                <ConversationAvatar
+                                                                    conversation={conv}
+                                                                    currentUserId={user?.id}
+                                                                    size={46}
+                                                                    onlineUsers={onlineUsers}
+                                                                />
+
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center justify-between mb-0.5">
+                                                                        <span className="text-sm font-semibold truncate" style={{ color: textPrimary }}>
+                                                                            {getConversationName(conv)}
+                                                                            {!conv.isGroup && conv.otherUser?.isVerified && (
+                                                                                <span className="ml-1 text-[10px]" style={{ color: 'hsl(158 100% 45%)' }}>✓</span>
+                                                                            )}
                                                                         </span>
-                                                                    )}
+                                                                        <span className="text-[11px] text-muted-foreground ml-2 flex-shrink-0 font-medium">
+                                                                            {conv.lastMessage ? formatTime(conv.lastMessage.createdAt) : ''}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center justify-between">
+                                                                        <p className="text-xs text-muted-foreground truncate max-w-[160px]">
+                                                                            {conv.lastMessage
+                                                                                ? `${conv.lastMessage.senderId === user?.id
+                                                                                    ? 'Tu: '
+                                                                                    : conv.isGroup
+                                                                                        ? `${conv.lastMessage.sender.username}: `
+                                                                                        : ''}${getMessagePreview(conv.lastMessage)}`
+                                                                                : getConversationSecondaryText(conv, user?.id)}
+                                                                        </p>
+                                                                        {conv.unreadCount > 0 && (
+                                                                            <span className="flex-shrink-0 ml-1 min-w-[20px] h-5 rounded-full text-[11px] font-bold flex items-center justify-center text-black px-1"
+                                                                                style={{ background: 'hsl(158 100% 45%)' }}>
+                                                                                {conv.unreadCount > 9 ? '9+' : conv.unreadCount}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        </button>
+                                                            </button>
 
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <button
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    className={`absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                                                                        isActive ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100'
-                                                                    }`}
-                                                                    style={{ background: isActive ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
-                                                                    title="Acciones del chat"
-                                                                    aria-label={`Acciones del chat ${getConversationName(conv)}`}
-                                                                >
-                                                                    <MoreHorizontal className="w-4 h-4" style={{ color: textMuted }} />
-                                                                </button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-48">
-                                                                <DropdownMenuLabel>Acciones del chat</DropdownMenuLabel>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem onClick={() => handleSelectConv(conv.id)}>
-                                                                    <MessageSquare className="w-4 h-4" />
-                                                                    Abrir chat
-                                                                </DropdownMenuItem>
-                                                                {!conv.isGroup && conv.otherUser && (
-                                                                    <DropdownMenuItem onClick={() => conv.otherUser && navigate(`/profile/${conv.otherUser.username}`)}>
-                                                                        <ExternalLink className="w-4 h-4" />
-                                                                        Ver perfil
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <button
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className={`absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isActive ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100'
+                                                                            }`}
+                                                                        style={{ background: isActive ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
+                                                                        title="Acciones del chat"
+                                                                        aria-label={`Acciones del chat ${getConversationName(conv)}`}
+                                                                    >
+                                                                        <MoreHorizontal className="w-4 h-4" style={{ color: textMuted }} />
+                                                                    </button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end" className="w-48">
+                                                                    <DropdownMenuLabel>Acciones del chat</DropdownMenuLabel>
+                                                                    <DropdownMenuSeparator />
+                                                                    <DropdownMenuItem onClick={() => handleSelectConv(conv.id)}>
+                                                                        <MessageSquare className="w-4 h-4" />
+                                                                        Abrir chat
                                                                     </DropdownMenuItem>
-                                                                )}
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-                                                </motion.li>
-                                            );
-                                        })}
-                                    </ul>
-                                )}
-                            </div>
-                        </motion.aside>
-                    )}
-                </AnimatePresence>
+                                                                    {!conv.isGroup && conv.otherUser && (
+                                                                        <DropdownMenuItem onClick={() => conv.otherUser && navigate(`/profile/${conv.otherUser.username}`)}>
+                                                                            <ExternalLink className="w-4 h-4" />
+                                                                            Ver perfil
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </div>
+                                                    </motion.li>
+                                                );
+                                            })}
+                                        </ul>
+                                    )}
+                                </div>
+                            </motion.aside>
+                        )}
+                    </AnimatePresence>
 
-                {/* ══ RIGHT COLUMN – Active chat ════════════════════════════════ */}
-                <div className="flex flex-col flex-1 h-full min-w-0" style={{ background: bgPage }}>
-                    {!activeConvId ? (
-                        /* ── Empty state ── */
-                        <div className="flex-1 flex flex-col items-center justify-center gap-6 select-none px-8">
-                            {/* Animated icon */}
-                            <div className="relative">
-                                <motion.div
-                                    animate={{ y: [0, -6, 0] }}
-                                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                                    className="w-28 h-28 rounded-3xl flex items-center justify-center shadow-lg"
+                    {/* ══ RIGHT COLUMN – Active chat ════════════════════════════════ */}
+                    <div className="flex flex-col flex-1 h-full min-w-0" style={{ background: bgPage }}>
+                        {!activeConvId ? (
+                            /* ── Empty state ── */
+                            <div className="flex-1 flex flex-col items-center justify-center gap-6 select-none px-8">
+                                {/* Animated icon */}
+                                <div className="relative">
+                                    <motion.div
+                                        animate={{ y: [0, -6, 0] }}
+                                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                                        className="w-28 h-28 rounded-3xl flex items-center justify-center shadow-lg"
+                                        style={{
+                                            background: 'linear-gradient(135deg, hsl(158 100% 45% / 0.12) 0%, hsl(158 100% 45% / 0.04) 100%)',
+                                            border: '1px solid hsl(158 100% 45% / 0.2)',
+                                            boxShadow: '0 8px 32px hsl(158 100% 45% / 0.12)',
+                                        }}
+                                    >
+                                        <MessageSquare className="w-12 h-12" style={{ color: 'hsl(158 100% 45%)' }} />
+                                    </motion.div>
+                                    <motion.div
+                                        animate={{ scale: [1, 1.15, 1] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                        className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-black font-bold"
+                                        style={{ background: 'hsl(158 100% 45%)', boxShadow: '0 0 16px hsl(158 100% 45% / 0.5)' }}
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </motion.div>
+                                </div>
+
+                                <div className="text-center space-y-2">
+                                    <h2 className="text-2xl font-black" style={{ color: textPrimary }}>Tus mensajes</h2>
+                                    <p className="text-sm leading-relaxed max-w-xs" style={{ color: textMuted }}>
+                                        Conectate con otros inversores de la red Finix y armá chats privados o grupales
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={handleOpenNewMessage}
+                                    className="flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-sm font-bold text-black transition-all hover:scale-105 active:scale-95"
                                     style={{
-                                        background: 'linear-gradient(135deg, hsl(158 100% 45% / 0.12) 0%, hsl(158 100% 45% / 0.04) 100%)',
-                                        border: '1px solid hsl(158 100% 45% / 0.2)',
-                                        boxShadow: '0 8px 32px hsl(158 100% 45% / 0.12)',
+                                        background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)',
+                                        boxShadow: '0 6px 24px hsl(158 100% 45% / 0.4)',
                                     }}
                                 >
-                                    <MessageSquare className="w-12 h-12" style={{ color: 'hsl(158 100% 45%)' }} />
-                                </motion.div>
-                                <motion.div
-                                    animate={{ scale: [1, 1.15, 1] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-black font-bold"
-                                    style={{ background: 'hsl(158 100% 45%)', boxShadow: '0 0 16px hsl(158 100% 45% / 0.5)' }}
-                                >
                                     <Plus className="w-4 h-4" />
-                                </motion.div>
-                            </div>
-
-                            <div className="text-center space-y-2">
-                                <h2 className="text-2xl font-black" style={{ color: textPrimary }}>Tus mensajes</h2>
-                                <p className="text-sm leading-relaxed max-w-xs" style={{ color: textMuted }}>
-                                    Conectate con otros inversores de la red Finix y armá chats privados o grupales
-                                </p>
-                            </div>
-
-                            <button
-                                onClick={handleOpenNewMessage}
-                                className="flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-sm font-bold text-black transition-all hover:scale-105 active:scale-95"
-                                style={{
-                                    background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)',
-                                    boxShadow: '0 6px 24px hsl(158 100% 45% / 0.4)',
-                                }}
-                            >
-                                <Plus className="w-4 h-4" />
-                                Nuevo mensaje o grupo
-                            </button>
-
-                            {/* Recent conversations hint */}
-                            {conversations.length > 0 && (
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>Seleccioná una conversación o grupo a la izquierda</span>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <>
-                            {/* ── Chat header ── */}
-                            <div
-                                className="flex items-center gap-2 px-3 lg:px-5 flex-shrink-0"
-                                style={{
-                                    borderBottom: `1px solid ${borderColor}`,
-                                    background: chatHeaderBg,
-                                    paddingTop: '12px',
-                                    paddingBottom: '12px',
-                                    minHeight: '64px',
-                                }}
-                            >
-                                {/* Back button */}
-                                <button
-                                    onClick={handleReturnToInbox}
-                                    className="h-9 rounded-xl inline-flex items-center gap-2 px-3 flex-shrink-0 transition-all active:scale-90"
-                                    style={{ background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.07)' }}
-                                    title="Volver a mensajes"
-                                    aria-label="Volver a mensajes"
-                                >
-                                    <ArrowLeft className="w-4 h-4" style={{ color: textPrimary }} />
-                                    <span className="text-[13px] font-semibold whitespace-nowrap" style={{ color: textPrimary }}>
-                                        Mensajes
-                                    </span>
+                                    Nuevo mensaje o grupo
                                 </button>
 
-                                {activeConv && (
-                                    <>
-                                        {/* Avatar */}
-                                        {activeConv.isGroup ? (
-                                            <ConversationAvatar
-                                                conversation={activeConv}
-                                                currentUserId={user?.id}
-                                                size={40}
-                                                onlineUsers={onlineUsers}
-                                            />
-                                        ) : activeConv.otherUser && (
-                                            <Link to={`/profile/${activeConv.otherUser.username}`}>
-                                                <UserAvatar user={activeConv.otherUser} size={40} online={onlineUsers.has(activeConv.otherUser.id)} />
-                                            </Link>
-                                        )}
-
-                                        {/* Name + status */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-1.5">
-                                                {activeConv.isGroup ? (
-                                                    <span className="font-bold truncate text-[15px]" style={{ color: textPrimary }}>
-                                                        {getConversationName(activeConv)}
-                                                    </span>
-                                                ) : activeConv.otherUser && (
-                                                    <Link
-                                                        to={`/profile/${activeConv.otherUser.username}`}
-                                                        className="font-bold hover:text-primary transition-colors truncate text-[15px]"
-                                                        style={{ color: textPrimary }}
-                                                    >
-                                                        {activeConv.otherUser.username}
-                                                    </Link>
-                                                )}
-                                                {!activeConv.isGroup && activeConv.otherUser?.isVerified && (
-                                                    <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
-                                                )}
-                                            </div>
-                                            <p className="text-[12px] flex items-center gap-1.5" style={{ color: textMuted }}>
-                                                {activeTypingUsers.length > 0 ? (
-                                                    <motion.span
-                                                        animate={{ opacity: [1, 0.5, 1] }}
-                                                        transition={{ duration: 1.2, repeat: Infinity }}
-                                                        className="font-medium"
-                                                        style={{ color: 'hsl(158 100% 40%)' }}
-                                                    >
-                                                        {typingLabel}
-                                                    </motion.span>
-                                                ) : activeConv.isGroup ? (
-                                                    getConversationSecondaryText(activeConv, user?.id)
-                                                ) : activeConv.otherUser && onlineUsers.has(activeConv.otherUser.id) ? (
-                                                    <span className="flex items-center gap-1">
-                                                        <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'hsl(158 100% 42%)', boxShadow: '0 0 5px hsl(158 100% 45%)' }} />
-                                                        En línea
-                                                    </span>
-                                                ) : 'Desconectado'}
-                                            </p>
-                                        </div>
-
-                                        {/* Actions */}
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <button
-                                                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
-                                                    style={{ background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.07)' }}
-                                                    title="Acciones del chat"
-                                                >
-                                                    <MoreHorizontal className="w-4 h-4" style={{ color: textMuted }} />
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-52">
-                                                <DropdownMenuLabel>Acciones del chat</DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-                                                {!activeConv.isGroup && activeConv.otherUser && (
-                                                    <DropdownMenuItem onClick={() => activeConv.otherUser && navigate(`/profile/${activeConv.otherUser.username}`)}>
-                                                        <ExternalLink className="w-4 h-4" />
-                                                        Ver perfil
-                                                    </DropdownMenuItem>
-                                                )}
-                                                <DropdownMenuItem onClick={handleReturnToInbox}>
-                                                    <ArrowLeft className="w-4 h-4" />
-                                                    Volver a mensajes
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </>
+                                {/* Recent conversations hint */}
+                                {conversations.length > 0 && (
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <span>Seleccioná una conversación o grupo a la izquierda</span>
+                                    </div>
                                 )}
                             </div>
+                        ) : (
+                            <>
+                                {/* ── Chat header ── */}
+                                <div
+                                    className="flex items-center gap-2 px-3 lg:px-5 flex-shrink-0"
+                                    style={{
+                                        borderBottom: `1px solid ${borderColor}`,
+                                        background: chatHeaderBg,
+                                        paddingTop: '12px',
+                                        paddingBottom: '12px',
+                                        minHeight: '64px',
+                                    }}
+                                >
+                                    {/* Back button */}
+                                    <button
+                                        onClick={handleReturnToInbox}
+                                        className="h-9 rounded-xl inline-flex items-center gap-2 px-3 flex-shrink-0 transition-all active:scale-90"
+                                        style={{ background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.07)' }}
+                                        title="Volver a mensajes"
+                                        aria-label="Volver a mensajes"
+                                    >
+                                        <ArrowLeft className="w-4 h-4" style={{ color: textPrimary }} />
+                                        <span className="text-[13px] font-semibold whitespace-nowrap" style={{ color: textPrimary }}>
+                                            Mensajes
+                                        </span>
+                                    </button>
 
-                            {/* ── Messages area ── */}
-                            <div className="flex-1 overflow-y-auto px-4 lg:px-5 py-4 space-y-1">
-                                {isLoadingMsgs ? (
-                                    <div className="flex justify-center py-10">
-                                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                                    </div>
-                                ) : messages.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-                                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                                            style={{ background: 'hsl(158 100% 45% / 0.07)', border: '1px solid hsl(158 100% 45% / 0.12)' }}>
-                                            <MessageSquare className="w-6 h-6" style={{ color: 'hsl(158 100% 45%)' }} />
-                                        </div>
-                                        <p className="text-sm font-medium" style={{ color: textMuted }}>
-                                            Iniciá el chat 👋
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {messages.map((msg, i) => {
-                                            const isMe = msg.senderId === user?.id;
-                                            const prevMsg = messages[i - 1];
-                                            const nextMsg = messages[i + 1];
-                                            const showAvatar = !isMe && (!prevMsg || prevMsg.senderId !== msg.senderId);
-                                            const isLastInGroup = !nextMsg || nextMsg.senderId !== msg.senderId;
-                                            const isFirstInGroup = !prevMsg || prevMsg.senderId !== msg.senderId;
+                                    {activeConv && (
+                                        <>
+                                            {/* Avatar */}
+                                            {activeConv.isGroup ? (
+                                                <ConversationAvatar
+                                                    conversation={activeConv}
+                                                    currentUserId={user?.id}
+                                                    size={40}
+                                                    onlineUsers={onlineUsers}
+                                                />
+                                            ) : activeConv.otherUser && (
+                                                <Link to={`/profile/${activeConv.otherUser.username}`}>
+                                                    <UserAvatar user={activeConv.otherUser} size={40} online={onlineUsers.has(activeConv.otherUser.id)} />
+                                                </Link>
+                                            )}
 
-                                            // Date separator
-                                            const msgDate = new Date(msg.createdAt).toDateString();
-                                            const prevDate = prevMsg ? new Date(prevMsg.createdAt).toDateString() : null;
-                                            const showDate = !prevDate || msgDate !== prevDate;
-
-                                            return (
-                                                <div key={msg.id}>
-                                                    {/* Date separator */}
-                                                    {showDate && (
-                                                        <div className="flex items-center gap-3 my-4">
-                                                            <div className="flex-1 h-px" style={{ background: borderColor }} />
-                                                            <span className="text-[11px] font-semibold px-2 rounded-full" style={{ color: textMuted, background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.05)' }}>
-                                                                {new Date(msg.createdAt).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                                                            </span>
-                                                            <div className="flex-1 h-px" style={{ background: borderColor }} />
-                                                        </div>
+                                            {/* Name + status */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5">
+                                                    {activeConv.isGroup ? (
+                                                        <span className="font-bold truncate text-[15px]" style={{ color: textPrimary }}>
+                                                            {getConversationName(activeConv)}
+                                                        </span>
+                                                    ) : activeConv.otherUser && (
+                                                        <Link
+                                                            to={`/profile/${activeConv.otherUser.username}`}
+                                                            className="font-bold hover:text-primary transition-colors truncate text-[15px]"
+                                                            style={{ color: textPrimary }}
+                                                        >
+                                                            {activeConv.otherUser.username}
+                                                        </Link>
                                                     )}
+                                                    {!activeConv.isGroup && activeConv.otherUser?.isVerified && (
+                                                        <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
+                                                    )}
+                                                </div>
+                                                <p className="text-[12px] flex items-center gap-1.5" style={{ color: textMuted }}>
+                                                    {activeTypingUsers.length > 0 ? (
+                                                        <motion.span
+                                                            animate={{ opacity: [1, 0.5, 1] }}
+                                                            transition={{ duration: 1.2, repeat: Infinity }}
+                                                            className="font-medium"
+                                                            style={{ color: 'hsl(158 100% 40%)' }}
+                                                        >
+                                                            {typingLabel}
+                                                        </motion.span>
+                                                    ) : activeConv.isGroup ? (
+                                                        getConversationSecondaryText(activeConv, user?.id)
+                                                    ) : activeConv.otherUser && onlineUsers.has(activeConv.otherUser.id) ? (
+                                                        <span className="flex items-center gap-1">
+                                                            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'hsl(158 100% 42%)', boxShadow: '0 0 5px hsl(158 100% 45%)' }} />
+                                                            En línea
+                                                        </span>
+                                                    ) : 'Desconectado'}
+                                                </p>
+                                            </div>
 
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                        transition={{ duration: 0.18 }}
-                                                        className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'} ${isFirstInGroup ? 'mt-3' : 'mt-0.5'}`}
+                                            {/* Actions */}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button
+                                                        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+                                                        style={{ background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.07)' }}
+                                                        title="Acciones del chat"
                                                     >
-                                                        {/* Other user avatar */}
-                                                        {!isMe && (
-                                                            <div className="w-7 flex-shrink-0">
-                                                                {showAvatar && (
-                                                                    <UserAvatar user={msg.sender} size={28} />
-                                                                )}
+                                                        <MoreHorizontal className="w-4 h-4" style={{ color: textMuted }} />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-52">
+                                                    <DropdownMenuLabel>Acciones del chat</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    {!activeConv.isGroup && activeConv.otherUser && (
+                                                        <DropdownMenuItem onClick={() => activeConv.otherUser && navigate(`/profile/${activeConv.otherUser.username}`)}>
+                                                            <ExternalLink className="w-4 h-4" />
+                                                            Ver perfil
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    <DropdownMenuItem onClick={handleReturnToInbox}>
+                                                        <ArrowLeft className="w-4 h-4" />
+                                                        Volver a mensajes
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* ── Messages area ── */}
+                                <div className="flex-1 overflow-y-auto px-4 lg:px-5 py-4 space-y-1">
+                                    {isLoadingMsgs ? (
+                                        <div className="flex justify-center py-10">
+                                            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                        </div>
+                                    ) : messages.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+                                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                                                style={{ background: 'hsl(158 100% 45% / 0.07)', border: '1px solid hsl(158 100% 45% / 0.12)' }}>
+                                                <MessageSquare className="w-6 h-6" style={{ color: 'hsl(158 100% 45%)' }} />
+                                            </div>
+                                            <p className="text-sm font-medium" style={{ color: textMuted }}>
+                                                Iniciá el chat 👋
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {messages.map((msg, i) => {
+                                                const isMe = msg.senderId === user?.id;
+                                                const prevMsg = messages[i - 1];
+                                                const nextMsg = messages[i + 1];
+                                                const showAvatar = !isMe && (!prevMsg || prevMsg.senderId !== msg.senderId);
+                                                const isLastInGroup = !nextMsg || nextMsg.senderId !== msg.senderId;
+                                                const isFirstInGroup = !prevMsg || prevMsg.senderId !== msg.senderId;
+
+                                                // Date separator
+                                                const msgDate = new Date(msg.createdAt).toDateString();
+                                                const prevDate = prevMsg ? new Date(prevMsg.createdAt).toDateString() : null;
+                                                const showDate = !prevDate || msgDate !== prevDate;
+
+                                                return (
+                                                    <div key={msg.id}>
+                                                        {/* Date separator */}
+                                                        {showDate && (
+                                                            <div className="flex items-center gap-3 my-4">
+                                                                <div className="flex-1 h-px" style={{ background: borderColor }} />
+                                                                <span className="text-[11px] font-semibold px-2 rounded-full" style={{ color: textMuted, background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.05)' }}>
+                                                                    {new Date(msg.createdAt).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                                                </span>
+                                                                <div className="flex-1 h-px" style={{ background: borderColor }} />
                                                             </div>
                                                         )}
 
-                                                        <div className={`flex flex-col max-w-[68%] ${isMe ? 'items-end' : 'items-start'}`}>
-                                                            {!isMe && activeConv?.isGroup && isFirstInGroup && (
-                                                                <span className="mb-1 px-1 text-[11px] font-semibold" style={{ color: textMuted }}>
-                                                                    {msg.sender.username}
-                                                                </span>
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                            transition={{ duration: 0.18 }}
+                                                            className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'} ${isFirstInGroup ? 'mt-3' : 'mt-0.5'}`}
+                                                        >
+                                                            {/* Other user avatar */}
+                                                            {!isMe && (
+                                                                <div className="w-7 flex-shrink-0">
+                                                                    {showAvatar && (
+                                                                        <UserAvatar user={msg.sender} size={28} />
+                                                                    )}
+                                                                </div>
                                                             )}
-                                                            {(() => {
-                                                                const hasAttachment = Boolean(msg.attachmentType);
-                                                                const hasText = Boolean(msg.content?.trim());
 
-                                                                return (
-                                                            <div
-                                                                className="text-sm leading-relaxed break-words whitespace-pre-wrap overflow-hidden"
-                                                                style={{
-                                                                    borderRadius: isMe
-                                                                        ? isFirstInGroup ? '18px 4px 18px 18px' : '18px 4px 4px 18px'
-                                                                        : isFirstInGroup ? '4px 18px 18px 18px' : '4px 18px 18px 4px',
-                                                                    background: isMe
-                                                                        ? 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)'
-                                                                        : bubbleBg,
-                                                                    color: isMe ? '#030d06' : bubbleText,
-                                                                    fontWeight: isMe ? 500 : 400,
-                                                                    boxShadow: isMe ? '0 2px 8px hsl(158 100% 45% / 0.25)' : 'none',
-                                                                    padding: hasAttachment ? '10px' : '10px 14px',
-                                                                }}
-                                                            >
-                                                                {hasAttachment && (
-                                                                    <MessageAttachmentCard
-                                                                        message={msg}
-                                                                        isLight={isLight}
-                                                                        borderColor={isMe ? 'hsl(158 100% 30% / 0.25)' : borderColor}
-                                                                        textPrimary={isMe ? '#031108' : textPrimary}
-                                                                        textMuted={isMe ? 'rgba(3,17,8,0.7)' : textMuted}
-                                                                    />
+                                                            <div className={`flex flex-col max-w-[68%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                                                {!isMe && activeConv?.isGroup && isFirstInGroup && (
+                                                                    <span className="mb-1 px-1 text-[11px] font-semibold" style={{ color: textMuted }}>
+                                                                        {msg.sender.username}
+                                                                    </span>
                                                                 )}
-                                                                {hasText && (
-                                                                    <div className={hasAttachment ? 'mt-2.5 px-1 pb-1' : ''}>
-                                                                        {msg.content}
+                                                                {(() => {
+                                                                    const hasAttachment = Boolean(msg.attachmentType);
+                                                                    const hasText = Boolean(msg.content?.trim());
+
+                                                                    return (
+                                                                        <div
+                                                                            className="text-sm leading-relaxed break-words whitespace-pre-wrap overflow-hidden"
+                                                                            style={{
+                                                                                borderRadius: isMe
+                                                                                    ? isFirstInGroup ? '18px 4px 18px 18px' : '18px 4px 4px 18px'
+                                                                                    : isFirstInGroup ? '4px 18px 18px 18px' : '4px 18px 18px 4px',
+                                                                                background: isMe
+                                                                                    ? 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)'
+                                                                                    : bubbleBg,
+                                                                                color: isMe ? '#030d06' : bubbleText,
+                                                                                fontWeight: isMe ? 500 : 400,
+                                                                                boxShadow: isMe ? '0 2px 8px hsl(158 100% 45% / 0.25)' : 'none',
+                                                                                padding: hasAttachment ? '10px' : '10px 14px',
+                                                                            }}
+                                                                        >
+                                                                            {hasAttachment && (
+                                                                                <MessageAttachmentCard
+                                                                                    message={msg}
+                                                                                    isLight={isLight}
+                                                                                    borderColor={isMe ? 'hsl(158 100% 30% / 0.25)' : borderColor}
+                                                                                    textPrimary={isMe ? '#031108' : textPrimary}
+                                                                                    textMuted={isMe ? 'rgba(3,17,8,0.7)' : textMuted}
+                                                                                />
+                                                                            )}
+                                                                            {hasText && (
+                                                                                <div className={hasAttachment ? 'mt-2.5 px-1 pb-1' : ''}>
+                                                                                    {msg.content}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })()}
+
+                                                                {/* Time + read status */}
+                                                                {isLastInGroup && (
+                                                                    <div className={`flex items-center gap-1 mt-1 px-1 ${isMe ? 'flex-row-reverse' : ''}`}>
+                                                                        <span className="text-[11px] text-muted-foreground">{formatMsgTime(msg.createdAt)}</span>
+                                                                        {isMe && (
+                                                                            msg.isRead
+                                                                                ? <CheckCheck className="w-3 h-3" style={{ color: 'hsl(158 100% 45%)' }} />
+                                                                                : <Check className="w-3 h-3 text-muted-foreground" />
+                                                                        )}
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                                );
-                                                            })()}
+                                                        </motion.div>
+                                                    </div>
+                                                );
+                                            })}
 
-                                                            {/* Time + read status */}
-                                                            {isLastInGroup && (
-                                                                <div className={`flex items-center gap-1 mt-1 px-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-                                                                    <span className="text-[11px] text-muted-foreground">{formatMsgTime(msg.createdAt)}</span>
-                                                                    {isMe && (
-                                                                        msg.isRead
-                                                                            ? <CheckCheck className="w-3 h-3" style={{ color: 'hsl(158 100% 45%)' }} />
-                                                                            : <Check className="w-3 h-3 text-muted-foreground" />
-                                                                    )}
-                                                                </div>
-                                                            )}
+                                            {/* Typing indicator */}
+                                            <AnimatePresence>
+                                                {activeTypingUsers.length > 0 && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 6 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: 6 }}
+                                                        className="flex items-end gap-2 mt-2"
+                                                    >
+                                                        <UserAvatar user={activeTypingUsers[0]} size={28} />
+                                                        <div className="space-y-1 px-4 py-3 rounded-[4px_18px_18px_18px]"
+                                                            style={{ background: bubbleBg }}>
+                                                            <p className="text-[11px] font-medium" style={{ color: textMuted }}>
+                                                                {typingLabel}
+                                                            </p>
+                                                            <div className="flex items-center gap-1">
+                                                                {['typing-a', 'typing-b', 'typing-c'].map((dotId, i) => (
+                                                                    <motion.span key={dotId} className="w-1.5 h-1.5 rounded-full"
+                                                                        style={{ background: textMuted }}
+                                                                        animate={{ y: [0, -4, 0] }}
+                                                                        transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                                                                    />
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     </motion.div>
-                                                </div>
-                                            );
-                                        })}
+                                                )}
+                                            </AnimatePresence>
 
-                                        {/* Typing indicator */}
-                                        <AnimatePresence>
-                                            {activeTypingUsers.length > 0 && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 6 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 6 }}
-                                                    className="flex items-end gap-2 mt-2"
-                                                >
-                                                    <UserAvatar user={activeTypingUsers[0]} size={28} />
-                                                    <div className="space-y-1 px-4 py-3 rounded-[4px_18px_18px_18px]"
-                                                        style={{ background: bubbleBg }}>
-                                                        <p className="text-[11px] font-medium" style={{ color: textMuted }}>
-                                                            {typingLabel}
-                                                        </p>
-                                                        <div className="flex items-center gap-1">
-                                                        {['typing-a', 'typing-b', 'typing-c'].map((dotId, i) => (
-                                                            <motion.span key={dotId} className="w-1.5 h-1.5 rounded-full"
-                                                                style={{ background: textMuted }}
-                                                                animate={{ y: [0, -4, 0] }}
-                                                                transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
-                                                            />
-                                                        ))}
-                                                        </div>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
+                                            <div ref={messagesEndRef} />
+                                        </>
+                                    )}
+                                </div>
 
-                                        <div ref={messagesEndRef} />
-                                    </>
-                                )}
-                            </div>
-
-                            {/* ── Message input ── */}
-                            <div
-                                className="flex-shrink-0 px-3 lg:px-4 py-3"
-                                style={{ borderTop: `1px solid ${borderColor}`, background: chatHeaderBg }}
-                            >
-                                {pendingAttachment && (
-                                    <div
-                                        className="mb-3 rounded-2xl border p-3"
-                                        style={{
-                                            borderColor,
-                                            background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 100% / 0.04)',
-                                        }}
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            {pendingAttachment.type === 'image' && pendingAttachment.url && (
-                                                <img
-                                                    src={resolveMediaUrl(pendingAttachment.url)}
-                                                    alt="Foto lista para enviar"
-                                                    className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
-                                                />
-                                            )}
-
-                                            {pendingAttachment.type === 'chart' && pendingAttachment.url && (
-                                                <img
-                                                    src={resolveMediaUrl(pendingAttachment.url)}
-                                                    alt="Grafico listo para enviar"
-                                                    className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
-                                                />
-                                            )}
-
-                                            {pendingAttachment.type === 'post' && (
-                                                <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-                                                    <Newspaper className="w-7 h-7" />
-                                                </div>
-                                            )}
-
-                                            {pendingAttachment.type === 'story' && (
-                                                pendingAttachment.sharedStory?.mediaUrl ? (
+                                {/* ── Message input ── */}
+                                <div
+                                    className="flex-shrink-0 px-3 lg:px-4 py-3"
+                                    style={{ borderTop: `1px solid ${borderColor}`, background: chatHeaderBg }}
+                                >
+                                    {pendingAttachment && (
+                                        <div
+                                            className="mb-3 rounded-2xl border p-3"
+                                            style={{
+                                                borderColor,
+                                                background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 100% / 0.04)',
+                                            }}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                {pendingAttachment.type === 'image' && pendingAttachment.url && (
                                                     <img
-                                                        src={resolveMediaUrl(pendingAttachment.sharedStory.mediaUrl)}
-                                                        alt="Historia lista para enviar"
+                                                        src={resolveMediaUrl(pendingAttachment.url)}
+                                                        alt="Foto lista para enviar"
                                                         className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
                                                     />
-                                                ) : (
+                                                )}
+
+                                                {pendingAttachment.type === 'chart' && pendingAttachment.url && (
+                                                    <img
+                                                        src={resolveMediaUrl(pendingAttachment.url)}
+                                                        alt="Grafico listo para enviar"
+                                                        className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
+                                                    />
+                                                )}
+
+                                                {pendingAttachment.type === 'post' && (
                                                     <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-                                                        <Sparkles className="w-7 h-7" />
+                                                        <Newspaper className="w-7 h-7" />
                                                     </div>
-                                                )
-                                            )}
-
-                                            <div className="min-w-0 flex-1">
-                                                {pendingAttachment.type === 'image' && (
-                                                    <>
-                                                        <p className="text-sm font-semibold" style={{ color: textPrimary }}>
-                                                            Foto lista para enviar
-                                                        </p>
-                                                        <p className="text-xs mt-1" style={{ color: textMuted }}>
-                                                            {String(pendingAttachment.meta?.originalName || 'Imagen')}
-                                                        </p>
-                                                    </>
                                                 )}
 
-                                                {pendingAttachment.type === 'post' && pendingAttachment.sharedPost && (
-                                                    <>
-                                                        <p className="text-sm font-semibold" style={{ color: textPrimary }}>
-                                                            Publicacion compartida
-                                                        </p>
-                                                        <p className="text-xs mt-1" style={{ color: textMuted }}>
-                                                            {pendingAttachment.sharedPost.author.username}
-                                                        </p>
-                                                        {pendingAttachment.sharedPost.content && (
-                                                            <p className="text-sm mt-2 max-h-10 overflow-hidden" style={{ color: textPrimary }}>
-                                                                {pendingAttachment.sharedPost.content}
+                                                {pendingAttachment.type === 'story' && (
+                                                    pendingAttachment.sharedStory?.mediaUrl ? (
+                                                        <img
+                                                            src={resolveMediaUrl(pendingAttachment.sharedStory.mediaUrl)}
+                                                            alt="Historia lista para enviar"
+                                                            className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                                                            <Sparkles className="w-7 h-7" />
+                                                        </div>
+                                                    )
+                                                )}
+
+                                                <div className="min-w-0 flex-1">
+                                                    {pendingAttachment.type === 'image' && (
+                                                        <>
+                                                            <p className="text-sm font-semibold" style={{ color: textPrimary }}>
+                                                                Foto lista para enviar
                                                             </p>
-                                                        )}
-                                                    </>
-                                                )}
-
-                                                {pendingAttachment.type === 'chart' && (
-                                                    <>
-                                                        <p className="text-sm font-semibold" style={{ color: textPrimary }}>
-                                                            Grafico listo para enviar
-                                                        </p>
-                                                        <p className="text-xs mt-1 font-mono" style={{ color: textMuted }}>
-                                                            {String(pendingAttachment.meta?.symbol || 'ACTIVO')} · {getChartIntervalLabel(String(pendingAttachment.meta?.interval || 'D'))}
-                                                        </p>
-                                                    </>
-                                                )}
-
-                                                {pendingAttachment.type === 'story' && pendingAttachment.sharedStory && (
-                                                    <>
-                                                        <p className="text-sm font-semibold" style={{ color: textPrimary }}>
-                                                            Historia compartida
-                                                        </p>
-                                                        <p className="text-xs mt-1" style={{ color: textMuted }}>
-                                                            {pendingAttachment.sharedStory.author.username}
-                                                        </p>
-                                                        {pendingAttachment.sharedStory.content && (
-                                                            <p className="text-sm mt-2 max-h-10 overflow-hidden" style={{ color: textPrimary }}>
-                                                                {pendingAttachment.sharedStory.content}
+                                                            <p className="text-xs mt-1" style={{ color: textMuted }}>
+                                                                {String(pendingAttachment.meta?.originalName || 'Imagen')}
                                                             </p>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
+                                                        </>
+                                                    )}
 
-                                            <button
-                                                onClick={() => setPendingAttachment(null)}
-                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/60 transition-colors"
-                                            >
-                                                <X className="w-4 h-4 text-muted-foreground" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {composerError && (
-                                    <div className="mb-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-                                        {composerError}
-                                    </div>
-                                )}
-
-                                <div className="mb-3 flex flex-wrap items-center gap-2">
-                                    <span className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: textMuted }}>
-                                        Enviar
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => imageInputRef.current?.click()}
-                                        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/60"
-                                        style={{ borderColor, color: textPrimary }}
-                                    >
-                                        <ImageIcon className="w-3.5 h-3.5 text-primary" />
-                                        Foto
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPostPicker(true)}
-                                        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/60"
-                                        style={{ borderColor, color: textPrimary }}
-                                    >
-                                        <Newspaper className="w-3.5 h-3.5 text-primary" />
-                                        Post
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowChartPicker(true)}
-                                        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/60"
-                                        style={{ borderColor, color: textPrimary }}
-                                    >
-                                        <BarChart2 className="w-3.5 h-3.5 text-primary" />
-                                        Grafico
-                                    </button>
-                                    <span className="text-xs" style={{ color: textMuted }}>
-                                        Texto desde el cuadro de abajo
-                                    </span>
-                                </div>
-
-                                <div
-                                    className="flex items-end gap-2 rounded-2xl px-3 py-2.5 transition-all"
-                                    style={{
-                                        background: inputBg,
-                                        border: `1px solid ${(inputText.trim() || pendingAttachment) ? 'hsl(158 100% 45% / 0.4)' : inputBorder}`,
-                                        boxShadow: (inputText.trim() || pendingAttachment) ? '0 0 0 3px hsl(158 100% 45% / 0.08)' : 'none',
-                                    }}
-                                >
-                                    <div className="relative">
-                                        <button
-                                            onClick={() => {
-                                                setShowAttachMenu((prev) => !prev);
-                                                setShowEmojiPicker(false);
-                                            }}
-                                            className="p-1.5 rounded-xl transition-all flex-shrink-0 mb-0.5"
-                                            style={{ color: showAttachMenu ? 'hsl(158 100% 45%)' : textMuted, background: showAttachMenu ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
-                                            title="Adjuntar"
-                                        >
-                                            <Plus className="w-5 h-5" />
-                                        </button>
-
-                                        <AnimatePresence>
-                                            {showAttachMenu && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                                                    transition={{ duration: 0.15 }}
-                                                    className="absolute bottom-full left-0 mb-2 w-52 p-2 rounded-2xl border shadow-xl z-20"
-                                                    style={{ background: isLight ? 'hsl(0 0% 100%)' : '#1a1a1a', borderColor }}
-                                                >
-                                                    <button
-                                                        onClick={() => {
-                                                            setShowAttachMenu(false);
-                                                            imageInputRef.current?.click();
-                                                        }}
-                                                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
-                                                    >
-                                                        <ImageIcon className="w-4 h-4 text-primary" />
-                                                        Foto
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setShowAttachMenu(false);
-                                                            setShowPostPicker(true);
-                                                        }}
-                                                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
-                                                    >
-                                                        <Newspaper className="w-4 h-4 text-primary" />
-                                                        Publicacion
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setShowAttachMenu(false);
-                                                            setShowChartPicker(true);
-                                                        }}
-                                                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
-                                                    >
-                                                        <BarChart2 className="w-4 h-4 text-primary" />
-                                                        Grafico
-                                                    </button>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-
-                                    {/* Emoji button */}
-                                    <div className="relative">
-                                        <button
-                                            onClick={() => {
-                                                setShowEmojiPicker((prev) => !prev);
-                                                setShowAttachMenu(false);
-                                            }}
-                                            className="p-1.5 rounded-xl transition-all flex-shrink-0 mb-0.5"
-                                            style={{ color: showEmojiPicker ? 'hsl(158 100% 45%)' : textMuted, background: showEmojiPicker ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
-                                            title="Emojis"
-                                        >
-                                            <Smile className="w-5 h-5" />
-                                        </button>
-
-                                        {/* Emoji picker */}
-                                        <AnimatePresence>
-                                            {showEmojiPicker && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                                                    transition={{ duration: 0.15 }}
-                                                    className="absolute bottom-full left-0 mb-3 w-[288px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border shadow-2xl z-20"
-                                                    style={{
-                                                        background: isLight ? 'hsl(0 0% 100% / 0.98)' : 'hsl(0 0% 8% / 0.98)',
-                                                        borderColor,
-                                                        backdropFilter: 'blur(10px)',
-                                                    }}
-                                                >
-                                                    <div
-                                                        className="px-3 py-2.5 border-b"
-                                                        style={{
-                                                            borderColor,
-                                                            background: isLight ? 'hsl(210 20% 98%)' : 'hsl(0 0% 100% / 0.03)',
-                                                        }}
-                                                    >
-                                                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: textMuted }}>
-                                                            Emojis
-                                                        </p>
-                                                    </div>
-                                                    <div className="p-3 space-y-3">
-                                                        {EMOJI_GROUPS.map((group) => (
-                                                            <div key={group.label} className="space-y-2">
-                                                                <p className="text-[11px] font-medium" style={{ color: textMuted }}>
-                                                                    {group.label}
+                                                    {pendingAttachment.type === 'post' && pendingAttachment.sharedPost && (
+                                                        <>
+                                                            <p className="text-sm font-semibold" style={{ color: textPrimary }}>
+                                                                Publicacion compartida
+                                                            </p>
+                                                            <p className="text-xs mt-1" style={{ color: textMuted }}>
+                                                                {pendingAttachment.sharedPost.author.username}
+                                                            </p>
+                                                            {pendingAttachment.sharedPost.content && (
+                                                                <p className="text-sm mt-2 max-h-10 overflow-hidden" style={{ color: textPrimary }}>
+                                                                    {pendingAttachment.sharedPost.content}
                                                                 </p>
-                                                                <div className="grid grid-cols-5 gap-2">
-                                                                    {group.items.map((emoji) => (
-                                                                        <button
-                                                                            key={emoji}
-                                                                            onClick={() => handleEmojiSelect(emoji)}
-                                                                            className="flex h-11 w-11 items-center justify-center rounded-xl border transition-all hover:-translate-y-0.5 hover:bg-secondary/60"
-                                                                            style={{
-                                                                                borderColor: isLight ? 'hsl(214 18% 90%)' : 'hsl(0 0% 100% / 0.06)',
-                                                                                background: isLight ? 'hsl(210 20% 99%)' : 'hsl(0 0% 100% / 0.03)',
-                                                                            }}
-                                                                            aria-label={`Agregar ${emoji}`}
-                                                                        >
-                                                                            <span
-                                                                                className="emoji-glyph block text-[25px]"
-                                                                                style={{ fontFamily: EMOJI_FONT_STACK }}
-                                                                            >
-                                                                                {emoji}
-                                                                            </span>
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
+                                                            )}
+                                                        </>
+                                                    )}
+
+                                                    {pendingAttachment.type === 'chart' && (
+                                                        <>
+                                                            <p className="text-sm font-semibold" style={{ color: textPrimary }}>
+                                                                Grafico listo para enviar
+                                                            </p>
+                                                            <p className="text-xs mt-1 font-mono" style={{ color: textMuted }}>
+                                                                {String(pendingAttachment.meta?.symbol || 'ACTIVO')} · {getChartIntervalLabel(String(pendingAttachment.meta?.interval || 'D'))}
+                                                            </p>
+                                                        </>
+                                                    )}
+
+                                                    {pendingAttachment.type === 'story' && pendingAttachment.sharedStory && (
+                                                        <>
+                                                            <p className="text-sm font-semibold" style={{ color: textPrimary }}>
+                                                                Historia compartida
+                                                            </p>
+                                                            <p className="text-xs mt-1" style={{ color: textMuted }}>
+                                                                {pendingAttachment.sharedStory.author.username}
+                                                            </p>
+                                                            {pendingAttachment.sharedStory.content && (
+                                                                <p className="text-sm mt-2 max-h-10 overflow-hidden" style={{ color: textPrimary }}>
+                                                                    {pendingAttachment.sharedStory.content}
+                                                                </p>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                <button
+                                                    onClick={() => setPendingAttachment(null)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/60 transition-colors"
+                                                >
+                                                    <X className="w-4 h-4 text-muted-foreground" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {composerError && (
+                                        <div className="mb-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                                            {composerError}
+                                        </div>
+                                    )}
+
+                                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: textMuted }}>
+                                            Enviar
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => imageInputRef.current?.click()}
+                                            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/60"
+                                            style={{ borderColor, color: textPrimary }}
+                                        >
+                                            <ImageIcon className="w-3.5 h-3.5 text-primary" />
+                                            Foto
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPostPicker(true)}
+                                            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/60"
+                                            style={{ borderColor, color: textPrimary }}
+                                        >
+                                            <Newspaper className="w-3.5 h-3.5 text-primary" />
+                                            Post
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowChartPicker(true)}
+                                            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/60"
+                                            style={{ borderColor, color: textPrimary }}
+                                        >
+                                            <BarChart2 className="w-3.5 h-3.5 text-primary" />
+                                            Grafico
+                                        </button>
+                                        <span className="text-xs" style={{ color: textMuted }}>
+                                            Texto desde el cuadro de abajo
+                                        </span>
                                     </div>
 
-                                    {/* Text input */}
-                                    <textarea
-                                        ref={inputRef}
-                                        value={inputText}
-                                        onChange={(e) => handleInputChange(e.target.value)}
-                                        onKeyDown={handleKeyDown}
-                                        placeholder={pendingAttachment ? 'Agrega un texto opcional...' : 'Escribi un mensaje, o comparti una foto, post o grafico...'}
-                                        rows={1}
-                                        className="flex-1 bg-transparent text-sm resize-none outline-none py-1.5 max-h-32 leading-relaxed placeholder:text-muted-foreground"
+                                    <div
+                                        className="flex items-end gap-2 rounded-2xl px-3 py-2.5 transition-all"
                                         style={{
-                                            color: textPrimary,
-                                            scrollbarWidth: 'none',
-                                        }}
-                                        onInput={(e) => {
-                                            const el = e.currentTarget;
-                                            el.style.height = 'auto';
-                                            el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-                                        }}
-                                    />
-
-                                    {/* Send button */}
-                                    <motion.button
-                                        onClick={handleSendMessage}
-                                        disabled={!canSendMessage}
-                                        whileHover={canSendMessage ? { scale: 1.08 } : {}}
-                                        whileTap={canSendMessage ? { scale: 0.92 } : {}}
-                                        className="p-2 rounded-xl flex-shrink-0 mb-0.5 transition-all"
-                                        style={{
-                                            background: canSendMessage
-                                                ? 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)'
-                                                : 'transparent',
-                                            color: canSendMessage ? '#060a07' : textMuted,
-                                            boxShadow: canSendMessage ? '0 2px 10px hsl(158 100% 45% / 0.35)' : 'none',
-                                            cursor: canSendMessage ? 'pointer' : 'default',
+                                            background: inputBg,
+                                            border: `1px solid ${(inputText.trim() || pendingAttachment) ? 'hsl(158 100% 45% / 0.4)' : inputBorder}`,
+                                            boxShadow: (inputText.trim() || pendingAttachment) ? '0 0 0 3px hsl(158 100% 45% / 0.08)' : 'none',
                                         }}
                                     >
-                                        {(isSending || isUploadingAttachment)
-                                            ? <Loader2 className="w-4 h-4 animate-spin" />
-                                            : <Send className="w-4 h-4" />}
-                                    </motion.button>
-                                </div>
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => {
+                                                    setShowAttachMenu((prev) => !prev);
+                                                    setShowEmojiPicker(false);
+                                                }}
+                                                className="p-1.5 rounded-xl transition-all flex-shrink-0 mb-0.5"
+                                                style={{ color: showAttachMenu ? 'hsl(158 100% 45%)' : textMuted, background: showAttachMenu ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
+                                                title="Adjuntar"
+                                            >
+                                                <Plus className="w-5 h-5" />
+                                            </button>
 
-                                <p className="text-center text-[10px] text-muted-foreground mt-2 opacity-60">
-                                    {isUploadingAttachment
-                                        ? 'Subiendo adjunto...'
-                                        : 'Enter para enviar · Shift+Enter nueva linea'}
-                                </p>
-                            </div>
-                        </>
-                    )}
+                                            <AnimatePresence>
+                                                {showAttachMenu && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="absolute bottom-full left-0 mb-2 w-52 p-2 rounded-2xl border shadow-xl z-20"
+                                                        style={{ background: isLight ? 'hsl(0 0% 100%)' : '#1a1a1a', borderColor }}
+                                                    >
+                                                        <button
+                                                            onClick={() => {
+                                                                setShowAttachMenu(false);
+                                                                imageInputRef.current?.click();
+                                                            }}
+                                                            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
+                                                        >
+                                                            <ImageIcon className="w-4 h-4 text-primary" />
+                                                            Foto
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setShowAttachMenu(false);
+                                                                setShowPostPicker(true);
+                                                            }}
+                                                            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
+                                                        >
+                                                            <Newspaper className="w-4 h-4 text-primary" />
+                                                            Publicacion
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setShowAttachMenu(false);
+                                                                setShowChartPicker(true);
+                                                            }}
+                                                            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
+                                                        >
+                                                            <BarChart2 className="w-4 h-4 text-primary" />
+                                                            Grafico
+                                                        </button>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+
+                                        {/* Emoji button */}
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => {
+                                                    setShowEmojiPicker((prev) => !prev);
+                                                    setShowAttachMenu(false);
+                                                }}
+                                                className="p-1.5 rounded-xl transition-all flex-shrink-0 mb-0.5"
+                                                style={{ color: showEmojiPicker ? 'hsl(158 100% 45%)' : textMuted, background: showEmojiPicker ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
+                                                title="Emojis"
+                                            >
+                                                <Smile className="w-5 h-5" />
+                                            </button>
+
+                                            {/* Emoji picker */}
+                                            <AnimatePresence>
+                                                {showEmojiPicker && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="absolute bottom-full left-0 mb-3 w-[288px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border shadow-2xl z-20"
+                                                        style={{
+                                                            background: isLight ? 'hsl(0 0% 100% / 0.98)' : 'hsl(0 0% 8% / 0.98)',
+                                                            borderColor,
+                                                            backdropFilter: 'blur(10px)',
+                                                        }}
+                                                    >
+                                                        <div
+                                                            className="px-3 py-2.5 border-b"
+                                                            style={{
+                                                                borderColor,
+                                                                background: isLight ? 'hsl(210 20% 98%)' : 'hsl(0 0% 100% / 0.03)',
+                                                            }}
+                                                        >
+                                                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: textMuted }}>
+                                                                Emojis
+                                                            </p>
+                                                        </div>
+                                                        <div className="p-3 space-y-3">
+                                                            {EMOJI_GROUPS.map((group) => (
+                                                                <div key={group.label} className="space-y-2">
+                                                                    <p className="text-[11px] font-medium" style={{ color: textMuted }}>
+                                                                        {group.label}
+                                                                    </p>
+                                                                    <div className="grid grid-cols-5 gap-2">
+                                                                        {group.items.map((emoji) => (
+                                                                            <button
+                                                                                key={emoji}
+                                                                                onClick={() => handleEmojiSelect(emoji)}
+                                                                                className="flex h-11 w-11 items-center justify-center rounded-xl border transition-all hover:-translate-y-0.5 hover:bg-secondary/60"
+                                                                                style={{
+                                                                                    borderColor: isLight ? 'hsl(214 18% 90%)' : 'hsl(0 0% 100% / 0.06)',
+                                                                                    background: isLight ? 'hsl(210 20% 99%)' : 'hsl(0 0% 100% / 0.03)',
+                                                                                }}
+                                                                                aria-label={`Agregar ${emoji}`}
+                                                                            >
+                                                                                <span
+                                                                                    className="emoji-glyph block text-[25px]"
+                                                                                    style={{ fontFamily: EMOJI_FONT_STACK }}
+                                                                                >
+                                                                                    {emoji}
+                                                                                </span>
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+
+                                        {/* Text input */}
+                                        <textarea
+                                            ref={inputRef}
+                                            value={inputText}
+                                            onChange={(e) => handleInputChange(e.target.value)}
+                                            onKeyDown={handleKeyDown}
+                                            placeholder={pendingAttachment ? 'Agrega un texto opcional...' : 'Escribi un mensaje, o comparti una foto, post o grafico...'}
+                                            rows={1}
+                                            className="flex-1 bg-transparent text-sm resize-none outline-none py-1.5 max-h-32 leading-relaxed placeholder:text-muted-foreground"
+                                            style={{
+                                                color: textPrimary,
+                                                scrollbarWidth: 'none',
+                                            }}
+                                            onInput={(e) => {
+                                                const el = e.currentTarget;
+                                                el.style.height = 'auto';
+                                                el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+                                            }}
+                                        />
+
+                                        {/* Send button */}
+                                        <motion.button
+                                            onClick={handleSendMessage}
+                                            disabled={!canSendMessage}
+                                            whileHover={canSendMessage ? { scale: 1.08 } : {}}
+                                            whileTap={canSendMessage ? { scale: 0.92 } : {}}
+                                            className="p-2 rounded-xl flex-shrink-0 mb-0.5 transition-all"
+                                            style={{
+                                                background: canSendMessage
+                                                    ? 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)'
+                                                    : 'transparent',
+                                                color: canSendMessage ? '#060a07' : textMuted,
+                                                boxShadow: canSendMessage ? '0 2px 10px hsl(158 100% 45% / 0.35)' : 'none',
+                                                cursor: canSendMessage ? 'pointer' : 'default',
+                                            }}
+                                        >
+                                            {(isSending || isUploadingAttachment)
+                                                ? <Loader2 className="w-4 h-4 animate-spin" />
+                                                : <Send className="w-4 h-4" />}
+                                        </motion.button>
+                                    </div>
+
+                                    <p className="text-center text-[10px] text-muted-foreground mt-2 opacity-60">
+                                        {isUploadingAttachment
+                                            ? 'Subiendo adjunto...'
+                                            : 'Enter para enviar · Shift+Enter nueva linea'}
+                                    </p>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
         </>
     );
 }

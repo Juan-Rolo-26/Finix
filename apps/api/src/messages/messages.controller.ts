@@ -30,7 +30,7 @@ export class MessagesController {
     @Post('conversations')
     async createOrGetConversation(
         @Request() req: any,
-        @Body() body: { userId?: string; userIds?: string[]; title?: string },
+        @Body() body: { userId?: string; userIds?: string[]; title?: string; description?: string },
     ) {
         const conversation = await this.messagesService.createConversation(req.user.id, body);
 

@@ -52,7 +52,19 @@ const shouldAutoLogoutOnUnauthorized = (path: string, status: number) => {
 
 export const apiUrl = (path: string) => buildUrl(activeBase ?? '', path);
 
+import { handleMockRequest } from './mockApi';
+import { handleMockMarket } from './mockMarket';
+
 export const apiFetch = async (path: string, init?: RequestInit) => {
+    if (path.startsWith('/portfolios')) {
+        const mockResponse = await handleMockRequest(path, init);
+        if (mockResponse) return mockResponse;
+    }
+    if (path.startsWith('/market')) {
+        const marketResponse = await handleMockMarket(path, init);
+        if (marketResponse) return marketResponse;
+    }
+
     const authToken = localStorage.getItem('token');
     const withAuth = (requestInit?: RequestInit) => {
         const enhancedInit = { ...requestInit, credentials: 'include' as RequestCredentials };
