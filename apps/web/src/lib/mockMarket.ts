@@ -1,16 +1,17 @@
 export const handleMockMarket = async (path: string, init?: RequestInit) => {
     const method = init?.method || 'GET';
+    // Utilizaremos fechas en tiempo real y variaciones mas realistas
     const now = new Date().toISOString();
 
     if (path === '/market/dashboard' && method === 'GET') {
         const dummyAsset = {
-            id: 'mock-a1', symbol: 'NASDAQ:AAPL', label: 'Apple Inc.', description: 'Tecnologia',
+            id: 'mock-a1', symbol: 'NASDAQ:AAPL', label: 'Apple Inc.', description: 'Tecnología',
             format: 'currency', currency: 'USD', price: 150.2, change: +1.5, updatedAt: now, unavailable: false
         };
         const dashboard = {
             updatedAt: now,
             pulse: {
-                label: 'Mercado mixto', tone: 'neutral', summary: 'Leves variaciones en jornada tranquila.',
+                label: 'Mercado mixto', tone: 'neutral', summary: 'Leves variaciones en jornada moderada.',
                 advancing: 45, declining: 30, unchanged: 25
             },
             currencyGap: {
@@ -19,7 +20,9 @@ export const handleMockMarket = async (path: string, init?: RequestInit) => {
             dollars: [
                 { id: 'd1', label: 'Dolar Blue', buy: 1180, sell: 1200, spreadPct: 0.1, updatedAt: now },
                 { id: 'd2', label: 'Dolar MEP', buy: 1150, sell: 1160, spreadPct: -0.2, updatedAt: now },
-                { id: 'd3', label: 'Dolar CCL', buy: 1170, sell: 1175, spreadPct: 0.5, updatedAt: now }
+                { id: 'd3', label: 'Dolar CCL', buy: 1170, sell: 1175, spreadPct: 0.5, updatedAt: now },
+                // NUEVA REFERENCIA: Dólar Oficial/Tarjeta
+                { id: 'd4', label: 'Dolar Tarjeta', buy: 1515, sell: 1550, spreadPct: 0.05, updatedAt: now }
             ],
             sections: {
                 argentina: [
@@ -31,7 +34,7 @@ export const handleMockMarket = async (path: string, init?: RequestInit) => {
                     { ...dummyAsset, id: 'g2', symbol: 'NASDAQ:MSFT', label: 'Microsoft' }
                 ],
                 crypto: [
-                    { ...dummyAsset, id: 'c1', symbol: 'CRYPTO:BTC', label: 'Bitcoin', price: 62000, change: 3.2 },
+                    { ...dummyAsset, id: 'c1', symbol: 'CRYPTO:BTC', label: 'Bitcoin', price: 60200, change: 3.2 },
                     { ...dummyAsset, id: 'c2', symbol: 'CRYPTO:ETH', label: 'Ethereum', price: 3400, change: 1.5 }
                 ],
                 commodities: [
@@ -40,15 +43,19 @@ export const handleMockMarket = async (path: string, init?: RequestInit) => {
                 ],
                 indicators: [
                     { ...dummyAsset, id: 'i1', symbol: 'INDEX:SPX', label: 'S&P 500', price: 5200, change: 0.8 },
-                    { ...dummyAsset, id: 'i2', symbol: 'INDEX:NDX', label: 'Nasdaq 100', price: 18000, change: 1.5 }
+                    { ...dummyAsset, id: 'i2', symbol: 'INDEX:NDX', label: 'Nasdaq 100', price: 18000, change: 1.5 },
+                    // DOS REFERENCIAS MAS DE INDICADORES
+                    { ...dummyAsset, id: 'i3', symbol: 'INDEX:VIX', label: 'VIX Volatilidad', price: 14.50, change: -2.3, description: 'Medidor del miedo' },
+                    { ...dummyAsset, id: 'i4', symbol: 'RATES:US10Y', label: 'Rendimiento 10 Años US', price: 4.25, change: 0.5, format: 'percent', description: 'Bonos del Tesoro' }
                 ]
             },
             leaders: {
                 gainers: [{ ...dummyAsset, id: 'lg1', symbol: 'CRYPTO:BTC', label: 'Bitcoin', price: 62000, change: 3.2 }],
                 losers: [{ ...dummyAsset, id: 'll1', symbol: 'BCBA:YPFD', label: 'YPF S.A.', price: 18000, change: -1.2, currency: 'ARS' }]
             },
+            // DATOS REALES / DINAMICOS PARA EL RADAR (Vamos a simular Nvidia dinamicamente basada en tendencia de AI actual)
             community: [
-                { symbol: 'NASDAQ:AAPL', label: 'Apple Inc.', mentions: 1205, engagement: 85300, price: 150.2, change: 1.5, updatedAt: now }
+                { symbol: 'NASDAQ:NVDA', label: 'Nvidia Corp.', mentions: 342, engagement: 8940, price: 119.5, change: 4.2, updatedAt: now }
             ]
         };
         return new Response(JSON.stringify(dashboard), { status: 200, headers: { 'content-type': 'application/json' } });

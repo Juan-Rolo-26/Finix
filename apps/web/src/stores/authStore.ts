@@ -135,7 +135,18 @@ export const useAuthStore = create<AuthState>((set) => ({
         persistToken(accessToken);
 
         try {
-            const username = session.user.user_metadata?.username as string | undefined;
+            let username = session.user.user_metadata?.username as string | undefined;
+            const pendingUsername = localStorage.getItem('pendingUsername');
+            if (pendingUsername) {
+                username = pendingUsername;
+                localStorage.removeItem('pendingUsername');
+                try {
+                    await supabase.auth.updateUser({ data: { username } });
+                } catch (e) {
+                    // Ignore metadata error if Supabase throws
+                }
+            }
+
             const res = await syncBackendUser(username);
 
             if (!res.ok) {

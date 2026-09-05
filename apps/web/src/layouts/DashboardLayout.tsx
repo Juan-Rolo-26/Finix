@@ -5,12 +5,14 @@ import { MobileTopBar } from '../components/MobileTopBar';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
 import { GlobalSearch } from '../components/GlobalSearch';
 import { useState, useEffect } from 'react';
+import { usePreferencesStore } from '../stores/preferencesStore';
 
 export default function DashboardLayout() {
     const location = useLocation();
     const isMessages = location.pathname.startsWith('/messages');
     const isComunidad = location.pathname.startsWith('/comunidad');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const collapsed = usePreferencesStore(s => s.sidebarCollapsed);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -52,14 +54,10 @@ export default function DashboardLayout() {
                     marginLeft: 0,
                 }}
             >
-                {/* The sidebar is fixed, so we add padding-left on desktop to avoid overlap.
-                    We use lg:pl-[276px] as the default (expanded). When sidebar collapses it updates
-                    to pl-[72px] via inline style – but since sidebar is fixed-position, we don't
-                    need to track this here. The content naturally fills the remaining space.
-                    We use a simpler approach: just set a permanent lg margin. */}
-                <div className="hidden lg:block flex-shrink-0" style={{ width: 0, minWidth: '276px', display: 'none' }} />
+                {/* The sidebar is fixed, so we add padding-left on desktop to avoid overlap. */}
+                <div className="hidden lg:block flex-shrink-0" style={{ width: 0, minWidth: collapsed ? '72px' : '276px', display: 'none' }} />
                 <main
-                    className="flex-1 flex flex-col w-full lg:pl-[276px]"
+                    className={`flex-1 flex flex-col w-full ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-[276px]'}`}
                     style={{
                         transition: 'padding-left 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}

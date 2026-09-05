@@ -149,9 +149,8 @@ export function Sidebar() {
     const location = useLocation();
     const navigate = useNavigate();
     const { logout, user } = useAuthStore();
-    const { theme, setTheme } = usePreferencesStore();
+    const { theme, setTheme, sidebarCollapsed: collapsed, toggleSidebar: setCollapsed } = usePreferencesStore();
     const [hov, setHov] = useState<string | null>(null);
-    const [collapsed, setCollapsed] = useState(false);
     const [unreadMsgs, setUnreadMsgs] = useState(0);
     const [unreadNotifs, setUnreadNotifs] = useState(0);
     const [pinnedAssets, setPinnedAssets] = useState<PinnedAsset[]>([]);
@@ -709,7 +708,7 @@ export function Sidebar() {
                     style={{ color: 'hsl(var(--muted-foreground))' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--muted) / 0.6)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    onClick={() => setCollapsed(v => !v)}
+                    onClick={() => setCollapsed()}
                     title={collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
                 >
                     {collapsed
@@ -742,8 +741,8 @@ export function Sidebar() {
                                 }}
                             >
                                 {user?.avatarUrl
-                                    ? <img src={resolveMediaUrl(user.avatarUrl)} alt={user.username} className="w-full h-full object-cover" />
-                                    : (user?.username?.[0]?.toUpperCase() || 'F')
+                                    ? <img src={resolveMediaUrl(user.avatarUrl)} alt={user.username || 'Avatar'} className="w-full h-full object-cover" />
+                                    : (user?.username?.[0]?.toUpperCase() || (user as any)?.email?.[0]?.toUpperCase() || 'U')
                                 }
                             </div>
                             <span
@@ -758,7 +757,7 @@ export function Sidebar() {
                         {!collapsed && (
                             <div className="flex-1 min-w-0">
                                 <p className="text-[12.5px] font-semibold truncate leading-tight">
-                                    {user?.username || 'Usuario'}
+                                    {user?.username || (user as any)?.email?.split('@')[0] || 'Usuario'}
                                 </p>
                                 <p className="text-[9.5px] uppercase tracking-[0.14em] font-semibold leading-tight mt-0.5"
                                     style={{ color: 'hsl(var(--primary) / 0.6)' }}>

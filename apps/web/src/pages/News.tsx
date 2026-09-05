@@ -66,34 +66,36 @@ function HeroNewsCard({ item }: { item: NewsItem }) {
                 ) : (
                     <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)/0.2), hsl(var(--secondary)))' }} />
                 )}
-                {/* Gradient overlay to make text readable */}
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, hsl(0 0% 0% / 0.9) 0%, hsl(0 0% 0% / 0.4) 40%, transparent 100%)' }} />
+                {/* Taller and darker Gradient overlay to make text highly readable */}
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.65) 60%, transparent 100%)' }} />
             </div>
 
             <div className="relative flex flex-col flex-1 justify-end p-6 lg:p-10 text-white z-10 w-full lg:w-4/5 pt-32">
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                     <span className="font-bold text-[11px] lg:text-xs uppercase tracking-widest px-3 py-1.5 rounded-full backdrop-blur-md"
-                        style={{ background: 'hsl(var(--primary) / 0.8)', color: '#fff' }}>
+                        style={{ background: 'hsl(var(--primary) / 0.8)', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
                         {item.source}
                     </span>
-                    <span className="flex items-center gap-1.5 text-xs font-medium opacity-90">
-                        <Clock className="w-3.5 h-3.5" />
+                    <span className="flex items-center gap-1.5 text-xs font-medium opacity-90 drop-shadow-md">
+                        <Clock className="w-3.5 h-3.5 shadow-sm" />
                         {formatRelativeTime(item.publishedAt)}
                     </span>
                     {dot && (
                         <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full backdrop-blur-md border"
-                            style={{ background: dot.bg, color: dot.color, borderColor: dot.color }}>
+                            style={{ background: dot.bg, color: dot.color, borderColor: dot.color, textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
                             {dot.icon} {dot.label}
                         </span>
                     )}
                 </div>
 
-                <h2 className="text-2xl md:text-3xl lg:text-4xl font-black leading-[1.1] mb-4 group-hover:text-primary transition-colors text-white text-balance shadow-black/80 drop-shadow-sm">
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-black leading-[1.1] mb-4 transition-colors !text-white text-balance drop-shadow-xl"
+                    style={{ textShadow: '0 2px 16px rgba(0,0,0,0.95)' }}>
                     {item.title}
                 </h2>
 
                 {item.summary && (
-                    <p className="text-sm md:text-base leading-relaxed opacity-80 line-clamp-2 md:line-clamp-3 max-w-3xl font-medium text-white/90 shadow-black/80 drop-shadow-sm">
+                    <p className="text-sm md:text-base leading-relaxed opacity-90 line-clamp-2 md:line-clamp-3 max-w-3xl font-medium !text-white/95 drop-shadow-lg"
+                        style={{ textShadow: '0 2px 8px rgba(0,0,0,0.85)' }}>
                         {item.summary}
                     </p>
                 )}
@@ -339,13 +341,13 @@ export default function News() {
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
                                 {/* Featured Hero Image */}
                                 {heroNews && (
-                                    <div className="lg:col-span-8 h-full">
+                                    <div className="lg:col-span-7 h-full">
                                         <HeroNewsCard item={heroNews} />
                                     </div>
                                 )}
                                 {/* Secondary Cards (Top stories grid) */}
                                 {gridNews.length > 0 && (
-                                    <div className="lg:col-span-4 flex flex-col gap-6">
+                                    <div className="lg:col-span-5 flex flex-col gap-6">
                                         {gridNews.map(item => (
                                             <GridNewsCard key={item.id} item={item} />
                                         ))}

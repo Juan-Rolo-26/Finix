@@ -113,10 +113,14 @@ export function MobileTopBar() {
                         color: 'hsl(var(--primary-foreground))',
                         fontSize: '13px',
                         fontWeight: 800,
+                        padding: user?.avatarUrl ? 0 : undefined,
                     }}
                     onClick={() => navigate('/profile')}
                 >
-                    {user?.username?.[0]?.toUpperCase() || 'F'}
+                    {user?.avatarUrl
+                        ? <img src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/uploads/${user.avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+                        : (user?.username?.[0]?.toUpperCase() || (user as any)?.email?.[0]?.toUpperCase() || 'U')
+                    }
                 </button>
             </div>
         </div>

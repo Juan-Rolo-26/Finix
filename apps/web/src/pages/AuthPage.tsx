@@ -97,6 +97,15 @@ export default function AuthPage() {
     };
 
     const loginGoogle = async () => {
+        if (view === 'register' && username.trim().length < 3) {
+            setAuthError('Por favor ingresá un nombre de usuario (mínimo 3 letras) en el campo de arriba antes de registrarte con Google.');
+            return;
+        }
+
+        if (view === 'register') {
+            localStorage.setItem('pendingUsername', username.trim());
+        }
+
         setIsLoading(true);
         clearMessages();
 
@@ -494,7 +503,7 @@ export default function AuthPage() {
                             <Sparkles className="w-3 h-3" />
                             <span>© 2026 Finix · Finanzas Sociales</span>
                             <span className="mx-1">•</span>
-                            <a href="https://instagram.com/finixarg" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+                            <a href="https://instagram.com/finixarg_" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
                                 <Instagram className="w-3.5 h-3.5" />
                             </a>
                         </div>

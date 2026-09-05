@@ -1067,7 +1067,7 @@ const Footer = () => {
                 <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-sm text-muted-foreground">{t.landing.footer.copyright}</p>
                     <div className="flex gap-6">
-                        <a href="https://instagram.com/fiinixarg" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-white transition-colors">Instagram</a>
+                        <a href="https://instagram.com/finixarg_" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-white transition-colors">Instagram</a>
                         <a href="https://tiktok.com/@finixarg" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-white transition-colors">TikTok</a>
                         <a href="#contacto" className="text-muted-foreground hover:text-white transition-colors">Correo</a>
                     </div>

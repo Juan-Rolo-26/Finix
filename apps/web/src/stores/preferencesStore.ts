@@ -12,6 +12,7 @@ export interface AppPreferences {
     compactTables: boolean;
     showAdvancedMetrics: boolean;
     theme: Theme;
+    sidebarCollapsed: boolean;
 }
 
 interface PreferencesState extends AppPreferences {
@@ -21,6 +22,7 @@ interface PreferencesState extends AppPreferences {
     toggleAutoRefresh: () => void;
     toggleCompactTables: () => void;
     toggleAdvancedMetrics: () => void;
+    toggleSidebar: () => void;
     updatePreferences: (prefs: Partial<AppPreferences>) => void;
 }
 
@@ -33,6 +35,7 @@ export const usePreferencesStore = create<PreferencesState>()(
             compactTables: false,
             showAdvancedMetrics: true,
             theme: 'light',
+            sidebarCollapsed: false,
 
             setLanguage: (language) => set({ language }),
             setCurrency: (currency) => set({ currency }),
@@ -40,6 +43,7 @@ export const usePreferencesStore = create<PreferencesState>()(
             toggleAutoRefresh: () => set((state) => ({ autoRefreshMarket: !state.autoRefreshMarket })),
             toggleCompactTables: () => set((state) => ({ compactTables: !state.compactTables })),
             toggleAdvancedMetrics: () => set((state) => ({ showAdvancedMetrics: !state.showAdvancedMetrics })),
+            toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
             updatePreferences: (prefs) => set((state) => ({ ...state, ...prefs })),
         }),
         {
