@@ -230,12 +230,22 @@ function CreateCommunityModal({ onClose, onCreate }: {
     };
 
     const [form, setForm] = useState({
-        name: '', description: '', category: 'Acciones',
+        name: '', description: '', categories: ['Acciones'] as string[],
         imageUrl: '', bannerUrl: '', privacyType: 'PUBLIC',
         monetization: 'free', // 'free' | 'paid' | 'freemium'
         plans: [] as typeof DEFAULT_PLAN[],
         rules: '',
     });
+
+    const toggleCategory = (key: string) => {
+        setForm(f => {
+            if (f.categories.includes(key)) {
+                // don't allow deselecting ALL
+                return f.categories.length > 1 ? { ...f, categories: f.categories.filter(c => c !== key) } : f;
+            }
+            return { ...f, categories: [...f.categories, key] };
+        });
+    };
 
     const addPlan = () => setForm(f => ({
         ...f,
@@ -265,7 +275,8 @@ function CreateCommunityModal({ onClose, onCreate }: {
                 body: JSON.stringify({
                     name: form.name,
                     description: form.description,
-                    category: form.category,
+                    // send first selected category for backend compat; mock stores it correctly
+                    category: form.categories[0],
                     privacyType: form.privacyType,
                     imageUrl: form.imageUrl || undefined,
                     bannerUrl: form.bannerUrl || undefined,
@@ -392,23 +403,35 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                         <label className="text-xs font-semibold mb-1 block"
                                             style={{ color: 'hsl(var(--muted-foreground))' }}>
                                             Categoría
+                                            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
+                                                style={{ background: 'hsl(var(--primary)/0.12)', color: 'hsl(var(--primary))' }}>
+                                                {form.categories.length} seleccionada{form.categories.length !== 1 ? 's' : ''}
+                                            </span>
                                         </label>
+                                        <p className="text-[10px] mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                            Podés seleccionar una o más categorías.
+                                        </p>
                                         <div className="grid grid-cols-3 gap-1.5">
                                             {CATEGORIES.filter(c => c.key !== 'all').map(cat => {
                                                 const Icon = cat.icon;
-                                                const active = form.category === cat.key;
+                                                const active = form.categories.includes(cat.key);
                                                 return (
                                                     <button
                                                         key={cat.key}
-                                                        onClick={() => setForm(f => ({ ...f, category: cat.key }))}
-                                                        className="flex items-center gap-1.5 px-2 py-2 rounded-lg text-[11px] font-medium transition-all"
+                                                        type="button"
+                                                        onClick={() => toggleCategory(cat.key)}
+                                                        className="flex items-center gap-1.5 px-2 py-2 rounded-lg text-[11px] font-medium transition-all relative"
                                                         style={{
                                                             background: active ? 'hsl(var(--primary)/0.12)' : 'hsl(var(--muted))',
                                                             border: `1px solid ${active ? 'hsl(var(--primary)/0.4)' : 'hsl(var(--border))'}`,
                                                             color: active ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
                                                         }}
                                                     >
-                                                        <Icon className="w-3 h-3" /> {cat.label}
+                                                        <Icon className="w-3 h-3 shrink-0" />
+                                                        <span className="truncate">{cat.label}</span>
+                                                        {active && (
+                                                            <Check className="w-2.5 h-2.5 ml-auto shrink-0" />
+                                                        )}
                                                     </button>
                                                 );
                                             })}
@@ -671,7 +694,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                             </div>
                                             <p className="font-bold text-sm">{form.name || 'Sin nombre'}</p>
                                             <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                {form.category} · {form.privacyType === 'PUBLIC' ? 'Pública' : form.privacyType === 'PRIVATE' ? 'Privada' : 'Exclusiva'}
+                                                {form.categories.join(', ')} · {form.privacyType === 'PUBLIC' ? 'Pública' : form.privacyType === 'PRIVATE' ? 'Privada' : 'Exclusiva'}
                                             </p>
                                             <p className="text-xs mt-2 line-clamp-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                                 {form.description}
@@ -728,10 +751,22 @@ export default function Comunidades() {
     const [communities, setCommunities] = useState<Community[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeCategory, setActiveCategory] = useState('all');
+    const [activeCategories, setActiveCategories] = useState<string[]>(['all']);
     const [sortBy, setSortBy] = useState('members');
     const [showCreate, setShowCreate] = useState(false);
     const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
+
+    const toggleFilterCategory = (key: string) => {
+        setActiveCategories(prev => {
+            if (key === 'all') return ['all'];
+            const withoutAll = prev.filter(k => k !== 'all');
+            if (withoutAll.includes(key)) {
+                const next = withoutAll.filter(k => k !== key);
+                return next.length === 0 ? ['all'] : next;
+            }
+            return [...withoutAll, key];
+        });
+    };
 
     // Open community from URL param
     const communityIdParam = searchParams.get('c');
@@ -741,18 +776,26 @@ export default function Comunidades() {
         try {
             const params = new URLSearchParams();
             if (searchQuery) params.set('search', searchQuery);
-            if (activeCategory !== 'all') params.set('category', activeCategory);
+            const isAll = activeCategories.includes('all');
+            if (!isAll && activeCategories.length === 1) {
+                params.set('category', activeCategories[0]);
+            }
             params.set('sort', sortBy);
             params.set('limit', '30');
 
             const res = await apiFetch(`/communities?${params}`);
             if (res.ok) {
                 const data = await res.json();
-                setCommunities(Array.isArray(data) ? data : []);
+                let results = Array.isArray(data) ? data : [];
+                // Client-side multi-category filter
+                if (!isAll && activeCategories.length > 1) {
+                    results = results.filter((c: Community) => activeCategories.includes(c.category));
+                }
+                setCommunities(results);
             }
         } catch { }
         finally { setLoading(false); }
-    }, [searchQuery, activeCategory, sortBy]);
+    }, [searchQuery, activeCategories, sortBy]);
 
     useEffect(() => {
         const t = setTimeout(fetchCommunities, searchQuery ? 300 : 0);
@@ -831,15 +874,18 @@ export default function Comunidades() {
                     />
                 </div>
 
-                {/* Categories */}
+                {/* Categories - multi-select */}
                 <div className="flex gap-1.5 overflow-x-auto pb-3 scrollbar-hide">
                     {CATEGORIES.map(cat => {
                         const Icon = cat.icon;
-                        const active = activeCategory === cat.key;
+                        const isAll = cat.key === 'all';
+                        const active = isAll
+                            ? activeCategories.includes('all')
+                            : activeCategories.includes(cat.key);
                         return (
                             <button
                                 key={cat.key}
-                                onClick={() => setActiveCategory(cat.key)}
+                                onClick={() => toggleFilterCategory(cat.key)}
                                 className="flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all"
                                 style={{
                                     background: active ? 'hsl(var(--primary))' : 'hsl(var(--muted))',
@@ -847,6 +893,9 @@ export default function Comunidades() {
                                 }}
                             >
                                 <Icon className="w-3 h-3" /> {cat.label}
+                                {active && !isAll && (
+                                    <Check className="w-2.5 h-2.5 ml-0.5" />
+                                )}
                             </button>
                         );
                     })}

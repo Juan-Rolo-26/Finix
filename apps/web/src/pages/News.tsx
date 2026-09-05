@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Bitcoin, Globe, MapPin, TrendingUp, BarChart2, RefreshCw, Zap, Clock, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
@@ -211,15 +211,19 @@ export default function News() {
     const [activeSection, setActiveSection] = useState<SectionSlug>('cripto');
     const [newsMap, setNewsMap] = useState<Partial<Record<SectionSlug, NewsItem[]>>>({});
     const [loadingSet, setLoadingSet] = useState<Set<SectionSlug>>(new Set());
+    // Ref mirror of newsMap so fetchSection closure doesn't go stale
+    const newsMapRef = useRef<Partial<Record<SectionSlug, NewsItem[]>>>({})
 
     const fetchSection = useCallback(async (slug: SectionSlug, force = false) => {
-        if (!force && newsMap[slug] !== undefined) return;
+        if (!force && newsMapRef.current[slug] !== undefined) return;
         setLoadingSet(prev => new Set(prev).add(slug));
         try {
             const res = await apiFetch(`/news?category=${slug}&limit=30`);
             if (res.ok) {
                 const data = await res.json();
-                setNewsMap(prev => ({ ...prev, [slug]: Array.isArray(data) ? data : [] }));
+                const items = Array.isArray(data) ? data : [];
+                newsMapRef.current = { ...newsMapRef.current, [slug]: items };
+                setNewsMap(prev => ({ ...prev, [slug]: items }));
             }
         } catch { } finally {
             setLoadingSet(prev => {
@@ -228,11 +232,11 @@ export default function News() {
                 return next;
             });
         }
-    }, [newsMap]);
+    }, []); // no deps — uses ref
 
     useEffect(() => {
         fetchSection(activeSection);
-    }, [activeSection]);
+    }, [activeSection, fetchSection]);
 
     const section = SECTIONS.find(s => s.slug === activeSection)!;
     const news = newsMap[activeSection];

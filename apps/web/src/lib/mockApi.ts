@@ -91,5 +91,74 @@ export const handleMockRequest = async (path: string, init?: RequestInit) => {
         return new Response(JSON.stringify(p.movements || []), { status: 200, headers: { 'content-type': 'application/json' } });
     }
 
+    if (path.match(/^\/portfolios\/([^\/]+)\/transactions\/?(\?.*)?$/) && method === 'POST') {
+        const id = path.match(/^\/portfolios\/([^\/]+)\/transactions/)?.[1];
+        const body = JSON.parse(init?.body as string);
+        const pIndex = db.findIndex((x: any) => x.id === id);
+        if (pIndex === -1) return new Response('Not found', { status: 404 });
+
+        const p = db[pIndex];
+        const { assetTicker, assetType, type, quantity, price, fee = 0, date } = body;
+        const total = quantity * (price || 0);
+
+        if (!p.assets) p.assets = [];
+        if (!p.movements) p.movements = [];
+
+        p.cashBalance = p.cashBalance || 0;
+
+        if (type === 'BUY') {
+            const existingAsset = p.assets.find((a: any) => a.ticker === assetTicker);
+            if (existingAsset) {
+                // Update average price and quantity
+                const totalCost = existingAsset.montoInvertido + total;
+                existingAsset.cantidad += quantity;
+                existingAsset.montoInvertido = totalCost;
+                existingAsset.ppc = totalCost / existingAsset.cantidad;
+            } else {
+                p.assets.push({
+                    id: Math.random().toString(36).substring(7),
+                    ticker: assetTicker,
+                    tipoActivo: assetType || 'stock',
+                    cantidad: quantity,
+                    ppc: price,
+                    montoInvertido: total,
+                    precioActual: price,
+                    value: total
+                });
+            }
+            if (body.updateCash) p.cashBalance -= (total + fee);
+        } else if (type === 'SELL') {
+            const existingAsset = p.assets.find((a: any) => a.ticker === assetTicker);
+            if (existingAsset) {
+                if (existingAsset.cantidad >= quantity) {
+                    existingAsset.montoInvertido = existingAsset.montoInvertido * (1 - (quantity / existingAsset.cantidad));
+                    existingAsset.cantidad -= quantity;
+                    if (existingAsset.cantidad <= 0) {
+                        p.assets = p.assets.filter((a: any) => a.ticker !== assetTicker);
+                    }
+                }
+            }
+            if (body.updateCash) p.cashBalance += (total - fee);
+        } else if (type === 'DIVIDEND') {
+            if (body.updateCash) p.cashBalance += quantity; // quantity here is the "total" dividend received
+        }
+
+        // Add movement
+        p.movements.push({
+            id: 'm-' + Date.now(),
+            fecha: date || new Date().toISOString(),
+            tipoMovimiento: type.toLowerCase(),
+            ticker: assetTicker || 'N/A',
+            claseActivo: assetType || 'N/A',
+            cantidad: quantity,
+            precio: price || 0,
+            total: type === 'DIVIDEND' ? quantity : total
+        });
+
+        db[pIndex] = p;
+        saveDb(db);
+        return new Response(JSON.stringify({ success: true }), { status: 201, headers: { 'content-type': 'application/json' } });
+    }
+
     return null;
 };

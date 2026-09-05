@@ -116,20 +116,15 @@ export default function AuthPage() {
 
 
     const handleLogin = async () => {
-        try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email.trim().toLowerCase(),
-                password,
-            });
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email.trim().toLowerCase(),
+            password,
+        });
 
-            if (error) throw error;
-            if (!data.session || !data.user) throw new Error("No se pudo obtener la sesión.");
+        if (error) throw error;
+        if (!data.session || !data.user) throw new Error("No se pudo obtener la sesión.");
 
-            useAuthStore.getState().login(data.session.access_token, data.user as any);
-            navigate('/dashboard');
-        } catch (err: any) {
-            setAuthError(normalizeAuthError(err.message, t.auth.errors.invalidCredentials));
-        }
+        useAuthStore.getState().login(data.session.access_token, data.user as any);
     };
 
     const handleRegister = async () => {
@@ -179,6 +174,8 @@ export default function AuthPage() {
         try {
             if (view === 'login') {
                 await handleLogin();
+                setIsLoading(false);
+                navigate('/dashboard');
                 return;
             }
 

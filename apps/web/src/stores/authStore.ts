@@ -29,18 +29,42 @@ function persistUser(user: User | null) {
     }
 }
 
+const BACKEND_TIMEOUT_MS = 5000;
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    return Promise.race([
+        promise,
+        new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Backend timeout')), ms)
+        ),
+    ]);
+}
+
 async function syncBackendUser(username?: string) {
-    let response = await apiFetch('/auth/me');
+    let response = await withTimeout(apiFetch('/auth/me'), BACKEND_TIMEOUT_MS);
 
     if (response.status === 401) {
-        response = await apiFetch('/auth/sync-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(username ? { username } : {}),
-        });
+        response = await withTimeout(
+            apiFetch('/auth/sync-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(username ? { username } : {}),
+            }),
+            BACKEND_TIMEOUT_MS
+        );
     }
 
     return response;
+}
+
+function buildFallbackUser(session: { access_token: string; user: { id: string; email?: string; user_metadata?: Record<string, unknown> } }): import('@finix/shared').User {
+    const meta = session.user.user_metadata ?? {};
+    return {
+        id: session.user.id,
+        email: session.user.email ?? '',
+        username: (meta.username as string | undefined) ?? (session.user.email ?? '').split('@')[0],
+        onboardingCompleted: false,
+    } as import('@finix/shared').User;
 }
 
 const persistedToken = localStorage.getItem('token');
@@ -135,12 +159,14 @@ export const useAuthStore = create<AuthState>((set) => ({
 
             return user;
         } catch (error) {
-            // No fallback data: if backend sync fails, logout locally to protect state
-            persistToken(null);
-            persistUser(null);
-            set({ token: null, user: null });
-            await supabase.auth.signOut().catch(() => { });
-            return null;
+            // Backend is unreachable (timeout, network error, etc.)
+            // Fall back to building a minimal user from the Supabase session
+            // so the user stays logged in rather than being kicked out.
+            console.warn('[AuthStore] Backend sync failed, using Supabase session fallback:', error);
+            const fallbackUser = buildFallbackUser(session);
+            persistUser(fallbackUser);
+            set({ token: accessToken, user: fallbackUser });
+            return fallbackUser;
         }
     },
 }));

@@ -114,6 +114,8 @@ export default function ExplorePage() {
     const [showStoryComposer, setShowStoryComposer] = useState(false);
     const [showSaved, setShowSaved] = useState(false);
     const loaderRef = useRef<HTMLDivElement>(null);
+    // Guard ref to prevent concurrent fetches (replaces isLoading in useCallback deps)
+    const fetchingRef = useRef(false);
 
     const storyComposerUser: StoryAuthor | null = user ? {
         id: user.id,
@@ -124,12 +126,13 @@ export default function ExplorePage() {
         title: (user as any).title,
     } : null;
 
-    const fetchPosts = useCallback(async (reset = false) => {
-        if (isLoading) return;
+    const fetchPosts = useCallback(async (reset = false, cursorOverride?: string | null) => {
+        if (fetchingRef.current) return;
+        fetchingRef.current = true;
         setIsLoading(true);
 
         try {
-            const cursor = reset ? '' : nextCursor;
+            const cursor = reset ? '' : (cursorOverride !== undefined ? cursorOverride : nextCursor);
             const params = new URLSearchParams({
                 sort,
                 limit: '15',
@@ -155,10 +158,12 @@ export default function ExplorePage() {
         } catch (e) {
             console.error(e);
         } finally {
+            fetchingRef.current = false;
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [sort, typeFilter, nextCursor, isLoading, showSaved]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sort, typeFilter, showSaved]);
 
     // Reset + fetch on filter change
     useEffect(() => {
@@ -182,15 +187,15 @@ export default function ExplorePage() {
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
-                if (entries[0].isIntersecting && hasMore && !isLoading) {
-                    fetchPosts(false);
+                if (entries[0].isIntersecting && hasMore && !fetchingRef.current) {
+                    fetchPosts(false, nextCursor);
                 }
             },
             { threshold: 0.1 }
         );
         if (loaderRef.current) observer.observe(loaderRef.current);
         return () => observer.disconnect();
-    }, [hasMore, isLoading, fetchPosts]);
+    }, [hasMore, fetchPosts, nextCursor]);
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
