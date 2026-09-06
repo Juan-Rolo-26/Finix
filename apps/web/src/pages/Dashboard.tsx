@@ -216,7 +216,7 @@ function FeedTabs({ active, onChange }: { active: FeedTab; onChange: (t: FeedTab
                     <button
                         key={tab.key}
                         onClick={() => onChange(tab.key)}
-                        className="relative flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all select-none flex-1 justify-center"
+                        className={`relative items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[12px] sm:text-[13px] font-semibold transition-all select-none flex-1 justify-center whitespace-nowrap ${tab.key === 'forYou' ? 'hidden sm:flex' : 'flex'}`}
                         style={{
                             color: isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
                             background: isActive ? 'hsl(var(--card))' : 'transparent',
@@ -232,8 +232,8 @@ function FeedTabs({ active, onChange }: { active: FeedTab; onChange: (t: FeedTab
                                 transition={{ type: 'spring', stiffness: 380, damping: 34 }}
                             />
                         )}
-                        <Icon className="w-3.5 h-3.5 relative z-10" style={{ color: isActive ? 'hsl(var(--primary))' : undefined }} />
-                        <span className="relative z-10">{tab.label}</span>
+                        <Icon className="w-3.5 h-3.5 relative z-10 shrink-0" style={{ color: isActive ? 'hsl(var(--primary))' : undefined }} />
+                        <span className="relative z-10 tracking-tight">{tab.label}</span>
                     </button>
                 );
             })}

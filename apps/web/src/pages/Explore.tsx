@@ -313,7 +313,7 @@ export default function ExplorePage() {
                                         ))}
                                     </div>
 
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
                                         {TYPE_FILTERS.map(({ key, label, icon: Icon }) => (
                                             <button
                                                 key={key}

@@ -1,4 +1,4 @@
-import { Bar, BarChart, CartesianGrid, LabelList, Legend, ReferenceLine, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Legend, ReferenceLine, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { CHART_AXIS_TICK, CHART_TOOLTIP_STYLE, FINTECH_COLORS, formatPercent } from './chartUtils';
@@ -7,33 +7,6 @@ import type { AssetPerformanceDatum } from './mockData';
 interface AssetPerformanceChartProps {
     data: AssetPerformanceDatum[];
     className?: string;
-}
-
-
-
-function renderValueLabel(props: any) {
-    const { value = 0, x = 0, y = 0, width = 0, height = 0 } = props;
-    const numericValue = typeof value === 'number' ? value : Number(value);
-
-    if (!Number.isFinite(numericValue)) {
-        return null;
-    }
-
-    const isPositive = numericValue >= 0;
-    const labelY = isPositive ? y - 8 : y + height + 14;
-
-    return (
-        <text
-            x={x + width / 2}
-            y={labelY}
-            textAnchor="middle"
-            fontSize={11}
-            fontWeight={700}
-            fill="rgba(15, 23, 42, 0.86)"
-        >
-            {formatPercent(numericValue, 1, true)}
-        </text>
-    );
 }
 
 export function AssetPerformanceChart({ data, className }: AssetPerformanceChartProps) {
@@ -93,15 +66,9 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                     cursor={{ fill: 'hsl(var(--foreground) / 0.05)' }}
                                 />
 
-                                <Bar yAxisId="left" dataKey="return" name="Retorno" fill={FINTECH_COLORS.positive} radius={[4, 4, 0, 0]} maxBarSize={22}>
-                                    <LabelList dataKey="return" content={(p) => renderValueLabel({ ...p, yAxisId: 'left' })} />
-                                </Bar>
-                                <Bar yAxisId="left" dataKey="contribution" name="Aporte" fill={FINTECH_COLORS.accent} radius={[4, 4, 0, 0]} maxBarSize={22}>
-                                    <LabelList dataKey="contribution" content={(p) => renderValueLabel({ ...p, yAxisId: 'left' })} />
-                                </Bar>
-                                <Bar yAxisId="right" dataKey="weight" name="Peso" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={22}>
-                                    <LabelList dataKey="weight" content={(p) => renderValueLabel({ ...p, yAxisId: 'right' })} />
-                                </Bar>
+                                <Bar yAxisId="left" dataKey="return" name="Retorno" fill={FINTECH_COLORS.positive} radius={[4, 4, 0, 0]} maxBarSize={22} />
+                                <Bar yAxisId="left" dataKey="contribution" name="Aporte" fill={FINTECH_COLORS.accent} radius={[4, 4, 0, 0]} maxBarSize={22} />
+                                <Bar yAxisId="right" dataKey="weight" name="Peso" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={22} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

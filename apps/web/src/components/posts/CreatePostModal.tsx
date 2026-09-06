@@ -344,7 +344,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
     return (
         <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+            className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={onClose}
         >
             <motion.div
@@ -352,7 +352,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 100, opacity: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="bg-card border border-border/50 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-4xl max-h-[97vh] overflow-y-auto"
+                className="bg-card border border-border/50 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-4xl max-h-[95vh] overflow-y-auto pb-6 sm:pb-0"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}

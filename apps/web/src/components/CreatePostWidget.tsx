@@ -199,23 +199,23 @@ export default function CreatePostWidget({
                 </AnimatePresence>
 
                 {/* Bottom toolbar */}
-                <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t" style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
+                <div className="flex flex-wrap items-center justify-between gap-2 px-2 sm:px-4 py-2 sm:py-2.5 border-t" style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
                     {/* Left tools */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5 sm:gap-1">
                         <input type="file" ref={fileRef} className="hidden" accept="image/*,video/*" onChange={handleImageSelect} />
-                        <ToolBtn icon={<ImageIcon className="w-3.5 h-3.5" />} label="Media" onClick={() => fileRef.current?.click()} />
-                        <ToolBtn icon={<BarChart2 className="w-3.5 h-3.5" />} label="Chart" onClick={() => { setContent(c => c + ' $'); textRef.current?.focus(); }} />
-                        <ToolBtn icon={<Hash className="w-3.5 h-3.5" />} label="Tag" onClick={() => { setContent(c => c + ' #'); textRef.current?.focus(); }} />
-                        <ToolBtn icon={<Smile className="w-3.5 h-3.5" />} label="Emoji" onClick={() => { setContent(c => c + ' 🚀'); textRef.current?.focus(); }} />
+                        <ToolBtn icon={<ImageIcon className="w-4 h-4" />} label="Media" onClick={() => fileRef.current?.click()} />
+                        <ToolBtn icon={<BarChart2 className="w-4 h-4" />} label="Chart" onClick={() => { setContent(c => c + ' $'); textRef.current?.focus(); }} />
+                        <ToolBtn icon={<Hash className="w-4 h-4" />} label="Tag" onClick={() => { setContent(c => c + ' #'); textRef.current?.focus(); }} />
+                        <ToolBtn icon={<Smile className="w-4 h-4" />} label="Emoji" onClick={() => { setContent(c => c + ' 🚀'); textRef.current?.focus(); }} />
                     </div>
 
                     {/* Right: type picker + post button */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                         {/* Post type */}
                         <div className="relative">
                             <button
                                 onClick={() => setShowTypes(v => !v)}
-                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-all"
+                                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-all"
                                 style={{ background: activeType.bg, color: activeType.color }}
                             >
                                 {activeType.label}
@@ -259,7 +259,7 @@ export default function CreatePostWidget({
                         <button
                             onClick={handleCreatePost}
                             disabled={!canPost || isPosting}
-                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12.5px] font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="flex items-center justify-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-[12px] sm:text-[12.5px] font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                             style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', boxShadow: canPost ? '0 2px 12px hsl(var(--primary) / 0.3)' : 'none' }}
                         >
                             {isPosting ? (
