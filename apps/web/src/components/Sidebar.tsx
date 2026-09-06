@@ -241,7 +241,7 @@ export function Sidebar() {
                 const d = await res.json();
                 const pinned = d.find((w: any) => w.name === '__pinned__');
                 if (pinned?.tickers) {
-                    const tcks = pinned.tickers.split(',').filter(Boolean).slice(0, 3);
+                    const tcks = (Array.isArray(pinned.tickers) ? pinned.tickers : pinned.tickers.split(',')).filter(Boolean).slice(0, 3);
                     const quotes = await Promise.all(tcks.map(async (t: string) => {
                         try {
                             const qRes = await apiFetch(`/market/quote?symbol=${t}`);

@@ -654,7 +654,15 @@ const PortfolioPage = () => {
                   )}
 
                   {/* Share */}
-                  <button className="w-9 h-9 rounded-xl border border-border/60 bg-card/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                  <button
+                    onClick={() => {
+                      if (selectedPortfolio) {
+                        navigator.clipboard.writeText(`${window.location.origin}/portfolio?id=${selectedPortfolio.id}`);
+                        alert('Enlace copiado al portapapeles');
+                      }
+                    }}
+                    title="Compartir Portfolio"
+                    className="w-9 h-9 rounded-xl border border-border/60 bg-card/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                     <Share2 className="w-4 h-4" />
                   </button>
                 </div>

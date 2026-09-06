@@ -4,8 +4,9 @@ export const handleMockRequest = async (path: string, init?: RequestInit) => {
 
     let db = getDb();
 
-    // Seed database if empty
-    if (db.length === 0) {
+    const hasSeeded = localStorage.getItem('hasSeededPortfolios');
+    // Seed database if empty and hasn't been seeded yet
+    if (db.length === 0 && !hasSeeded) {
         db = [{
             id: 'mock-1', nombre: 'Mi Portfolio Principal', descripcion: 'Portfolio de prueba local', objetivo: 'largo plazo', monedaBase: 'USD', nivelRiesgo: 'medio', modoSocial: false, esPrincipal: true, cashBalance: 5000,
             assets: [
@@ -18,6 +19,7 @@ export const handleMockRequest = async (path: string, init?: RequestInit) => {
             ]
         }];
         saveDb(db);
+        localStorage.setItem('hasSeededPortfolios', 'true');
     }
 
     const method = init?.method || 'GET';

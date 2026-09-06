@@ -306,7 +306,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             <div className="flex items-start justify-between p-4 pb-3">
                 <Link to={`/profile/${post.author.username}`} className="flex items-center gap-3 group">
                     {post.author.avatarUrl ? (
-                            <img
+                        <img
                             src={resolveMediaUrl(post.author.avatarUrl)}
                             alt={post.author.username}
                             className="w-10 h-10 rounded-full object-cover border-2 border-border/50 group-hover:border-primary/50 transition-colors"
@@ -414,7 +414,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             {/* Tickers */}
             {post.tickers && (
                 <div className="px-4 pb-2 flex flex-wrap gap-1">
-                    {post.tickers.split(',').filter(Boolean).map((t) => (
+                    {(Array.isArray(post.tickers) ? post.tickers : post.tickers.split(',')).filter(Boolean).map((t: string) => (
                         <span key={t} className="text-xs text-primary font-medium">#{t.trim()}</span>
                     ))}
                 </div>

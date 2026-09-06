@@ -960,7 +960,7 @@ export default function Profile() {
             const pinned = watchlists.find((w: any) => w.name === '__pinned__');
             if (!pinned) return;
 
-            const tickers: string[] = pinned.tickers ? pinned.tickers.split(',').filter(Boolean) : [];
+            const tickers: string[] = pinned.tickers ? (Array.isArray(pinned.tickers) ? pinned.tickers : pinned.tickers.split(',')).filter(Boolean) : [];
             setAllPinnedTickers(tickers);
 
             // Fetch quotes for each ticker

@@ -86,7 +86,7 @@ export default function CreatePostWidget({
             const res = await apiFetch('/posts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content, tickers, postType, mediaUrls: mediaUrls.length ? mediaUrls : undefined, parentId, quotedPostId }),
+                body: JSON.stringify({ content, tickers, type: postType, mediaUrls: mediaUrls.length ? mediaUrls : undefined, parentId, quotedPostId }),
             });
             if (!res.ok) throw new Error('Error creating post');
 

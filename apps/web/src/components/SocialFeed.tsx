@@ -24,7 +24,7 @@ interface Comment {
 interface Post {
     id: string; content: string; createdAt: string;
     tickers?: string; mediaUrl?: string;
-    postType?: 'analysis' | 'opinion' | 'education' | 'news' | 'question';
+    type?: 'analysis' | 'opinion' | 'education' | 'news' | 'question';
     likes: unknown[]; comments: Comment[];
     author: { id: string; username: string; role: string; isInfluencer: boolean; avatarUrl?: string };
     media?: { url: string; mediaType: string }[];
@@ -96,9 +96,13 @@ function EmptyFeed() {
 }
 
 /* ── Ticker chips ───────────────────────────────────────────────── */
-function TickerChips({ tickers }: { tickers?: string }) {
+function TickerChips({ tickers }: { tickers?: string | string[] }) {
     if (!tickers) return null;
-    const list = tickers.split(',').map(t => t.trim()).filter(Boolean).slice(0, 5);
+    const list = Array.isArray(tickers)
+        ? tickers.slice(0, 5)
+        : typeof tickers === 'string'
+            ? tickers.split(',').map(t => t.trim()).filter(Boolean).slice(0, 5)
+            : [];
     return (
         <div className="flex flex-wrap gap-1.5 mb-2">
             {list.map(t => (
@@ -207,7 +211,7 @@ function FeedItem({ post }: { post: Post }) {
     const isOwner = user?.id === post.author.id;
     if (isRemoved) return null;
 
-    const typeConfig = post.postType ? POST_TYPE_CONFIG[post.postType] : null;
+    const typeConfig = post.type ? POST_TYPE_CONFIG[post.type] : null;
 
     const handleLike = async () => {
         const prev = { likes, isLiked };
@@ -270,7 +274,11 @@ function FeedItem({ post }: { post: Post }) {
     };
 
     const mediaUrl = post.media?.[0]?.url ?? post.mediaUrl ?? null;
-    const primaryTicker = post.tickers?.split(',')[0]?.replace('$', '').trim();
+    const primaryTicker = Array.isArray(post.tickers)
+        ? post.tickers[0]?.replace('$', '').trim()
+        : typeof post.tickers === 'string'
+            ? post.tickers.split(',')[0]?.replace('$', '').trim()
+            : null;
     const tvSymbol = !mediaUrl && primaryTicker
         ? primaryTicker === 'BTC' ? 'BITSTAMP:BTCUSD'
             : primaryTicker === 'ETH' ? 'BITSTAMP:ETHUSD'

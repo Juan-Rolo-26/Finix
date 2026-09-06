@@ -274,9 +274,9 @@ export async function handleMockPosts(path: string, init?: RequestInit): Promise
         const db = getDb();
         const newPost: MockPost = {
             id: `mock-p${Date.now()}`,
-            type: body.type || 'post',
+            type: body.type || body.postType || 'post',
             content: body.content || '',
-            tickers: body.tickers,
+            tickers: Array.isArray(body.tickers) ? body.tickers.join(', ') : body.tickers || '',
             assetSymbol: body.assetSymbol,
             analysisType: body.analysisType,
             riskLevel: body.riskLevel,
