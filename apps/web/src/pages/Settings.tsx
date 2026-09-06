@@ -1001,6 +1001,45 @@ export default function Settings() {
                     </Card>
                 </TabsContent>
 
+                {/* ── NOTIFICACIONES ── */}
+                <TabsContent value="notificaciones" className="space-y-4">
+                    <Card className="border-border/50 bg-card/30 backdrop-blur-sm">
+                        <SectionHeader
+                            icon={<Bell className="w-4 h-4" />}
+                            title="Notificaciones"
+                            description="Configurá cómo y cuándo querés que Finix se contacte con vos."
+                        />
+                        <CardContent className="space-y-4">
+                            <ToggleRow
+                                label="Notificaciones Push"
+                                description="Recibe alertas en la web o app sobre interacciones y mensajes."
+                                checked={notificationPrefs.push}
+                                onChange={(v) => {
+                                    setNotificationPrefs((p) => ({ ...p, push: v }));
+                                    // Save instantly like prefs or rely on save profile?
+                                    // The existing saveProfile uses notificationPrefs so we make the user save or auto-save?
+                                    // Well, let's keep it simple.
+                                }}
+                            />
+                            <ToggleRow
+                                label="Notificaciones por Email"
+                                description="Recibe resúmenes semanales, actualizaciones de seguridad y noticias importantes."
+                                checked={notificationPrefs.email}
+                                onChange={(v) => {
+                                    setNotificationPrefs((p) => ({ ...p, email: v }));
+                                }}
+                            />
+
+                            <div className="flex justify-end pt-2 border-t border-border/30">
+                                <Button onClick={saveProfile} disabled={isSavingProfile} className="gap-2">
+                                    {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    Guardar Notificaciones
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
                 {/* ── SEGURIDAD ── */}
                 <TabsContent value="seguridad" className="space-y-4">
                     <Card className="border-border/50 bg-card/30 backdrop-blur-sm">
