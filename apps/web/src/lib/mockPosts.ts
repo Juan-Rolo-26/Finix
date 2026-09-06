@@ -52,151 +52,14 @@ function getComments(): Record<string, { id: string; content: string; author: { 
     return JSON.parse(localStorage.getItem(COMMENTS_KEY) || '{}');
 }
 
-function now(offsetMinutes = 0) {
-    return new Date(Date.now() - offsetMinutes * 60000).toISOString();
-}
 
 function seedDb(): MockPost[] {
-    const seed: MockPost[] = [
-        {
-            id: 'mock-p1',
-            type: 'chart',
-            assetSymbol: 'AAPL',
-            analysisType: 'technical',
-            riskLevel: 'medium',
-            content: '📊 Apple rompió resistencia clave en $185. El RSI sigue en zona neutral y el MACD apunta positivo. Espero testeo en $180 antes de continuar al alza hacia $195.\n\nSe viene un movimiento interesante esta semana. ¿Qué opinan?',
-            tickers: 'AAPL, NASDAQ',
-            media: [],
-            author: { id: 'u1', username: 'inversor_pro', isVerified: true },
-            likesCount: 147,
-            commentsCount: 23,
-            repostsCount: 18,
-            savesCount: 41,
-            likedByMe: false,
-            repostedByMe: false,
-            savedByMe: false,
-            createdAt: now(35),
-        },
-        {
-            id: 'mock-p2',
-            type: 'post',
-            content: '💡 Tip del día: La diversificación no es solo tener muchos activos — es tener activos que no correlacionen entre sí.\n\nHoy con los mercados volátiles, tener algo de oro o bonos cortos puede salvar tu portfolio. El cash también es una posición válida. No hay que estar siempre invertido al 100%.',
-            tickers: 'ORO, BTC, BONOS',
-            media: [],
-            author: { id: 'u2', username: 'finanzas_ok', isVerified: false },
-            likesCount: 89,
-            commentsCount: 12,
-            repostsCount: 34,
-            savesCount: 67,
-            likedByMe: false,
-            repostedByMe: false,
-            savedByMe: false,
-            createdAt: now(72),
-        },
-        {
-            id: 'mock-p3',
-            type: 'chart',
-            assetSymbol: 'BTC',
-            analysisType: 'technical',
-            riskLevel: 'high',
-            content: '🚀 Bitcoin consolidando en el rango $60k-$65k. El halving ya fue pero el efecto aún no se vio completamente. Históricamente el rally post-halving tarda 6-12 meses en manifestarse plenamente.\n\nMi target para Q1 2027: $95k-$110k. ¿Coinciden?',
-            tickers: 'BTC, CRYPTO',
-            media: [],
-            author: { id: 'u3', username: 'crypto_analyst_ar', isVerified: true },
-            likesCount: 312,
-            commentsCount: 87,
-            repostsCount: 56,
-            savesCount: 134,
-            likedByMe: false,
-            repostedByMe: false,
-            savedByMe: false,
-            createdAt: now(150),
-        },
-        {
-            id: 'mock-p4',
-            type: 'post',
-            content: '📉 YPF bajó 8% hoy después de los datos de producción. Sin embargo, el contexto macro sigue siendo favorable para el sector energético argentino con Vaca Muerta en pleno auge.\n\nPara inversores de largo plazo esto puede ser una oportunidad de entrada. DYOR como siempre.',
-            tickers: 'YPFD, MERVAL',
-            media: [],
-            author: { id: 'u4', username: 'merval_watcher' },
-            likesCount: 43,
-            commentsCount: 19,
-            repostsCount: 8,
-            savesCount: 21,
-            likedByMe: false,
-            repostedByMe: false,
-            savedByMe: false,
-            createdAt: now(210),
-        },
-        {
-            id: 'mock-p5',
-            type: 'post',
-            content: '🌎 Resumen semanal del mercado:\n\n✅ S&P500 +1.8%\n✅ Nasdaq +2.3%\n🔴 Merval -2.1%\n✅ Bitcoin +5.4%\n🔴 Dólar Blue sin variación\n\nSemana positiva para mercados globales, aunque Argentina sigue su propio ritmo. El inversor local tiene que balancear exposición local vs internacional inteligentemente.',
-            media: [],
-            author: { id: 'u5', username: 'finix_news', isVerified: true },
-            likesCount: 201,
-            commentsCount: 45,
-            repostsCount: 92,
-            savesCount: 178,
-            likedByMe: false,
-            repostedByMe: false,
-            savedByMe: false,
-            createdAt: now(420),
-        },
-        {
-            id: 'mock-p6',
-            type: 'chart',
-            assetSymbol: 'NVDA',
-            analysisType: 'technical',
-            riskLevel: 'medium',
-            content: '🧠 NVIDIA sigue siendo el rey de la IA. Después de la corrección del 15% desde máximos, el soporte en $850 demostró ser fuerte.\n\nCon los resultados del próximo trimestre en el horizonte, esto sigue siendo una de las mejores compañías del mundo en la que estar posicionado.',
-            tickers: 'NVDA, AI, NASDAQ',
-            media: [],
-            author: { id: 'u6', username: 'tech_stocks_lat', isVerified: false },
-            likesCount: 167,
-            commentsCount: 38,
-            repostsCount: 29,
-            savesCount: 85,
-            likedByMe: false,
-            repostedByMe: false,
-            savedByMe: false,
-            createdAt: now(600),
-        },
-        {
-            id: 'mock-p7',
-            type: 'post',
-            content: '💰 El dólar blue bajó hoy a $1.180. La brecha cambiaria sigue comprimiendo. Esto afecta directamente a quienes tienen posiciones en ARS que planean dolarizar.\n\nImportante monitorear. Si sigue esta tendencia, el arbitraje entre CCL y blue puede ser interesante.',
-            tickers: 'DOLAR, FX',
-            media: [],
-            author: { id: 'u7', username: 'economia_ar' },
-            likesCount: 76,
-            commentsCount: 31,
-            repostsCount: 14,
-            savesCount: 39,
-            likedByMe: false,
-            repostedByMe: false,
-            savedByMe: false,
-            createdAt: now(900),
-        },
-        {
-            id: 'mock-p8',
-            type: 'post',
-            content: '📚 Lectura obligatoria: "El inversor inteligente" de Benjamin Graham sigue siendo la biblia del value investing. En un mercado tan volátil como el actual, los principios de margen de seguridad y análisis fundamental nunca pierden vigencia.\n\n¿Cuál es el libro que más los marcó en inversiones?',
-            media: [],
-            author: { id: 'u8', username: 'value_invest_ar', isVerified: false },
-            likesCount: 134,
-            commentsCount: 67,
-            repostsCount: 41,
-            savesCount: 98,
-            likedByMe: false,
-            repostedByMe: false,
-            savedByMe: false,
-            createdAt: now(1200),
-        },
-    ];
-
-    saveDb(seed);
-    return seed;
+    const hasSeeded = localStorage.getItem('hasSeededPostsV2');
+    if (!hasSeeded) {
+        localStorage.setItem('hasSeededPostsV2', 'true');
+        return [];
+    }
+    return [];
 }
 
 function applyUserStates(posts: MockPost[]): MockPost[] {
@@ -257,9 +120,24 @@ export async function handleMockPosts(path: string, init?: RequestInit): Promise
         return json({ posts: saved, nextCursor: null, hasMore: false });
     }
 
+    // GET /posts
+    if ((path === '/posts' || path.startsWith('/posts?')) && method === 'GET') {
+        let db = applyUserStates(getDb());
+        db = [...db].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return json(db);
+    }
+
     // POST /posts/upload-media
     if (path === '/posts/upload-media' && method === 'POST') {
-        const dummyUrl = 'https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC--big.svg';
+        let dummyUrl = 'https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC--big.svg';
+        try {
+            if (init?.body instanceof FormData) {
+                const file = init.body.get('files') as File;
+                if (file) {
+                    dummyUrl = URL.createObjectURL(file);
+                }
+            }
+        } catch (e) { }
         return json([{
             url: dummyUrl,
             mediaType: 'image',
@@ -280,7 +158,7 @@ export async function handleMockPosts(path: string, init?: RequestInit): Promise
             assetSymbol: body.assetSymbol,
             analysisType: body.analysisType,
             riskLevel: body.riskLevel,
-            media: [],
+            media: Array.isArray(body.mediaUrls) ? body.mediaUrls.map((url: string) => ({ url, mediaType: 'image' })) : [],
             author: { id: 'current-user', username: 'vos' },
             likesCount: 0,
             commentsCount: 0,

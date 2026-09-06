@@ -358,7 +358,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
                                 {/* Embedded chart */}
                                 <div className="rounded-xl overflow-hidden border border-border/40">
-                                    <EmbeddedChart symbol={assetSymbol} interval={tvInterval} theme={tvTheme} onWidgetReady={() => { }} />
+                                    <EmbeddedChart symbol={assetSymbol} interval={tvInterval} theme={tvTheme} />
                                 </div>
 
                                 <motion.div key="auto-info" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
