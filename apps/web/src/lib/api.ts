@@ -54,10 +54,14 @@ export const apiUrl = (path: string) => buildUrl(activeBase ?? '', path);
 
 import { handleMockRequest } from './mockApi';
 import { handleMockMarket } from './mockMarket';
-import { handleMockCommunities } from './mockCommunities';
 import { handleMockNews } from './mockNews';
+import { handleMockPosts } from './mockPosts';
 
 export const apiFetch = async (path: string, init?: RequestInit) => {
+    if (path.startsWith('/posts')) {
+        const postResponse = await handleMockPosts(path, init);
+        if (postResponse) return postResponse;
+    }
     if (path.startsWith('/portfolios')) {
         const mockResponse = await handleMockRequest(path, init);
         if (mockResponse) return mockResponse;
@@ -65,10 +69,6 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
     if (path.startsWith('/market')) {
         const marketResponse = await handleMockMarket(path, init);
         if (marketResponse) return marketResponse;
-    }
-    if (path.startsWith('/communities')) {
-        const commResponse = await handleMockCommunities(path, init);
-        if (commResponse) return commResponse;
     }
     if (path.startsWith('/news')) {
         const newsResponse = await handleMockNews(path, init);

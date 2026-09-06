@@ -142,7 +142,10 @@ export default function ExplorePage() {
 
             const endpoint = showSaved ? '/posts/saved' : `/posts/feed?${params}`;
             const res = await apiFetch(endpoint);
-            if (!res.ok) return;
+            if (!res.ok) {
+                setHasMore(false);
+                return;
+            }
 
             const data = await res.json();
             const newPosts: Post[] = data.posts || [];
@@ -157,6 +160,7 @@ export default function ExplorePage() {
             setHasMore(data.hasMore ?? false);
         } catch (e) {
             console.error(e);
+            setHasMore(false);
         } finally {
             fetchingRef.current = false;
             setIsLoading(false);

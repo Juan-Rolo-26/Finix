@@ -257,6 +257,17 @@ export async function handleMockPosts(path: string, init?: RequestInit): Promise
         return json({ posts: saved, nextCursor: null, hasMore: false });
     }
 
+    // POST /posts/upload-media
+    if (path === '/posts/upload-media' && method === 'POST') {
+        const dummyUrl = 'https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC--big.svg';
+        return json([{
+            url: dummyUrl,
+            mediaType: 'image',
+            mimeType: 'image/png',
+            sizeBytes: 1000
+        }], 201);
+    }
+
     // POST /posts (create)
     if (path === '/posts' && method === 'POST') {
         const body = JSON.parse((init?.body as string) || '{}');
