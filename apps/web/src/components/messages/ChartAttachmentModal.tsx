@@ -2,14 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     BarChart2,
-    Camera,
     ChevronDown,
     Loader2,
     Search,
     X,
 } from 'lucide-react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
-import { uploadChatBlob } from './mediaUpload';
 import type { ComposerAttachment } from './messageTypes';
 
 const POPULAR_SYMBOLS = [
@@ -146,7 +144,6 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
     const [interval, setInterval] = useState('D');
     const [analysisType, setAnalysisType] = useState('technical');
     const [riskLevel, setRiskLevel] = useState('medium');
-    const [chartWidget, setChartWidget] = useState<any | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
@@ -158,34 +155,13 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
     };
 
     const handleAttach = async () => {
-        if (!chartWidget || typeof chartWidget.imageCanvas !== 'function') {
-            setError('El grafico todavia no esta listo. Espera unos segundos e intenta de nuevo.');
-            return;
-        }
-
         setIsSubmitting(true);
         setError('');
 
         try {
-            const canvas = await chartWidget.imageCanvas();
-            const blob = await new Promise<Blob>((resolve, reject) => {
-                canvas.toBlob((nextBlob: Blob | null) => {
-                    if (nextBlob) {
-                        resolve(nextBlob);
-                        return;
-                    }
-                    reject(new Error('No se pudo generar la imagen del grafico.'));
-                }, 'image/png');
-            });
-
-            const uploaded = await uploadChatBlob(
-                blob,
-                `chat_chart_${assetSymbol.replace(/[^A-Z0-9:_-]/gi, '_')}_${Date.now()}.png`,
-            );
-
             onSelect({
                 type: 'chart',
-                url: uploaded.url,
+                url: '',
                 meta: {
                     symbol: assetSymbol,
                     interval,
@@ -194,6 +170,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                     riskLevel,
                 },
             });
+            onClose();
         } catch (nextError: any) {
             setError(nextError?.message || 'No se pudo adjuntar el grafico');
         } finally {
@@ -264,11 +241,10 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                                     setSymbolInput(symbol);
                                     setAssetSymbol(symbol);
                                 }}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
-                                    assetSymbol === symbol
-                                        ? 'border-primary/50 bg-primary/10 text-primary'
-                                        : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground'
-                                }`}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${assetSymbol === symbol
+                                    ? 'border-primary/50 bg-primary/10 text-primary'
+                                    : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground'
+                                    }`}
                             >
                                 {symbol.includes(':') ? symbol.split(':')[1] : symbol}
                             </button>
@@ -280,11 +256,10 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                             <button
                                 key={item.value}
                                 onClick={() => setInterval(item.value)}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
-                                    interval === item.value
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'
-                                }`}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${interval === item.value
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'
+                                    }`}
                             >
                                 {item.label}
                             </button>
@@ -295,7 +270,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                         symbol={assetSymbol}
                         interval={interval}
                         theme={tvTheme}
-                        onWidgetReady={setChartWidget}
+                        onWidgetReady={() => { }}
                     />
 
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -339,12 +314,12 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                     <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
                         <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-                                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <BarChart2 className="w-5 h-5" />}
                             </div>
                             <div>
-                                <p className="text-sm font-bold text-primary">Captura automatica</p>
+                                <p className="text-sm font-bold text-primary">Adjuntar análisis</p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Finix genera una imagen del grafico con el estado actual para que la otra persona la vea tal como la preparaste.
+                                    Se enviará un mensaje interactivo con el símbolo seleccionado para que los demás puedan verlo en detalle.
                                 </p>
                             </div>
                         </div>
@@ -365,7 +340,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                         </button>
                         <button
                             onClick={handleAttach}
-                            disabled={isSubmitting || !chartWidget}
+                            disabled={isSubmitting}
                             className="flex-1 h-11 rounded-2xl text-sm font-bold text-black bg-gradient-to-r from-primary to-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (

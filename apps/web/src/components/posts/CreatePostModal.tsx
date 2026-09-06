@@ -12,13 +12,11 @@ import { resolveMediaUrl } from '@/lib/mediaUrl';
 import {
     X, BarChart2, PenSquare,
     Upload, Loader2, Trash2, Camera, Search, ChevronDown,
-    CheckCircle2, AlertCircle,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type PostType = 'post' | 'image' | 'reel' | 'chart';
-type CaptureStatus = 'idle' | 'processing' | 'captured' | 'error';
 
 interface MediaFile {
     file: File;
@@ -154,11 +152,6 @@ async function uploadFile(file: File): Promise<string> {
     return uploaded[0]?.url;
 }
 
-async function uploadBlob(blob: Blob, filename: string): Promise<string> {
-    const file = new File([blob], filename, { type: blob.type });
-    return uploadFile(file);
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface CreatePostModalProps {
@@ -183,29 +176,11 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
     const [isPublishing, setIsPublishing] = useState(false);
     const [error, setError] = useState('');
     const [isDragging, setIsDragging] = useState(false);
-    const [chartWidget, setChartWidget] = useState<any | null>(null);
-    const [isCapturingChart, setIsCapturingChart] = useState(false);
-
-    // Capture
-    const [captureStatus, setCaptureStatus] = useState<CaptureStatus>('idle');
-    const [capturedPreview, setCapturedPreview] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const maxFiles = 10;
     const acceptedTypes = ALLOWED_IMAGE.join(',');
-
-    const revokePreviewUrl = useCallback((value: string | null) => {
-        if (value?.startsWith('blob:')) {
-            URL.revokeObjectURL(value);
-        }
-    }, []);
-
-    useEffect(() => {
-        return () => {
-            revokePreviewUrl(capturedPreview);
-        };
-    }, [capturedPreview, revokePreviewUrl]);
 
     // ── File handling ─────────────────────────────────────────────────────────
 
@@ -240,56 +215,18 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
     const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files); };
 
-    const clearCapture = useCallback(() => {
-        revokePreviewUrl(capturedPreview);
-        setCapturedPreview(null);
-        setCaptureStatus('idle');
-    }, [capturedPreview, revokePreviewUrl]);
-
-    const captureChartImage = useCallback(async () => {
-        if (!chartWidget || typeof chartWidget.imageCanvas !== 'function') {
-            throw new Error('El gráfico todavía no está listo. Esperá un segundo e intentá publicar de nuevo.');
-        }
-
-        setIsCapturingChart(true);
-        setCaptureStatus('processing');
-
-        try {
-            const canvas = await chartWidget.imageCanvas();
-            const blob = await new Promise<Blob>((resolve, reject) => {
-                canvas.toBlob((nextBlob: Blob | null) => {
-                    if (nextBlob) resolve(nextBlob);
-                    else reject(new Error('No se pudo generar la imagen del gráfico.'));
-                }, 'image/png');
-            });
-
-            revokePreviewUrl(capturedPreview);
-            const preview = URL.createObjectURL(blob);
-            const uploaded = await uploadBlob(blob, `chart_${assetSymbol.replace(/[^A-Z0-9:_-]/gi, '_')}_${Date.now()}.png`);
-
-            setCapturedPreview(preview);
-            setCaptureStatus('captured');
-            return uploaded;
-        } catch (e) {
-            setCaptureStatus('error');
-            throw e;
-        } finally {
-            setIsCapturingChart(false);
-        }
-    }, [assetSymbol, capturedPreview, chartWidget, revokePreviewUrl]);
-
     // ── Apply symbol ──────────────────────────────────────────────────────────
 
     const applySymbol = () => {
         const sym = symbolInput.trim().toUpperCase();
-        if (sym) { setAssetSymbol(sym); clearCapture(); }
+        if (sym) { setAssetSymbol(sym); }
     };
 
     // ── Publish ───────────────────────────────────────────────────────────────
 
     const handlePublish = async () => {
-        if (type === 'chart' && !content.trim() && mediaFiles.length === 0 && !chartWidget) {
-            setError('Esperá a que cargue el gráfico para adjuntarlo automáticamente o escribí tu análisis.');
+        if (type === 'chart' && !content.trim() && mediaFiles.length === 0) {
+            setError('Escribí algo o subí una imagen para acompañar tu análisis.');
             return;
         }
         if (type !== 'chart' && !content.trim() && mediaFiles.length === 0) {
@@ -302,14 +239,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
         setError('');
 
         try {
-            let allMediaUrls: { url: string; mediaType: string }[] = [];
-
-            // Chart capture goes first and is generated automatically at publish time.
-            if (type === 'chart') {
-                const chartImageUrl = await captureChartImage();
-                allMediaUrls.push({ url: chartImageUrl, mediaType: 'image' });
-            }
-            allMediaUrls = [...allMediaUrls, ...mediaFiles.filter((m) => m.url).map((m) => ({ url: m.url!, mediaType: m.mediaType }))];
+            let allMediaUrls = [...mediaFiles.filter((m) => m.url).map((m) => ({ url: m.url!, mediaType: m.mediaType }))];
 
             const tickerList = tickers.split(/[\s,]+/).map((t) => t.trim().toUpperCase()).filter(Boolean);
             let finalContent = content.trim();
@@ -377,7 +307,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                     <div className="grid grid-cols-2 max-w-md w-full mx-auto gap-3">
                         {TYPE_OPTIONS.map(({ key, label, desc, icon: Icon }) => (
                             <button key={key}
-                                onClick={() => { setType(key); setMediaFiles([]); setError(''); clearCapture(); }}
+                                onClick={() => { setType(key); setMediaFiles([]); setError(''); }}
                                 className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-medium transition-all ${type === key ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border/50 text-muted-foreground hover:border-border hover:text-foreground'}`}
                                 title={desc}
                             >
@@ -406,7 +336,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                     </div>
                                     <div className="flex items-center gap-1 flex-wrap">
                                         {INTERVALS.map(({ v, label }) => (
-                                            <button key={v} onClick={() => { setTvInterval(v); clearCapture(); }}
+                                            <button key={v} onClick={() => { setTvInterval(v); }}
                                                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${tvInterval === v ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
                                             >{label}</button>
                                         ))}
@@ -419,7 +349,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                     {POPULAR_SYMBOLS.map((s) => {
                                         const short = s.includes(':') ? s.split(':')[1].replace('USDT', '') : s;
                                         return (
-                                            <button key={s} onClick={() => { setSymbolInput(s); setAssetSymbol(s); clearCapture(); }}
+                                            <button key={s} onClick={() => { setSymbolInput(s); setAssetSymbol(s); }}
                                                 className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-all ${assetSymbol === s ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground'}`}
                                             >{short}</button>
                                         );
@@ -428,75 +358,26 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
                                 {/* Embedded chart */}
                                 <div className="rounded-xl overflow-hidden border border-border/40">
-                                    <EmbeddedChart symbol={assetSymbol} interval={tvInterval} theme={tvTheme} onWidgetReady={setChartWidget} />
+                                    <EmbeddedChart symbol={assetSymbol} interval={tvInterval} theme={tvTheme} onWidgetReady={() => { }} />
                                 </div>
 
-                                {/* ── CAPTURE SECTION ── */}
-                                <AnimatePresence mode="wait">
-                                    {captureStatus !== 'captured' && captureStatus !== 'error' && (
-                                        <motion.div key="auto-info" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-                                            className="rounded-xl border border-primary/40 bg-primary/8 p-4 space-y-3"
+                                <motion.div key="auto-info" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                                    className="rounded-xl border border-primary/40 bg-primary/8 p-4 space-y-3"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <motion.div
+                                            className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0"
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <motion.div
-                                                    animate={isCapturingChart ? { scale: [1, 1.08, 1] } : undefined}
-                                                    transition={{ duration: 1.2, repeat: Infinity }}
-                                                    className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0"
-                                                >
-                                                    <Camera className="w-5 h-5 text-primary" />
-                                                </motion.div>
-                                                <div>
-                                                    <p className="font-bold text-sm text-primary">Adjunto automático del gráfico</p>
-                                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                                        Al publicar, Finix genera y sube solo la imagen del gráfico con tus dibujos actuales. No tenés que descargar ni copiar nada.
-                                                    </p>
-                                                </div>
-                                            </div>
+                                            <Camera className="w-5 h-5 text-primary" />
                                         </motion.div>
-                                    )}
-
-                                    {captureStatus === 'processing' && (
-                                        <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                            className="flex items-center justify-center gap-2.5 py-4 rounded-xl bg-primary/5 border border-primary/20"
-                                        >
-                                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                            <span className="text-sm font-medium text-primary">Capturando y subiendo el gráfico...</span>
-                                        </motion.div>
-                                    )}
-
-                                    {captureStatus === 'captured' && capturedPreview && (
-                                        <motion.div key="captured" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <span className="flex items-center gap-1.5 text-sm font-bold text-emerald-500">
-                                                    <CheckCircle2 className="w-4 h-4" />
-                                                    Última captura generada correctamente
-                                                </span>
-                                                <button onClick={clearCapture} className="text-xs text-muted-foreground hover:text-foreground transition-colors underline">
-                                                    Limpiar preview
-                                                </button>
-                                            </div>
-                                            <div className="relative rounded-xl overflow-hidden border-2 border-emerald-500/40 shadow-lg shadow-emerald-500/10">
-                                                <img src={capturedPreview} alt="Captura del gráfico" className="w-full object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                                <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow">
-                                                    ✓ Adjuntada automáticamente
-                                                </div>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground">
-                                                Si seguís dibujando o cambiás el gráfico, al publicar se genera una captura nueva con el estado actual.
+                                        <div>
+                                            <p className="font-bold text-sm text-primary">Capturá y compartí tu gráfico</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                Hacé clic en el botón de la cámara arriba en el gráfico, guardá la imagen y adjuntala acá abajo de forma manual.
                                             </p>
-                                        </motion.div>
-                                    )}
-
-                                    {captureStatus === 'error' && (
-                                        <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                            className="flex items-center gap-2 text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg px-3 py-2.5"
-                                        >
-                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                            No se pudo generar la imagen automática del gráfico. Esperá a que termine de cargar e intentá publicar de nuevo, o subí una captura manual abajo.
-                                            <button onClick={clearCapture} className="ml-auto font-bold underline whitespace-nowrap">Limpiar</button>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                        </div>
+                                    </div>
+                                </motion.div>
 
                                 {/* Analysis metadata */}
                                 <div className="grid gap-3 sm:grid-cols-2">
@@ -597,13 +478,13 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                         <Button variant="outline" onClick={onClose} className="flex-1">Cancelar</Button>
                         <Button
                             onClick={handlePublish}
-                            disabled={isPublishing || isCapturingChart || mediaFiles.some((m) => m.uploading) || captureStatus === 'processing' || (type === 'chart' && !chartWidget)}
+                            disabled={isPublishing || mediaFiles.some((m) => m.uploading)}
                             className="flex-1 bg-gradient-to-r from-primary to-emerald-400 text-black font-bold shadow-glow"
                         >
-                            {isPublishing || isCapturingChart
-                                ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> {isCapturingChart ? 'Adjuntando gráfico...' : 'Publicando...'}</>
+                            {isPublishing
+                                ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Publicando...</>
                                 : type === 'chart'
-                                    ? '📊 Publicar análisis con gráfico'
+                                    ? '📊 Publicar análisis'
                                     : 'Crear en feed'
                             }
                         </Button>

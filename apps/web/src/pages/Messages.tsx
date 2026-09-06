@@ -549,7 +549,7 @@ function MessageAttachmentCard({
         );
     }
 
-    if (message.attachmentType === 'chart' && message.attachmentUrl) {
+    if (message.attachmentType === 'chart') {
         const symbol = typeof message.attachmentMeta?.symbol === 'string' ? message.attachmentMeta.symbol : 'ACTIVO';
         const interval = typeof message.attachmentMeta?.interval === 'string' ? message.attachmentMeta.interval : 'D';
         const analysisType = typeof message.attachmentMeta?.analysisType === 'string' ? message.attachmentMeta.analysisType : '';
@@ -563,12 +563,14 @@ function MessageAttachmentCard({
                     background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 100% / 0.04)',
                 }}
             >
-                <img
-                    src={resolveMediaUrl(message.attachmentUrl)}
-                    alt={`Grafico ${symbol}`}
-                    className="w-full max-h-80 object-cover"
-                    loading="lazy"
-                />
+                {message.attachmentUrl && (
+                    <img
+                        src={resolveMediaUrl(message.attachmentUrl)}
+                        alt={`Grafico ${symbol}`}
+                        className="w-full max-h-80 object-cover"
+                        loading="lazy"
+                    />
+                )}
                 <div className="p-3 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                         <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-primary/15 text-primary">
@@ -1887,12 +1889,18 @@ export default function MessagesPage() {
                                                     />
                                                 )}
 
-                                                {pendingAttachment.type === 'chart' && pendingAttachment.url && (
-                                                    <img
-                                                        src={resolveMediaUrl(pendingAttachment.url)}
-                                                        alt="Grafico listo para enviar"
-                                                        className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
-                                                    />
+                                                {pendingAttachment.type === 'chart' && (
+                                                    pendingAttachment.url ? (
+                                                        <img
+                                                            src={resolveMediaUrl(pendingAttachment.url)}
+                                                            alt="Grafico listo para enviar"
+                                                            className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                                                            <BarChart2 className="w-7 h-7" />
+                                                        </div>
+                                                    )
                                                 )}
 
                                                 {pendingAttachment.type === 'post' && (
