@@ -23,8 +23,8 @@ interface Comment {
 }
 interface Post {
     id: string; content: string; createdAt: string;
-    tickers?: string; mediaUrl?: string;
-    type?: 'analysis' | 'opinion' | 'education' | 'news' | 'question';
+    tickers?: string; mediaUrl?: string; assetSymbol?: string;
+    type?: 'analysis' | 'opinion' | 'education' | 'news' | 'question' | 'chart';
     likes: unknown[]; comments: Comment[];
     author: { id: string; username: string; role: string; isInfluencer: boolean; avatarUrl?: string };
     media?: { url: string; mediaType: string }[];
@@ -279,10 +279,13 @@ function FeedItem({ post }: { post: Post }) {
         : typeof post.tickers === 'string'
             ? post.tickers.split(',')[0]?.replace('$', '').trim()
             : null;
-    const tvSymbol = !mediaUrl && primaryTicker
-        ? primaryTicker === 'BTC' ? 'BITSTAMP:BTCUSD'
-            : primaryTicker === 'ETH' ? 'BITSTAMP:ETHUSD'
-                : `NASDAQ:${primaryTicker}`
+    // Use post.assetSymbol if available (from CreateChart), else use the extracted ticker 
+    // Let TradingView automatically resolve the prefix if it's just a raw ticker.
+    const rawTicker = post.assetSymbol || primaryTicker;
+    const tvSymbol = !mediaUrl && rawTicker
+        ? rawTicker === 'BTC' ? 'BINANCE:BTCUSDT'
+            : rawTicker === 'ETH' ? 'BINANCE:ETHUSDT'
+                : rawTicker
         : null;
 
     return (

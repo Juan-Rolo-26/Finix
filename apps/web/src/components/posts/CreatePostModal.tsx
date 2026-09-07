@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { Post } from '@/pages/Explore';
 import { Button } from '@/components/ui/button';
@@ -144,12 +145,12 @@ function EmbeddedChart({ symbol, interval, theme, onWidgetReady }: EmbeddedChart
 // ─── Upload helper ────────────────────────────────────────────────────────────
 
 async function uploadFile(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append('files', file);
-    const res = await apiFetch('/posts/upload-media', { method: 'POST', body: formData });
-    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d?.message || 'Error al subir'); }
-    const uploaded = await res.json();
-    return uploaded[0]?.url;
+    const ext = file.name.split('.').pop();
+    const fileName = `post_${crypto.randomUUID()}.${ext}`;
+    const path = `posts/${fileName}`;
+    const { error } = await supabase.storage.from('public-media').upload(path, file);
+    if (error) throw new Error(error.message);
+    return supabase.storage.from('public-media').getPublicUrl(path).data.publicUrl;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
