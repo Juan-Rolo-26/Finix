@@ -157,6 +157,13 @@ export async function handleMockPosts(path: string, init?: RequestInit): Promise
     if (path === '/posts' && method === 'POST') {
         const body = JSON.parse((init?.body as string) || '{}');
         const db = getDb();
+        let realUserId = 'current-user';
+        let realUsername = 'vos';
+        try {
+            const localUser = JSON.parse(localStorage.getItem('user') || 'null');
+            if (localUser) { realUserId = localUser.id; realUsername = localUser.username || 'vos'; }
+        } catch (e) { }
+
         const newPost: MockPost = {
             id: `mock-p${Date.now()}`,
             type: body.type || body.postType || 'post',
@@ -166,7 +173,7 @@ export async function handleMockPosts(path: string, init?: RequestInit): Promise
             analysisType: body.analysisType,
             riskLevel: body.riskLevel,
             media: Array.isArray(body.mediaUrls) ? body.mediaUrls.map((item: any) => ({ url: typeof item === 'string' ? item : item.url, mediaType: 'image' })) : [],
-            author: { id: 'current-user', username: 'vos' },
+            author: { id: realUserId, username: realUsername },
             likesCount: 0,
             commentsCount: 0,
             repostsCount: 0,

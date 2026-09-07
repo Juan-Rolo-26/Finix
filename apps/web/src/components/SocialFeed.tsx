@@ -208,7 +208,7 @@ function FeedItem({ post }: { post: Post }) {
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportReason, setReportReason] = useState('');
 
-    const isOwner = user?.id === post.author.id;
+    const isOwner = user?.id === post.author.id || post.author.id === 'current-user';
     if (isRemoved) return null;
 
     const typeConfig = post.type ? POST_TYPE_CONFIG[post.type] : null;
