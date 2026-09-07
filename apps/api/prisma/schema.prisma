@@ -42,8 +42,9 @@ model User {
 
   // Tipo de cuenta
   isInfluencer       Boolean @default(false)
-  isVerified         Boolean @default(false)
-  accountType        String  @default("BASIC") // BASIC, PRO, CREATOR, ANALYST
+  isVerified               Boolean @default(false)
+  financialAdvisorVerified Boolean @default(false)
+  accountType              String  @default("BASIC") // BASIC, PRO, CREATOR, ANALYST
   plan               String  @default("FREE") // FREE | PRO
   stripeCustomerId   String? @unique
   subscriptionStatus String  @default("INACTIVE") // INACTIVE | ACTIVE | CANCELED | PAST_DUE | EXPIRED
@@ -152,6 +153,11 @@ model User {
   hubComments  HubComment[]  @relation("HubComments")
   hubEvents    HubEvent[]    @relation("HubEvents")
   hubResources HubResource[] @relation("HubResources")
+
+  // Financial Advisor Verifications
+  financialVerifications           FinancialAdvisorVerification[] @relation("UserFinancialVerifications")
+  financialVerificationsReviewed   FinancialAdvisorVerification[] @relation("FinancialVerificationsReviewed")
+  financialVerificationAuditLogs   FinancialVerificationAuditLog[] @relation("FinancialVerificationAuditLogs")
 
   @@index([createdAt])
 }
@@ -1052,3 +1058,59 @@ model HubResource {
   @@index([category, order])
   @@index([mediaType])
 }
+
+model FinancialAdvisorVerification {
+  id                           String    @id @default(uuid())
+  userId                       String
+  user                         User      @relation("UserFinancialVerifications", fields: [userId], references: [id], onDelete: Cascade)
+  status                       String    @default("pending") // pending, under_review, approved, rejected, suspended, expired
+  fullName                     String
+  documentType                 String
+  documentCountry              String
+  documentNumber               String
+  professionalCategory         String
+  registrationNumber           String
+  registrationEntity           String
+  professionalCountry          String
+  identityDocumentFrontPath    String
+  identityDocumentBackPath     String
+  professionalDocumentPath     String
+  experienceYears              Int?
+  specialization               String?
+  company                      String?
+  professionalPosition         String?
+  cvPath                       String?
+  website                      String?
+  linkedin                     String?
+  professionalDescription      String?
+  submittedAt                  DateTime  @default(now())
+  reviewedAt                   DateTime?
+  reviewedById                 String?
+  reviewedBy                   User?     @relation("FinancialVerificationsReviewed", fields: [reviewedById], references: [id])
+  rejectionReason              String?
+  adminNotes                   String?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+
+  auditLogs FinancialVerificationAuditLog[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model FinancialVerificationAuditLog {
+  id              String    @id @default(uuid())
+  verificationId  String
+  verification    FinancialAdvisorVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+  adminId         String?
+  admin           User?     @relation("FinancialVerificationAuditLogs", fields: [adminId], references: [id])
+  action          String
+  previousStatus  String?
+  newStatus       String?
+  reason          String?
+  createdAt       DateTime  @default(now())
+
+  @@index([verificationId])
+  @@index([adminId])
+}
+

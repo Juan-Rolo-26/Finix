@@ -32,7 +32,14 @@ const REPOSTS_KEY = 'mockPostsReposts';
 const COMMENTS_KEY = 'mockPostsComments';
 
 function getDb(): MockPost[] {
-    return JSON.parse(localStorage.getItem(DB_KEY) || 'null') || seedDb();
+    let db = JSON.parse(localStorage.getItem(DB_KEY) || 'null') || seedDb();
+
+    const purged = db.filter((p: MockPost) => p.author?.id === 'current-user');
+    if (purged.length !== db.length) {
+        db = purged;
+        saveDb(db);
+    }
+    return db;
 }
 
 function saveDb(db: MockPost[]) {
@@ -158,7 +165,7 @@ export async function handleMockPosts(path: string, init?: RequestInit): Promise
             assetSymbol: body.assetSymbol,
             analysisType: body.analysisType,
             riskLevel: body.riskLevel,
-            media: Array.isArray(body.mediaUrls) ? body.mediaUrls.map((url: string) => ({ url, mediaType: 'image' })) : [],
+            media: Array.isArray(body.mediaUrls) ? body.mediaUrls.map((item: any) => ({ url: typeof item === 'string' ? item : item.url, mediaType: 'image' })) : [],
             author: { id: 'current-user', username: 'vos' },
             likesCount: 0,
             commentsCount: 0,

@@ -29,10 +29,12 @@ import {
     Bell,
     Clock,
     ImagePlus,
+    BadgeCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AvatarUpload from '@/components/AvatarUpload';
 import LocationQuickSelect from '@/components/LocationQuickSelect';
+import FinancialVerificationTab from '@/components/settings/FinancialVerificationTab';
 import { uploadProfileImage } from '@/lib/profileMedia';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -489,13 +491,14 @@ export default function Settings() {
 
             {/* Tabs */}
             <Tabs defaultValue="cuenta" className="space-y-6">
-                <TabsList className="grid h-auto w-full grid-cols-5 gap-1 p-1.5 bg-card/40 border border-border/40 rounded-2xl">
+                <TabsList className="grid h-auto w-full grid-cols-6 gap-1 p-1.5 bg-card/40 border border-border/40 rounded-2xl">
                     {[
                         { value: 'cuenta', label: 'Cuenta', icon: <User className="w-3.5 h-3.5" /> },
                         { value: 'privacidad', label: 'Privacidad', icon: <Shield className="w-3.5 h-3.5" /> },
                         { value: 'preferencias', label: 'Preferencias', icon: <Globe className="w-3.5 h-3.5" /> },
                         { value: 'notificaciones', label: 'Notificaciones', icon: <Bell className="w-3.5 h-3.5" /> },
                         { value: 'seguridad', label: 'Seguridad', icon: <Lock className="w-3.5 h-3.5" /> },
+                        { value: 'verificacion', label: 'Verificación', icon: <BadgeCheck className="w-3.5 h-3.5" /> },
                     ].map(({ value, label, icon }) => (
                         <TabsTrigger
                             key={value}
@@ -507,6 +510,10 @@ export default function Settings() {
                         </TabsTrigger>
                     ))}
                 </TabsList>
+
+                <TabsContent value="verificacion">
+                    <FinancialVerificationTab />
+                </TabsContent>
 
                 {/* ── CUENTA ── */}
                 <TabsContent value="cuenta" className="space-y-4">
