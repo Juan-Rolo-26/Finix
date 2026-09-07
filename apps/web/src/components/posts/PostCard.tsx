@@ -443,6 +443,22 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                 )}
             </div>
 
+            {/* Auto TradingView Chart if ticker is mentioned and no media provided */}
+            {!post.media?.length && !post.mediaUrl && !tradingViewUrl && post.tickers && (
+                <div className="px-4 pb-3">
+                    <div className="rounded-xl overflow-hidden border border-border/50 h-[300px] w-full bg-black/10">
+                        <iframe
+                            src={`https://s.tradingview.com/widgetembed/?symbol=${(Array.isArray(post.tickers) ? post.tickers[0] : post.tickers.split(',')[0]).trim().replace('$', '')}&interval=D&theme=dark&style=1&timezone=America%2FArgentina%2FBuenos_Aires&hide_top_toolbar=1&hide_legend=1&saveimage=0&locale=es`}
+                            width="100%"
+                            height="100%"
+                            frameBorder="0"
+                            allowTransparency={true}
+                            scrolling="no"
+                        />
+                    </div>
+                </div>
+            )}
+
             {post.quotedPost && (
                 <div className="px-4 pb-3">
                     <button
@@ -481,16 +497,26 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             {/* TradingView link */}
             {tradingViewUrl && (
                 <div className="px-4 pb-3">
-                    <a
-                        href={tradingViewUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg border border-blue-400/30 bg-blue-400/10 px-3 py-2 text-sm text-blue-300 hover:bg-blue-400/20 transition-colors"
-                    >
-                        <BarChart2 className="w-4 h-4" />
-                        Ver gráfico en TradingView
-                        <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                    {tradingViewUrl.includes('/x/') ? (
+                        <div className="relative rounded-xl overflow-hidden border border-border/50 bg-black/20 group">
+                            <img src={tradingViewUrl} alt="TradingView Chart" className="w-full h-auto object-contain max-h-[500px]" loading="lazy" />
+                            <a href={tradingViewUrl} target="_blank" rel="noreferrer" className="absolute bottom-3 right-3 flex flex-row items-center gap-2 p-2 rounded-lg bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm shadow-xl">
+                                <span className="text-xs font-semibold">TradingView</span>
+                                <ExternalLink className="w-4 h-4" />
+                            </a>
+                        </div>
+                    ) : (
+                        <a
+                            href={tradingViewUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 rounded-lg border border-blue-400/30 bg-blue-400/10 px-3 py-2 text-sm text-blue-300 hover:bg-blue-400/20 transition-colors"
+                        >
+                            <BarChart2 className="w-4 h-4" />
+                            Ver gráfico en TradingView
+                            <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                    )}
                 </div>
             )}
 
