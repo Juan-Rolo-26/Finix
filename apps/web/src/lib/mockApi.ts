@@ -79,8 +79,6 @@ export const handleMockRequest = async (path: string, init?: RequestInit) => {
             totalValue: valorActual,
             gananciaTotal,
             variacionPorcentual,
-            diversificacionPorClase: { STOCK: 50, CRYPTO: 50 },
-            diversificacionPorActivo: { AAPL: 50, BTC: 50 },
             cantidadActivos: p.assets.length
         };
         return new Response(JSON.stringify(metrics), { status: 200, headers: { 'content-type': 'application/json' } });

@@ -26,20 +26,34 @@ export const handleMockMarket = async (path: string, init?: RequestInit) => {
             ],
             sections: {
                 argentina: [
-                    { ...dummyAsset, id: 'a1', symbol: 'BCBA:GGAL', label: 'Grupo Financiero Galicia', price: 3500, change: 2.4, currency: 'ARS' },
-                    { ...dummyAsset, id: 'a2', symbol: 'BCBA:YPFD', label: 'YPF S.A.', price: 18000, change: -1.2, currency: 'ARS' }
+                    { ...dummyAsset, id: 'a1', symbol: 'BCBA:GGAL', label: 'Grupo Financiero Galicia', price: 4200, change: 3.8, currency: 'ARS' },
+                    { ...dummyAsset, id: 'a2', symbol: 'BCBA:YPFD', label: 'YPF S.A.', price: 19500, change: -0.5, currency: 'ARS' },
+                    { ...dummyAsset, id: 'a3', symbol: 'BCBA:PAMP', label: 'Pampa Energía', price: 3100, change: 1.2, currency: 'ARS' },
+                    { ...dummyAsset, id: 'a4', symbol: 'BCBA:AL30', label: 'Bono AL30', price: 58000, change: 0.8, currency: 'ARS' },
+                    { ...dummyAsset, id: 'a5', symbol: 'BCBA:CEPU', label: 'Central Puerto', price: 1450, change: -1.7, currency: 'ARS' },
+                    { ...dummyAsset, id: 'a6', symbol: 'BCBA:BMA', label: 'Banco Macro', price: 5600, change: 2.1, currency: 'ARS' }
                 ],
                 global: [
                     dummyAsset,
-                    { ...dummyAsset, id: 'g2', symbol: 'NASDAQ:MSFT', label: 'Microsoft' }
+                    { ...dummyAsset, id: 'g2', symbol: 'NASDAQ:MSFT', label: 'Microsoft', price: 421.5, change: 1.2 },
+                    { ...dummyAsset, id: 'g3', symbol: 'NASDAQ:TSLA', label: 'Tesla', price: 175.2, change: 3.4 },
+                    { ...dummyAsset, id: 'g4', symbol: 'NASDAQ:AMZN', label: 'Amazon', price: 185.1, change: -0.8 },
+                    { ...dummyAsset, id: 'g5', symbol: 'NASDAQ:NVDA', label: 'NVIDIA', price: 895.5, change: 4.9 },
+                    { ...dummyAsset, id: 'g6', symbol: 'NASDAQ:META', label: 'Meta', price: 510.3, change: 2.1 }
                 ],
                 crypto: [
-                    { ...dummyAsset, id: 'c1', symbol: 'CRYPTO:BTC', label: 'Bitcoin', price: 60200, change: 3.2 },
-                    { ...dummyAsset, id: 'c2', symbol: 'CRYPTO:ETH', label: 'Ethereum', price: 3400, change: 1.5 }
+                    { ...dummyAsset, id: 'c1', symbol: 'CRYPTO:BTC', label: 'Bitcoin', price: 62450, change: 3.2 },
+                    { ...dummyAsset, id: 'c2', symbol: 'CRYPTO:ETH', label: 'Ethereum', price: 3450, change: 1.5 },
+                    { ...dummyAsset, id: 'c3', symbol: 'CRYPTO:SOL', label: 'Solana', price: 145, change: 8.2 },
+                    { ...dummyAsset, id: 'c4', symbol: 'CRYPTO:BNB', label: 'Binance Coin', price: 560, change: -1.2 },
+                    { ...dummyAsset, id: 'c5', symbol: 'CRYPTO:ADA', label: 'Cardano', price: 0.45, change: 0.5 }
                 ],
                 commodities: [
                     { ...dummyAsset, id: 'cm1', symbol: 'OANDA:XAUUSD', label: 'Oro', price: 2350, change: -0.5 },
-                    { ...dummyAsset, id: 'cm2', symbol: 'NYMEX:CL', label: 'Petróleo WTI', price: 82.5, change: 1.2 }
+                    { ...dummyAsset, id: 'cm2', symbol: 'NYMEX:CL', label: 'Petróleo WTI', price: 82.5, change: 1.2 },
+                    { ...dummyAsset, id: 'cm3', symbol: 'OANDA:XAGUSD', label: 'Plata', price: 28.4, change: 2.1 },
+                    { ...dummyAsset, id: 'cm4', symbol: 'COMEX:HG', label: 'Cobre', price: 4.5, change: -1.8 },
+                    { ...dummyAsset, id: 'cm5', symbol: 'CBOT:ZS', label: 'Soja', price: 1150, change: 0.3 }
                 ],
                 indicators: [
                     { ...dummyAsset, id: 'i1', symbol: 'INDEX:SPX', label: 'S&P 500', price: 5200, change: 0.8 },
@@ -65,10 +79,10 @@ export const handleMockMarket = async (path: string, init?: RequestInit) => {
         const urlParams = new URLSearchParams(path.split('?')[1]);
         const query = urlParams.get('query') || '';
         return new Response(JSON.stringify([{
-            symbol: `MOCK:${query.toUpperCase()}`,
+            symbol: `NASDAQ:${query.toUpperCase()}`,
             name: query.toUpperCase(),
             type: 'stock',
-            exchange: 'MOCK'
+            exchange: 'NASDAQ'
         }]), { status: 200, headers: { 'content-type': 'application/json' } });
     }
 

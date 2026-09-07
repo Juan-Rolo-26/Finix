@@ -468,6 +468,14 @@ export function PortfolioDashboard({
                                     <div className="mt-2 text-4xl font-semibold tracking-tight sm:text-5xl">
                                         {formatCurrency(summary.currentValue, currency)}
                                     </div>
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <span className={cn('text-lg font-medium', summary.totalGain >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
+                                            {summary.totalGain >= 0 ? '+' : ''}{formatCurrency(summary.totalGain, currency)}
+                                        </span>
+                                        <span className={cn('text-sm font-medium px-2 py-0.5 rounded-md', summary.totalReturn >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500')}>
+                                            {summary.totalReturn >= 0 ? '+' : ''}{formatPercent(summary.totalReturn, 2)}
+                                        </span>
+                                    </div>
                                 </div>
                                 {summary.topWinner && (
                                     <div className="rounded-2xl border border-border/60 bg-background/50 px-4 py-3 shadow-sm backdrop-blur">

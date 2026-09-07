@@ -271,7 +271,16 @@ export const PortfolioAdvancedMetrics = ({
     );
 
     const allocationByAsset = useMemo(
-        () => buildDistribution(assets, (asset) => String(asset.ticker || '').trim().toUpperCase()),
+        () => buildDistribution(assets, (asset) => {
+            let ticker = String(asset.ticker || '').trim().toUpperCase();
+            if (ticker.startsWith('MOCK:')) {
+                const symbolOnly = ticker.split(':')[1] || '';
+                const argentineAssets = ['AL30', 'GD30', 'GGAL', 'YPFD', 'PAMP', 'CEPU', 'BMA', 'EDN', 'LOMA', 'TGS', 'YPF'];
+                const exchange = argentineAssets.includes(symbolOnly) ? 'BCBA' : 'NASDAQ';
+                ticker = `${exchange}:${symbolOnly}`;
+            }
+            return ticker;
+        }),
         [assets],
     );
 
