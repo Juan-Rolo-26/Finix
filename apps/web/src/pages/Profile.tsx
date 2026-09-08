@@ -6,6 +6,7 @@ import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { uploadProfileImage } from '@/lib/profileMedia';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SymbolLogo } from '@/components/SymbolLogo';
+import { resolveAssetInfo } from '@/lib/tradingview';
 import PostCard from '@/components/posts/PostCard';
 import type { Post } from '@/pages/Explore';
 import {
@@ -1878,6 +1879,7 @@ export default function Profile() {
 
                                 <div className="space-y-1 max-h-64 overflow-y-auto">
                                     {searchResults.length > 0 ? searchResults.map((r) => {
+                                        const info = resolveAssetInfo(r.symbol);
                                         const already = allPinnedTickers.includes(r.symbol);
                                         return (
                                             <button
@@ -1893,12 +1895,12 @@ export default function Profile() {
                                                 onMouseLeave={e => !already && ((e.currentTarget as HTMLElement).style.background = 'transparent')}
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black" style={{ background: PRIMARY_DIM, color: PRIMARY }}>
-                                                        {r.symbol[0]}
-                                                    </div>
+                                                    <SymbolLogo symbol={info.ticker} size={32} />
                                                     <div>
-                                                        <p className="text-sm font-semibold text-foreground">{r.symbol}</p>
-                                                        <p className="text-xs text-gray-500 truncate max-w-[240px]">{r.name}</p>
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            {info.exchange ? `${info.exchange}:${info.ticker}` : info.ticker}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 truncate max-w-[240px]">{info.displayName}</p>
                                                     </div>
                                                 </div>
                                                 {already ? <Check className="w-4 h-4 text-gray-600" /> : <Plus className="w-4 h-4 text-gray-500" />}
