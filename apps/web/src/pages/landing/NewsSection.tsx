@@ -49,7 +49,7 @@ export default function NewsSection() {
                 <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="w-full max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-16 relative z-10">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 24 }}
@@ -122,7 +122,7 @@ export default function NewsSection() {
                 >
                     <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                         <Link
-                            to="/"
+                            to="/auth"
                             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border border-border hover:border-primary/40 bg-card/50 text-foreground font-semibold hover:text-primary transition-all"
                         >
                             Ver todas las noticias

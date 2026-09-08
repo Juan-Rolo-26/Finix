@@ -55,7 +55,7 @@ export default function FinalCTASection() {
                 />
             </div>
 
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <div className="w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 relative z-10 text-center">
                 {/* Small label */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -73,7 +73,7 @@ export default function FinalCTASection() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                    className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-8"
+                    className="text-6xl sm:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.05] mb-10"
                 >
                     El mercado nunca se detiene.{' '}
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-400 to-brand">
@@ -86,7 +86,7 @@ export default function FinalCTASection() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.2 }}
-                    className="text-xl text-muted-foreground leading-relaxed mb-12 max-w-2xl mx-auto"
+                    className="text-2xl 2xl:text-3xl text-muted-foreground leading-relaxed mb-16 max-w-4xl mx-auto"
                 >
                     Entrá a Finix y empezá a construir tu propia experiencia financiera. Comunidad, mercados, herramientas y más.
                 </motion.p>
@@ -102,17 +102,17 @@ export default function FinalCTASection() {
                         <div className="absolute -inset-1 bg-gradient-to-r from-primary to-emerald-400 rounded-2xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
                         <Link
                             to="/auth"
-                            className="relative flex items-center justify-center gap-2 px-10 py-5 rounded-xl bg-primary text-primary-foreground font-bold text-lg shadow-glow hover:shadow-intense transition-all"
+                            className="relative flex items-center justify-center gap-3 px-12 py-5 rounded-2xl bg-primary text-primary-foreground font-bold text-xl shadow-glow hover:shadow-intense transition-all"
                         >
                             Crear cuenta gratis
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </motion.div>
 
                     <motion.a
                         href="#precios"
                         onClick={e => { e.preventDefault(); document.querySelector('#precios')?.scrollIntoView({ behavior: 'smooth' }); }}
-                        className="flex items-center gap-2 px-8 py-5 rounded-xl border border-border hover:border-primary/40 text-muted-foreground hover:text-foreground font-semibold text-base transition-all cursor-pointer"
+                        className="flex items-center gap-3 px-10 py-5 rounded-2xl border border-border hover:border-primary/40 text-muted-foreground hover:text-foreground font-semibold text-xl transition-all cursor-pointer"
                         whileHover={{ scale: 1.02 }}
                     >
                         Ver planes

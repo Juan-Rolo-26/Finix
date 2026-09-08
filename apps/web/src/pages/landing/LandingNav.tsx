@@ -43,8 +43,8 @@ export default function LandingNav() {
                     boxShadow: scrolled ? '0 8px 32px hsl(222 42% 3% / 0.3)' : 'none',
                 }}
             >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className={`flex items-center justify-between transition-all duration-300 ${scrolled ? 'py-3' : 'py-5'}`}>
+                <div className="w-full max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-16">
+                    <div className={`flex items-center justify-between transition-all duration-300 ${scrolled ? 'py-4' : 'py-6'}`}>
                         {/* Logo */}
                         <motion.a
                             href="#inicio"
@@ -52,11 +52,8 @@ export default function LandingNav() {
                             className="flex items-center gap-2 group cursor-pointer"
                             whileHover={{ scale: 1.02 }}
                         >
-                            <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center shadow-glow">
-                                <span className="text-black font-extrabold text-sm select-none">F</span>
-                                <div className="absolute inset-0 rounded-lg bg-primary/20 blur-sm group-hover:blur-md transition-all" />
-                            </div>
-                            <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                            <img src="/finix-logo.png" alt="Finix" className="h-10 w-auto object-contain" />
+                            <span className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
                                 FINIX
                             </span>
                         </motion.a>
@@ -68,8 +65,8 @@ export default function LandingNav() {
                                     key={link.label}
                                     href={link.href}
                                     onClick={e => { e.preventDefault(); handleScroll(link.href); }}
-                                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg hover:bg-white/5 transition-all duration-200 cursor-pointer"
-                                    whileHover={{ y: -1 }}
+                                    className="px-5 py-2.5 text-base font-medium text-muted-foreground hover:text-foreground rounded-xl hover:bg-white/5 transition-all duration-200 cursor-pointer"
+                                    whileHover={{ y: -2 }}
                                 >
                                     {link.label}
                                 </motion.a>
@@ -80,14 +77,14 @@ export default function LandingNav() {
                         <div className="hidden md:flex items-center gap-3">
                             <Link
                                 to="/auth"
-                                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                className="px-5 py-2.5 text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 Iniciar sesión
                             </Link>
-                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
                                 <Link
                                     to="/auth"
-                                    className="px-5 py-2.5 text-sm font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-glow hover:shadow-intense"
+                                    className="px-6 py-3 text-base font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-glow hover:shadow-intense"
                                 >
                                     Crear cuenta
                                 </Link>
@@ -135,14 +132,14 @@ export default function LandingNav() {
                                 <Link
                                     to="/auth"
                                     onClick={() => setMobileOpen(false)}
-                                    className="w-full py-3 text-center text-sm font-medium rounded-xl border border-border hover:bg-white/5 transition-colors"
+                                    className="w-full py-4 text-center text-base font-medium rounded-xl border border-border hover:bg-white/5 transition-colors"
                                 >
                                     Iniciar sesión
                                 </Link>
                                 <Link
                                     to="/auth"
                                     onClick={() => setMobileOpen(false)}
-                                    className="w-full py-3 text-center text-sm font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                                    className="w-full py-4 text-center text-base font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
                                 >
                                     Crear cuenta gratis
                                 </Link>

@@ -113,7 +113,7 @@ export default function PricingSection() {
                 />
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="relative z-10 w-full max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-16">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 24 }}
@@ -121,11 +121,11 @@ export default function PricingSection() {
                     viewport={{ once: true }}
                     className="text-center mb-12"
                 >
-                    <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight mb-4">
+                    <h2 className="text-5xl sm:text-6xl font-extrabold tracking-tight leading-tight mb-6">
                         Elegí cómo vivir{' '}
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">Finix.</span>
                     </h2>
-                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+                    <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10">
                         Empezá gratis. Crece cuando estés listo.
                     </p>
 
@@ -133,16 +133,16 @@ export default function PricingSection() {
                     <div className="inline-flex items-center gap-1 p-1 rounded-full bg-secondary/60 border border-border/40">
                         <button
                             onClick={() => setBilling('monthly')}
-                            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${billing === 'monthly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={`px-6 py-2 rounded-full text-base font-semibold transition-all ${billing === 'monthly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             Mensual
                         </button>
                         <button
                             onClick={() => setBilling('annual')}
-                            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${billing === 'annual' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={`px-6 py-2 rounded-full text-base font-semibold transition-all flex items-center gap-2 ${billing === 'annual' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             Anual
-                            <span className="text-2xs font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">−20%</span>
+                            <span className="text-xs font-bold px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400">−20%</span>
                         </button>
                     </div>
                 </motion.div>
@@ -176,13 +176,13 @@ export default function PricingSection() {
 
                                 {/* Icon & name */}
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${plan.highlighted ? 'bg-primary/20 border border-primary/30' : 'bg-secondary/60 border border-border/30'}`}>
-                                        <Icon className={`w-5 h-5 ${plan.highlighted ? 'text-primary' : 'text-foreground/60'}`} />
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${plan.highlighted ? 'bg-primary/20 border border-primary/30' : 'bg-secondary/60 border border-border/30'}`}>
+                                        <Icon className={`w-6 h-6 ${plan.highlighted ? 'text-primary' : 'text-foreground/60'}`} />
                                     </div>
                                     <div>
-                                        <p className="font-extrabold text-foreground">{plan.name}</p>
+                                        <p className="font-extrabold text-xl text-foreground">{plan.name}</p>
                                         {plan.id === 'creator' && (
-                                            <p className="text-2xs text-amber-400 font-semibold">Finix Creator</p>
+                                            <p className="text-sm text-amber-400 font-semibold">Finix Creator</p>
                                         )}
                                     </div>
                                 </div>
@@ -203,16 +203,16 @@ export default function PricingSection() {
                                     )}
                                 </div>
 
-                                <p className="text-xs text-muted-foreground mb-5 leading-relaxed">{plan.desc}</p>
+                                <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{plan.desc}</p>
 
                                 {/* CTA */}
                                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">
                                     <Link
-                                        to="/"
-                                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all ${plan.btnStyle}`}
+                                        to="/auth"
+                                        className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-semibold text-base transition-all ${plan.btnStyle}`}
                                     >
                                         {plan.btnLabel}
-                                        <ArrowRight className="w-4 h-4" />
+                                        <ArrowRight className="w-5 h-5" />
                                     </Link>
                                 </motion.div>
 

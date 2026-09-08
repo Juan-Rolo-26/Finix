@@ -56,7 +56,7 @@ export default function AISection() {
                 }} />
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="w-full max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-16 relative z-10">
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
 
                     {/* Left: Text */}
@@ -92,7 +92,7 @@ export default function AISection() {
 
                         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                             <Link
-                                to="/"
+                                to="/auth"
                                 className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-primary to-brand text-white font-bold text-sm shadow-intense hover:shadow-[0_0_40px_hsl(152_80%_42%_/_0.35)] transition-all"
                             >
                                 Probá Finix AI

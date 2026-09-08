@@ -158,7 +158,7 @@ export default function HeroSection() {
             </div>
 
             {/* Main content */}
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
+            <div className="relative z-10 w-full max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-16 py-24 sm:py-32">
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
 
                     {/* Left: Text */}
@@ -179,7 +179,7 @@ export default function HeroSection() {
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                            className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-6"
+                            className="text-6xl sm:text-7xl lg:text-8xl 2xl:text-[7rem] font-extrabold tracking-tight leading-[1.05] mb-8"
                         >
                             El lugar donde los{' '}
                             <span className="relative inline-block">
@@ -200,7 +200,7 @@ export default function HeroSection() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6, delay: 0.35 }}
-                            className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-10 max-w-xl mx-auto lg:mx-0"
+                            className="text-xl sm:text-2xl 2xl:text-3xl text-muted-foreground leading-relaxed mb-12 max-w-2xl mx-auto lg:mx-0"
                         >
                             Descubrí mercados, conectate con inversores, participá en comunidades y llevá tus decisiones financieras a otro nivel.
                         </motion.p>
@@ -216,16 +216,16 @@ export default function HeroSection() {
                                 <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-emerald-400 rounded-xl blur opacity-40 group-hover:opacity-70 transition-opacity" />
                                 <Link
                                     to="/auth"
-                                    className="relative flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-base shadow-glow hover:shadow-intense transition-all"
+                                    className="relative flex items-center justify-center gap-3 px-10 py-5 rounded-2xl bg-primary text-primary-foreground font-bold text-lg 2xl:text-xl shadow-glow hover:shadow-intense transition-all"
                                 >
                                     Crear cuenta gratis
-                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </Link>
                             </motion.div>
                             <motion.a
                                 href="#producto"
                                 onClick={e => { e.preventDefault(); document.querySelector('#producto')?.scrollIntoView({ behavior: 'smooth' }); }}
-                                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl border border-border hover:border-primary/40 text-foreground/80 hover:text-foreground font-semibold text-base transition-all hover:bg-white/4 cursor-pointer"
+                                className="flex items-center justify-center gap-3 px-10 py-5 rounded-2xl border border-border hover:border-primary/40 text-foreground/80 hover:text-foreground font-semibold text-lg 2xl:text-xl transition-all hover:bg-white/4 cursor-pointer"
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                             >
@@ -257,8 +257,8 @@ export default function HeroSection() {
                                 ))}
                             </div>
                             <div>
-                                <p className="text-sm font-semibold">+2.000 inversores</p>
-                                <p className="text-xs text-muted-foreground">ya forman parte de Finix</p>
+                                <p className="text-base 2xl:text-xl font-semibold">+2.000 inversores</p>
+                                <p className="text-sm 2xl:text-base text-muted-foreground">ya forman parte de Finix</p>
                             </div>
                         </motion.div>
                     </div>
@@ -273,7 +273,7 @@ export default function HeroSection() {
                     >
                         <motion.div
                             style={{ rotateX, rotateY }}
-                            className="relative w-full h-[520px]"
+                            className="relative w-full h-[600px] 2xl:h-[750px] transform scale-110"
                         >
                             {/* Asset cards */}
                             <div className="absolute top-0 left-0 space-y-3">
@@ -306,7 +306,7 @@ export default function HeroSection() {
                             >
                                 <Users className="w-5 h-5 text-primary" />
                                 <div>
-                                    <p className="text-xs font-bold">Value Investing</p>
+                                    <p className="text-sm font-bold">Value Investing</p>
                                     <p className="text-xs text-muted-foreground">3.2k miembros · activo ahora</p>
                                 </div>
                                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

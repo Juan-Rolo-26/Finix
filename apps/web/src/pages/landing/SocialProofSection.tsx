@@ -13,7 +13,7 @@ export default function SocialProofSection() {
         <section id="producto" className="py-20 relative overflow-hidden border-y border-border/20">
             <div className="absolute inset-0 bg-gradient-to-r from-background via-secondary/30 to-background pointer-events-none" />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="w-full max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-16 relative z-10">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}

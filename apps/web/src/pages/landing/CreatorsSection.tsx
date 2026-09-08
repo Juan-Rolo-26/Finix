@@ -25,7 +25,7 @@ export default function CreatorsSection() {
                 />
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="w-full max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-16 relative z-10">
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
 
                     {/* Left: Text */}
@@ -85,7 +85,7 @@ export default function CreatorsSection() {
 
                         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                             <Link
-                                to="/"
+                                to="/auth"
                                 className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 text-black font-bold text-sm shadow-[0_0_30px_hsl(38_90%_52%_/_0.3)] hover:shadow-[0_0_40px_hsl(38_90%_52%_/_0.5)] transition-all"
                             >
                                 Convertite en creador
