@@ -170,12 +170,28 @@ export function Sidebar() {
     useEffect(() => {
         if (searchQuery.length < 2) { setSearchResults([]); return; }
         setIsSearchLoading(true);
-        const t = setTimeout(() => {
-            apiFetch(`/users/search?q=${searchQuery}`)
-                .then(r => r.json())
-                .then(d => setSearchResults(Array.isArray(d) ? d : []))
-                .catch(() => setSearchResults([]))
-                .finally(() => setIsSearchLoading(false));
+        const t = setTimeout(async () => {
+            try {
+                const [usersRes, marketRes] = await Promise.all([
+                    apiFetch(`/users/search?q=${searchQuery}`).catch(() => null),
+                    apiFetch(`/market/search?q=${searchQuery}`).catch(() => null)
+                ]);
+
+                let combined: any[] = [];
+                if (usersRes?.ok) {
+                    const users = await usersRes.json();
+                    combined = combined.concat(users.map((u: any) => ({ ...u, _searchType: 'user' })));
+                }
+                if (marketRes?.ok) {
+                    const market = await marketRes.json();
+                    combined = combined.concat(market.slice(0, 4).map((m: any) => ({ ...m, _searchType: 'asset' })));
+                }
+                setSearchResults(combined);
+            } catch {
+                setSearchResults([]);
+            } finally {
+                setIsSearchLoading(false);
+            }
         }, 300);
         return () => clearTimeout(t);
     }, [searchQuery]);
@@ -425,34 +441,63 @@ export function Sidebar() {
                                                     <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'hsl(var(--muted-foreground))' }} />
                                                 </div>
                                             ) : searchResults.length > 0 ? (
-                                                searchResults.map(u => (
-                                                    <button
-                                                        key={u.id}
-                                                        className="w-full flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors text-left"
-                                                        onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
-                                                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                                        onClick={() => { navigate(`/profile/${u.username}`); setIsSearchOpen(false); setSearchQuery(''); }}
-                                                    >
-                                                        <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shrink-0"
-                                                            style={{ background: 'hsl(var(--primary) / 0.12)' }}>
-                                                            {u.avatarUrl
-                                                                ? <img src={resolveMediaUrl(u.avatarUrl)} alt={u.username} className="w-full h-full object-cover" />
-                                                                : <User className="w-4 h-4" style={{ color: PRIMARY }} />
-                                                            }
-                                                        </div>
-                                                        <div className="flex-1 min-w-0 text-left">
-                                                            <div className="flex items-center gap-1">
-                                                                <p className="text-[13px] font-semibold truncate">{u.username}</p>
-                                                                {u.isVerified && (
-                                                                    <span className="verified-badge">✓</span>
-                                                                )}
+                                                searchResults.map((r, i) => {
+                                                    if (r._searchType === 'asset') {
+                                                        return (
+                                                            <button
+                                                                key={r.symbol || i}
+                                                                className="w-full flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors text-left"
+                                                                onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
+                                                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                                                onClick={() => { navigate(`/market?symbol=${r.symbol}`); setIsSearchOpen(false); setSearchQuery(''); }}
+                                                            >
+                                                                <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shrink-0"
+                                                                    style={{ background: 'hsl(var(--primary) / 0.12)' }}>
+                                                                    <TrendingUp className="w-4 h-4" style={{ color: PRIMARY }} />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0 text-left">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <p className="text-[13px] font-semibold truncate">{r.name}</p>
+                                                                        <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-primary/10 text-primary">
+                                                                            {r.type}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                                                        {r.exchange}:{r.symbol}
+                                                                    </p>
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <button
+                                                            key={r.id || i}
+                                                            className="w-full flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors text-left"
+                                                            onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
+                                                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                                            onClick={() => { navigate(`/profile/${r.username}`); setIsSearchOpen(false); setSearchQuery(''); }}
+                                                        >
+                                                            <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shrink-0"
+                                                                style={{ background: 'hsl(var(--primary) / 0.12)' }}>
+                                                                {r.avatarUrl
+                                                                    ? <img src={resolveMediaUrl(r.avatarUrl)} alt={r.username} className="w-full h-full object-cover" />
+                                                                    : <User className="w-4 h-4" style={{ color: PRIMARY }} />
+                                                                }
                                                             </div>
-                                                            <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                                {u.title || u.company || 'Ver perfil →'}
-                                                            </p>
-                                                        </div>
-                                                    </button>
-                                                ))
+                                                            <div className="flex-1 min-w-0 text-left">
+                                                                <div className="flex items-center gap-1">
+                                                                    <p className="text-[13px] font-semibold truncate">{r.username}</p>
+                                                                    {r.isVerified && (
+                                                                        <span className="verified-badge">✓</span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                                                    {r.title || r.company || 'Ver perfil →'}
+                                                                </p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })
                                             ) : searchQuery.length >= 2 ? (
                                                 <div className="empty-state py-6">
                                                     <p className="text-[13px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>

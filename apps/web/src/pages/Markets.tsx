@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -340,33 +341,30 @@ export default function Markets() {
                     <TabsContent value="chart" className="space-y-6">
                         <Card className="rounded-[32px] border-border/60 bg-card/60 shadow-sm backdrop-blur-xl">
                             <CardContent className="flex flex-col gap-6 p-6 md:p-8">
-                                <div className="flex flex-col gap-6 w-full relative">
-                                    {/* Componente nativo de TradingView que lee todo directo de ellos */}
-                                    <TradingViewSymbolInfo symbol={selectedAsset?.symbol || 'NASDAQ:AAPL'} theme="dark" locale="es" />
+                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 w-full">
+                                    <div className="flex-1 w-full relative">
+                                        <TradingViewSymbolInfo symbol={selectedAsset?.symbol || 'NASDAQ:AAPL'} theme="dark" locale="es" />
+                                    </div>
 
-                                    {/* Capa invisible para poder darle clic y cambiar el activo, simulando el comportamiento de "clic en Apple" */}
-                                    <Dialog>
-                                        <DialogTrigger asChild>
-                                            <button
-                                                className="absolute top-0 left-0 w-[45%] h-full cursor-pointer z-10 hover:bg-white/5 transition-colors rounded-xl flex items-start p-2 opacity-0 hover:opacity-100"
-                                                title="Clic para cambiar de activo"
-                                            >
-                                                <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-border/50 text-xs text-muted-foreground flex items-center gap-2 mt-2 ml-2 shadow-sm">
-                                                    <Search className="w-3.5 h-3.5" />
-                                                    Cambiar activo
-                                                </div>
-                                            </button>
-                                        </DialogTrigger>
-                                        <DialogContent className="sm:max-w-md">
-                                            <DialogHeader>
-                                                <DialogTitle>Buscar en TradingView</DialogTitle>
-                                            </DialogHeader>
-                                            <MarketAssetSearch onSelect={(sym) => {
-                                                document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); // hack close
-                                                handleOpenMarketSymbol(sym);
-                                            }} />
-                                        </DialogContent>
-                                    </Dialog>
+                                    <div className="shrink-0 pt-2">
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button variant="outline" className="gap-2 bg-secondary/50 hover:bg-secondary/80 border-border/60 transition-all rounded-xl shadow-sm">
+                                                    <Search className="w-4 h-4 text-muted-foreground" />
+                                                    <span>Buscar Símbolo de TradingView</span>
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="sm:max-w-md">
+                                                <DialogHeader>
+                                                    <DialogTitle>Buscar activo en TradingView</DialogTitle>
+                                                </DialogHeader>
+                                                <MarketAssetSearch onSelect={(sym) => {
+                                                    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); // hack close
+                                                    handleOpenMarketSymbol(sym);
+                                                }} />
+                                            </DialogContent>
+                                        </Dialog>
+                                    </div>
                                 </div>
 
                                 <div className="h-px w-full bg-border/60" />

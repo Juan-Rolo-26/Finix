@@ -118,6 +118,7 @@ const TV_SLUG_MAP: Record<string, string> = {
     GE: 'ge-aerospace', CAT: 'caterpillar', PFE: 'pfizer', MRNA: 'moderna',
     ABBV: 'abbvie', UNH: 'unitedhealth-group', COIN: 'coinbase',
     MSTR: 'microstrategy', DDOG: 'datadog', SNOW: 'snowflake', CRWD: 'crowdstrike',
+    LAC: 'lithium-americas', MELI: 'mercadolibre',
 };
 
 // ─── Logo URL builder ─────────────────────────────────────────────────────────
@@ -151,7 +152,7 @@ export function getLogoUrls(symbol: string): string[] {
     }
 
     // Generic TradingView CDN attempt
-    if (cleanTicker.length >= 2) {
+    if (cleanTicker.length >= 2 && !isCrypto) {
         urls.push(`https://s3-symbol-logo.tradingview.com/${cleanTicker.toLowerCase()}--big.svg`);
     }
 
@@ -166,10 +167,20 @@ export function getLogoUrls(symbol: string): string[] {
         SBUX: 'starbucks.com', INTC: 'intel.com', AMD: 'amd.com', ORCL: 'oracle.com',
         UBER: 'uber.com', SPOT: 'spotify.com', SHOP: 'shopify.com', PYPL: 'paypal.com',
         ADBE: 'adobe.com', CRM: 'salesforce.com', NKE: 'nike.com',
+        LAC: 'lithiumamericas.com', GGAL: 'bancogalicia.com',
+        YPFD: 'ypf.com', PAMP: 'pampaenergia.com', CEPU: 'centralpuerto.com',
+        BMA: 'macro.com.ar', EDN: 'edenor.com', LOMA: 'lomanegra.com',
+        TGS: 'tgs.com.ar', MIRG: 'mirgor.com.ar', TECO2: 'telecom.com.ar',
+        AL30: 'argentina.gob.ar', GD30: 'argentina.gob.ar',
     };
     const domain = DOMAIN_MAP[ticker];
     if (domain) {
         urls.push(`https://logo.clearbit.com/${domain}`);
+    }
+
+    // Country flag fallback for local exchanges
+    if (exchange === 'BCBA' || exchange === 'BYMA') {
+        urls.push(`https://s3-symbol-logo.tradingview.com/country/AR.svg`);
     }
 
     return [...new Set(urls)]; // deduplicate

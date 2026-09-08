@@ -61,12 +61,22 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         setIsLoading(true);
         const timer = setTimeout(async () => {
             try {
-                // By now, just user search, but it can be expanded.
-                const res = await apiFetch(`/users/search?q=${query}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setResults(data);
+                const [usersRes, marketRes] = await Promise.all([
+                    apiFetch(`/users/search?q=${query}`).catch(() => null),
+                    apiFetch(`/market/search?q=${query}`).catch(() => null)
+                ]);
+
+                let combined: any[] = [];
+                if (usersRes?.ok) {
+                    const users = await usersRes.json();
+                    combined = combined.concat(users.map((u: any) => ({ ...u, _searchType: 'user' })));
                 }
+                if (marketRes?.ok) {
+                    const market = await marketRes.json();
+                    // Limitar assets sugeridos a 5
+                    combined = combined.concat(market.slice(0, 5).map((m: any) => ({ ...m, _searchType: 'asset' })));
+                }
+                setResults(combined);
             } catch (err) {
                 console.error('Search error', err);
             } finally {
@@ -78,9 +88,12 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     }, [query, activeFilter]);
 
     const handleSelect = (result: any) => {
-        // Adding to history
         setHistory(prev => [query, ...prev.filter(q => q !== query)].slice(0, 5));
-        navigate(`/profile/${result.username}`);
+        if (result._searchType === 'asset') {
+            navigate(`/market?symbol=${result.symbol}`);
+        } else {
+            navigate(`/profile/${result.username}`);
+        }
         onClose();
     };
 
@@ -211,34 +224,62 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                                 <h4 className="text-xs font-semibold text-muted-foreground px-2 py-1 mb-1">
                                     Resultados ({results.length})
                                 </h4>
-                                {results.map((r, i) => (
-                                    <button
-                                        key={r.id || i}
-                                        onClick={() => handleSelect(r)}
-                                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-secondary flex overflow-hidden items-center justify-center flex-shrink-0 border border-border">
-                                            {r.avatarUrl ? (
-                                                <img src={resolveMediaUrl(r.avatarUrl)} alt={r.username} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <Users className="w-5 h-5 text-muted-foreground" />
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-semibold text-foreground truncate">
-                                                    {r.username}
-                                                </span>
-                                                {r.isInfluencer && (
-                                                    <Sparkles className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                                {results.map((r, i) => {
+                                    if (r._searchType === 'asset') {
+                                        return (
+                                            <button
+                                                key={r.symbol || i}
+                                                onClick={() => handleSelect(r)}
+                                                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-secondary flex overflow-hidden items-center justify-center flex-shrink-0 border border-border">
+                                                    <TrendingUp className="w-5 h-5 text-muted-foreground" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-semibold text-foreground truncate">
+                                                            {r.name}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                                                            {r.type}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-xs text-muted-foreground block truncate">
+                                                        {r.exchange}:{r.symbol}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        );
+                                    }
+                                    return (
+                                        <button
+                                            key={r.id || i}
+                                            onClick={() => handleSelect(r)}
+                                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left"
+                                        >
+                                            <div className="w-10 h-10 rounded-full bg-secondary flex overflow-hidden items-center justify-center flex-shrink-0 border border-border">
+                                                {r.avatarUrl ? (
+                                                    <img src={resolveMediaUrl(r.avatarUrl)} alt={r.username} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <Users className="w-5 h-5 text-muted-foreground" />
                                                 )}
                                             </div>
-                                            <span className="text-xs text-muted-foreground block truncate">
-                                                {r.title || r.bio || "Inversor en Finix"}
-                                            </span>
-                                        </div>
-                                    </button>
-                                ))}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-semibold text-foreground truncate">
+                                                        {r.username}
+                                                    </span>
+                                                    {r.isInfluencer && (
+                                                        <Sparkles className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                                                    )}
+                                                </div>
+                                                <span className="text-xs text-muted-foreground block truncate">
+                                                    {r.title || r.bio || "Inversor en Finix"}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 text-center">
