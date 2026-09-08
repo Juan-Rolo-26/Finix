@@ -14,7 +14,6 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const PortfolioPage = lazy(() => import('./pages/Portfolio'));
 const InfoPage = lazy(() => import('./pages/InfoPage'));
 const OnboardingWizard = lazy(() => import('./pages/OnboardingWizard'));
-const Landing = lazy(() => import('./pages/Landing'));
 const Privacy = lazy(() => import('./pages/legal/Privacy'));
 const Terms = lazy(() => import('./pages/legal/Terms'));
 const ResponsibleUse = lazy(() => import('./pages/legal/ResponsibleUse'));
@@ -116,23 +115,19 @@ export default function App() {
                 }
             >
                 <Routes>
-                    {/* Root: landing page. If logged in → dashboard */}
+                    {/* Root route: Login/Registration. If logged in → dashboard */}
                     <Route
                         path="/"
                         element={
                             !token
-                                ? <Landing />
+                                ? <AuthPage />
                                 : <Navigate to="/dashboard" replace />
                         }
                     />
 
                     <Route
                         path="/auth"
-                        element={
-                            !token
-                                ? <AuthPage />
-                                : <Navigate to="/dashboard" replace />
-                        }
+                        element={<Navigate to="/" replace />}
                     />
 
                     {/* Supabase auth callback (email verification + OAuth) */}
