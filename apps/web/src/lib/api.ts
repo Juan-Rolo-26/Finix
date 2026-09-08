@@ -55,13 +55,8 @@ export const apiUrl = (path: string) => buildUrl(activeBase ?? '', path);
 import { handleMockRequest } from './mockApi';
 import { handleMockMarket } from './mockMarket';
 import { handleMockNews } from './mockNews';
-import { handleMockPosts } from './mockPosts';
 
 export const apiFetch = async (path: string, init?: RequestInit) => {
-    if (path.startsWith('/posts')) {
-        const postResponse = await handleMockPosts(path, init);
-        if (postResponse) return postResponse;
-    }
     if (path.startsWith('/portfolios')) {
         const mockResponse = await handleMockRequest(path, init);
         if (mockResponse) return mockResponse;

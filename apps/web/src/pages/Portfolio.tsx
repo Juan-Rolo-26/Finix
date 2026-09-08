@@ -54,7 +54,7 @@ import { cn } from "@/lib/utils";
 import { AddTransactionModal } from "@/components/portfolio/AddTransactionModal";
 import { PortfolioAdvancedMetrics } from "@/components/portfolio/AdvancedDiversification";
 import { PortfolioDashboard } from "@/components/portfolio/dashboard/PortfolioDashboard";
-import { SymbolLogo } from "@/components/SymbolLogo";
+import { AssetRowInfo } from "@/components/AssetBadge";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Portfolio {
@@ -191,6 +191,22 @@ function StatPill({ label, value, delta, positive, currency }: {
   );
 }
 
+function normalizeTickerSymbol(ticker: string): string {
+  let t = ticker.toUpperCase();
+  if (t.startsWith('MOCK:')) {
+    const symbolOnly = t.split(':')[1] || '';
+    const argentineAssets = ['AL30', 'GD30', 'GGAL', 'YPFD', 'PAMP', 'CEPU', 'BMA', 'EDN', 'LOMA', 'TGS', 'YPF'];
+    const exchange = argentineAssets.includes(symbolOnly) ? 'BCBA' : 'NASDAQ';
+    return `${exchange}:${symbolOnly}`;
+  }
+  // If no exchange prefix, try to infer
+  if (!t.includes(':') && t.length >= 2) {
+    const argentineAssets = ['AL30', 'GD30', 'GGAL', 'YPFD', 'PAMP', 'CEPU', 'BMA', 'EDN', 'LOMA', 'TGS'];
+    return argentineAssets.includes(t) ? `BCBA:${t}` : `NASDAQ:${t}`;
+  }
+  return t;
+}
+
 function AssetRow({ asset, totalPortfolioValue, currency, onSell }: {
   asset: Asset; totalPortfolioValue: number; currency: string; onSell: () => void;
 }) {
@@ -200,14 +216,7 @@ function AssetRow({ asset, totalPortfolioValue, currency, onSell }: {
   const pct = asset.montoInvertido > 0 ? (pnl / asset.montoInvertido) * 100 : 0;
   const weight = totalPortfolioValue > 0 ? (currentValue / totalPortfolioValue) * 100 : 0;
   const isUp = pct >= 0;
-
-  let ticker = asset.ticker.toUpperCase();
-  if (ticker.startsWith('MOCK:')) {
-    const symbolOnly = ticker.split(':')[1] || '';
-    const argentineAssets = ['AL30', 'GD30', 'GGAL', 'YPFD', 'PAMP', 'CEPU', 'BMA', 'EDN', 'LOMA', 'TGS', 'YPF'];
-    const exchange = argentineAssets.includes(symbolOnly) ? 'BCBA' : 'NASDAQ';
-    ticker = `${exchange}:${symbolOnly}`;
-  }
+  const symbol = normalizeTickerSymbol(asset.ticker);
 
   return (
     <motion.div
@@ -216,16 +225,14 @@ function AssetRow({ asset, totalPortfolioValue, currency, onSell }: {
       animate={{ opacity: 1, y: 0 }}
       className="group flex items-center gap-4 rounded-2xl border border-transparent px-4 py-3.5 transition-all hover:border-border/60 hover:bg-card/50"
     >
-      {/* Logo */}
-      <SymbolLogo symbol={ticker} size={40} />
-
-      {/* Name */}
-      <div className="flex-1 min-w-0">
-        <p className="font-bold text-[14px] leading-tight truncate">{ticker}</p>
-        <p className="text-[11px] text-muted-foreground truncate">
-          {asset.cantidad.toFixed(4)} unid. · PPC {fmtCurrency(asset.ppc, currency)}
-        </p>
-      </div>
+      {/* Logo + Exchange + Name */}
+      <AssetRowInfo
+        symbol={symbol}
+        subtext={`${asset.cantidad.toFixed(4)} unid. · PPC ${fmtCurrency(asset.ppc, currency)}`}
+        size="md"
+        showLivePrice={false}
+        className="flex-1 min-w-0"
+      />
 
       {/* Weight bar */}
       <div className="hidden sm:flex flex-col items-end gap-1 w-20">
@@ -268,26 +275,25 @@ function MovementRow({ movement, currency }: { movement: Movement; currency: str
     : isVenta ? "text-red-400 bg-red-500/10 border-red-500/20"
       : "text-blue-400 bg-blue-500/10 border-blue-500/20";
 
-  let ticker = movement.ticker.toUpperCase();
-  if (ticker.startsWith('MOCK:')) {
-    const symbolOnly = ticker.split(':')[1] || '';
-    const argentineAssets = ['AL30', 'GD30', 'GGAL', 'YPFD', 'PAMP', 'CEPU', 'BMA', 'EDN', 'LOMA', 'TGS', 'YPF'];
-    const exchange = argentineAssets.includes(symbolOnly) ? 'BCBA' : 'NASDAQ';
-    ticker = `${exchange}:${symbolOnly}`;
-  }
+  const symbol = normalizeTickerSymbol(movement.ticker);
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted/20 transition-colors">
+    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted/20 transition-colors">
+      {/* Type icon */}
       <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border", typeColor)}>
         {isCompra ? <TrendingUp className="w-3.5 h-3.5" /> : isVenta ? <TrendingDown className="w-3.5 h-3.5" /> : <DollarSign className="w-3.5 h-3.5" />}
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-semibold">{ticker}</p>
-        <p className="text-[11px] text-muted-foreground">
-          {new Date(movement.fecha).toLocaleDateString("es-AR")} · {movement.cantidad.toFixed(4)} × {fmtCurrency(movement.precio, currency)}
-        </p>
-      </div>
-      <div className="text-right">
+
+      {/* Asset info with logo + exchange + name */}
+      <AssetRowInfo
+        symbol={symbol}
+        subtext={`${new Date(movement.fecha).toLocaleDateString("es-AR")} · ${movement.cantidad.toFixed(4)} × ${fmtCurrency(movement.precio, currency)}`}
+        size="sm"
+        className="flex-1 min-w-0"
+      />
+
+      {/* Values */}
+      <div className="text-right shrink-0">
         <p className={cn("text-[13px] font-bold tabular-nums", isVenta ? "text-red-400" : "text-emerald-400")}>
           {isVenta ? "-" : "+"}{fmtCompact(movement.total, currency)}
         </p>

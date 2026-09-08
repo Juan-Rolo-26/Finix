@@ -10,6 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { apiFetch } from '@/lib/api';
 import BackButton from '@/components/BackButton';
+import { SymbolLogo } from '@/components/SymbolLogo';
+import { ExchangeBadge } from '@/components/AssetBadge';
+import { resolveAssetInfo } from '@/lib/tradingview';
 
 interface AddTransactionModalProps {
     open: boolean;
@@ -442,26 +445,26 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                             Escribe al menos 1 caracter para buscar en TradingView.
                                         </div>
                                     )}
-                                    {!isSearching && !searchError && trimmedQuery.length >= 1 && searchResults.map((asset, index) => (
-                                        <button
-                                            key={`${asset.symbol}-${asset.exchange || 'na'}-${asset.type || 'na'}-${index}`}
-                                            className="w-full flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
-                                            onClick={() => handleSelectAsset(asset)}
-                                        >
-                                            <div>
-                                                <div className="font-bold">{asset.symbol}</div>
-                                                <div className="text-sm text-muted-foreground">{asset.name}</div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {asset.exchange && (
-                                                    <Badge variant="secondary" className="uppercase text-[10px]">
-                                                        {asset.exchange}
-                                                    </Badge>
-                                                )}
-                                                <Badge variant="outline">{formatAssetType(asset.type)}</Badge>
-                                            </div>
-                                        </button>
-                                    ))}
+                                    {!isSearching && !searchError && trimmedQuery.length >= 1 && searchResults.map((asset, index) => {
+                                        const info = resolveAssetInfo(asset.symbol);
+                                        return (
+                                            <button
+                                                key={`${asset.symbol}-${asset.exchange || 'na'}-${asset.type || 'na'}-${index}`}
+                                                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
+                                                onClick={() => handleSelectAsset(asset)}
+                                            >
+                                                <SymbolLogo symbol={asset.symbol} size={36} />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <ExchangeBadge exchange={asset.exchange || info.exchange} size="xs" />
+                                                        <span className="font-bold text-[13px]">{info.ticker}</span>
+                                                    </div>
+                                                    <div className="text-[11px] text-muted-foreground truncate">{asset.name || info.displayName}</div>
+                                                </div>
+                                                <Badge variant="outline" className="text-[10px] uppercase shrink-0">{formatAssetType(asset.type)}</Badge>
+                                            </button>
+                                        );
+                                    })}
                                     {!isSearching && !searchError && trimmedQuery.length >= 1 && searchResults.length === 0 && (
                                         <div className="text-center text-muted-foreground py-4">
                                             No se encontraron resultados en TradingView.
@@ -485,20 +488,25 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                         Recomendados · 7 Magníficas
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        {MAG7_RECOMMENDATIONS.map((asset) => (
-                                            <button
-                                                key={asset.symbol}
-                                                className="flex flex-col items-start gap-1 rounded-lg border border-border/70 p-3 text-left transition-colors hover:bg-muted"
-                                                onClick={() => handleSelectAsset(asset)}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold">{asset.name}</span>
-                                                    <Badge variant="outline" className="uppercase text-[10px]">
-                                                        {formatAssetType(asset.type)}
-                                                    </Badge>
-                                                </div>
-                                            </button>
-                                        ))}
+                                        {MAG7_RECOMMENDATIONS.map((asset) => {
+                                            const info = resolveAssetInfo(asset.symbol);
+                                            return (
+                                                <button
+                                                    key={asset.symbol}
+                                                    className="flex items-center gap-2.5 rounded-lg border border-border/70 p-2.5 text-left transition-colors hover:bg-muted"
+                                                    onClick={() => handleSelectAsset(asset)}
+                                                >
+                                                    <SymbolLogo symbol={asset.symbol} size={30} />
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-1">
+                                                            <ExchangeBadge exchange={asset.exchange || 'NASDAQ'} size="xs" />
+                                                            <span className="font-bold text-[11px]">{info.ticker}</span>
+                                                        </div>
+                                                        <div className="text-[10px] text-muted-foreground truncate">{asset.name}</div>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>

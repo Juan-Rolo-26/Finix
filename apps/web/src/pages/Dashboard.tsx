@@ -215,6 +215,13 @@ export default function Dashboard() {
     const [posts, setPosts] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<FeedTab>('forYou');
 
+    // Map UI tabs to backend sort values
+    const tabToSort: Record<FeedTab, string> = {
+        forYou: 'recent',
+        following: 'following',
+        trending: 'trending',
+    };
+
     useEffect(() => {
         apiFetch('/market/tickers')
             .then(r => r.json())
@@ -229,12 +236,17 @@ export default function Dashboard() {
             .then(r => r.json())
             .then(data => setTopTraders(Array.isArray(data) ? data : []))
             .catch(() => { });
+    }, []);
 
-        apiFetch('/posts')
+    // Fetch posts when tab changes
+    useEffect(() => {
+        const sort = tabToSort[activeTab];
+        apiFetch(`/posts/feed?sort=${sort}&limit=20`)
             .then(r => r.json())
             .then(data => setPosts(Array.isArray(data) ? data : data?.posts ?? []))
-            .catch(() => { });
-    }, []);
+            .catch(() => setPosts([]));
+    }, [activeTab]);
+
 
     return (
         <div className="page-enter w-full max-w-[1920px] mx-auto px-4 py-6 md:px-6 xl:px-8">
