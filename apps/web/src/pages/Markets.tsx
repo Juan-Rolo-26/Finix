@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     Activity,
@@ -26,14 +26,6 @@ interface MarketAsset {
     exchange?: string;
 }
 
-interface QuoteData {
-    inputSymbol?: string;
-    symbol: string;
-    price: number | null;
-    change: number | null;
-    updatedAt: string;
-    unavailable?: boolean;
-}
 
 const DEFAULT_ASSET: MarketAsset = {
     symbol: 'NASDAQ:AAPL',
@@ -92,59 +84,7 @@ function buildFallbackAsset(symbol: string): MarketAsset {
     };
 }
 
-function getTypeColor(type: string) {
-    const colors: Record<string, string> = {
-        stock: 'border-sky-400/30 bg-sky-500/10 text-sky-200',
-        crypto: 'border-amber-400/30 bg-amber-500/10 text-amber-100',
-        forex: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100',
-        commodity: 'border-yellow-400/30 bg-yellow-500/10 text-yellow-100',
-        etf: 'border-cyan-400/30 bg-cyan-500/10 text-cyan-100',
-        other: 'border-border/50 bg-secondary/60 text-foreground',
-    };
-    return colors[type] || colors.other;
-}
 
-function formatTime(value?: string) {
-    if (!value) return '--:--';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '--:--';
-    return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatRelativeTime(value?: string) {
-    if (!value) return 'Sin actualizar';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Sin actualizar';
-
-    const diffMs = Date.now() - date.getTime();
-    const diffMinutes = Math.max(0, Math.round(diffMs / 60000));
-
-    if (diffMinutes < 1) return 'Hace instantes';
-    if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
-
-    const diffHours = Math.round(diffMinutes / 60);
-    if (diffHours < 24) return `Hace ${diffHours} h`;
-
-    return date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
-}
-
-function formatQuotePrice(value: number | null) {
-    if (value === null || !Number.isFinite(value)) return 'Sin datos';
-    return new Intl.NumberFormat('es-AR', {
-        minimumFractionDigits: Math.abs(value) >= 100 ? 2 : 4,
-        maximumFractionDigits: Math.abs(value) >= 100 ? 2 : 4,
-    }).format(value);
-}
-
-function formatQuoteChange(value: number | null) {
-    if (value === null || !Number.isFinite(value)) return 'Sin variacion';
-
-    return `${new Intl.NumberFormat('es-AR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-        signDisplay: 'always',
-    }).format(value)}%`;
-}
 
 
 
@@ -160,7 +100,7 @@ export default function Markets() {
     );
     const [dashboardData, setDashboardData] = useState<MarketDashboardData | null>(null);
     const [isDashboardLoading, setIsDashboardLoading] = useState(false);
-    const [quoteData, setQuoteData] = useState<QuoteData | null>(null);
+
     const [activeTab, setActiveTab] = useState(initialSymbolParam ? 'chart' : 'overview');
     const [chartInterval, setChartInterval] = useState('D');
 
@@ -266,34 +206,7 @@ export default function Markets() {
         };
     }, []);
 
-    useEffect(() => {
-        if (!selectedAsset) return;
 
-        let cancelled = false;
-        setQuoteData(null);
-
-        const fetchQuote = async () => {
-            try {
-                const res = await apiFetch(`/market/quote?symbol=${encodeURIComponent(selectedAsset.symbol)}`);
-                if (!cancelled && res.ok) {
-                    const data = await res.json();
-                    setQuoteData(data);
-                }
-            } catch (error) {
-                if (!cancelled) {
-                    console.error('Quote error:', error);
-                }
-            }
-        };
-
-        fetchQuote();
-        const interval = window.setInterval(fetchQuote, 30000);
-
-        return () => {
-            cancelled = true;
-            window.clearInterval(interval);
-        };
-    }, [selectedAsset]);
 
 
 

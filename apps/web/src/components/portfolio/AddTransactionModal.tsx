@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { apiFetch } from '@/lib/api';
 import BackButton from '@/components/BackButton';
 import { SymbolLogo } from '@/components/SymbolLogo';
-import { ExchangeBadge } from '@/components/AssetBadge';
+
 import { resolveAssetInfo } from '@/lib/tradingview';
 
 interface AddTransactionModalProps {
@@ -455,10 +455,9 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                             >
                                                 <SymbolLogo symbol={asset.symbol} size={36} />
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                                        <ExchangeBadge exchange={asset.exchange || info.exchange} size="xs" />
-                                                        <span className="font-bold text-[13px]">{info.ticker}</span>
-                                                    </div>
+                                                    <span className="font-bold text-[13px]">
+                                                        {asset.exchange || info.exchange ? `${asset.exchange || info.exchange}:${info.ticker}` : info.ticker}
+                                                    </span>
                                                     <div className="text-[11px] text-muted-foreground truncate">{asset.name || info.displayName}</div>
                                                 </div>
                                                 <Badge variant="outline" className="text-[10px] uppercase shrink-0">{formatAssetType(asset.type)}</Badge>
@@ -498,10 +497,9 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                                 >
                                                     <SymbolLogo symbol={asset.symbol} size={30} />
                                                     <div className="min-w-0">
-                                                        <div className="flex items-center gap-1">
-                                                            <ExchangeBadge exchange={asset.exchange || 'NASDAQ'} size="xs" />
-                                                            <span className="font-bold text-[11px]">{info.ticker}</span>
-                                                        </div>
+                                                        <span className="font-bold text-[11px]">
+                                                            {asset.exchange || 'NASDAQ' ? `${asset.exchange || 'NASDAQ'}:${info.ticker}` : info.ticker}
+                                                        </span>
                                                         <div className="text-[10px] text-muted-foreground truncate">{asset.name}</div>
                                                     </div>
                                                 </button>

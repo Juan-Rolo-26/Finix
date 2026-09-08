@@ -498,7 +498,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
 
     // Build pie data from diversificacionPorClase
     const pieData = metrics
-        ? Object.entries(metrics.diversificacionPorClase).map(([label, value], i) => ({ label: normalizeAllocationLabel(label), value, color: PIE_COLORS[i % PIE_COLORS.length] }))
+        ? Object.entries(metrics.diversificacionPorClase || {}).map(([label, value], i) => ({ label: normalizeAllocationLabel(label), value, color: PIE_COLORS[i % PIE_COLORS.length] }))
         : [];
 
     const totalValue = metrics?.valorActual ?? 0;
@@ -605,7 +605,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                                         { label: 'Crypto', value: 25, color: '#3b82f6' },
                                         { label: 'Commodities', value: 20, color: '#f59e0b' },
                                     ]).slice(0, 5).map((d) => {
-                                        const pct = totalValue > 0 ? (d.value / (metrics ? Object.values(metrics.diversificacionPorClase).reduce((a, b) => a + b, 0) : 100)) * 100 : d.value;
+                                        const pct = totalValue > 0 ? (d.value / (metrics ? Object.values(metrics.diversificacionPorClase || {}).reduce((a, b) => a + Number(b), 0) : 100)) * 100 : d.value;
                                         return (
                                             <div key={d.label} className="space-y-0.5">
                                                 <div className="flex items-center justify-between">
@@ -768,7 +768,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                                                 {isCompra ? '-' : '+'}{fmt(mv.total, selected?.monedaBase)}
                                             </div>
                                             <div className="text-[9px] text-muted-foreground">
-                                                {new Date(mv.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                                                {mv.fecha ? new Date(mv.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) : '—'}
                                             </div>
                                         </div>
                                     </motion.div>
@@ -1164,9 +1164,10 @@ export default function Profile() {
         input.click();
     };
 
-    const parseJsonArray = (str?: string): string[] => {
+    const parseJsonArray = (str?: string | string[]): string[] => {
         if (!str) return [];
-        try { return JSON.parse(str); } catch { return str.split(',').filter(Boolean); }
+        if (Array.isArray(str)) return str;
+        try { return JSON.parse(str); } catch { return typeof str === 'string' ? str.split(',').filter(Boolean) : []; }
     };
 
     if (isLoading) {
@@ -1252,9 +1253,9 @@ export default function Profile() {
                             }}
                         >
                             {profile.avatarUrl ? (
-                                <img src={resolveMediaUrl(profile.avatarUrl)} alt={profile.username} className="w-full h-full object-cover" />
+                                <img src={resolveMediaUrl(profile.avatarUrl)} alt={profile.username || 'Usuario'} className="w-full h-full object-cover" />
                             ) : (
-                                profile.username[0].toUpperCase()
+                                (profile.username && profile.username.length > 0) ? profile.username[0].toUpperCase() : 'U'
                             )}
                         </div>
                         {isOwnProfile && isEditing && (
@@ -1403,7 +1404,7 @@ export default function Profile() {
                         )}
                         <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            Miembro desde {new Date(profile.createdAt).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}
+                            Miembro desde {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : 'recientemente'}
                         </span>
                         {profile.website && (
                             <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-white transition-colors" style={{ color: PRIMARY }}>
