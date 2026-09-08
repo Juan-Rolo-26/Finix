@@ -1,15 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     Activity,
     LineChart,
+    Search,
+    Loader2
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import TradingViewChart from '@/components/TradingViewChart';
+import TradingViewSymbolInfo from '@/components/TradingViewSymbolInfo';
 import MarketDashboard, { type MarketDashboardData } from '@/components/markets/MarketDashboard';
 import { useTranslation } from '@/i18n';
 
@@ -335,80 +340,33 @@ export default function Markets() {
                     <TabsContent value="chart" className="space-y-6">
                         <Card className="rounded-[32px] border-border/60 bg-card/60 shadow-sm backdrop-blur-xl">
                             <CardContent className="flex flex-col gap-6 p-6 md:p-8">
-                                <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-                                    <div className="space-y-4">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            {selectedAsset?.exchange && (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-border/60 bg-background/60 uppercase tracking-[0.18em]"
-                                                >
-                                                    {selectedAsset.exchange}
-                                                </Badge>
-                                            )}
-                                            {selectedAsset?.type && (
-                                                <Badge className={getTypeColor(selectedAsset.type)}>
-                                                    {selectedAsset.type}
-                                                </Badge>
-                                            )}
-                                            <Badge
-                                                variant="outline"
-                                                className="border-border/60 bg-background/40 text-muted-foreground"
+                                <div className="flex flex-col gap-6 w-full relative">
+                                    {/* Componente nativo de TradingView que lee todo directo de ellos */}
+                                    <TradingViewSymbolInfo symbol={selectedAsset?.symbol || 'NASDAQ:AAPL'} theme="dark" locale="es" />
+
+                                    {/* Capa invisible para poder darle clic y cambiar el activo, simulando el comportamiento de "clic en Apple" */}
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <button
+                                                className="absolute top-0 left-0 w-[45%] h-full cursor-pointer z-10 hover:bg-white/5 transition-colors rounded-xl flex items-start p-2 opacity-0 hover:opacity-100"
+                                                title="Clic para cambiar de activo"
                                             >
-                                                Actualizado {formatRelativeTime(quoteData?.updatedAt).toLowerCase()}
-                                            </Badge>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                                                {selectedAsset?.name || 'Mercado'}
-                                            </h1>
-                                            <p className="text-sm text-muted-foreground">
-                                                {selectedAsset?.symbol || 'Selecciona un activo para abrir el chart.'}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-4 sm:grid-cols-3 xl:min-w-[560px]">
-                                        <div className="rounded-2xl border border-border/60 bg-background/40 p-4">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">
-                                                Precio actual
-                                            </p>
-                                            <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
-                                                {formatQuotePrice(quoteData?.price ?? null)}
-                                            </p>
-                                        </div>
-
-                                        <div className="rounded-2xl border border-border/60 bg-background/40 p-4">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">
-                                                Variacion
-                                            </p>
-                                            <p
-                                                className={cn(
-                                                    'mt-3 text-2xl font-semibold tracking-tight',
-                                                    (quoteData?.change ?? 0) > 0
-                                                        ? 'text-emerald-300'
-                                                        : (quoteData?.change ?? 0) < 0
-                                                            ? 'text-rose-300'
-                                                            : 'text-foreground'
-                                                )}
-                                            >
-                                                {formatQuoteChange(quoteData?.change ?? null)}
-                                            </p>
-                                        </div>
-
-                                        <div className="rounded-2xl border border-border/60 bg-background/40 p-4">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">
-                                                Ultima lectura
-                                            </p>
-                                            <p className="mt-3 text-lg font-semibold text-foreground">
-                                                {formatRelativeTime(quoteData?.updatedAt)}
-                                            </p>
-                                            <p className="mt-1 text-sm text-muted-foreground">
-                                                {formatTime(quoteData?.updatedAt)}
-                                            </p>
-                                        </div>
-                                    </div>
+                                                <div className="bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-border/50 text-xs text-muted-foreground flex items-center gap-2 mt-2 ml-2 shadow-sm">
+                                                    <Search className="w-3.5 h-3.5" />
+                                                    Cambiar activo
+                                                </div>
+                                            </button>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-md">
+                                            <DialogHeader>
+                                                <DialogTitle>Buscar en TradingView</DialogTitle>
+                                            </DialogHeader>
+                                            <MarketAssetSearch onSelect={(sym) => {
+                                                document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); // hack close
+                                                handleOpenMarketSymbol(sym);
+                                            }} />
+                                        </DialogContent>
+                                    </Dialog>
                                 </div>
 
                                 <div className="h-px w-full bg-border/60" />
@@ -455,6 +413,71 @@ export default function Markets() {
 
 
                 </Tabs>
+            </div>
+        </div>
+    );
+}
+
+function MarketAssetSearch({ onSelect }: { onSelect: (symbol: string) => void }) {
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (query.trim().length < 1) {
+            setResults([]);
+            return;
+        }
+
+        setLoading(true);
+        const timer = setTimeout(() => {
+            apiFetch(`/market/search?query=${encodeURIComponent(query)}`)
+                .then(r => r.json())
+                .then(d => {
+                    if (Array.isArray(d)) setResults(d);
+                })
+                .finally(() => setLoading(false));
+        }, 400);
+
+        return () => clearTimeout(timer);
+    }, [query]);
+
+    return (
+        <div className="space-y-4 py-2">
+            <Input
+                placeholder="Buscar (Ej. AAPL, BYMA:GGAL, BTC)..."
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                autoFocus
+                className="text-base h-12"
+            />
+
+            <div className="max-h-[300px] overflow-y-auto space-y-2">
+                {loading ? (
+                    <div className="flex justify-center p-4">
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    </div>
+                ) : null}
+                {!loading && query.trim().length >= 1 && results.length === 0 && (
+                    <p className="text-sm text-center text-muted-foreground p-4">
+                        No se encontraron resultados
+                    </p>
+                )}
+                {!loading && results.map(r => (
+                    <button
+                        key={`${r.symbol}-${r.type}`}
+                        onClick={() => onSelect(r.symbol)}
+                        className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-colors text-left"
+                    >
+                        <div className="min-w-0 flex-1">
+                            <p className="font-bold flex items-center gap-1.5 truncate">
+                                {r.symbol}
+                            </p>
+                            <p className="text-sm text-muted-foreground truncate">{r.name}</p>
+                        </div>
+                        {r.type && <Badge variant="outline" className="shrink-0 uppercase text-[10px]">{r.type}</Badge>}
+                    </button>
+                ))}
             </div>
         </div>
     );

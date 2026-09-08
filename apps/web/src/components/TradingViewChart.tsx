@@ -44,7 +44,7 @@ function TradingViewChart({
                     locale: 'es',
                     toolbar_bg: '#0a0a0a',
                     enable_publishing: false,
-                    allow_symbol_change: true,
+                    allow_symbol_change: false,
                     save_image: true,
                     hide_side_toolbar: false,
                     show_popup_button: true,
