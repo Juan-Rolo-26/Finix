@@ -26,7 +26,6 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Explore = lazy(() => import('./pages/Explore'));
 const Messages = lazy(() => import('./pages/Messages'));
 const PostDetail = lazy(() => import('./pages/PostDetail'));
-const Comunidad = lazy(() => import('./pages/legacy_Comunidad'));
 const Comunidades = lazy(() => import('./pages/Comunidades'));
 const NewsPage = lazy(() => import('./pages/News'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
@@ -167,7 +166,6 @@ export default function App() {
                         <Route path="/explore" element={<Explore />} />
                         <Route path="/posts/:id" element={<PostDetail />} />
                         <Route path="/messages" element={<Messages />} />
-                        <Route path="/comunidad" element={<Comunidad />} />
                         <Route path="/comunidades" element={<Comunidades />} />
                         <Route path="/news" element={<NewsPage />} />
                         <Route path="/notifications" element={<NotificationsPage />} />
