@@ -10,32 +10,9 @@
  *   <AssetBadge symbol="CRYPTO:BTC" showPrice layout="horizontal" />
  */
 
-import { useLivePrice, resolveAssetInfo, getExchangeLabel } from '@/lib/tradingview';
+import { useLivePrice, resolveAssetInfo } from '@/lib/tradingview';
 import { SymbolLogo } from '@/components/SymbolLogo';
 import { cn } from '@/lib/utils';
-
-// ─── Exchange badge colors ────────────────────────────────────────────────────
-
-const EXCHANGE_COLORS: Record<string, { bg: string; text: string }> = {
-    NASDAQ: { bg: 'hsl(215 85% 55% / 0.14)', text: 'hsl(215 85% 70%)' },
-    NYSE: { bg: 'hsl(225 70% 55% / 0.14)', text: 'hsl(225 70% 70%)' },
-    BCBA: { bg: 'hsl(38 90% 52% / 0.14)', text: 'hsl(38 90% 65%)' },
-    BYMA: { bg: 'hsl(38 90% 52% / 0.14)', text: 'hsl(38 90% 65%)' },
-    CRYPTO: { bg: 'hsl(280 65% 55% / 0.14)', text: 'hsl(280 65% 75%)' },
-    BINANCE: { bg: 'hsl(45 95% 50% / 0.14)', text: 'hsl(45 95% 65%)' },
-    COINBASE: { bg: 'hsl(220 80% 55% / 0.14)', text: 'hsl(220 80% 70%)' },
-    OANDA: { bg: 'hsl(142 60% 45% / 0.14)', text: 'hsl(142 60% 60%)' },
-    NYMEX: { bg: 'hsl(25 90% 50% / 0.14)', text: 'hsl(25 90% 65%)' },
-    COMEX: { bg: 'hsl(25 90% 50% / 0.14)', text: 'hsl(25 90% 65%)' },
-    CBOT: { bg: 'hsl(100 55% 45% / 0.14)', text: 'hsl(100 55% 65%)' },
-    INDEX: { bg: 'hsl(190 65% 45% / 0.14)', text: 'hsl(190 65% 65%)' },
-    FOREXCOM: { bg: 'hsl(160 55% 45% / 0.14)', text: 'hsl(160 55% 65%)' },
-};
-
-function getExchangeStyle(exchange: string) {
-    const upper = (exchange || '').toUpperCase();
-    return EXCHANGE_COLORS[upper] ?? { bg: 'hsl(var(--secondary))', text: 'hsl(var(--muted-foreground))' };
-}
 
 // ─── Price formatter ──────────────────────────────────────────────────────────
 
@@ -53,26 +30,6 @@ function fmtPrice(price: number | null, decimals?: number): string {
 function fmtChange(change: number | null): string {
     if (change === null || !Number.isFinite(change)) return '';
     return `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-}
-
-// ─── ExchangeBadge sub-component ─────────────────────────────────────────────
-
-export function ExchangeBadge({ exchange, size = 'md' }: { exchange: string; size?: 'xs' | 'sm' | 'md' }) {
-    if (!exchange) return null;
-    const style = getExchangeStyle(exchange);
-    const label = getExchangeLabel(exchange);
-    const sizeClass = size === 'xs' ? 'text-[9px] px-1.5 py-0.5' :
-        size === 'sm' ? 'text-[10px] px-2 py-0.5' :
-            'text-[10.5px] px-2.5 py-1';
-
-    return (
-        <span
-            className={cn('inline-flex items-center font-bold tracking-wider uppercase rounded-full leading-none', sizeClass)}
-            style={{ background: style.bg, color: style.text }}
-        >
-            {label}
-        </span>
-    );
 }
 
 // ─── AssetBadge ──────────────────────────────────────────────────────────────
@@ -138,9 +95,8 @@ export function AssetBadge({
             <div className={cn('flex flex-col min-w-0', layout === 'vertical' ? 'items-center' : 'items-start')}>
                 {/* Exchange + Ticker row */}
                 <div className="flex items-center gap-1.5 flex-wrap">
-                    <ExchangeBadge exchange={info.exchange} size={size === 'lg' ? 'md' : 'xs'} />
                     <span className={cn('font-bold text-foreground leading-tight', cfg.ticker)}>
-                        {info.ticker}
+                        {info.exchange ? `${info.exchange}:${info.ticker}` : info.ticker}
                     </span>
                     {showPrice && compactPrice && !loading && price !== null && (
                         <span className={cn('font-bold tabular-nums ml-1', cfg.price, isUp ? 'text-emerald-400' : 'text-rose-400')}>
@@ -205,8 +161,9 @@ export function AssetRowInfo({ symbol, nameOverride, subtext, size = 'md', showL
             <div className="flex flex-col min-w-0 flex-1">
                 {/* Exchange + Ticker */}
                 <div className="flex items-center gap-1.5">
-                    <ExchangeBadge exchange={info.exchange} size="xs" />
-                    <span className={cn('font-bold text-foreground', cfg.ticker)}>{info.ticker}</span>
+                    <span className={cn('font-bold text-foreground', cfg.ticker)}>
+                        {info.exchange ? `${info.exchange}:${info.ticker}` : info.ticker}
+                    </span>
                 </div>
 
                 {/* Name */}
