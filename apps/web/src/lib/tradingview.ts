@@ -119,6 +119,10 @@ const TV_SLUG_MAP: Record<string, string> = {
     ABBV: 'abbvie', UNH: 'unitedhealth-group', COIN: 'coinbase',
     MSTR: 'microstrategy', DDOG: 'datadog', SNOW: 'snowflake', CRWD: 'crowdstrike',
     LAC: 'lithium-americas', MELI: 'mercadolibre',
+    PAMP: 'pampa-energia', YPFD: 'ypf', YPF: 'ypf', GGAL: 'grupo-financiero-galicia',
+    BMA: 'banco-macro', CEPU: 'central-puerto', LOMA: 'loma-negra-cia-ind-argentina',
+    EDN: 'empresa-distribuidora-y-comerc', TGS: 'transportadora-de-gas-del-sur',
+    CRES: 'cresud', SUPV: 'grupo-supervielle', IRSA: 'irsa-inversiones-y-represe',
 };
 
 // ─── Logo URL builder ─────────────────────────────────────────────────────────

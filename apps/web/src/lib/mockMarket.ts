@@ -75,27 +75,6 @@ export const handleMockMarket = async (path: string, init?: RequestInit) => {
         return new Response(JSON.stringify(dashboard), { status: 200, headers: { 'content-type': 'application/json' } });
     }
 
-    if (path.startsWith('/market/search') && method === 'GET') {
-        const urlParams = new URLSearchParams(path.split('?')[1]);
-        const query = urlParams.get('query') || '';
-        return new Response(JSON.stringify([{
-            symbol: `NASDAQ:${query.toUpperCase()}`,
-            name: query.toUpperCase(),
-            type: 'stock',
-            exchange: 'NASDAQ'
-        }]), { status: 200, headers: { 'content-type': 'application/json' } });
-    }
-
-    if (path.startsWith('/market/quote') && method === 'GET') {
-        const urlParams = new URLSearchParams(path.split('?')[1]);
-        const symbol = urlParams.get('symbol') || '';
-        return new Response(JSON.stringify({
-            symbol,
-            price: Math.random() * 1000 + 100,
-            change: (Math.random() * 10) - 5,
-            updatedAt: now
-        }), { status: 200, headers: { 'content-type': 'application/json' } });
-    }
 
     if (path === '/market/tickers' && method === 'GET') {
         return new Response(JSON.stringify([
