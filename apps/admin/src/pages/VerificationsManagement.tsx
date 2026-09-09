@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BadgeCheck, Check, X, Loader2, User, Search, Eye, ExternalLink } from 'lucide-react';
+import { BadgeCheck, Check, X, Loader2, User, Eye } from 'lucide-react';
 import { adminFetch } from '../lib/api';
 
 export default function VerificationsManagement() {
@@ -106,8 +106,8 @@ export default function VerificationsManagement() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${req.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                    req.status === 'rejected' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                                        'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                                req.status === 'rejected' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                                    'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                                 }`}>
                                                 {req.status === 'approved' ? 'Aprobado' : req.status === 'rejected' ? 'Rechazado' : 'Pendiente'}
                                             </span>
