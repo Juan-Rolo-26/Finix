@@ -56,7 +56,6 @@ import { handleMockRequest } from './mockApi';
 import { handleMockMarket } from './mockMarket';
 import { handleMockNews } from './mockNews';
 import { handleMockPosts } from './mockPosts';
-import { handleMockCommunities } from './mockCommunities';
 import { handleMockUsers } from './mockUsers';
 
 export const apiFetch = async (path: string, init?: RequestInit) => {
@@ -71,10 +70,6 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
     if (path.startsWith('/posts')) {
         const postsResponse = await handleMockPosts(path, init);
         if (postsResponse) return postsResponse;
-    }
-    if (path.startsWith('/communities')) {
-        const communitiesResponse = await handleMockCommunities(path, init);
-        if (communitiesResponse) return communitiesResponse;
     }
     if (path.startsWith('/market')) {
         const marketResponse = await handleMockMarket(path, init);

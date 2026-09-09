@@ -39,7 +39,22 @@ const Help = () => {
 
                             <div>
                                 <h3 className="text-lg font-bold text-white mb-2">¿Los datos son en tiempo real?</h3>
-                                <p>Sí, la gran mayoría de nuestros cotizadores a través de TradingView o Yahoo Finance proveen información de mercado en tiempo real, garantizando que el estado de tu cuenta se muestre siempre lo más ajustado posible al flujo global.</p>
+                                <p>Sí, la gran mayoría de nuestros cotizadores a través de TradingView o Yahoo Finance proveen información de mercado en tiempo real, garantizando que el estado de tu portafolio se muestre siempre actualizado.</p>
+                            </div>
+
+                            <div>
+                                <h3 className="text-lg font-bold text-white mb-2">¿Cómo personalizo mi perfil?</h3>
+                                <p>Ve a la sección "Perfil" o "Configuraciones" en el menú lateral. Desde ahí podrás actualizar tu nombre de usuario, escribir una bio sobre tu perfil inversor y cambiar tu foto para destacarte en la comunidad.</p>
+                            </div>
+
+                            <div>
+                                <h3 className="text-lg font-bold text-white mb-2">¿Cómo recupero mi contraseña?</h3>
+                                <p>Si no podés ingresar, ve a la pantalla de inicio de sesión y apretá "Olvidé mi contraseña". Ingresá tu correo vinculado a Finix y te vamos a enviar un código seguro de 6 dígitos para crear una nueva al instante.</p>
+                            </div>
+
+                            <div>
+                                <h3 className="text-lg font-bold text-white mb-2">¿Cómo verifico mi cuenta (tilde verde)?</h3>
+                                <p>El símbolo de verificación se otorga automáticamente a inversores destacados, analistas con alto índice de aciertos o perfiles institucionales comprobados por nuestro equipo.</p>
                             </div>
                         </div>
                     </section>
