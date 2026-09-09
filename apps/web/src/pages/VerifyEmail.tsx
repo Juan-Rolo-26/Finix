@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 export default function VerifyEmail() {
     const [searchParams] = useSearchParams();
@@ -31,22 +32,35 @@ export default function VerifyEmail() {
 
         const normalizedEmail = email.trim().toLowerCase();
         try {
-            const res = await apiFetch('/auth/register/verify-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: normalizedEmail, code }),
+            const { data, error: submitError } = await supabase.auth.verifyOtp({
+                email: normalizedEmail,
+                token: code,
+                type: 'signup'
             });
-            const data = await res.json();
 
-            if (!res.ok) {
-                setError(data.message || 'No pudimos verificar el codigo. Proba otra vez.');
+            if (submitError) {
+                setError(submitError.message || 'Código incorrecto o expirado.');
                 setIsLoading(false);
                 return;
             }
 
-            if (data.token && data.user) {
-                login(data.token, data.user);
-                navigate(data.user.onboardingCompleted ? '/dashboard' : '/onboarding');
+            if (data.session && data.user) {
+                login(data.session.access_token, data.user as any);
+                // Call backend sync
+                try {
+                    await apiFetch('/auth/sync-user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${data.session.access_token}`
+                        },
+                        body: JSON.stringify({ username: data.user.user_metadata?.username })
+                    });
+                } catch (syncErr) {
+                    console.error('Error syncing user:', syncErr);
+                }
+
+                navigate('/dashboard');
             } else {
                 setIsLoading(false);
             }
@@ -59,7 +73,7 @@ export default function VerifyEmail() {
     const handleResend = async () => {
         const normalizedEmail = email.trim().toLowerCase();
         if (!normalizedEmail) {
-            setError('Ingresa tu correo para reenviar el codigo.');
+            setError('Ingresá tu correo para reenviar el código.');
             return;
         }
 
@@ -68,25 +82,26 @@ export default function VerifyEmail() {
         setMessage('');
 
         try {
-            const res = await apiFetch('/auth/register/resend-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: normalizedEmail }),
+            const { error: resendError } = await supabase.auth.resend({
+                type: 'signup',
+                email: normalizedEmail,
+                options: {
+                    emailRedirectTo: `${window.location.origin}/verify-email`
+                }
             });
-            const data = await res.json();
 
-            if (!res.ok) {
-                setError(data.message || 'No pudimos reenviar el codigo.');
+            if (resendError) {
+                setError(resendError.message || 'No pudimos reenviar el código.');
                 setResending(false);
                 return;
             }
         } catch (err) {
-            setError('Error de conexión con el servidor.');
+            setError('Error de conexión.');
             setResending(false);
             return;
         }
 
-        setMessage('Te reenviamos un nuevo codigo de verificacion.');
+        setMessage('Te reenviamos un nuevo código de verificación.');
         setResending(false);
     };
 

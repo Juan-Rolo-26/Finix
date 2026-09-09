@@ -153,7 +153,7 @@ export default function AuthPage() {
 
             if (error) throw error;
 
-            setSuccessMessage('Te enviamos un código de verificación a tu correo. Por favor, revisalo.');
+            navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
         } catch (err: any) {
             setAuthError(normalizeAuthError(err.message, 'Error de conexión'));
         }
