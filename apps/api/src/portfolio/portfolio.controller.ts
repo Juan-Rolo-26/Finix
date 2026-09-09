@@ -12,7 +12,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { PortfolioService } from './portfolio.service';
-import { CreatePortfolioDto, UpdatePortfolioDto, CreateAssetDto, UpdateAssetDto, CreateTransactionDto } from './dto/portfolio.dto';
+import { CreatePortfolioDto, UpdatePortfolioDto, CreateAssetDto, UpdateAssetDto, CreateTransactionDto, CreateWatchlistDto, UpdateWatchlistDto } from './dto/portfolio.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { LimitFreePortfolioGuard } from '../access/limit-free-portfolio.guard';
 
@@ -35,7 +35,7 @@ export class PortfolioController {
 
     @UseGuards(JwtAuthGuard)
     @Post('watchlists')
-    async createWatchlist(@Request() req, @Body() body: { name: string; tickers: string }) {
+    async createWatchlist(@Request() req, @Body() body: CreateWatchlistDto) {
         const userId = this.resolveUserId(req);
         return this.portfolioService.createWatchlist(userId, body.name, body.tickers || '');
     }
@@ -45,7 +45,7 @@ export class PortfolioController {
     async updateWatchlist(
         @Request() req,
         @Param('id') id: string,
-        @Body() body: { name?: string; tickers?: string },
+        @Body() body: UpdateWatchlistDto,
     ) {
         const userId = this.resolveUserId(req);
         return this.portfolioService.updateWatchlist(id, userId, body);

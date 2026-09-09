@@ -10,7 +10,7 @@ export class ReportsService {
     ) { }
 
     async createReport(reporterId: string, targetType: string, targetId: string, reason: string) {
-        if (!['USER', 'POST', 'MESSAGE', 'COMMENT'].includes(targetType)) {
+        if (!['USER', 'POST', 'MESSAGE', 'COMMENT', 'CHAT'].includes(targetType)) {
             throw new BadRequestException('Tipo de objetivo de reporte inválido');
         }
 
@@ -57,5 +57,19 @@ export class ReportsService {
         });
 
         return report;
+    }
+
+    async getReports() {
+        return this.prisma.report.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: { reporter: { select: { username: true, email: true } } }
+        });
+    }
+
+    async resolveReport(id: string, note?: string) {
+        return this.prisma.report.update({
+            where: { id },
+            data: { status: 'RESOLVED', resolutionNote: note }
+        });
     }
 }

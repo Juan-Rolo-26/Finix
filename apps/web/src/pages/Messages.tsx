@@ -27,9 +27,11 @@ import {
     Newspaper,
     MoreHorizontal,
     Sparkles,
+    Flag,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
+import ReportModal from '@/components/ReportModal';
 import ChartAttachmentModal from '@/components/messages/ChartAttachmentModal';
 import PostPickerModal from '@/components/messages/PostPickerModal';
 import { uploadChatFile } from '@/components/messages/mediaUpload';
@@ -868,6 +870,7 @@ export default function MessagesPage() {
     const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showAttachMenu, setShowAttachMenu] = useState(false);
+    const [reportTarget, setReportTarget] = useState<{ id: string; type: 'USER' | 'POST' | 'MESSAGE' | 'CHAT' } | null>(null);
     const [showPostPicker, setShowPostPicker] = useState(false);
     const [showChartPicker, setShowChartPicker] = useState(false);
     const [pendingAttachment, setPendingAttachment] = useState<ComposerAttachment | null>(null);
@@ -1316,6 +1319,14 @@ export default function MessagesPage() {
                     />
                 )}
             </AnimatePresence>
+            {reportTarget && (
+                <ReportModal
+                    isOpen={true}
+                    targetId={reportTarget.id}
+                    targetType={reportTarget.type as any}
+                    onClose={() => setReportTarget(null)}
+                />
+            )}
 
             <div className="flex flex-col flex-1 overflow-hidden">
                 <input
@@ -1707,6 +1718,11 @@ export default function MessagesPage() {
                                                         <ArrowLeft className="w-4 h-4" />
                                                         Volver a mensajes
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => setReportTarget({ id: activeConv.id, type: 'CHAT' })}>
+                                                        <Flag className="w-4 h-4 text-orange-500" />
+                                                        <span className="text-orange-500">Reportar chat</span>
+                                                    </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </>
@@ -1824,6 +1840,14 @@ export default function MessagesPage() {
                                                                             msg.isRead
                                                                                 ? <CheckCheck className="w-3 h-3" style={{ color: 'hsl(158 100% 45%)' }} />
                                                                                 : <Check className="w-3 h-3 text-muted-foreground" />
+                                                                        )}
+                                                                        {!isMe && (
+                                                                            <button
+                                                                                onClick={() => setReportTarget({ id: msg.id, type: 'MESSAGE' })}
+                                                                                className="text-[10px] text-muted-foreground hover:text-orange-500 transition-colors ml-2"
+                                                                            >
+                                                                                Reportar
+                                                                            </button>
                                                                         )}
                                                                     </div>
                                                                 )}

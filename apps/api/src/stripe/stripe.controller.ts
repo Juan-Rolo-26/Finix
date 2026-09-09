@@ -2,6 +2,7 @@ import { Controller, Get, Headers, HttpCode, HttpStatus, Param, Post, Req, UseGu
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { StripeService } from './stripe.service';
+import { CreateCommunityPaymentDto } from './dto/stripe.dto';
 
 @Controller('stripe')
 export class StripeController {
@@ -30,8 +31,7 @@ export class StripeController {
 
     @UseGuards(JwtAuthGuard)
     @Post('communities/:communityId/checkout')
-    createCommunityPayment(@Req() req: any, @Param('communityId') communityId: string, @Body() body: { planId: string }) {
-        if (!body?.planId) throw new BadRequestException('Se requiere planId');
+    createCommunityPayment(@Req() req: any, @Param('communityId') communityId: string, @Body() body: CreateCommunityPaymentDto) {
         return this.stripeService.createCommunityPayment(req.user.id, communityId, body.planId);
     }
 

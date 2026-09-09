@@ -285,10 +285,10 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     const handleReport = async () => {
         if (!reportReason.trim()) return;
         try {
-            await apiFetch(`/posts/${post.id}/report`, {
+            await apiFetch('/reports', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reason: reportReason }),
+                body: JSON.stringify({ targetType: 'POST', targetId: post.id, reason: reportReason }),
             });
             setShowReportModal(false);
             setReportReason('');

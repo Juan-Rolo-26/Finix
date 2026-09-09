@@ -8,6 +8,8 @@ import {
     CreateCommunityPostDto,
     CreateCommunityResourceDto,
     UpdateCommunityDto,
+    CreateEventDto,
+    CommunityPlanDto,
 } from './dto/create-community.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
@@ -140,7 +142,7 @@ export class CommunitiesController {
 
     @UseGuards(JwtAuthGuard)
     @Post(':id/events')
-    createEvent(@Param('id') id: string, @Request() req: any, @Body() dto: any) {
+    createEvent(@Param('id') id: string, @Request() req: any, @Body() dto: CreateEventDto) {
         return this.communitiesService.createEvent(id, req.user.id, dto);
     }
 
@@ -154,8 +156,8 @@ export class CommunitiesController {
 
     @UseGuards(JwtAuthGuard)
     @Post(':id/plans')
-    createPlan(@Param('id') id: string, @Request() req: any, @Body() dto: any) {
-        return this.communitiesService.createPlan(id, req.user.id, dto);
+    createPlan(@Param('id') id: string, @Request() req: any, @Body() dto: CommunityPlanDto) {
+        return this.communitiesService.createPlan(id, req.user.id, Object.assign(dto, { communityId: id }));
     }
 
     @UseGuards(JwtAuthGuard)

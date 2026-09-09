@@ -23,6 +23,7 @@ import { PostsService } from './posts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
 import { buildUploadPublicPath } from '../uploads/upload-url.util';
+import { CreatePostDto, UpdatePostDto, AddCommentDto, ReportPostDto } from './dto/posts.dto';
 
 // ─── Multer config ────────────────────────────────────────────────────────────
 
@@ -175,7 +176,7 @@ export class PostsController {
 
     @UseGuards(JwtAuthGuard)
     @Post()
-    createPost(@Request() req, @Body() body: any) {
+    createPost(@Request() req, @Body() body: CreatePostDto) {
         return this.postsService.createPost(req.user.id, {
             content: body.content,
             type: body.type,
@@ -201,8 +202,8 @@ export class PostsController {
 
     @UseGuards(JwtAuthGuard)
     @Patch(':id')
-    updatePost(@Request() req, @Param('id') id: string, @Body('content') content: string) {
-        return this.postsService.updatePost(id, req.user.id, content);
+    updatePost(@Request() req, @Param('id') id: string, @Body() body: UpdatePostDto) {
+        return this.postsService.updatePost(id, req.user.id, body.content);
     }
 
     // ── DELETE ────────────────────────────────────────────────────────────────
@@ -240,10 +241,9 @@ export class PostsController {
     addComment(
         @Request() req,
         @Param('id') id: string,
-        @Body('content') content: string,
-        @Body('parentId') parentId?: string,
+        @Body() body: AddCommentDto,
     ) {
-        return this.postsService.addComment(id, req.user.id, content, parentId);
+        return this.postsService.addComment(id, req.user.id, body.content, body.parentId);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -285,9 +285,9 @@ export class PostsController {
     reportPost(
         @Request() req,
         @Param('id') id: string,
-        @Body('reason') reason: string,
+        @Body() body: ReportPostDto,
     ) {
-        return this.postsService.reportPost(id, req.user.id, reason);
+        return this.postsService.reportPost(id, req.user.id, body.reason);
     }
 
     // ── LEGACY ────────────────────────────────────────────────────────────────

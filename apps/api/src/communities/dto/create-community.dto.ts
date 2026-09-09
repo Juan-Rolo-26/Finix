@@ -103,7 +103,8 @@ export class CreateCommunityPostDto {
 
     @IsArray()
     @IsOptional()
-    mediaUrls?: any[];
+    @ValidateNested({ each: true })
+    mediaUrls?: Record<string, string>[];
 
     @IsString()
     @IsOptional()
@@ -133,4 +134,20 @@ export class CreateCommunityResourceDto {
     @IsInt()
     @IsOptional()
     requiredTierLevel?: number;
+}
+
+export class CreateEventDto {
+    @IsString()
+    title: string;
+
+    @IsString()
+    @IsOptional()
+    description?: string;
+
+    @IsString()
+    date: string;
+
+    @IsString()
+    @IsOptional()
+    link?: string;
 }

@@ -161,6 +161,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                 throw new UnauthorizedException('Usuario no encontrado');
             }
 
+            if (finixUser.status === 'BANNED' || finixUser.status === 'SUSPENDED') {
+                throw new UnauthorizedException('Cuenta suspendida o baneada');
+            }
+
             return {
                 id: finixUser.id,
                 email: finixUser.email,
@@ -229,8 +233,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                 }
             } catch (e) {
                 console.error('[JwtStrategy] Auto-sync failed:', e);
-                // We'll let it pass, but it might fail Foreign Key constraints later if creation fails
+                throw new UnauthorizedException('No se pudo validar la identidad del usuario');
             }
+        }
+
+        if (user && (user.status === 'BANNED' || user.status === 'SUSPENDED')) {
+            throw new UnauthorizedException('Cuenta suspendida o baneada');
         }
 
         return {

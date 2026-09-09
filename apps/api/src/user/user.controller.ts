@@ -2,6 +2,7 @@ import { Controller, Get, Patch, Param, Body, UseGuards, Request, Query } from '
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
+import { UpdateProfileDto, ChangePasswordDto } from './dto/user.dto';
 
 @Controller('users')
 export class UserController {
@@ -15,7 +16,7 @@ export class UserController {
 
     @UseGuards(JwtAuthGuard)
     @Patch('me')
-    async updateProfile(@Request() req, @Body() updateData: any) {
+    async updateProfile(@Request() req, @Body() updateData: UpdateProfileDto) {
         return this.userService.updateProfile(req.user.id, updateData);
     }
 
@@ -23,7 +24,7 @@ export class UserController {
     @Patch('me/password')
     async updatePassword(
         @Request() req,
-        @Body() body: { currentPassword?: string; newPassword?: string }
+        @Body() body: ChangePasswordDto
     ) {
         return this.userService.changePassword(req.user.id, body.currentPassword || '', body.newPassword || '');
     }

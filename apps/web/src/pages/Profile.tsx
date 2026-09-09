@@ -15,8 +15,9 @@ import {
     Edit, Check, X, Camera, Globe, Shield,
     BarChart3, Target, MessageSquare, UserPlus,
     Star, Search, Plus, Wallet, DollarSign,
-    ArrowUpRight, ArrowDownRight, Layers, Activity, Loader2, Lock,
+    ArrowUpRight, ArrowDownRight, Layers, Activity, Loader2, Lock, Flag
 } from 'lucide-react';
+import ReportModal from '@/components/ReportModal';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -814,6 +815,7 @@ export default function Profile() {
     const [searchResults, setSearchResults] = useState<{ symbol: string; name: string }[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [showReportModal, setShowReportModal] = useState(false);
 
     const isOwnProfile = !!(currentUser?.username === username || (!username && currentUser));
 
@@ -1335,10 +1337,27 @@ export default function Profile() {
                                             ? <><Check className="w-3.5 h-3.5" /> Siguiendo</>
                                             : <><UserPlus className="w-3.5 h-3.5" /> Seguir</>}
                                 </button>
+                                <button
+                                    onClick={() => setShowReportModal(true)}
+                                    className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all"
+                                    style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
+                                    title="Reportar usuario"
+                                >
+                                    <Flag className="w-4 h-4 text-orange-500" />
+                                </button>
                             </>
                         )}
                     </div>
                 </div>
+
+                {showReportModal && profile && (
+                    <ReportModal
+                        isOpen={true}
+                        targetId={profile.id}
+                        targetType="USER"
+                        onClose={() => setShowReportModal(false)}
+                    />
+                )}
 
                 {/* ── PROFILE INFO ──────────────────────────────── */}
                 <div className="px-6 mt-4">

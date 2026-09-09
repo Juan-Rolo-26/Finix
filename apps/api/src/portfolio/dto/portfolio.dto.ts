@@ -170,3 +170,21 @@ export class CreateTransactionDto {
     @IsBoolean()
     updateCash?: boolean;
 }
+
+export class CreateWatchlistDto {
+    @IsString()
+    name: string;
+
+    @IsString()
+    tickers: string;
+}
+
+export class UpdateWatchlistDto {
+    @IsOptional()
+    @IsString()
+    name?: string;
+
+    @IsOptional()
+    @IsString()
+    tickers?: string;
+}

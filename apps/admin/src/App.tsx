@@ -7,6 +7,8 @@ import AdminLayout from './layouts/AdminLayout';
 import PostsList from './pages/PostsList';
 import ReportsList from './pages/ReportsList';
 import AuditLogs from './pages/AuditLogs';
+import NewsManagement from './pages/NewsManagement';
+import VerificationsManagement from './pages/VerificationsManagement';
 import { adminFetch } from './lib/api';
 
 const RequireAdminAuth = ({ children }: { children: JSX.Element }) => {
@@ -58,6 +60,8 @@ export default function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/users" element={<UsersList />} />
                 <Route path="/posts" element={<PostsList />} />
+                <Route path="/news" element={<NewsManagement />} />
+                <Route path="/verifications" element={<VerificationsManagement />} />
                 <Route path="/reports" element={<ReportsList />} />
                 <Route path="/audit-logs" element={<AuditLogs />} />
             </Route>

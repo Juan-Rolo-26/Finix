@@ -5,6 +5,7 @@ import * as bodyParser from 'body-parser';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import { isAllowedOrigin } from './config/allowed-origins';
+import helmet from 'helmet';
 
 const logger = new Logger('Bootstrap');
 
@@ -24,6 +25,7 @@ async function bootstrap() {
     app.use(bodyParser.json({ limit: '2mb' }));
     app.use(bodyParser.urlencoded({ extended: true }));
     app.use(cookieParser());
+    app.use(helmet());
 
     // ── Validation ────────────────────────────────────────────────────────────
     app.useGlobalPipes(new ValidationPipe({

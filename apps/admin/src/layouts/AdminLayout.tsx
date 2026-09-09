@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Shield, LayoutDashboard, Users, FileText, AlertTriangle, LogOut, Menu, ScrollText } from 'lucide-react';
+import { Shield, LayoutDashboard, Users, FileText, AlertTriangle, LogOut, Menu, ScrollText, Newspaper, BadgeCheck } from 'lucide-react';
 import { adminFetch } from '../lib/api';
 
 export default function AdminLayout() {
@@ -16,6 +16,8 @@ export default function AdminLayout() {
         { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
         { name: 'Usuarios', path: '/users', icon: Users },
         { name: 'Publicaciones', path: '/posts', icon: FileText },
+        { name: 'Noticias', path: '/news', icon: Newspaper },
+        { name: 'Verificaciones', path: '/verifications', icon: BadgeCheck },
         { name: 'Reportes', path: '/reports', icon: AlertTriangle },
         { name: 'Auditoría', path: '/audit-logs', icon: ScrollText },
     ];

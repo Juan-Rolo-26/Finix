@@ -11,6 +11,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { EventsGateway } from '../events.gateway';
 import { MessagesService } from './messages.service';
+import { SendMessageDto, CreateConversationDto } from './dto/messages.dto';
 
 @Controller('messages')
 @UseGuards(JwtAuthGuard)
@@ -30,7 +31,7 @@ export class MessagesController {
     @Post('conversations')
     async createOrGetConversation(
         @Request() req: any,
-        @Body() body: { userId?: string; userIds?: string[]; title?: string; description?: string },
+        @Body() body: CreateConversationDto,
     ) {
         const conversation = await this.messagesService.createConversation(req.user.id, body);
 
@@ -58,15 +59,7 @@ export class MessagesController {
     async sendMessage(
         @Param('id') id: string,
         @Request() req: any,
-        @Body() body: {
-            content?: string;
-            attachment?: {
-                type: 'image' | 'post' | 'chart' | 'story';
-                url?: string;
-                postId?: string;
-                meta?: Record<string, any>;
-            } | null;
-        },
+        @Body() body: SendMessageDto,
     ) {
         const message = await this.messagesService.sendMessage(req.user.id, id, body);
 
