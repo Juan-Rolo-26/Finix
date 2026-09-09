@@ -3,7 +3,17 @@ const withApiPrefix = (path: string) => {
         return path;
     }
 
-    const baseUrl = import.meta.env.VITE_ADMIN_API_PROXY_TARGET || '';
+    let baseUrl = import.meta.env.VITE_ADMIN_API_PROXY_TARGET || '';
+
+    // Auto-detección para producción si el .env no fue configurado en el VPS
+    if (!baseUrl && typeof window !== 'undefined' && window.location.hostname === 'admin.finixarg.com') {
+        baseUrl = 'https://finixarg.com/api';
+    }
+    // Si estamos en localhost y no hay variable, usamos el proxy de Vite
+    else if (!baseUrl && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        baseUrl = 'http://localhost:3001/api';
+    }
+
     let normalizedPath = path.startsWith('/') ? path : `/${path}`;
 
     if (!baseUrl) {
