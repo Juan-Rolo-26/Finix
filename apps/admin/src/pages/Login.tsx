@@ -11,8 +11,6 @@ export default function Login() {
     const [code, setCode] = useState('');
     const [step, setStep] = useState<LoginStep>('credentials');
     const [preAuthToken, setPreAuthToken] = useState('');
-    const [setupSecret, setSetupSecret] = useState('');
-    const [otpauthUrl, setOtpauthUrl] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -35,8 +33,6 @@ export default function Login() {
 
             if (data.step === 'SETUP_2FA') {
                 setPreAuthToken(data.token);
-                setSetupSecret(data.secret || '');
-                setOtpauthUrl(data.otpauthUrl || '');
                 setStep('setup_2fa');
                 return;
             }
@@ -118,13 +114,13 @@ export default function Login() {
     const renderTwoFactorStep = () => (
         <>
             {step === 'setup_2fa' && (
-                <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
-                    <p>Configura Google Authenticator (o app TOTP compatible) con este secreto:</p>
-                    <p className="font-mono break-all text-amber-100">{setupSecret}</p>
-                    {otpauthUrl && (
-                        <p className="font-mono break-all text-[10px] text-amber-300">{otpauthUrl}</p>
-                    )}
-                    <p>Luego ingresa el código de 6 dígitos para activar 2FA.</p>
+                <div className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[13px] text-emerald-200 text-center mb-4">
+                    <p>¡Hola! Hemos enviado un código de 6 dígitos a tu correo electrónico para verificar tu identidad.</p>
+                </div>
+            )}
+            {step === 'verify_2fa' && (
+                <div className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[13px] text-emerald-200 text-center mb-4">
+                    <p>Por favor ingresa el código de seguridad que enviamos a tu bandeja de correo.</p>
                 </div>
             )}
 

@@ -22,6 +22,7 @@ import {
 } from 'crypto';
 import { AdminLoginDto, AdminVerifyTwoFactorDto } from './dto/admin-auth.dto';
 import { AdminAuditService } from './admin-audit.service';
+import { MailService } from '../mail/mail.service';
 
 interface RequestMeta {
     ip: string;
@@ -59,6 +60,7 @@ export class AdminAuthService {
         private readonly prisma: PrismaService,
         private readonly jwtService: JwtService,
         private readonly adminAuditService: AdminAuditService,
+        private readonly mailService: MailService,
     ) {
         if (!process.env.JWT_SECRET) {
             throw new InternalServerErrorException('JWT_SECRET is required for admin security flow');
@@ -145,49 +147,21 @@ export class AdminAuthService {
         await this.clearFailedUserAttempts(user.id);
         this.clearIpAttempts(meta.ip, email);
 
-        if (!user.adminTwoFactorEnabled || !user.adminTotpSecret) {
-            const issuer = process.env.ADMIN_TOTP_ISSUER || 'Finix Admin';
-            const generated = speakeasy.generateSecret({
-                name: user.email,
-                issuer,
-                length: 20,
-            });
-            const secret = generated.base32;
-            const encryptedSecret = this.encryptSecret(secret);
-            const expires = new Date(Date.now() + 10 * 60 * 1000);
+        // Instead of TOTP/Google Auth, we universally send an Email Code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const encryptedSecret = this.encryptSecret(code);
+        const expires = new Date(Date.now() + 10 * 60 * 1000);
 
-            await this.prisma.user.update({
-                where: { id: user.id },
-                data: {
-                    adminTotpTempSecret: encryptedSecret,
-                    adminTotpTempExpires: expires,
-                },
-            });
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                adminTotpTempSecret: encryptedSecret,
+                adminTotpTempExpires: expires,
+            },
+        });
 
-            const setupToken = await this.jwtService.signAsync(
-                {
-                    sub: user.id,
-                    type: 'admin_pre_auth',
-                    purpose: 'setup_2fa',
-                },
-                { expiresIn: this.setupTokenTtl },
-            );
-
-            await this.adminAuditService.logDirect({
-                actorId: user.id,
-                action: 'AUTH_2FA_SETUP_CHALLENGE_ISSUED',
-                targetId: user.id,
-                ipAddress: meta.ip,
-                userAgent: meta.userAgent,
-            });
-
-            return {
-                step: 'SETUP_2FA' as const,
-                token: setupToken,
-                secret,
-                otpauthUrl: generated.otpauth_url || '',
-            };
-        }
+        // Send email
+        await this.mailService.sendAdmin2faCode(user.email, code);
 
         const preAuthToken = await this.jwtService.signAsync(
             {
@@ -236,10 +210,14 @@ export class AdminAuthService {
 
         this.assertRoleAndOwner(user);
 
-        if (preAuthPayload.purpose === 'setup_2fa') {
-            await this.completeTwoFactorSetup(user, code);
-        } else {
-            await this.assertValidTwoFactorCode(user, code);
+        // Verify email code
+        if (!user.adminTotpTempSecret || !user.adminTotpTempExpires || user.adminTotpTempExpires < new Date()) {
+            throw new UnauthorizedException('Código de verificación expirado, vuelve a iniciar sesión');
+        }
+
+        const validCode = this.decryptSecret(user.adminTotpTempSecret);
+        if (validCode !== code) {
+            throw new UnauthorizedException('Código 2FA inválido');
         }
 
         await this.prisma.user.update({
@@ -248,6 +226,9 @@ export class AdminAuthService {
                 lastLogin: new Date(),
                 adminFailedLoginAttempts: 0,
                 adminLockedUntil: null,
+                adminTotpTempSecret: null,
+                adminTotpTempExpires: null,
+                adminTwoFactorEnabled: true,
             },
         });
 
@@ -382,49 +363,7 @@ export class AdminAuthService {
         return user;
     }
 
-    private async completeTwoFactorSetup(user: User, code: string) {
-        if (!user.adminTotpTempSecret || !user.adminTotpTempExpires || user.adminTotpTempExpires < new Date()) {
-            throw new UnauthorizedException('Setup 2FA expirado, vuelve a iniciar sesión');
-        }
 
-        const secret = this.decryptSecret(user.adminTotpTempSecret);
-        const isValidCode = speakeasy.totp.verify({
-            secret,
-            encoding: 'base32',
-            token: code,
-            window: 1,
-        });
-        if (!isValidCode) {
-            throw new UnauthorizedException('Código 2FA inválido');
-        }
-
-        await this.prisma.user.update({
-            where: { id: user.id },
-            data: {
-                adminTwoFactorEnabled: true,
-                adminTotpSecret: this.encryptSecret(secret),
-                adminTotpTempSecret: null,
-                adminTotpTempExpires: null,
-            },
-        });
-    }
-
-    private async assertValidTwoFactorCode(user: User, code: string) {
-        if (!user.adminTwoFactorEnabled || !user.adminTotpSecret) {
-            throw new UnauthorizedException('2FA no configurado');
-        }
-
-        const secret = this.decryptSecret(user.adminTotpSecret);
-        const isValidCode = speakeasy.totp.verify({
-            secret,
-            encoding: 'base32',
-            token: code,
-            window: 1,
-        });
-        if (!isValidCode) {
-            throw new UnauthorizedException('Código 2FA inválido');
-        }
-    }
 
     private async createSessionTokens(user: User, meta: RequestMeta): Promise<SessionTokens> {
         const sessionId = randomUUID();

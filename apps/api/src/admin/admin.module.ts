@@ -8,11 +8,14 @@ import { AdminPermissionsGuard } from './permissions.guard';
 import { AdminAuditService } from './admin-audit.service';
 import { AdminManagementService } from './admin-management.service';
 
+import { MailModule } from '../mail/mail.module';
+
 @Module({
     imports: [
         JwtModule.register({
             secret: process.env.JWT_SECRET || 'secretKey',
         }),
+        MailModule,
     ],
     controllers: [AdminController, AdminAuthController],
     providers: [AdminGuard, AdminPermissionsGuard, AdminAuditService, AdminAuthService, AdminManagementService],

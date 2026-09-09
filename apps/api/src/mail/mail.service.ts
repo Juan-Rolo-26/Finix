@@ -176,6 +176,19 @@ export class MailService {
         });
     }
 
+    async sendAdmin2faCode(email: string, code: string) {
+        return this.sendCodeEmail({
+            email,
+            code,
+            subject: 'Tu código de acceso seguro al Panel Admin de Finix',
+            title: 'Acceso Admin (2FA)',
+            description: 'Se ha solicitado acceso al panel de administración de Finix. Este es tu código de verificación:',
+            footer: 'Si no solicitaste este acceso, por favor reportalo de inmediato. El código expira en 10 minutos.',
+            ctaLabel: 'Abrir Admin Finix',
+            ctaUrl: 'https://admin.finixarg.com',
+        });
+    }
+
     async sendPasswordResetCode(email: string, code: string) {
         const resetUrl = this.buildAppLink('/reset-password', { email });
         return this.sendCodeEmail({
