@@ -9,6 +9,7 @@ import { AdminAuditService } from './admin-audit.service';
 import { AdminManagementService } from './admin-management.service';
 
 import { MailModule } from '../mail/mail.module';
+import { NewsModule } from '../news/news.module';
 
 @Module({
     imports: [
@@ -16,6 +17,7 @@ import { MailModule } from '../mail/mail.module';
             secret: process.env.JWT_SECRET || 'secretKey',
         }),
         MailModule,
+        NewsModule,
     ],
     controllers: [AdminController, AdminAuthController],
     providers: [AdminGuard, AdminPermissionsGuard, AdminAuditService, AdminAuthService, AdminManagementService],

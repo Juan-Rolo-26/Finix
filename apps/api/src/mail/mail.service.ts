@@ -79,7 +79,7 @@ export class MailService {
         `;
     }
 
-    private async sendEmail(params: {
+    async sendEmail(params: {
         to: string;
         subject: string;
         text: string;

@@ -26,10 +26,10 @@ export class NewsService {
         console.log('[NewsService] Initialized');
         this.initializeCategories();
 
-        // Optimize: Trigger scraping immediately on boot so UI is populated
-        setTimeout(() => {
-            this.fetchAndStoreNews().catch(console.error);
-        }, 3000);
+        // Commented out optimize boot scraping to avoid filling up news automatically
+        // setTimeout(() => {
+        //     this.fetchAndStoreNews().catch(console.error);
+        // }, 3000);
     }
 
     /**
@@ -271,9 +271,8 @@ export class NewsService {
     }
 
     /**
-     * Fetch and store news (called by cron or manually)
+     * Fetch and store news (disabled automatic cron per user request)
      */
-    @Cron(CronExpression.EVERY_10_MINUTES)
     async fetchAndStoreNews() {
         console.log('[NewsService] Starting news fetch...');
 
@@ -384,6 +383,68 @@ export class NewsService {
             throw error;
         }
     }
+
+    /**
+     * Parse and add manual news from URL (Admin)
+     */
+    async addManualNews(url: string) {
+        // Scrape page content
+        const scraped = await this.newsFetcher.scrapeWebsitePage(url);
+        if (!scraped.title || !scraped.text) {
+            throw new Error('No se pudo extraer información suficiente de esa URL.');
+        }
+
+        const urlHash = crypto.createHash('md5').update(url).digest('hex');
+
+        let titleEs = scraped.title;
+        let summaryEs = scraped.text.substring(0, 300) + '...';
+        let contentEs = scraped.text;
+        let wasTranslated = false;
+
+        // Simplify categorization for admin insertion
+        const analysis = this.sentimentAnalyzer.analyzeArticle(titleEs, contentEs, summaryEs);
+        const category = await this.categorizeNews(titleEs, summaryEs);
+
+        // Find or create FINIX_ADMIN source
+        const source = await this.getOrCreateSource('Finix Admin');
+
+        const news = await this.prisma.news.upsert({
+            where: { url },
+            update: {},
+            create: {
+                title: scraped.title,
+                titleEs,
+                content: scraped.text,
+                contentEs,
+                summary: summaryEs,
+                summaryEs,
+                url: url,
+                urlHash,
+                imageUrl: scraped.image || null,
+                language: 'es',
+                wasTranslated,
+                categoryId: category?.id,
+                sourceId: source.id,
+                author: 'Finix Admin',
+                sentiment: analysis.sentiment,
+                sentimentScore: analysis.sentimentScore,
+                impactLevel: analysis.impactLevel,
+                tickers: analysis.tickers.join(','),
+                publishedAt: new Date(),
+            },
+        });
+
+        // Invalidate cache
+        this.queryCache.clear();
+        return news;
+    }
+
+    async deleteNews(id: string) {
+        await this.prisma.news.delete({ where: { id } });
+        this.queryCache.clear();
+        return { success: true };
+    }
+
 
     /**
      * Categorize news based on content

@@ -27,6 +27,8 @@ import { RequireAdminPermissions } from './permissions.decorator';
 import { AdminPermission, hasAdminPermission } from './admin-permissions';
 import { AdminAuditService } from './admin-audit.service';
 import { AdminManagementService } from './admin-management.service';
+import { NewsService } from '../news/news.service';
+import { Post } from '@nestjs/common';
 
 type AdminRequest = Request & {
     user?: {
@@ -44,6 +46,7 @@ export class AdminController {
         private readonly prisma: PrismaService,
         private readonly adminAuditService: AdminAuditService,
         private readonly adminManagementService: AdminManagementService,
+        private readonly newsService: NewsService,
     ) { }
 
     @Get('kpis')
@@ -62,6 +65,119 @@ export class AdminController {
                 pendingReports,
             },
         };
+    }
+
+    // ============================================
+    // MANUAL NEWS MANAGEMENT
+    // ============================================
+
+    @Get('news')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async getAdminNews() {
+        // Return only admin added news
+        const news = await this.prisma.news.findMany({
+            where: {
+                source: {
+                    name: 'Finix Admin'
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        return { data: news };
+    }
+
+    @Post('news/scrape')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ) // or separate permission for writing content
+    async addManualNews(@Body() body: { url: string }) {
+        if (!body.url) throw new BadRequestException('Se requiere una URL');
+        try {
+            const result = await this.newsService.addManualNews(body.url);
+            return result;
+        } catch (error: any) {
+            throw new BadRequestException(error.message);
+        }
+    }
+
+    @Delete('news/:id')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async deleteManualNews(@Param('id') id: string) {
+        return this.newsService.deleteNews(id);
+    }
+
+    // ============================================
+    // VERIFICATION REQUESTS
+    // ============================================
+
+    @Get('verifications')
+    @RequireAdminPermissions(AdminPermission.USERS_READ)
+    async getVerifications() {
+        const verifications = await this.prisma.financialAdvisorVerification.findMany({
+            include: { user: { select: { username: true, email: true, id: true } } },
+            orderBy: { createdAt: 'desc' }
+        });
+        return { data: verifications };
+    }
+
+    @Patch('verifications/:id/status')
+    @RequireAdminPermissions(AdminPermission.USERS_MODERATE)
+    async updateVerificationStatus(
+        @Param('id') id: string,
+        @Body() body: { status: string; reason?: string },
+        @Req() req: AdminRequest
+    ) {
+        if (!['approved', 'rejected', 'pending', 'suspended'].includes(body.status)) {
+            throw new BadRequestException('Estado inválido');
+        }
+
+        const adminId = req.user?.id;
+
+        const updated = await this.prisma.$transaction(async (tx) => {
+            const current = await tx.financialAdvisorVerification.findUnique({ where: { id } });
+            if (!current) throw new BadRequestException('Request no encontrado');
+
+            const verification = await tx.financialAdvisorVerification.update({
+                where: { id },
+                data: {
+                    status: body.status,
+                    reviewedById: adminId,
+                    reviewedAt: new Date(),
+                    rejectionReason: body.reason,
+                }
+            });
+
+            // If approved, update user's profile
+            if (body.status === 'approved') {
+                await tx.user.update({
+                    where: { id: verification.userId },
+                    data: {
+                        financialAdvisorVerified: true,
+                    }
+                });
+            } else if (body.status === 'rejected' || body.status === 'suspended') {
+                await tx.user.update({
+                    where: { id: verification.userId },
+                    data: {
+                        financialAdvisorVerified: false,
+                    }
+                });
+            }
+
+            // Create audit log
+            await tx.financialVerificationAuditLog.create({
+                data: {
+                    verificationId: id,
+                    adminId,
+                    action: 'UPDATE_STATUS',
+                    previousStatus: current.status,
+                    newStatus: body.status,
+                    reason: body.reason
+                }
+            });
+
+            return verification;
+        });
+
+        return { data: updated };
     }
 
     @Get('users')
