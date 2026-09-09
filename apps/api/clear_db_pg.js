@@ -7,7 +7,7 @@ async function main() {
 
     const client = new Client({
         connectionString: directUrl,
-        ssl: { rejectUnauthorized: false }
+        ssl: { rejecffftUnauthorized: false }
     });
 
     try {
