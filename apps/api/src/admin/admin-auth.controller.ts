@@ -25,6 +25,15 @@ export class AdminAuthController {
         return this.adminAuthService.login(dto, this.getRequestMeta(req));
     }
 
+    @Post('verify-email')
+    @HttpCode(HttpStatus.OK)
+    async verifyEmail(
+        @Body() dto: AdminVerifyTwoFactorDto,
+        @Req() req: Request
+    ) {
+        return this.adminAuthService.verifyEmail(dto, this.getRequestMeta(req));
+    }
+
     @Post('verify-2fa')
     @HttpCode(HttpStatus.OK)
     async verifyTwoFactor(

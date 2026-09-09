@@ -167,23 +167,72 @@ export class AdminAuthService {
             {
                 sub: user.id,
                 type: 'admin_pre_auth',
-                purpose: 'verify_2fa',
+                purpose: 'verify_email',
             },
             { expiresIn: this.preAuthTokenTtl },
         );
 
         await this.adminAuditService.logDirect({
             actorId: user.id,
-            action: 'AUTH_2FA_CHALLENGE_ISSUED',
+            action: 'AUTH_CHALLENGE_EMAIL_ISSUED',
             targetId: user.id,
             ipAddress: meta.ip,
             userAgent: meta.userAgent,
         });
 
         return {
-            step: 'VERIFY_2FA' as const,
+            step: 'VERIFY_EMAIL' as const,
             token: preAuthToken,
         };
+    }
+
+    async verifyEmail(dto: AdminVerifyTwoFactorDto, meta: RequestMeta) {
+        const code = dto.code.trim();
+        if (!/^\d{6}$/.test(code)) throw new BadRequestException('Código email inválido');
+
+        let payload: any;
+        try { payload = await this.jwtService.verifyAsync(dto.token); }
+        catch { throw new UnauthorizedException('Token de verificación inválido o expirado'); }
+
+        if (payload?.type !== 'admin_pre_auth' || payload?.purpose !== 'verify_email' || !payload?.sub) {
+            throw new UnauthorizedException('Token de verificación inválido');
+        }
+
+        const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+        if (!user) throw new UnauthorizedException('Usuario no encontrado');
+        this.assertRoleAndOwner(user);
+
+        if (!user.adminTotpTempSecret || !user.adminTotpTempExpires || user.adminTotpTempExpires < new Date()) {
+            throw new UnauthorizedException('Código de verificación expirado, vuelve a iniciar sesión');
+        }
+
+        const validCode = this.decryptSecret(user.adminTotpTempSecret);
+        if (validCode !== code) throw new UnauthorizedException('Código de email inválido');
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: { adminTotpTempSecret: null, adminTotpTempExpires: null },
+        });
+
+        if (user.adminTwoFactorEnabled && user.adminTotpSecret) {
+            const token = await this.jwtService.signAsync(
+                { sub: user.id, type: 'admin_pre_auth', purpose: 'verify_totp' },
+                { expiresIn: this.preAuthTokenTtl },
+            );
+            return { step: 'VERIFY_2FA' as const, token };
+        } else {
+            const secret = speakeasy.generateSecret({ name: 'Finix Admin' });
+            const encryptedTotp = this.encryptSecret(secret.base32);
+            await this.prisma.user.update({
+                where: { id: user.id },
+                data: { adminTotpSecret: encryptedTotp },
+            });
+            const token = await this.jwtService.signAsync(
+                { sub: user.id, type: 'admin_pre_auth', purpose: 'verify_totp' },
+                { expiresIn: this.preAuthTokenTtl },
+            );
+            return { step: 'SETUP_2FA' as const, token, secret: secret.base32 };
+        }
     }
 
     async verifyTwoFactor(dto: AdminVerifyTwoFactorDto, meta: RequestMeta) {
@@ -199,26 +248,26 @@ export class AdminAuthService {
             throw new UnauthorizedException('Token de verificación inválido o expirado');
         }
 
-        if (preAuthPayload?.type !== 'admin_pre_auth' || !preAuthPayload?.sub) {
+        if (preAuthPayload?.type !== 'admin_pre_auth' || preAuthPayload?.purpose !== 'verify_totp' || !preAuthPayload?.sub) {
             throw new UnauthorizedException('Token de verificación inválido');
         }
 
         const user = await this.prisma.user.findUnique({ where: { id: preAuthPayload.sub } });
-        if (!user) {
-            throw new UnauthorizedException('Usuario admin no encontrado');
+        if (!user || !user.adminTotpSecret) {
+            throw new UnauthorizedException('Usuario admin no encontrado o sin 2FA configurado');
         }
 
         this.assertRoleAndOwner(user);
 
-        // Verify email code
-        if (!user.adminTotpTempSecret || !user.adminTotpTempExpires || user.adminTotpTempExpires < new Date()) {
-            throw new UnauthorizedException('Código de verificación expirado, vuelve a iniciar sesión');
-        }
+        const decryptedTotpSecret = this.decryptSecret(user.adminTotpSecret);
+        const verified = speakeasy.totp.verify({
+            secret: decryptedTotpSecret,
+            encoding: 'base32',
+            token: code,
+            window: 1
+        });
 
-        const validCode = this.decryptSecret(user.adminTotpTempSecret);
-        if (validCode !== code) {
-            throw new UnauthorizedException('Código 2FA inválido');
-        }
+        if (!verified) throw new UnauthorizedException('Código 2FA incorrecto');
 
         await this.prisma.user.update({
             where: { id: user.id },
@@ -226,8 +275,6 @@ export class AdminAuthService {
                 lastLogin: new Date(),
                 adminFailedLoginAttempts: 0,
                 adminLockedUntil: null,
-                adminTotpTempSecret: null,
-                adminTotpTempExpires: null,
                 adminTwoFactorEnabled: true,
             },
         });
