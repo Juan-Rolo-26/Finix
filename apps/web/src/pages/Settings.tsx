@@ -390,7 +390,7 @@ export default function Settings() {
         clearTimeout(prefsDebounce.current);
         prefsDebounce.current = setTimeout(async () => {
             try {
-                const res = await apiFetch('/me/preferences', {
+                const res = await apiFetch('/users/me/preferences', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ...prefs, [key]: value }),

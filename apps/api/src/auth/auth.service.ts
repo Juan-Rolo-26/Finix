@@ -71,17 +71,32 @@ export class AuthService {
         }
 
         const baseUsername = this.buildFallbackUsername(email);
-        for (let attempt = 0; attempt < 100; attempt += 1) {
-            const candidate = attempt === 0
-                ? baseUsername
-                : this.withUsernameSuffix(baseUsername, attempt);
+        
+        const existingUsers = await this.prisma.user.findMany({
+            where: { username: { startsWith: baseUsername } },
+            select: { username: true, id: true },
+        });
 
-            const usernameExists = await this.prisma.user.findUnique({
-                where: { username: candidate },
-                select: { id: true },
-            });
-            if (!usernameExists || usernameExists.id === currentUserId) {
-                return candidate;
+        // If the base username is not taken, or it belongs to the current user
+        const baseMatch = existingUsers.find(u => u.username === baseUsername);
+        if (!baseMatch || baseMatch.id === currentUserId) {
+            return baseUsername;
+        }
+
+        const takenSuffixes = new Set<number>();
+        for (const user of existingUsers) {
+            if (user.username.startsWith(baseUsername)) {
+                const suffix = user.username.slice(baseUsername.length);
+                const num = parseInt(suffix, 10);
+                if (!isNaN(num)) {
+                    takenSuffixes.add(num);
+                }
+            }
+        }
+
+        for (let attempt = 1; attempt < 1000; attempt++) {
+            if (!takenSuffixes.has(attempt)) {
+                return this.withUsernameSuffix(baseUsername, attempt);
             }
         }
 

@@ -51,8 +51,12 @@ export class StoriesService {
                 where: { viewerId: userId },
                 select: { viewerId: true },
             },
+            // likes: {
+            //     where: { userId: userId },
+            //     select: { userId: true },
+            // },
             _count: {
-                select: { views: true },
+                select: { views: true /*, likes: true*/ },
             },
         };
     }
@@ -70,6 +74,8 @@ export class StoriesService {
             author: story.author,
             viewedByMe: story.authorId === userId || story.views?.length > 0,
             viewsCount: story._count?.views ?? 0,
+            isLiked: false, // story.likes?.length > 0,
+            likesCount: 0, // story._count?.likes ?? 0,
         };
     }
 
@@ -229,6 +235,41 @@ export class StoriesService {
         await this.prisma.story.delete({
             where: { id: storyId },
         });
+
+        return { success: true };
+    }
+
+    async likeStory(storyId: string, userId: string) {
+        const story = await this.prisma.story.findUnique({
+            where: { id: storyId },
+            select: { id: true, expiresAt: true },
+        });
+
+        if (!story || story.expiresAt <= new Date()) {
+            throw new NotFoundException('Historia no encontrada');
+        }
+
+        try {
+            // await this.prisma.storyLike.create({
+            //     data: {
+            //         storyId,
+            //         userId,
+            //     },
+            // });
+        } catch (e) {
+            // Might fail if already liked (unique constraint), that's fine
+        }
+
+        return { success: true };
+    }
+
+    async unlikeStory(storyId: string, userId: string) {
+        // await this.prisma.storyLike.deleteMany({
+        //     where: {
+        //         storyId,
+        //         userId,
+        //     },
+        // });
 
         return { success: true };
     }

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BadgeCheck, ChevronLeft, ChevronRight, Eye, MessageSquare, Trash2, X } from 'lucide-react';
+import { BadgeCheck, ChevronLeft, ChevronRight, Eye, Heart, Send, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -96,6 +96,9 @@ export function StoryViewerModal({
     const [storyIndex, setStoryIndex] = useState(0);
     const [progress, setProgress] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [replyText, setReplyText] = useState('');
+    const [isLiking, setIsLiking] = useState(false);
+    const [isSendingReply, setIsSendingReply] = useState(false);
 
     const open = activeGroupIndex !== null && groups.length > 0;
 
@@ -139,8 +142,6 @@ export function StoryViewerModal({
 
     const currentGroup = open ? groups[groupIndex] : null;
     const currentStory = currentGroup?.stories[storyIndex] ?? null;
-
-    const orderedGroups = useMemo(() => groups, [groups]);
 
     const goToGroup = (nextGroupIndex: number) => {
         if (nextGroupIndex < 0 || nextGroupIndex >= groups.length) return;
@@ -265,6 +266,65 @@ export function StoryViewerModal({
         }
     };
 
+    const handleToggleLike = async () => {
+        if (!currentStory || !currentUserId || isOwnStory || isLiking) return;
+        setIsLiking(true);
+        const method = currentStory.isLiked ? 'DELETE' : 'POST';
+        const newGroups = groups.map(group => {
+            if (group.author.id !== currentStory.authorId) return group;
+            return {
+                ...group,
+                stories: group.stories.map(s => {
+                    if (s.id !== currentStory.id) return s;
+                    return {
+                        ...s,
+                        isLiked: !s.isLiked,
+                        likesCount: s.isLiked ? s.likesCount - 1 : s.likesCount + 1
+                    };
+                })
+            };
+        });
+        onGroupsChange(newGroups);
+        try {
+            await apiFetch(`/stories/${currentStory.id}/like`, { method });
+        } catch (error) {
+            // Revert on error
+            onGroupsChange(groups);
+        } finally {
+            setIsLiking(false);
+        }
+    };
+
+    const handleSendReply = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!replyText.trim() || !currentStory || !currentUserId || isOwnStory || isSendingReply) return;
+        setIsSendingReply(true);
+        try {
+            const convRes = await apiFetch('/messages/conversations', {
+                method: 'POST',
+                body: JSON.stringify({ userId: currentStory.authorId }),
+            });
+            if (!convRes.ok) throw new Error('Error de conversacion');
+            const conv = await convRes.json();
+            
+            const msgRes = await apiFetch(`/messages/conversations/${conv.id}/messages`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    content: `Respuesta a historia:
+
+${replyText.trim()}`,
+                    attachment: buildStoryAttachment(currentStory),
+                }),
+            });
+            if (!msgRes.ok) throw new Error('Error enviando mensaje');
+            setReplyText('');
+        } catch (error) {
+            alert('Error al enviar el mensaje');
+        } finally {
+            setIsSendingReply(false);
+        }
+    };
+
     const handleOpenProfile = () => {
         navigate(`/profile/${currentStory.author.username}`);
     };
@@ -292,7 +352,7 @@ export function StoryViewerModal({
             </button>
 
             <div className="mx-auto flex h-full max-w-7xl items-center justify-center p-3 md:p-6">
-                <div className="grid h-full w-full items-center gap-5 lg:grid-cols-[minmax(0,430px)_320px]">
+                <div className="grid h-full w-full items-center gap-5 place-items-center">
                     <div className="relative mx-auto flex h-full w-full max-w-[430px] flex-col justify-center">
                         <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#09110d] shadow-[0_30px_120px_rgba(0,0,0,0.55)]">
                             <div className="absolute inset-x-0 top-0 z-[60] flex gap-1.5 px-4 pt-4">
@@ -342,16 +402,7 @@ export function StoryViewerModal({
                                 </button>
 
                                 <div className="flex items-center gap-2">
-                                    {currentUserId ? (
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="rounded-full bg-black/35 text-white hover:bg-black/50 hover:text-white"
-                                            onClick={handleShareToChat}
-                                        >
-                                            <MessageSquare className="h-4 w-4" />
-                                        </Button>
-                                    ) : null}
+
 
                                     {isOwnStory ? (
                                         <Button
@@ -431,53 +482,79 @@ export function StoryViewerModal({
                             </div>
                         </div>
 
-                        <div className="mt-4 flex items-center justify-between px-1 text-xs text-white/65">
-                            <span>Toca los lados para avanzar o volver</span>
+                        
+                        <div className="mt-4 flex items-center gap-3 w-full">
                             {isOwnStory ? (
-                                <span className="inline-flex items-center gap-1.5">
-                                    <Eye className="h-3.5 w-3.5" />
-                                    {currentStory.viewsCount} vistas
-                                </span>
-                            ) : null}
-                        </div>
-                    </div>
-
-                    <div className="hidden h-[78vh] overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-4 backdrop-blur lg:flex lg:flex-col">
-                        <div className="mb-3 text-sm font-semibold text-white/80">Historias activas</div>
-                        <div className="space-y-2 overflow-y-auto pr-1">
-                            {orderedGroups.map((group, index) => {
-                                const latestStory: StoryItem | undefined = group.stories[group.stories.length - 1];
-                                const active = index === groupIndex;
-
-                                return (
+                                <div className="flex w-full items-center justify-between px-2 text-xs text-white/65">
+                                    <div className="flex items-center gap-4">
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <Eye className="h-4 w-4" />
+                                            {currentStory.viewsCount} vistas
+                                        </span>
+                                        {currentStory.likesCount > 0 && (
+                                            <span className="inline-flex items-center gap-1.5">
+                                                <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                                                {currentStory.likesCount} me gusta
+                                            </span>
+                                        )}
+                                    </div>
                                     <button
-                                        key={group.author.id}
                                         type="button"
-                                        onClick={() => goToGroup(index)}
-                                        className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-white/10 bg-black/15 hover:border-white/20 hover:bg-white/5'
-                                            }`}
+                                        onClick={handleShareToChat}
+                                        className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-transparent text-white backdrop-blur-sm hover:border-white/40 transition-colors"
+                                        title="Compartir historia"
                                     >
-                                        <div className={`h-12 w-12 overflow-hidden rounded-full border-2 ${group.hasUnseen ? 'border-primary' : 'border-white/20'}`}>
-                                            {group.author.avatarUrl ? (
-                                                <img src={resolveMediaUrl(group.author.avatarUrl)} alt={group.author.username} className="h-full w-full object-cover" />
-                                            ) : (
-                                                <div className="flex h-full w-full items-center justify-center bg-black/30 text-sm font-bold uppercase text-white">
-                                                    {group.author.username[0]}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="truncate text-sm font-semibold text-white">{group.author.username}</div>
-                                            <div className="truncate text-xs text-white/55">
-                                                {latestStory ? timeAgo(latestStory.createdAt) : 'Reciente'}
-                                            </div>
-                                        </div>
-                                        <div className={`h-2.5 w-2.5 rounded-full ${group.hasUnseen ? 'bg-primary' : 'bg-white/15'}`} />
+                                        <Send className="h-4 w-4 transition-transform group-hover:scale-110 group-hover:-translate-y-1 group-hover:translate-x-1" />
                                     </button>
-                                );
-                            })}
+                                </div>
+                            ) : (
+                                currentUserId ? (
+                                    <>
+                                        <form onSubmit={handleSendReply} className="flex-1 relative">
+                                            <input
+                                                type="text"
+                                                value={replyText}
+                                                onChange={(e) => setReplyText(e.target.value)}
+                                                onKeyDown={(e) => e.stopPropagation()}
+                                                placeholder={`Responder a ${currentStory.author.username}...`}
+                                                className="w-full rounded-full border border-white/20 bg-transparent px-4 py-2.5 pr-10 text-sm text-white placeholder-white/60 focus:border-white/50 focus:outline-none focus:ring-1 focus:ring-white/50 backdrop-blur-sm"
+                                            />
+                                            {replyText.trim() && (
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSendingReply}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-50 transition-colors"
+                                                >
+                                                    <Send className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                        </form>
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleLike}
+                                            disabled={isLiking}
+                                            className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-transparent text-white backdrop-blur-sm hover:border-white/40 transition-colors"
+                                            title={currentStory.isLiked ? "Ya no me gusta" : "Me gusta"}
+                                        >
+                                            <Heart className={`h-5 w-5 transition-transform group-hover:scale-110 ${currentStory.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleShareToChat}
+                                            className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-transparent text-white backdrop-blur-sm hover:border-white/40 transition-colors"
+                                            title="Compartir historia"
+                                        >
+                                            <Send className="h-5 w-5 transition-transform group-hover:scale-110 group-hover:-translate-y-1 group-hover:translate-x-1" />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="w-full text-center text-xs text-white/50">Iniciá sesión para interactuar</div>
+                                )
+                            )}
                         </div>
                     </div>
+
+                    
                 </div>
             </div>
         </div>,

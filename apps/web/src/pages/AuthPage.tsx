@@ -64,6 +64,7 @@ export default function AuthPage() {
         { label: 'Cómo funciona', to: '/info/how' },
         { label: 'Sobre Finix', to: '/info/about' },
         { label: 'Contacto', to: '/info/contact' },
+        { label: 'Planes', to: '/pro' },
     ];
 
     const legalAndSocialLinks = [
@@ -484,7 +485,9 @@ export default function AuthPage() {
                     </div>
                 </div>
 
-                <footer className="auth-footer border-t border-border/30 px-4 py-6">
+
+
+                <footer className="auth-footer border-t border-border/30 px-4 py-6 relative z-10">
                     <div className="max-w-4xl mx-auto">
                         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4 lg:flex-nowrap lg:items-center lg:gap-x-8">
                             {infoLinks.map(({ label, to }) => (

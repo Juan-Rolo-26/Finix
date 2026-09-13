@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
@@ -12,7 +12,7 @@ import { usePreferencesStore } from '@/stores/preferencesStore';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import {
     X, BarChart2, PenSquare,
-    Upload, Loader2, Trash2, Camera, Search, ChevronDown,
+    Upload, Loader2, Trash2, Camera, Search, ChevronDown, CheckCircle2,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -63,84 +63,153 @@ const INTERVALS = [
 
 // ─── TradingView Embedded Chart ───────────────────────────────────────────────
 
+interface EmbeddedChartHandle {
+    captureImage: () => Promise<Blob | null>;
+    triggerSaveImage: () => void;
+    getWidget: () => any;
+}
+
 interface EmbeddedChartProps {
     symbol: string;
     interval: string;
     theme: 'dark' | 'light';
     onWidgetReady?: (widget: any | null) => void;
+    onSnapshotUrl?: (url: string) => void;
 }
 
-function EmbeddedChart({ symbol, interval, theme, onWidgetReady }: EmbeddedChartProps) {
-    const wrapRef = useRef<HTMLDivElement>(null);
+const EmbeddedChart = forwardRef<EmbeddedChartHandle, EmbeddedChartProps>(
+    function EmbeddedChart({ symbol, interval, theme, onWidgetReady, onSnapshotUrl }, ref) {
+        const wrapRef = useRef<HTMLDivElement>(null);
+        const widgetRef = useRef<any>(null);
 
-    useEffect(() => {
-        if (!wrapRef.current) return;
-        wrapRef.current.innerHTML = '';
+        // Expose captureImage and triggerSaveImage to parent
+        useImperativeHandle(ref, () => ({
+            getWidget: () => widgetRef.current,
+            captureImage: async (): Promise<Blob | null> => {
+                const w = widgetRef.current;
+                if (!w) return null;
+                try {
+                    if (typeof w.imageCanvas === 'function') {
+                        const canvas = await Promise.race([
+                            w.imageCanvas(),
+                            new Promise<never>((_, reject) =>
+                                setTimeout(() => reject(new Error('Timeout al capturar gráfico')), 4000)
+                            ),
+                        ]);
+                        if (canvas && typeof canvas.toBlob === 'function') {
+                            return new Promise<Blob | null>((resolve) =>
+                                canvas.toBlob((b: Blob | null) => resolve(b), 'image/png')
+                            );
+                        }
+                    }
+                } catch (err) {
+                    console.warn('TradingView imageCanvas error:', err);
+                }
+                return null;
+            },
+            triggerSaveImage: () => {
+                // Find the TV iframe and click its save-image button
+                const iframe = wrapRef.current?.querySelector('iframe');
+                if (iframe) {
+                    iframe.contentWindow?.postMessage(
+                        JSON.stringify({ name: 'tv-widget-save-image' }),
+                        'https://www.tradingview.com'
+                    );
+                }
+            },
+        }));
 
-        const containerId = `tv_post_${Math.random().toString(36).slice(2, 9)}`;
-        const div = document.createElement('div');
-        div.id = containerId;
-        wrapRef.current.appendChild(div);
+        // Listen for TradingView snapshot URLs from the widget popup
+        useEffect(() => {
+            const handler = (e: MessageEvent) => {
+                if (!e.origin.includes('tradingview.com')) return;
+                try {
+                    const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+                    // TV sends something like { name: 'widgetReady' } etc.
+                    // When save_image is triggered the resulting URL appears in the window as a download
+                    // We check if it's a snapshot URL message
+                    if (data?.name === 'saveImage' || data?.snapshotUrl || data?.url?.includes('tradingview.com/x/')) {
+                        const url = data.snapshotUrl || data.url;
+                        if (url) onSnapshotUrl?.(url);
+                    }
+                } catch { /* not JSON */ }
+            };
+            window.addEventListener('message', handler);
+            return () => window.removeEventListener('message', handler);
+        }, [onSnapshotUrl]);
 
-        const mount = () => {
-            const TV = (window as any).TradingView;
-            if (!TV) return;
-            const widget = new TV.widget({
-                container_id: containerId,
-                width: '100%',
-                height: 480,
-                symbol,
-                interval,
-                timezone: 'America/Argentina/Buenos_Aires',
-                theme,
-                style: '1',
-                locale: 'es',
-                toolbar_bg: theme === 'dark' ? '#0a0a0a' : '#ffffff',
-                enable_publishing: false,
-                hide_side_toolbar: false,   // barra de herramientas de dibujo
-                allow_symbol_change: true,
-                save_image: true,            // 📷 botón de captura nativo
-                support_host: 'https://www.tradingview.com',
-            });
+        useEffect(() => {
+            if (!wrapRef.current) return;
+            wrapRef.current.innerHTML = '';
 
-            if (typeof widget?.ready === 'function') {
-                widget.ready(() => onWidgetReady?.(widget));
+            const containerId = `tv_post_${Math.random().toString(36).slice(2, 9)}`;
+            const div = document.createElement('div');
+            div.id = containerId;
+            wrapRef.current.appendChild(div);
+
+            const mount = () => {
+                const TV = (window as any).TradingView;
+                if (!TV) return;
+                const widget = new TV.widget({
+                    container_id: containerId,
+                    width: '100%',
+                    height: 480,
+                    symbol,
+                    interval,
+                    timezone: 'America/Argentina/Buenos_Aires',
+                    theme,
+                    style: '1',
+                    locale: 'es',
+                    toolbar_bg: theme === 'dark' ? '#0a0a0a' : '#ffffff',
+                    enable_publishing: false,
+                    hide_side_toolbar: false,
+                    allow_symbol_change: true,
+                    save_image: true,
+                    support_host: 'https://www.tradingview.com',
+                });
+
+                widgetRef.current = widget;
+
+                if (typeof widget?.ready === 'function') {
+                    widget.ready(() => onWidgetReady?.(widget));
+                } else {
+                    onWidgetReady?.(widget);
+                }
+            };
+
+            if ((window as any).TradingView) {
+                mount();
             } else {
-                onWidgetReady?.(widget);
+                const existing = document.getElementById('tv-script');
+                if (!existing) {
+                    const script = document.createElement('script');
+                    script.id = 'tv-script';
+                    script.src = 'https://s3.tradingview.com/tv.js';
+                    script.async = true;
+                    script.onload = mount;
+                    document.head.appendChild(script);
+                } else {
+                    const poll = setInterval(() => {
+                        if ((window as any).TradingView) { clearInterval(poll); mount(); }
+                    }, 100);
+                    return () => clearInterval(poll);
+                }
             }
-        };
 
-        if ((window as any).TradingView) {
-            mount();
-        } else {
-            const existing = document.getElementById('tv-script');
-            if (!existing) {
-                const script = document.createElement('script');
-                script.id = 'tv-script';
-                script.src = 'https://s3.tradingview.com/tv.js';
-                script.async = true;
-                script.onload = mount;
-                document.head.appendChild(script);
-            } else {
-                const poll = setInterval(() => {
-                    if ((window as any).TradingView) { clearInterval(poll); mount(); }
-                }, 100);
-                return () => clearInterval(poll);
-            }
-        }
+            return () => {
+                widgetRef.current = null;
+                onWidgetReady?.(null);
+                if (wrapRef.current) wrapRef.current.innerHTML = '';
+            };
+        }, [symbol, interval, theme, onWidgetReady]);
 
-        return () => {
-            onWidgetReady?.(null);
-            if (wrapRef.current) wrapRef.current.innerHTML = '';
-        };
-    }, [symbol, interval, theme, onWidgetReady]);
-
-    return (
-        <div className="w-full rounded-xl overflow-hidden" style={{ height: 480 }}>
-            <div ref={wrapRef} className="w-full h-full" />
-        </div>
-    );
-}
+        return (
+            <div className="w-full rounded-xl overflow-hidden" style={{ height: 480 }}>
+                <div ref={wrapRef} className="w-full h-full" />
+            </div>
+        );
+    }
+);
 
 // ─── Upload helper ────────────────────────────────────────────────────────────
 
@@ -175,10 +244,12 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
     const [tickers, setTickers] = useState('');
     const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
     const [isPublishing, setIsPublishing] = useState(false);
+    const [isCapturing, setIsCapturing] = useState(false);
     const [error, setError] = useState('');
     const [isDragging, setIsDragging] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const chartRef = useRef<EmbeddedChartHandle>(null);
 
     const maxFiles = 10;
     const acceptedTypes = ALLOWED_IMAGE.join(',');
@@ -210,6 +281,89 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
         }
     }, [mediaFiles.length, maxFiles]);
 
+    // ── Paste handler (Ctrl+V / Cmd+V) ─────────────────────────────────────────
+    useEffect(() => {
+        const handlePaste = async (e: ClipboardEvent) => {
+            const items = e.clipboardData?.items;
+            if (items) {
+                const imageFiles: File[] = [];
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (item.type.startsWith('image/')) {
+                        const file = item.getAsFile();
+                        if (file) {
+                            const namedFile = new File([file], `chart_clipboard_${Date.now()}.png`, { type: file.type || 'image/png' });
+                            imageFiles.push(namedFile);
+                        }
+                    }
+                }
+                if (imageFiles.length > 0) {
+                    e.preventDefault();
+                    addFiles(imageFiles);
+                    return;
+                }
+            }
+
+            const text = e.clipboardData?.getData('text');
+            if (text && text.includes('tradingview.com/x/')) {
+                const match = text.match(/https?:\/\/(?:www\.)?tradingview\.com\/x\/[a-zA-Z0-9_-]+\/?/);
+                if (match) {
+                    const tvSnapshotUrl = match[0].endsWith('/') ? `${match[0].slice(0, -1)}.png` : `${match[0]}.png`;
+                    try {
+                        const resp = await fetch(tvSnapshotUrl);
+                        if (resp.ok) {
+                            const blob = await resp.blob();
+                            const file = new File([blob], `chart_tv_${Date.now()}.png`, { type: 'image/png' });
+                            addFiles([file]);
+                        }
+                    } catch {
+                        // ignore
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('paste', handlePaste);
+        return () => window.removeEventListener('paste', handlePaste);
+    }, [addFiles]);
+
+    // ── Snapshot handler ──────────────────────────────────────────────────────
+    const handleSnapshotUrl = useCallback(async (url: string) => {
+        if (!url) return;
+        try {
+            const pngUrl = url.includes('/x/') && !url.endsWith('.png') ? `${url.replace(/\/$/, '')}.png` : url;
+            const res = await fetch(pngUrl);
+            if (res.ok) {
+                const blob = await res.blob();
+                const file = new File([blob], `chart_${assetSymbol}_${Date.now()}.png`, { type: 'image/png' });
+                addFiles([file]);
+            }
+        } catch {
+            // ignore
+        }
+    }, [assetSymbol, addFiles]);
+
+    // ── Chart capture button action ───────────────────────────────────────────
+    const handleCaptureChart = async () => {
+        setIsCapturing(true);
+        setError('');
+        try {
+            const blob = await chartRef.current?.captureImage();
+            if (blob) {
+                const file = new File([blob], `chart_${assetSymbol}_${Date.now()}.png`, { type: 'image/png' });
+                await addFiles([file]);
+            } else {
+                chartRef.current?.triggerSaveImage();
+                setError('💡 Hacé clic en la cámara 📷 de TradingView (arriba a la derecha del gráfico) → "Copiar imagen" y presioná Ctrl+V para pegar tus dibujos.');
+            }
+        } catch (err: any) {
+            chartRef.current?.triggerSaveImage();
+            setError('💡 Hacé clic en la cámara 📷 de TradingView → "Copiar imagen" y presioná Ctrl+V para pegar tus dibujos.');
+        } finally {
+            setIsCapturing(false);
+        }
+    };
+
     const removeMedia = (idx: number) => setMediaFiles((prev) => {
         const copy = [...prev]; URL.revokeObjectURL(copy[idx].preview); copy.splice(idx, 1); return copy;
     });
@@ -226,10 +380,59 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
     // ── Publish ───────────────────────────────────────────────────────────────
 
     const handlePublish = async () => {
-        if (type === 'chart' && !content.trim() && mediaFiles.length === 0) {
-            setError('Escribí algo o subí una imagen para acompañar tu análisis.');
-            return;
+        setError('');
+
+        // For charts: if no media uploaded yet, attempt automatic capture!
+        if (type === 'chart' && mediaFiles.length === 0) {
+            setIsCapturing(true);
+            let capturedBlob: Blob | null = null;
+            try {
+                const res = await chartRef.current?.captureImage();
+                capturedBlob = res || null;
+            } catch (err) {
+                console.warn('Auto-capture error:', err);
+            }
+            setIsCapturing(false);
+
+            if (capturedBlob) {
+                try {
+                    setIsPublishing(true);
+                    const file = new File([capturedBlob], `chart_${assetSymbol}_${Date.now()}.png`, { type: 'image/png' });
+                    const url = await uploadFile(file);
+
+                    const tickerList = tickers.split(/[\s,]+/).map((t) => t.trim().toUpperCase()).filter(Boolean);
+                    let finalContent = content.trim();
+                    if (!finalContent) finalContent = `Análisis de ${assetSymbol}`;
+
+                    const res = await apiFetch('/posts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            content: finalContent,
+                            type,
+                            assetSymbol,
+                            analysisType,
+                            riskLevel,
+                            tickers: tickerList.length ? tickerList : [assetSymbol],
+                            mediaUrls: [{ url, mediaType: 'image' }],
+                        }),
+                    });
+
+                    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d?.message || 'Error al publicar'); }
+                    const newPost = await res.json();
+                    onCreated(newPost);
+                    return;
+                } catch (e: any) {
+                    setError(e.message || 'Error al publicar');
+                    setIsPublishing(false);
+                    return;
+                }
+            } else {
+                setError('⚠️ Para que tus dibujos y anotaciones aparezcan en la publicación, capturá el gráfico con el botón "📸 Capturar gráfico con mis anotaciones" o usá la cámara de TradingView para copiar y pegar con Ctrl+V.');
+                return;
+            }
         }
+
         if (type !== 'chart' && !content.trim() && mediaFiles.length === 0) {
             setError('Escribí algo o subí una imagen.'); return;
         }
@@ -359,26 +562,60 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
                                 {/* Embedded chart */}
                                 <div className="rounded-xl overflow-hidden border border-border/40">
-                                    <EmbeddedChart symbol={assetSymbol} interval={tvInterval} theme={tvTheme} />
+                                    <EmbeddedChart
+                                        ref={chartRef}
+                                        symbol={assetSymbol}
+                                        interval={tvInterval}
+                                        theme={tvTheme}
+                                        onSnapshotUrl={handleSnapshotUrl}
+                                    />
                                 </div>
 
-                                <motion.div key="auto-info" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-                                    className="rounded-xl border border-primary/40 bg-primary/8 p-4 space-y-3"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <motion.div
-                                            className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0"
-                                        >
-                                            <Camera className="w-5 h-5 text-primary" />
-                                        </motion.div>
-                                        <div>
-                                            <p className="font-bold text-sm text-primary">Capturá y compartí tu gráfico</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">
-                                                Hacé clic en el botón de la cámara arriba en el gráfico, guardá la imagen y adjuntala acá abajo de forma manual.
-                                            </p>
+                                {/* Chart capture action & feedback */}
+                                <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0 text-primary">
+                                                {mediaFiles.length > 0 ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Camera className="w-5 h-5" />}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-sm text-foreground">
+                                                    {mediaFiles.length > 0 ? '✓ Gráfico con tus anotaciones capturado' : 'Guardar gráfico con tus anotaciones'}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                    {mediaFiles.length > 0
+                                                        ? `${mediaFiles.length} imagen lista para publicar en el feed`
+                                                        : 'Presioná el botón para guardar tus dibujos y líneas'}
+                                                </p>
+                                            </div>
                                         </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={handleCaptureChart}
+                                            disabled={isCapturing || isPublishing}
+                                            className="font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 shrink-0"
+                                        >
+                                            {isCapturing ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                                                    Capturando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Camera className="w-4 h-4 mr-1.5" />
+                                                    {mediaFiles.length > 0 ? 'Volver a capturar' : 'Capturar gráfico ahora'}
+                                                </>
+                                            )}
+                                        </Button>
                                     </div>
-                                </motion.div>
+
+                                    {mediaFiles.length === 0 && (
+                                        <p className="text-[11px] text-muted-foreground border-t border-border/30 pt-2 leading-relaxed">
+                                            💡 <strong>Otras formas:</strong> En el gráfico de arriba hacé clic en la cámara 📷 de TradingView → <strong>"Copiar imagen"</strong> y presioná <strong>Ctrl+V</strong> para pegarla aquí directamente, o descargala y subila abajo.
+                                        </p>
+                                    )}
+                                </div>
 
                                 {/* Analysis metadata */}
                                 <div className="grid gap-3 sm:grid-cols-2">

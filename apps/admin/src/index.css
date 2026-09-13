@@ -6,8 +6,81 @@
 
 @layer base {
 
-    /* ─── DARK MODE (default) ─── */
+    /* ─── LIGHT MODE (default) ─── */
     :root {
+        --background: 0 0% 97%;
+        --foreground: 220 15% 10%;
+
+        --card: 0 0% 100%;
+        --card-foreground: 220 15% 10%;
+
+        --popover: 0 0% 100%;
+        --popover-foreground: 220 15% 10%;
+
+        --primary: 158 80% 32%;
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 210 14% 93%;
+        --secondary-foreground: 220 15% 20%;
+
+        --muted: 210 14% 92%;
+        --muted-foreground: 220 10% 42%;
+
+        --accent: 158 80% 32%;
+        --accent-foreground: 0 0% 100%;
+
+        --success: 142 60% 28%;
+        --success-foreground: 0 0% 100%;
+
+        --danger: 0 72% 50%;
+        --danger-foreground: 0 0% 100%;
+
+        --destructive: 0 72% 50%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 214 18% 86%;
+        --input: 214 18% 86%;
+        --ring: 158 80% 32%;
+
+        --gradient-hero: linear-gradient(135deg, hsl(0 0% 96%) 0%, hsl(0 0% 100%) 50%, hsl(158 80% 32% / 0.08) 100%);
+        --gradient-card: linear-gradient(135deg, hsl(0 0% 100% / 0.95) 0%, hsl(0 0% 98% / 0.8) 100%);
+        --gradient-accent: linear-gradient(90deg, hsl(158 80% 32%) 0%, hsl(158 80% 40%) 100%);
+        --gradient-primary-glow: radial-gradient(circle at center, hsl(158 80% 32% / 0.15) 0%, transparent 70%);
+
+        --shadow-glow: 0 0 60px hsl(158 80% 32% / 0.18);
+        --shadow-card: 0 4px 24px hsl(220 15% 10% / 0.08);
+        --shadow-intense: 0 0 80px hsl(158 80% 32% / 0.22);
+
+        /* Sidebar tokens (light) */
+        --sidebar-bg: 0 0% 100%;
+        --sidebar-border: 214 18% 88%;
+        --sidebar-text: 220 15% 10%;
+        --sidebar-muted: 220 10% 50%;
+        --sidebar-hover-bg: 158 80% 32% / 0.06;
+        --sidebar-hover-border: 158 80% 32% / 0.12;
+        --sidebar-section-label: 158 80% 28% / 0.5;
+        --sidebar-active-bg-from: 158 80% 32% / 0.1;
+        --sidebar-active-bg-to: 158 80% 32% / 0.02;
+        --sidebar-active-border: 158 80% 32% / 0.25;
+        --sidebar-card-bg-from: 158 80% 32% / 0.06;
+        --sidebar-card-bg-to: 158 80% 32% / 0.01;
+        --sidebar-card-border: 158 80% 32% / 0.18;
+        --sidebar-pinned-bg: 158 80% 32% / 0.04;
+        --sidebar-pinned-border: 214 18% 88%;
+        --sidebar-pinned-row-border: 214 18% 90%;
+        --sidebar-online-border: 0 0% 100%;
+        --sidebar-logo-bg-from: 158 80% 32% / 0.12;
+        --sidebar-logo-bg-to: 158 80% 32% / 0.04;
+        --sidebar-logo-border: 158 80% 32% / 0.25;
+        --sidebar-logo-text-from: hsl(220 15% 10%);
+        --sidebar-logo-text-to: hsl(158 80% 30%);
+        --sidebar-logo-subtitle: 158 80% 28% / 0.6;
+        --sidebar-top-glow: radial-gradient(ellipse 80% 60% at 50% -10%, hsl(158 80% 32% / 0.06) 0%, transparent 100%);
+    }
+
+
+    /* ─── DARK MODE ─── */
+    .dark {
         font-size: 16px;
         --background: 0 0% 7%;
         --foreground: 0 0% 98%;
@@ -83,77 +156,6 @@
         --sidebar-top-glow: radial-gradient(ellipse 80% 60% at 50% -10%, hsl(158 100% 45% / 0.07) 0%, transparent 100%);
     }
 
-    /* ─── LIGHT MODE ─── */
-    .light {
-        --background: 0 0% 97%;
-        --foreground: 220 15% 10%;
-
-        --card: 0 0% 100%;
-        --card-foreground: 220 15% 10%;
-
-        --popover: 0 0% 100%;
-        --popover-foreground: 220 15% 10%;
-
-        --primary: 158 80% 32%;
-        --primary-foreground: 0 0% 100%;
-
-        --secondary: 210 14% 93%;
-        --secondary-foreground: 220 15% 20%;
-
-        --muted: 210 14% 92%;
-        --muted-foreground: 220 10% 42%;
-
-        --accent: 158 80% 32%;
-        --accent-foreground: 0 0% 100%;
-
-        --success: 142 60% 28%;
-        --success-foreground: 0 0% 100%;
-
-        --danger: 0 72% 50%;
-        --danger-foreground: 0 0% 100%;
-
-        --destructive: 0 72% 50%;
-        --destructive-foreground: 0 0% 100%;
-
-        --border: 214 18% 86%;
-        --input: 214 18% 86%;
-        --ring: 158 80% 32%;
-
-        --gradient-hero: linear-gradient(135deg, hsl(0 0% 96%) 0%, hsl(0 0% 100%) 50%, hsl(158 80% 32% / 0.08) 100%);
-        --gradient-card: linear-gradient(135deg, hsl(0 0% 100% / 0.95) 0%, hsl(0 0% 98% / 0.8) 100%);
-        --gradient-accent: linear-gradient(90deg, hsl(158 80% 32%) 0%, hsl(158 80% 40%) 100%);
-        --gradient-primary-glow: radial-gradient(circle at center, hsl(158 80% 32% / 0.15) 0%, transparent 70%);
-
-        --shadow-glow: 0 0 60px hsl(158 80% 32% / 0.18);
-        --shadow-card: 0 4px 24px hsl(220 15% 10% / 0.08);
-        --shadow-intense: 0 0 80px hsl(158 80% 32% / 0.22);
-
-        /* Sidebar tokens (light) */
-        --sidebar-bg: 0 0% 100%;
-        --sidebar-border: 214 18% 88%;
-        --sidebar-text: 220 15% 10%;
-        --sidebar-muted: 220 10% 50%;
-        --sidebar-hover-bg: 158 80% 32% / 0.06;
-        --sidebar-hover-border: 158 80% 32% / 0.12;
-        --sidebar-section-label: 158 80% 28% / 0.5;
-        --sidebar-active-bg-from: 158 80% 32% / 0.1;
-        --sidebar-active-bg-to: 158 80% 32% / 0.02;
-        --sidebar-active-border: 158 80% 32% / 0.25;
-        --sidebar-card-bg-from: 158 80% 32% / 0.06;
-        --sidebar-card-bg-to: 158 80% 32% / 0.01;
-        --sidebar-card-border: 158 80% 32% / 0.18;
-        --sidebar-pinned-bg: 158 80% 32% / 0.04;
-        --sidebar-pinned-border: 214 18% 88%;
-        --sidebar-pinned-row-border: 214 18% 90%;
-        --sidebar-online-border: 0 0% 100%;
-        --sidebar-logo-bg-from: 158 80% 32% / 0.12;
-        --sidebar-logo-bg-to: 158 80% 32% / 0.04;
-        --sidebar-logo-border: 158 80% 32% / 0.25;
-        --sidebar-logo-text-from: hsl(220 15% 10%);
-        --sidebar-logo-text-to: hsl(158 80% 30%);
-        --sidebar-logo-subtitle: 158 80% 28% / 0.6;
-        --sidebar-top-glow: radial-gradient(ellipse 80% 60% at 50% -10%, hsl(158 80% 32% / 0.06) 0%, transparent 100%);
-    }
 
     @media (min-width: 1024px) {
         :root {
@@ -214,83 +216,83 @@
 }
 
 /* ─── Light mode: card backgrounds ─── */
-.light .bg-\[\#0e1613\] {
+body:not(.dark) .bg-\[\#0e1613\] {
     background-color: hsl(0 0% 100%) !important;
 }
 
-.light .bg-\[\#0a0a0a\] {
+body:not(.dark) .bg-\[\#0a0a0a\] {
     background-color: hsl(0 0% 97%) !important;
 }
 
-.light .bg-\[\#111\] {
+body:not(.dark) .bg-\[\#111\] {
     background-color: hsl(0 0% 100%) !important;
 }
 
-.light .bg-\[\#0c0c0c\] {
+body:not(.dark) .bg-\[\#0c0c0c\] {
     background-color: hsl(0 0% 97%) !important;
 }
 
-.light .bg-\[\#1a1a1a\] {
+body:not(.dark) .bg-\[\#1a1a1a\] {
     background-color: hsl(0 0% 95%) !important;
 }
 
 /* ─── Light mode: text overrides ─── */
-.light .text-white {
+body:not(.dark) .text-white {
     color: hsl(220 15% 10%) !important;
 }
 
-.light .text-gray-100,
-.light .text-gray-200,
-.light .text-gray-300 {
+body:not(.dark) .text-gray-100,
+body:not(.dark) .text-gray-200,
+body:not(.dark) .text-gray-300 {
     color: hsl(220 15% 20%) !important;
 }
 
-.light .text-gray-400,
-.light .text-gray-500 {
+body:not(.dark) .text-gray-400,
+body:not(.dark) .text-gray-500 {
     color: hsl(220 10% 42%) !important;
 }
 
 /* ─── Light mode: dark border overrides ─── */
-.light .border-border-dark {
+body:not(.dark) .border-border-dark {
     border-color: hsl(214 18% 88%) !important;
 }
 
 /* ─── Light mode: semantic helper classes for dark-only panels ─── */
 /* Use these classes in JSX when a component has hardcoded dark styles */
-.light .bg-panel-dark {
+body:not(.dark) .bg-panel-dark {
     background: hsl(var(--background)) !important;
     border-color: hsl(var(--border)) !important;
     color: hsl(var(--foreground)) !important;
 }
 
-.light .bg-msg-sidebar {
+body:not(.dark) .bg-msg-sidebar {
     background: hsl(var(--card)) !important;
     border-color: hsl(var(--border)) !important;
 }
 
-.light .bg-msg-chat {
+body:not(.dark) .bg-msg-chat {
     background: hsl(var(--background)) !important;
 }
 
-.light .bg-msg-bubble-other {
+body:not(.dark) .bg-msg-bubble-other {
     background: hsl(var(--secondary)) !important;
     color: hsl(var(--foreground)) !important;
 }
 
-.light .msg-input-wrap {
+body:not(.dark) .msg-input-wrap {
     background: hsl(var(--card)) !important;
     border-color: hsl(var(--border)) !important;
 }
 
-.light .text-white-override {
+body:not(.dark) .text-white-override {
     color: hsl(var(--foreground)) !important;
 }
 
-.light .border-dark-subtle {
+body:not(.dark) .border-dark-subtle {
     border-color: hsl(var(--border)) !important;
 }
 
 /* ─── Transition all themed elements ─── */
-.light * {
+body:not(.dark) * {
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }

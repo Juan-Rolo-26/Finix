@@ -43,4 +43,14 @@ export class StoriesController {
     deleteStory(@Request() req: any, @Param('id') id: string) {
         return this.storiesService.deleteStory(id, req.user.id);
     }
+
+    @Post(':id/like')
+    likeStory(@Request() req: any, @Param('id') id: string) {
+        return this.storiesService.likeStory(id, req.user.id);
+    }
+
+    @Delete(':id/like')
+    unlikeStory(@Request() req: any, @Param('id') id: string) {
+        return this.storiesService.unlikeStory(id, req.user.id);
+    }
 }

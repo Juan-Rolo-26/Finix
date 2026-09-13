@@ -21,6 +21,12 @@ export class UserController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Patch('me/preferences')
+    async updatePreferences(@Request() req, @Body() preferencesData: any) {
+        return this.userService.updateProfile(req.user.id, preferencesData);
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Patch('me/password')
     async updatePassword(
         @Request() req,

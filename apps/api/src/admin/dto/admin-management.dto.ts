@@ -88,6 +88,23 @@ export class AdminPostsQueryDto extends AdminPaginationDto {
     @IsString()
     @IsIn(POST_VISIBILITY)
     visibility?: string;
+
+    @IsOptional()
+    @Transform(trimString)
+    @IsString()
+    @MaxLength(50)
+    type?: string;
+
+    @IsOptional()
+    @Transform(trimString)
+    @IsString()
+    @MaxLength(120)
+    author?: string;
+
+    @IsOptional()
+    @Transform(trimString)
+    @IsString()
+    hasReports?: string;
 }
 
 export class AdminUpdatePostDto {

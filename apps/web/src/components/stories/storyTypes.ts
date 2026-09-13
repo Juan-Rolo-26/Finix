@@ -18,6 +18,8 @@ export interface StoryItem {
     expiresAt: string;
     viewsCount: number;
     viewedByMe: boolean;
+    isLiked: boolean;
+    likesCount: number;
     author: StoryAuthor;
 }
 

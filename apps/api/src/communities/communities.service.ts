@@ -132,18 +132,16 @@ export class CommunitiesService {
 
         // Create plans
         if (dto.plans && Array.isArray(dto.plans) && dto.plans.length > 0) {
-            for (const plan of dto.plans) {
-                await this.prisma.communityPlan.create({
-                    data: {
-                        communityId: community.id,
-                        name: plan.name,
-                        price: plan.price || 0,
-                        interval: plan.interval || 'monthly',
-                        features: JSON.stringify(plan.features || []),
-                        tierLevel: plan.tierLevel || 0,
-                    },
-                });
-            }
+            await this.prisma.communityPlan.createMany({
+                data: dto.plans.map((plan: any) => ({
+                    communityId: community.id,
+                    name: plan.name,
+                    price: plan.price || 0,
+                    interval: plan.interval || 'monthly',
+                    features: JSON.stringify(plan.features || []),
+                    tierLevel: plan.tierLevel || 0,
+                })),
+            });
         } else {
             // Default free plan
             await this.prisma.communityPlan.create({
@@ -562,7 +560,7 @@ export class CommunitiesService {
                 subscriptionStatus: 'ACTIVE',
                 plan: { price: { gt: 0 } },
             },
-            include: { plan: true },
+            select: { plan: { select: { price: true, interval: true } } },
         });
         const mrr = paidMembers.reduce((sum, m) => {
             const price = Number(m.plan?.price ?? 0);

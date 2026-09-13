@@ -3,9 +3,10 @@ import { motion } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { Link } from 'react-router-dom';
-import { Heart, Trash2, Reply, ChevronDown, Loader2, BadgeCheck, Send } from 'lucide-react';
+import { Heart, Trash2, Reply, ChevronDown, Loader2, BadgeCheck, Send, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import ReportModal from '@/components/ReportModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,6 +66,7 @@ function CommentItem({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [replies, setReplies] = useState<Comment[]>(comment.replies || []);
     const [showReplies, setShowReplies] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
 
     const isOwner = currentUserId === comment.author.id;
 
@@ -158,13 +160,22 @@ function CommentItem({
                                 Responder
                             </button>
                         )}
-                        {isOwner && (
+                        {isOwner ? (
                             <button
                                 onClick={handleDelete}
                                 className="text-xs text-red-400/60 hover:text-red-400 transition-colors"
                             >
                                 <Trash2 className="w-3 h-3" />
                             </button>
+                        ) : (
+                            currentUserId && (
+                                <button
+                                    onClick={() => setShowReportModal(true)}
+                                    className="text-xs text-muted-foreground hover:text-red-400 transition-colors"
+                                >
+                                    <Flag className="w-3 h-3" />
+                                </button>
+                            )
                         )}
                     </div>
 
@@ -204,6 +215,16 @@ function CommentItem({
                     )}
                 </div>
             </div>
+
+            {showReportModal && (
+                <ReportModal
+                    isOpen={showReportModal}
+                    onClose={() => setShowReportModal(false)}
+                    targetType="COMMENT"
+                    targetId={comment.id}
+                    targetPreview={comment.content.substring(0, 100)}
+                />
+            )}
 
             {/* Replies */}
             {showReplies && replies.map((reply) => (

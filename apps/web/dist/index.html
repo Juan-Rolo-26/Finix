@@ -1,9 +1,34 @@
 <!doctype html>
-<html lang="es" class="dark">
+<html lang="es" class="light">
 
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/logo.png" />
+
+  <script>
+    (function() {
+      try {
+        var theme = 'light';
+        var stored = localStorage.getItem('finix_app_preferences_v4');
+        if (stored) {
+          var parsed = JSON.parse(stored);
+          if (parsed && parsed.state && parsed.state.theme) {
+            theme = parsed.state.theme;
+          }
+        }
+        if (theme === 'system') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+          document.documentElement.classList.remove('light');
+        } else {
+          document.documentElement.classList.add('light');
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <!-- Preconnect para Google Fonts (Raleway) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -13,8 +38,8 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Finix - Finanzas Sociales</title>
-  <script type="module" crossorigin src="/assets/index-T9fiQd-G.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-CTkqS5m_.css">
+  <script type="module" crossorigin src="/assets/index-Obqkjgzm.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DCw41aFg.css">
 </head>
 
 <body class="bg-background text-foreground font-sans antialiased">

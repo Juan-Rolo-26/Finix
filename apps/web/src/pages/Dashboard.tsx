@@ -1,30 +1,22 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
-import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { formatCurrency } from '../lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-    TrendingUp, TrendingDown,
-    Award,
     ArrowUpRight,
     ArrowDownRight,
     ChevronRight,
     Flame,
     Users,
-    BarChart2,
+    Compass,
     Newspaper,
 } from 'lucide-react';
 import SocialFeed from '../components/SocialFeed';
 import { StoriesRail } from '@/components/stories/StoriesRail';
 import { motion, AnimatePresence } from 'framer-motion';
-
-interface User {
-    id: string;
-    username: string;
-    avatarUrl?: string;
-    winRate?: number;
-    totalReturn?: number;
-}
+import { TopGainersCard } from '@/components/TopGainersCard';
+import { TopLosersCard } from '@/components/TopLosersCard';
+import { CalendarPreviewCard } from '@/components/CalendarPreviewCard';
 
 interface MarketTicker {
     symbol: string;
@@ -33,17 +25,10 @@ interface MarketTicker {
     changePercent?: number;
 }
 
-function formatPercent(value?: number | null, fractionDigits = 1) {
-    if (typeof value !== 'number' || Number.isNaN(value)) return '--';
-    return `${value > 0 ? '+' : ''}${value.toFixed(fractionDigits)}%`;
-}
-
-
-
 const FEED_TABS = [
-    { key: 'forYou', label: 'Para vos', icon: Flame },
+    { key: 'general', label: 'General', icon: Compass },
     { key: 'following', label: 'Siguiendo', icon: Users },
-    { key: 'trending', label: 'Tendencias', icon: BarChart2 },
+    { key: 'finix_oficial', label: 'Finix', icon: Flame },
 ] as const;
 
 type FeedTab = typeof FEED_TABS[number]['key'];
@@ -109,7 +94,7 @@ function FeedTabs({ active, onChange }: { active: FeedTab; onChange: (t: FeedTab
                     <button
                         key={tab.key}
                         onClick={() => onChange(tab.key)}
-                        className={`relative items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[12px] sm:text-[13px] font-semibold transition-all select-none flex-1 justify-center whitespace-nowrap ${tab.key === 'forYou' ? 'hidden sm:flex' : 'flex'}`}
+                        className={`relative items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[12px] sm:text-[13px] font-semibold transition-all select-none flex-1 justify-center whitespace-nowrap ${tab.key === 'finix_oficial' ? 'hidden sm:flex' : 'flex'}`}
                         style={{
                             color: isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
                             background: isActive ? 'hsl(var(--card))' : 'transparent',
@@ -134,36 +119,7 @@ function FeedTabs({ active, onChange }: { active: FeedTab; onChange: (t: FeedTab
     );
 }
 
-/* ── Sidebar asset row ──────────────────────────────────────────── */
-function AssetRow({ item, onClick }: { item: any; onClick: () => void }) {
-    const isUp = item.change >= 0;
-    const sym = item.symbol?.split(':').pop() ?? item.symbol;
-    return (
-        <button
-            onClick={onClick}
-            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all hover:bg-white/[0.04] group"
-        >
-            <div className="flex items-center gap-2.5">
-                <SymbolLogo symbol={item.symbol ?? sym} size={32} />
-                <div className="text-left">
-                    <p className="text-[12.5px] font-semibold leading-tight group-hover:text-primary transition-colors">{sym}</p>
-                    <p className="text-[10px] font-medium" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>
-                        Vol {item.volume ? (item.volume / 1_000_000).toFixed(1) + 'M' : '--'}
-                    </p>
-                </div>
-            </div>
-            <div className="text-right">
-                <p className="text-[12.5px] font-bold num">{formatCurrency(item.price, 'USD')}</p>
-                <div className="flex items-center justify-end gap-0.5 mt-0.5">
-                    {isUp ? <TrendingUp className="w-2.5 h-2.5" style={{ color: 'hsl(142 70% 45%)' }} /> : <TrendingDown className="w-2.5 h-2.5" style={{ color: 'hsl(0 68% 56%)' }} />}
-                    <span className="text-[10.5px] font-bold num" style={{ color: isUp ? 'hsl(142 70% 45%)' : 'hsl(0 68% 56%)' }}>
-                        {item.change > 0 ? '+' : ''}{item.change.toFixed(2)}%
-                    </span>
-                </div>
-            </div>
-        </button>
-    );
-}
+
 
 /* ── Sidebar card shell ─────────────────────────────────────────── */
 function SideCard({ title, icon, iconColor, iconBg, to, toLabel, children, index }: {
@@ -207,44 +163,137 @@ function SideCard({ title, icon, iconColor, iconBg, to, toLabel, children, index
     );
 }
 
+/* ── Feed Memory Cache for Instant Loading ──────────────────────── */
+const feedMemoryCache: Record<string, any[]> = {};
+
+function getCachedFeed(tab: string) {
+    if (feedMemoryCache[tab] && feedMemoryCache[tab].length > 0) {
+        return feedMemoryCache[tab];
+    }
+    if (typeof window !== 'undefined') {
+        try {
+            const raw = sessionStorage.getItem(`finix_cached_feed_${tab}`);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    feedMemoryCache[tab] = parsed;
+                    return parsed;
+                }
+            }
+        } catch {}
+    }
+    return [];
+}
+
 /* ── Main Dashboard ─────────────────────────────────────────────── */
 export default function Dashboard() {
     const navigate = useNavigate();
-    const [topAssets, setTopAssets] = useState<any[]>([]);
-    const [topTraders, setTopTraders] = useState<User[]>([]);
-    const [posts, setPosts] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<FeedTab>('forYou');
+    const [topGainers, setTopGainers] = useState<any[]>([]);
+    const [isGainersLoading, setIsGainersLoading] = useState<boolean>(true);
+    const [isGainersError, setIsGainersError] = useState<boolean>(false);
+    const [gainersStale, setGainersStale] = useState<boolean>(false);
+    const [gainersDate, setGainersDate] = useState<string>('');
+
+    const [topLosers, setTopLosers] = useState<any[]>([]);
+    const [isLosersLoading, setIsLosersLoading] = useState<boolean>(true);
+    const [isLosersError, setIsLosersError] = useState<boolean>(false);
+    const [losersStale, setLosersStale] = useState<boolean>(false);
+    const [losersDate, setLosersDate] = useState<string>('');
+
+    const [activeTab, setActiveTab] = useState<FeedTab>('general');
+    const [posts, setPosts] = useState<any[]>(() => getCachedFeed('general'));
+    const [isFeedLoading, setIsFeedLoading] = useState<boolean>(() => getCachedFeed('general').length === 0);
 
     // Map UI tabs to backend sort values
     const tabToSort: Record<FeedTab, string> = {
-        forYou: 'recent',
+        general: 'general',
         following: 'following',
-        trending: 'trending',
+        finix_oficial: 'finix_oficial',
+    };
+
+    const fetchTopGainers = () => {
+        setIsGainersLoading(true);
+        setIsGainersError(false);
+        apiFetch('/market/rankings/top-gainers')
+            .then(r => {
+                if (!r.ok) throw new Error('Failed to load top gainers');
+                return r.json();
+            })
+            .then((data: any) => {
+                const list = Array.isArray(data?.items) ? data.items : [];
+                setTopGainers(list);
+                setGainersStale(Boolean(data?.isStale));
+                setGainersDate(data?.date || '');
+            })
+            .catch(() => {
+                setIsGainersError(true);
+            })
+            .finally(() => {
+                setIsGainersLoading(false);
+            });
+    };
+
+    const fetchTopLosers = () => {
+        setIsLosersLoading(true);
+        setIsLosersError(false);
+        apiFetch('/market/rankings/top-losers')
+            .then(r => {
+                if (!r.ok) throw new Error('Failed to load top losers');
+                return r.json();
+            })
+            .then((data: any) => {
+                const list = Array.isArray(data?.items) ? data.items : [];
+                setTopLosers(list);
+                setLosersStale(Boolean(data?.isStale));
+                setLosersDate(data?.date || '');
+            })
+            .catch(() => {
+                setIsLosersError(true);
+            })
+            .finally(() => {
+                setIsLosersLoading(false);
+            });
     };
 
     useEffect(() => {
-        apiFetch('/market/tickers')
-            .then(r => r.json())
-            .then((data: any) => {
-                const list = Array.isArray(data) ? data : [];
-                const sorted = [...list].sort((a: any, b: any) => Math.abs(b.change) - Math.abs(a.change));
-                setTopAssets(sorted.slice(0, 6));
-            })
-            .catch(() => { });
-
-        apiFetch('/users/top-traders')
-            .then(r => r.json())
-            .then(data => setTopTraders(Array.isArray(data) ? data : []))
-            .catch(() => { });
+        fetchTopGainers();
+        fetchTopLosers();
     }, []);
 
-    // Fetch posts when tab changes
+    // Fetch posts when tab changes with instant cache and background revalidation
     useEffect(() => {
+        let isMounted = true;
         const sort = tabToSort[activeTab];
+        const cached = getCachedFeed(activeTab);
+
+        if (cached.length > 0) {
+            setPosts(cached);
+            setIsFeedLoading(false);
+        } else {
+            setPosts([]);
+            setIsFeedLoading(true);
+        }
+
         apiFetch(`/posts/feed?sort=${sort}&limit=20`)
             .then(r => r.json())
-            .then(data => setPosts(Array.isArray(data) ? data : data?.posts ?? []))
-            .catch(() => setPosts([]));
+            .then(data => {
+                if (!isMounted) return;
+                const list = Array.isArray(data) ? data : (data?.posts ?? []);
+                setPosts(list);
+                feedMemoryCache[activeTab] = list;
+                try {
+                    sessionStorage.setItem(`finix_cached_feed_${activeTab}`, JSON.stringify(list));
+                } catch {}
+            })
+            .catch(() => {
+                if (!isMounted) return;
+                if (cached.length === 0) setPosts([]);
+            })
+            .finally(() => {
+                if (isMounted) setIsFeedLoading(false);
+            });
+
+        return () => { isMounted = false; };
     }, [activeTab]);
 
 
@@ -256,7 +305,7 @@ export default function Dashboard() {
               - Desktop (lg): 2 columns (Feed + Right Sidebar)
               - Ultrawide (2xl): 3 columns (Feed + Market + Connect/News) for perfect full-width distribution
             */}
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_340px_340px] gap-6 xl:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_340px_340px] gap-6 xl:gap-8 items-start">
 
                 {/* ── Left Column: Main Feed ── */}
                 <div className="space-y-4 min-w-0 max-w-[800px] w-full mx-auto 2xl:mx-0 2xl:max-w-none">
@@ -281,7 +330,15 @@ export default function Dashboard() {
                             >
                                 <SocialFeed
                                     initialPosts={posts}
-                                    onPostCreated={(newPost) => setPosts([newPost, ...posts])}
+                                    isLoading={isFeedLoading}
+                                    onPostCreated={(newPost) => {
+                                        const next = [newPost, ...posts];
+                                        setPosts(next);
+                                        feedMemoryCache[activeTab] = next;
+                                        try {
+                                            sessionStorage.setItem(`finix_cached_feed_${activeTab}`, JSON.stringify(next));
+                                        } catch {}
+                                    }}
                                 />
                             </motion.div>
                         </AnimatePresence>
@@ -289,33 +346,29 @@ export default function Dashboard() {
                 </div>
 
                 {/* ── Middle Column (or joined in Right on lg) ── */}
-                <aside className="hidden lg:flex flex-col gap-5">
+                <aside className="hidden lg:flex flex-col gap-5 sticky top-6 self-start max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-hide">
 
+                    {/* Mejores Rendimientos (S&P 500 Top Gainers) */}
+                    <TopGainersCard
+                        items={topGainers}
+                        isLoading={isGainersLoading}
+                        isError={isGainersError}
+                        isStale={gainersStale}
+                        date={gainersDate}
+                        onRetry={fetchTopGainers}
+                    />
 
-                    {/* Trending Assets */}
-                    <SideCard
-                        index={0}
-                        title="Mejores rendimientos"
-                        icon={<TrendingUp className="w-4 h-4" />}
-                        iconColor="hsl(142 70% 50%)"
-                        iconBg="hsl(142 70% 45% / 0.15)"
-                        to="/market"
-                        toLabel="Ver todos"
-                    >
-                        {topAssets.length === 0 ? (
-                            <p className="px-5 pb-4 text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>Sin datos disponibles</p>
-                        ) : (
-                            <div className="px-2 pb-2">
-                                {topAssets.map(item => (
-                                    <AssetRow
-                                        key={item.symbol}
-                                        item={item}
-                                        onClick={() => navigate(`/market?symbol=${item.symbol}`)}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </SideCard>
+                    {/* Peores Rendimientos (S&P 500 Top Losers) on lg only (on 2xl it lives in right aside) */}
+                    <div className="2xl:hidden">
+                        <TopLosersCard
+                            items={topLosers}
+                            isLoading={isLosersLoading}
+                            isError={isLosersError}
+                            isStale={losersStale}
+                            date={losersDate}
+                            onRetry={fetchTopLosers}
+                        />
+                    </div>
 
                     {/* News / Pulse (lg only, moved to right on 2xl) */}
                     <div className="2xl:hidden">
@@ -340,96 +393,36 @@ export default function Dashboard() {
                         </SideCard>
                     </div>
 
-                    {/* Eventos Económicos */}
-                    <SideCard
-                        index={3}
-                        title="Calendario Económico"
-                        icon={<Award className="w-4 h-4" />}
-                        iconColor="hsl(280 65% 60%)"
-                        iconBg="hsl(280 65% 60% / 0.15)"
-                        to="/market"
-                        toLabel="Ver calendario"
-                    >
-                        <div className="px-5 pb-5 pt-1 space-y-4">
-                            {[
-                                { time: '10:30', flag: '🇺🇸', event: 'Índice de Precios al Consumidor (IPC)', impact: 'Alto', color: 'hsl(0 80% 60%)' },
-                                { time: '12:00', flag: '🇪🇺', event: 'Declaraciones de Lagarde (BCE)', impact: 'Medio', color: 'hsl(38 90% 55%)' },
-                                { time: '15:15', flag: '🇺🇸', event: 'Producción Industrial mensual', impact: 'Medio', color: 'hsl(38 90% 55%)' }
-                            ].map((evt, j) => (
-                                <div key={j} className="flex items-start gap-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/market')}>
-                                    <span className="text-[11.5px] font-bold text-foreground mt-0.5">{evt.time}</span>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-1.5 mb-0.5">
-                                            <span>{evt.flag}</span>
-                                            <span className="text-[9.5px] font-bold tracking-wider uppercase" style={{ color: evt.color }}>Impacto {evt.impact}</span>
-                                        </div>
-                                        <p className="text-[13px] font-medium leading-snug truncate" style={{ color: 'hsl(var(--foreground) / 0.8)' }}>
-                                            {evt.event}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </SideCard>
+                    {/* Calendario Finix */}
+                    <CalendarPreviewCard />
 
+                    {/* Enlaces de información y legales colocados debajo de Calendario */}
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] font-medium px-2 pt-1 pb-4" style={{ color: 'hsl(var(--muted-foreground) / 0.65)' }}>
+                        <Link to="/about" className="hover:text-primary transition-colors">Sobre Finix</Link>
+                        <span className="opacity-30">·</span>
+                        <Link to="/help" className="hover:text-primary transition-colors">Ayuda</Link>
+                        <span className="opacity-30">·</span>
+                        <Link to="/terms" className="hover:text-primary transition-colors">Términos</Link>
+                        <span className="opacity-30">·</span>
+                        <Link to="/privacy" className="hover:text-primary transition-colors">Privacidad</Link>
+                        <span className="opacity-30">·</span>
+                        <Link to="/cookies" className="hover:text-primary transition-colors">Cookies</Link>
+                        <div className="w-full mt-1.5 text-[10.5px] opacity-40">© 2026 Finix Network Inc.</div>
+                    </div>
                 </aside>
 
                 {/* ── Right Column (2xl only) ── */}
-                <aside className="hidden 2xl:flex flex-col gap-5">
+                <aside className="hidden 2xl:flex flex-col gap-5 sticky top-6 self-start max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-hide">
 
-                    {/* Top Traders */}
-                    <SideCard
-                        index={1}
-                        title="Top Inversores"
-                        icon={<Award className="w-4 h-4" />}
-                        iconColor="hsl(38 100% 55%)"
-                        iconBg="hsl(38 100% 55% / 0.15)"
-                        to="/explore"
-                        toLabel="Ránking"
-                    >
-                        {topTraders.length === 0 ? (
-                            <p className="px-5 pb-4 text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>No hay traders disponibles</p>
-                        ) : (
-                            <div className="px-2 pb-2">
-                                {topTraders.slice(0, 6).map((trader, i) => {
-                                    const isUp = (trader.totalReturn ?? 0) >= 0;
-                                    const rankColors = ['hsl(38 100% 55%)', 'hsl(220 14% 70%)', 'hsl(30 70% 50%)'];
-                                    return (
-                                        <button
-                                            key={trader.id}
-                                            onClick={() => navigate(`/profile/${trader.username}`)}
-                                            className="w-full flex items-center justify-between gap-3 px-3 py-3 rounded-xl transition-all hover:bg-white/[0.04] group"
-                                        >
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <span className="text-[11.5px] font-black w-5 text-center flex-shrink-0" style={{ color: rankColors[i] ?? 'hsl(var(--muted-foreground))' }}>
-                                                    {i + 1}
-                                                </span>
-                                                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-background shadow-sm"
-                                                    style={{ background: 'hsl(var(--primary) / 0.15)' }}>
-                                                    {trader.avatarUrl
-                                                        ? <img src={resolveMediaUrl(trader.avatarUrl)} alt={trader.username} className="w-full h-full object-cover" />
-                                                        : <div className="w-full h-full flex items-center justify-center text-[12px] font-bold" style={{ color: 'hsl(var(--primary))' }}>
-                                                            {trader.username[0].toUpperCase()}
-                                                        </div>
-                                                    }
-                                                </div>
-                                                <div className="min-w-0 text-left">
-                                                    <p className="text-[13.5px] font-bold truncate group-hover:text-primary transition-colors">{trader.username}</p>
-                                                    <p className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
-                                                        {formatPercent(trader.winRate, 0)} acierto
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <span className="text-[12.5px] font-black num flex-shrink-0 px-2 py-1 rounded-lg"
-                                                style={{ background: isUp ? 'hsl(142 70% 45% / 0.12)' : 'hsl(0 68% 56% / 0.12)', color: isUp ? 'hsl(142 70% 50%)' : 'hsl(0 68% 60%)' }}>
-                                                {isUp ? '+' : ''}{formatPercent(trader.totalReturn)}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </SideCard>
+                    {/* Peores Rendimientos (S&P 500 Top Losers) — AL LADO Y DEL MISMO TAMAÑO */}
+                    <TopLosersCard
+                        items={topLosers}
+                        isLoading={isLosersLoading}
+                        isError={isLosersError}
+                        isStale={losersStale}
+                        date={losersDate}
+                        onRetry={fetchTopLosers}
+                    />
 
                     {/* Dedicated News Card for 2xl */}
                     <SideCard
@@ -464,15 +457,6 @@ export default function Dashboard() {
                             </div>
                         </div>
                     </SideCard>
-
-                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-[11px] font-medium px-2 mt-2" style={{ color: 'hsl(var(--muted-foreground) / 0.45)' }}>
-                        <Link to="/about" className="hover:text-primary/70 transition-colors">Sobre Finix</Link>
-                        <Link to="/help" className="hover:text-primary/70 transition-colors">Ayuda</Link>
-                        <Link to="/terms" className="hover:text-primary/70 transition-colors">Términos</Link>
-                        <Link to="/privacy" className="hover:text-primary/70 transition-colors">Privacidad</Link>
-                        <Link to="/cookies" className="hover:text-primary/70 transition-colors">Cookies</Link>
-                        <div className="w-full mt-2 text-[10.5px]">© 2026 Finix Network Inc.</div>
-                    </div>
                 </aside>
 
             </div>

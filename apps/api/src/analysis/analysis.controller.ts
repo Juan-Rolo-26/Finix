@@ -1,22 +1,24 @@
-import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AnalysisService } from './analysis.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
 
 @Controller('analysis')
 export class AnalysisController {
     constructor(private readonly analysisService: AnalysisService) { }
 
-    @UseGuards(JwtAuthGuard)
-    @Get(':ticker')
-    async getAnalysis(@Param('ticker') ticker: string) {
-        // Normalize ticker
-        const normalizedTicker = ticker.toUpperCase();
-        return this.analysisService.getAnalysis(normalizedTicker);
+    @Get()
+    async getPublicList() {
+        return this.analysisService.getPublicList();
     }
 
-    @UseGuards(JwtAuthGuard)
-    @Post(':ticker/refresh')
-    async refreshAnalysis(@Param('ticker') ticker: string) {
-        return this.analysisService.refreshAnalysis(ticker.toUpperCase());
+    @UseGuards(OptionalJwtAuthGuard)
+    @Get(':slugOrTicker')
+    async getAnalysis(@Param('slugOrTicker') slugOrTicker: string, @Req() req: any) {
+        return this.analysisService.getAnalysisBySlugOrTicker(slugOrTicker, req.user);
+    }
+
+    @Post('sample/seed')
+    async seedSample() {
+        return this.analysisService.seedAppleSample('system');
     }
 }

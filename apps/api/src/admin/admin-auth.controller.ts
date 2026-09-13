@@ -21,8 +21,18 @@ export class AdminAuthController {
 
     @Post('login')
     @HttpCode(HttpStatus.OK)
-    login(@Body() dto: AdminLoginDto, @Req() req: Request) {
-        return this.adminAuthService.login(dto, this.getRequestMeta(req));
+    async login(@Body() dto: AdminLoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+        const result = await this.adminAuthService.login(dto, this.getRequestMeta(req));
+        
+        if ('user' in result && result.user) {
+            this.attachSessionCookies(res, result.accessToken, result.refreshToken);
+            return {
+                user: result.user,
+                expiresInMs: result.accessTokenTtlMs,
+            };
+        }
+
+        return result;
     }
 
     @Post('verify-email')

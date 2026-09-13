@@ -96,6 +96,8 @@ export const ASSET_NAMES: Record<string, string> = {
 
 // ─── TradingView logo slug maps ───────────────────────────────────────────────
 
+import { TV_SYMBOL_SLUGS } from './tv-slugs.const';
+
 const CRYPTO_TV_MAP: Record<string, string> = {
     BTC: 'bitcoin', ETH: 'ethereum', BNB: 'binance-coin', SOL: 'solana',
     XRP: 'ripple', ADA: 'cardano', AVAX: 'avalanche', DOGE: 'dogecoin',
@@ -105,6 +107,7 @@ const CRYPTO_TV_MAP: Record<string, string> = {
 };
 
 const TV_SLUG_MAP: Record<string, string> = {
+    ...TV_SYMBOL_SLUGS,
     AAPL: 'apple', MSFT: 'microsoft', TSLA: 'tesla', GOOGL: 'alphabet', GOOG: 'alphabet',
     AMZN: 'amazon', META: 'meta', NVDA: 'nvidia', NFLX: 'netflix',
     JPM: 'jpmorgan-chase', BAC: 'bank-of-america', V: 'visa', MA: 'mastercard',
@@ -149,14 +152,15 @@ export function getLogoUrls(symbol: string): string[] {
         }
     }
 
-    // TradingView slug for well-known stocks
+    // TradingView slug for well-known stocks (1st priority)
     const tvSlug = TV_SLUG_MAP[ticker] ?? TV_SLUG_MAP[cleanTicker];
     if (tvSlug) {
         urls.push(`https://s3-symbol-logo.tradingview.com/${tvSlug}--big.svg`);
     }
 
-    // Generic TradingView CDN attempt
-    if (cleanTicker.length >= 2 && !isCrypto) {
+    // Secondary backup CDN & generic TradingView CDN
+    if (cleanTicker.length >= 1 && !isCrypto) {
+        urls.push(`https://images.financialmodelingprep.com/symbol/${cleanTicker}.png`);
         urls.push(`https://s3-symbol-logo.tradingview.com/${cleanTicker.toLowerCase()}--big.svg`);
     }
 

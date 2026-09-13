@@ -25,11 +25,17 @@ import {
     VolumeX,
     BadgeCheck,
     ExternalLink,
+    Lightbulb,
+    BookOpen,
+    Newspaper,
+    MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import CommentsPanel from './CommentsPanel';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
+import ReportModal from '@/components/ReportModal';
+import DeletePostModal from '@/components/DeletePostModal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,10 +52,15 @@ function timeAgo(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
 }
 
-const TYPE_BADGE: Record<string, { label: string; icon: any; color: string }> = {
-    chart: { label: 'TradingView', icon: BarChart2, color: 'text-blue-400 bg-blue-400/10 border-blue-400/20' },
-    reel: { label: 'Edición', icon: Film, color: 'text-purple-400 bg-purple-400/10 border-purple-400/20' },
-    image: { label: 'Imagen', icon: ImageIcon, color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
+const TYPE_BADGE: Record<string, { label: string; icon: any; color: string; borderColor: string }> = {
+    analysis: { label: 'Análisis', icon: TrendingUp, color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20', borderColor: 'border-emerald-500/50' },
+    opinion: { label: 'Opinión', icon: Lightbulb, color: 'text-blue-400 bg-blue-400/10 border-blue-400/20', borderColor: 'border-blue-500/50' },
+    education: { label: 'Educación', icon: BookOpen, color: 'text-purple-400 bg-purple-400/10 border-purple-400/20', borderColor: 'border-purple-500/50' },
+    news: { label: 'Noticia', icon: Newspaper, color: 'text-orange-400 bg-orange-400/10 border-orange-400/20', borderColor: 'border-orange-500/50' },
+    question: { label: 'Pregunta', icon: MessageSquare, color: 'text-rose-400 bg-rose-400/10 border-rose-400/20', borderColor: 'border-rose-500/50' },
+    chart: { label: 'TradingView', icon: BarChart2, color: 'text-blue-400 bg-blue-400/10 border-blue-400/20', borderColor: 'border-blue-500/50' },
+    reel: { label: 'Edición', icon: Film, color: 'text-purple-400 bg-purple-400/10 border-purple-400/20', borderColor: 'border-purple-500/50' },
+    image: { label: 'Imagen', icon: ImageIcon, color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20', borderColor: 'border-emerald-500/50' },
 };
 
 const RISK_COLOR: Record<string, string> = {
@@ -179,10 +190,11 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(post.content);
     const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [showRepostModal, setShowRepostModal] = useState(false);
     const [repostComment, setRepostComment] = useState('');
     const [showReportModal, setShowReportModal] = useState(false);
-    const [reportReason, setReportReason] = useState('');
     const [commentsCount, setCommentsCount] = useState(post.commentsCount);
 
     const isOwner = currentUserId === post.author.id;
@@ -253,12 +265,23 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
         } catch { }
     };
 
-    const handleDelete = async () => {
-        if (!confirm('¿Eliminar esta publicación?')) return;
+    const confirmDelete = async () => {
+        if (!isOwner) return;
+        setIsDeleting(true);
         try {
-            await apiFetch(`/posts/${post.id}`, { method: 'DELETE' });
+            const res = await apiFetch(`/posts/${post.id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error();
             onDeleted(post.id);
-        } catch { }
+        } catch { } finally {
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+            setShowMenu(false);
+        }
+    };
+
+    const handleDeleteClick = () => {
+        setShowMenu(false);
+        setShowDeleteModal(true);
     };
 
     const handleSaveEdit = async () => {
@@ -282,46 +305,33 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
         navigator.clipboard.writeText(`${window.location.origin}/posts/${post.id}`);
     };
 
-    const handleReport = async () => {
-        if (!reportReason.trim()) return;
-        try {
-            await apiFetch('/reports', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ targetType: 'POST', targetId: post.id, reason: reportReason }),
-            });
-            setShowReportModal(false);
-            setReportReason('');
-        } catch { }
-    };
-
     // ── Render ───────────────────────────────────────────────────────────────
 
     return (
         <motion.article
             layout
-            className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden hover:border-border/80 transition-colors"
+            className={`rounded-2xl border ${typeBadge?.borderColor || 'border-border/50'} bg-card/60 backdrop-blur-sm hover:border-border/80 transition-colors`}
         >
             {/* Header */}
             <div className="flex items-start justify-between p-4 pb-3">
-                <Link to={`/profile/${post.author.username}`} className="flex items-center gap-3 group">
-                    {post.author.avatarUrl ? (
+                <Link to={`/profile/${post.author?.username || ''}`} className="flex items-center gap-3 group">
+                    {post.author?.avatarUrl ? (
                         <img
                             src={resolveMediaUrl(post.author.avatarUrl)}
-                            alt={post.author.username}
+                            alt={post.author.username || 'Avatar'}
                             className="w-10 h-10 rounded-full object-cover border-2 border-border/50 group-hover:border-primary/50 transition-colors"
                         />
                     ) : (
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center text-black font-bold text-sm shrink-0">
-                            {post.author.username[0].toUpperCase()}
+                            {(post.author?.username?.[0] || 'U').toUpperCase()}
                         </div>
                     )}
                     <div>
                         <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-sm group-hover:text-primary transition-colors">
-                                {post.author.username}
+                                {post.author?.username || 'Usuario'}
                             </span>
-                            {post.author.isVerified && (
+                            {post.author?.isVerified && (
                                 <BadgeCheck className="w-4 h-4 text-primary" />
                             )}
                         </div>
@@ -365,15 +375,16 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                                 )}
                                 {isOwner && (
                                     <button
-                                        onClick={() => { handleDelete(); setShowMenu(false); }}
-                                        className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-400 hover:bg-red-400/10 transition-colors"
+                                        onClick={handleDeleteClick}
+                                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[12.5px] font-medium transition-colors hover:bg-red-500/10"
+                                        style={{ color: 'hsl(0 68% 55%)' }}
                                     >
                                         <Trash2 className="w-4 h-4" /> Eliminar
                                     </button>
                                 )}
                                 {!isOwner && (
                                     <button
-                                        onClick={() => { setShowReportModal(true); setShowMenu(false); }}
+                                        onClick={(e) => { e.stopPropagation(); setShowReportModal(true); setShowMenu(false); }}
                                         className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-orange-400 hover:bg-orange-400/10 transition-colors"
                                     >
                                         <Flag className="w-4 h-4" /> Reportar
@@ -443,12 +454,12 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                 )}
             </div>
 
-            {/* Auto TradingView Chart if ticker is mentioned and no media provided */}
-            {!post.media?.length && !post.mediaUrl && !tradingViewUrl && post.tickers && (
+            {/* Auto TradingView Chart if ticker is mentioned and no media provided (for text posts only) */}
+            {post.type !== 'chart' && !post.media?.length && !post.mediaUrl && !tradingViewUrl && post.tickers && String(post.tickers).trim() && (
                 <div className="px-4 pb-3">
                     <div className="rounded-xl overflow-hidden border border-border/50 h-[300px] w-full bg-black/10">
                         <iframe
-                            src={`https://s.tradingview.com/widgetembed/?symbol=${(Array.isArray(post.tickers) ? post.tickers[0] : post.tickers.split(',')[0]).trim().replace('$', '')}&interval=D&theme=dark&style=1&timezone=America%2FArgentina%2FBuenos_Aires&hide_top_toolbar=1&hide_legend=1&saveimage=0&locale=es`}
+                            src={`https://s.tradingview.com/widgetembed/?symbol=${(Array.isArray(post.tickers) ? post.tickers[0] : String(post.tickers).split(',')[0]).trim().replace('$', '')}&interval=D&theme=dark&style=1&timezone=America%2FArgentina%2FBuenos_Aires&hide_top_toolbar=1&hide_legend=1&saveimage=0&locale=es`}
                             width="100%"
                             height="100%"
                             frameBorder="0"
@@ -467,18 +478,18 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                         className="w-full text-left rounded-xl border border-border/50 bg-background/30 p-4 hover:bg-muted/10 transition-colors"
                     >
                         <div className="flex items-center gap-2 mb-2">
-                            {post.quotedPost.author.avatarUrl ? (
+                            {post.quotedPost.author?.avatarUrl ? (
                                 <img
                                     src={resolveMediaUrl(post.quotedPost.author.avatarUrl)}
-                                    alt={post.quotedPost.author.username}
+                                    alt={post.quotedPost.author.username || 'Usuario'}
                                     className="w-5 h-5 rounded-full object-cover"
                                 />
                             ) : (
                                 <div className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold">
-                                    {post.quotedPost.author.username[0]}
+                                    {(post.quotedPost.author?.username?.[0] || 'U').toUpperCase()}
                                 </div>
                             )}
-                            <span className="font-bold text-sm">{post.quotedPost.author.username}</span>
+                            <span className="font-bold text-sm">{post.quotedPost.author?.username || 'Usuario'}</span>
                             <span className="text-xs text-muted-foreground">{timeAgo(post.quotedPost.createdAt)}</span>
                         </div>
                         <p className="text-sm line-clamp-3 mb-2">{post.quotedPost.content}</p>
@@ -604,37 +615,53 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+                        className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm"
                         onClick={() => setShowRepostModal(false)}
                     >
                         <motion.div
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 20 }}
-                            className="bg-card border border-border/50 rounded-2xl p-5 w-full max-w-md space-y-4"
+                            initial={{ scale: 0.95, y: 20, opacity: 0 }}
+                            animate={{ scale: 1, y: 0, opacity: 1 }}
+                            exit={{ scale: 0.95, y: 20, opacity: 0 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="bg-card/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-3xl p-6 w-full max-w-md space-y-5"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <h3 className="font-semibold flex items-center gap-2">
-                                <Repeat2 className="w-5 h-5 text-emerald-400" />
-                                {reposted ? 'Quitar repost' : 'Repostear'}
-                            </h3>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                                    <Repeat2 className="w-5 h-5 text-emerald-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg leading-tight text-foreground">
+                                        {reposted ? 'Quitar repost' : 'Repostear'}
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground">
+                                        {reposted ? 'Esto eliminará el repost de tu feed.' : 'Compartí esta publicación con tus seguidores.'}
+                                    </p>
+                                </div>
+                            </div>
+                            
                             {!reposted && (
-                                <Textarea
-                                    placeholder="Añadí un comentario (opcional)..."
-                                    value={repostComment}
-                                    onChange={(e) => setRepostComment(e.target.value)}
-                                    className="bg-secondary/30 resize-none"
-                                    rows={3}
-                                    maxLength={500}
-                                />
+                                <div className="space-y-2">
+                                    <Textarea
+                                        placeholder="Añadí un comentario (opcional)..."
+                                        value={repostComment}
+                                        onChange={(e) => setRepostComment(e.target.value)}
+                                        className="bg-secondary/30 resize-none text-sm border-none focus-visible:ring-1 focus-visible:ring-emerald-500/50 min-h-[100px] rounded-xl p-4"
+                                        rows={3}
+                                        maxLength={500}
+                                    />
+                                </div>
                             )}
-                            <div className="flex gap-2 justify-end">
-                                <Button variant="ghost" onClick={() => setShowRepostModal(false)}>Cancelar</Button>
+                            
+                            <div className="flex gap-3 pt-2">
+                                <Button variant="outline" onClick={() => setShowRepostModal(false)} className="flex-1 rounded-xl h-11 border-border/50">
+                                    Cancelar
+                                </Button>
                                 <Button
                                     onClick={handleRepost}
-                                    className={reposted ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : ''}
+                                    className={`flex-1 rounded-xl h-11 font-bold shadow-glow ${reposted ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-gradient-to-r from-primary to-emerald-400 text-black'}`}
                                 >
-                                    {reposted ? 'Quitar repost' : 'Repostear'}
+                                    {reposted ? 'Quitar' : 'Repostear'}
                                 </Button>
                             </div>
                         </motion.div>
@@ -645,48 +672,22 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             {/* Report modal */}
             <AnimatePresence>
                 {showReportModal && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-                        onClick={() => setShowReportModal(false)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 20 }}
-                            className="bg-card border border-border/50 rounded-2xl p-5 w-full max-w-md space-y-4"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <h3 className="font-semibold flex items-center gap-2 text-orange-400">
-                                <Flag className="w-5 h-5" /> Reportar publicación
-                            </h3>
-                            <div className="space-y-2">
-                                {['Spam o publicidad', 'Contenido falso o engañoso', 'Contenido inapropiado', 'Otro'].map((reason) => (
-                                    <button
-                                        key={reason}
-                                        onClick={() => setReportReason(reason)}
-                                        className={`w-full text-left px-4 py-2.5 rounded-lg border text-sm transition-all ${reportReason === reason ? 'border-orange-400/50 bg-orange-400/10 text-orange-400' : 'border-border/50 hover:bg-secondary/50'}`}
-                                    >
-                                        {reason}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="flex gap-2 justify-end">
-                                <Button variant="ghost" onClick={() => setShowReportModal(false)}>Cancelar</Button>
-                                <Button
-                                    onClick={handleReport}
-                                    disabled={!reportReason}
-                                    className="bg-orange-500/20 text-orange-400 hover:bg-orange-500/30"
-                                >
-                                    Enviar reporte
-                                </Button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
+                    <ReportModal
+                        isOpen={showReportModal}
+                        onClose={() => setShowReportModal(false)}
+                        targetType="POST"
+                        targetId={post.id}
+                        targetPreview={post.content}
+                    />
                 )}
             </AnimatePresence>
+
+            <DeletePostModal 
+                isOpen={showDeleteModal} 
+                onClose={() => setShowDeleteModal(false)} 
+                onConfirm={confirmDelete}
+                isDeleting={isDeleting}
+            />
         </motion.article>
     );
 }

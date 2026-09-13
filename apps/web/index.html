@@ -1,9 +1,34 @@
 <!doctype html>
-<html lang="es" class="dark">
+<html lang="es" class="light">
 
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/logo.png" />
+
+  <script>
+    (function() {
+      try {
+        var theme = 'light';
+        var stored = localStorage.getItem('finix_app_preferences_v4');
+        if (stored) {
+          var parsed = JSON.parse(stored);
+          if (parsed && parsed.state && parsed.state.theme) {
+            theme = parsed.state.theme;
+          }
+        }
+        if (theme === 'system') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+          document.documentElement.classList.remove('light');
+        } else {
+          document.documentElement.classList.add('light');
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <!-- Preconnect para Google Fonts (Raleway) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />

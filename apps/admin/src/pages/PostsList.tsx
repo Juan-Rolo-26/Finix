@@ -8,6 +8,7 @@ type AdminPostRow = {
     visibility: string;
     type: string;
     assetSymbol?: string | null;
+    media?: { url: string; mediaType: string }[] | null;
     author: {
         id: string;
         username: string;
@@ -33,6 +34,10 @@ export default function PostsList() {
     const [search, setSearch] = useState('');
     const [submittedSearch, setSubmittedSearch] = useState('');
     const [visibilityFilter, setVisibilityFilter] = useState('');
+    const [typeFilter, setTypeFilter] = useState('');
+    const [hasReportsFilter, setHasReportsFilter] = useState(false);
+    const [authorFilter, setAuthorFilter] = useState('');
+    const [submittedAuthor, setSubmittedAuthor] = useState('');
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState<FeedbackState>(null);
     const [page, setPage] = useState(1);
@@ -59,8 +64,17 @@ export default function PostsList() {
                 if (submittedSearch) {
                     params.set('search', submittedSearch);
                 }
+                if (submittedAuthor) {
+                    params.set('author', submittedAuthor);
+                }
                 if (visibilityFilter) {
                     params.set('visibility', visibilityFilter);
+                }
+                if (typeFilter) {
+                    params.set('type', typeFilter);
+                }
+                if (hasReportsFilter) {
+                    params.set('hasReports', 'true');
                 }
 
                 const res = await adminFetch(`/admin/posts?${params.toString()}`);
@@ -94,13 +108,14 @@ export default function PostsList() {
         return () => {
             cancelled = true;
         };
-    }, [page, refreshTick, submittedSearch, visibilityFilter]);
+    }, [page, refreshTick, submittedSearch, submittedAuthor, visibilityFilter, typeFilter, hasReportsFilter]);
 
     const handleSearch = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setFeedback(null);
         setPage(1);
         setSubmittedSearch(search.trim());
+        setSubmittedAuthor(authorFilter.trim());
         setRefreshTick((current) => current + 1);
     };
 
@@ -195,29 +210,41 @@ export default function PostsList() {
         <div className="space-y-6 animate-in fade-in">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-bold tracking-tight text-white">Gestión de Publicaciones</h1>
-                    <p className="text-sm text-zinc-500">
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">Gestión de Publicaciones</h1>
+                    <p className="text-sm text-muted-foreground">
                         Moderación rápida, ocultado, borrado lógico y eliminación permanente con auditoría.
                     </p>
                 </div>
 
                 <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row">
-                    <form onSubmit={handleSearch} className="relative w-full xl:w-96">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-                        <input
-                            type="text"
-                            placeholder="Buscar en contenido..."
-                            value={search}
-                            onChange={(event) => setSearch(event.target.value)}
-                            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none transition-colors"
-                        />
+                    <form onSubmit={handleSearch} className="flex gap-2 relative w-full xl:w-auto">
+                        <div className="relative w-full xl:w-64">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                type="text"
+                                placeholder="Buscar en contenido..."
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                                className="w-full rounded-xl border border-border bg-card py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none transition-colors"
+                            />
+                        </div>
+                        <div className="relative w-full xl:w-48">
+                            <input
+                                type="text"
+                                placeholder="Autor (@username)"
+                                value={authorFilter}
+                                onChange={(event) => setAuthorFilter(event.target.value)}
+                                className="w-full rounded-xl border border-border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none transition-colors"
+                            />
+                        </div>
+                        <button type="submit" className="hidden" />
                     </form>
 
                     <button
                         type="button"
                         onClick={handleRefresh}
                         disabled={loading}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                         Actualizar
@@ -232,11 +259,11 @@ export default function PostsList() {
                     { label: 'Con reportes', value: reportedOnPage, icon: AlertTriangle, tone: 'text-red-400 bg-red-500/10 border-red-500/20' },
                     { label: 'Reportes totales', value: totalReportsOnPage, icon: Trash2, tone: 'text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/20' },
                 ].map((card) => (
-                    <div key={card.label} className="rounded-2xl border border-zinc-800/70 bg-zinc-900/90 p-5">
+                    <div key={card.label} className="rounded-2xl border border-border bg-card/90 p-5">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">{card.label}</p>
-                                <p className="mt-2 text-2xl font-bold text-white">{card.value.toLocaleString()}</p>
+                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">{card.label}</p>
+                                <p className="mt-2 text-2xl font-bold text-foreground">{card.value.toLocaleString()}</p>
                             </div>
                             <div className={`rounded-2xl border p-3 ${card.tone}`}>
                                 <card.icon className="h-5 w-5" />
@@ -246,22 +273,53 @@ export default function PostsList() {
                 ))}
             </div>
 
-            <div className="rounded-2xl border border-zinc-800/70 bg-zinc-900/80 p-4">
-                <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+            <div className="rounded-2xl border border-border bg-card/80 p-4">
+                <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto]">
                     <label className="space-y-2 text-sm">
-                        <span className="text-zinc-500">Visibilidad</span>
+                        <span className="text-muted-foreground">Visibilidad</span>
                         <select
                             value={visibilityFilter}
                             onChange={(event) => {
                                 setPage(1);
                                 setVisibilityFilter(event.target.value);
                             }}
-                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-zinc-100 focus:border-emerald-500 focus:outline-none"
+                            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-foreground focus:border-emerald-500 focus:outline-none"
                         >
                             <option value="">Todas</option>
                             <option value="VISIBLE">VISIBLE</option>
                             <option value="HIDDEN">HIDDEN</option>
                         </select>
+                    </label>
+
+                    <label className="space-y-2 text-sm">
+                        <span className="text-muted-foreground">Tipo de publicación</span>
+                        <select
+                            value={typeFilter}
+                            onChange={(event) => {
+                                setPage(1);
+                                setTypeFilter(event.target.value);
+                            }}
+                            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-foreground focus:border-emerald-500 focus:outline-none"
+                        >
+                            <option value="">Todos</option>
+                            <option value="post">Texto/Normal</option>
+                            <option value="image">Imagen</option>
+                            <option value="reel">Video/Reel</option>
+                            <option value="chart">TradingView</option>
+                        </select>
+                    </label>
+
+                    <label className="flex items-center gap-2 text-sm mt-8 mr-4 cursor-pointer">
+                        <input 
+                            type="checkbox"
+                            checked={hasReportsFilter}
+                            onChange={(e) => {
+                                setPage(1);
+                                setHasReportsFilter(e.target.checked);
+                            }}
+                            className="w-4 h-4 rounded border-border text-emerald-500 focus:ring-emerald-500"
+                        />
+                        <span className="text-foreground">Solo con reportes</span>
                     </label>
 
                     <div className="flex items-end">
@@ -270,12 +328,16 @@ export default function PostsList() {
                             onClick={() => {
                                 setSearch('');
                                 setSubmittedSearch('');
+                                setAuthorFilter('');
+                                setSubmittedAuthor('');
                                 setVisibilityFilter('');
+                                setTypeFilter('');
+                                setHasReportsFilter(false);
                                 setPage(1);
                                 setFeedback(null);
                                 setRefreshTick((current) => current + 1);
                             }}
-                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-zinc-800"
+                            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-semibold text-foreground/90 transition-colors hover:bg-secondary"
                         >
                             Limpiar filtros
                         </button>
@@ -302,7 +364,7 @@ export default function PostsList() {
                     return (
                         <article
                             key={post.id}
-                            className="relative flex flex-col gap-4 rounded-2xl border border-zinc-800/60 bg-zinc-900 p-5 shadow-sm transition-colors hover:border-zinc-700"
+                            className="relative flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-border"
                         >
                             {post.visibility === 'HIDDEN' && (
                                 <span className="absolute right-4 top-4 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-300">
@@ -315,17 +377,17 @@ export default function PostsList() {
                                     <img
                                         src={post.author.avatarUrl}
                                         alt={post.author.username}
-                                        className="h-10 w-10 rounded-full border border-zinc-800 object-cover"
+                                        className="h-10 w-10 rounded-full border border-border object-cover"
                                     />
                                 ) : (
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800 text-xs text-zinc-400">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-xs text-muted-foreground">
                                         {post.author.username?.[0]?.toUpperCase() || '?'}
                                     </div>
                                 )}
 
                                 <div className="min-w-0">
-                                    <p className="truncate text-sm font-semibold text-zinc-100">{post.author.username}</p>
-                                    <p className="text-xs text-zinc-500">
+                                    <p className="truncate text-sm font-semibold text-foreground">{post.author.username}</p>
+                                    <p className="text-xs text-muted-foreground">
                                         {new Date(post.createdAt).toLocaleString('es-AR', {
                                             dateStyle: 'short',
                                             timeStyle: 'short',
@@ -334,25 +396,55 @@ export default function PostsList() {
                                 </div>
                             </div>
 
-                            <div className="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                                <span className="rounded-full border border-zinc-800 bg-zinc-950 px-2.5 py-1">
+                            <div className="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                <span className="rounded-full border border-border bg-background px-2.5 py-1">
                                     {post.type}
                                 </span>
                                 {post.assetSymbol && (
-                                    <span className="rounded-full border border-zinc-800 bg-zinc-950 px-2.5 py-1">
+                                    <span className="rounded-full border border-border bg-background px-2.5 py-1">
                                         {post.assetSymbol}
                                     </span>
                                 )}
-                                <span className="rounded-full border border-zinc-800 bg-zinc-950 px-2.5 py-1">
+                                <span className="rounded-full border border-border bg-background px-2.5 py-1">
                                     ID {post.id.slice(0, 8)}
                                 </span>
                             </div>
 
-                            <p className="min-h-24 rounded-xl border border-zinc-800/50 bg-zinc-950/50 p-3 text-sm leading-relaxed text-zinc-300">
-                                {post.content || <span className="italic text-zinc-500">Sin texto. Post de media o chart.</span>}
+                            <p className="min-h-24 rounded-xl border border-border bg-background/50 p-3 text-sm leading-relaxed text-foreground/90">
+                                {post.content || <span className="italic text-muted-foreground">Sin texto. Post de media o chart.</span>}
                             </p>
 
-                            <div className="flex items-center justify-between gap-4 text-xs font-medium text-zinc-500">
+                            {/* Chart / media preview */}
+                            {(post.type === 'chart' || post.type === 'image') && (() => {
+                                const imgs = (post.media ?? []).filter(m => m.mediaType === 'image');
+                                if (imgs.length > 0) {
+                                    return (
+                                        <div className={`grid gap-1.5 ${imgs.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                            {imgs.slice(0, 4).map((m, i) => (
+                                                <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="block rounded-xl overflow-hidden bg-black/30">
+                                                    <img src={m.url} alt="media" className="w-full max-h-52 object-cover" />
+                                                </a>
+                                            ))}
+                                        </div>
+                                    );
+                                }
+                                if (post.type === 'chart' && post.assetSymbol) {
+                                    // Show a static TradingView mini-embed for the chart
+                                    return (
+                                        <div className="rounded-xl overflow-hidden border border-border/40" style={{ height: 220 }}>
+                                            <iframe
+                                                src={`https://www.tradingview.com/widgetembed/?symbol=${encodeURIComponent(post.assetSymbol)}&interval=D&theme=dark&style=1&locale=es&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=220`}
+                                                className="w-full h-full border-0"
+                                                allow="clipboard-write"
+                                                title={`Chart ${post.assetSymbol}`}
+                                            />
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })()}
+
+                            <div className="flex items-center justify-between gap-4 text-xs font-medium text-muted-foreground">
                                 <div className="flex flex-wrap gap-3">
                                     <span>Likes {post._count.likes}</span>
                                     <span>Comentarios {post._count.comments}</span>
@@ -379,7 +471,7 @@ export default function PostsList() {
                                     className={`rounded-xl px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                                         post.visibility === 'HIDDEN'
                                             ? 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
-                                            : 'bg-zinc-800 text-zinc-200 hover:bg-zinc-700'
+                                            : 'bg-secondary text-foreground hover:bg-secondary/80'
                                     }`}
                                 >
                                     {post.visibility === 'HIDDEN' ? 'Mostrar' : 'Ocultar'}
@@ -414,18 +506,18 @@ export default function PostsList() {
             </div>
 
             {posts.length === 0 && !loading && (
-                <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900 py-12 text-center text-zinc-500">
+                <div className="rounded-2xl border border-border bg-card py-12 text-center text-muted-foreground">
                     No hay publicaciones que coincidan con los filtros.
                 </div>
             )}
 
             {loading && (
-                <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900 py-12 text-center text-zinc-500">
+                <div className="rounded-2xl border border-border bg-card py-12 text-center text-muted-foreground">
                     Cargando publicaciones...
                 </div>
             )}
 
-            <div className="flex flex-col gap-3 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <p>
                     Página {page} de {totalPages}. Total: {total.toLocaleString()} publicaciones.
                 </p>
@@ -434,7 +526,7 @@ export default function PostsList() {
                         type="button"
                         disabled={page === 1}
                         onClick={() => setPage((current) => Math.max(1, current - 1))}
-                        className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg border border-border bg-card px-3 py-1.5 transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         Anterior
                     </button>
@@ -442,7 +534,7 @@ export default function PostsList() {
                         type="button"
                         disabled={page >= totalPages}
                         onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                        className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg border border-border bg-card px-3 py-1.5 transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         Siguiente
                     </button>

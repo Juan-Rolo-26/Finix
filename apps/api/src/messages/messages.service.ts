@@ -274,7 +274,10 @@ export class MessagesService {
             )),
         };
 
-        return this.serializeMessage(message, conversationContext);
+        return {
+            message: this.serializeMessage(message, conversationContext),
+            participantIds: conv.participants.map((p) => p.userId),
+        };
     }
 
     /** Mark all unread messages in a conversation as read */

@@ -11,6 +11,6 @@
         "dist",
         "test",
         "**/*.spec.ts",
-        "db-check.ts"
+        "*.ts"
     ]
 }

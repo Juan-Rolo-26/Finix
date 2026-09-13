@@ -698,24 +698,44 @@ export class MarketService {
             return this.tickersCache.data;
         }
 
-        const defaultTickers = ['NASDAQ:TSLA', 'CRYPTO:BTCUSD', 'AMEX:SPY', 'NASDAQ:NVDA', 'NASDAQ:AAPL'];
-        const quotes = await this.getQuotes(defaultTickers);
+        try {
+            // Fetch real top gainers of the day (Large Cap US stocks)
+            const response = await fetch('https://scanner.tradingview.com/america/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filter: [
+                        { left: "type", operation: "in_range", right: ["stock"] },
+                        { left: "market_cap_basic", operation: "egreater", right: 20000000000 }, // > 20B
+                        { left: "exchange", operation: "in_range", right: ["NASDAQ", "NYSE"] }
+                    ],
+                    columns: ["name", "close", "change", "volume"],
+                    sort: { sortBy: "change", sortOrder: "desc" },
+                    range: [0, 10]
+                })
+            });
 
-        const result = quotes.map((q, i) => {
-            const mockFallback = this.mockTickers[i % this.mockTickers.length];
-            // Extraer el símbolo corto (ej: TSLA en lugar de NASDAQ:TSLA)
-            const shortSymbol = q.inputSymbol.split(':')[1] || q.inputSymbol;
+            if (!response.ok) throw new Error('Scanner failed');
+            const data = await response.json();
 
-            return {
-                symbol: shortSymbol === 'BTCUSD' ? 'BTC' : shortSymbol,
-                price: q.price ?? mockFallback.price,
-                change: q.change ?? mockFallback.change,
-                volume: Math.floor(Math.random() * 50000) + 10000 // Simulation for volume as real volume might be missing
-            };
-        });
+            const result = data.data.map((item: any) => {
+                const fullSymbol = item.s;
+                const [shortSymbol, price, change, volume] = item.d;
+                return {
+                    symbol: fullSymbol,
+                    shortSymbol: shortSymbol,
+                    price: price,
+                    change: change,
+                    volume: volume
+                };
+            });
 
-        this.tickersCache = { data: result, fetchedAt: Date.now() };
-        return result;
+            this.tickersCache = { data: result, fetchedAt: Date.now() };
+            return result;
+        } catch (error) {
+            console.error('[MarketService] Top gainers failed:', error);
+            return [];
+        }
     }
 
     async searchSymbols(query: string) {

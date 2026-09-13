@@ -4,7 +4,7 @@ const defaultBases = Array.from(
             '/api',
             import.meta.env.VITE_API_URL,
             typeof window !== 'undefined' ? `${window.location.origin}/api` : null,
-            import.meta.env.DEV ? 'http://localhost:3001/api' : null,
+            import.meta.env.DEV ? 'http://localhost:3010/api' : null,
         ].filter(Boolean)
     )
 ) as string[];
@@ -55,7 +55,6 @@ export const apiUrl = (path: string) => buildUrl(activeBase ?? '', path);
 import { handleMockRequest } from './mockApi';
 import { handleMockMarket } from './mockMarket';
 import { handleMockNews } from './mockNews';
-import { handleMockPosts } from './mockPosts';
 import { handleMockUsers } from './mockUsers';
 
 export const apiFetch = async (path: string, init?: RequestInit) => {
@@ -66,10 +65,6 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
     if (path.startsWith('/users')) {
         const usersResponse = await handleMockUsers(path, init);
         if (usersResponse) return usersResponse;
-    }
-    if (path.startsWith('/posts')) {
-        const postsResponse = await handleMockPosts(path, init);
-        if (postsResponse) return postsResponse;
     }
     if (path.startsWith('/market')) {
         const marketResponse = await handleMockMarket(path, init);

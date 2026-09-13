@@ -25,14 +25,14 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold tracking-tight text-white mb-6">Dashboard</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-6">Dashboard</h1>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat) => (
-                    <div key={stat.title} className="bg-zinc-900 border border-zinc-800/60 p-6 rounded-2xl flex items-center justify-between">
+                    <div key={stat.title} className="bg-card border border-border p-6 rounded-2xl flex items-center justify-between">
                         <div>
-                            <p className="text-zinc-400 text-sm mb-1">{stat.title}</p>
-                            <h3 className="text-2xl font-bold text-white">{stat.value.toLocaleString()}</h3>
+                            <p className="text-muted-foreground text-sm mb-1">{stat.title}</p>
+                            <h3 className="text-2xl font-bold text-foreground">{stat.value.toLocaleString()}</h3>
                         </div>
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.bg}`}>
                             <stat.icon className={`w-6 h-6 ${stat.color}`} />
@@ -43,8 +43,8 @@ export default function Dashboard() {
 
             {/* Quick Actions / Info Placeholder */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                <div className="bg-zinc-900 border border-zinc-800/60 p-6 rounded-2xl">
-                    <h3 className="font-semibold text-white mb-4">Avisos del Sistema</h3>
+                <div className="bg-card border border-border p-6 rounded-2xl">
+                    <h3 className="font-semibold text-foreground mb-4">Avisos del Sistema</h3>
                     <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-sm flex items-center gap-3">
                         <ShieldCheck className="w-5 h-5 flex-shrink-0" />
                         Semilla de AdminBootstrapper cargada. Base de datos segura. Allowlist activa.

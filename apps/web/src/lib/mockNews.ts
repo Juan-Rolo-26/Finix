@@ -341,6 +341,9 @@ function json(data: unknown, status = 200) {
 export async function handleMockNews(path: string, _init?: RequestInit): Promise<Response | null> {
     if (!path.startsWith('/news')) return null;
 
+    // Let the new CMS slot endpoints go directly to the real backend
+    if (path.startsWith('/news/slots')) return null;
+
     const qs = path.includes('?') ? new URLSearchParams(path.split('?')[1]) : new URLSearchParams();
     const category = (qs.get('category') || 'cripto').toLowerCase();
 

@@ -29,17 +29,19 @@ const POST_INCLUDE = (userId?: string) => ({
     reposts: userId ? { where: { userId }, select: { userId: true }, take: 1 } : false,
     saves: userId ? { where: { userId }, select: { userId: true }, take: 1 } : false,
     parent: {
-        include: {
+        select: {
+            id: true,
             author: { select: AUTHOR_SELECT },
         }
     },
     quotedPost: {
-        include: {
+        select: {
+            id: true,
+            content: true,
             author: { select: AUTHOR_SELECT },
-            media: true,
         }
     },
-    _count: { select: { likes: true, replies: true, reposts: true, saves: true, quotes: true } },
+    _count: { select: { likes: true, replies: true } },
 });
 
 const COMMENT_INCLUDE = (userId?: string) => ({
@@ -95,6 +97,13 @@ function enrichComment(comment: any, userId: string | undefined, repliesByParent
 
 @Injectable()
 export class PostsService {
+    private feedCache = new Map<string, { data: any; timestamp: number }>();
+    private readonly FEED_CACHE_TTL = 15000; // 15s
+
+    public clearFeedCache() {
+        this.feedCache.clear();
+    }
+
     constructor(
         private prisma: PrismaService,
         private notificationsService: NotificationsService,
@@ -213,6 +222,7 @@ export class PostsService {
             include: POST_INCLUDE(userId),
         });
 
+        this.clearFeedCache();
         return enrichPost(post, userId);
     }
 
@@ -223,12 +233,18 @@ export class PostsService {
         opts: {
             cursor?: string;
             limit?: number;
-            sort?: 'recent' | 'popular' | 'following' | 'trending';
+            sort?: 'recent' | 'popular' | 'following' | 'trending' | 'finix_oficial' | 'general';
             type?: string;
         },
     ) {
+        const cacheKey = `${userId || 'anon'}:${opts.sort || 'general'}:${opts.limit || 20}:${opts.cursor || ''}:${opts.type || ''}`;
+        const cached = this.feedCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < this.FEED_CACHE_TTL) {
+            return cached.data;
+        }
+
         const limit = Math.min(opts.limit ?? 20, 50);
-        const sort = opts.sort ?? 'recent';
+        const sort = opts.sort ?? 'general';
 
         let followingIds: string[] = [];
         if (sort === 'following' && userId) {
@@ -239,12 +255,35 @@ export class PostsService {
             followingIds = follows.map((f) => f.followingId);
         }
 
-        const where: any = { parentId: null }; // Main feed shows only top-level posts initially
+        const where: any = { parentId: null, visibility: 'VISIBLE', deletedAt: null }; // Main feed shows only top-level posts initially
         if (sort === 'following') {
             where.authorId = { in: followingIds };
+        } else if (sort === 'finix_oficial') {
+            where.author = { username: 'finix_oficial' };
         }
         if (opts.type) {
-            where.type = opts.type;
+            const t = opts.type.toLowerCase().trim();
+            if (t === 'post') {
+                where.type = { in: ['post', 'opinion', 'analysis', 'education', 'news', 'question'] };
+            } else if (t === 'chart') {
+                where.OR = [
+                    { type: 'chart' },
+                    { assetSymbol: { not: null } },
+                    { tickers: { not: '' } },
+                ];
+            } else if (t === 'image') {
+                where.OR = [
+                    { type: 'image' },
+                    { media: { some: { mediaType: 'image' } } },
+                ];
+            } else if (t === 'reel') {
+                where.OR = [
+                    { type: 'reel' },
+                    { media: { some: { mediaType: 'video' } } },
+                ];
+            } else {
+                where.type = opts.type;
+            }
         }
 
         const orderBy: any =
@@ -264,11 +303,15 @@ export class PostsService {
         const items = hasMore ? posts.slice(0, limit) : posts;
         const nextCursor = hasMore ? items[items.length - 1].id : null;
 
-        return {
+        const result = {
             posts: items.map((p) => enrichPost(p, userId)),
             nextCursor,
             hasMore,
         };
+
+        this.feedCache.set(cacheKey, { data: result, timestamp: Date.now() });
+
+        return result;
     }
 
     // ── GET ONE ───────────────────────────────────────────────────────────────
@@ -342,6 +385,7 @@ export class PostsService {
         const post = await this.prisma.post.findFirst({ where });
         if (!post) throw new NotFoundException('Post no encontrado o sin permisos');
         await this.prisma.post.delete({ where: { id: postId } });
+        this.clearFeedCache();
         return { success: true };
     }
 
@@ -363,9 +407,11 @@ export class PostsService {
 
         if (existing) {
             await this.prisma.like.delete({ where: { postId_userId: { postId, userId } } });
+            this.clearFeedCache();
             return { liked: false };
         }
         await this.prisma.like.create({ data: { postId, userId } });
+        this.clearFeedCache();
 
         if (post.authorId !== userId) {
             const actorUsername = await this.getActorUsername(userId);
@@ -557,6 +603,7 @@ export class PostsService {
 
         if (existing) {
             await this.prisma.repost.delete({ where: { userId_postId: { userId, postId } } });
+            this.clearFeedCache();
             return { reposted: false };
         }
 
@@ -564,6 +611,7 @@ export class PostsService {
         await this.prisma.repost.create({
             data: { userId, postId },
         });
+        this.clearFeedCache();
 
         if (post.authorId !== userId) {
             const actorUsername = await this.getActorUsername(userId);
@@ -591,9 +639,11 @@ export class PostsService {
 
         if (existing) {
             await this.prisma.save.delete({ where: { userId_postId: { userId, postId } } });
+            this.clearFeedCache();
             return { saved: false };
         }
         await this.prisma.save.create({ data: { userId, postId } });
+        this.clearFeedCache();
         return { saved: true };
     }
 
@@ -636,7 +686,7 @@ export class PostsService {
         if (!user) throw new NotFoundException('Usuario no encontrado');
 
         const posts = await this.prisma.post.findMany({
-            where: { authorId: user.id, parentId: null },
+            where: { authorId: user.id, parentId: null, visibility: 'VISIBLE', deletedAt: null },
             take: limit + 1,
             ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
             orderBy: { createdAt: 'desc' },
@@ -658,13 +708,13 @@ export class PostsService {
         const skip = (page - 1) * limit;
         const [posts, total] = await Promise.all([
             this.prisma.post.findMany({
-                where: { parentId: null },
+                where: { parentId: null, visibility: 'VISIBLE', deletedAt: null },
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
                 include: POST_INCLUDE(viewerId),
             }),
-            this.prisma.post.count({ where: { parentId: null } }),
+            this.prisma.post.count({ where: { parentId: null, visibility: 'VISIBLE', deletedAt: null } }),
         ]);
         return {
             posts: posts.map((post) => enrichPost(post, viewerId)),

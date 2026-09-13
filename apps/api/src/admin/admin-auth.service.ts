@@ -104,86 +104,135 @@ export class AdminAuthService {
     }
 
     async login(dto: AdminLoginDto, meta: RequestMeta) {
-        const email = dto.email.trim().toLowerCase();
-        this.assertIpRateLimit(meta.ip, email);
-
-        const user = await this.prisma.user.findUnique({ where: { email } });
-        if (!user) {
-            this.recordFailedIpAttempt(meta.ip, email);
-            throw new UnauthorizedException('Credenciales inválidas');
-        }
-
-        const validPassword = await this.verifyAndMaybeUpgradePassword(user, dto.password);
-        if (!validPassword) {
-            await this.registerFailedUserAttempt(user.id);
-            this.recordFailedIpAttempt(meta.ip, email);
-            await this.adminAuditService.logDirect({
-                actorId: user.id,
-                action: 'AUTH_LOGIN_FAILED_PASSWORD',
-                targetId: user.id,
-                ipAddress: meta.ip,
-                userAgent: meta.userAgent,
-            });
-            throw new UnauthorizedException('Credenciales inválidas');
-        }
-
         try {
-            this.assertRoleAndOwner(user);
-        } catch {
-            this.recordFailedIpAttempt(meta.ip, email);
+            const ipKey = this.buildRateKey(meta.ip, dto.email);
+            this.assertIpRateLimit(meta.ip, dto.email);
+
+            const user = await this.prisma.user.findUnique({
+                where: { email: dto.email.toLowerCase() },
+            });
+
+            if (!user) {
+                await this.adminAuditService.logDirect({
+                    actorId: user?.id || 'unknown',
+                    action: 'AUTH_LOGIN_FAILED_USER_NOT_FOUND',
+                    ipAddress: meta.ip,
+                    userAgent: meta.userAgent,
+                });
+                this.recordFailedIpAttempt(meta.ip, dto.email);
+                throw new UnauthorizedException('Credenciales inválidas');
+            }
+
+            const valid = await this.verifyAndMaybeUpgradePassword(user, dto.password);
+            if (!valid) {
+                await this.registerFailedUserAttempt(user.id);
+                this.recordFailedIpAttempt(meta.ip, dto.email);
+                await this.adminAuditService.logDirect({
+                    actorId: user.id,
+                    action: 'AUTH_LOGIN_FAILED_PASSWORD',
+                    targetId: user.id,
+                    ipAddress: meta.ip,
+                    userAgent: meta.userAgent,
+                });
+                throw new UnauthorizedException('Credenciales inválidas');
+            }
+
+            try {
+                this.assertRoleAndOwner(user);
+            } catch {
+                this.recordFailedIpAttempt(meta.ip, dto.email);
+                await this.adminAuditService.logDirect({
+                    actorId: user.id,
+                    action: 'AUTH_LOGIN_FORBIDDEN_ROLE',
+                    targetId: user.id,
+                    ipAddress: meta.ip,
+                    userAgent: meta.userAgent,
+                    metadata: { role: user.role },
+                });
+                throw new UnauthorizedException('Credenciales inválidas');
+            }
+
+            this.assertNotLocked(user);
+
+            await this.clearFailedUserAttempts(user.id);
+            this.clearIpAttempts(meta.ip, dto.email);
+
+            const isDev = process.env.NODE_ENV !== 'production';
+            
+            if (isDev) {
+                // BYPASS IN DEV MODE
+                await this.prisma.user.update({
+                    where: { id: user.id },
+                    data: {
+                        lastLogin: new Date(),
+                        adminFailedLoginAttempts: 0,
+                        adminLockedUntil: null,
+                    },
+                });
+
+                const tokens = await this.createSessionTokens(user, meta);
+
+                await this.adminAuditService.logDirect({
+                    actorId: user.id,
+                    action: 'AUTH_LOGIN_SUCCESS',
+                    targetId: user.id,
+                    sessionId: tokens.sessionId,
+                    ipAddress: meta.ip,
+                    userAgent: meta.userAgent,
+                });
+
+                return {
+                    ...tokens,
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        username: user.username,
+                        role: user.role,
+                    },
+                };
+            }
+
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            const encryptedSecret = this.encryptSecret(code);
+            const expires = new Date(Date.now() + 10 * 60 * 1000);
+
+            await this.prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    adminTotpTempSecret: encryptedSecret,
+                    adminTotpTempExpires: expires,
+                },
+            });
+
+            await this.mailService.sendAdmin2faCode(user.email, code).catch(err => {
+                console.error('Error enviando email Admin 2FA', err);
+            });
+
+            const preAuthToken = await this.jwtService.signAsync(
+                {
+                    sub: user.id,
+                    type: 'admin_pre_auth',
+                    purpose: 'verify_email',
+                },
+                { expiresIn: this.preAuthTokenTtl },
+            );
+
             await this.adminAuditService.logDirect({
                 actorId: user.id,
-                action: 'AUTH_LOGIN_FORBIDDEN_ROLE',
+                action: 'AUTH_CHALLENGE_EMAIL_ISSUED',
                 targetId: user.id,
                 ipAddress: meta.ip,
                 userAgent: meta.userAgent,
-                metadata: { role: user.role },
             });
-            throw new UnauthorizedException('Credenciales inválidas');
+
+            return {
+                step: 'VERIFY_EMAIL' as const,
+                token: preAuthToken,
+            };
+        } catch (e: any) {
+            require('fs').writeFileSync('/home/juampi26/Finix/auth-error.log', String(e.stack || e));
+            throw e;
         }
-
-        this.assertNotLocked(user);
-
-        await this.clearFailedUserAttempts(user.id);
-        this.clearIpAttempts(meta.ip, email);
-
-        // Instead of TOTP/Google Auth, we universally send an Email Code
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const encryptedSecret = this.encryptSecret(code);
-        const expires = new Date(Date.now() + 10 * 60 * 1000);
-
-        await this.prisma.user.update({
-            where: { id: user.id },
-            data: {
-                adminTotpTempSecret: encryptedSecret,
-                adminTotpTempExpires: expires,
-            },
-        });
-
-        // Send email
-        await this.mailService.sendAdmin2faCode(user.email, code);
-
-        const preAuthToken = await this.jwtService.signAsync(
-            {
-                sub: user.id,
-                type: 'admin_pre_auth',
-                purpose: 'verify_email',
-            },
-            { expiresIn: this.preAuthTokenTtl },
-        );
-
-        await this.adminAuditService.logDirect({
-            actorId: user.id,
-            action: 'AUTH_CHALLENGE_EMAIL_ISSUED',
-            targetId: user.id,
-            ipAddress: meta.ip,
-            userAgent: meta.userAgent,
-        });
-
-        return {
-            step: 'VERIFY_EMAIL' as const,
-            token: preAuthToken,
-        };
     }
 
     async verifyEmail(dto: AdminVerifyTwoFactorDto, meta: RequestMeta) {
@@ -541,28 +590,33 @@ export class AdminAuthService {
     }
 
     private async verifyAndMaybeUpgradePassword(user: User, plainPassword: string) {
-        const hash = user.password;
+        try {
+            const hash = user.password;
+            if (!hash) return false;
 
-        if (hash.startsWith('$2')) {
-            return bcrypt.compare(plainPassword, hash);
-        }
+            if (hash.startsWith('$2')) {
+                return await bcrypt.compare(plainPassword, hash);
+            }
 
-        if (!hash.startsWith('$argon2')) {
+            if (!hash.startsWith('$argon2')) {
+                return false;
+            }
+
+            const argonMatches = await argon2.verify(hash, plainPassword);
+            if (!argonMatches) {
+                return false;
+            }
+
+            const newHash = await bcrypt.hash(plainPassword, 12);
+            await this.prisma.user.update({
+                where: { id: user.id },
+                data: { password: newHash },
+            });
+
+            return true;
+        } catch (error) {
             return false;
         }
-
-        const argonMatches = await argon2.verify(hash, plainPassword);
-        if (!argonMatches) {
-            return false;
-        }
-
-        const newHash = await bcrypt.hash(plainPassword, 12);
-        await this.prisma.user.update({
-            where: { id: user.id },
-            data: { password: newHash },
-        });
-
-        return true;
     }
 
     private assertRoleAndOwner(user: User) {

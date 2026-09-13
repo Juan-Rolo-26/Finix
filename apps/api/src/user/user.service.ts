@@ -430,6 +430,9 @@ export class UserService {
             returnsVisibilityMode: true,
             acceptingFollowers: true,
             createdAt: true,
+            theme: true,
+            language: true,
+            currency: true,
             _count: {
                 select: {
                     posts: true,
@@ -615,6 +618,27 @@ export class UserService {
             }
         }
 
+        if (updateData.theme !== undefined) {
+            const rawTheme = String(updateData.theme).toLowerCase().trim();
+            if (['light', 'dark', 'system'].includes(rawTheme)) {
+                filteredData.theme = rawTheme;
+            }
+        }
+
+        if (updateData.language !== undefined) {
+            const rawLang = String(updateData.language).trim();
+            if (rawLang) {
+                filteredData.language = rawLang.slice(0, 10);
+            }
+        }
+
+        if (updateData.currency !== undefined) {
+            const rawCurr = String(updateData.currency).trim().toUpperCase();
+            if (['USD', 'ARS', 'EUR'].includes(rawCurr)) {
+                filteredData.currency = rawCurr;
+            }
+        }
+
         if (Object.keys(filteredData).length === 0) {
             return this.getCurrentUserProfile(userId);
         }
@@ -765,84 +789,29 @@ export class UserService {
             where: {
                 isProfilePublic: true,
                 showStats: true,
-                portfolios: {
-                    some: {
-                        holdings: {
-                            some: {},
-                        },
-                    },
-                },
+                totalReturn: { not: null },
             },
             select: {
                 id: true,
                 username: true,
                 avatarUrl: true,
+                totalReturn: true,
+                winRate: true,
+                riskScore: true,
                 isVerified: true,
                 title: true,
                 company: true,
-                portfolios: {
-                    select: {
-                        holdings: {
-                            select: {
-                                quantity: true,
-                                averageCost: true,
-                                asset: {
-                                    select: {
-                                        ticker: true,
-                                    },
-                                },
-                            },
-                        },
-                        transactions: {
-                            select: {
-                                id: true,
-                                type: true,
-                                date: true,
-                                createdAt: true,
-                                quantity: true,
-                                total: true,
-                                fee: true,
-                                currency: true,
-                                pricePerUnit: true,
-                                asset: {
-                                    select: {
-                                        ticker: true,
-                                    },
-                                },
-                            },
-                        },
-                        cashAccounts: {
-                            select: {
-                                currency: true,
-                                balance: true,
-                            },
-                        },
-                    },
-                },
             },
+            orderBy: {
+                totalReturn: 'desc',
+            },
+            take: 10,
         });
 
-        const traderHoldings = traders.flatMap((trader) => trader.portfolios.flatMap((portfolio) => portfolio.holdings));
-        const quoteMap = await this.buildQuotePriceMap(traderHoldings);
-
-        const result = traders
-            .map((trader) => {
-                const stats = this.computePortfolioStatsFromPortfolios(trader.portfolios, quoteMap);
-                return {
-                    id: trader.id,
-                    username: trader.username,
-                    avatarUrl: normalizeStoredUploadUrl(trader.avatarUrl) ?? null,
-                    totalReturn: stats.totalReturn,
-                    winRate: stats.winRate,
-                    riskScore: stats.riskScore,
-                    isVerified: trader.isVerified,
-                    title: trader.title,
-                    company: trader.company,
-                };
-            })
-            .filter((trader) => trader.totalReturn !== null)
-            .sort((left, right) => (right.totalReturn ?? Number.NEGATIVE_INFINITY) - (left.totalReturn ?? Number.NEGATIVE_INFINITY))
-            .slice(0, 10);
+        const result = traders.map((trader) => ({
+            ...trader,
+            avatarUrl: normalizeStoredUploadUrl(trader.avatarUrl) ?? null,
+        }));
 
         this.topTradersCache = { data: result, fetchedAt: Date.now() };
         return result;

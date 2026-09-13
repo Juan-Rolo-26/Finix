@@ -114,8 +114,11 @@ export default function ExplorePage() {
     const [showStoryComposer, setShowStoryComposer] = useState(false);
     const [showSaved, setShowSaved] = useState(false);
     const loaderRef = useRef<HTMLDivElement>(null);
-    // Guard ref to prevent concurrent fetches (replaces isLoading in useCallback deps)
+
     const fetchingRef = useRef(false);
+    const activeRequestIdRef = useRef(0);
+    const nextCursorRef = useRef<string | null>(null);
+    nextCursorRef.current = nextCursor;
 
     const storyComposerUser: StoryAuthor | null = user ? {
         id: user.id,
@@ -127,12 +130,14 @@ export default function ExplorePage() {
     } : null;
 
     const fetchPosts = useCallback(async (reset = false, cursorOverride?: string | null) => {
-        if (fetchingRef.current) return;
+        if (fetchingRef.current && !reset) return;
         fetchingRef.current = true;
         setIsLoading(true);
 
+        const requestId = ++activeRequestIdRef.current;
+
         try {
-            const cursor = reset ? '' : (cursorOverride !== undefined ? cursorOverride : nextCursor);
+            const cursor = reset ? '' : (cursorOverride !== undefined ? cursorOverride : nextCursorRef.current);
             const params = new URLSearchParams({
                 sort,
                 limit: '15',
@@ -142,12 +147,18 @@ export default function ExplorePage() {
 
             const endpoint = showSaved ? '/posts/saved' : `/posts/feed?${params}`;
             const res = await apiFetch(endpoint);
+
+            // Si se disparó otra petición más reciente, descartamos esta
+            if (requestId !== activeRequestIdRef.current) return;
+
             if (!res.ok) {
                 setHasMore(false);
                 return;
             }
 
             const data = await res.json();
+            if (requestId !== activeRequestIdRef.current) return;
+
             const newPosts: Post[] = data.posts || [];
 
             setPosts((prev) => {
@@ -157,16 +168,19 @@ export default function ExplorePage() {
                 return [...prev, ...uniqueNew];
             });
             setNextCursor(data.nextCursor || null);
-            setHasMore(data.hasMore ?? false);
+            setHasMore(Boolean(data.hasMore));
         } catch (e) {
-            console.error(e);
-            setHasMore(false);
+            if (requestId === activeRequestIdRef.current) {
+                console.error(e);
+                setHasMore(false);
+            }
         } finally {
-            fetchingRef.current = false;
-            setIsLoading(false);
-            setIsRefreshing(false);
+            if (requestId === activeRequestIdRef.current) {
+                fetchingRef.current = false;
+                setIsLoading(false);
+                setIsRefreshing(false);
+            }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sort, typeFilter, showSaved]);
 
     // Reset + fetch on filter change
@@ -175,8 +189,7 @@ export default function ExplorePage() {
         setNextCursor(null);
         setHasMore(true);
         fetchPosts(true);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sort, typeFilter, showSaved]);
+    }, [fetchPosts]);
 
     // Check for create param
     useEffect(() => {
@@ -187,19 +200,21 @@ export default function ExplorePage() {
         }
     }, [location.search, navigate, location.pathname]);
 
-    // Infinite scroll observer
+    // Infinite scroll observer (solo se activa cuando ya hay publicaciones cargadas)
     useEffect(() => {
+        if (!hasMore || isLoading || posts.length === 0) return;
+
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting && hasMore && !fetchingRef.current) {
-                    fetchPosts(false, nextCursor);
+                    fetchPosts(false, nextCursorRef.current);
                 }
             },
             { threshold: 0.1 }
         );
         if (loaderRef.current) observer.observe(loaderRef.current);
         return () => observer.disconnect();
-    }, [hasMore, fetchPosts, nextCursor]);
+    }, [hasMore, isLoading, posts.length, fetchPosts]);
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
@@ -375,7 +390,7 @@ export default function ExplorePage() {
                         </div>
                     ) : (
                         <>
-                            <div className="flex flex-col gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {posts.map((post) => (
                                     <PostCard
                                         key={post.id}

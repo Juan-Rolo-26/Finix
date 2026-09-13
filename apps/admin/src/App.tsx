@@ -9,6 +9,12 @@ import ReportsList from './pages/ReportsList';
 import AuditLogs from './pages/AuditLogs';
 import NewsManagement from './pages/NewsManagement';
 import VerificationsManagement from './pages/VerificationsManagement';
+import Statistics from './pages/Statistics';
+import CommunitiesManagement from './pages/CommunitiesManagement';
+import ProUsersManagement from './pages/ProUsersManagement';
+import AnalysisManagement from './pages/AnalysisManagement';
+import MarketRankingsManagement from './pages/MarketRankingsManagement';
+import CalendarManagement from './pages/CalendarManagement';
 import { adminFetch } from './lib/api';
 
 const RequireAdminAuth = ({ children }: { children: JSX.Element }) => {
@@ -58,9 +64,15 @@ export default function App() {
             <Route element={<RequireAdminAuth><AdminLayout /></RequireAdminAuth>}>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/statistics" element={<Statistics />} />
                 <Route path="/users" element={<UsersList />} />
+                <Route path="/pro-users" element={<ProUsersManagement />} />
+                <Route path="/communities" element={<CommunitiesManagement />} />
                 <Route path="/posts" element={<PostsList />} />
                 <Route path="/news" element={<NewsManagement />} />
+                <Route path="/market-rankings" element={<MarketRankingsManagement />} />
+                <Route path="/calendar" element={<CalendarManagement />} />
+                <Route path="/analysis" element={<AnalysisManagement />} />
                 <Route path="/verifications" element={<VerificationsManagement />} />
                 <Route path="/reports" element={<ReportsList />} />
                 <Route path="/audit-logs" element={<AuditLogs />} />

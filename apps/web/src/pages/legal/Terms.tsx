@@ -103,51 +103,75 @@ const termsSections = [
     },
 ];
 
+import { Link } from 'react-router-dom';
+
 const Terms = () => {
     return (
-        <div className="min-h-screen finix-unified-bg text-foreground font-sans">
-            <nav className="fixed top-0 w-full z-50 border-b border-primary/10 bg-background/60 backdrop-blur-xl">
-                <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-                    <BackButton to="/" label="Volver al inicio" />
-                    <div className="flex items-center gap-2">
-                        <span className="font-heading font-bold text-xl">Finix</span>
+        <div className="min-h-screen finix-unified-bg text-foreground font-sans selection:bg-primary/30">
+            <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl transition-colors">
+                <div className="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+                    <BackButton to="/dashboard" label="Volver a Finix" />
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center">
+                            <span className="text-primary font-bold text-base">F</span>
+                        </div>
+                        <span className="font-heading font-black text-lg tracking-tight">Finix</span>
                     </div>
                 </div>
             </nav>
 
-            <main className="container mx-auto px-6 pt-32 pb-20 max-w-4xl">
-                <div className="mb-12">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                        <Scale className="w-6 h-6 text-primary" />
-                    </div>
-                    <h1 className="text-4xl font-heading font-bold mb-4">Términos y Condiciones</h1>
-                    <p className="text-muted-foreground">Última actualización: 7 de marzo de 2026</p>
+            <main className="container mx-auto px-4 md:px-8 pt-28 pb-20 max-w-4xl">
+                {/* ── Navigation Tabs between Legal & Info pages ── */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-hide border-b border-border/40 text-xs font-semibold">
+                    <Link to="/about" className="px-3.5 py-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
+                        Sobre Finix
+                    </Link>
+                    <Link to="/help" className="px-3.5 py-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
+                        Centro de Ayuda
+                    </Link>
+                    <Link to="/terms" className="px-3.5 py-1.5 rounded-full bg-primary/15 text-primary border border-primary/30 whitespace-nowrap shadow-sm">
+                        Términos de Servicio
+                    </Link>
+                    <Link to="/privacy" className="px-3.5 py-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
+                        Política de Privacidad
+                    </Link>
+                    <Link to="/cookies" className="px-3.5 py-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
+                        Cookies
+                    </Link>
                 </div>
 
-                <div className="space-y-12 text-muted-foreground leading-8">
-                    <section className="rounded-3xl border border-amber-500/20 bg-amber-500/5 p-6">
-                        <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                            <AlertTriangle className="w-5 h-5 text-amber-500" />
+                <div className="mb-12">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 text-primary">
+                        <Scale className="w-6 h-6" />
+                    </div>
+                    <h1 className="text-3xl sm:text-4xl font-heading font-black tracking-tight mb-3">Términos y Condiciones</h1>
+                    <p className="text-muted-foreground text-sm">Última actualización: 7 de marzo de 2026</p>
+                </div>
+
+                <div className="space-y-12 text-muted-foreground leading-relaxed">
+                    <section className="rounded-3xl border border-amber-500/25 bg-amber-500/5 p-6">
+                        <h2 className="text-lg sm:text-xl font-bold text-foreground mb-3 flex items-center gap-2">
+                            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
                             Importante: Finix no brinda asesoría financiera personalizada
                         </h2>
-                        <p className="text-foreground/90 mb-4">
+                        <p className="text-foreground/90 text-sm mb-3">
                             Finix es una herramienta para aprender, analizar y compartir información financiera dentro de una comunidad. No operamos como asesor financiero, bróker, agente ni administrador de inversiones.
                         </p>
-                        <p>
+                        <p className="text-xs text-muted-foreground">
                             El contenido de la plataforma tiene fines educativos e informativos. Nunca debe tomarse como instrucción directa para invertir ni como sustituto del análisis propio o del asesoramiento profesional habilitado.
                         </p>
                     </section>
 
                     {termsSections.map(({ title, paragraphs, bullets }) => (
-                        <section key={title}>
-                            <h2 className="text-2xl font-bold text-foreground mb-4">{title}</h2>
+                        <section key={title} className="rounded-2xl border border-border/40 bg-card/60 p-6">
+                            <h2 className="text-xl font-bold text-foreground mb-3">{title}</h2>
                             {paragraphs.map((paragraph) => (
-                                <p key={paragraph} className="mb-4 last:mb-0">
+                                <p key={paragraph} className="text-sm mb-3 last:mb-0 leading-relaxed">
                                     {paragraph}
                                 </p>
                             ))}
                             {bullets ? (
-                                <ul className="list-disc pl-6 space-y-2 mt-4">
+                                <ul className="list-disc pl-5 space-y-1.5 mt-3 text-sm">
                                     {bullets.map((item) => (
                                         <li key={item}>{item}</li>
                                     ))}
@@ -156,6 +180,17 @@ const Terms = () => {
                         </section>
                     ))}
                 </div>
+
+                {/* ── Footer ── */}
+                <footer className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+                    <p>© 2026 Finix Network Inc. Todos los derechos reservados.</p>
+                    <div className="flex items-center gap-4">
+                        <Link to="/about" className="hover:text-foreground transition-colors">Sobre Finix</Link>
+                        <Link to="/help" className="hover:text-foreground transition-colors">Ayuda</Link>
+                        <Link to="/privacy" className="hover:text-foreground transition-colors">Privacidad</Link>
+                        <Link to="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>
+                    </div>
+                </footer>
             </main>
         </div>
     );

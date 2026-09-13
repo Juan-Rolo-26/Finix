@@ -61,10 +61,11 @@ export class MessagesController {
         @Request() req: any,
         @Body() body: SendMessageDto,
     ) {
-        const message = await this.messagesService.sendMessage(req.user.id, id, body);
+        const result = await this.messagesService.sendMessage(req.user.id, id, body);
+        const { message, participantIds } = result;
 
         try {
-            await this.eventsGateway.emitNewMessage(id, message);
+            await this.eventsGateway.emitNewMessage(id, message, participantIds);
         } catch {
             // The message is already persisted; realtime delivery is best-effort.
         }

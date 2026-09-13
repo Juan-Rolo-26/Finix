@@ -9,10 +9,6 @@ const withApiPrefix = (path: string) => {
     if (!baseUrl && typeof window !== 'undefined' && window.location.hostname === 'admin.finixarg.com') {
         baseUrl = 'https://finixarg.com/api';
     }
-    // Si estamos en localhost y no hay variable, usamos el proxy de Vite
-    else if (!baseUrl && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        baseUrl = 'http://localhost:3001/api';
-    }
 
     let normalizedPath = path.startsWith('/') ? path : `/${path}`;
 
@@ -44,26 +40,54 @@ const buildInit = (init?: RequestInit): RequestInit => {
     };
 };
 
-async function tryRefreshSession() {
-    const url = withApiPrefix('/admin/auth/refresh');
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({}),
-    });
+// Timeout máximo por request al admin API (25s).
+// Evita que los fetches queden colgados indefinidamente si la API no responde.
+const ADMIN_FETCH_TIMEOUT_MS = 25_000;
 
-    return response.ok;
+function buildAbortSignal(): AbortSignal {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), ADMIN_FETCH_TIMEOUT_MS);
+    return controller.signal;
+}
+
+async function tryRefreshSession(): Promise<boolean> {
+    try {
+        const url = withApiPrefix('/admin/auth/refresh');
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({}),
+            signal: buildAbortSignal(),
+        });
+        return response.ok;
+    } catch {
+        // Error de red o timeout en el refresh → sesión inválida
+        return false;
+    }
 }
 
 export async function adminFetch(path: string, init?: RequestInit) {
     const url = withApiPrefix(path);
-    let response = await fetch(url, buildInit(init));
+
+    let response: Response;
+    try {
+        response = await fetch(url, { ...buildInit(init), signal: buildAbortSignal() });
+    } catch (err: any) {
+        // Error de red o timeout → lanzamos un mensaje legible
+        const isTimeout = err?.name === 'AbortError';
+        throw new Error(isTimeout ? 'La solicitud tardó demasiado. Verificá la conexión con la API.' : 'No se pudo conectar con la API.');
+    }
 
     if (response.status === 401 && !isAuthEndpoint(url)) {
         const refreshed = await tryRefreshSession();
         if (refreshed) {
-            response = await fetch(url, buildInit(init));
+            try {
+                response = await fetch(url, { ...buildInit(init), signal: buildAbortSignal() });
+            } catch (err: any) {
+                const isTimeout = err?.name === 'AbortError';
+                throw new Error(isTimeout ? 'La solicitud tardó demasiado. Verificá la conexión con la API.' : 'No se pudo conectar con la API.');
+            }
         } else if (typeof window !== 'undefined') {
             window.location.assign('/login');
         }

@@ -12,6 +12,8 @@ import {
 import CreatePostWidget from './CreatePostWidget';
 import TradingViewWidget from './TradingViewWidget';
 import CommentsPanel from './posts/CommentsPanel';
+import ReportModal from './ReportModal';
+import DeletePostModal from './DeletePostModal';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -33,7 +35,11 @@ interface Post {
     likesCount?: number; commentsCount?: number; repostsCount?: number;
     _count?: { likes: number; comments: number; reposts: number; quotes: number; replies: number };
 }
-interface SocialFeedProps { initialPosts: Post[]; onPostCreated: (post: Post) => void; }
+interface SocialFeedProps {
+    initialPosts: Post[];
+    isLoading?: boolean;
+    onPostCreated: (post: Post) => void;
+}
 
 /* ── Post type config ───────────────────────────────────────────── */
 const POST_TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
@@ -84,7 +90,7 @@ function EmptyFeed() {
                 </p>
             </div>
             <div className="flex gap-2 flex-wrap justify-center mt-1">
-                {['Explorar traders', 'Tendencias'].map(label => (
+                {['Explorar traders', 'General'].map(label => (
                     <span key={label} className="px-3 py-1.5 rounded-full text-[11.5px] font-medium cursor-pointer transition-all hover:opacity-80"
                         style={{ background: 'hsl(var(--secondary))', color: 'hsl(var(--foreground))' }}>
                         {label}
@@ -153,9 +159,8 @@ function ActionBtn({
 }
 
 /* ── Main Feed ──────────────────────────────────────────────────── */
-export default function SocialFeed({ initialPosts, onPostCreated }: SocialFeedProps) {
+export default function SocialFeed({ initialPosts, isLoading = false, onPostCreated }: SocialFeedProps) {
     const [posts, setPosts] = useState<Post[]>(initialPosts);
-    const [isLoading] = useState(false);
     const [prevInitialPosts, setPrevInitialPosts] = useState(initialPosts);
     if (initialPosts !== prevInitialPosts) { setPrevInitialPosts(initialPosts); setPosts(initialPosts); }
 
@@ -166,22 +171,26 @@ export default function SocialFeed({ initialPosts, onPostCreated }: SocialFeedPr
             <CreatePostWidget onPostCreated={handlePostCreated} />
 
             <div className="space-y-2.5">
-                {isLoading ? (
-                    <> <PostSkeleton /> <PostSkeleton /> <PostSkeleton /> </>
+                {isLoading && posts.length === 0 ? (
+                    <div className="flex flex-col gap-2.5">
+                        <PostSkeleton /> <PostSkeleton /> <PostSkeleton />
+                    </div>
                 ) : posts.length === 0 ? (
                     <EmptyFeed />
                 ) : (
                     <AnimatePresence initial={false}>
-                        {posts.map((post, i) => (
-                            <motion.div
-                                key={post.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0, transition: { delay: i < 5 ? i * 0.04 : 0, duration: 0.25 } }}
-                                exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.15 } }}
-                            >
-                                <FeedItem post={post} />
-                            </motion.div>
-                        ))}
+                        <div className="flex flex-col gap-2.5">
+                            {posts.map((post, i) => (
+                                <motion.div
+                                    key={post.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0, transition: { delay: i < 5 ? i * 0.04 : 0, duration: 0.25 } }}
+                                    exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.15 } }}
+                                >
+                                    <FeedItem post={post} />
+                                </motion.div>
+                            ))}
+                        </div>
                     </AnimatePresence>
                 )}
             </div>
@@ -206,7 +215,8 @@ function FeedItem({ post }: { post: Post }) {
     const [isRemoved, setIsRemoved] = useState(false);
     const [likeAnim, setLikeAnim] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
-    const [reportReason, setReportReason] = useState('');
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const isOwner = user?.id === post.author.id || post.author.id === 'current-user';
     if (isRemoved) return null;
@@ -244,33 +254,24 @@ function FeedItem({ post }: { post: Post }) {
         catch { setIsSaved(v => !v); }
     };
 
-    const handleDelete = async () => {
-        if (!isOwner || !window.confirm('¿Eliminar esta publicación?')) return;
+    const confirmDelete = async () => {
+        if (!isOwner) return;
+        setIsDeleting(true);
         try {
             const res = await apiFetch(`/posts/${post.id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error();
             setIsRemoved(true);
-        } catch { } finally { setShowMenu(false); }
+        } catch { } finally { setIsDeleting(false); setShowDeleteModal(false); setShowMenu(false); }
+    };
+
+    const handleDeleteClick = () => {
+        setShowMenu(false);
+        setShowDeleteModal(true);
     };
 
     const handleCopyLink = async () => {
         try { await navigator.clipboard.writeText(`${window.location.origin}/posts/${post.id}`); }
         catch { } finally { setShowMenu(false); }
-    };
-
-    const handleReport = async () => {
-        if (!reportReason.trim()) return;
-        try {
-            await apiFetch(`/posts/${post.id}/report`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reason: reportReason }),
-            });
-        } catch {
-        } finally {
-            setShowReportModal(false);
-            setReportReason('');
-        }
     };
 
     const mediaUrl = post.media?.[0]?.url ?? post.mediaUrl ?? null;
@@ -290,26 +291,24 @@ function FeedItem({ post }: { post: Post }) {
 
     return (
         <article
-            className="rounded-2xl overflow-hidden transition-all duration-200 cursor-pointer"
-            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border) / 0.45)' }}
+            className="rounded-2xl transition-all duration-200 cursor-pointer"
+            style={{ 
+                background: 'hsl(var(--card))', 
+                border: `1px solid ${typeConfig ? typeConfig.color : 'hsl(var(--border) / 0.45)'}` 
+            }}
             onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border) / 0.75)';
+                if (!typeConfig) (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border) / 0.75)';
                 (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 24px hsl(var(--foreground) / 0.04)';
             }}
             onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border) / 0.45)';
+                if (!typeConfig) (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border) / 0.45)';
                 (e.currentTarget as HTMLElement).style.boxShadow = 'none';
             }}
             onClick={e => {
-                if ((e.target as HTMLElement).closest('button, a, textarea, input')) return;
+                if (showReportModal || (e.target as HTMLElement).closest('button, a, textarea, input, label, [role="dialog"], [data-prevent-post-click]')) return;
                 navigate(`/posts/${post.id}`);
             }}
         >
-            {/* ── Post type accent bar ─── */}
-            {typeConfig && (
-                <div className="h-[2px] w-full" style={{ background: typeConfig.color }} />
-            )}
-
             <div className="p-4">
                 {/* ── Author row ─── */}
                 <div className="flex items-start justify-between gap-2 mb-3">
@@ -396,13 +395,13 @@ function FeedItem({ post }: { post: Post }) {
                                             </button>
                                         ))}
                                         {isOwner ? (
-                                            <button onClick={handleDelete}
+                                            <button onClick={handleDeleteClick}
                                                 className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[12.5px] font-medium transition-colors hover:bg-red-500/10"
                                                 style={{ color: 'hsl(0 68% 55%)' }}>
                                                 <Trash2 className="w-3.5 h-3.5" />Eliminar
                                             </button>
                                         ) : (
-                                            <button onClick={() => { setShowReportModal(true); setShowMenu(false); }}
+                                            <button onClick={(e) => { e.stopPropagation(); setShowReportModal(true); setShowMenu(false); }}
                                                 className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[12.5px] font-medium transition-colors hover:bg-secondary/50"
                                                 style={{ color: 'hsl(var(--muted-foreground))' }}>
                                                 <Flag className="w-3.5 h-3.5" />Reportar
@@ -563,59 +562,22 @@ function FeedItem({ post }: { post: Post }) {
             {/* ── Report modal ─── */}
             <AnimatePresence>
                 {showReportModal && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-                        onClick={() => setShowReportModal(false)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 20 }}
-                            className="bg-card border border-border/50 rounded-2xl p-5 w-full max-w-md space-y-4"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <h3 className="font-semibold flex items-center gap-2" style={{ color: 'hsl(amber / 90%)' }}>
-                                <Flag className="w-5 h-5 flex-shrink-0" /> Reportar publicación
-                            </h3>
-                            <div className="space-y-2">
-                                {['Spam o publicidad', 'Contenido falso o engañoso', 'Contenido inapropiado', 'Otro'].map((reason) => (
-                                    <button
-                                        key={reason}
-                                        onClick={() => setReportReason(reason)}
-                                        className="w-full text-left px-4 py-2.5 rounded-lg border text-sm transition-all"
-                                        style={{
-                                            border: reportReason === reason ? '1px solid hsl(var(--primary) / 0.5)' : '1px solid hsl(var(--border) / 0.5)',
-                                            background: reportReason === reason ? 'hsl(var(--primary) / 0.1)' : 'transparent',
-                                            color: reportReason === reason ? 'hsl(var(--primary))' : 'hsl(var(--foreground) / 0.8)'
-                                        }}
-                                    >
-                                        {reason}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="flex gap-2 justify-end mt-4">
-                                <button
-                                    className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-secondary/50"
-                                    onClick={() => setShowReportModal(false)}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={handleReport}
-                                    disabled={!reportReason}
-                                    className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                                    style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}
-                                >
-                                    Enviar reporte
-                                </button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
+                    <ReportModal
+                        isOpen={showReportModal}
+                        onClose={() => setShowReportModal(false)}
+                        targetType="POST"
+                        targetId={post.id}
+                        targetPreview={post.content}
+                    />
                 )}
             </AnimatePresence>
+
+            <DeletePostModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={confirmDelete}
+                isDeleting={isDeleting}
+            />
         </article>
     );
 }

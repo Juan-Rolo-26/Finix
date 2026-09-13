@@ -870,7 +870,7 @@ export default function MessagesPage() {
     const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showAttachMenu, setShowAttachMenu] = useState(false);
-    const [reportTarget, setReportTarget] = useState<{ id: string; type: 'USER' | 'POST' | 'MESSAGE' | 'CHAT' } | null>(null);
+    const [reportTarget, setReportTarget] = useState<{ id: string; type: 'USER' | 'POST' | 'MESSAGE' | 'CHAT', preview?: string } | null>(null);
     const [showPostPicker, setShowPostPicker] = useState(false);
     const [showChartPicker, setShowChartPicker] = useState(false);
     const [pendingAttachment, setPendingAttachment] = useState<ComposerAttachment | null>(null);
@@ -1324,6 +1324,7 @@ export default function MessagesPage() {
                     isOpen={true}
                     targetId={reportTarget.id}
                     targetType={reportTarget.type as any}
+                    targetPreview={reportTarget.preview}
                     onClose={() => setReportTarget(null)}
                 />
             )}
@@ -1843,7 +1844,7 @@ export default function MessagesPage() {
                                                                         )}
                                                                         {!isMe && (
                                                                             <button
-                                                                                onClick={() => setReportTarget({ id: msg.id, type: 'MESSAGE' })}
+                                                                                onClick={() => setReportTarget({ id: msg.id, type: 'MESSAGE', preview: msg.content })}
                                                                                 className="text-[10px] text-muted-foreground hover:text-orange-500 transition-colors ml-2"
                                                                             >
                                                                                 Reportar

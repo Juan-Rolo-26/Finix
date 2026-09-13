@@ -4,6 +4,7 @@ import { useAuthStore } from './stores/authStore';
 import { usePreferencesStore } from './stores/preferencesStore';
 import { supabase } from './lib/supabase';
 import DashboardLayout from './layouts/DashboardLayout';
+import InstallBanner from './components/InstallBanner';
 
 // ─── Lazy Loaded Pages ────────────────────────────────────────────────────────
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -23,12 +24,17 @@ const Help = lazy(() => import('./pages/Help'));
 const Markets = lazy(() => import('./pages/Markets'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
+const ProUpgrade = lazy(() => import('./pages/ProUpgrade'));
 const Explore = lazy(() => import('./pages/Explore'));
 const Messages = lazy(() => import('./pages/Messages'));
 const PostDetail = lazy(() => import('./pages/PostDetail'));
 const Comunidades = lazy(() => import('./pages/Comunidades'));
 const NewsPage = lazy(() => import('./pages/News'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const AnalysisPage = lazy(() => import('./pages/Analysis'));
+const TopGainersPage = lazy(() => import('./pages/TopGainersPage'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 
 // ─── Theme Applier ────────────────────────────────────────────────────────────
 
@@ -45,10 +51,12 @@ function ThemeApplier() {
         };
 
         const apply = () => {
-            const resolved = resolveTheme();
+            const resolved = resolveTheme() || 'light';
             if (resolved === 'light') {
                 root.classList.add('light');
+                root.classList.remove('dark');
             } else {
+                root.classList.add('dark');
                 root.classList.remove('light');
             }
         };
@@ -101,6 +109,7 @@ export default function App() {
 
     return (
         <>
+            <InstallBanner />
             <ThemeApplier />
             <Suspense
                 fallback={
@@ -160,18 +169,28 @@ export default function App() {
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/portfolio" element={<PortfolioPage />} />
                         <Route path="/market" element={<Markets />} />
+                        <Route path="/mercado/mejores-rendimientos" element={<TopGainersPage />} />
+                        <Route path="/market/top-gainers" element={<TopGainersPage />} />
+                        <Route path="/calendario" element={<CalendarPage />} />
+                        <Route path="/calendar" element={<CalendarPage />} />
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/profile/:username" element={<Profile />} />
                         <Route path="/settings" element={<Settings />} />
+                        <Route path="/settings/plan" element={<ProUpgrade />} />
                         <Route path="/explore" element={<Explore />} />
                         <Route path="/posts/:id" element={<PostDetail />} />
                         <Route path="/messages" element={<Messages />} />
                         <Route path="/comunidades" element={<Comunidades />} />
                         <Route path="/news" element={<NewsPage />} />
                         <Route path="/notifications" element={<NotificationsPage />} />
+                        <Route path="/analysis" element={<AnalysisPage />} />
+                        <Route path="/analysis/:slug" element={<AnalysisPage />} />
+                        <Route path="/analisis" element={<AnalysisPage />} />
+                        <Route path="/analisis/:slug" element={<AnalysisPage />} />
                     </Route>
 
                     {/* Info & Legal Routes */}
+                    <Route path="/pro" element={<Pricing />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/help" element={<Help />} />
                     <Route path="/legal/privacy" element={<Privacy />} />

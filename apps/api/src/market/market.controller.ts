@@ -1,10 +1,29 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, NotFoundException } from '@nestjs/common';
 import { MarketService } from './market.service';
+import { PrismaService } from '../prisma.service';
 
 @Controller('market')
 export class MarketController {
-    constructor(private marketService: MarketService) {
+    constructor(
+        private marketService: MarketService,
+        private prisma: PrismaService
+    ) {
         console.log('MarketController initialized');
+    }
+
+    @Get('analysis/daily')
+    async getDailyAnalysis() {
+        // Obtenemos el análisis activo más reciente
+        const analysis = await this.prisma.assetAnalysis.findFirst({
+            where: { isActive: true },
+            orderBy: { updatedAt: 'desc' }
+        });
+
+        if (!analysis) {
+            throw new NotFoundException('No active analysis found');
+        }
+
+        return analysis;
     }
 
     @Get('tickers')

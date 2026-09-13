@@ -204,21 +204,21 @@ export default function UsersList() {
         <div className="space-y-6 animate-in fade-in">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-bold tracking-tight text-white">Gestión de Usuarios</h1>
-                    <p className="text-sm text-zinc-500">
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">Gestión de Usuarios</h1>
+                    <p className="text-sm text-muted-foreground">
                         Ban, shadowban o eliminación permanente con confirmación fuerte y auditoría.
                     </p>
                 </div>
 
                 <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row">
                     <form onSubmit={handleSearch} className="relative w-full xl:w-96">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <input
                             type="text"
                             placeholder="Buscar por email o username..."
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
-                            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none transition-colors"
+                            className="w-full rounded-xl border border-border bg-card py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none transition-colors"
                         />
                     </form>
 
@@ -226,7 +226,7 @@ export default function UsersList() {
                         type="button"
                         onClick={handleRefresh}
                         disabled={loading}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                         Actualizar
@@ -241,11 +241,11 @@ export default function UsersList() {
                     { label: 'Admins en página', value: adminsOnPage, icon: ShieldAlert, tone: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
                     { label: 'Moderados en página', value: shadowOnPage + bannedOnPage, icon: Trash2, tone: 'text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/20' },
                 ].map((card) => (
-                    <div key={card.label} className="rounded-2xl border border-zinc-800/70 bg-zinc-900/90 p-5">
+                    <div key={card.label} className="rounded-2xl border border-border bg-card/90 p-5">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">{card.label}</p>
-                                <p className="mt-2 text-2xl font-bold text-white">{card.value.toLocaleString()}</p>
+                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">{card.label}</p>
+                                <p className="mt-2 text-2xl font-bold text-foreground">{card.value.toLocaleString()}</p>
                             </div>
                             <div className={`rounded-2xl border p-3 ${card.tone}`}>
                                 <card.icon className="h-5 w-5" />
@@ -255,17 +255,17 @@ export default function UsersList() {
                 ))}
             </div>
 
-            <div className="rounded-2xl border border-zinc-800/70 bg-zinc-900/80 p-4">
+            <div className="rounded-2xl border border-border bg-card/80 p-4">
                 <div className="grid gap-3 md:grid-cols-3">
                     <label className="space-y-2 text-sm">
-                        <span className="text-zinc-500">Rol</span>
+                        <span className="text-muted-foreground">Rol</span>
                         <select
                             value={roleFilter}
                             onChange={(event) => {
                                 setPage(1);
                                 setRoleFilter(event.target.value);
                             }}
-                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-zinc-100 focus:border-emerald-500 focus:outline-none"
+                            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-foreground focus:border-emerald-500 focus:outline-none"
                         >
                             <option value="">Todos los roles</option>
                             <option value="USER">USER</option>
@@ -277,14 +277,14 @@ export default function UsersList() {
                     </label>
 
                     <label className="space-y-2 text-sm">
-                        <span className="text-zinc-500">Estado</span>
+                        <span className="text-muted-foreground">Estado</span>
                         <select
                             value={statusFilter}
                             onChange={(event) => {
                                 setPage(1);
                                 setStatusFilter(event.target.value);
                             }}
-                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-zinc-100 focus:border-emerald-500 focus:outline-none"
+                            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-foreground focus:border-emerald-500 focus:outline-none"
                         >
                             <option value="">Todos los estados</option>
                             <option value="ACTIVE">ACTIVE</option>
@@ -304,7 +304,7 @@ export default function UsersList() {
                                 setFeedback(null);
                                 setRefreshTick((current) => current + 1);
                             }}
-                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-zinc-800"
+                            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-semibold text-foreground/90 transition-colors hover:bg-secondary"
                         >
                             Limpiar filtros
                         </button>
@@ -324,10 +324,10 @@ export default function UsersList() {
                 </div>
             )}
 
-            <div className="overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-900 shadow-sm">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-zinc-300">
-                        <thead className="sticky top-0 bg-zinc-800/60 text-xs uppercase text-zinc-500">
+                    <table className="w-full text-left text-sm text-foreground/90">
+                        <thead className="sticky top-0 bg-secondary/60 text-xs uppercase text-muted-foreground">
                             <tr>
                                 <th className="px-6 py-4 font-semibold">Usuario</th>
                                 <th className="px-6 py-4 font-semibold">Rol</th>
@@ -342,12 +342,12 @@ export default function UsersList() {
                                 const isPending = pendingUserId === user.id;
 
                                 return (
-                                    <tr key={user.id} className="transition-colors hover:bg-zinc-800/20">
+                                    <tr key={user.id} className="transition-colors hover:bg-secondary/20">
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col gap-1">
-                                                <span className="font-semibold text-zinc-100">{user.username}</span>
-                                                <span className="text-xs text-zinc-500">{user.email}</span>
-                                                <span className="text-[11px] text-zinc-600">
+                                                <span className="font-semibold text-foreground">{user.username}</span>
+                                                <span className="text-xs text-muted-foreground">{user.email}</span>
+                                                <span className="text-[11px] text-muted-foreground">
                                                     Alta: {formatDate(user.createdAt)}
                                                 </span>
                                             </div>
@@ -359,7 +359,7 @@ export default function UsersList() {
                                                         ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
                                                         : user.role === 'CREATOR'
                                                             ? 'border-amber-500/20 bg-amber-500/10 text-amber-400'
-                                                            : 'border-zinc-700 bg-zinc-800 text-zinc-400'
+                                                            : 'border-border bg-secondary text-muted-foreground'
                                                 }`}>
                                                     {user.role}
                                                 </span>
@@ -378,10 +378,10 @@ export default function UsersList() {
                                                 {user.status}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-xs text-zinc-500">
+                                        <td className="px-6 py-4 text-xs text-muted-foreground">
                                             Último login: {formatDate(user.lastLogin)}
                                         </td>
-                                        <td className="px-6 py-4 text-xs text-zinc-500">
+                                        <td className="px-6 py-4 text-xs text-muted-foreground">
                                             {user.flags?.trim() || 'Ninguno'}
                                         </td>
                                         <td className="px-6 py-4">
@@ -452,7 +452,7 @@ export default function UsersList() {
 
                             {users.length === 0 && !loading && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
+                                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                                         No se encontraron usuarios con esos filtros.
                                     </td>
                                 </tr>
@@ -460,7 +460,7 @@ export default function UsersList() {
 
                             {loading && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
+                                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                                         Cargando usuarios...
                                     </td>
                                 </tr>
@@ -470,7 +470,7 @@ export default function UsersList() {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-3 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <p>
                     Página {page} de {totalPages}. Total: {total.toLocaleString()} usuarios.
                 </p>
@@ -479,7 +479,7 @@ export default function UsersList() {
                         type="button"
                         disabled={page === 1}
                         onClick={() => setPage((current) => Math.max(1, current - 1))}
-                        className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg border border-border bg-card px-3 py-1.5 transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         Anterior
                     </button>
@@ -487,7 +487,7 @@ export default function UsersList() {
                         type="button"
                         disabled={page >= totalPages}
                         onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                        className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg border border-border bg-card px-3 py-1.5 transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         Siguiente
                     </button>

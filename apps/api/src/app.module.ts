@@ -27,6 +27,8 @@ import { ContactModule } from './contact/contact.module';
 import { HubModule } from './hub/hub.module';
 import { HealthModule } from './health/health.module';
 import { ReportsModule } from './reports/reports.module';
+import { MarketRankingModule } from './market-ranking/market-ranking.module';
+import { CalendarModule } from './calendar/calendar.module';
 
 @Module({
     imports: [
@@ -73,6 +75,8 @@ import { ReportsModule } from './reports/reports.module';
         MailModule,
         HubModule,
         ReportsModule,
+        MarketRankingModule,
+        CalendarModule,
     ],
     controllers: [],
     providers: [

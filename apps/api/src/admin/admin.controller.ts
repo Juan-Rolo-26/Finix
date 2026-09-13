@@ -28,6 +28,7 @@ import { AdminPermission, hasAdminPermission } from './admin-permissions';
 import { AdminAuditService } from './admin-audit.service';
 import { AdminManagementService } from './admin-management.service';
 import { NewsService } from '../news/news.service';
+import { AnalysisService } from '../analysis/analysis.service';
 import { Post } from '@nestjs/common';
 
 type AdminRequest = Request & {
@@ -47,6 +48,7 @@ export class AdminController {
         private readonly adminAuditService: AdminAuditService,
         private readonly adminManagementService: AdminManagementService,
         private readonly newsService: NewsService,
+        private readonly analysisService: AnalysisService,
     ) { }
 
     @Get('kpis')
@@ -78,20 +80,21 @@ export class AdminController {
         const news = await this.prisma.news.findMany({
             where: {
                 source: {
-                    name: 'Finix Admin'
-                }
+                    name: 'Finix Admin',
+                },
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            take: 50,
         });
         return { data: news };
     }
 
     @Post('news/scrape')
     @RequireAdminPermissions(AdminPermission.DASHBOARD_READ) // or separate permission for writing content
-    async addManualNews(@Body() body: { url: string }) {
+    async addManualNews(@Body() body: { url: string; categoryId?: string }) {
         if (!body.url) throw new BadRequestException('Se requiere una URL');
         try {
-            const result = await this.newsService.addManualNews(body.url);
+            const result = await this.newsService.addManualNews(body.url, body.categoryId);
             return result;
         } catch (error: any) {
             throw new BadRequestException(error.message);
@@ -101,7 +104,61 @@ export class AdminController {
     @Delete('news/:id')
     @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
     async deleteManualNews(@Param('id') id: string) {
-        return this.newsService.deleteNews(id);
+        await this.prisma.news.delete({ where: { id } });
+        return { success: true };
+    }
+
+    // ============================================
+    // ASSET ANALYSIS MANAGEMENT (FINIX PRO CMS)
+    // ============================================
+
+    @Get('analysis')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async getAnalyses() {
+        const analyses = await this.analysisService.getAdminList();
+        return { data: analyses };
+    }
+
+    @Get('analysis/:id')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async getAnalysisById(@Param('id') id: string) {
+        const analysis = await this.analysisService.getAdminById(id);
+        return { data: analysis };
+    }
+
+    @Post('analysis')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async createAnalysis(@Req() req: AdminRequest, @Body() body: any) {
+        const analysis = await this.analysisService.createAnalysis(body, req.user?.id);
+        return { data: analysis };
+    }
+
+    @Patch('analysis/:id')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async updateAnalysis(@Param('id') id: string, @Req() req: AdminRequest, @Body() body: any) {
+        const analysis = await this.analysisService.updateAnalysis(id, body, req.user?.id);
+        return { data: analysis };
+    }
+
+    @Patch('analysis/:id/status')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async updateAnalysisStatus(@Param('id') id: string, @Req() req: AdminRequest, @Body() body: { status: string }) {
+        const analysis = await this.analysisService.updateStatus(id, body.status, req.user?.id);
+        return { data: analysis };
+    }
+
+    @Delete('analysis/:id')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async deleteAnalysis(@Param('id') id: string, @Req() req: AdminRequest) {
+        await this.analysisService.deleteAnalysis(id, req.user?.id);
+        return { success: true };
+    }
+
+    @Post('analysis/seed-sample')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async seedSampleAnalysis(@Req() req: AdminRequest) {
+        const result = await this.analysisService.seedAppleSample(req.user?.id);
+        return result;
     }
 
     // ============================================
@@ -113,7 +170,8 @@ export class AdminController {
     async getVerifications() {
         const verifications = await this.prisma.financialAdvisorVerification.findMany({
             include: { user: { select: { username: true, email: true, id: true } } },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            take: 50,
         });
         return { data: verifications };
     }
@@ -180,6 +238,117 @@ export class AdminController {
         return { data: updated };
     }
 
+    // ============================================
+    // NEW ADMIN SECTIONS
+    // ============================================
+
+    @Get('statistics')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async getDetailedStatistics() {
+        // We aggregate more stats for the advanced statistics page
+        const [
+            totalUsers,
+            proUsers,
+            totalPosts,
+            totalCommunities,
+            totalRevenue,
+            usersLast7Days,
+        ] = await Promise.all([
+            this.prisma.user.count(),
+            this.prisma.user.count({ where: { accountType: 'PRO' } }),
+            this.prisma.post.count({ where: { deletedAt: null } }),
+            this.prisma.community.count(),
+            this.prisma.finixRevenue.aggregate({ _sum: { totalAmount: true } }),
+            this.prisma.user.count({
+                where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }
+            })
+        ]);
+
+        return {
+            data: {
+                totalUsers,
+                proUsers,
+                totalPosts,
+                totalCommunities,
+                totalRevenue: totalRevenue._sum.totalAmount || 0,
+                usersLast7Days,
+            }
+        };
+    }
+
+    @Get('communities')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async getCommunities(@Query('page') page: string = '1', @Query('limit') limit: string = '20') {
+        const pageNumber = parseInt(page, 10);
+        const limitNumber = parseInt(limit, 10);
+        const skip = (pageNumber - 1) * limitNumber;
+
+        const communities = await this.prisma.community.findMany({
+            take: limitNumber,
+            skip,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                creator: {
+                    select: { id: true, username: true, email: true }
+                },
+                _count: {
+                    select: { members: true, posts: true }
+                }
+            }
+        });
+
+        const total = await this.prisma.community.count();
+
+        return { data: communities, total, page: pageNumber, limit: limitNumber };
+    }
+
+    @Get('pro-users')
+    @RequireAdminPermissions(AdminPermission.USERS_READ)
+    async getProUsers(@Query('page') page: string = '1', @Query('limit') limit: string = '20') {
+        const pageNumber = parseInt(page, 10);
+        const limitNumber = parseInt(limit, 10);
+        const skip = (pageNumber - 1) * limitNumber;
+
+        const users = await this.prisma.user.findMany({
+            where: {
+                OR: [
+                    { accountType: 'PRO' },
+                    { plan: 'PRO' },
+                    { subscriptions: { some: { status: 'ACTIVE' } } }
+                ]
+            },
+            take: limitNumber,
+            skip,
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                accountType: true,
+                plan: true,
+                aiUsageThisMonth: true,
+                aiUsageLimit: true,
+                createdAt: true,
+                subscriptions: {
+                    where: { status: 'ACTIVE' },
+                    select: { id: true, status: true, planType: true }
+                }
+            }
+        });
+
+        const total = await this.prisma.user.count({
+            where: {
+                OR: [
+                    { accountType: 'PRO' },
+                    { plan: 'PRO' },
+                    { subscriptions: { some: { status: 'ACTIVE' } } }
+                ]
+            }
+        });
+
+        return { data: users, total, page: pageNumber, limit: limitNumber };
+    }
+
     @Get('users')
     @RequireAdminPermissions(AdminPermission.USERS_READ)
     async getUsers(@Query() query: AdminUsersQueryDto) {
@@ -193,11 +362,13 @@ export class AdminController {
         if (query.role) whereClause.role = query.role;
         if (query.status) whereClause.status = query.status;
 
-        const skip = (query.page - 1) * query.limit;
+        const pageNumber = parseInt(String(query.page), 10) || 1;
+        const limitNumber = parseInt(String(query.limit), 10) || 50;
+        const skip = (pageNumber - 1) * limitNumber;
 
         const users = await this.prisma.user.findMany({
             where: whereClause,
-            take: query.limit,
+            take: limitNumber,
             skip,
             orderBy: { createdAt: 'desc' },
             select: {
@@ -215,7 +386,7 @@ export class AdminController {
 
         const total = await this.prisma.user.count({ where: whereClause });
 
-        return { data: users, total, page: query.page, limit: query.limit };
+        return { data: users, total, page: pageNumber, limit: limitNumber };
     }
 
     @Patch('users/:id')
@@ -324,6 +495,13 @@ export class AdminController {
             whereClause.content = { contains: query.search };
         }
         if (query.visibility) whereClause.visibility = query.visibility;
+        if (query.type) whereClause.type = query.type;
+        if (query.author) {
+            whereClause.author = { username: { contains: query.author } };
+        }
+        if (query.hasReports === 'true') {
+            whereClause.reports = { some: {} };
+        }
 
         const skip = (query.page - 1) * query.limit;
 
@@ -338,6 +516,9 @@ export class AdminController {
                 },
                 _count: {
                     select: { likes: true, comments: true, reports: true },
+                },
+                media: {
+                    select: { url: true, mediaType: true },
                 },
             },
         });
@@ -422,11 +603,15 @@ export class AdminController {
     async getReports() {
         const reports = await this.prisma.report.findMany({
             orderBy: { createdAt: 'desc' },
+            take: 50,
             include: {
                 reporter: {
-                    select: { id: true, username: true },
-                },
-            },
+                    select: {
+                        username: true,
+                        id: true,
+                    }
+                }
+            }
         });
 
         return { data: reports };

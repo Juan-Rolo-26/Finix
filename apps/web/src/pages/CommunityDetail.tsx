@@ -11,6 +11,7 @@ import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { useAuthStore } from '@/stores/authStore';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import ReportModal from '@/components/ReportModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -120,6 +121,7 @@ function PostCard({ post, community, onDelete }: {
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(post._count.likes);
     const [showMenu, setShowMenu] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
 
     const canDelete = user?.id === post.author.id || user?.id === community.creator.id;
 
@@ -188,6 +190,32 @@ function PostCard({ post, community, onDelete }: {
                         </AnimatePresence>
                     </div>
                 )}
+                {!canDelete && (
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowMenu(v => !v)}
+                            className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+                            <MoreHorizontal className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                        </button>
+                        <AnimatePresence>
+                            {showMenu && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95, y: 4 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className="absolute right-0 top-8 z-10 rounded-xl shadow-xl overflow-hidden w-36"
+                                    style={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))' }}>
+                                    <button
+                                        onClick={() => { setShowReportModal(true); setShowMenu(false); }}
+                                        className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-medium hover:bg-orange-500/10 transition-colors"
+                                        style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                        <AlertCircle className="w-3.5 h-3.5" /> Reportar
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                )}
             </div>
 
             {/* Content & Media */}
@@ -226,6 +254,16 @@ function PostCard({ post, community, onDelete }: {
                     <Bookmark className="w-4 h-4" />
                 </button>
             </div>
+
+            {showReportModal && (
+                <ReportModal
+                    isOpen={showReportModal}
+                    targetType="POST"
+                    targetId={post.id}
+                    targetPreview={post.content || ''}
+                    onClose={() => setShowReportModal(false)}
+                />
+            )}
         </motion.div>
     );
 }

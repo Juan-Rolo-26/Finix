@@ -40,6 +40,11 @@ export default function Login() {
                 return;
             }
 
+            if (data.user) {
+                navigate('/dashboard');
+                return;
+            }
+
             throw new Error('Respuesta de autenticación inesperada');
         } catch (err: any) {
             setError(err.message || 'Error de autenticación');
@@ -110,16 +115,16 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#09090b] text-zinc-100 font-sans p-4">
+        <div className="min-h-screen flex items-center justify-center bg-background text-foreground font-sans p-4">
             <div className="w-full max-w-sm">
                 <div className="flex flex-col items-center mb-8 gap-3">
-                    <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-xl">
-                        {step === 'credentials' ? <Shield className="w-8 h-8 text-emerald-500" /> :
-                            step === 'verify_email' ? <Mail className="w-8 h-8 text-emerald-500" /> :
-                                <KeyRound className="w-8 h-8 text-emerald-500" />}
+                    <div className="w-16 h-16 rounded-2xl bg-card border border-border flex items-center justify-center shadow-xl">
+                        {step === 'credentials' ? <Shield className="w-8 h-8 text-primary" /> :
+                            step === 'verify_email' ? <Mail className="w-8 h-8 text-primary" /> :
+                                <KeyRound className="w-8 h-8 text-primary" />}
                     </div>
                     <h1 className="text-2xl font-bold tracking-tight">Finix Admin</h1>
-                    <p className="text-zinc-500 text-sm">
+                    <p className="text-muted-foreground text-sm">
                         {step === 'credentials' ? 'Ingreso restringido para administradores' :
                             step === 'verify_email' ? 'Verificación Requerida' :
                                 step === 'setup_2fa' ? 'Configuración 2FA Requerida' :
@@ -129,24 +134,24 @@ export default function Login() {
 
                 <form
                     onSubmit={step === 'credentials' ? handleCredentialLogin : step === 'verify_email' ? handleVerifyEmail : handleVerify2FA}
-                    className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/60 p-6 rounded-2xl shadow-2xl"
+                    className="bg-card/50 backdrop-blur-xl border border-border p-6 rounded-2xl shadow-2xl"
                 >
                     <div className="space-y-4">
                         {step === 'credentials' && (
                             <>
                                 <div>
-                                    <label htmlFor="admin-email" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">Email</label>
+                                    <label htmlFor="admin-email" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Email</label>
                                     <input
                                         id="admin-email" type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                                        className="w-full bg-[#09090b] border border-zinc-700/50 rounded-lg px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                                        className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                                         placeholder="admin@finix.com" autoComplete="email"
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="admin-password" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">Contraseña</label>
+                                    <label htmlFor="admin-password" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Contraseña</label>
                                     <input
                                         id="admin-password" type="password" required value={password} onChange={e => setPassword(e.target.value)}
-                                        className="w-full bg-[#09090b] border border-zinc-700/50 rounded-lg px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                                        className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                                         placeholder="••••••••" autoComplete="current-password"
                                     />
                                 </div>
@@ -155,14 +160,14 @@ export default function Login() {
 
                         {step === 'verify_email' && (
                             <>
-                                <div className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[13px] text-emerald-200 text-center mb-4">
+                                <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/10 p-3 text-[13px] text-primary text-center mb-4">
                                     <p>¡Hemos enviado un código de 6 dígitos a tu correo electrónico!</p>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2 text-center">Código Email</label>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 text-center">Código Email</label>
                                     <input
                                         type="text" required inputMode="numeric" pattern="[0-9]{6}" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        className="w-full bg-[#09090b] border border-zinc-700/50 rounded-lg px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all tracking-[0.3em] text-center font-mono"
+                                        className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all tracking-[0.3em] text-center font-mono"
                                         placeholder="000000"
                                     />
                                 </div>
@@ -171,18 +176,18 @@ export default function Login() {
 
                         {step === 'setup_2fa' && (
                             <>
-                                <div className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[13px] text-emerald-200 text-center mb-4">
+                                <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/10 p-3 text-[13px] text-primary text-center mb-4">
                                     <p>Escanea este código QR con Google Authenticator o Authy para habilitar el acceso seguro con 2FA.</p>
                                 </div>
                                 <div className="bg-white p-4 rounded-lg flex justify-center mb-2 mx-auto w-fit">
                                     <QRCodeSVG value={`otpauth://totp/Finix%20Admin:${email}?secret=${mfaSecret}&issuer=Finix%20Admin`} size={150} />
                                 </div>
-                                <p className="text-center text-[10px] text-zinc-500 font-mono mb-4 break-all px-2">{mfaSecret}</p>
+                                <p className="text-center text-[10px] text-muted-foreground font-mono mb-4 break-all px-2">{mfaSecret}</p>
                                 <div>
-                                    <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2 text-center">Código de la App</label>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 text-center">Código de la App</label>
                                     <input
                                         type="text" required inputMode="numeric" pattern="[0-9]{6}" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        className="w-full bg-[#09090b] border border-zinc-700/50 rounded-lg px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all tracking-[0.3em] text-center font-mono"
+                                        className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all tracking-[0.3em] text-center font-mono"
                                         placeholder="000000"
                                     />
                                 </div>
@@ -191,14 +196,14 @@ export default function Login() {
 
                         {step === 'verify_2fa' && (
                             <>
-                                <div className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[13px] text-emerald-200 text-center mb-4">
+                                <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/10 p-3 text-[13px] text-primary text-center mb-4">
                                     <p>Por favor, ingresa el código generado por tu aplicación Authenticator.</p>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2 text-center">Código 2FA Autenticador</label>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 text-center">Código 2FA Autenticador</label>
                                     <input
                                         type="text" required inputMode="numeric" pattern="[0-9]{6}" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        className="w-full bg-[#09090b] border border-zinc-700/50 rounded-lg px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all tracking-[0.3em] text-center font-mono"
+                                        className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all tracking-[0.3em] text-center font-mono"
                                         placeholder="000000"
                                     />
                                 </div>
@@ -213,7 +218,7 @@ export default function Login() {
 
                         <button
                             type="submit" disabled={loading}
-                            className="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-black font-semibold rounded-lg px-4 py-3 text-sm transition-all disabled:opacity-50 flex justify-center items-center"
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg px-4 py-3 text-sm transition-all disabled:opacity-50 flex justify-center items-center"
                         >
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                                 step === 'credentials' ? 'Continuar' :
@@ -225,7 +230,7 @@ export default function Login() {
                             <button
                                 type="button"
                                 onClick={() => { setStep('credentials'); setCode(''); setError(''); setPreAuthToken(''); }}
-                                className="w-full border border-zinc-700 hover:border-zinc-600 text-zinc-300 rounded-lg px-4 py-2.5 text-sm"
+                                className="w-full border border-border hover:border-zinc-600 text-foreground/90 rounded-lg px-4 py-2.5 text-sm"
                             >
                                 Volver al login
                             </button>
@@ -233,7 +238,7 @@ export default function Login() {
                     </div>
                 </form>
 
-                <p className="text-center text-xs text-zinc-600 mt-8">
+                <p className="text-center text-xs text-muted-foreground mt-8">
                     &copy; {new Date().getFullYear()} Finix Technologies.
                 </p>
             </div>

@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuthStore } from "@/stores/authStore";
+import { useNavigate } from "react-router-dom";
+import { ProGate } from "@/components/ProGate";
 import {
   Plus,
   Minus,
@@ -351,6 +354,22 @@ function PortfolioSkeleton() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const PortfolioPage = () => {
   const t = useTranslation();
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const isPro = (user as any)?.plan === 'PRO' || (user as any)?.accountType === 'PRO' || (user as any)?.role === 'ADMIN' || (user as any)?.isPro || (user as any)?.subscriptionTier === 'pro';
+
+  if (!isPro) {
+      return (
+          <div className="min-h-[calc(100vh-60px)] flex flex-col flex-1 bg-background">
+              <ProGate
+                  title="Funcionalidad Exclusiva PRO"
+                  description="La sección de Portafolios es exclusiva para usuarios con Finix PRO. Mejorá tu plan para acceder a herramientas avanzadas y gestión patrimonial en tiempo real."
+                  buttonText="Activar PRO"
+                  onUpgrade={() => navigate('/pro')}
+              />
+          </div>
+      );
+  }
 
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);

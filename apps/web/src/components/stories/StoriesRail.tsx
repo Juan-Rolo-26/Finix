@@ -18,27 +18,53 @@ function buildOwnGroup(story: StoryItem, currentUser: StoryAuthor) {
 
 export function StoriesRail() {
     const currentUser = useAuthStore((state) => state.user);
-    const [groups, setGroups] = useState<StoryGroup[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [groups, setGroups] = useState<StoryGroup[]>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const cached = sessionStorage.getItem('finix_cached_stories');
+                if (cached) return JSON.parse(cached);
+            } catch {}
+        }
+        return [];
+    });
+    const [isLoading, setIsLoading] = useState(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                return !sessionStorage.getItem('finix_cached_stories');
+            } catch {}
+        }
+        return true;
+    });
     const [composerOpen, setComposerOpen] = useState(false);
     const [viewerGroupIndex, setViewerGroupIndex] = useState<number | null>(null);
 
     useEffect(() => {
+        let isMounted = true;
         const loadStories = async () => {
-            setIsLoading(true);
             try {
                 const res = await apiFetch('/stories/feed');
                 if (!res.ok) throw new Error();
                 const data = await res.json();
-                setGroups(Array.isArray(data?.groups) ? data.groups : []);
+                const nextGroups = Array.isArray(data?.groups) ? data.groups : [];
+                if (isMounted) {
+                    setGroups(nextGroups);
+                    try {
+                        sessionStorage.setItem('finix_cached_stories', JSON.stringify(nextGroups));
+                    } catch {}
+                }
             } catch {
-                setGroups([]);
+                if (isMounted && groups.length === 0) {
+                    setGroups([]);
+                }
             } finally {
-                setIsLoading(false);
+                if (isMounted) {
+                    setIsLoading(false);
+                }
             }
         };
 
         void loadStories();
+        return () => { isMounted = false; };
     }, []);
 
     const currentUserStory = useMemo(() => {

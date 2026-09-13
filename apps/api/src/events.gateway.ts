@@ -163,19 +163,20 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
-    async emitNewMessage(conversationId: string, message: any) {
+    async emitNewMessage(conversationId: string, message: any, participantIds?: string[]) {
         if (!this.server) {
             return;
         }
 
-        const participantIds = await this.messagesService.getConversationParticipantIds(conversationId);
+        const participants = participantIds || await this.messagesService.getConversationParticipantIds(conversationId);
+        
         this.server.to(`conv:${conversationId}`).emit('newDirectMessage', message);
         this.server.to(`conv:${conversationId}`).emit('conversationUpdated', {
             conversationId,
             lastMessage: message,
         });
 
-        for (const participantId of participantIds) {
+        for (const participantId of participants) {
             this.server.to(`user:${participantId}`).emit('conversationUpdated', {
                 conversationId,
                 lastMessage: message,

@@ -23,6 +23,8 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     CheckCheck,
+    Microscope,
+    Calendar,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { apiFetch } from '../lib/api';
@@ -294,14 +296,16 @@ export function Sidebar() {
                 { name: 'Explorar', path: '/explore', icon: Compass, badge: 0 },
                 { name: 'Comunidades', path: '/comunidades', icon: Users, badge: 0 },
                 { name: 'Mensajes', path: '/messages', icon: MessageSquare, badge: unreadMsgs },
-                { name: 'Noticias', path: '/news', icon: Newspaper, badge: 0 },
             ],
         },
         {
             label: 'Finanzas',
             links: [
-                { name: 'Mercado', path: '/market', icon: TrendingUp, badge: 0 },
-                { name: 'Portafolio', path: '/portfolio', icon: Briefcase, badge: 0 },
+                { name: 'Mercado',   path: '/market',   icon: TrendingUp,  badge: 0 },
+                { name: 'Calendario', path: '/calendario', icon: Calendar, badge: 0 },
+                { name: 'Portafolio',path: '/portfolio', icon: Briefcase,   badge: 0 },
+                { name: 'Noticias',  path: '/news',     icon: Newspaper,   badge: 0 },
+                { name: 'Análisis',  path: '/analysis', icon: Microscope,  badge: 0 },
                 // { name: 'Aprender', path: '/learn', icon: BookOpen, badge: 0 },
             ],
         },

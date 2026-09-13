@@ -159,6 +159,7 @@ model User {
   financialVerificationsReviewed   FinancialAdvisorVerification[] @relation("FinancialVerificationsReviewed")
   financialVerificationAuditLogs   FinancialVerificationAuditLog[] @relation("FinancialVerificationAuditLogs")
 
+  @@index([username])
   @@index([createdAt])
 }
 
@@ -240,6 +241,7 @@ model Post {
   @@index([createdAt])
   @@index([authorId])
   @@index([parentId])
+  @@index([communityId])
 }
 
 model PostMedia {
@@ -352,6 +354,8 @@ model Portfolio {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Asset {
@@ -399,6 +403,9 @@ model Transaction {
   asset     Asset?    @relation(fields: [assetId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@index([portfolioId])
+  @@index([portfolioId, date])
 }
 
 model CashAccount {
@@ -420,6 +427,8 @@ model Watchlist {
   tickers String
 
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ============================================
@@ -442,16 +451,22 @@ model NewsSource {
 }
 
 model NewsCategory {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  slug        String  @unique
-  description String?
-  color       String? // For UI display
-  icon        String? // Icon identifier
+  id           String  @id @default(uuid())
+  name         String  @unique
+  slug         String  @unique
+  description  String?
+  color        String? // For UI display
+  icon         String? // Icon identifier
+  image        String? // Category hero image
+  isActive     Boolean @default(true)
+  displayOrder Int     @default(0) // Sort order in UI
 
-  news News[]
+  news     News[]
+  slots    NewsSlot[]
+  articles NewsArticle[]
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model News {
@@ -1114,3 +1129,427 @@ model FinancialVerificationAuditLog {
   @@index([adminId])
 }
 
+model AssetAnalysis {
+  id                      String    @id @default(uuid())
+  symbol                  String    // e.g. "NASDAQ:AAPL" or "AAPL"
+  isActive                Boolean   @default(true) // Si está activo, será el que se muestre como destacado
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  // 1. Información de la empresa
+  companyName             String?
+  ticker                  String?
+  sector                  String?
+  industry                String?
+  country                 String?
+  foundedYear             Int?
+  ceo                     String?
+  employeesCount          Int?
+  marketCap               Float?
+  businessDescription     String?
+  productsServices        String?
+  revenueGeneration       String?
+  mainRevenueSources      String?
+  geographicRevenue       String?
+  businessSegments        String?
+  mainCompetitors         String?
+  competitiveAdvantage    String?
+  customerDependency      String?
+  productDependency       String?
+  marketShare             String?
+
+  // 2. Ingresos y crecimiento
+  revenue                 Float?
+  revenueGrowthYoY        Float?
+  revenueCagr3y           Float?
+  revenueCagr5y           Float?
+  growthBySegment         String?
+  growthByRegion          String?
+  recurringRevenue        String?
+  arr                     Float?
+  mrr                     Float?
+  revenueGuidance         String?
+  estimatedRevenue        Float?
+  realVsEstimatedRevenue  String?
+
+  // 3. Rentabilidad
+  eps                     Float?
+  epsGrowth               Float?
+  epsEstimatedVsReal      String?
+  grossMargin             Float?
+  operatingMargin         Float?
+  netMargin               Float?
+  ebit                    Float?
+  ebitda                  Float?
+  ebitdaMargin            Float?
+  roe                     Float?
+  roa                     Float?
+  roic                    Float?
+  roce                    Float?
+  freeCashFlow            Float?
+  fcfMargin               Float?
+  fcfGrowth               Float?
+
+  // 4. Valuación
+  peRatio                 Float?
+  forwardPe               Float?
+  pegRatio                Float?
+  priceToSales            Float?
+  priceToBook             Float?
+  evToEbitda              Float?
+  evToRevenue             Float?
+  priceToFcf              Float?
+  dividendYield           Float?
+  marketCapToFcf          Float?
+  historicalValuation     String?
+  historicalAvgPe         Float?
+  sectorPe                Float?
+  competitorsPe           String?
+  estimatedFairValue      Float?
+  valuationPremiumDiscount Float?
+
+  // 5. Balance financiero
+  cash                    Float?
+  totalDebt               Float?
+  netDebt                 Float?
+  netDebtToEbitda         Float?
+  currentRatio            Float?
+  quickRatio              Float?
+  totalAssets             Float?
+  totalLiabilities        Float?
+  equity                  Float?
+  equityGrowth            Float?
+  longTermDebt            Float?
+  shortTermDebt           Float?
+  interestPaid            Float?
+  interestCoverageRatio   Float?
+
+  // 6. Cash Flow
+  operatingCashFlow       Float?
+  capEx                   Float?
+  // freeCashFlow is in section 3 but can be shared
+  fcfPerShare             Float?
+  fcfYield                Float?
+  earningsToCashConversion Float?
+  historicalCashFlow      String?
+  // fcfGrowth is in section 3
+
+  // 7. Accionistas y mercado
+  sharesOutstanding       Float?
+  shareDilution           Float?
+  insiderOwnership        Float?
+  institutionalOwnership  Float?
+  insiderBuys             String?
+  insiderSells            String?
+  buybacks                String?
+  sharesGrowthReduction   String?
+  shortInterest           Float?
+  shortFloat              Float?
+  beta                    Float?
+
+  // 8. Análisis técnico
+  currentPrice            Float?
+  dailyChange             Float?
+  weeklyChange            Float?
+  monthlyChange           Float?
+  yearlyChange            Float?
+  high52w                 Float?
+  low52w                  Float?
+  distanceToHigh          Float?
+  distanceToLow           Float?
+  volume                  Float?
+  avgVolume               Float?
+  relativeVolume          Float?
+  sma20                   Float?
+  sma50                   Float?
+  sma100                  Float?
+  sma200                  Float?
+  rsi                     Float?
+  macd                    String?
+  bollingerBands          String?
+  atr                     Float?
+  supports                String?
+  resistances             String?
+  trend                   String?
+  momentum                String?
+  historicalVolatility    Float?
+
+  // Identificadores y publicación
+  slug                    String?   @unique
+  status                  String    @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+  exchange                String?
+  logoUrl                 String?
+  analysisDate            DateTime?
+  sources                 String?
+  legalDisclaimer         String?
+
+  // Secciones estructuradas (JSON almacenado como String)
+  sectionVisibility       String?   // JSON: { showCompany: true, showGrowth: true, ... }
+  executiveSummary        String?   // JSON: { title, summary, positivePoints: [], negativePoints: [], conclusion }
+  businessModel           String?   // JSON: [{ product, description, revenuePct, growth, margin }]
+  historicalSeries        String?   // JSON: { revenue: [], eps: [], margins: [], cashFlow: [], debt: [], pe: [], shares: [] }
+  segmentGrowth           String?   // JSON: [{ segment, revenue, growth, pctOfTotal }]
+  competitorsData         String?   // JSON: [{ name, ticker, revenue, growth, pe, roic, netMargin, fcf, marketCap, debt }]
+  technicalData           String?   // JSON: { priceSeries: [], movingAverages: [], rsiSeries: [], macd: {}, supports: [], resistances: [], technicalScore: 74, technicalSignal: 'BUY' }
+  risksData               String?   // JSON: [{ title, description, severity, probability, impact }]
+  catalystsData           String?   // JSON: [{ title, description, horizon, impact }]
+  scenariosData           String?   // JSON: { bull: {...}, base: {...}, bear: {...} }
+  valuationMethodology    String?   // JSON: { method, assumptions, result, date, notes }
+  swotData                String?   // JSON: { strengths: [], weaknesses: [], opportunities: [], threats: [] }
+
+  auditLogs               AnalysisAuditLog[]
+
+  @@index([status])
+  @@index([ticker])
+}
+
+model AnalysisAuditLog {
+  id          String        @id @default(uuid())
+  analysisId  String
+  analysis    AssetAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  userId      String?
+  action      String        // CREATE, UPDATE, STATUS_CHANGE, DELETE
+  field       String?
+  oldValue    String?
+  newValue    String?
+  createdAt   DateTime      @default(now())
+
+  @@index([analysisId])
+  @@index([createdAt])
+}
+
+// ============================================
+// NEWS CMS SLOT SYSTEM
+// ============================================
+
+// NewsArticle: un artículo asignado manualmente por el admin a un slot
+model NewsArticle {
+  id          String    @id @default(uuid())
+  url         String    @unique
+
+  // Metadata automática (extraída por scraping)
+  title       String
+  description String?
+  imageUrl    String?
+  sourceName  String?
+  sourceUrl   String?
+  publishedAt DateTime?
+  author      String?
+
+  // Flags de override manual (cuando el admin edita manualmente)
+  customTitle       Boolean @default(false)
+  customDescription Boolean @default(false)
+  customImage       Boolean @default(false)
+
+  // Estado del artículo
+  isActive    Boolean @default(true)
+  isPublished Boolean @default(false)
+  status      String  @default("DRAFT") // DRAFT | PUBLISHED | INACTIVE | ERROR
+
+  // Categoría opcional (para contexto)
+  categoryId  String?
+  category    NewsCategory? @relation(fields: [categoryId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slots          NewsSlot[]
+  historyAsPrev  NewsSlotHistory[] @relation("PreviousArticle")
+  historyAsNew   NewsSlotHistory[] @relation("NewArticle")
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([isPublished])
+}
+
+// NewsSlot: posición fija en el mosaico de una categoría
+model NewsSlot {
+  id         String  @id @default(uuid())
+  categoryId String
+  category   NewsCategory @relation(fields: [categoryId], references: [id])
+
+  slotKey  String @unique // ej: "economia_slot_1"
+  position Int    // 1-5
+
+  articleId String?
+  article   NewsArticle? @relation(fields: [articleId], references: [id])
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  history NewsSlotHistory[]
+
+  @@unique([categoryId, position])
+  @@index([categoryId])
+  @@index([articleId])
+}
+
+// NewsSlotHistory: auditoría de cambios de contenido en slots
+model NewsSlotHistory {
+  id     String   @id @default(uuid())
+  slotId String
+  slot   NewsSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  previousArticleId String?
+  previousArticle   NewsArticle? @relation("PreviousArticle", fields: [previousArticleId], references: [id])
+
+  newArticleId String?
+  newArticle   NewsArticle? @relation("NewArticle", fields: [newArticleId], references: [id])
+
+  changedBy String? // admin user id
+  changedAt DateTime @default(now())
+
+  @@index([slotId])
+  @@index([changedAt])
+}
+
+// ─── Market Rankings (S&P 500 & Top Gainers) ───────────────────────────
+
+model SP500Asset {
+  id          String   @id @default(uuid())
+  ticker      String   @unique
+  companyName String
+  exchange    String   @default("US")
+  sector      String?
+  industry    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rankings    DailyMarketRanking[]
+
+  @@index([ticker])
+  @@index([isActive])
+}
+
+model DailyMarketRanking {
+  id              String      @id @default(uuid())
+  date            String      // Format: YYYY-MM-DD
+  rankingType     String      // TOP_GAINERS, TOP_LOSERS, etc.
+  rank            Int         // 1 to 5 (or up to N)
+  sp500AssetId    String?
+  sp500Asset      SP500Asset? @relation(fields: [sp500AssetId], references: [id], onDelete: SetNull)
+
+  ticker          String
+  companyName     String
+  price           Float
+  previousClose   Float
+  change          Float
+  changePercent   Float
+  volume          Float
+  logoUrl         String?
+  marketTimestamp DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([date, rankingType, rank])
+  @@index([date, rankingType])
+  @@index([ticker])
+}
+
+model MarketRankingExecutionLog {
+  id              String   @id @default(uuid())
+  executedAt      DateTime @default(now())
+  rankingType     String
+  targetDate      String
+  status          String   // SUCCESS, PARTIAL, FAILED
+  providerUsed    String
+  assetsProcessed Int
+  errorsCount     Int
+  durationMs      Int
+  topResultsJson  String?  // JSON preview of TOP 5
+  errorMessage    String?
+
+  @@index([executedAt])
+  @@index([targetDate])
+}
+
+model MarketCalendarEvent {
+  id                   String   @id @default(uuid())
+  eventType            String   @default("ECONOMIC") // ECONOMIC
+  country              String   // US, AR
+  currency             String?  // USD, ARS
+  assetId              String?
+  title                String
+  description          String?
+  category             String   // INFLATION, CENTRAL_BANK, EMPLOYMENT, ACTIVITY, FISCAL, TRADE, OTHER
+  importance           String   @default("HIGH") // HIGH, MEDIUM, LOW
+  marketImpactScore    Int      @default(0) // 0 to 100
+  date                 String   // YYYY-MM-DD
+  time                 String?  // 10:30, 16:00
+  timestampUtc         DateTime
+  timezone             String   @default("UTC")
+  previousValue        String?
+  consensusValue       String?
+  actualValue          String?
+  surprise             Float?
+  surprisePercent      Float?
+  expectedMarketEffect String?
+  affectedAssets       String?  // JSON string or comma-separated list of symbols: ["SPY","QQQ","BTC"]
+  source               String?  // BLS, INDEC, BCRA, FED, etc.
+  sourceUrl            String?
+  sourceType           String   @default("AUTOMATIC") // AUTOMATIC, MANUAL
+  isPublished          Boolean  @default(true)
+  isFeatured           Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([date])
+  @@index([country])
+  @@index([importance])
+  @@index([marketImpactScore])
+  @@index([isPublished])
+  @@index([category])
+}
+
+model MarketEarningsEvent {
+  id                  String   @id @default(uuid())
+  assetId             String?
+  ticker              String
+  companyName         String
+  logoUrl             String?
+  date                String   // YYYY-MM-DD
+  time                String?  // 18:00
+  timestampUtc        DateTime
+  timezone            String   @default("America/New_York")
+  dateStatus          String   @default("CONFIRMED") // CONFIRMED, ESTIMATED
+  reportTiming        String?  // BMO (Before Market Open), AMC (After Market Close), DMH (During Market Hours)
+  epsEstimate         Float?
+  revenueEstimate     Float?
+  actualEps           Float?
+  actualRevenue       Float?
+  epsSurprise         Float?
+  revenueSurprise     Float?
+  marketCap           Float?
+  earningsImpactScore Int      @default(0) // 0 to 100
+  source              String?
+  sourceUrl           String?
+  sourceType          String   @default("AUTOMATIC") // AUTOMATIC, MANUAL
+  isPublished         Boolean  @default(true)
+  isFeatured          Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([date])
+  @@index([ticker])
+  @@index([earningsImpactScore])
+  @@index([isPublished])
+  @@index([dateStatus])
+}
+
+model CalendarSyncLog {
+  id              String   @id @default(uuid())
+  executedAt      DateTime @default(now())
+  syncType        String   // ALL, ECONOMIC, EARNINGS
+  status          String   // SUCCESS, PARTIAL, FAILED
+  providerUsed    String
+  eventsProcessed Int
+  errorsCount     Int
+  durationMs      Int
+  errorMessage    String?
+
+  @@index([executedAt])
+  @@index([syncType])
+}

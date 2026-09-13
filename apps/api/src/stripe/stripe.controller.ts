@@ -24,6 +24,12 @@ export class StripeController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Post('subscriptions/creator/checkout')
+    createCreatorSubscription(@Req() req: any) {
+        return this.stripeService.createSubscription(req.user.id, 'pro_creator');
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Post('subscriptions/pro/cancel')
     cancelProSubscription(@Req() req: any) {
         return this.stripeService.cancelSubscription(req.user.id);

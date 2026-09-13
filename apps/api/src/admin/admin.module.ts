@@ -10,6 +10,7 @@ import { AdminManagementService } from './admin-management.service';
 
 import { MailModule } from '../mail/mail.module';
 import { NewsModule } from '../news/news.module';
+import { AnalysisModule } from '../analysis/analysis.module';
 
 @Module({
     imports: [
@@ -18,9 +19,10 @@ import { NewsModule } from '../news/news.module';
         }),
         MailModule,
         NewsModule,
+        AnalysisModule,
     ],
     controllers: [AdminController, AdminAuthController],
     providers: [AdminGuard, AdminPermissionsGuard, AdminAuditService, AdminAuthService, AdminManagementService],
-    exports: [AdminGuard],
+    exports: [AdminGuard, JwtModule],
 })
 export class AdminModule { }

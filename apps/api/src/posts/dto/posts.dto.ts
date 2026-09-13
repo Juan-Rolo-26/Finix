@@ -34,8 +34,8 @@ export class CreatePostDto {
     content: string;
 
     @IsOptional()
-    @IsEnum(PostType)
-    type?: PostType;
+    @IsString()
+    type?: string;
 
     @IsOptional()
     @IsString()
@@ -43,12 +43,12 @@ export class CreatePostDto {
     assetSymbol?: string;
 
     @IsOptional()
-    @IsEnum(AnalysisType)
-    analysisType?: AnalysisType;
+    @IsString()
+    analysisType?: string;
 
     @IsOptional()
-    @IsEnum(RiskLevel)
-    riskLevel?: RiskLevel;
+    @IsString()
+    riskLevel?: string;
 
     @IsOptional()
     @IsArray()

@@ -47,18 +47,18 @@ export class NewsService {
             { name: 'ETFs', slug: 'etfs', icon: 'PieChart', color: '#6366f1' },
             { name: 'Economía', slug: 'economia', icon: 'TrendingUp', color: '#10b981' },
             { name: 'Acciones', slug: 'acciones', icon: 'BarChart2', color: '#a855f7' },
+            { name: 'Inteligencia Artificial', slug: 'ai', icon: 'Cpu', color: '#ec4899' },
+            { name: 'Startups', slug: 'startups', icon: 'Rocket', color: '#f43f5e' },
+            { name: 'Finanzas Personales', slug: 'finanzas-personales', icon: 'Wallet', color: '#14b8a6' },
         ];
 
-        for (const cat of categories) {
-            try {
-                await this.prisma.newsCategory.upsert({
-                    where: { slug: cat.slug },
-                    update: {},
-                    create: cat,
-                });
-            } catch (error) {
-                // Category might already exist
-            }
+        try {
+            await this.prisma.newsCategory.createMany({
+                data: categories,
+                skipDuplicates: true,
+            });
+        } catch (error) {
+            console.error('Error seeding categories', error);
         }
     }
 
@@ -95,6 +95,8 @@ export class NewsService {
             });
             if (src) {
                 where.sourceId = src.id;
+            } else {
+                return []; // Strict filtering: if source doesn't exist, return empty
             }
         }
 
@@ -387,7 +389,7 @@ export class NewsService {
     /**
      * Parse and add manual news from URL (Admin)
      */
-    async addManualNews(url: string) {
+    async addManualNews(url: string, categoryId?: string) {
         // Scrape page content
         const scraped = await this.newsFetcher.scrapeWebsitePage(url);
         if (!scraped.title || !scraped.text) {
@@ -403,7 +405,14 @@ export class NewsService {
 
         // Simplify categorization for admin insertion
         const analysis = this.sentimentAnalyzer.analyzeArticle(titleEs, contentEs, summaryEs);
-        const category = await this.categorizeNews(titleEs, summaryEs);
+        
+        let category: any = null;
+        if (categoryId) {
+            category = await this.prisma.newsCategory.findUnique({ where: { id: categoryId } });
+        }
+        if (!category) {
+            category = await this.categorizeNews(titleEs, summaryEs);
+        }
 
         // Find or create FINIX_ADMIN source
         const source = await this.getOrCreateSource('Finix Admin');

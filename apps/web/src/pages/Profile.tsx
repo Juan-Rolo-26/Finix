@@ -1355,6 +1355,7 @@ export default function Profile() {
                         isOpen={true}
                         targetId={profile.id}
                         targetType="USER"
+                        targetPreview={`Perfil: @${profile.username} - ${profile.bio?.slice(0, 50) || 'Sin biografía'}`}
                         onClose={() => setShowReportModal(false)}
                     />
                 )}
@@ -1686,7 +1687,7 @@ export default function Profile() {
                                             <p className="text-muted-foreground text-sm">Cargando publicaciones...</p>
                                         </div>
                                     ) : profilePosts.length > 0 ? (
-                                        <>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             {profilePosts.map((post) => (
                                                 <PostCard
                                                     key={post.id}
@@ -1709,12 +1710,9 @@ export default function Profile() {
                                                     }}
                                                 />
                                             ))}
-                                        </>
-                                    ) : (
-                                        <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                            <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                            <p className="text-muted-foreground text-sm">No hay publicaciones aún</p>
                                         </div>
+                                    ) : (
+                                        <div className="py-16"></div>
                                     )}
                                 </div>
                             </motion.div>

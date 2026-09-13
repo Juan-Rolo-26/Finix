@@ -18,6 +18,7 @@ import {
     Newspaper,
     TrendingUp,
     Briefcase,
+    Microscope,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
@@ -70,15 +71,16 @@ export function BottomNav() {
         location.pathname === p ||
         (p !== '/dashboard' && location.pathname.startsWith(`${p}/`));
 
-    const moreActive = ['/market', '/portfolio', '/news', '/learn', '/profile', '/settings', '/notifications'].some(p => isActive(p));
+    const moreActive = ['/market', '/portfolio', '/news', '/analysis', '/learn', '/profile', '/settings', '/notifications'].some(p => isActive(p));
 
     const moreLinks = [
-        { label: 'Mercado', path: '/market', icon: TrendingUp },
-        { label: 'Portafolio', path: '/portfolio', icon: Briefcase },
-        { label: 'Noticias', path: '/news', icon: Newspaper },
+        { label: 'Mercado',   path: '/market',   icon: TrendingUp  },
+        { label: 'Portafolio',path: '/portfolio', icon: Briefcase   },
+        { label: 'Noticias',  path: '/news',     icon: Newspaper   },
+        { label: 'Análisis',  path: '/analysis', icon: Microscope  },
         // { label: 'Aprender', path: '/learn', icon: BookOpen },
-        { label: 'Mi Perfil', path: '/profile', icon: User },
-        { label: 'Ajustes', path: '/settings', icon: Settings },
+        { label: 'Mi Perfil', path: '/profile',  icon: User        },
+        { label: 'Ajustes',   path: '/settings', icon: Settings    },
     ];
 
     const LEFT_TABS = mainTabs.slice(0, 2);   // Dashboard, Comunidad
