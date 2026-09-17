@@ -32,10 +32,11 @@ git reset --hard origin/main
 echo "[2/7] Instalando dependencias de NPM..."
 npm install
 
-# 5. Cargar variables de apps/api/.env si existen para Prisma
+# 5. Cargar variables de apps/api/.env de forma segura
 if [ -f "apps/api/.env" ]; then
-    export $(grep -v '^#' apps/api/.env | xargs 2>/dev/null) || true
-    # Si falta DIRECT_URL, usar DATABASE_URL como fallback
+    set -a
+    source apps/api/.env 2>/dev/null || true
+    set +a
     if [ -z "$DIRECT_URL" ] && [ -n "$DATABASE_URL" ]; then
         export DIRECT_URL="$DATABASE_URL"
     fi
@@ -50,6 +51,7 @@ npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma || {
 # 6. Compilar Backend, Web y Admin
 echo "[4/7] Compilando Backend (NestJS)..."
 cd "$SCRIPT_DIR/apps/api"
+rm -f *.tsbuildinfo
 npm run build
 cd "$SCRIPT_DIR"
 
