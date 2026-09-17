@@ -53,7 +53,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
 
     async onModuleInit() {
-        await this.$connect();
+        try {
+            await this.$connect();
+            console.log('✅ [Prisma] Conectado a la base de datos');
+        } catch (err: any) {
+            console.error('⚠️ [Prisma] Advertencia: No se pudo conectar a la base de datos al iniciar:', err?.message || err);
+            console.error('⚠️ Por favor verificá DATABASE_URL en apps/api/.env');
+        }
 
         // Setea statement_timeout = 20s por sesión.
         // Si una query tarda más de 20s, PostgreSQL la cancela automáticamente
