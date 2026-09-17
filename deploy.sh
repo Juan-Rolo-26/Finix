@@ -16,17 +16,23 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || { echo "❌ Error al entrar en la carpeta $SCRIPT_DIR"; exit 1; }
 echo "📁 Directorio de Finix: $SCRIPT_DIR"
 
-# 2. Descargar los últimos cambios de GitHub
+# 2. Permisos INMEDIATOS para que NGINX (www-data) siempre pueda leer la carpeta
+echo "🔒 Verificando permisos del servidor web..."
+chmod -R 755 "$SCRIPT_DIR"
+if [[ "$SCRIPT_DIR" == /root* ]]; then
+    chmod 755 /root
+fi
+
+# 3. Descargar los últimos cambios de GitHub
 echo "[1/7] Descargando últimos cambios desde GitHub (main)..."
 git fetch --all
 git reset --hard origin/main
 
-# 3. Instalar dependencias del monorepo
+# 4. Instalar dependencias del monorepo
 echo "[2/7] Instalando dependencias de NPM..."
 npm install
 
-# 4. Generar Prisma Client y aplicar migraciones
-# 4. Cargar variables de apps/api/.env si existen para Prisma
+# 5. Cargar variables de apps/api/.env si existen para Prisma
 if [ -f "apps/api/.env" ]; then
     export $(grep -v '^#' apps/api/.env | xargs 2>/dev/null) || true
     # Si falta DIRECT_URL, usar DATABASE_URL como fallback
@@ -41,11 +47,16 @@ npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma || {
     echo "⚠️ Advertencia: Error en prisma migrate deploy. Continuando con el build..."
 }
 
-# 5. Compilar Backend, Web y Admin
+# 6. Compilar Backend, Web y Admin
 echo "[4/7] Compilando Backend (NestJS)..."
 cd "$SCRIPT_DIR/apps/api"
 npm run build
 cd "$SCRIPT_DIR"
+
+# Asegurar que main.js esté en dist/main.js si nest compiló en subcarpeta
+if [ -f "$SCRIPT_DIR/apps/api/dist/src/main.js" ] && [ ! -f "$SCRIPT_DIR/apps/api/dist/main.js" ]; then
+    cp -r "$SCRIPT_DIR/apps/api/dist/src/"* "$SCRIPT_DIR/apps/api/dist/"
+fi
 
 echo "[5/7] Compilando Frontend Web (finixarg.com)..."
 npm run build -w web
@@ -53,9 +64,8 @@ npm run build -w web
 echo "[6/7] Compilando Panel Admin (admin.finixarg.com)..."
 npm run build -w admin
 
-# 6. Gestionar proceso PM2
+# 7. Gestionar proceso PM2
 echo "[7/7] Gestionando proceso en PM2..."
-# Detectar archivo de entrada del backend compilado
 API_ENTRY=$(find "$SCRIPT_DIR/apps/api/dist" -name "main.js" 2>/dev/null | head -n 1)
 
 if [ -z "$API_ENTRY" ]; then
@@ -70,17 +80,14 @@ pm2 delete finix-api 2>/dev/null || true
 pm2 start "$API_ENTRY" --name "finix-api" --cwd "$SCRIPT_DIR/apps/api"
 pm2 save
 
-# 7. Permisos y carpetas necesarias
-echo "🔒 Ajustando permisos del servidor web..."
-mkdir -p apps/api/uploads
-chmod -R 755 "$SCRIPT_DIR"
+# 8. Re-asegurar permisos web para NGINX
+mkdir -p "$SCRIPT_DIR/apps/api/uploads"
+chmod -R 755 "$SCRIPT_DIR/apps/web/dist" 2>/dev/null || true
+chmod -R 755 "$SCRIPT_DIR/apps/admin/dist" 2>/dev/null || true
+chmod -R 755 "$SCRIPT_DIR/apps/api/uploads" 2>/dev/null || true
+chmod 755 /root
 
-# Si el repo está dentro de /root, permitir a Nginx (www-data) leer los archivos compilados
-if [[ "$SCRIPT_DIR" == /root* ]]; then
-    chmod +x /root
-fi
-
-# 8. Actualizar y recargar NGINX automáticamente si existe la configuración
+# 9. Actualizar y recargar NGINX automáticamente si existe la configuración
 if [ -f "/etc/nginx/sites-available/finixarg.com.conf" ]; then
     echo "🌐 Actualizando configuración y recargando NGINX..."
     sudo cp "$SCRIPT_DIR/deploy/nginx/finixarg.com.conf" /etc/nginx/sites-available/finixarg.com.conf
@@ -89,7 +96,7 @@ if [ -f "/etc/nginx/sites-available/finixarg.com.conf" ]; then
     sudo nginx -t && sudo systemctl reload nginx || echo "⚠️ Advertencia al recargar NGINX"
 fi
 
-# 8. Verificación de salud (Health Check)
+# 10. Verificación de salud (Health Check)
 echo "🩺 Verificando estado del backend..."
 sleep 3
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/health || echo "error")
@@ -103,7 +110,7 @@ if [ "$HTTP_STATUS" = "200" ]; then
     echo "============================================="
 else
     echo "============================================="
-    echo "   ⚠️ Despliegue completado con advertencia: "
+    echo "   ⚠️ Despliegue completado:                  "
     echo "   Health check respondió código: $HTTP_STATUS"
     echo "   Revisa los logs con: pm2 logs finix-api   "
     echo "============================================="
