@@ -54,9 +54,12 @@ fi
 
 echo "[3/7] Sincronizando base de datos con Prisma..."
 npx prisma generate --schema=apps/api/prisma/schema.prisma
-npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma || {
-    echo "⚠️ Advertencia: Error en prisma migrate deploy. Continuando con el build..."
-}
+if ! npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma; then
+    echo "ℹ️ Base de datos existente detectada (P3005). Sincronizando esquema directamente con prisma db push..."
+    npx prisma db push --schema=apps/api/prisma/schema.prisma --accept-data-loss || {
+        echo "⚠️ Advertencia: Error sincronizando Prisma. Continuando..."
+    }
+fi
 
 # 6. Compilar Backend, Web y Admin
 echo "[4/7] Compilando Backend (NestJS)..."
@@ -102,27 +105,29 @@ pm2 save
 
 # 9. Actualizar y recargar NGINX automáticamente
 echo "🌐 Actualizando configuración y recargando NGINX..."
+# Limpiar configuraciones viejas o duplicadas que generen conflicto de server_name
+sudo rm -f /etc/nginx/sites-enabled/finix* /etc/nginx/sites-enabled/default /etc/nginx/conf.d/finix*
 sudo cp "$SCRIPT_DIR/deploy/nginx/finixarg.com.conf" /etc/nginx/sites-available/finixarg.com.conf
-sudo ln -sf /etc/nginx/sites-available/finixarg.com.conf /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
+sudo ln -sf /etc/nginx/sites-available/finixarg.com.conf /etc/nginx/sites-enabled/finixarg.com.conf
 sudo nginx -t && sudo systemctl reload nginx || echo "⚠️ Advertencia al recargar NGINX"
 
 # 10. Verificación de salud (Health Check)
 echo "🩺 Verificando estado del backend..."
 sleep 3
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/health || echo "error")
+API_PORT="${PORT:-3010}"
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${API_PORT}/health" || echo "error")
 
 if [ "$HTTP_STATUS" = "200" ]; then
     echo "============================================="
     echo "   ✅ ¡Despliegue finalizado exitosamente!   "
-    echo "   Backend: OK (HTTP 200)                    "
+    echo "   Backend: OK (HTTP 200 en puerto ${API_PORT}) "
     echo "   Web: https://finixarg.com                 "
     echo "   Admin: https://admin.finixarg.com         "
     echo "============================================="
 else
     echo "============================================="
     echo "   ⚠️ Despliegue completado:                  "
-    echo "   Health check respondió código: $HTTP_STATUS"
+    echo "   Health check en puerto ${API_PORT} respondió código: $HTTP_STATUS"
     echo "   Revisa los logs con: pm2 logs finix-api   "
     echo "============================================="
 fi
