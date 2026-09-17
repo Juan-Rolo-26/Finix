@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      allowedHosts: true,
       port: devPort,
       strictPort: true,
       host: true,
@@ -38,6 +39,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     preview: {
+      allowedHosts: true,
       port: previewPort,
       strictPort: true,
       host: true,

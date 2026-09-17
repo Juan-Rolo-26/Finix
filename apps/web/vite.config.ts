@@ -20,6 +20,7 @@ export default defineConfig({
     }
   },
   server: {
+    allowedHosts: true,
     proxy: {
       "/api": {
         target: "http://localhost:3010",
@@ -33,6 +34,6 @@ export default defineConfig({
   },
   preview: {
     host: true,
-    allowedHosts: ["finixarg.com"]
+    allowedHosts: true
   }
 })
