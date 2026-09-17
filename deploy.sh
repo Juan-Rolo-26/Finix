@@ -7,6 +7,7 @@
 
 set -e # Detener ante cualquier error crítico
 
+run_deploy() {
 echo "============================================="
 echo "   🚀 Iniciando Despliegue Automático FINIX  "
 echo "============================================="
@@ -131,4 +132,8 @@ else
     echo "   Revisa los logs con: pm2 logs finix-api   "
     echo "============================================="
 fi
+}
+
+run_deploy "$@"
+
 
