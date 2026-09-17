@@ -34,9 +34,19 @@ npm install
 
 # 5. Cargar variables de apps/api/.env de forma segura
 if [ -f "apps/api/.env" ]; then
-    set -a
-    source apps/api/.env 2>/dev/null || true
-    set +a
+    while IFS= read -r line || [ -n "$line" ]; do
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${line// }" ]] && continue
+        if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            val="${BASH_REMATCH[2]}"
+            val="${val%\"}"
+            val="${val#\"}"
+            val="${val%\'}"
+            val="${val#\'}"
+            export "$key"="$val"
+        fi
+    done < "apps/api/.env"
     if [ -z "$DIRECT_URL" ] && [ -n "$DATABASE_URL" ]; then
         export DIRECT_URL="$DATABASE_URL"
     fi
