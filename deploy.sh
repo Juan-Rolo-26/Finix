@@ -87,6 +87,10 @@ sudo cp -r "$SCRIPT_DIR/apps/web/dist/"* /var/www/finix-web/
 sudo cp -r "$SCRIPT_DIR/apps/admin/dist/"* /var/www/finix-admin/
 sudo chown -R www-data:www-data /var/www/finix-web /var/www/finix-admin "$SCRIPT_DIR/apps/api/uploads"
 sudo chmod -R 755 /var/www/finix-web /var/www/finix-admin "$SCRIPT_DIR/apps/api/uploads"
+# Enlaces de compatibilidad por si alguna configuración vieja apunta a /var/www/finix/apps/...
+sudo mkdir -p /var/www/finix/apps/web /var/www/finix/apps/admin
+sudo ln -sfn /var/www/finix-web /var/www/finix/apps/web/dist
+sudo ln -sfn /var/www/finix-admin /var/www/finix/apps/admin/dist
 
 # 8. Gestionar proceso PM2
 echo "[7/7] Gestionando proceso en PM2..."
