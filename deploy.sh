@@ -26,6 +26,15 @@ echo "[2/7] Instalando dependencias de NPM..."
 npm install
 
 # 4. Generar Prisma Client y aplicar migraciones
+# 4. Cargar variables de apps/api/.env si existen para Prisma
+if [ -f "apps/api/.env" ]; then
+    export $(grep -v '^#' apps/api/.env | xargs 2>/dev/null) || true
+    # Si falta DIRECT_URL, usar DATABASE_URL como fallback
+    if [ -z "$DIRECT_URL" ] && [ -n "$DATABASE_URL" ]; then
+        export DIRECT_URL="$DATABASE_URL"
+    fi
+fi
+
 echo "[3/7] Sincronizando base de datos con Prisma..."
 npx prisma generate --schema=apps/api/prisma/schema.prisma
 npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma || {
@@ -34,7 +43,9 @@ npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma || {
 
 # 5. Compilar Backend, Web y Admin
 echo "[4/7] Compilando Backend (NestJS)..."
-npm run build -w api
+cd "$SCRIPT_DIR/apps/api"
+npm run build
+cd "$SCRIPT_DIR"
 
 echo "[5/7] Compilando Frontend Web (finixarg.com)..."
 npm run build -w web
@@ -44,16 +55,20 @@ npm run build -w admin
 
 # 6. Gestionar proceso PM2
 echo "[7/7] Gestionando proceso en PM2..."
-if pm2 describe finix-api > /dev/null 2>&1; then
-    echo "🔄 Reiniciando finix-api con nuevas variables y código..."
-    pm2 restart finix-api --update-env
-else
-    echo "⚡ Iniciando finix-api por primera vez en PM2..."
-    cd "$SCRIPT_DIR/apps/api"
-    pm2 start dist/main.js --name "finix-api"
-    cd "$SCRIPT_DIR"
-    pm2 save
+# Detectar archivo de entrada del backend compilado
+API_ENTRY=$(find "$SCRIPT_DIR/apps/api/dist" -name "main.js" 2>/dev/null | head -n 1)
+
+if [ -z "$API_ENTRY" ]; then
+    echo "❌ Error: No se encontró main.js en $SCRIPT_DIR/apps/api/dist"
+    exit 1
 fi
+
+echo "📍 Archivo de inicio del backend: $API_ENTRY"
+
+# Eliminar proceso previo desactualizado para asegurar la ruta correcta
+pm2 delete finix-api 2>/dev/null || true
+pm2 start "$API_ENTRY" --name "finix-api" --cwd "$SCRIPT_DIR/apps/api"
+pm2 save
 
 # 7. Permisos y carpetas necesarias
 echo "🔒 Ajustando permisos del servidor web..."
@@ -63,6 +78,15 @@ chmod -R 755 "$SCRIPT_DIR"
 # Si el repo está dentro de /root, permitir a Nginx (www-data) leer los archivos compilados
 if [[ "$SCRIPT_DIR" == /root* ]]; then
     chmod +x /root
+fi
+
+# 8. Actualizar y recargar NGINX automáticamente si existe la configuración
+if [ -f "/etc/nginx/sites-available/finixarg.com.conf" ]; then
+    echo "🌐 Actualizando configuración y recargando NGINX..."
+    sudo cp "$SCRIPT_DIR/deploy/nginx/finixarg.com.conf" /etc/nginx/sites-available/finixarg.com.conf
+    sudo ln -sf /etc/nginx/sites-available/finixarg.com.conf /etc/nginx/sites-enabled/
+    sudo rm -f /etc/nginx/sites-enabled/default
+    sudo nginx -t && sudo systemctl reload nginx || echo "⚠️ Advertencia al recargar NGINX"
 fi
 
 # 8. Verificación de salud (Health Check)
