@@ -22,5 +22,13 @@ jobs:
           script_stop: true
           command_timeout: 15m
           script: |
-            cd /var/www/finix
+            if [ -d "$HOME/Finix" ]; then
+              cd "$HOME/Finix"
+            elif [ -d "/root/Finix" ]; then
+              cd "/root/Finix"
+            elif [ -d "$HOME/finix" ]; then
+              cd "$HOME/finix"
+            elif [ -d "/var/www/finix" ]; then
+              cd "/var/www/finix"
+            fi
             bash deploy.sh

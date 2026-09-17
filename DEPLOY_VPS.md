@@ -42,14 +42,11 @@ sudo apt install -y nodejs
 # 4. Instalar PM2 de manera global para mantener el backend siempre activo
 sudo npm install -g pm2
 
-# 5. Clonar el repositorio en /var/www/finix
-sudo mkdir -p /var/www
-cd /var/www
-sudo git clone https://github.com/TU_USUARIO/Finix.git finix
-cd /var/www/finix
+# 5. Clonar el repositorio directamente en tu carpeta de inicio (sin /var/www)
+git clone https://github.com/TU_USUARIO/Finix.git
+cd Finix
 
-# 6. Asignar permisos y hacer ejecutables los scripts
-sudo chown -R $USER:$USER /var/www/finix
+# 6. Hacer ejecutables los scripts de despliegue
 chmod +x deploy.sh scripts/push-deploy.sh
 ```
 
@@ -57,7 +54,7 @@ chmod +x deploy.sh scripts/push-deploy.sh
 
 ## ⚙️ 3. Configuración de Variables de Entorno (`.env`)
 
-Dentro de `/var/www/finix`:
+Dentro de la carpeta `Finix`:
 
 ### 3.1. Backend API (`apps/api/.env`)
 Creá el archivo `apps/api/.env`:
@@ -147,7 +144,8 @@ VITE_ADMIN_BASE_PATH="/"
 Copia el archivo de configuración listo para producción:
 
 ```bash
-sudo cp /var/www/finix/deploy/nginx/finixarg.com.conf /etc/nginx/sites-available/finixarg.com.conf
+# Estando dentro de la carpeta Finix:
+sudo cp deploy/nginx/finixarg.com.conf /etc/nginx/sites-available/finixarg.com.conf
 sudo ln -sf /etc/nginx/sites-available/finixarg.com.conf /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 ```
@@ -175,7 +173,7 @@ sudo certbot --nginx -d finixarg.com -d www.finixarg.com -d admin.finixarg.com
 Para compilar todo por primera vez y dejar el backend corriendo en PM2:
 
 ```bash
-cd /var/www/finix
+cd ~/Finix
 bash deploy.sh
 ```
 
@@ -263,7 +261,7 @@ Si no deseás usar GitHub Actions con SSH, podés levantar el webhook server que
 
 1. En el VPS iniciás el servidor webhook con PM2:
    ```bash
-   cd /var/www/finix
+   cd ~/Finix
    pm2 start webhook-server.js --name "finix-webhook"
    pm2 save
    ```
@@ -288,7 +286,7 @@ pm2 logs finix-api
 pm2 restart finix-api
 
 # Ejecutar un despliegue completo manual
-cd /var/www/finix && bash deploy.sh
+cd ~/Finix && bash deploy.sh
 
 # Ver logs de Nginx en caso de problemas de red
 sudo tail -f /var/log/nginx/error.log

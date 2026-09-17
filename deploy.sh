@@ -11,8 +11,10 @@ echo "============================================="
 echo "   🚀 Iniciando Despliegue Automático FINIX  "
 echo "============================================="
 
-# 1. Movernos al directorio del proyecto
-cd /var/www/finix || { echo "❌ Error: La carpeta /var/www/finix no existe."; exit 1; }
+# 1. Detectar automáticamente la carpeta del repositorio
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR" || { echo "❌ Error al entrar en la carpeta $SCRIPT_DIR"; exit 1; }
+echo "📁 Directorio de Finix: $SCRIPT_DIR"
 
 # 2. Descargar los últimos cambios de GitHub
 echo "[1/7] Descargando últimos cambios desde GitHub (main)..."
@@ -47,19 +49,21 @@ if pm2 describe finix-api > /dev/null 2>&1; then
     pm2 restart finix-api --update-env
 else
     echo "⚡ Iniciando finix-api por primera vez en PM2..."
-    cd /var/www/finix/apps/api
+    cd "$SCRIPT_DIR/apps/api"
     pm2 start dist/main.js --name "finix-api"
-    cd /var/www/finix
+    cd "$SCRIPT_DIR"
     pm2 save
 fi
 
 # 7. Permisos y carpetas necesarias
 echo "🔒 Ajustando permisos del servidor web..."
 mkdir -p apps/api/uploads
-chown -R www-data:www-data apps/web/dist
-chown -R www-data:www-data apps/admin/dist
-chown -R www-data:www-data apps/api/uploads
-chmod -R 755 /var/www/finix
+chmod -R 755 "$SCRIPT_DIR"
+
+# Si el repo está dentro de /root, permitir a Nginx (www-data) leer los archivos compilados
+if [[ "$SCRIPT_DIR" == /root* ]]; then
+    chmod +x /root
+fi
 
 # 8. Verificación de salud (Health Check)
 echo "🩺 Verificando estado del backend..."

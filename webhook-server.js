@@ -48,7 +48,7 @@ app.post('/webhook', (req, res) => {
         // Responder rápido a GitHub/cliente para evitar timeout (30s)
         res.status(200).json({ status: 'success', message: 'Webhook recibido. Despliegue iniciado.' });
 
-        exec('bash deploy.sh', { cwd: '/var/www/finix' }, (error, stdout, stderr) => {
+        exec('bash deploy.sh', { cwd: __dirname }, (error, stdout, stderr) => {
             isDeploying = false;
             if (error) {
                 console.error(`[${new Date().toISOString()}] ❌ Error en deploy: ${error.message}`);
