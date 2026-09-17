@@ -47,7 +47,7 @@ export default function AdminLayout() {
             {/* Mobile Sidebar Toggle */}
             <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden fixed top-4 right-4 z-50 p-2 bg-zinc-800 rounded-lg border border-zinc-700 text-zinc-300"
+                className="lg:hidden fixed top-4 right-4 z-50 p-2 bg-card rounded-lg border border-border text-foreground shadow-md hover:bg-muted transition-colors"
             >
                 <Menu className="w-5 h-5" />
             </button>

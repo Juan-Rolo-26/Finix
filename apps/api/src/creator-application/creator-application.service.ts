@@ -1,11 +1,15 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { MailService } from '../mail/mail.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 
 @Injectable()
 export class CreatorApplicationService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly mailService: MailService,
+    ) { }
 
     async create(userId: string, dto: CreateApplicationDto) {
         const existing = await this.prisma.creatorApplication.findUnique({
@@ -20,8 +24,8 @@ export class CreatorApplicationService {
             throw new BadRequestException('Ya eres un creador aprobado.');
         }
 
-        if (existing) {
-            return this.prisma.creatorApplication.update({
+        const application = existing
+            ? await this.prisma.creatorApplication.update({
                 where: { id: existing.id },
                 data: {
                     bio: dto.bio,
@@ -32,19 +36,44 @@ export class CreatorApplicationService {
                     reviewedBy: null,
                     reviewedAt: null,
                 },
+            })
+            : await this.prisma.creatorApplication.create({
+                data: {
+                    userId,
+                    bio: dto.bio,
+                    experience: dto.experience,
+                    education: dto.education,
+                    documentsUrl: dto.documentsUrl,
+                    status: 'PENDING',
+                },
             });
-        }
 
-        return this.prisma.creatorApplication.create({
-            data: {
-                userId,
-                bio: dto.bio,
-                experience: dto.experience,
-                education: dto.education,
-                documentsUrl: dto.documentsUrl,
-                status: 'PENDING',
-            },
+        // Notify admin about creator application
+        const applicant = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { username: true, email: true },
         });
+
+        this.mailService.sendAdminAlert({
+            eventType: 'CREATOR_APPLICATION',
+            title: `Nueva Solicitud de Creador: @${applicant?.username || 'usuario'}`,
+            badgeText: 'SOLICITUD DE CREADOR',
+            badgeColor: '#f59e0b',
+            summary: `El usuario @${applicant?.username || 'usuario'} ha postulado para ser Creador Verificado en Finix.`,
+            details: [
+                { label: 'Postulante', value: `@${applicant?.username || 'N/A'} (${applicant?.email || 'N/A'})` },
+                { label: 'Biografía', value: dto.bio ? (dto.bio.length > 200 ? `${dto.bio.slice(0, 200)}...` : dto.bio) : 'N/A' },
+                { label: 'Experiencia', value: dto.experience ? (dto.experience.length > 200 ? `${dto.experience.slice(0, 200)}...` : dto.experience) : 'N/A' },
+                { label: 'Educación', value: dto.education || 'N/A' },
+                { label: 'Documentos Adjuntos', value: dto.documentsUrl || 'No adjuntados' },
+                { label: 'ID Solicitud', value: application.id },
+                { label: 'Fecha y Hora', value: new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) },
+            ],
+            actionUrl: `${this.mailService.getAdminUrl()}/creators`,
+            actionLabel: 'Revisar Postulación en Admin',
+        });
+
+        return application;
     }
 
     async findAll(status?: string) {

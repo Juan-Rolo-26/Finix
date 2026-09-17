@@ -3,11 +3,13 @@ const withApiPrefix = (path: string) => {
         return path;
     }
 
-    let baseUrl = import.meta.env.VITE_ADMIN_API_PROXY_TARGET || '';
+    let baseUrl = import.meta.env.VITE_ADMIN_API_URL || import.meta.env.VITE_ADMIN_API_PROXY_TARGET || '';
 
-    // Auto-detección para producción si el .env no fue configurado en el VPS
-    if (!baseUrl && typeof window !== 'undefined' && window.location.hostname === 'admin.finixarg.com') {
-        baseUrl = 'https://finixarg.com/api';
+    // En navegador en producción (o en admin.finixarg.com), usamos '/api'
+    // aprovechando el proxy de Nginx (o el proxy de Vite en desarrollo).
+    // Esto garantiza que las cookies de sesión (2FA) sean 100% Same-Origin.
+    if (!baseUrl && typeof window !== 'undefined') {
+        baseUrl = '/api';
     }
 
     let normalizedPath = path.startsWith('/') ? path : `/${path}`;

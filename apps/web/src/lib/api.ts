@@ -52,24 +52,16 @@ const shouldAutoLogoutOnUnauthorized = (path: string, status: number) => {
 
 export const apiUrl = (path: string) => buildUrl(activeBase ?? '', path);
 
-import { handleMockRequest } from './mockApi';
-import { handleMockMarket } from './mockMarket';
 import { handleMockNews } from './mockNews';
-import { handleMockUsers } from './mockUsers';
+
+// Limpieza de mocks legacy del navegador
+if (typeof window !== 'undefined') {
+    localStorage.removeItem('mockPortfolios');
+    localStorage.removeItem('hasSeededPortfolios');
+}
 
 export const apiFetch = async (path: string, init?: RequestInit) => {
-    if (path.startsWith('/portfolios')) {
-        const mockResponse = await handleMockRequest(path, init);
-        if (mockResponse) return mockResponse;
-    }
-    if (path.startsWith('/users')) {
-        const usersResponse = await handleMockUsers(path, init);
-        if (usersResponse) return usersResponse;
-    }
-    if (path.startsWith('/market')) {
-        const marketResponse = await handleMockMarket(path, init);
-        if (marketResponse) return marketResponse;
-    }
+    // Portfolios, Users y Market van 100% al backend NestJS sin interceptores de mocks
     if (path.startsWith('/news')) {
         const newsResponse = await handleMockNews(path, init);
         if (newsResponse) return newsResponse;
@@ -78,14 +70,21 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
     const authToken = localStorage.getItem('token');
     const withAuth = (requestInit?: RequestInit) => {
         const enhancedInit = { ...requestInit, credentials: 'include' as RequestCredentials };
-        if (!authToken) {
-            return enhancedInit;
-        }
         const headers = new Headers(enhancedInit.headers || {});
-        if (!headers.has('Authorization')) {
+        if (authToken && !headers.has('Authorization')) {
             headers.set('Authorization', `Bearer ${authToken}`);
         }
-        return { ...enhancedInit, headers };
+        if (!headers.has('Cache-Control')) {
+            headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
+        if (!headers.has('Pragma')) {
+            headers.set('Pragma', 'no-cache');
+        }
+        return {
+            ...enhancedInit,
+            headers,
+            cache: (requestInit?.cache || 'no-store') as RequestCache,
+        };
     };
 
     const candidates = activeBase

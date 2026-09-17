@@ -23,9 +23,13 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     CheckCheck,
-    Microscope,
+    AreaChart,
     Calendar,
+    Heart,
+    UserPlus,
+    Repeat,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useAuthStore } from '../stores/authStore';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
@@ -35,6 +39,15 @@ import { usePreferencesStore } from '../stores/preferencesStore';
 /* ─── Brand token ─────────────────────────────────────────────── */
 const PRIMARY = 'hsl(var(--primary))';
 const PRIMARY_BRD = 'hsl(var(--primary) / 0.2)';
+
+function getNotificationVisual(type: string) {
+    if (type.startsWith('SOCIAL_FOLLOW')) return { icon: UserPlus, color: 'text-emerald-500', bg: 'bg-emerald-500/10' };
+    if (type.startsWith('SOCIAL_LIKE')) return { icon: Heart, color: 'text-rose-500', bg: 'bg-rose-500/10' };
+    if (type.startsWith('SOCIAL_COMMENT') || type.startsWith('SOCIAL_REPLY')) return { icon: MessageSquare, color: 'text-sky-500', bg: 'bg-sky-500/10' };
+    if (type.startsWith('SOCIAL_REPOST')) return { icon: Repeat, color: 'text-violet-500', bg: 'bg-violet-500/10' };
+    if (type.startsWith('MARKET_')) return { icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10' };
+    return { icon: Bell, color: 'text-muted-foreground', bg: 'bg-muted/40' };
+}
 
 interface PinnedAsset {
     ticker: string;
@@ -108,10 +121,19 @@ function SidebarNavLink({
                 />
             )}
             <div className="relative z-10 flex items-center gap-3 w-full" style={{ justifyContent: collapsed ? 'center' : undefined }}>
-                <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+                <div
+                    className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all border border-black/30 dark:border-white/35 bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs",
+                        active
+                            ? "border-black/60 dark:border-white/60"
+                            : "hover:border-black/50"
+                    )}
+                >
+                    <Icon className="w-3.5 h-3.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+                </div>
                 {!collapsed && (
                     <>
-                        <span className="flex-1 leading-none">{name}</span>
+                        <span className="flex-1 leading-none font-semibold">{name}</span>
                         {badge > 0 && (
                             <motion.span
                                 initial={{ scale: 0 }}
@@ -168,27 +190,19 @@ export function Sidebar() {
 
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
 
-    /* ── Fetch search results ─────────────────────────────────── */
+    /* ── Fetch search results (only users) ─────────────────────── */
     useEffect(() => {
         if (searchQuery.length < 2) { setSearchResults([]); return; }
         setIsSearchLoading(true);
         const t = setTimeout(async () => {
             try {
-                const [usersRes, marketRes] = await Promise.all([
-                    apiFetch(`/users/search?q=${searchQuery}`).catch(() => null),
-                    apiFetch(`/market/search?q=${searchQuery}`).catch(() => null)
-                ]);
-
-                let combined: any[] = [];
+                const usersRes = await apiFetch(`/users/search?q=${encodeURIComponent(searchQuery)}`).catch(() => null);
                 if (usersRes?.ok) {
                     const users = await usersRes.json();
-                    combined = combined.concat(users.map((u: any) => ({ ...u, _searchType: 'user' })));
+                    setSearchResults(users || []);
+                } else {
+                    setSearchResults([]);
                 }
-                if (marketRes?.ok) {
-                    const market = await marketRes.json();
-                    combined = combined.concat(market.slice(0, 4).map((m: any) => ({ ...m, _searchType: 'asset' })));
-                }
-                setSearchResults(combined);
             } catch {
                 setSearchResults([]);
             } finally {
@@ -199,26 +213,44 @@ export function Sidebar() {
     }, [searchQuery]);
 
     /* ── Fetch notifications ──────────────────────────────────── */
-    useEffect(() => {
-        if (!isNotifsOpen) return;
-        const fetchNotifs = async () => {
-            setIsNotifsLoading(true);
-            try {
-                const res = await apiFetch(`/notifications?limit=25`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setNotifications(data.items || []);
-                    await apiFetch('/notifications/read-all', { method: 'PATCH' });
-                    setUnreadNotifs(0);
-                }
-            } catch {
-                setNotifications([]);
-            } finally {
-                setIsNotifsLoading(false);
+    const fetchNotifs = async () => {
+        setIsNotifsLoading(true);
+        try {
+            const res = await apiFetch(`/notifications?limit=25`);
+            if (res.ok) {
+                const data = await res.json();
+                setNotifications(data.items || []);
             }
-        };
-        fetchNotifs();
+        } catch {
+            setNotifications([]);
+        } finally {
+            setIsNotifsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isNotifsOpen) {
+            fetchNotifs();
+        }
     }, [isNotifsOpen]);
+
+    const handleReadAllNotifs = async () => {
+        try {
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+            setUnreadNotifs(0);
+            await apiFetch('/notifications/read-all', { method: 'PATCH' });
+        } catch { }
+    };
+
+    const handleNotificationClick = async (n: NotificationItem) => {
+        if (!n.isRead) {
+            setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, isRead: true } : x));
+            setUnreadNotifs(prev => Math.max(0, prev - 1));
+            apiFetch(`/notifications/${n.id}/read`, { method: 'PATCH' }).catch(() => { });
+        }
+        if (n.link) navigate(n.link);
+        setIsNotifsOpen(false);
+    };
 
     useEffect(() => {
         const load = async () => {
@@ -228,7 +260,7 @@ export function Sidebar() {
             } catch { }
         };
         load();
-        const iv = setInterval(load, 30_000);
+        const iv = setInterval(load, 10_000);
         return () => clearInterval(iv);
     }, []);
 
@@ -305,7 +337,7 @@ export function Sidebar() {
                 { name: 'Calendario', path: '/calendario', icon: Calendar, badge: 0 },
                 { name: 'Portafolio',path: '/portfolio', icon: Briefcase,   badge: 0 },
                 { name: 'Noticias',  path: '/news',     icon: Newspaper,   badge: 0 },
-                { name: 'Análisis',  path: '/analysis', icon: Microscope,  badge: 0 },
+                { name: 'Análisis',  path: '/analysis', icon: AreaChart,  badge: 0 },
                 // { name: 'Aprender', path: '/learn', icon: BookOpen, badge: 0 },
             ],
         },
@@ -337,7 +369,7 @@ export function Sidebar() {
             initial={{ x: -12, opacity: 0 }}
             animate={{ x: 0, opacity: 1, width: sidebarWidth }}
             transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="fixed left-0 top-0 z-40 hidden lg:flex h-screen flex-col"
+            className="fixed left-0 top-0 bottom-0 z-40 hidden lg:flex h-screen flex-col"
             style={{
                 width: sidebarWidth,
                 background: 'hsl(var(--sidebar-bg))',
@@ -354,12 +386,7 @@ export function Sidebar() {
             <div className="flex items-center gap-3 px-4 py-4 flex-shrink-0"
                 style={{ borderBottom: '1px solid hsl(var(--sidebar-border))' }}>
                 <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
-                    style={{
-                        background: `linear-gradient(135deg, hsl(var(--sidebar-logo-bg-from)) 0%, hsl(var(--sidebar-logo-bg-to)) 100%)`,
-                        border: `1px solid hsl(var(--sidebar-logo-border))`,
-                        boxShadow: `0 0 14px hsl(var(--primary) / 0.15)`,
-                    }}
+                    className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer border border-black/30 dark:border-white/35 bg-white dark:bg-zinc-900 shadow-2xs transition-transform hover:scale-105"
                     onClick={() => navigate('/dashboard')}
                 >
                     <img src="/logo.png" alt="Finix" className="h-5 w-5 object-contain" />
@@ -427,7 +454,7 @@ export function Sidebar() {
                                                 style={{ color: 'hsl(var(--muted-foreground))' }} />
                                             <input
                                                 type="text"
-                                                placeholder="Buscar personas, activos, temas..."
+                                                placeholder="Buscar usuarios..."
                                                 className="w-full text-[13px] pl-8 pr-3 py-2 rounded-xl outline-none"
                                                 style={{
                                                     background: 'hsl(var(--secondary))',
@@ -445,73 +472,44 @@ export function Sidebar() {
                                                     <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'hsl(var(--muted-foreground))' }} />
                                                 </div>
                                             ) : searchResults.length > 0 ? (
-                                                searchResults.map((r, i) => {
-                                                    if (r._searchType === 'asset') {
-                                                        return (
-                                                            <button
-                                                                key={r.symbol || i}
-                                                                className="w-full flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors text-left"
-                                                                onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
-                                                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                                                onClick={() => { navigate(`/market?symbol=${r.symbol}`); setIsSearchOpen(false); setSearchQuery(''); }}
-                                                            >
-                                                                <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shrink-0"
-                                                                    style={{ background: 'hsl(var(--primary) / 0.12)' }}>
-                                                                    <TrendingUp className="w-4 h-4" style={{ color: PRIMARY }} />
-                                                                </div>
-                                                                <div className="flex-1 min-w-0 text-left">
-                                                                    <div className="flex items-center gap-1">
-                                                                        <p className="text-[13px] font-semibold truncate">{r.name}</p>
-                                                                        <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-primary/10 text-primary">
-                                                                            {r.type}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                                        {r.exchange}:{r.symbol}
-                                                                    </p>
-                                                                </div>
-                                                            </button>
-                                                        );
-                                                    }
-                                                    return (
-                                                        <button
-                                                            key={r.id || i}
-                                                            className="w-full flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors text-left"
-                                                            onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
-                                                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                                            onClick={() => { navigate(`/profile/${r.username}`); setIsSearchOpen(false); setSearchQuery(''); }}
-                                                        >
-                                                            <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shrink-0"
-                                                                style={{ background: 'hsl(var(--primary) / 0.12)' }}>
-                                                                {r.avatarUrl
-                                                                    ? <img src={resolveMediaUrl(r.avatarUrl)} alt={r.username} className="w-full h-full object-cover" />
-                                                                    : <User className="w-4 h-4" style={{ color: PRIMARY }} />
-                                                                }
+                                                searchResults.map((r, i) => (
+                                                    <button
+                                                        key={r.id || r.username || i}
+                                                        className="w-full flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors text-left"
+                                                        onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
+                                                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                                        onClick={() => { navigate(`/profile/${r.username}`); setIsSearchOpen(false); setSearchQuery(''); }}
+                                                    >
+                                                        <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shrink-0 border border-border/40"
+                                                            style={{ background: 'hsl(var(--primary) / 0.12)' }}>
+                                                            {r.avatarUrl
+                                                                ? <img src={resolveMediaUrl(r.avatarUrl)} alt={r.username} className="w-full h-full object-cover" />
+                                                                : <User className="w-4 h-4" style={{ color: PRIMARY }} />
+                                                            }
+                                                        </div>
+                                                        <div className="flex-1 min-w-0 text-left">
+                                                            <div className="flex items-center gap-1">
+                                                                <p className="text-[13px] font-semibold truncate">{r.name || r.username}</p>
+                                                                {r.isVerified && (
+                                                                    <span className="verified-badge">✓</span>
+                                                                )}
                                                             </div>
-                                                            <div className="flex-1 min-w-0 text-left">
-                                                                <div className="flex items-center gap-1">
-                                                                    <p className="text-[13px] font-semibold truncate">{r.username}</p>
-                                                                    {r.isVerified && (
-                                                                        <span className="verified-badge">✓</span>
-                                                                    )}
-                                                                </div>
-                                                                <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                                    {r.title || r.company || 'Ver perfil →'}
-                                                                </p>
-                                                            </div>
-                                                        </button>
-                                                    );
-                                                })
+                                                            <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                                                @{r.username} {r.bio ? `• ${r.bio}` : (r.title || r.company ? `• ${r.title || r.company}` : '')}
+                                                            </p>
+                                                        </div>
+                                                    </button>
+                                                ))
                                             ) : searchQuery.length >= 2 ? (
-                                                <div className="empty-state py-6">
+                                                <div className="empty-state py-6 text-center">
                                                     <p className="text-[13px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                        Sin resultados para "{searchQuery}"
+                                                        Sin usuarios para "{searchQuery}"
                                                     </p>
                                                 </div>
                                             ) : (
                                                 <p className="text-[12px] text-center py-4 leading-relaxed px-3"
                                                     style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                    Busca personas, activos o temas de interés
+                                                    Busca usuarios por nombre o @usuario
                                                 </p>
                                             )}
                                         </div>
@@ -545,7 +543,7 @@ export function Sidebar() {
                                         initial={{ opacity: 0, y: 8, scale: 0.96 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                                        className="absolute top-10 left-0 w-[300px] rounded-2xl shadow-2xl overflow-hidden z-50 origin-top-left"
+                                        className="absolute top-10 left-0 w-[310px] rounded-2xl shadow-2xl overflow-hidden z-50 origin-top-left flex flex-col"
                                         style={popoverStyle}
                                         transition={{ duration: 0.16 }}
                                     >
@@ -563,6 +561,7 @@ export function Sidebar() {
                                                     style={{ color: 'hsl(var(--primary) / 0.7)' }}
                                                     onMouseEnter={e => (e.currentTarget.style.color = PRIMARY)}
                                                     onMouseLeave={e => (e.currentTarget.style.color = 'hsl(var(--primary) / 0.7)')}
+                                                    onClick={handleReadAllNotifs}
                                                 >
                                                     <CheckCheck className="w-3.5 h-3.5" />
                                                     Leer todo
@@ -581,42 +580,59 @@ export function Sidebar() {
                                                             style={{ color: 'hsl(var(--muted-foreground))' }}>
                                                             {group.label}
                                                         </p>
-                                                        {group.items.map((n) => (
-                                                            <button
-                                                                key={n.id}
-                                                                className="w-full flex items-start gap-3 p-2.5 rounded-xl cursor-pointer transition-colors text-left"
-                                                                onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
-                                                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                                                onClick={() => { if (n.link) navigate(n.link); setIsNotifsOpen(false); }}
-                                                            >
-                                                                <div
-                                                                    className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
+                                                        {group.items.map((n) => {
+                                                            const visual = getNotificationVisual(n.type);
+                                                            const Icon = visual.icon;
+                                                            return (
+                                                                <button
+                                                                    key={n.id}
+                                                                    className="w-full flex items-start gap-3 p-2.5 rounded-xl cursor-pointer transition-colors text-left relative group"
                                                                     style={{
-                                                                        background: n.type === 'follow' ? 'hsl(var(--primary) / 0.12)' : 'hsl(var(--secondary))',
+                                                                        background: !n.isRead ? 'hsl(var(--primary) / 0.05)' : 'transparent'
                                                                     }}
+                                                                    onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--secondary))')}
+                                                                    onMouseLeave={e => (e.currentTarget.style.background = !n.isRead ? 'hsl(var(--primary) / 0.05)' : 'transparent')}
+                                                                    onClick={() => handleNotificationClick(n)}
                                                                 >
-                                                                    {n.type === 'follow'
-                                                                        ? <User className="w-4 h-4" style={{ color: PRIMARY }} />
-                                                                        : <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                                                                    }
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="text-[12.5px] font-medium leading-snug">{n.title}</p>
-                                                                    {n.message && (
-                                                                        <p className="mt-0.5 text-[11px] leading-snug truncate"
-                                                                            style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                                            {n.message}
-                                                                        </p>
+                                                                    <div className="relative shrink-0 w-8 h-8 mt-0.5">
+                                                                        {n.actor?.avatarUrl ? (
+                                                                            <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
+                                                                                <img src={resolveMediaUrl(n.actor.avatarUrl)} alt={n.actor.username} className="w-full h-full object-cover" />
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div
+                                                                                className={`w-8 h-8 rounded-full flex items-center justify-center ${visual.bg}`}
+                                                                            >
+                                                                                <Icon className={`w-4 h-4 ${visual.color}`} />
+                                                                            </div>
+                                                                        )}
+                                                                        {n.actor && (
+                                                                            <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border border-background ${visual.bg}`}>
+                                                                                <Icon className={`w-2.5 h-2.5 ${visual.color}`} />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-[12.5px] font-medium leading-snug">{n.title}</p>
+                                                                        {n.message && (
+                                                                            <p className="mt-0.5 text-[11px] leading-snug truncate"
+                                                                                style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                                                                {n.message}
+                                                                            </p>
+                                                                        )}
+                                                                        <span className="text-[10px] mt-1 inline-block font-semibold"
+                                                                            style={{ color: 'hsl(var(--primary) / 0.65)' }}>
+                                                                            {n.timeLabel}
+                                                                        </span>
+                                                                    </div>
+                                                                    {!n.isRead && (
+                                                                        <span className="w-2 h-2 rounded-full shrink-0 bg-primary mt-2" />
                                                                     )}
-                                                                    <span className="text-[10px] mt-1 inline-block font-semibold"
-                                                                        style={{ color: 'hsl(var(--primary) / 0.65)' }}>
-                                                                        {n.timeLabel}
-                                                                    </span>
-                                                                </div>
-                                                                {n.link && <ChevronRight className="w-3.5 h-3.5 shrink-0 mt-1"
-                                                                    style={{ color: 'hsl(var(--muted-foreground))' }} />}
-                                                            </button>
-                                                        ))}
+                                                                    {n.link && <ChevronRight className="w-3.5 h-3.5 shrink-0 mt-1"
+                                                                        style={{ color: 'hsl(var(--muted-foreground))' }} />}
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 ))
                                             ) : (
@@ -631,6 +647,15 @@ export function Sidebar() {
                                                     </p>
                                                 </div>
                                             )}
+                                        </div>
+                                        <div className="p-2 border-t text-center" style={{ borderColor: 'hsl(var(--border) / 0.6)' }}>
+                                            <button
+                                                onClick={() => { setIsNotifsOpen(false); navigate('/notifications'); }}
+                                                className="text-[12px] font-semibold transition-colors hover:underline"
+                                                style={{ color: PRIMARY }}
+                                            >
+                                                Ver todas las notificaciones →
+                                            </button>
                                         </div>
                                     </motion.div>
                                 )}
@@ -808,9 +833,9 @@ export function Sidebar() {
                                 <p className="text-[12.5px] font-semibold truncate leading-tight">
                                     {user?.username || (user as any)?.email?.split('@')[0] || 'Usuario'}
                                 </p>
-                                <p className="text-[9.5px] uppercase tracking-[0.14em] font-semibold leading-tight mt-0.5"
-                                    style={{ color: 'hsl(var(--primary) / 0.6)' }}>
-                                    Inversor
+                                <p className="text-[9.5px] uppercase tracking-[0.14em] font-bold leading-tight mt-0.5"
+                                    style={{ color: (user?.role === 'ADMIN' || user?.plan === 'PRO' || (user as any)?.isPro) ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.6)' }}>
+                                    {user?.role === 'ADMIN' ? 'ADMIN · PRO' : ((user?.plan === 'PRO' || (user as any)?.isPro) ? 'PRO' : 'Inversor')}
                                 </p>
                             </div>
                         )}
@@ -834,7 +859,40 @@ export function Sidebar() {
                     <LogOut className="w-3.5 h-3.5" />
                     {!collapsed && <span>Cerrar sesión</span>}
                 </motion.button>
+
+                {/* ── Legal footer links — only when expanded ── */}
+                {!collapsed && (
+                    <div className="mt-3 pt-2.5 border-t flex flex-wrap gap-x-2.5 gap-y-1 justify-center" style={{ borderColor: 'hsl(var(--sidebar-border))' }}>
+                        <Link to="/help" className="text-[9.5px] font-medium transition-colors" style={{ color: 'hsl(var(--muted-foreground))' }}
+                            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--foreground))')}
+                            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))')}>
+                            Ayuda
+                        </Link>
+                        <span className="text-[9.5px]" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>·</span>
+                        <Link to="/terms" className="text-[9.5px] font-medium transition-colors" style={{ color: 'hsl(var(--muted-foreground))' }}
+                            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--foreground))')}
+                            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))')}>
+                            Términos
+                        </Link>
+                        <span className="text-[9.5px]" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>·</span>
+                        <Link to="/privacy" className="text-[9.5px] font-medium transition-colors" style={{ color: 'hsl(var(--muted-foreground))' }}
+                            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--foreground))')}
+                            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))')}>
+                            Privacidad
+                        </Link>
+                        <span className="text-[9.5px]" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>·</span>
+                        <Link to="/cookies" className="text-[9.5px] font-medium transition-colors" style={{ color: 'hsl(var(--muted-foreground))' }}
+                            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--foreground))')}
+                            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))')}>
+                            Cookies
+                        </Link>
+                        <p className="w-full text-center text-[8.5px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground) / 0.45)' }}>
+                            © {new Date().getFullYear()} Finix
+                        </p>
+                    </div>
+                )}
             </motion.div>
         </motion.aside>
     );
 }
+

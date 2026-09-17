@@ -79,23 +79,86 @@ export class CalendarController {
         });
     }
 
+    /**
+     * Consulta pública de dividendos de empresas S&P 500
+     */
+    @UseGuards(OptionalJwtAuthGuard)
+    @Get('dividends')
+    async getDividendEvents(
+        @Query('weekStart') weekStart?: string,
+        @Req() req?: any,
+    ) {
+        return this.calendarService.getWeekEvents({
+            weekStart,
+            category: 'DIVIDEND' as any,
+            user: req?.user,
+        });
+    }
+
+    /**
+     * Consulta pública de eventos de mercado (solo status PUBLISHED o APPROVED)
+     */
+    @UseGuards(OptionalJwtAuthGuard)
+    @Get('events')
+    async getPublicEvents(
+        @Query('range') range?: 'today' | 'tomorrow' | 'week' | 'next_week' | 'month' | 'all',
+        @Query('country') country?: string,
+        @Query('category') category?: string,
+        @Query('impact') impact?: string,
+        @Query('ticker') ticker?: string,
+        @Query('search') search?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        return this.calendarService.getPublicEvents({
+            range,
+            country,
+            category,
+            impact,
+            ticker,
+            search,
+            page: page ? parseInt(page, 10) : 1,
+            limit: limit ? parseInt(limit, 10) : 50,
+        });
+    }
+
+    @UseGuards(OptionalJwtAuthGuard)
+    @Get('events/:id')
+    async getEventById(@Param('id') id: string) {
+        return this.calendarService.getEventById(id);
+    }
+
+    @UseGuards(OptionalJwtAuthGuard)
+    @Get('today')
+    async getTodayEvents(@Query('country') country?: string) {
+        return this.calendarService.getPublicEvents({
+            range: 'today',
+            country,
+            limit: 50,
+        });
+    }
+
+    @UseGuards(OptionalJwtAuthGuard)
+    @Get('upcoming')
+    async getUpcomingEvents(@Query('country') country?: string) {
+        return this.calendarService.getPublicEvents({
+            range: 'week',
+            country,
+            limit: 100,
+        });
+    }
+
+    @Get('sources')
+    async getPublicSources() {
+        return this.calendarService.getPublicSources();
+    }
+
     // --- Endpoints de Administración ---
 
     @UseGuards(AdminGuard)
     @Get('admin/overview')
     async getAdminOverview() {
-        const [economic, earnings, logs] = await Promise.all([
-            this.calendarService.getAdminEvents({ page: 1, limit: 10, type: 'ECONOMIC' }),
-            this.calendarService.getAdminEvents({ page: 1, limit: 10, type: 'EARNINGS' }),
-            this.calendarService.getSyncLogs(),
-        ]);
-        return {
-            totalEconomic: economic.total,
-            totalEarnings: earnings.total,
-            recentEconomic: economic.items,
-            recentEarnings: earnings.items,
-            syncLogs: logs,
-        };
+        return this.calendarService.getAdminOverview();
     }
 
     @UseGuards(AdminGuard)
@@ -105,12 +168,28 @@ export class CalendarController {
         @Query('limit') limit?: string,
         @Query('country') country?: string,
         @Query('type') type?: 'ECONOMIC' | 'EARNINGS',
+        @Query('category') category?: string,
+        @Query('impact') impact?: string,
+        @Query('status') status?: string,
+        @Query('source') source?: string,
+        @Query('ticker') ticker?: string,
+        @Query('date') date?: string,
+        @Query('range') range?: 'today' | 'week' | 'month' | 'all',
+        @Query('search') search?: string,
     ) {
         return this.calendarService.getAdminEvents({
             page: page ? parseInt(page, 10) : 1,
-            limit: limit ? parseInt(limit, 10) : 30,
+            limit: limit ? parseInt(limit, 10) : 50,
             country,
             type,
+            category,
+            impact,
+            status,
+            source,
+            ticker,
+            date,
+            range,
+            search,
         });
     }
 
@@ -133,11 +212,68 @@ export class CalendarController {
     }
 
     @UseGuards(AdminGuard)
+    @Get('admin/sources')
+    async getAdminSources() {
+        return this.calendarService.getAdminSources();
+    }
+
+    @UseGuards(AdminGuard)
+    @Patch('admin/sources/:id')
+    async toggleSourceActive(
+        @Param('id') id: string,
+        @Body('isActive') isActive: boolean,
+    ) {
+        return this.calendarService.toggleSourceActive(id, Boolean(isActive));
+    }
+
+    @UseGuards(AdminGuard)
+    @Get('admin/logs')
+    async getAdminLogs() {
+        return this.calendarService.getSyncLogs();
+    }
+
+    @UseGuards(AdminGuard)
     @Post('admin/sync')
     async triggerSync(
         @Body('from') from?: string,
         @Body('to') to?: string,
+        @Body('sourceId') sourceId?: string,
+    ) {
+        return this.calendarService.syncMacroData(from, to, sourceId);
+    }
+
+    @UseGuards(AdminGuard)
+    @Post('admin/sync-macro')
+    async triggerSyncMacro(
+        @Body('from') from?: string,
+        @Body('to') to?: string,
+        @Body('sourceId') sourceId?: string,
+    ) {
+        return this.calendarService.syncMacroData(from, to, sourceId);
+    }
+
+    @UseGuards(AdminGuard)
+    @Post('admin/sync-all')
+    async triggerSyncAll(
+        @Body('from') from?: string,
+        @Body('to') to?: string,
     ) {
         return this.calendarService.syncWeeklyData(from, to);
+    }
+
+    @UseGuards(AdminGuard)
+    @Post('admin/sync-source/:sourceId')
+    async triggerSyncSource(
+        @Param('sourceId') sourceId: string,
+    ) {
+        return this.calendarService.syncMacroData(undefined, undefined, sourceId);
+    }
+
+    @UseGuards(AdminGuard)
+    @Post('admin/sync-tradingview-earnings')
+    async syncTradingViewEarnings(
+        @Body('targetDate') targetDate?: string,
+    ) {
+        return this.calendarService.syncTradingViewEarnings(targetDate);
     }
 }

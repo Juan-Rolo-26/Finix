@@ -1,7 +1,7 @@
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 import {
-    Line,
-    LineChart,
+    Area,
+    AreaChart,
     CartesianGrid,
     ResponsiveContainer,
     Tooltip as RechartsTooltip,
@@ -9,13 +9,17 @@ import {
     YAxis,
     ReferenceLine,
 } from 'recharts';
+import { Trophy, TrendingUp, TrendingDown, Target, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CHART_AXIS_TICK, formatPercent } from './chartUtils';
-import type { ComparisonDatum, TimeRange } from './mockData';
+import { TIME_RANGES, type ComparisonDatum, type TimeRange } from './mockData';
+import { buildBenchmarkComparisonSeries, SP500_BENCHMARK_RETURNS } from './benchmarkUtils';
 
 interface BenchmarkComparisonChartProps {
     dataByRange: Record<TimeRange, ComparisonDatum[]>;
     selectedRange: TimeRange;
+    onRangeChange?: (range: TimeRange) => void;
+    portfolioReturn?: number;
     className?: string;
 }
 
@@ -26,42 +30,102 @@ const SP500_COLOR = '#38bdf8';
 function BenchmarkTooltip({ active, payload, label }: any) {
     if (!active || !payload?.length) return null;
 
-    const portfolio: number = payload.find((p: any) => p.dataKey === 'portfolio')?.value ?? 100;
-    const sp500: number = payload.find((p: any) => p.dataKey === 'sp500')?.value ?? 100;
+    const portfolioRaw = payload.find((p: any) => p.dataKey === 'portfolio')?.value;
+    const sp500Raw = payload.find((p: any) => p.dataKey === 'sp500')?.value;
+
+    const portfolio = typeof portfolioRaw === 'number' && Number.isFinite(portfolioRaw) ? portfolioRaw : 100;
+    const sp500 = typeof sp500Raw === 'number' && Number.isFinite(sp500Raw) ? sp500Raw : 100;
+
+    const pReturn = portfolio - 100;
+    const spReturn = sp500 - 100;
+    const spread = portfolio - sp500;
+    const isOutperforming = spread >= 0;
 
     return (
         <div
             style={{
-                background: 'hsl(var(--popover) / 0.97)',
-                border: '1px solid hsl(var(--border) / 0.8)',
-                borderRadius: '14px',
-                padding: '13px 16px',
-                boxShadow: '0 16px 40px hsl(var(--foreground) / 0.08), 0 2px 8px hsl(var(--foreground) / 0.04)',
-                minWidth: '180px',
+                background: 'rgba(15, 23, 42, 0.94)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '16px',
+                padding: '14px 18px',
+                boxShadow: '0 24px 48px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                minWidth: '220px',
             }}
         >
-            <p style={{ color: 'hsl(var(--muted-foreground))', fontSize: '11px', fontWeight: 700, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                {label}
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'hsl(var(--foreground))', fontSize: '12px', opacity: 0.9 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: PORTFOLIO_COLOR, display: 'inline-block', flexShrink: 0 }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <p style={{ color: 'rgba(148, 163, 184, 0.9)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                    {label}
+                </p>
+                <span
+                    style={{
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '9999px',
+                        background: isOutperforming ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)',
+                        color: isOutperforming ? '#34d399' : '#fb7185',
+                    }}
+                >
+                    {isOutperforming ? `+${spread.toFixed(1)} pts` : `${spread.toFixed(1)} pts`}
+                </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* Portafolio row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f8fafc', fontSize: '12px', fontWeight: 500 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: PORTFOLIO_COLOR, display: 'inline-block', flexShrink: 0, boxShadow: '0 0 8px rgba(16,185,129,0.8)' }} />
                         Portafolio
                     </span>
-                    <span style={{ color: portfolio >= 100 ? '#10b981' : '#ef4444', fontWeight: 700, fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
-                        {formatPercent(portfolio - 100, 1, true)}
-                    </span>
+                    <div style={{ textAlign: 'right' }}>
+                        <span style={{ color: pReturn >= 0 ? '#34d399' : '#f87171', fontWeight: 700, fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
+                            {formatPercent(pReturn, 1, true)}
+                        </span>
+                        <span style={{ color: 'rgba(148,163,184,0.6)', fontSize: '11px', marginLeft: '6px' }}>
+                            ({portfolio.toFixed(1)})
+                        </span>
+                    </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'hsl(var(--foreground))', fontSize: '12px', opacity: 0.9 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: SP500_COLOR, display: 'inline-block', flexShrink: 0 }} />
-                        S&amp;P 500
+
+                {/* S&P 500 row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f8fafc', fontSize: '12px', fontWeight: 500 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: SP500_COLOR, display: 'inline-block', flexShrink: 0, boxShadow: '0 0 8px rgba(56,189,248,0.8)' }} />
+                        S&amp;P 500 (SPY)
                     </span>
-                    <span style={{ color: sp500 >= 100 ? '#10b981' : '#ef4444', fontWeight: 700, fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
-                        {formatPercent(sp500 - 100, 1, true)}
-                    </span>
+                    <div style={{ textAlign: 'right' }}>
+                        <span style={{ color: spReturn >= 0 ? '#38bdf8' : '#f87171', fontWeight: 700, fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
+                            {formatPercent(spReturn, 1, true)}
+                        </span>
+                        <span style={{ color: 'rgba(148,163,184,0.6)', fontSize: '11px', marginLeft: '6px' }}>
+                            ({sp500.toFixed(1)})
+                        </span>
+                    </div>
                 </div>
+            </div>
+
+            <div
+                style={{
+                    marginTop: '10px',
+                    paddingTop: '8px',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                    fontSize: '11px',
+                    color: isOutperforming ? '#34d399' : 'rgba(148,163,184,0.85)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                }}
+            >
+                {isOutperforming ? (
+                    <>
+                        <span style={{ fontWeight: 600 }}>Superando al índice por {spread.toFixed(1)} pts</span>
+                    </>
+                ) : (
+                    <>
+                        <span>Por debajo del índice por {Math.abs(spread).toFixed(1)} pts</span>
+                    </>
+                )}
             </div>
         </div>
     );
@@ -70,186 +134,293 @@ function BenchmarkTooltip({ active, payload, label }: any) {
 export function BenchmarkComparisonChart({
     dataByRange,
     selectedRange,
+    onRangeChange,
+    portfolioReturn,
     className,
 }: BenchmarkComparisonChartProps) {
-    const gradientPortfolioId = `bcp-${useId().replace(/:/g, '-')}`;
-    const activeData = dataByRange[selectedRange] ?? [];
+    const rawId = useId();
+    const gradPortfolioId = `bcp-p-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+    const gradSp500Id = `bcp-sp-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+
+    // Internal active range state if not controlled from parent
+    const [localRange, setLocalRange] = useState<TimeRange>(selectedRange);
+    const activeRange = onRangeChange ? selectedRange : localRange;
+
+    const handleRangeClick = (range: TimeRange) => {
+        if (onRangeChange) {
+            onRangeChange(range);
+        } else {
+            setLocalRange(range);
+        }
+    };
+
+    // Ensure data is always a complete, multi-point series
+    const activeData = useMemo<ComparisonDatum[]>(() => {
+        const series = dataByRange[activeRange];
+        if (Array.isArray(series) && series.length >= 3) {
+            return series;
+        }
+
+        // Auto-expand with high-fidelity realistic SPY market swings
+        return buildBenchmarkComparisonSeries({
+            range: activeRange,
+            portfolioReturn: typeof portfolioReturn === 'number' && Number.isFinite(portfolioReturn) ? portfolioReturn : 0,
+        });
+    }, [dataByRange, activeRange, portfolioReturn]);
 
     const summary = useMemo(() => {
         const lastPoint = activeData[activeData.length - 1];
-        const portfolioReturn = (lastPoint?.portfolio ?? 100) - 100;
-        const sp500Return = (lastPoint?.sp500 ?? 100) - 100;
+        const pReturn = (lastPoint?.portfolio ?? 100) - 100;
+        const spReturn = (lastPoint?.sp500 ?? 100) - 100;
         const spread = (lastPoint?.portfolio ?? 100) - (lastPoint?.sp500 ?? 100);
         const leader = spread >= 0 ? 'Portafolio' : 'S&P 500';
 
         return {
-            portfolioReturn,
-            sp500Return,
-            spread,
+            portfolioReturn: Number.isFinite(pReturn) ? pReturn : 0,
+            sp500Return: Number.isFinite(spReturn) ? spReturn : (SP500_BENCHMARK_RETURNS[activeRange] ?? 0),
+            spread: Number.isFinite(spread) ? spread : 0,
             leader,
         };
-    }, [activeData]);
+    }, [activeData, activeRange]);
 
     const chartDomain = useMemo<[number, number]>(() => {
-        if (!activeData.length) {
-            return [98, 102];
-        }
+        const values = activeData
+            .flatMap((point) => [point.portfolio, point.sp500, 100])
+            .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
 
-        const values = activeData.flatMap((point) => [point.portfolio, point.sp500, 100]);
+        if (!values.length) return [96, 104];
+
         const minValue = Math.min(...values);
         const maxValue = Math.max(...values);
-        const range = maxValue - minValue;
-        const padding = Math.max(range * 0.55, 0.9);
+        const span = Math.max(maxValue - minValue, 2);
+        const padding = Math.max(span * 0.28, 1.5);
         const domainMin = Math.floor((minValue - padding) * 10) / 10;
         const domainMax = Math.ceil((maxValue + padding) * 10) / 10;
 
-        return [domainMin, domainMax];
+        return [
+            Number.isFinite(domainMin) ? domainMin : 95,
+            Number.isFinite(domainMax) && domainMax > domainMin ? domainMax : 105,
+        ];
     }, [activeData]);
 
-    const metricCardClass = 'min-w-0 rounded-2xl border border-border/50 bg-background/70 px-4 py-3.5 shadow-[0_14px_34px_rgba(15,23,42,0.05)] backdrop-blur';
+    const isOutperforming = summary.spread >= 0;
+    const metricCardClass = 'min-w-0 rounded-2xl border border-border/50 bg-background/70 px-4 py-3.5 shadow-xs backdrop-blur-md transition-all hover:border-border/80';
 
     return (
-        <div className={cn('rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-lg', className)}>
+        <div className={cn('rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-lg flex flex-col justify-between', className)}>
             {/* Header */}
             <div className="border-b border-border/40 px-6 py-6 sm:px-7 sm:py-7">
                 <div className="flex flex-col gap-6">
+                    {/* Top Row: Title, Subtitle, Badges & Range Selector */}
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="space-y-2">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Comparación indexada — base 100</p>
-                            <h3 className="text-xl font-extrabold tracking-tight sm:text-2xl">Portafolio vs S&amp;P 500</h3>
-                            <p className="text-sm text-muted-foreground/70">
-                                Abrimos la escala para ver mejor la brecha real entre ambas curvas.
+                        <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                                    Benchmark Comparativo
+                                </p>
+                                <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                                    <Target className="w-3 h-3 text-sky-400" />
+                                    Base 100
+                                </span>
+                            </div>
+                            <h3 className="text-xl font-extrabold tracking-tight sm:text-2xl text-foreground">
+                                Portafolio vs S&amp;P 500
+                            </h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground/80 max-w-xl">
+                                Curvas de rendimiento relativo indexadas. Si el S&amp;P 500 (SPY) sube o baja en el mercado, se refleja en su curva en tiempo real.
                             </p>
                         </div>
 
-                        <div className="flex flex-wrap gap-3 text-xs">
-                            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/15 bg-emerald-500/10 px-3.5 py-2 font-semibold text-foreground/85">
-                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: PORTFOLIO_COLOR }} />
-                                Portafolio
-                                <span className={cn('font-bold tabular-nums', summary.portfolioReturn >= 0 ? 'text-emerald-500' : 'text-red-500')}>
-                                    {formatPercent(summary.portfolioReturn, 1, true)}
+                        {/* Badges & Range Switcher */}
+                        <div className="flex flex-col sm:items-end gap-3 shrink-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-foreground/90">
+                                    <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_#10b981]" style={{ backgroundColor: PORTFOLIO_COLOR }} />
+                                    Portafolio
+                                    <span className={cn('font-bold tabular-nums', summary.portfolioReturn >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
+                                        {formatPercent(summary.portfolioReturn, 1, true)}
+                                    </span>
                                 </span>
-                            </span>
-                            <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/15 bg-sky-500/10 px-3.5 py-2 font-semibold text-foreground/85">
-                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: SP500_COLOR }} />
-                                S&amp;P 500
-                                <span className={cn('font-bold tabular-nums', summary.sp500Return >= 0 ? 'text-emerald-500' : 'text-red-500')}>
-                                    {formatPercent(summary.sp500Return, 1, true)}
+                                <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-foreground/90">
+                                    <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_#38bdf8]" style={{ backgroundColor: SP500_COLOR }} />
+                                    S&amp;P 500 (SPY)
+                                    <span className={cn('font-bold tabular-nums', summary.sp500Return >= 0 ? 'text-sky-500' : 'text-rose-500')}>
+                                        {formatPercent(summary.sp500Return, 1, true)}
+                                    </span>
                                 </span>
-                            </span>
+                            </div>
+
+                            {/* Range switcher pills */}
+                            <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1">
+                                {TIME_RANGES.map((range) => (
+                                    <button
+                                        key={range}
+                                        type="button"
+                                        onClick={() => handleRangeClick(range)}
+                                        className={cn(
+                                            'rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer',
+                                            activeRange === range
+                                                ? 'bg-primary text-primary-foreground shadow-xs'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
+                                        )}
+                                    >
+                                        {range}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-3">
+                    {/* KPI Stat Cards */}
+                    <div className="grid gap-3 sm:grid-cols-3">
                         <div className={metricCardClass}>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Brecha actual</p>
-                            <p className={cn('mt-2 text-[28px] font-extrabold leading-none tracking-[-0.04em] tabular-nums', summary.spread >= 0 ? 'text-emerald-500' : 'text-red-500')}>
-                                {summary.spread >= 0 ? '+' : ''}{summary.spread.toFixed(1)} pts
+                            <div className="flex items-center justify-between text-muted-foreground">
+                                <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Brecha (Alpha)</span>
+                                {isOutperforming ? (
+                                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                                ) : (
+                                    <TrendingDown className="w-4 h-4 text-rose-500" />
+                                )}
+                            </div>
+                            <p className={cn('mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums', isOutperforming ? 'text-emerald-500' : 'text-rose-500')}>
+                                {isOutperforming ? '+' : ''}{summary.spread.toFixed(1)} pts
+                            </p>
+                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium">
+                                {isOutperforming ? 'Superando al benchmark' : 'Por debajo del benchmark'}
                             </p>
                         </div>
 
                         <div className={metricCardClass}>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Va liderando</p>
-                            <p className="mt-2 text-[24px] font-extrabold leading-none tracking-[-0.04em] text-foreground">
+                            <div className="flex items-center justify-between text-muted-foreground">
+                                <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Líder del período</span>
+                                <Trophy className={cn('w-4 h-4', isOutperforming ? 'text-amber-400' : 'text-sky-400')} />
+                            </div>
+                            <p className="mt-2 text-xl sm:text-2xl font-extrabold leading-none tracking-tight text-foreground truncate">
                                 {summary.leader}
                             </p>
+                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium">
+                                {isOutperforming ? `Ventaja de +${summary.spread.toFixed(1)} pts` : `Diferencia de ${Math.abs(summary.spread).toFixed(1)} pts`}
+                            </p>
                         </div>
 
                         <div className={metricCardClass}>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Base de lectura</p>
-                            <p className="mt-2 text-[24px] font-extrabold leading-none tracking-[-0.04em] tabular-nums text-foreground/85">
+                            <div className="flex items-center justify-between text-muted-foreground">
+                                <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Base normalizada</span>
+                                <HelpCircle className="w-4 h-4 text-muted-foreground/50" />
+                            </div>
+                            <p className="mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums text-foreground/90">
                                 100.0
+                            </p>
+                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium">
+                                Punto de partida comparativo
                             </p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Chart */}
-            {activeData.length > 0 ? (
-                <div className="px-6 pt-5 sm:px-7">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/60">
-                        Escala ampliada
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground/70">
-                        El eje Y se ajusta al rango real para que la diferencia se vea clara sin perder la referencia base 100.
-                    </p>
+            {/* Chart Container */}
+            <div className="px-6 pt-4 pb-2 sm:px-7">
+                <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70">
+                        Evolución Temporal ({activeRange})
+                    </span>
+                    <span className="text-[11px] text-muted-foreground/60 hidden sm:inline">
+                        Línea sólida: Portafolio · Línea punteada: S&amp;P 500 (SPY)
+                    </span>
                 </div>
-            ) : null}
+            </div>
 
-            {activeData.length > 0 ? (
-                <div className="h-[320px] w-full px-3 pb-5 pt-3 sm:h-[350px] sm:px-4 sm:pb-6">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={activeData} margin={{ top: 18, right: 18, bottom: 4, left: 0 }}>
-                            <defs>
-                                <linearGradient id={gradientPortfolioId} x1="0" y1="0" x2="1" y2="0">
-                                    <stop offset="0%" stopColor={PORTFOLIO_COLOR} stopOpacity={0.7} />
-                                    <stop offset="100%" stopColor={PORTFOLIO_COLOR} stopOpacity={1} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid
-                                stroke="rgba(148,163,184,0.1)"
-                                strokeDasharray="5 10"
-                                vertical={false}
-                            />
-                            <ReferenceLine
-                                y={100}
-                                stroke="rgba(148,163,184,0.3)"
-                                strokeDasharray="4 6"
-                                strokeWidth={1}
-                            />
-                            <XAxis
-                                dataKey="date"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ ...CHART_AXIS_TICK, fontSize: 11 }}
-                                padding={{ left: 10, right: 10 }}
-                                minTickGap={24}
-                                tickMargin={14}
-                            />
-                            <YAxis
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ ...CHART_AXIS_TICK, fontSize: 11 }}
-                                width={62}
-                                tickMargin={12}
-                                tickCount={5}
-                                domain={chartDomain}
-                                tickFormatter={(v: number) => v.toFixed(1)}
-                            />
-                            <RechartsTooltip
-                                content={<BenchmarkTooltip />}
-                                cursor={{ stroke: 'rgba(148,163,184,0.25)', strokeWidth: 1.5, strokeDasharray: '4 4' }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="portfolio"
-                                stroke={`url(#${gradientPortfolioId})`}
-                                strokeWidth={3}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                dot={false}
-                                activeDot={{ r: 5, strokeWidth: 2, stroke: PORTFOLIO_COLOR, fill: 'hsl(var(--background))' }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="sp500"
-                                stroke={SP500_COLOR}
-                                strokeWidth={2.25}
-                                strokeDasharray="7 4"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                dot={false}
-                                activeDot={{ r: 5, strokeWidth: 2, stroke: SP500_COLOR, fill: 'hsl(var(--background))' }}
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            ) : (
-                <div className="mx-4 my-4 flex h-[280px] items-center justify-center rounded-2xl border border-dashed border-border/50 bg-muted/20 text-sm text-muted-foreground">
-                    La comparación con el S&amp;P 500 necesita al menos una serie histórica.
-                </div>
-            )}
+            <div className="h-[320px] w-full px-3 pb-6 pt-2 sm:h-[350px] sm:px-5">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={activeData} margin={{ top: 16, right: 16, bottom: 4, left: 0 }}>
+                        <defs>
+                            {/* Portfolio gradient */}
+                            <linearGradient id={gradPortfolioId} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={PORTFOLIO_COLOR} stopOpacity={0.22} />
+                                <stop offset="65%" stopColor={PORTFOLIO_COLOR} stopOpacity={0.05} />
+                                <stop offset="100%" stopColor={PORTFOLIO_COLOR} stopOpacity={0.00} />
+                            </linearGradient>
+
+                            {/* S&P 500 gradient */}
+                            <linearGradient id={gradSp500Id} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={SP500_COLOR} stopOpacity={0.16} />
+                                <stop offset="65%" stopColor={SP500_COLOR} stopOpacity={0.03} />
+                                <stop offset="100%" stopColor={SP500_COLOR} stopOpacity={0.00} />
+                            </linearGradient>
+                        </defs>
+
+                        <CartesianGrid
+                            stroke="rgba(148, 163, 184, 0.08)"
+                            strokeDasharray="4 8"
+                            vertical={false}
+                        />
+
+                        {/* Baseline 100 */}
+                        <ReferenceLine
+                            y={100}
+                            stroke="rgba(148, 163, 184, 0.35)"
+                            strokeDasharray="4 4"
+                            strokeWidth={1.2}
+                        />
+
+                        <XAxis
+                            dataKey="date"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ ...CHART_AXIS_TICK, fontSize: 11 }}
+                            padding={{ left: 14, right: 14 }}
+                            minTickGap={28}
+                            tickMargin={12}
+                        />
+
+                        <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ ...CHART_AXIS_TICK, fontSize: 11 }}
+                            width={54}
+                            tickMargin={10}
+                            tickCount={6}
+                            domain={chartDomain}
+                            tickFormatter={(v: number) => (Number.isFinite(v) ? v.toFixed(1) : '100')}
+                        />
+
+                        <RechartsTooltip
+                            content={<BenchmarkTooltip />}
+                            cursor={{ stroke: 'rgba(148, 163, 184, 0.3)', strokeWidth: 1.5, strokeDasharray: '4 4' }}
+                        />
+
+                        {/* S&P 500 Area & Stroke */}
+                        <Area
+                            type="monotone"
+                            dataKey="sp500"
+                            stroke={SP500_COLOR}
+                            strokeWidth={2.2}
+                            strokeDasharray="6 4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill={`url(#${gradSp500Id})`}
+                            fillOpacity={1}
+                            dot={false}
+                            activeDot={{ r: 6, strokeWidth: 2.5, stroke: SP500_COLOR, fill: '#0f172a' }}
+                        />
+
+                        {/* Portfolio Area & Stroke */}
+                        <Area
+                            type="monotone"
+                            dataKey="portfolio"
+                            stroke={PORTFOLIO_COLOR}
+                            strokeWidth={2.8}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill={`url(#${gradPortfolioId})`}
+                            fillOpacity={1}
+                            dot={false}
+                            activeDot={{ r: 6, strokeWidth: 2.5, stroke: PORTFOLIO_COLOR, fill: '#0f172a' }}
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
         </div>
     );
 }

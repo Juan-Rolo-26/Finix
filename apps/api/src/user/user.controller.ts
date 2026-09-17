@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
@@ -21,56 +21,62 @@ export class UserController {
     }
 
     @UseGuards(JwtAuthGuard)
-    @Patch('me/preferences')
-    async updatePreferences(@Request() req, @Body() preferencesData: any) {
-        return this.userService.updateProfile(req.user.id, preferencesData);
-    }
-
-    @UseGuards(JwtAuthGuard)
     @Patch('me/password')
-    async updatePassword(
-        @Request() req,
-        @Body() body: ChangePasswordDto
-    ) {
-        return this.userService.changePassword(req.user.id, body.currentPassword || '', body.newPassword || '');
+    async changePassword(@Request() req, @Body() changePasswordData: ChangePasswordDto) {
+        return this.userService.changePassword(req.user.id, changePasswordData.currentPassword, changePasswordData.newPassword);
     }
 
     @UseGuards(JwtAuthGuard)
-    @Get('me/notifications')
-    async getMyNotifications(@Request() req, @Query('days') days?: string) {
-        const parsedDays = Number.parseInt(days ?? '', 10);
-        return this.userService.getNotifications(
-            req.user.id,
-            Number.isFinite(parsedDays) ? parsedDays : undefined,
-        );
+    @Patch('me/portfolio-visibility')
+    async updatePortfolioVisibility(@Request() req, @Body() body: { isPortfolioPublic: boolean }) {
+        return this.userService.updateProfile(req.user.id, { isPortfolioPublic: body.isPortfolioPublic });
     }
 
     @UseGuards(JwtAuthGuard)
-    @Get('me/notifications/unread-count')
-    async getMyUnreadNotificationsCount(@Request() req) {
-        return this.userService.getUnreadNotificationsCount(req.user.id);
+    @Patch('me/preferences')
+    async updatePreferences(@Request() req, @Body() body: { preferences: any }) {
+        return this.userService.updateProfile(req.user.id, { preferences: body.preferences });
     }
 
     @UseGuards(JwtAuthGuard)
-    @Patch('me/notifications/read-all')
-    async markMyNotificationsAsRead(@Request() req) {
-        return this.userService.markAllNotificationsAsRead(req.user.id);
+    @Patch('me/privacy')
+    async updatePrivacy(@Request() req, @Body() body: {
+        isProfilePublic?: boolean;
+        isPortfolioPublic?: boolean;
+        acceptingFollowers?: boolean;
+        allowComments?: boolean;
+        allowMentions?: boolean;
+    }) {
+        return this.userService.updateProfile(req.user.id, body);
     }
 
     @UseGuards(JwtAuthGuard)
-    @Get('me/stats')
-    async getMyStats(@Request() req) {
+    @Get('recommendations')
+    async getRecommendedUsers(@Request() req, @Query('limit') limit?: string) {
+        return this.userService.getTopTraders();
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('ranking')
+    async getUserRanking(@Request() req) {
         return this.userService.getUserStats(req.user.id);
     }
 
-    @Get('top-traders')
-    async getTopTraders() {
+    @UseGuards(JwtAuthGuard)
+    @Get('ranking/leaderboard')
+    async getRankingLeaderboard(@Query('limit') limit?: string) {
         return this.userService.getTopTraders();
     }
 
     @Get('search')
     async searchUsers(@Query('q') query: string) {
         return this.userService.searchUsers(query);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post(':username/follow')
+    async toggleFollowPost(@Param('username') username: string, @Request() req) {
+        return this.userService.toggleFollow(req.user.id, username);
     }
 
     @UseGuards(JwtAuthGuard)

@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ArrowDownRight, ArrowUpRight, Layers3, Target, WalletCards } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { AssetPerformanceChart } from './AssetPerformanceChart';
 import { BenchmarkComparisonChart } from './BenchmarkComparisonChart';
 import { PortfolioChart } from './PortfolioChart';
-import { clamp, formatCurrency, formatPercent, titleCase } from './chartUtils';
+import { formatPercent, titleCase } from './chartUtils';
+import { buildBenchmarkComparisonSeries, SP500_BENCHMARK_RETURNS } from './benchmarkUtils';
 import {
     TIME_RANGES,
     type AllocationDatum,
@@ -53,7 +55,8 @@ interface DashboardMovement {
     tipoMovimiento: string;
 }
 
-interface PortfolioDashboardProps {
+export interface PortfolioDashboardProps {
+    portfolioId?: string;
     portfolioName?: string;
     currency?: string;
     metrics?: DashboardMetrics | null;
@@ -63,33 +66,6 @@ interface PortfolioDashboardProps {
     useMockData?: boolean;
     className?: string;
 }
-
-const RANGE_LABELS: Record<TimeRange, string[]> = {
-    '1D': ['09:30', '10:30', '11:30', '13:00', '14:30', '16:00'],
-    '1W': ['Lun', 'Mar', 'Mie', 'Jue', 'Vie'],
-    '1M': ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5'],
-    '3M': ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-    '1Y': ['Ene', 'Mar', 'May', 'Jul', 'Sep', 'Nov'],
-    ALL: ['2021', '2022', '2023', '2024', '2025', '2026'],
-};
-
-const RANGE_RETURN_MULTIPLIER: Record<TimeRange, number> = {
-    '1D': 0.04,
-    '1W': 0.1,
-    '1M': 0.22,
-    '3M': 0.46,
-    '1Y': 0.78,
-    ALL: 1,
-};
-
-const RANGE_WOBBLE: Record<TimeRange, number> = {
-    '1D': 0.004,
-    '1W': 0.006,
-    '1M': 0.008,
-    '3M': 0.012,
-    '1Y': 0.015,
-    ALL: 0.02,
-};
 
 function getAssetValue(asset: DashboardAsset) {
     return (asset.precioActual ?? asset.ppc) * asset.cantidad;
@@ -105,17 +81,17 @@ function getAssetReturn(asset: DashboardAsset) {
     return ((currentValue - asset.montoInvertido) / asset.montoInvertido) * 100;
 }
 
-function normalizeComparisonSeries(seriesByRange: Record<TimeRange, PortfolioValuePoint[]>): Record<TimeRange, ComparisonDatum[]> {
+function normalizeComparisonSeries(
+    seriesByRange: Record<TimeRange, PortfolioValuePoint[]>,
+    portfolioReturn = 0,
+): Record<TimeRange, ComparisonDatum[]> {
     return TIME_RANGES.reduce((acc, range) => {
-        const rangeData = seriesByRange[range];
-        const baseValue = rangeData[0]?.portfolio || 1;
-
-        acc[range] = rangeData.map((point) => ({
-            date: point.date,
-            portfolio: Number(((point.portfolio / baseValue) * 100).toFixed(1)),
-            sp500: Number(((point.sp500 / baseValue) * 100).toFixed(1)),
-        }));
-
+        const rangeData = seriesByRange[range] || [];
+        acc[range] = buildBenchmarkComparisonSeries({
+            range,
+            portfolioReturn,
+            apiSeries: rangeData,
+        });
         return acc;
     }, {} as Record<TimeRange, ComparisonDatum[]>);
 }
@@ -125,36 +101,6 @@ function createEmptySeriesByRange() {
         acc[range] = [];
         return acc;
     }, {} as Record<TimeRange, PortfolioValuePoint[]>);
-}
-
-function buildSeriesRange(
-    currentValue: number,
-    investedCapital: number,
-    totalReturn: number,
-    benchmarkReturn: number,
-    range: TimeRange,
-): PortfolioValuePoint[] {
-    const labels = RANGE_LABELS[range];
-    const multiplier = RANGE_RETURN_MULTIPLIER[range];
-    const wobble = RANGE_WOBBLE[range];
-    const scaledPortfolioReturn = totalReturn * multiplier;
-    const scaledBenchmarkReturn = benchmarkReturn * multiplier;
-    const portfolioStart = currentValue / (1 + scaledPortfolioReturn / 100);
-    const benchmarkEnd = investedCapital * (1 + scaledBenchmarkReturn / 100);
-    const benchmarkStart = investedCapital;
-
-    return labels.map((label, index) => {
-        const progress = labels.length === 1 ? 1 : index / (labels.length - 1);
-        const eased = 1 - Math.pow(1 - progress, 1.45);
-        const portfolioSwing = index === 0 || index === labels.length - 1 ? 0 : Math.sin((index + 1) * 1.2) * currentValue * wobble;
-        const benchmarkSwing = index === 0 || index === labels.length - 1 ? 0 : Math.cos((index + 1) * 1.15) * currentValue * (wobble * 0.5);
-
-        return {
-            date: label,
-            portfolio: Math.max(0, Math.round(portfolioStart + (currentValue - portfolioStart) * eased + portfolioSwing)),
-            sp500: Math.max(0, Math.round(benchmarkStart + (benchmarkEnd - benchmarkStart) * eased + benchmarkSwing)),
-        };
-    });
 }
 
 function inferSector(asset: DashboardAsset) {
@@ -269,80 +215,27 @@ function buildSectorData(assets: DashboardAsset[] = []): SectorDatum[] {
         .slice(0, 6);
 }
 
-function buildYearSeriesFromMonthlyReturns(
-    monthlyReturns: NonNullable<DashboardMetrics['retornosMensuales']>,
-    currentValue: number,
-    benchmarkReturn: number,
-) {
-    const cleanReturns = monthlyReturns
-        .filter((entry) => entry?.label && Number.isFinite(Number(entry.value)))
-        .slice(-12);
 
-    if (cleanReturns.length === 0 || currentValue <= 0) {
-        return [];
-    }
-
-    const portfolioValues = new Array<number>(cleanReturns.length);
-    let runningEndValue = currentValue;
-
-    for (let index = cleanReturns.length - 1; index >= 0; index -= 1) {
-        portfolioValues[index] = Math.max(0, runningEndValue);
-
-        const returnFactor = 1 + (Number(cleanReturns[index].value) / 100);
-        if (Math.abs(returnFactor) > 1e-6) {
-            runningEndValue /= returnFactor;
-        }
-    }
-
-    const benchmarkStart = portfolioValues[0] > 0 ? portfolioValues[0] : currentValue;
-    const benchmarkEnd = benchmarkStart * (1 + benchmarkReturn / 100);
-
-    return cleanReturns.map((entry, index) => {
-        const progress = cleanReturns.length === 1 ? 1 : index / (cleanReturns.length - 1);
-        const benchmarkSwing = index === 0 || index === cleanReturns.length - 1
-            ? 0
-            : Math.sin((index + 1) * 0.78) * benchmarkStart * 0.01;
-
-        return {
-            date: entry.label,
-            portfolio: Math.round(portfolioValues[index]),
-            sp500: Math.max(0, Math.round(benchmarkStart + (benchmarkEnd - benchmarkStart) * progress + benchmarkSwing)),
-        };
-    });
-}
-
-function buildPortfolioSeries(metrics?: DashboardMetrics | null, assets: DashboardAsset[] = [], movements: DashboardMovement[] = []) {
-    if (!metrics && assets.length === 0) {
-        return createEmptySeriesByRange();
-    }
-
-    const derivedCurrentValue = assets.reduce((sum, asset) => sum + getAssetValue(asset), 0);
-    const derivedCapitalTotal = assets.reduce((sum, asset) => sum + asset.montoInvertido, 0);
-    const currentValue = metrics?.valorActual || derivedCurrentValue;
-    const capitalTotal = metrics?.capitalTotal && metrics.capitalTotal > 0
-        ? metrics.capitalTotal
-        : derivedCapitalTotal > 0
-            ? derivedCapitalTotal
-            : currentValue - (metrics?.gananciaTotal ?? 0);
-    const totalReturn = capitalTotal > 0
-        ? ((currentValue - capitalTotal) / capitalTotal) * 100
-        : (metrics?.variacionPorcentual ?? 0);
-    const buyMoves = movements.filter((movement) => movement.tipoMovimiento === 'compra').length;
-    const riskBias = clamp(assets.length * 0.35 + buyMoves * 0.18, 0.8, 4.4);
-    const benchmarkReturn = totalReturn >= 0
-        ? clamp(totalReturn - riskBias, -18, 28)
-        : clamp(totalReturn + Math.min(riskBias, 2.2), -24, 12);
-    const actualYearSeries = metrics?.retornosMensuales?.length
-        ? buildYearSeriesFromMonthlyReturns(metrics.retornosMensuales, currentValue, benchmarkReturn)
-        : [];
+function buildPortfolioSeries(metrics?: DashboardMetrics | null, assets: DashboardAsset[] = []) {
+    const currentValue = metrics?.valorActual || assets.reduce((sum, asset) => sum + getAssetValue(asset), 0);
+    const capitalTotal = metrics?.capitalTotal || metrics?.capitalInvertido || assets.reduce((sum, asset) => sum + asset.montoInvertido, 0);
 
     return TIME_RANGES.reduce((acc, range) => {
-        if (range === '1Y' && actualYearSeries.length > 0) {
-            acc[range] = actualYearSeries;
-            return acc;
-        }
+        const spReturnPct = SP500_BENCHMARK_RETURNS[range] ?? 0;
+        const initialPoint: PortfolioValuePoint[] = (currentValue > 0 || capitalTotal > 0) ? [
+            {
+                date: 'Inicio',
+                portfolio: Math.round(capitalTotal),
+                sp500: Math.round(capitalTotal),
+            },
+            {
+                date: 'Hoy',
+                portfolio: Math.round(currentValue),
+                sp500: Math.round(capitalTotal * (1 + spReturnPct / 100)),
+            },
+        ] : [];
 
-        acc[range] = buildSeriesRange(currentValue, capitalTotal, totalReturn, benchmarkReturn, range);
+        acc[range] = initialPoint;
         return acc;
     }, {} as Record<TimeRange, PortfolioValuePoint[]>);
 }
@@ -350,7 +243,6 @@ function buildPortfolioSeries(metrics?: DashboardMetrics | null, assets: Dashboa
 function resolveData({
     metrics,
     assets,
-    movements,
     data,
 }: {
     metrics?: DashboardMetrics | null;
@@ -359,15 +251,16 @@ function resolveData({
     data?: Partial<PortfolioDashboardData>;
 }): PortfolioDashboardData {
     const safeAssets = assets ?? [];
-    const portfolioValueByRange = data?.portfolioValueByRange ?? buildPortfolioSeries(metrics, safeAssets, movements ?? []);
-    const comparisonByRange = data?.comparisonByRange ?? normalizeComparisonSeries(portfolioValueByRange);
+    const portfolioValueByRange = data?.portfolioValueByRange ?? buildPortfolioSeries(metrics, safeAssets);
+    const returnPct = metrics?.variacionPorcentual ?? 0;
+    const comparisonByRange = data?.comparisonByRange ?? normalizeComparisonSeries(portfolioValueByRange, returnPct);
     const allocation = data?.allocation ?? buildAllocationData(metrics, safeAssets);
     const assetPerformance = data?.assetPerformance ?? buildAssetPerformanceData(metrics, safeAssets);
     const sectors = data?.sectors ?? buildSectorData(safeAssets);
 
     return {
-        portfolioValueByRange: portfolioValueByRange,
-        comparisonByRange: comparisonByRange,
+        portfolioValueByRange,
+        comparisonByRange,
         allocation,
         assetPerformance,
         sectors,
@@ -375,6 +268,7 @@ function resolveData({
 }
 
 export function PortfolioDashboard({
+    portfolioId,
     portfolioName = 'Portafolio Finix',
     currency = 'USD',
     metrics,
@@ -384,11 +278,64 @@ export function PortfolioDashboard({
     className,
 }: PortfolioDashboardProps) {
     const [selectedRange, setSelectedRange] = useState<TimeRange>('1Y');
+    const [liveHistory, setLiveHistory] = useState<Record<TimeRange, PortfolioValuePoint[]>>(() => createEmptySeriesByRange());
+    const [historyNotice, setHistoryNotice] = useState<string | null>(null);
 
-    const resolvedData = useMemo(
-        () => resolveData({ metrics, assets, movements, data }),
-        [metrics, assets, movements, data],
-    );
+    useEffect(() => {
+        if (!portfolioId) return;
+        let isMounted = true;
+        apiFetch(`/portfolios/${portfolioId}/history?range=${selectedRange}`)
+            .then((r) => r.ok ? r.json() : null)
+            .then((res) => {
+                if (!isMounted || !res) return;
+                if (res.insufficientData && res.message) {
+                    setHistoryNotice(res.message);
+                } else {
+                    setHistoryNotice(null);
+                }
+                if (Array.isArray(res.series) && res.series.length > 0) {
+                    const spReturnTotal = SP500_BENCHMARK_RETURNS[selectedRange] ?? 0;
+                    const nPoints = res.series.length;
+                    const baseRefValue = res.series[0]?.portfolio || res.series[0]?.invested || 10000;
+
+                    setLiveHistory((prev) => ({
+                        ...prev,
+                        [selectedRange]: res.series.map((pt: any, idx: number) => {
+                            const progress = nPoints > 1 ? idx / (nPoints - 1) : 1;
+                            const wave = Math.sin(progress * Math.PI * 2) * (Math.abs(spReturnTotal) * 0.18);
+                            const interpolatedReturn = (spReturnTotal * progress) + wave;
+                            const computedSp500 = Math.round(baseRefValue * (1 + interpolatedReturn / 100));
+
+                            return {
+                                date: pt.date,
+                                portfolio: Number.isFinite(pt.portfolio) ? pt.portfolio : (pt.invested || 0),
+                                sp500: computedSp500,
+                            };
+                        }),
+                    }));
+                }
+            })
+            .catch(() => null);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [portfolioId, selectedRange]);
+
+    const resolvedData = useMemo(() => {
+        const effectiveReturn = metrics?.variacionPorcentual ?? 0;
+        const base = resolveData({ metrics, assets, movements, data });
+        const historyForRange = liveHistory[selectedRange];
+        if (historyForRange && historyForRange.length > 0) {
+            base.portfolioValueByRange[selectedRange] = historyForRange;
+        }
+        base.comparisonByRange[selectedRange] = buildBenchmarkComparisonSeries({
+            range: selectedRange,
+            portfolioReturn: effectiveReturn,
+            apiSeries: historyForRange,
+        });
+        return base;
+    }, [metrics, assets, movements, data, liveHistory, selectedRange]);
 
     const activePortfolioSeries = resolvedData.portfolioValueByRange[selectedRange];
     const activeComparisonSeries = resolvedData.comparisonByRange[selectedRange];
@@ -420,98 +367,92 @@ export function PortfolioDashboard({
         {
             label: 'Retorno total',
             value: formatPercent(summary.totalReturn, 1, true),
-            sublabel: `${selectedRange} variacion ${formatPercent(summary.rangeReturn, 1, true)}`,
+            sublabel: `${selectedRange} variación ${formatPercent(summary.rangeReturn, 1, true)}`,
             positive: summary.totalReturn >= 0,
             icon: summary.totalReturn >= 0 ? ArrowUpRight : ArrowDownRight,
         },
         {
             label: 'Ventaja vs S&P 500',
             value: formatPercent(summary.benchmarkSpread, 1, true),
-            sublabel: 'Ganancia frente al indice',
+            sublabel: summary.benchmarkSpread >= 0 ? 'Superando al índice' : 'Por debajo del índice',
             positive: summary.benchmarkSpread >= 0,
             icon: Target,
         },
         {
-            label: 'Activos',
-            value: summary.holdings.toString(),
-            sublabel: `${summary.sleeves} tipos cubiertos`,
+            label: 'Activos en cartera',
+            value: `${summary.holdings}`,
+            sublabel: `${summary.sleeves} clases diversificadas`,
             positive: true,
             icon: Layers3,
+        },
+        {
+            label: 'Mejor posición',
+            value: summary.topWinner ? `${summary.topWinner.asset} ${formatPercent(summary.topWinner.return, 1, true)}` : 'N/A',
+            sublabel: summary.topWinner ? 'Activo líder en retorno' : 'Sin posiciones',
+            positive: (summary.topWinner?.return ?? 0) >= 0,
+            icon: ArrowUpRight,
         },
     ];
 
     return (
-        <div className={cn('space-y-6', className)}>
-            <Card className="overflow-hidden border-border/80 bg-gradient-to-br from-card to-card/90 text-foreground shadow-sm">
-                <CardContent className="relative overflow-hidden p-6 sm:p-8">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent opacity-60" />
-                    <div className="relative grid gap-8 xl:grid-cols-[minmax(0,1.5fr)_420px] xl:items-end">
-                        <div className="space-y-5">
-                            <div className="flex flex-wrap items-center gap-3">
-                                <Badge variant="outline" className="border-border/80 bg-background/80 text-foreground shadow-sm">
-                                    Panel del portafolio
-                                </Badge>
-                                <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                                    <WalletCards className="h-3.5 w-3.5" />
-                                    Vista en vivo
-                                </span>
-                            </div>
+        <div className={cn('space-y-6 w-full', className)}>
+            {/* ── ENCABEZADO DE SECCIÓN ── */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
+                <div>
+                    <h3 className="text-xl sm:text-2xl font-black tracking-tight text-foreground flex items-center gap-2.5">
+                        <WalletCards className="w-5 h-5 text-primary" />
+                        <span>Métricas y Análisis de Rendimiento</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                        Evolución patrimonial y comparativa de mercado de {portfolioName}
+                    </p>
+                </div>
+                <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-xs font-bold px-3 py-1">
+                    Vista en vivo
+                </Badge>
+            </div>
 
-                            <div>
-                                <p className="text-sm uppercase tracking-[0.18em] text-primary/80">Resumen</p>
-                                <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{portfolioName}</h2>
-                            </div>
+            {historyNotice && (
+                <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-xs sm:text-sm text-blue-300 flex items-center gap-2.5 backdrop-blur-sm">
+                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" />
+                    <span>{historyNotice}</span>
+                </div>
+            )}
 
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Valor actual del portafolio</p>
-                                    <div className="mt-2 text-4xl font-semibold tracking-tight sm:text-5xl">
-                                        {formatCurrency(summary.currentValue, currency)}
-                                    </div>
-                                    <div className="mt-2 flex items-center gap-2">
-                                        <span className={cn('text-lg font-medium', summary.totalGain >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
-                                            {summary.totalGain >= 0 ? '+' : ''}{formatCurrency(summary.totalGain, currency)}
-                                        </span>
-                                        <span className={cn('text-sm font-medium px-2 py-0.5 rounded-md', summary.totalReturn >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500')}>
-                                            {summary.totalReturn >= 0 ? '+' : ''}{formatPercent(summary.totalReturn, 2)}
-                                        </span>
-                                    </div>
-                                </div>
-                                {summary.topWinner && (
-                                    <div className="rounded-2xl border border-border/60 bg-background/50 px-4 py-3 shadow-sm backdrop-blur">
-                                        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Mejor activo</p>
-                                        <p className="mt-1 text-lg font-semibold text-emerald-500">
-                                            {summary.topWinner.asset} {formatPercent(summary.topWinner.return, 1, true)}
-                                        </p>
-                                    </div>
-                                )}
+            {/* ── KPI METRICS STRIP (4 TARJETAS SIMÉTRICAS QUE OCUPAN TODO EL ANCHO) ── */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 w-full">
+                {summaryCards.map((item) => (
+                    <div
+                        key={item.label}
+                        className="rounded-2xl border border-border/70 bg-card/80 hover:bg-card/95 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 p-4 sm:p-5 backdrop-blur-md relative overflow-hidden group"
+                    >
+                        <div className="flex items-center justify-between gap-3 mb-2">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground truncate">
+                                {item.label}
+                            </span>
+                            <div className={cn(
+                                "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-transform group-hover:scale-110",
+                                item.positive 
+                                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" 
+                                    : "bg-rose-500/10 border-rose-500/20 text-rose-500"
+                            )}>
+                                <item.icon className="h-4 w-4" />
                             </div>
                         </div>
 
-                        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                            {summaryCards.map((item) => (
-                                <div
-                                    key={item.label}
-                                    className="rounded-2xl border border-border/60 bg-background/50 p-4 shadow-sm backdrop-blur-sm"
-                                >
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div>
-                                            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.label}</p>
-                                            <p className={cn('mt-2 text-2xl font-semibold', item.positive ? 'text-emerald-500' : 'text-rose-500')}>
-                                                {item.value}
-                                            </p>
-                                        </div>
-                                        <item.icon className={cn('h-5 w-5', item.positive ? 'text-emerald-500' : 'text-rose-500')} />
-                                    </div>
-                                    <p className="mt-3 text-sm text-muted-foreground">{item.sublabel}</p>
-                                </div>
-                            ))}
+                        <div className={cn('text-2xl sm:text-3xl font-black tracking-tight font-mono', item.positive ? 'text-emerald-500' : 'text-rose-500')}>
+                            {item.value}
                         </div>
+
+                        <p className="mt-2 text-xs text-muted-foreground/80 font-medium truncate">
+                            {item.sublabel}
+                        </p>
                     </div>
-                </CardContent>
-            </Card>
+                ))}
+            </div>
 
-            <div className="grid gap-6 xl:grid-cols-2">
+            {/* ── EVOLUCIÓN HISTÓRICA DEL PORTAFOLIO (ANCHO COMPLETO) ── */}
+            <div className="w-full">
                 <PortfolioChart
                     dataByRange={resolvedData.portfolioValueByRange}
                     selectedRange={selectedRange}
@@ -519,11 +460,21 @@ export function PortfolioDashboard({
                     currency={currency}
                     costBasis={summary.costBasis}
                 />
-                <AssetPerformanceChart data={resolvedData.assetPerformance} />
-                <BenchmarkComparisonChart
-                    dataByRange={resolvedData.comparisonByRange}
-                    selectedRange={selectedRange}
-                />
+            </div>
+
+            {/* ── RENDIMIENTO Y COMPARATIVA BENCHMARK (DISTRIBUCIÓN SIMÉTRICA 2 COLUMNAS) ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                <ErrorBoundary fallbackTitle="Rendimiento de activos temporalmente inaccesible">
+                    <AssetPerformanceChart data={resolvedData.assetPerformance} />
+                </ErrorBoundary>
+                <ErrorBoundary fallbackTitle="Comparativa de mercado temporalmente inaccesible">
+                    <BenchmarkComparisonChart
+                        dataByRange={resolvedData.comparisonByRange}
+                        selectedRange={selectedRange}
+                        onRangeChange={setSelectedRange}
+                        portfolioReturn={summary.totalReturn}
+                    />
+                </ErrorBoundary>
             </div>
         </div>
     );

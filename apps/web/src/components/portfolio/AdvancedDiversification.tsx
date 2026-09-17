@@ -54,16 +54,18 @@ function formatCurrency(value: number) {
 }
 
 function formatCompactCurrency(value: number) {
+    const safe = typeof value === 'number' && Number.isFinite(value) ? value : 0;
     return new Intl.NumberFormat('es-AR', {
         style: 'currency',
         currency: 'USD',
         notation: 'compact',
         minimumFractionDigits: 0,
         maximumFractionDigits: 1,
-    }).format(value);
+    }).format(safe);
 }
 
 function formatPercent(value: number) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return '0.0%';
     return `${value.toFixed(1)}%`;
 }
 

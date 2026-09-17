@@ -1,33 +1,93 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { MarketRankingService } from './services/market-ranking.service';
 
 @Injectable()
-export class MarketRankingScheduler {
+export class MarketRankingScheduler implements OnModuleInit {
     private readonly logger = new Logger(MarketRankingScheduler.name);
 
     constructor(private readonly rankingService: MarketRankingService) { }
 
     /**
-     * Se ejecuta de lunes a viernes a las 4:50 PM (16:50 ET) hora de Nueva York (America/New_York).
-     * Solo en días en los que haya habido mercado bursátil estadounidense (excluye fines de semana y feriados de Wall Street).
+     * Al iniciar el módulo, verificamos si ya existe el ranking del último día hábil.
+     * Si no existe o la base de datos está vacía, se ejecuta inmediatamente.
+     */
+    async onModuleInit() {
+        this.logger.log('Inicializando MarketRankingScheduler. Verificando frescura de rankings...');
+        setTimeout(async () => {
+            try {
+                const today = this.rankingService.getCurrentNewYorkDate();
+                const existing = await this.rankingService.getTopGainers(today);
+                if (!existing || existing.items.length === 0 || existing.isStale) {
+                    this.logger.log(`No hay ranking actualizado para la fecha ${today}. Ejecutando cálculo inicial...`);
+                    await this.rankingService.executeDailyRanking();
+                }
+            } catch (err: any) {
+                this.logger.warn(`Error en verificación inicial de rankings: ${err.message}`);
+            }
+        }, 5000); // 5s delay para permitir inicialización de Prisma y conexiones
+    }
+
+    /**
+     * Se ejecuta de lunes a viernes al cierre de Wall Street:
+     * 1) 16:50 ET: Consolidación preliminar tras el toque de campana.
      */
     @Cron('50 16 * * 1-5', {
         timeZone: 'America/New_York',
     })
     async handleMarketCloseRanking() {
+        await this.runRankingJob('Cierre oficial 16:50 ET');
+    }
+
+    /**
+     * 2) 18:15 ET: Liquidación y cierre definitivo de la jornada.
+     */
+    @Cron('15 18 * * 1-5', {
+        timeZone: 'America/New_York',
+    })
+    async handlePostMarketSettlement() {
+        await this.runRankingJob('Liquidación post-mercado 18:15 ET');
+    }
+
+    /**
+     * 3) Actualizaciones intradía durante la rueda (11:00, 13:00, 15:00 ET).
+     */
+    @Cron('0 11,13,15 * * 1-5', {
+        timeZone: 'America/New_York',
+    })
+    async handleIntradayRanking() {
+        await this.runRankingJob('Actualización intradía');
+    }
+
+    /**
+     * 4) Chequeo diario a las 20:00 ET (todos los días para garantizar consistencia).
+     */
+    @Cron('0 20 * * *', {
+        timeZone: 'America/New_York',
+    })
+    async handleDailyEveningCheck() {
+        await this.runRankingJob('Verificación nocturna diaria 20:00 ET');
+    }
+
+    private async runRankingJob(triggerName: string) {
         const now = new Date();
-        if (this.isUSMarketHoliday(now)) {
-            this.logger.log(`[Cron 16:50 ET] Hoy no hubo operaciones en el mercado bursátil de EE.UU. (Feriado). Omitiendo cálculo.`);
+        const dayOfWeek = now.getDay();
+        // Si es fin de semana (0=Domingo, 6=Sábado), omitir ejecución si los mercados están cerrados
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
             return;
         }
 
-        this.logger.log('[Cron 16:50 ET] Cierre y consolidación del mercado bursátil de EE.UU. Ejecutando ranking S&P 500...');
+        if (this.isUSMarketHoliday(now)) {
+            this.logger.log(`[${triggerName}] Hoy no hubo operaciones en el mercado bursátil de EE.UU. (Feriado). Omitiendo.`);
+            return;
+        }
+
+        this.logger.log(`[${triggerName}] Ejecutando actualización de rankings diarios S&P 500...`);
         try {
             const result = await this.rankingService.executeDailyRanking();
-            this.logger.log(`[Cron 16:50 ET] Ranking finalizado con éxito para ${result.date}. Top 5 guardado.`);
+            this.logger.log(`[${triggerName}] Ranking finalizado con éxito para ${result.date}. Top Gainers y Losers actualizados.`);
         } catch (error: any) {
-            this.logger.error(`[Cron 16:50 ET] Error en ejecución de ranking: ${error.message}`);
+            this.logger.error(`[${triggerName}] Error en ejecución de ranking: ${error.message}`);
         }
     }
 

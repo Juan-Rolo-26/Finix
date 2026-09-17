@@ -157,11 +157,6 @@
     }
 
 
-    @media (min-width: 1024px) {
-        :root {
-            font-size: 17px;
-        }
-    }
 
     body {
         background-color: hsl(var(--background));

@@ -16,8 +16,7 @@ interface TradingViewWidgetProps {
 export default function TradingViewWidget({
     symbol = "NASDAQ:AAPL",
     theme = "dark",
-    autosize = true,
-    height = 500,
+    height = 540,
 }: TradingViewWidgetProps) {
     const containerId = `tradingview_${Math.random().toString(36).substring(7)}`;
 
@@ -28,13 +27,15 @@ export default function TradingViewWidget({
         script.onload = () => {
             if (window.TradingView) {
                 new window.TradingView.widget({
-                    autosize: autosize,
+                    autosize: false,
+                    width: '100%',
+                    height: height,
                     symbol: symbol,
                     interval: "D",
-                    timezone: "Etc/UTC",
+                    timezone: "America/Argentina/Buenos_Aires",
                     theme: theme,
                     style: "1",
-                    locale: "en",
+                    locale: "es",
                     enable_publishing: false,
                     allow_symbol_change: true,
                     container_id: containerId
@@ -46,11 +47,11 @@ export default function TradingViewWidget({
         return () => {
             // Cleanup if needed
         };
-    }, [symbol]);
+    }, [symbol, height, theme]);
 
     return (
-        <div className='tradingview-widget-container' style={{ height: `${height}px`, width: "100%" }}>
-            <div id={containerId} style={{ height: "calc(100% - 32px)", width: "100%" }} />
+        <div className='tradingview-widget-container w-full shrink-0' style={{ height: `${height}px`, minHeight: `${height}px`, width: "100%" }}>
+            <div id={containerId} style={{ height: `${height}px`, minHeight: `${height}px`, width: "100%" }} />
         </div>
     );
 }

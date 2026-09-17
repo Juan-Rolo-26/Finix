@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
 
 const ResponsibleUse = () => {
@@ -7,12 +8,12 @@ const ResponsibleUse = () => {
             <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl transition-colors">
                 <div className="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
                     <BackButton to="/dashboard" label="Volver a Finix" />
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center">
-                            <span className="text-primary font-bold text-base">F</span>
+                    <Link to="/dashboard" className="flex items-center gap-3 group cursor-pointer">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border border-black/20 dark:border-white/30 bg-white dark:bg-zinc-900 shadow-2xs transition-transform group-hover:scale-105">
+                            <img src="/logo.png" alt="Finix" className="h-5 w-5 object-contain" />
                         </div>
-                        <span className="font-heading font-black text-lg tracking-tight">Finix</span>
-                    </div>
+                        <span className="font-heading font-black text-xl tracking-tight text-foreground">Finix</span>
+                    </Link>
                 </div>
             </nav>
 

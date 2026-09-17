@@ -70,6 +70,14 @@ export class CreatePostDto {
     @IsOptional()
     @IsString()
     quotedPostId?: string;
+
+    @IsOptional()
+    @IsString()
+    chartAnalysisId?: string;
+
+    @IsOptional()
+    @IsString()
+    chartAnalysisVersionId?: string;
 }
 
 export class UpdatePostDto {

@@ -18,7 +18,7 @@ import {
     Newspaper,
     TrendingUp,
     Briefcase,
-    Microscope,
+    AreaChart,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
@@ -77,7 +77,7 @@ export function BottomNav() {
         { label: 'Mercado',   path: '/market',   icon: TrendingUp  },
         { label: 'Portafolio',path: '/portfolio', icon: Briefcase   },
         { label: 'Noticias',  path: '/news',     icon: Newspaper   },
-        { label: 'Análisis',  path: '/analysis', icon: Microscope  },
+        { label: 'Análisis',  path: '/analysis', icon: AreaChart   },
         // { label: 'Aprender', path: '/learn', icon: BookOpen },
         { label: 'Mi Perfil', path: '/profile',  icon: User        },
         { label: 'Ajustes',   path: '/settings', icon: Settings    },
@@ -302,7 +302,7 @@ export function BottomNav() {
                                         return (
                                             <button
                                                 key={path}
-                                                className="flex flex-col items-center gap-2 py-4 rounded-2xl transition-all"
+                                                className="flex flex-col items-center gap-2 py-3.5 rounded-2xl transition-all"
                                                 style={{
                                                     background: active ? `hsl(var(--primary) / 0.1)` : 'hsl(var(--secondary))',
                                                     border: `1px solid ${active ? `hsl(var(--primary) / 0.25)` : 'hsl(var(--border))'}`,
@@ -310,7 +310,9 @@ export function BottomNav() {
                                                 }}
                                                 onClick={() => navigate(path)}
                                             >
-                                                <Icon className="w-4.5 h-4.5" style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }} />
+                                                <div className="w-8 h-8 rounded-full flex items-center justify-center border border-black/30 dark:border-white/35 bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs">
+                                                    <Icon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                                </div>
                                                 <span className="text-[11px] font-semibold">{label}</span>
                                             </button>
                                         );

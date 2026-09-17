@@ -119,6 +119,13 @@ export class AdminController {
         return { data: analyses };
     }
 
+    @Get('analysis/tradingview/fetch')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async fetchTradingViewData(@Query('symbol') symbol: string) {
+        const data = await this.analysisService.fetchTradingViewAssetData(symbol);
+        return { data };
+    }
+
     @Get('analysis/:id')
     @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
     async getAnalysisById(@Param('id') id: string) {
@@ -609,12 +616,96 @@ export class AdminController {
                     select: {
                         username: true,
                         id: true,
+                        avatarUrl: true,
+                        email: true,
                     }
                 }
             }
         });
 
-        return { data: reports };
+        const postIds = reports.filter(r => r.targetType === 'POST').map(r => r.targetId);
+        const userIds = reports.filter(r => r.targetType === 'USER').map(r => r.targetId);
+        const commentIds = reports.filter(r => r.targetType === 'COMMENT').map(r => r.targetId);
+
+        const [posts, users, comments] = await Promise.all([
+            postIds.length > 0
+                ? this.prisma.post.findMany({
+                    where: { id: { in: postIds } },
+                    include: {
+                        author: {
+                            select: {
+                                id: true,
+                                username: true,
+                                avatarUrl: true,
+                                status: true,
+                                role: true,
+                            },
+                        },
+                        media: {
+                            select: { url: true, mediaType: true },
+                        },
+                        _count: {
+                            select: { likes: true, comments: true },
+                        },
+                    },
+                })
+                : [],
+            userIds.length > 0
+                ? this.prisma.user.findMany({
+                    where: { id: { in: userIds } },
+                    select: {
+                        id: true,
+                        username: true,
+                        email: true,
+                        avatarUrl: true,
+                        role: true,
+                        status: true,
+                        accountType: true,
+                        createdAt: true,
+                        _count: {
+                            select: { posts: true },
+                        },
+                    },
+                })
+                : [],
+            commentIds.length > 0
+                ? this.prisma.comment.findMany({
+                    where: { id: { in: commentIds } },
+                    include: {
+                        author: {
+                            select: { id: true, username: true, avatarUrl: true, status: true },
+                        },
+                        post: {
+                            select: { id: true, content: true },
+                        },
+                    },
+                })
+                : [],
+        ]);
+
+        const postMap = new Map<string, any>();
+        posts.forEach(p => postMap.set(p.id, p));
+        const userMap = new Map<string, any>();
+        users.forEach(u => userMap.set(u.id, u));
+        const commentMap = new Map<string, any>();
+        comments.forEach(c => commentMap.set(c.id, c));
+
+        const enriched = reports.map(r => {
+            let target: any = null;
+            if (r.targetType === 'POST') {
+                target = postMap.get(r.targetId) || null;
+            } else if (r.targetType === 'USER') {
+                target = userMap.get(r.targetId) || null;
+            } else if (r.targetType === 'COMMENT') {
+                target = commentMap.get(r.targetId) || null;
+            }
+            return {
+                ...r,
+                target,
+            };
+        });
+
+        return { data: enriched };
     }
 
     @Patch('reports/:id')

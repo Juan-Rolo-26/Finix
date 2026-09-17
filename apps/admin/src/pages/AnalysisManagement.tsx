@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
     BarChart2, Plus, Loader2, Trash2, Edit, Eye, Sparkles, 
-    Smartphone, Tablet, Monitor, X, TrendingUp, DollarSign, Target, 
-    Briefcase, Activity, Users, ShieldAlert
+    Smartphone, Tablet, Monitor, X, DollarSign, Target, 
+    Briefcase, Activity, Users, ShieldAlert, ExternalLink, CheckCircle2,
+    LineChart, Zap, Building2, Scale, PieChart, Layers
 } from 'lucide-react';
 import { adminFetch } from '../lib/api';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/tabs';
@@ -11,6 +12,109 @@ import { Textarea } from '../components/textarea';
 import { Button } from '../components/button';
 import { Switch } from '../components/switch';
 import { Label } from '../components/label';
+
+const formatCurrency = (val: number | null | undefined, compact = false) => {
+    if (val === null || val === undefined) return null;
+    if (compact) {
+        if (Math.abs(val) >= 1e12) return `$${(val / 1e12).toFixed(2)}T`;
+        if (Math.abs(val) >= 1e9) return `$${(val / 1e9).toFixed(2)}B`;
+        if (Math.abs(val) >= 1e6) return `$${(val / 1e6).toFixed(2)}M`;
+    }
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(val);
+};
+
+const formatNumber = (val: number | null | undefined, compact = false) => {
+    if (val === null || val === undefined) return null;
+    if (compact) {
+        if (Math.abs(val) >= 1e12) return `${(val / 1e12).toFixed(2)}T`;
+        if (Math.abs(val) >= 1e9) return `${(val / 1e9).toFixed(2)}B`;
+        if (Math.abs(val) >= 1e6) return `${(val / 1e6).toFixed(2)}M`;
+        if (Math.abs(val) >= 1e3) return `${(val / 1e3).toFixed(1)}K`;
+    }
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(val);
+};
+
+// Componente interactivo de TradingView con herramientas completas de dibujo y guardado automático
+function AdminTradingViewChart({ symbol, exchange, chartStorageId }: { symbol?: string; exchange?: string; chartStorageId?: string }) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const scriptLoadedRef = useRef(false);
+
+    const fullSymbol = symbol 
+        ? (symbol.includes(':') ? symbol : `${exchange || 'NASDAQ'}:${symbol}`)
+        : 'NASDAQ:AAPL';
+
+    const uniqueUserId = chartStorageId || `finix_analysis_${fullSymbol.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+        containerRef.current.innerHTML = '';
+
+        const widgetContainer = document.createElement('div');
+        const containerId = `tv_admin_${Math.random().toString(36).slice(2, 10)}`;
+        widgetContainer.id = containerId;
+        widgetContainer.style.height = '100%';
+        widgetContainer.style.width = '100%';
+        containerRef.current.appendChild(widgetContainer);
+
+        const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+        const mount = () => {
+            if (typeof (window as any).TradingView !== 'undefined') {
+                new (window as any).TradingView.widget({
+                    container_id: containerId,
+                    autosize: true,
+                    width: '100%',
+                    height: 520,
+                    symbol: fullSymbol,
+                    interval: 'D',
+                    timezone: 'America/Argentina/Buenos_Aires',
+                    theme: isDark ? 'dark' : 'light',
+                    style: '1',
+                    locale: 'es',
+                    toolbar_bg: isDark ? '#0a0a0a' : '#ffffff',
+                    enable_publishing: false,
+                    allow_symbol_change: true,
+                    save_image: true,
+                    hide_side_toolbar: false, // Habilita la barra de dibujo de líneas, canales, etc.
+                    withdateranges: true,
+                    details: true,
+                    hotlist: true,
+                    calendar: true,
+                    studies: ['MASimple@tv-basicstudies', 'RSI@tv-basicstudies'],
+                    charts_storage_url: 'https://saveload.tradingview.com',
+                    charts_storage_api_version: '1.1',
+                    client_id: 'finix.app',
+                    user_id: uniqueUserId,
+                    auto_save_delay: 1, // Auto-guardado casi instantáneo de dibujos y líneas
+                    load_last_chart: true,
+                    support_host: 'https://www.tradingview.com',
+                });
+            }
+        };
+
+        if (typeof (window as any).TradingView === 'undefined' && !scriptLoadedRef.current) {
+            const script = document.createElement('script');
+            script.src = 'https://s3.tradingview.com/tv.js';
+            script.async = true;
+            script.onload = () => {
+                scriptLoadedRef.current = true;
+                mount();
+            };
+            document.head.appendChild(script);
+        } else {
+            mount();
+        }
+
+        return () => {
+            if (containerRef.current) containerRef.current.innerHTML = '';
+        };
+    }, [fullSymbol]);
+
+    return (
+        <div className="w-full rounded-2xl overflow-hidden border border-border/60 bg-card p-1 shadow-2xl">
+            <div ref={containerRef} className="w-full h-[520px]" />
+        </div>
+    );
+}
 
 // Componente para preview responsivo integrado
 function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: () => void }) {
@@ -23,45 +127,45 @@ function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: ()
     const risks = analysis.risksData || [];
 
     const containerWidth = 
-        deviceMode === 'mobile' ? 'w-[375px] max-w-[375px] border-2 border-zinc-700 rounded-[40px] p-4 shadow-2xl bg-zinc-950' : 
-        deviceMode === 'tablet' ? 'w-[768px] max-w-[768px] border border-zinc-800 rounded-3xl p-6 shadow-2xl bg-zinc-950' : 
+        deviceMode === 'mobile' ? 'w-[375px] max-w-[375px] border-2 border-border rounded-[40px] p-4 shadow-2xl bg-card' : 
+        deviceMode === 'tablet' ? 'w-[768px] max-w-[768px] border border-border rounded-3xl p-6 shadow-2xl bg-card' : 
         'w-full max-w-5xl bg-transparent';
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-start overflow-y-auto p-4 sm:p-6">
+        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex flex-col items-center justify-start overflow-y-auto p-4 sm:p-6">
             {/* Barra superior de control */}
-            <div className="w-full max-w-5xl flex items-center justify-between pb-4 border-b border-zinc-800 mb-6 shrink-0">
+            <div className="w-full max-w-5xl flex items-center justify-between pb-4 border-b border-border mb-6 shrink-0">
                 <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold uppercase tracking-widest text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1 rounded-full">
+                    <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
                         Vista Previa Finix Pro
                     </span>
-                    <span className="text-sm font-semibold text-zinc-300">
+                    <span className="text-sm font-semibold text-foreground">
                         {analysis.companyName || analysis.symbol} ({analysis.ticker || 'N/A'})
                     </span>
                 </div>
 
-                <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
+                <div className="flex items-center gap-1 bg-muted border border-border p-1 rounded-xl">
                     <button
                         onClick={() => setDeviceMode('desktop')}
-                        className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${deviceMode === 'desktop' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
+                        className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${deviceMode === 'desktop' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                         <Monitor className="w-3.5 h-3.5" /> Desktop
                     </button>
                     <button
                         onClick={() => setDeviceMode('tablet')}
-                        className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${deviceMode === 'tablet' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
+                        className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${deviceMode === 'tablet' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                         <Tablet className="w-3.5 h-3.5" /> Tablet
                     </button>
                     <button
                         onClick={() => setDeviceMode('mobile')}
-                        className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${deviceMode === 'mobile' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
+                        className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${deviceMode === 'mobile' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                         <Smartphone className="w-3.5 h-3.5" /> Mobile
                     </button>
                 </div>
 
-                <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-muted text-muted-foreground hover:text-foreground">
                     <X className="w-5 h-5" />
                 </Button>
             </div>
@@ -69,24 +173,24 @@ function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: ()
             {/* Canvas de Previsualización */}
             <div className={`transition-all duration-300 ${containerWidth} space-y-8 pb-20`}>
                 {/* 1. Header */}
-                <div className="bg-zinc-900/80 border border-zinc-800 rounded-3xl p-6 sm:p-8 backdrop-blur-sm">
+                <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 backdrop-blur-sm shadow-sm space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
                             {analysis.logoUrl ? (
-                                <img src={analysis.logoUrl} alt={analysis.companyName} className="w-16 h-16 rounded-2xl object-contain bg-white/5 border border-zinc-800 p-2" />
+                                <img src={analysis.logoUrl} alt={analysis.companyName} className="w-16 h-16 rounded-2xl object-contain bg-muted/40 border border-border p-2 shrink-0" />
                             ) : (
-                                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center font-bold text-emerald-400 text-2xl">
+                                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center font-black text-emerald-600 dark:text-emerald-400 text-2xl shrink-0">
                                     {analysis.ticker || 'STK'}
                                 </div>
                             )}
                             <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">{analysis.companyName || analysis.symbol}</h1>
-                                    <span className="text-xs font-bold text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-md">{analysis.ticker}</span>
+                                <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
+                                    <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-foreground">{analysis.companyName || analysis.symbol}</h1>
+                                    <span className="text-xs sm:text-sm font-black text-muted-foreground bg-muted px-2.5 py-0.5 rounded-lg">{analysis.ticker}</span>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
-                                    {analysis.exchange && <span className="bg-zinc-800/80 px-2 py-0.5 rounded text-zinc-300 font-semibold">{analysis.exchange}</span>}
-                                    {analysis.sector && <span className="bg-zinc-800/80 px-2 py-0.5 rounded text-zinc-300">{analysis.sector}</span>}
+                                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                                    {analysis.exchange && <span className="bg-muted px-2 py-0.5 rounded text-foreground font-bold">{analysis.exchange}</span>}
+                                    {analysis.sector && <span className="bg-muted px-2 py-0.5 rounded text-foreground font-semibold">{analysis.sector}</span>}
                                     {analysis.industry && <span>• {analysis.industry}</span>}
                                     {analysis.country && <span>• {analysis.country}</span>}
                                 </div>
@@ -94,65 +198,133 @@ function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: ()
                         </div>
 
                         {analysis.currentPrice && (
-                            <div className="sm:text-right bg-zinc-950/60 sm:bg-transparent p-4 sm:p-0 rounded-2xl border border-zinc-800/60 sm:border-none">
-                                <div className="text-3xl font-black text-white">${Number(analysis.currentPrice).toFixed(2)}</div>
-                                <div className={`text-sm font-bold flex items-center sm:justify-end gap-1 ${Number(analysis.dailyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            <div className="sm:text-right bg-muted/40 sm:bg-transparent p-4 sm:p-0 rounded-2xl border border-border sm:border-none">
+                                <div className="text-3xl sm:text-4xl font-black text-foreground">${Number(analysis.currentPrice).toFixed(2)}</div>
+                                <div className={`text-sm sm:text-base font-black flex items-center sm:justify-end gap-1 mt-0.5 ${Number(analysis.dailyChange) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                     {Number(analysis.dailyChange) >= 0 ? '+' : ''}{Number(analysis.dailyChange || 0).toFixed(2)}% hoy
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    {/* Snapshot Bar */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-zinc-800/80">
-                        {analysis.marketCap && (
-                            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/40">
-                                <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">Market Cap</span>
-                                <span className="text-sm font-bold text-zinc-200">
-                                    ${(Number(analysis.marketCap) / 1e9).toFixed(1)}B
+                    {/* Rendimientos Periódicos de TradingView */}
+                    {(analysis.dailyChange !== null || analysis.weeklyChange !== null || analysis.monthlyChange !== null || analysis.yearlyChange !== null) && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 border-t border-border">
+                            <div className="p-3 rounded-xl bg-muted/30 border border-border flex items-center justify-between">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">1 Día</span>
+                                <span className={`text-sm font-black ${Number(analysis.dailyChange) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                    {Number(analysis.dailyChange) >= 0 ? '+' : ''}{Number(analysis.dailyChange || 0).toFixed(2)}%
                                 </span>
                             </div>
-                        )}
-                        {analysis.high52w && (
-                            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/40">
-                                <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">52W High</span>
-                                <span className="text-sm font-bold text-zinc-200">${Number(analysis.high52w).toFixed(2)}</span>
+                            <div className="p-3 rounded-xl bg-muted/30 border border-border flex items-center justify-between">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">1 Semana</span>
+                                <span className={`text-sm font-black ${Number(analysis.weeklyChange) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                    {Number(analysis.weeklyChange) >= 0 ? '+' : ''}{Number(analysis.weeklyChange || 0).toFixed(2)}%
+                                </span>
                             </div>
-                        )}
-                        {analysis.low52w && (
-                            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/40">
-                                <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">52W Low</span>
-                                <span className="text-sm font-bold text-zinc-200">${Number(analysis.low52w).toFixed(2)}</span>
+                            <div className="p-3 rounded-xl bg-muted/30 border border-border flex items-center justify-between">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">1 Mes</span>
+                                <span className={`text-sm font-black ${Number(analysis.monthlyChange) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                    {Number(analysis.monthlyChange) >= 0 ? '+' : ''}{Number(analysis.monthlyChange || 0).toFixed(2)}%
+                                </span>
+                            </div>
+                            <div className="p-3 rounded-xl bg-muted/30 border border-border flex items-center justify-between">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">1 Año</span>
+                                <span className={`text-sm font-black ${Number(analysis.yearlyChange) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                    {Number(analysis.yearlyChange) >= 0 ? '+' : ''}{Number(analysis.yearlyChange || 0).toFixed(2)}%
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Snapshot Bar */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-3">
+                        {analysis.marketCap && (
+                            <div className="bg-muted/40 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Market Cap</span>
+                                <span className="text-lg font-black text-foreground">{formatCurrency(analysis.marketCap, true)}</span>
                             </div>
                         )}
                         {analysis.peRatio && (
-                            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/40">
-                                <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">P/E Ratio</span>
-                                <span className="text-sm font-bold text-emerald-400">{Number(analysis.peRatio).toFixed(1)}x</span>
+                            <div className="bg-muted/40 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">P/E Ratio</span>
+                                <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{Number(analysis.peRatio).toFixed(1)}x</span>
+                            </div>
+                        )}
+                        {analysis.volume && (
+                            <div className="bg-muted/40 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Volumen Hoy</span>
+                                <span className="text-lg font-black text-foreground">{formatNumber(analysis.volume, true)}</span>
+                            </div>
+                        )}
+                        {analysis.avgVolume && (
+                            <div className="bg-muted/40 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Vol. Prom. 30D</span>
+                                <span className="text-lg font-black text-foreground">{formatNumber(analysis.avgVolume, true)}</span>
+                            </div>
+                        )}
+                        {analysis.relativeVolume && (
+                            <div className="bg-muted/40 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Vol. Relativo</span>
+                                <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{Number(analysis.relativeVolume).toFixed(2)}x</span>
+                            </div>
+                        )}
+                        {analysis.beta && (
+                            <div className="bg-muted/40 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Beta 1Y</span>
+                                <span className="text-lg font-black text-foreground">{Number(analysis.beta).toFixed(2)}</span>
                             </div>
                         )}
                     </div>
+
+                    {/* Rango 52 Semanas */}
+                    {analysis.high52w && analysis.low52w && (
+                        <div className="p-4 rounded-xl bg-muted/30 border border-border space-y-2.5 mt-3">
+                            <div className="flex items-center justify-between text-xs sm:text-sm">
+                                <div>
+                                    <span className="text-muted-foreground font-bold block text-xs uppercase">52W Low</span>
+                                    <span className="text-base font-black text-foreground">${Number(analysis.low52w).toFixed(2)}</span>
+                                </div>
+                                <div className="text-center">
+                                    <span className="text-muted-foreground font-bold text-xs uppercase block">Rango Anual</span>
+                                    {analysis.currentPrice && <span className="font-mono font-black text-base text-emerald-600 dark:text-emerald-400">${Number(analysis.currentPrice).toFixed(2)}</span>}
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-muted-foreground font-bold block text-xs uppercase">52W High</span>
+                                    <span className="text-base font-black text-foreground">${Number(analysis.high52w).toFixed(2)}</span>
+                                </div>
+                            </div>
+                            <div className="relative w-full h-2.5 rounded-full bg-muted overflow-hidden border border-border">
+                                <div 
+                                    className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-500 rounded-full"
+                                    style={{
+                                        width: `${Math.max(5, Math.min(95, ((Number(analysis.currentPrice || analysis.low52w) - Number(analysis.low52w)) / (Number(analysis.high52w) - Number(analysis.low52w) || 1)) * 100))}%`
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* 2. Resumen Ejecutivo */}
                 {visibility.showSummary !== false && summary.title && (
-                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-4">
-                        <div className="flex items-center gap-2.5 text-emerald-400">
-                            <Sparkles className="w-5 h-5" />
-                            <h2 className="text-lg font-bold text-white tracking-tight">Resumen Ejecutivo</h2>
+                    <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
+                            <Sparkles className="w-6 h-6" />
+                            <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Resumen Ejecutivo</h2>
                         </div>
-                        <h3 className="text-base font-bold text-zinc-200">{summary.title}</h3>
-                        {summary.summary && <p className="text-sm text-zinc-300 leading-relaxed">{summary.summary}</p>}
+                        <h3 className="text-lg sm:text-xl font-black text-foreground leading-snug">{summary.title}</h3>
+                        {summary.summary && <p className="text-sm sm:text-base text-foreground/90 leading-relaxed">{summary.summary}</p>}
 
                         {(summary.positivePoints?.length > 0 || summary.negativePoints?.length > 0) && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
                                 {summary.positivePoints?.length > 0 && (
-                                    <div className="bg-emerald-950/20 border border-emerald-900/40 rounded-2xl p-4 space-y-2">
-                                        <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">Puntos Positivos</span>
-                                        <ul className="space-y-1.5 text-xs text-zinc-300">
+                                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-5 space-y-3">
+                                        <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Puntos Positivos</span>
+                                        <ul className="space-y-2 text-sm sm:text-base text-foreground font-medium">
                                             {summary.positivePoints.map((pt: string, idx: number) => (
-                                                <li key={idx} className="flex items-start gap-2">
-                                                    <span className="text-emerald-400 font-bold">•</span>
+                                                <li key={idx} className="flex items-start gap-2 leading-relaxed">
+                                                    <span className="text-emerald-500 font-bold">•</span>
                                                     <span>{pt}</span>
                                                 </li>
                                             ))}
@@ -160,12 +332,12 @@ function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: ()
                                     </div>
                                 )}
                                 {summary.negativePoints?.length > 0 && (
-                                    <div className="bg-rose-950/20 border border-rose-900/40 rounded-2xl p-4 space-y-2">
-                                        <span className="text-xs font-bold text-rose-400 uppercase tracking-wider block">Puntos de Cautela</span>
-                                        <ul className="space-y-1.5 text-xs text-zinc-300">
+                                    <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-5 space-y-3">
+                                        <span className="text-sm font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider block">Puntos de Cautela</span>
+                                        <ul className="space-y-2 text-sm sm:text-base text-foreground font-medium">
                                             {summary.negativePoints.map((pt: string, idx: number) => (
-                                                <li key={idx} className="flex items-start gap-2">
-                                                    <span className="text-rose-400 font-bold">•</span>
+                                                <li key={idx} className="flex items-start gap-2 leading-relaxed">
+                                                    <span className="text-rose-500 font-bold">•</span>
                                                     <span>{pt}</span>
                                                 </li>
                                             ))}
@@ -179,22 +351,22 @@ function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: ()
 
                 {/* 3. Fair Value Highlight */}
                 {visibility.showFairValue !== false && analysis.estimatedFairValue && (
-                    <div className="bg-gradient-to-r from-emerald-950/40 via-zinc-900/60 to-zinc-900/60 border border-emerald-900/40 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                        <div className="space-y-1.5">
-                            <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
-                                <Target className="w-4 h-4" /> Fair Value & Valoración Intrínseca
+                    <div className="bg-gradient-to-r from-emerald-500/15 via-card to-card border border-emerald-500/30 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-sm">
+                        <div className="space-y-2">
+                            <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+                                <Target className="w-5 h-5" /> Fair Value & Valoración Intrínseca
                             </span>
-                            <div className="text-2xl font-black text-white">
+                            <div className="text-3xl sm:text-5xl font-black text-foreground">
                                 Objetivo: ${Number(analysis.estimatedFairValue).toFixed(2)}
                             </div>
-                            <p className="text-xs text-zinc-400 max-w-xl">
+                            <p className="text-sm sm:text-base text-muted-foreground max-w-xl leading-relaxed">
                                 Valuación calculada por el equipo de análisis financiero de Finix según modelo de flujos y múltiplos.
                             </p>
                         </div>
                         {analysis.currentPrice && (
-                            <div className="bg-zinc-950/80 border border-zinc-800 px-6 py-4 rounded-2xl text-center shrink-0">
-                                <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block">Potencial (Upside)</span>
-                                <span className={`text-2xl font-black ${Number(analysis.estimatedFairValue) >= Number(analysis.currentPrice) ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            <div className="bg-card border border-border px-7 py-5 rounded-2xl text-center shrink-0 shadow-lg space-y-1">
+                                <span className="text-xs sm:text-sm font-black text-muted-foreground uppercase tracking-wider block">Potencial (Upside)</span>
+                                <span className={`text-3xl sm:text-4xl font-black ${Number(analysis.estimatedFairValue) >= Number(analysis.currentPrice) ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                     {((Number(analysis.estimatedFairValue) / Number(analysis.currentPrice) - 1) * 100).toFixed(1)}%
                                 </span>
                             </div>
@@ -202,28 +374,111 @@ function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: ()
                     </div>
                 )}
 
+                {/* Múltiplos de Valuación (TradingView) */}
+                {visibility.showValuation !== false && (analysis.peRatio || analysis.priceToSales || analysis.evToEbitda) && (
+                    <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
+                            <Scale className="w-6 h-6" />
+                            <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Múltiplos de Valuación Bursátil</h2>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-2">
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">P/E Ratio</span>
+                                <span className="text-xl font-black text-foreground">{analysis.peRatio ? `${analysis.peRatio}x` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">Forward P/E</span>
+                                <span className="text-xl font-black text-foreground">{analysis.forwardPe ? `${analysis.forwardPe}x` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">Price to Sales</span>
+                                <span className="text-xl font-black text-foreground">{analysis.priceToSales ? `${analysis.priceToSales}x` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">Price to Book</span>
+                                <span className="text-xl font-black text-foreground">{analysis.priceToBook ? `${analysis.priceToBook}x` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">EV / EBITDA</span>
+                                <span className="text-xl font-black text-foreground">{analysis.evToEbitda ? `${analysis.evToEbitda}x` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">Price to FCF</span>
+                                <span className="text-xl font-black text-foreground">{analysis.priceToFcf ? `${analysis.priceToFcf}x` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">Dividend Yield</span>
+                                <span className="text-xl font-black text-foreground">{analysis.dividendYield ? `${analysis.dividendYield}%` : '0%'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">P/E Sectorial</span>
+                                <span className="text-xl font-black text-foreground">{analysis.sectorPe ? `${analysis.sectorPe}x` : '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Perfil Corporativo & Liderazgo */}
+                {visibility.showCompany !== false && (analysis.businessDescription || analysis.ceo || analysis.foundedYear) && (
+                    <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-3 text-blue-500">
+                            <Building2 className="w-6 h-6" />
+                            <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Perfil Corporativo & Liderazgo</h2>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-1">
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">CEO</span>
+                                <span className="text-sm sm:text-base font-black text-foreground">{analysis.ceo || '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">Fundación</span>
+                                <span className="text-sm sm:text-base font-black text-foreground">{analysis.foundedYear || '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">Empleados</span>
+                                <span className="text-sm sm:text-base font-black text-foreground">{analysis.employeesCount ? formatNumber(analysis.employeesCount) : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">Cuota Mercado</span>
+                                <span className="text-sm sm:text-base font-black text-foreground">{analysis.marketShare || '-'}</span>
+                            </div>
+                        </div>
+                        {analysis.businessDescription && (
+                            <p className="text-sm sm:text-base text-foreground/90 leading-relaxed pt-2">
+                                {analysis.businessDescription}
+                            </p>
+                        )}
+                        {analysis.competitiveAdvantage && (
+                            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm space-y-1">
+                                <span className="font-black text-primary block">Ventaja Competitiva (Moat):</span>
+                                <p className="text-foreground/90 leading-relaxed">{analysis.competitiveAdvantage}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* 4. Modelo de Negocio */}
                 {visibility.showBusinessModel !== false && businessModel.length > 0 && (
-                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-4">
-                        <div className="flex items-center gap-2.5 text-blue-400">
-                            <Briefcase className="w-5 h-5" />
-                            <h2 className="text-lg font-bold text-white tracking-tight">Modelo de Negocio y Segmentos</h2>
+                    <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-3 text-blue-500">
+                            <Briefcase className="w-6 h-6" />
+                            <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Modelo de Negocio y Segmentos</h2>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                             {businessModel.map((item: any, idx: number) => (
-                                <div key={idx} className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-4 space-y-2">
+                                <div key={idx} className="bg-muted/30 border border-border rounded-2xl p-5 space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <span className="font-bold text-white text-sm">{item.product}</span>
+                                        <span className="font-black text-foreground text-base sm:text-lg">{item.product}</span>
                                         {item.revenuePct && (
-                                            <span className="text-xs font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-900/50 px-2 py-0.5 rounded-full">
+                                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
                                                 {item.revenuePct}% ingresos
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-xs text-zinc-400 leading-relaxed">{item.description}</p>
-                                    <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-2 border-t border-zinc-850">
-                                        {item.growth && <span>Crec: <strong className="text-zinc-300">{item.growth}%</strong></span>}
-                                        {item.margin && <span>Margen: <strong className="text-zinc-300">{item.margin}%</strong></span>}
+                                    <p className="text-sm text-foreground/85 leading-relaxed">{item.description}</p>
+                                    <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground pt-2.5 border-t border-border">
+                                        {item.growth && <span>Crec: <strong className="text-foreground font-black">{item.growth}%</strong></span>}
+                                        {item.margin && <span>Margen: <strong className="text-foreground font-black">{item.margin}%</strong></span>}
                                     </div>
                                 </div>
                             ))}
@@ -231,65 +486,226 @@ function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: ()
                     </div>
                 )}
 
-                {/* 5. Métricas Financieras Clave */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {analysis.revenue && (
-                        <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-5 space-y-2">
-                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <DollarSign className="w-4 h-4 text-emerald-400" /> Revenue TTM
-                            </span>
-                            <div className="text-xl font-bold text-white">${(Number(analysis.revenue) / 1e9).toFixed(1)}B</div>
-                            {analysis.revenueGrowthYoY && <div className="text-xs text-emerald-400">+{analysis.revenueGrowthYoY}% YoY</div>}
+                {/* 5. Métricas de Rentabilidad y Retorno */}
+                {visibility.showProfitability !== false && (
+                    <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
+                            <DollarSign className="w-6 h-6" />
+                            <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Rentabilidad & Retornos de Capital</h2>
                         </div>
-                    )}
-                    {analysis.grossMargin && (
-                        <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-5 space-y-2">
-                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <TrendingUp className="w-4 h-4 text-blue-400" /> Margen Bruto
-                            </span>
-                            <div className="text-xl font-bold text-white">{Number(analysis.grossMargin).toFixed(1)}%</div>
-                            {analysis.operatingMargin && <div className="text-xs text-zinc-400">Operativo: {analysis.operatingMargin}%</div>}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-1">
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">EPS Diluido</span>
+                                <span className="text-xl font-black text-foreground">{analysis.eps ? `$${analysis.eps}` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Margen Bruto</span>
+                                <span className="text-xl font-black text-foreground">{analysis.grossMargin ? `${analysis.grossMargin}%` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Margen Operativo</span>
+                                <span className="text-xl font-black text-foreground">{analysis.operatingMargin ? `${analysis.operatingMargin}%` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Margen Neto</span>
+                                <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">{analysis.netMargin ? `${analysis.netMargin}%` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Margen EBITDA</span>
+                                <span className="text-xl font-black text-foreground">{analysis.ebitdaMargin ? `${analysis.ebitdaMargin}%` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">ROIC</span>
+                                <span className="text-xl font-black text-foreground">{analysis.roic ? `${analysis.roic}%` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">ROE</span>
+                                <span className="text-xl font-black text-foreground">{analysis.roe ? `${analysis.roe}%` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">ROA</span>
+                                <span className="text-xl font-black text-foreground">{analysis.roa ? `${analysis.roa}%` : '-'}</span>
+                            </div>
                         </div>
-                    )}
-                    {analysis.freeCashFlow && (
-                        <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-5 space-y-2">
-                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Activity className="w-4 h-4 text-amber-400" /> Free Cash Flow
-                            </span>
-                            <div className="text-xl font-bold text-white">${(Number(analysis.freeCashFlow) / 1e9).toFixed(1)}B</div>
-                            {analysis.fcfYield && <div className="text-xs text-amber-400">FCF Yield: {analysis.fcfYield}%</div>}
+                    </div>
+                )}
+
+                {/* 6. Cash Flow & Balance Financiero */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-card border border-border rounded-3xl p-6 sm:p-7 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-3 text-primary font-bold">
+                            <Activity className="w-6 h-6" />
+                            <h3 className="text-lg sm:text-xl font-black text-foreground">Generación de Flujo de Caja</h3>
                         </div>
-                    )}
+                        <div className="grid grid-cols-2 gap-3.5">
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Free Cash Flow</span>
+                                <span className="text-base sm:text-lg font-black text-foreground">{formatCurrency(analysis.freeCashFlow, true)}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Operating CF</span>
+                                <span className="text-base sm:text-lg font-black text-foreground">{formatCurrency(analysis.operatingCashFlow, true)}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">CapEx</span>
+                                <span className="text-base sm:text-lg font-black text-foreground">{formatCurrency(analysis.capEx, true)}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">FCF Yield</span>
+                                <span className="text-base sm:text-lg font-black text-foreground">{analysis.fcfYield ? `${analysis.fcfYield}%` : '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-card border border-border rounded-3xl p-6 sm:p-7 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-3 text-primary font-bold">
+                            <Layers className="w-6 h-6" />
+                            <h3 className="text-lg sm:text-xl font-black text-foreground">Balance Financiero & Solvencia</h3>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3.5">
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Efectivo (Cash)</span>
+                                <span className="text-base sm:text-lg font-black text-foreground">{formatCurrency(analysis.cash, true)}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Deuda Total</span>
+                                <span className="text-base sm:text-lg font-black text-foreground">{formatCurrency(analysis.totalDebt, true)}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Current Ratio</span>
+                                <span className="text-base sm:text-lg font-black text-foreground">{analysis.currentRatio ? `${analysis.currentRatio}x` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Net Debt / EBITDA</span>
+                                <span className="text-base sm:text-lg font-black text-foreground">{analysis.netDebtToEbitda ? `${analysis.netDebtToEbitda}x` : '-'}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* 6. Competidores */}
-                {visibility.showCompetitors !== false && competitors.length > 0 && (
-                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-4">
-                        <div className="flex items-center gap-2.5 text-purple-400">
-                            <Users className="w-5 h-5" />
-                            <h2 className="text-lg font-bold text-white tracking-tight">Comparativa con Competidores</h2>
+                {/* 7. Estructura Accionaria & Sentimiento */}
+                {visibility.showOwnership !== false && (analysis.sharesOutstanding || analysis.institutionalOwnership || analysis.beta) && (
+                    <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-3 text-primary">
+                            <PieChart className="w-6 h-6" />
+                            <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Estructura Accionaria, Flotante y Sentimiento</h2>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-xs text-left">
-                                <thead className="bg-zinc-950/60 text-zinc-400 uppercase border-b border-zinc-800">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-1">
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Acciones en Circulación</span>
+                                <span className="text-sm sm:text-base font-black text-foreground">{formatNumber(analysis.sharesOutstanding, true)}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Tenencia Institucional</span>
+                                <span className="text-sm sm:text-base font-black text-foreground">{analysis.institutionalOwnership ? `${analysis.institutionalOwnership}%` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Tenencia Insiders</span>
+                                <span className="text-sm sm:text-base font-black text-foreground">{analysis.insiderOwnership ? `${analysis.insiderOwnership}%` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3.5 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground uppercase block">Beta (1Y)</span>
+                                <span className="text-sm sm:text-base font-black text-foreground">{analysis.beta ? Number(analysis.beta).toFixed(2) : '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 8. Análisis Técnico & Gráfico de TradingView */}
+                {visibility.showTechnical !== false && (
+                    <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-primary">
+                                <LineChart className="w-6 h-6" />
+                                <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Análisis Técnico Cuantitativo</h2>
+                            </div>
+                            {analysis.trend && (
+                                <span className="text-xs sm:text-sm font-black px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                                    Tendencia: {analysis.trend}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Gráfico TradingView integrado */}
+                        <div className="rounded-2xl overflow-hidden border border-border bg-card">
+                            <AdminTradingViewChart symbol={analysis.symbol || analysis.ticker} exchange={analysis.exchange} />
+                        </div>
+
+                        {/* Ratios Técnicos */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3.5 pt-2">
+                            <div className="bg-muted/30 p-3 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">RSI (14D)</span>
+                                <span className="text-base font-black text-foreground">{analysis.rsi || '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">SMA 20</span>
+                                <span className="text-base font-black text-foreground">{analysis.sma20 ? `$${Number(analysis.sma20).toFixed(2)}` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">SMA 50</span>
+                                <span className="text-base font-black text-foreground">{analysis.sma50 ? `$${Number(analysis.sma50).toFixed(2)}` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">SMA 100</span>
+                                <span className="text-base font-black text-foreground">{analysis.sma100 ? `$${Number(analysis.sma100).toFixed(2)}` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">SMA 200</span>
+                                <span className="text-base font-black text-foreground">{analysis.sma200 ? `$${Number(analysis.sma200).toFixed(2)}` : '-'}</span>
+                            </div>
+                            <div className="bg-muted/30 p-3 rounded-xl border border-border">
+                                <span className="text-xs font-bold text-muted-foreground block uppercase">ATR</span>
+                                <span className="text-base font-black text-foreground">{analysis.atr ? `$${Number(analysis.atr).toFixed(2)}` : '-'}</span>
+                            </div>
+                        </div>
+
+                        {(analysis.supports || analysis.resistances) && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm pt-1">
+                                {analysis.supports && (
+                                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                                        <span className="font-black text-emerald-600 dark:text-emerald-400 block mb-1">Soportes Clave:</span>
+                                        <p className="text-foreground font-medium leading-relaxed">{analysis.supports}</p>
+                                    </div>
+                                )}
+                                {analysis.resistances && (
+                                    <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                                        <span className="font-black text-rose-600 dark:text-rose-400 block mb-1">Resistencias Clave:</span>
+                                        <p className="text-foreground font-medium leading-relaxed">{analysis.resistances}</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* 9. Competidores */}
+                {visibility.showCompetitors !== false && competitors.length > 0 && (
+                    <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-3 text-purple-500">
+                            <Users className="w-6 h-6" />
+                            <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Comparativa con Competidores</h2>
+                        </div>
+                        <div className="overflow-x-auto rounded-xl border border-border/40">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-muted/50 text-muted-foreground uppercase text-xs font-black border-b border-border">
                                     <tr>
-                                        <th className="px-4 py-3">Empresa</th>
-                                        <th className="px-4 py-3">Ticker</th>
-                                        <th className="px-4 py-3">P/E</th>
-                                        <th className="px-4 py-3">ROIC</th>
-                                        <th className="px-4 py-3">Margen Neto</th>
-                                        <th className="px-4 py-3">Market Cap</th>
+                                        <th className="px-5 py-3.5">Empresa</th>
+                                        <th className="px-5 py-3.5">Ticker</th>
+                                        <th className="px-5 py-3.5">P/E</th>
+                                        <th className="px-5 py-3.5">ROIC</th>
+                                        <th className="px-5 py-3.5">Margen Neto</th>
+                                        <th className="px-5 py-3.5">Market Cap</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-zinc-800/50">
+                                <tbody className="divide-y divide-border">
                                     {competitors.map((c: any, idx: number) => (
-                                        <tr key={idx} className={c.ticker === analysis.ticker ? 'bg-emerald-950/20 font-bold text-emerald-400' : 'text-zinc-300'}>
-                                            <td className="px-4 py-3 font-semibold">{c.name}</td>
-                                            <td className="px-4 py-3">{c.ticker}</td>
-                                            <td className="px-4 py-3">{c.pe ? `${c.pe}x` : '-'}</td>
-                                            <td className="px-4 py-3">{c.roic ? `${c.roic}%` : '-'}</td>
-                                            <td className="px-4 py-3">{c.netMargin ? `${c.netMargin}%` : '-'}</td>
-                                            <td className="px-4 py-3">{c.marketCap ? `$${c.marketCap}B` : '-'}</td>
+                                        <tr key={idx} className={c.ticker === analysis.ticker ? 'bg-emerald-500/10 font-black text-emerald-600 dark:text-emerald-400' : 'text-foreground font-medium'}>
+                                            <td className="px-5 py-3.5 font-bold text-base">{c.name}</td>
+                                            <td className="px-5 py-3.5 font-bold">{c.ticker}</td>
+                                            <td className="px-5 py-3.5">{c.pe ? `${c.pe}x` : '-'}</td>
+                                            <td className="px-5 py-3.5">{c.roic ? `${c.roic}%` : '-'}</td>
+                                            <td className="px-5 py-3.5">{c.netMargin ? `${c.netMargin}%` : '-'}</td>
+                                            <td className="px-5 py-3.5 font-bold">{c.marketCap ? `$${c.marketCap}B` : '-'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -298,38 +714,38 @@ function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: ()
                     </div>
                 )}
 
-                {/* 7. Riesgos */}
+                {/* 10. Riesgos */}
                 {visibility.showRisks !== false && risks.length > 0 && (
-                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-4">
-                        <div className="flex items-center gap-2.5 text-rose-400">
-                            <ShieldAlert className="w-5 h-5" />
-                            <h2 className="text-lg font-bold text-white tracking-tight">Principales Factores de Riesgo</h2>
+                    <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-3 text-rose-500">
+                            <ShieldAlert className="w-6 h-6" />
+                            <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Principales Factores de Riesgo</h2>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                             {risks.map((r: any, idx: number) => (
-                                <div key={idx} className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-4 space-y-2">
+                                <div key={idx} className="bg-muted/30 border border-border rounded-2xl p-5 space-y-2.5">
                                     <div className="flex items-center justify-between">
-                                        <span className="font-bold text-white text-sm">{r.title}</span>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
-                                            r.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                                            r.severity === 'HIGH' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
-                                            r.severity === 'MEDIUM' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                                            'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                        <span className="font-black text-foreground text-base">{r.title}</span>
+                                        <span className={`text-xs font-black px-2.5 py-1 rounded uppercase ${
+                                            r.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30' :
+                                            r.severity === 'HIGH' ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30' :
+                                            r.severity === 'MEDIUM' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30' :
+                                            'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30'
                                         }`}>
                                             {r.severity || 'LOW'}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-zinc-400 leading-relaxed">{r.description}</p>
+                                    <p className="text-sm text-foreground/85 leading-relaxed font-normal">{r.description}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
 
-                {/* 8. Disclaimer & Fuentes */}
-                <div className="text-center text-xs text-zinc-500 pt-6 border-t border-zinc-800/60 space-y-2">
-                    {analysis.sources && <p>Fuentes: {analysis.sources}</p>}
-                    <p>{analysis.legalDisclaimer || 'Este informe tiene fines exclusivamente educativos e informativos y no constituye asesoramiento financiero.'}</p>
+                {/* 11. Disclaimer & Fuentes */}
+                <div className="text-center text-sm text-muted-foreground pt-6 border-t border-border space-y-2">
+                    {analysis.sources && <p className="font-bold text-foreground">Fuentes: {analysis.sources}</p>}
+                    <p className="leading-relaxed">{analysis.legalDisclaimer || 'Este informe tiene fines exclusivamente educativos e informativos y no constituye asesoramiento financiero.'}</p>
                 </div>
             </div>
         </div>
@@ -346,13 +762,26 @@ export default function AnalysisManagement() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'ALL' | 'PUBLISHED' | 'DRAFT' | 'ARCHIVED'>('ALL');
 
+    // Estado de auto-completado con TradingView y publicación
+    const [fetchingTV, setFetchingTV] = useState(false);
+    const [autoTickerInput, setAutoTickerInput] = useState('');
+    const [tvMessage, setTvMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [publishedFeedback, setPublishedFeedback] = useState<{ slug: string; ticker: string; companyName: string } | null>(null);
+
+    const getWebAnalysisUrl = (slug: string) => {
+        if (typeof window !== 'undefined' && window.location.port === '5147') {
+            return `${window.location.protocol}//${window.location.hostname}:5173/analysis/${slug}`;
+        }
+        return `/analysis/${slug}`;
+    };
+
     // Estado del formulario completo
     const [formData, setFormData] = useState<any>({
         symbol: '',
         ticker: '',
         slug: '',
         companyName: '',
-        status: 'DRAFT',
+        status: 'PUBLISHED',
         sectionVisibility: {
             showHeader: true,
             showSummary: true,
@@ -401,42 +830,142 @@ export default function AnalysisManagement() {
         }
     };
 
+    const handleAutofillTradingView = async (customSymbol?: string) => {
+        const target = (customSymbol || autoTickerInput || formData.ticker || formData.symbol || '').trim();
+        if (!target) {
+            setTvMessage({ type: 'error', text: 'Por favor ingresa un ticker o símbolo (ej: AAPL, TSLA, GGAL, NVDA).' });
+            return;
+        }
+
+        setFetchingTV(true);
+        setTvMessage(null);
+        try {
+            const res = await adminFetch(`/admin/analysis/tradingview/fetch?symbol=${encodeURIComponent(target)}`);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || 'No se encontraron datos en TradingView para este símbolo');
+            }
+            const json = await res.json();
+            const data = json.data || json;
+
+            // Si ya existe un análisis con este ticker en el CMS y el formulario no tiene ID, vincularlo automáticamente
+            const existingLocal = analyses.find((a: any) => 
+                (a.ticker && a.ticker.toUpperCase() === target.toUpperCase()) ||
+                (a.symbol && a.symbol.toUpperCase().includes(target.toUpperCase())) ||
+                (a.slug && a.slug.toLowerCase() === target.toLowerCase())
+            );
+
+            setFormData((prev: any) => ({
+                ...prev,
+                ...data,
+                // Preservar ID si ya existía en prev o en la lista local existente
+                id: prev.id || existingLocal?.id,
+                // Preservar la visibilidad de secciones configurada previamente
+                sectionVisibility: prev.sectionVisibility || data.sectionVisibility,
+                // Mezclar de forma inteligente el resumen ejecutivo
+                executiveSummary: {
+                    ...(prev.executiveSummary || {}),
+                    ...(data.executiveSummary || {}),
+                },
+                // Mezclar datos técnicos
+                technicalData: {
+                    ...(prev.technicalData || {}),
+                    ...(data.technicalData || {}),
+                },
+                businessModel: (data.businessModel && data.businessModel.length > 0) ? data.businessModel : (prev.businessModel || []),
+                competitorsData: (data.competitorsData && data.competitorsData.length > 0) ? data.competitorsData : (prev.competitorsData || []),
+                risksData: (data.risksData && data.risksData.length > 0) ? data.risksData : (prev.risksData || []),
+                catalystsData: (data.catalystsData && data.catalystsData.length > 0) ? data.catalystsData : (prev.catalystsData || []),
+                scenariosData: (data.scenariosData && data.scenariosData.length > 0) ? data.scenariosData : (prev.scenariosData || []),
+                swotData: data.swotData || prev.swotData,
+                historicalSeries: (data.historicalSeries && data.historicalSeries.length > 0) ? data.historicalSeries : (prev.historicalSeries || []),
+                valuationMethodology: (data.valuationMethodology && data.valuationMethodology.length > 0) ? data.valuationMethodology : (prev.valuationMethodology || []),
+                // Mantener estado de publicación
+                status: prev.status || 'PUBLISHED',
+            }));
+            setAutoTickerInput(data.ticker || target);
+            setTvMessage({
+                type: 'success',
+                text: `¡Datos técnicos, fundamentales y logo de ${data.companyName} (${data.ticker}) importados exitosamente desde TradingView!`
+            });
+        } catch (error: any) {
+            console.error(error);
+            setTvMessage({ type: 'error', text: error.message || 'Error al consultar TradingView' });
+        } finally {
+            setFetchingTV(false);
+        }
+    };
+
     const handleEdit = async (item: any) => {
         try {
             const res = await adminFetch(`/admin/analysis/${item.id}`);
             const data = await res.json();
             setFormData(data.data || item);
+            setAutoTickerInput(item.ticker || item.symbol || '');
+            setTvMessage(null);
             setIsFormOpen(true);
             setActiveTab('overview');
         } catch (e) {
             console.error(e);
             setFormData(item);
+            setAutoTickerInput(item.ticker || item.symbol || '');
+            setTvMessage(null);
             setIsFormOpen(true);
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = async (overrideStatus?: string) => {
         setSaving(true);
         try {
-            const url = formData.id ? `/admin/analysis/${formData.id}` : '/admin/analysis';
-            const method = formData.id ? 'PATCH' : 'POST';
+            const payload = { ...formData };
+            if (overrideStatus) {
+                payload.status = overrideStatus;
+            }
+
+            const defaultChartStorageId = payload.technicalData?.chartStorageId || (payload.id 
+                ? `finix_analysis_${payload.id}` 
+                : (payload.symbol || payload.ticker 
+                    ? `finix_analysis_${(payload.symbol || payload.ticker).toLowerCase().replace(/[^a-z0-9_]/g, '_')}` 
+                    : `finix_analysis_${Date.now()}`));
+
+            payload.technicalData = {
+                ...(payload.technicalData || {}),
+                chartStorageId: defaultChartStorageId,
+            };
+
+            // Remover campos virtuales o derivados que no pertenecen al modelo Prisma
+            delete payload.fairValueUpsideDownside;
+            delete payload.auditLogs;
+
+            const url = payload.id ? `/admin/analysis/${payload.id}` : '/admin/analysis';
+            const method = payload.id ? 'PATCH' : 'POST';
 
             const res = await adminFetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             if (res.ok) {
+                const resJson = await res.json().catch(() => ({}));
+                const savedItem = resJson.data || payload;
                 setIsFormOpen(false);
                 fetchAnalyses();
+
+                const finalSlug = savedItem.slug || savedItem.ticker?.toLowerCase() || 'asset';
+                setPublishedFeedback({
+                    slug: finalSlug,
+                    ticker: savedItem.ticker || savedItem.symbol || 'STK',
+                    companyName: savedItem.companyName || savedItem.ticker || 'Acción',
+                });
             } else {
-                const err = await res.json();
-                alert(`Error guardando: ${err.message || 'Verifica los datos'}`);
+                const err = await res.json().catch(() => ({}));
+                const errMsg = err.message || (Array.isArray(err.errors) ? err.errors.join(', ') : 'Verifica los datos ingresados');
+                alert(`Error guardando: ${errMsg}`);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert('Error guardando análisis');
+            alert(`Error guardando análisis: ${error.message || 'Error de conexión'}`);
         } finally {
             setSaving(false);
         }
@@ -497,6 +1026,38 @@ export default function AnalysisManagement() {
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto pb-16">
+            {/* Notificación de Publicación Exitosa */}
+            {publishedFeedback && (
+                <div className="bg-emerald-500/10 border-2 border-emerald-500/40 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                            <CheckCircle2 className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-foreground text-base">
+                                ¡Análisis de {publishedFeedback.companyName} ({publishedFeedback.ticker}) guardado y sincronizado!
+                            </h4>
+                            <p className="text-xs text-muted-foreground">
+                                El análisis ya está disponible y reflejado en la sección de Análisis de Finix Pro.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <a
+                            href={getWebAnalysisUrl(publishedFeedback.slug)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all"
+                        >
+                            Ver en la sección de Análisis <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                        <Button variant="ghost" size="sm" onClick={() => setPublishedFeedback(null)} className="text-muted-foreground hover:text-foreground">
+                            Cerrar
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Header del Panel */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -521,7 +1082,7 @@ export default function AnalysisManagement() {
                                 ticker: '',
                                 slug: '',
                                 companyName: '',
-                                status: 'DRAFT',
+                                status: 'PUBLISHED',
                                 sectionVisibility: {
                                     showHeader: true,
                                     showSummary: true,
@@ -552,6 +1113,8 @@ export default function AnalysisManagement() {
                                 technicalData: { supports: [], resistances: [], technicalSignal: 'NEUTRAL', technicalScore: 50 },
                                 valuationMethodology: { method: '', assumptions: '', result: '', notes: '' },
                             });
+                            setAutoTickerInput('');
+                            setTvMessage(null);
                             setIsFormOpen(true);
                             setActiveTab('overview');
                         }} className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold">
@@ -657,14 +1220,14 @@ export default function AnalysisManagement() {
                                                     value={item.status || 'DRAFT'}
                                                     onChange={(e) => handleQuickStatusChange(item.id, e.target.value)}
                                                     className={`text-xs font-bold rounded-lg px-2.5 py-1 border outline-none cursor-pointer ${
-                                                        item.status === 'PUBLISHED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
-                                                        item.status === 'ARCHIVED' ? 'bg-zinc-500/10 text-zinc-400 border-zinc-500/30' :
-                                                        'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                                        item.status === 'PUBLISHED' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
+                                                        item.status === 'ARCHIVED' ? 'bg-muted text-muted-foreground border-border' :
+                                                        'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
                                                     }`}
                                                 >
-                                                    <option value="DRAFT" className="bg-zinc-900 text-zinc-200">Borrador (Draft)</option>
-                                                    <option value="PUBLISHED" className="bg-zinc-900 text-zinc-200">Publicado (Pro)</option>
-                                                    <option value="ARCHIVED" className="bg-zinc-900 text-zinc-200">Archivado</option>
+                                                    <option value="DRAFT" className="bg-card text-foreground">Borrador (Draft)</option>
+                                                    <option value="PUBLISHED" className="bg-card text-foreground">Publicado (Pro)</option>
+                                                    <option value="ARCHIVED" className="bg-card text-foreground">Archivado</option>
                                                 </select>
                                             </td>
                                             <td className="px-6 py-4 text-muted-foreground text-xs">
@@ -672,6 +1235,15 @@ export default function AnalysisManagement() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-1.5">
+                                                    <a
+                                                        href={getWebAnalysisUrl(item.slug || item.ticker?.toLowerCase())}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                                                        title="Ver en la sección pública de Análisis"
+                                                    >
+                                                        <ExternalLink className="w-4 h-4" />
+                                                    </a>
                                                     <Button variant="ghost" size="icon" onClick={() => setPreviewItem(item)} title="Vista Previa">
                                                         <Eye className="w-4 h-4 text-emerald-400" />
                                                     </Button>
@@ -703,20 +1275,118 @@ export default function AnalysisManagement() {
                                 <h2 className="text-xl font-bold text-foreground">
                                     {formData.id ? `Editar: ${formData.companyName || formData.symbol}` : 'Nuevo Análisis de Acción'}
                                 </h2>
-                                <span className="text-xs text-muted-foreground">Todos los campos son opcionales. Los campos vacíos se ocultan automáticamente en Finix Pro.</span>
+                                <span className="text-xs text-muted-foreground">Datos integrados en tiempo real con TradingView y modelos institucionales de Finix.</span>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            {/* Selector rápido de estado */}
+                            <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border/60">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData((p: any) => ({ ...p, status: 'DRAFT' }))}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                        formData.status === 'DRAFT'
+                                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    Borrador
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData((p: any) => ({ ...p, status: 'PUBLISHED' }))}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                        formData.status === 'PUBLISHED'
+                                            ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    🟢 Publicado
+                                </button>
+                            </div>
+
                             <Button variant="outline" onClick={() => setPreviewItem(formData)} className="border-border/60">
-                                <Eye className="w-4 h-4 mr-2 text-emerald-400" /> Vista Previa
+                                <Eye className="w-4 h-4 mr-1.5 text-emerald-400" /> Vista Previa
                             </Button>
-                            <Button onClick={handleSave} disabled={saving} className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold">
+                            
+                            <Button 
+                                variant="outline" 
+                                onClick={() => handleSave('DRAFT')} 
+                                disabled={saving} 
+                                className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 font-semibold"
+                            >
                                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                                Guardar Análisis
+                                Guardar Borrador
+                            </Button>
+
+                            <Button 
+                                onClick={() => handleSave('PUBLISHED')} 
+                                disabled={saving} 
+                                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                            >
+                                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                🚀 Guardar y Publicar
                             </Button>
                         </div>
                     </div>
+
+                    {/* HERO BAR: Auto-relleno Instantáneo con TradingView */}
+                    <div className="bg-gradient-to-r from-emerald-500/10 via-card to-card border border-emerald-500/30 p-4 sm:p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-xl shrink-0 border border-emerald-500/30 shadow-inner">
+                                <Zap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-sm font-bold text-foreground tracking-tight">Auto-relleno Instantáneo de TradingView</h3>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider border border-emerald-500/30">
+                                        Scanner en Vivo
+                                    </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Ingresa el ticker (ej. AAPL, TSLA, NVDA, GGAL, MELI) para auto-completar datos técnicos, fundamentales, ratios y el logo oficial.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                            <div className="relative">
+                                <Input
+                                    placeholder="Ej: AAPL, GGAL..."
+                                    value={autoTickerInput}
+                                    onChange={(e) => setAutoTickerInput(e.target.value.toUpperCase())}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') handleAutofillTradingView(); }}
+                                    className="w-36 sm:w-44 bg-background border-input text-foreground font-bold tracking-wider uppercase text-xs focus:border-emerald-500"
+                                />
+                            </div>
+                            <Button
+                                onClick={() => handleAutofillTradingView()}
+                                disabled={fetchingTV}
+                                className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs px-4 h-10 shadow-lg shadow-emerald-500/20 whitespace-nowrap"
+                            >
+                                {fetchingTV ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
+                                {fetchingTV ? 'Consultando TV...' : '⚡ Importar de TradingView'}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Mensajes de feedback de TradingView */}
+                    {tvMessage && (
+                        <div className={`p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-3 border ${
+                            tvMessage.type === 'success' 
+                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30' 
+                                : 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30'
+                        }`}>
+                            <div className="flex items-center gap-2">
+                                {tvMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> : <X className="w-4 h-4 text-rose-500 shrink-0" />}
+                                <span>{tvMessage.text}</span>
+                            </div>
+                            <button onClick={() => setTvMessage(null)} className="text-muted-foreground hover:text-foreground text-xs underline">
+                                Cerrar
+                            </button>
+                        </div>
+                    )}
 
                     {/* Selector de Pestañas de Secciones */}
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -732,7 +1402,7 @@ export default function AnalysisManagement() {
                             <TabsTrigger value="valuation">9. Valuación & Fair Value</TabsTrigger>
                             <TabsTrigger value="ownership">10. Accionistas</TabsTrigger>
                             <TabsTrigger value="competitors">11. Competidores</TabsTrigger>
-                            <TabsTrigger value="technical">12. Técnico</TabsTrigger>
+                            <TabsTrigger value="technical">12. Técnico & Gráfico TV</TabsTrigger>
                             <TabsTrigger value="risks">13. Riesgos & Cat.</TabsTrigger>
                             <TabsTrigger value="scenarios">14. Escenarios & DAFO</TabsTrigger>
                         </TabsList>
@@ -1789,12 +2459,17 @@ export default function AnalysisManagement() {
                             </div>
                         </TabsContent>
 
-                        {/* 12. TÉCNICO */}
-                        <TabsContent value="technical" className="space-y-5 pt-2">
+                        {/* 12. TÉCNICO Y GRÁFICO INTERACTIVO */}
+                        <TabsContent value="technical" className="space-y-6 pt-2">
                             <div className="flex items-center justify-between pb-4 border-b border-border/50">
                                 <div>
-                                    <h3 className="font-bold text-base">Análisis Técnico</h3>
-                                    <span className="text-xs text-muted-foreground">Indicadores cuantitativos, medias móviles y niveles clave.</span>
+                                    <h3 className="font-bold text-base flex items-center gap-2">
+                                        <LineChart className="w-5 h-5 text-emerald-400" />
+                                        Análisis Técnico & Gráfico Interactivo de TradingView
+                                    </h3>
+                                    <span className="text-xs text-muted-foreground">
+                                        Herramientas de dibujo en vivo (líneas, canales, Fibonacci), indicadores cuantitativos y niveles clave.
+                                    </span>
                                 </div>
                                 <Switch 
                                     checked={formData.sectionVisibility?.showTechnical !== false} 
@@ -1805,7 +2480,114 @@ export default function AnalysisManagement() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                            {/* Canvas del Gráfico Interactivo con Herramientas de Dibujo y Auto-Guardado */}
+                            {(() => {
+                                const currentChartStorageId = formData.technicalData?.chartStorageId || (formData.id 
+                                    ? `finix_analysis_${formData.id}` 
+                                    : (formData.symbol || formData.ticker 
+                                        ? `finix_analysis_${(formData.symbol || formData.ticker).toLowerCase().replace(/[^a-z0-9_]/g, '_')}` 
+                                        : `finix_analysis_${Date.now()}`));
+
+                                return (
+                                    <div className="space-y-4">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-md flex items-center gap-1.5">
+                                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                    Lienzo Pro Interactivo
+                                                </span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    Trazá líneas, canales, rectángulos o indicadores: se guardan automáticamente en la nube de Finix.
+                                                </span>
+                                            </div>
+                                            <div className="text-xs font-mono font-bold text-foreground bg-muted border border-border px-3 py-1 rounded-lg self-start sm:self-auto">
+                                                {formData.symbol || (formData.ticker ? `${formData.exchange || 'NASDAQ'}:${formData.ticker}` : 'NASDAQ:AAPL')}
+                                            </div>
+                                        </div>
+
+                                        <AdminTradingViewChart 
+                                            symbol={formData.symbol || formData.ticker} 
+                                            exchange={formData.exchange} 
+                                            chartStorageId={currentChartStorageId}
+                                        />
+
+                                        {/* Tarjeta de Confirmación de Auto-Guardado y Proyección Única */}
+                                        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 sm:p-5">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                <div className="flex items-start sm:items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                                        <CheckCircle2 className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                                            Sincronización Automática de Gráfico Único Activa
+                                                        </h4>
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            ¡No necesitás sacar capturas ni subir fotos! Cada trazado de líneas, figuras y soportes se guarda tal cual en tiempo real y se proyecta interactivo para cada usuario.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
+                                                    <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                        ID: {currentChartStorageId}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Diagnóstico y Notas Técnicas */}
+                            <div className="bg-card/40 border border-border/60 rounded-2xl p-5 space-y-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
+                                    <div>
+                                        <Label>Patrón Chartista Identificado</Label>
+                                        <Input 
+                                            placeholder="Ej: Canal Alcista, Triángulo Ascendente, Doble Suelo..."
+                                            value={formData.technicalData?.chartPattern || ''}
+                                            onChange={(e) => setFormData((p: any) => ({
+                                                ...p,
+                                                technicalData: { ...(p.technicalData || {}), chartPattern: e.target.value }
+                                            }))}
+                                            className="mt-1.5"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Temporalidad Recomendada</Label>
+                                        <select
+                                            value={formData.technicalData?.chartTimeframe || 'D'}
+                                            onChange={(e) => setFormData((p: any) => ({
+                                                ...p,
+                                                technicalData: { ...(p.technicalData || {}), chartTimeframe: e.target.value }
+                                            }))}
+                                            className="w-full mt-1.5 px-3 py-2 rounded-xl bg-muted border border-border text-sm font-semibold"
+                                        >
+                                            <option value="D">Diario (1D)</option>
+                                            <option value="240">4 Horas (4H)</option>
+                                            <option value="60">1 Hora (1H)</option>
+                                            <option value="W">Semanal (1W)</option>
+                                            <option value="M">Mensual (1M)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <Label>Conclusiones y Comentarios del Gráfico Técnico</Label>
+                                    <Textarea 
+                                        placeholder="Ej: La acción se encuentra testeando el soporte dinámico de la media móvil de 50 sesiones tras una consolidación en rango. Posible entrada en rebote hacia resistencias..."
+                                        value={formData.technicalData?.chartNotes || ''}
+                                        onChange={(e) => setFormData((p: any) => ({
+                                            ...p,
+                                            technicalData: { ...(p.technicalData || {}), chartNotes: e.target.value }
+                                        }))}
+                                        className="mt-1.5 h-20"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Métricas Cuantitativas e Indicadores */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-5 pt-2">
                                 <div>
                                     <Label>Señal Técnica General</Label>
                                     <select

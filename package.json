@@ -9,7 +9,8 @@
     "scripts": {
         "dev": "concurrently --names \"API,WEB,ADMIN\" --prefix-colors \"bgBlue,bgGreen,bgYellow\" \"npm run dev -w api\" \"npm run dev -w web\" \"npm run dev -w admin\"",
         "build": "npm run build --workspaces --if-present",
-        "test": "npm run test --workspaces --if-present"
+        "test": "npm run test --workspaces --if-present",
+        "deploy": "bash scripts/push-deploy.sh"
     },
     "devDependencies": {
         "concurrently": "^8.2.2",

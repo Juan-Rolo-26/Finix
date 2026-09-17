@@ -55,7 +55,7 @@ export function CalendarPreviewCard() {
 
     return (
         <div
-            className="rounded-2xl border transition-all duration-300 overflow-hidden"
+            className="rounded-2xl border transition-all duration-300 overflow-hidden shrink-0"
             style={{
                 background: 'var(--card-bg, hsl(var(--card)))',
                 borderColor: 'hsl(var(--border) / 0.55)',
@@ -88,7 +88,7 @@ export function CalendarPreviewCard() {
             </div>
 
             {/* Content */}
-            <div className="p-4 space-y-3">
+            <div className="p-3.5 pb-4 space-y-2.5">
                 {isLoading ? (
                     <div className="py-8 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -108,7 +108,7 @@ export function CalendarPreviewCard() {
                             <div
                                 key={evt.id}
                                 onClick={() => navigate('/calendario')}
-                                className="p-3 rounded-xl border border-border/40 bg-secondary/20 hover:bg-secondary/40 transition-all cursor-pointer group flex items-start gap-3"
+                                className="p-3 pb-3.5 rounded-xl border border-border/40 bg-secondary/20 hover:bg-secondary/40 transition-all cursor-pointer group flex items-start gap-3"
                             >
                                 {/* Left Time/Day Box */}
                                 <div className="flex flex-col items-center justify-center min-w-[48px] py-1 px-1.5 rounded-lg bg-background/80 border border-border/30 text-center flex-shrink-0">
@@ -158,7 +158,7 @@ export function CalendarPreviewCard() {
                                                 />
                                             </div>
                                         )}
-                                        <p className="text-[13px] font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                                        <p className="text-[13px] font-bold text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                                             {evt.title}
                                         </p>
                                     </div>
@@ -171,11 +171,17 @@ export function CalendarPreviewCard() {
                                             {evt.revenueEstimate != null ? ` · Rev est: $${evt.revenueEstimate}B` : ''}
                                         </p>
                                     ) : (
-                                        evt.consensusValue && (
-                                            <p className="text-[11px] text-muted-foreground mt-0.5">
-                                                Consenso: <span className="font-semibold text-foreground/80">{evt.consensusValue}</span>
-                                                {evt.previousValue && ` · Ant: ${evt.previousValue}`}
+                                        (evt.consensusValue || evt.previousValue) ? (
+                                            <p className="text-[11px] text-muted-foreground mt-1 leading-tight">
+                                                {evt.consensusValue && (
+                                                    <span>Consenso: <strong className="text-foreground/90">{evt.consensusValue}</strong></span>
+                                                )}
+                                                {evt.previousValue && <span> · Ant: {evt.previousValue}</span>}
                                             </p>
+                                        ) : (
+                                            evt.subtitle && (
+                                                <p className="text-[11px] text-muted-foreground mt-0.5">{evt.subtitle}</p>
+                                            )
                                         )
                                     )}
                                 </div>

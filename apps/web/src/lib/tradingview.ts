@@ -125,7 +125,30 @@ const TV_SLUG_MAP: Record<string, string> = {
     PAMP: 'pampa-energia', YPFD: 'ypf', YPF: 'ypf', GGAL: 'grupo-financiero-galicia',
     BMA: 'banco-macro', CEPU: 'central-puerto', LOMA: 'loma-negra-cia-ind-argentina',
     EDN: 'empresa-distribuidora-y-comerc', TGS: 'transportadora-de-gas-del-sur',
+    TGSU2: 'transportadora-de-gas-del-sur', TXAR: 'ternium', ALUA: 'aluar-aluminio-argentino',
     CRES: 'cresud', SUPV: 'grupo-supervielle', IRSA: 'irsa-inversiones-y-represe',
+    VIST: 'vista-energy', DIA: 'spdr',
+};
+
+export const SPECIAL_ASSET_LOGOS: Record<string, string[]> = {
+    IMV: ['https://s3-symbol-logo.tradingview.com/country/AR.svg'],
+    ARINTR: ['https://s3-symbol-logo.tradingview.com/country/AR.svg'],
+    DXY: ['https://s3-symbol-logo.tradingview.com/country/US.svg'],
+    US10Y: ['https://s3-symbol-logo.tradingview.com/country/US.svg'],
+    US02Y: ['https://s3-symbol-logo.tradingview.com/country/US.svg'],
+    NI225: ['https://s3-symbol-logo.tradingview.com/country/JP.svg'],
+    HSI: ['https://s3-symbol-logo.tradingview.com/country/HK.svg'],
+    VIX: ['https://s3-symbol-logo.tradingview.com/cboe--big.svg'],
+    XAUUSD: ['https://s3-symbol-logo.tradingview.com/metal/gold--big.svg'],
+    'HG1!': ['https://s3-symbol-logo.tradingview.com/copper--big.svg'],
+    'NG1!': ['https://s3-symbol-logo.tradingview.com/natural-gas--big.svg'],
+    'ZS1!': ['https://s3-symbol-logo.tradingview.com/soybeans--big.svg'],
+    'ZW1!': ['https://s3-symbol-logo.tradingview.com/wheat--big.svg'],
+    TXAR: ['https://s3-symbol-logo.tradingview.com/ternium--big.svg'],
+    ALUA: ['https://s3-symbol-logo.tradingview.com/aluar-aluminio-argentino--big.svg'],
+    TGSU2: ['https://s3-symbol-logo.tradingview.com/transportadora-de-gas-del-sur--big.svg'],
+    VIST: ['https://s3-symbol-logo.tradingview.com/vista-energy--big.svg'],
+    DIA: ['https://s3-symbol-logo.tradingview.com/spdr--big.svg'],
 };
 
 // ─── Logo URL builder ─────────────────────────────────────────────────────────
@@ -140,6 +163,13 @@ export function getLogoUrls(symbol: string): string[] {
     const cleanTicker = ticker.replace(/USD(T)?$/, '');
 
     const urls: string[] = [];
+
+    // Check special curated logos first
+    if (SPECIAL_ASSET_LOGOS[ticker]) {
+        urls.push(...SPECIAL_ASSET_LOGOS[ticker]);
+    } else if (SPECIAL_ASSET_LOGOS[cleanTicker]) {
+        urls.push(...SPECIAL_ASSET_LOGOS[cleanTicker]);
+    }
     const isCrypto = exchange === 'CRYPTO' || exchange === 'BINANCE' || exchange === 'COINBASE'
         || exchange === 'BITSTAMP' || exchange === 'KRAKEN' || CRYPTO_TV_MAP[cleanTicker] != null;
 

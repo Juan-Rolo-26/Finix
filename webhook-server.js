@@ -1,38 +1,70 @@
 const express = require('express');
 const { exec } = require('child_process');
+const crypto = require('crypto');
 
 const app = express();
-const port = 4000;
+const port = Number(process.env.WEBHOOK_PORT || 4000);
+const webhookSecret = process.env.WEBHOOK_SECRET || '';
 
 app.use(express.json());
 
+let isDeploying = false;
+
+app.get('/health', (_req, res) => {
+    res.status(200).json({ status: 'ok', service: 'finix-webhook-server', isDeploying });
+});
+
 app.post('/webhook', (req, res) => {
-    const branch = req.body.ref;
+    // Si se configuró WEBHOOK_SECRET, verificar encabezado de GitHub o token
+    if (webhookSecret) {
+        const ghSig = req.headers['x-hub-signature-256'];
+        const customToken = req.headers['x-webhook-secret'] || req.query.secret;
 
-    // Solo reaccionamos si el push ocurre en la rama 'main'
-    if (branch === 'refs/heads/main') {
-        console.log(`[${new Date().toISOString()}] Push detectado en main. Iniciando deploy de Finix...`);
+        if (ghSig) {
+            const hmac = crypto.createHmac('sha256', webhookSecret);
+            const digest = 'sha256=' + hmac.update(JSON.stringify(req.body)).digest('hex');
+            if (ghSig !== digest) {
+                console.warn('[Webhook] Firma de GitHub inválida.');
+                return res.status(403).json({ error: 'Firma no autorizada' });
+            }
+        } else if (customToken !== webhookSecret) {
+            console.warn('[Webhook] Token secreto no coincide.');
+            return res.status(403).json({ error: 'Token no autorizado' });
+        }
+    }
 
-        // Ejecutar el deploy.sh asincrónicamente
-        exec('./deploy.sh', { cwd: '/var/www/finix' }, (error, stdout, stderr) => {
+    const branch = req.body?.ref;
+
+    // Aceptamos push a rama 'main' o llamada manual
+    if (!branch || branch === 'refs/heads/main') {
+        if (isDeploying) {
+            console.log(`[${new Date().toISOString()}] Ya hay un despliegue en ejecución. Solicitud omitida.`);
+            return res.status(429).json({ message: 'Despliegue ya en curso. Intentá de nuevo en unos minutos.' });
+        }
+
+        console.log(`[${new Date().toISOString()}] Push detectado en main. Iniciando bash deploy.sh...`);
+        isDeploying = true;
+
+        // Responder rápido a GitHub/cliente para evitar timeout (30s)
+        res.status(200).json({ status: 'success', message: 'Webhook recibido. Despliegue iniciado.' });
+
+        exec('bash deploy.sh', { cwd: '/var/www/finix' }, (error, stdout, stderr) => {
+            isDeploying = false;
             if (error) {
-                console.error(`Error en deploy: ${error.message}`);
+                console.error(`[${new Date().toISOString()}] ❌ Error en deploy: ${error.message}`);
                 return;
             }
             if (stderr) {
-                console.error(`Logs (stderr): ${stderr}`);
+                console.warn(`[${new Date().toISOString()}] Logs de advertencia:\n${stderr}`);
             }
-            console.log(`Resultado exitoso:\n${stdout}`);
-            console.log('----- DEPLOY COMPLETADO -----');
+            console.log(`[${new Date().toISOString()}] ✅ Resultado exitoso:\n${stdout}`);
+            console.log('================ DEPLOY COMPLETADO ================');
         });
-
-        // Respondemos rápidamente a GitHub para que no dé timeout
-        res.status(200).send('Webhook recibido. Deploy en proceso...');
     } else {
-        res.status(200).send('Ignorando push (no es la rama main).');
+        res.status(200).json({ status: 'ignored', message: `Rama ${branch} ignorada (solo main).` });
     }
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
     console.log(`Finix Webhook Server corriendo en el puerto ${port}...`);
 });

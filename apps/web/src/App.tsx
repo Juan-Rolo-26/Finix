@@ -5,6 +5,7 @@ import { usePreferencesStore } from './stores/preferencesStore';
 import { supabase } from './lib/supabase';
 import DashboardLayout from './layouts/DashboardLayout';
 import InstallBanner from './components/InstallBanner';
+import CookieConsent from './components/CookieConsent';
 
 // ─── Lazy Loaded Pages ────────────────────────────────────────────────────────
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -110,6 +111,7 @@ export default function App() {
     return (
         <>
             <InstallBanner />
+            <CookieConsent />
             <ThemeApplier />
             <Suspense
                 fallback={

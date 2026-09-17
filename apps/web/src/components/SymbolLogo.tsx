@@ -13,7 +13,6 @@ export function SymbolLogo({ symbol, size = 32, className }: SymbolLogoProps) {
     const [idx, setIdx] = useState(0);
     const [failed, setFailed] = useState(false);
 
-    const radius = Math.round(size * 0.28);
     const letter = ticker.replace(/USD(T)?$/, '').slice(0, 1).toUpperCase();
 
     const handleError = () => {
@@ -32,9 +31,11 @@ export function SymbolLogo({ symbol, size = 32, className }: SymbolLogoProps) {
                     width: size,
                     height: size,
                     fontSize: size * 0.38,
-                    borderRadius: radius,
-                    background: 'hsl(var(--primary) / 0.15)',
+                    borderRadius: '50%',
+                    background: 'hsl(var(--primary) / 0.12)',
                     color: 'hsl(var(--primary))',
+                    border: '1px solid rgba(0, 0, 0, 0.25)',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                 }}
             >
                 {letter}
@@ -52,10 +53,13 @@ export function SymbolLogo({ symbol, size = 32, className }: SymbolLogoProps) {
             style={{
                 width: size,
                 height: size,
-                borderRadius: radius,
+                borderRadius: '50%',
                 objectFit: 'contain',
                 flexShrink: 0,
                 background: 'hsl(var(--card))',
+                border: '1px solid rgba(0, 0, 0, 0.25)',
+                padding: '2px',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             }}
         />
     );

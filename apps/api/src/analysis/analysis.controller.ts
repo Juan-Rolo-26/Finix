@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AnalysisService } from './analysis.service';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
 
@@ -6,9 +6,15 @@ import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
 export class AnalysisController {
     constructor(private readonly analysisService: AnalysisService) { }
 
+    @UseGuards(OptionalJwtAuthGuard)
     @Get()
-    async getPublicList() {
-        return this.analysisService.getPublicList();
+    async getPublicList(@Req() req: any) {
+        return this.analysisService.getPublicList(req.user);
+    }
+
+    @Get('tradingview/fetch')
+    async fetchTradingView(@Query('symbol') symbol: string) {
+        return this.analysisService.fetchTradingViewAssetData(symbol);
     }
 
     @UseGuards(OptionalJwtAuthGuard)
@@ -22,3 +28,4 @@ export class AnalysisController {
         return this.analysisService.seedAppleSample('system');
     }
 }
+

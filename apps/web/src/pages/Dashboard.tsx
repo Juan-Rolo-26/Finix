@@ -137,7 +137,7 @@ function SideCard({ title, icon, iconColor, iconBg, to, toLabel, children, index
             custom={index}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0, transition: { delay: index * 0.08, duration: 0.35, ease: 'easeOut' } }}
-            className="rounded-2xl overflow-hidden"
+            className="rounded-2xl overflow-hidden shrink-0"
             style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border) / 0.5)' }}
         >
             <div className="flex items-center justify-between px-4 pt-4 pb-3">
@@ -185,6 +185,117 @@ function getCachedFeed(tab: string) {
     return [];
 }
 
+/* ── Dynamic News Headlines Card ────────────────────────────────── */
+interface HeadlineItem {
+    id: string;
+    slotId?: string;
+    slotKey?: string;
+    title: string;
+    description?: string;
+    imageUrl?: string;
+    url?: string;
+    sourceName: string;
+    publishedAt?: string;
+    category: string;
+    categorySlug: string;
+    categoryColor: string;
+}
+
+function formatHeadlineTime(dateStr?: string) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
+    if (diffMin < 1) return 'Hace instantes';
+    if (diffMin < 60) return `Hace ${diffMin}m`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `Hace ${diffH}h`;
+    const diffD = Math.floor(diffH / 24);
+    if (diffD === 1) return 'Ayer';
+    if (diffD < 7) return `Hace ${diffD}d`;
+    return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
+}
+
+function HeadlinesCard({
+    headlines,
+    isLoading,
+    onNavigate,
+}: {
+    headlines: HeadlineItem[];
+    isLoading: boolean;
+    onNavigate: (path: string) => void;
+}) {
+    return (
+        <SideCard
+            index={2}
+            title="Titulares del día"
+            icon={<Newspaper className="w-4 h-4" />}
+            iconColor="hsl(215 90% 65%)"
+            iconBg="hsl(215 90% 65% / 0.15)"
+            to="/news"
+            toLabel="Noticias"
+        >
+            <div className="px-5 pb-5 pt-1">
+                {isLoading ? (
+                    <div className="space-y-4 py-2">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="animate-pulse space-y-2">
+                                <div className="h-2.5 bg-muted/60 rounded w-16" />
+                                <div className="h-3.5 bg-muted/80 rounded w-full" />
+                                <div className="h-2.5 bg-muted/40 rounded w-24" />
+                            </div>
+                        ))}
+                    </div>
+                ) : headlines.length === 0 ? (
+                    <div className="py-6 text-center flex flex-col items-center justify-center">
+                        <Newspaper className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                        <p className="text-[12.5px] font-semibold text-muted-foreground">Sin titulares publicados</p>
+                        <p className="text-[11px] text-muted-foreground/60 mt-0.5">El contenido se publica desde el panel editorial.</p>
+                        <button
+                            onClick={() => onNavigate('/news')}
+                            className="mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold bg-secondary/80 hover:bg-secondary text-foreground transition-all"
+                        >
+                            Ver sección Noticias
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-3.5">
+                        {headlines.map((item) => (
+                            <div
+                                key={item.id}
+                                className="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition-opacity group"
+                                onClick={() => {
+                                    if (item.slotId) {
+                                        apiFetch(`/news/slots/${item.slotId}/click`, { method: 'POST' }).catch(() => {});
+                                    }
+                                    if (item.categorySlug) {
+                                        onNavigate(`/news?category=${item.categorySlug}`);
+                                    } else {
+                                        onNavigate('/news');
+                                    }
+                                }}
+                            >
+                                <span
+                                    className="text-[10px] font-bold tracking-wider uppercase transition-opacity"
+                                    style={{ color: item.categoryColor || 'hsl(var(--primary))' }}
+                                >
+                                    {item.category}
+                                </span>
+                                <h4 className="text-[13px] font-semibold leading-snug group-hover:text-primary transition-colors line-clamp-2">
+                                    {item.title}
+                                </h4>
+                                <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>
+                                    {formatHeadlineTime(item.publishedAt)}{item.sourceName ? ` · ${item.sourceName}` : ''}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </SideCard>
+    );
+}
+
 /* ── Main Dashboard ─────────────────────────────────────────────── */
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -199,6 +310,9 @@ export default function Dashboard() {
     const [isLosersError, setIsLosersError] = useState<boolean>(false);
     const [losersStale, setLosersStale] = useState<boolean>(false);
     const [losersDate, setLosersDate] = useState<string>('');
+
+    const [headlines, setHeadlines] = useState<HeadlineItem[]>([]);
+    const [isHeadlinesLoading, setIsHeadlinesLoading] = useState<boolean>(true);
 
     const [activeTab, setActiveTab] = useState<FeedTab>('general');
     const [posts, setPosts] = useState<any[]>(() => getCachedFeed('general'));
@@ -255,9 +369,23 @@ export default function Dashboard() {
             });
     };
 
+    const fetchHeadlines = () => {
+        setIsHeadlinesLoading(true);
+        apiFetch('/news/slots/headlines')
+            .then(r => r.ok ? r.json() : [])
+            .then(data => {
+                if (Array.isArray(data)) setHeadlines(data);
+            })
+            .catch(() => {})
+            .finally(() => {
+                setIsHeadlinesLoading(false);
+            });
+    };
+
     useEffect(() => {
         fetchTopGainers();
         fetchTopLosers();
+        fetchHeadlines();
     }, []);
 
     // Fetch posts when tab changes with instant cache and background revalidation
@@ -372,42 +500,19 @@ export default function Dashboard() {
 
                     {/* News / Pulse (lg only, moved to right on 2xl) */}
                     <div className="2xl:hidden">
-                        <SideCard
-                            index={2}
-                            title="Noticias y pulso"
-                            icon={<Newspaper className="w-4 h-4" />}
-                            iconColor="hsl(215 90% 65%)"
-                            iconBg="hsl(215 90% 65% / 0.15)"
-                            to="/news"
-                            toLabel="Abrir"
-                        >
-                            <div className="px-5 pb-4 pt-1">
-                                <p className="text-[13px] leading-relaxed mb-3" style={{ color: 'hsl(var(--muted-foreground) / 0.8)' }}>
-                                    Mercados, cripto y economía. Mantente un paso adelante.
-                                </p>
-                                <button onClick={() => navigate('/news')} className="w-full py-2.5 rounded-xl text-[12.5px] font-bold text-white transition-all hover:opacity-90"
-                                    style={{ background: 'linear-gradient(135deg, hsl(215 90% 55%), hsl(280 65% 55%))' }}>
-                                    Leer titulares
-                                </button>
-                            </div>
-                        </SideCard>
+                        <HeadlinesCard
+                            headlines={headlines}
+                            isLoading={isHeadlinesLoading}
+                            onNavigate={navigate}
+                        />
                     </div>
 
                     {/* Calendario Finix */}
                     <CalendarPreviewCard />
 
-                    {/* Enlaces de información y legales colocados debajo de Calendario */}
-                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] font-medium px-2 pt-1 pb-4" style={{ color: 'hsl(var(--muted-foreground) / 0.65)' }}>
-                        <Link to="/about" className="hover:text-primary transition-colors">Sobre Finix</Link>
-                        <span className="opacity-30">·</span>
-                        <Link to="/help" className="hover:text-primary transition-colors">Ayuda</Link>
-                        <span className="opacity-30">·</span>
-                        <Link to="/terms" className="hover:text-primary transition-colors">Términos</Link>
-                        <span className="opacity-30">·</span>
-                        <Link to="/privacy" className="hover:text-primary transition-colors">Privacidad</Link>
-                        <span className="opacity-30">·</span>
-                        <Link to="/cookies" className="hover:text-primary transition-colors">Cookies</Link>
-                        <div className="w-full mt-1.5 text-[10.5px] opacity-40">© 2026 Finix Network Inc.</div>
+                    {/* Enlaces de información y legales en columna media solo cuando la columna 2xl está oculta */}
+                    <div className="2xl:hidden">
+                        <DashboardFooter />
                     </div>
                 </aside>
 
@@ -425,41 +530,66 @@ export default function Dashboard() {
                     />
 
                     {/* Dedicated News Card for 2xl */}
-                    <SideCard
-                        index={2}
-                        title="Titulares del día"
-                        icon={<Newspaper className="w-4 h-4" />}
-                        iconColor="hsl(215 90% 65%)"
-                        iconBg="hsl(215 90% 65% / 0.15)"
-                        to="/news"
-                        toLabel="Noticias"
-                    >
-                        <div className="px-5 pb-5 pt-1 space-y-4">
-                            <div className="flex flex-col gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/news')}>
-                                <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: 'hsl(280 65% 65%)' }}>MARKETS</span>
-                                <h4 className="text-[13.5px] font-semibold leading-snug">El S&P 500 alcanza nuevo máximo histórico impulsado por tech</h4>
-                                <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>Hace 2h · Bloomberg</span>
-                            </div>
-                            <div className="flex flex-col gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/news')}>
-                                <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: 'hsl(38 88% 52%)' }}>CRYPTO</span>
-                                <h4 className="text-[13.5px] font-semibold leading-snug">Bitcoin consolida sobre resistencia clave, analistas prevén rally</h4>
-                                <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>Hace 5h · CoinDesk</span>
-                            </div>
-                            <div className="flex flex-col gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/news')}>
-                                <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: 'hsl(200 90% 60%)' }}>ECONOMÍA</span>
-                                <h4 className="text-[13.5px] font-semibold leading-snug">La Fed sugiere un recorte de tasas más leve en la próxima reunión</h4>
-                                <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>Hace 8h · Reuters</span>
-                            </div>
-                            <div className="flex flex-col gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/news')}>
-                                <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: 'hsl(350 75% 65%)' }}>EMPRESAS</span>
-                                <h4 className="text-[13.5px] font-semibold leading-snug">Nvidia anuncia resultados trimestrales récord y sorprende al mercado</h4>
-                                <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>Hace 11h · WSJ</span>
-                            </div>
-                        </div>
-                    </SideCard>
+                    <HeadlinesCard
+                        headlines={headlines}
+                        isLoading={isHeadlinesLoading}
+                        onNavigate={navigate}
+                    />
+
+                    {/* Botones de Telegram, Instagram y enlaces directamente debajo de Noticias */}
+                    <DashboardFooter />
                 </aside>
 
             </div>
+        </div>
+    );
+}
+
+function DashboardFooter() {
+    return (
+        <div className="flex flex-col items-center justify-center text-center gap-2.5 px-2 pt-1 pb-4 shrink-0" style={{ color: 'hsl(var(--muted-foreground) / 0.65)' }}>
+            {/* Redes Sociales / Comunidad */}
+            <div className="flex items-center justify-center gap-2 pt-0.5">
+                <a
+                    href="https://t.me/Finixcomunidad"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/20 hover:text-sky-300 transition-all text-[11.5px] font-semibold shadow-2xs cursor-pointer"
+                    title="Comunidad oficial en Telegram"
+                >
+                    <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                    </svg>
+                    <span>Telegram</span>
+                </a>
+                <a
+                    href="https://instagram.com/finixarg_"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 hover:bg-pink-500/20 hover:text-pink-300 transition-all text-[11.5px] font-semibold shadow-2xs cursor-pointer"
+                    title="Instagram oficial"
+                >
+                    <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                    <span>Instagram</span>
+                </a>
+            </div>
+
+            {/* Enlaces de información y legales */}
+            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] font-medium text-center">
+                <Link to="/about" className="hover:text-primary transition-colors">Sobre Finix</Link>
+                <span className="opacity-30">·</span>
+                <Link to="/help" className="hover:text-primary transition-colors">Ayuda</Link>
+                <span className="opacity-30">·</span>
+                <Link to="/terms" className="hover:text-primary transition-colors">Términos</Link>
+                <span className="opacity-30">·</span>
+                <Link to="/privacy" className="hover:text-primary transition-colors">Privacidad</Link>
+                <span className="opacity-30">·</span>
+                <Link to="/cookies" className="hover:text-primary transition-colors">Cookies</Link>
+            </div>
+
+            <div className="w-full text-center text-[10.5px] opacity-50 font-medium">© 2026 Finix Network Inc.</div>
         </div>
     );
 }

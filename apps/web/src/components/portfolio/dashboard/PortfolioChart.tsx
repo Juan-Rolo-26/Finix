@@ -56,34 +56,51 @@ export function PortfolioChart({
 }: PortfolioChartProps) {
     const gradientId = useId().replace(/:/g, '-');
     const activeData = dataByRange[selectedRange] ?? [];
+    const safeActiveData = useMemo(() => {
+        const valid = (activeData ?? []).filter((p): p is PortfolioValuePoint => Boolean(p && typeof p.portfolio === 'number' && Number.isFinite(p.portfolio)));
+        if (valid.length === 1) {
+            // Duplicate point slightly before to allow Recharts to draw an area
+            return [{ ...valid[0], date: 'Inicio' }, valid[0]];
+        }
+        return valid;
+    }, [activeData]);
 
     const summary = useMemo(() => {
-        const first = activeData[0];
-        const last = activeData[activeData.length - 1];
+        const first = safeActiveData[0];
+        const last = safeActiveData[safeActiveData.length - 1];
 
         if (!first || !last) {
-            return { currentValue: 0, absoluteChange: 0, percentChange: 0, minValue: 0, maxValue: 0 };
+            return { currentValue: 0, absoluteChange: 0, percentChange: 0, minValue: 0, maxValue: 100 };
         }
 
         const absoluteChange = last.portfolio - first.portfolio;
         const percentChange = first.portfolio > 0 ? (absoluteChange / first.portfolio) * 100 : 0;
+        const portfolioValues = safeActiveData.map((p) => p.portfolio).filter(Number.isFinite);
+        const minValue = portfolioValues.length ? Math.min(...portfolioValues) : 0;
+        const maxValue = portfolioValues.length ? Math.max(...portfolioValues) : 100;
 
         return {
             currentValue: last.portfolio,
             absoluteChange,
             percentChange,
-            minValue: Math.min(...activeData.map((p) => p.portfolio)),
-            maxValue: Math.max(...activeData.map((p) => p.portfolio)),
+            minValue,
+            maxValue,
         };
-    }, [activeData]);
+    }, [safeActiveData]);
 
     const isPositive = summary.absoluteChange >= 0;
 
-    const chartDomain = useMemo(() => {
-        if (!activeData.length) return [0, 0];
-        const padding = Math.max((summary.maxValue - summary.minValue) * 0.18, summary.currentValue * 0.04, 250);
-        return [Math.max(0, Math.floor(summary.minValue - padding)), Math.ceil(summary.maxValue + padding)];
-    }, [activeData.length, summary]);
+    const chartDomain = useMemo<[number, number]>(() => {
+        if (!safeActiveData.length) return [0, 100];
+        const span = Math.max(summary.maxValue - summary.minValue, 10);
+        const padding = Math.max(span * 0.18, summary.currentValue * 0.04, 50);
+        const minDomain = Math.max(0, Math.floor(summary.minValue - padding));
+        const maxDomain = Math.ceil(summary.maxValue + padding);
+        return [
+            Number.isFinite(minDomain) ? minDomain : 0,
+            Number.isFinite(maxDomain) && maxDomain > minDomain ? maxDomain : minDomain + 100,
+        ];
+    }, [safeActiveData.length, summary]);
 
     const strokeColor = isPositive ? '#10b981' : '#f87171';
     const fillColor = isPositive ? '#10b981' : '#f87171';
@@ -162,10 +179,10 @@ export function PortfolioChart({
             </div>
 
             {/* Chart */}
-            {activeData.length > 0 ? (
+            {safeActiveData.length > 0 ? (
                 <div className="h-[330px] w-full px-3 pb-5 pt-3 sm:h-[350px] sm:px-4 sm:pb-6">
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={activeData} margin={{ top: 18, right: 16, bottom: 4, left: 0 }}>
+                        <AreaChart data={safeActiveData} margin={{ top: 18, right: 16, bottom: 4, left: 0 }}>
                             <defs>
                                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0%" stopColor={fillColor} stopOpacity={0.28} />

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore, isJuanUser } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
 import { ProGate } from "@/components/ProGate";
 import {
@@ -26,6 +26,11 @@ import {
   ChevronDown,
   Search,
   SortAsc,
+  Trophy,
+  PieChart,
+  Wallet,
+  X,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +62,7 @@ import { cn } from "@/lib/utils";
 import { AddTransactionModal } from "@/components/portfolio/AddTransactionModal";
 import { PortfolioAdvancedMetrics } from "@/components/portfolio/AdvancedDiversification";
 import { PortfolioDashboard } from "@/components/portfolio/dashboard/PortfolioDashboard";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { AssetRowInfo } from "@/components/AssetBadge";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -90,6 +96,11 @@ interface Asset {
   precioActual?: number;
   createdAt: string;
   value?: number;
+  isCedear?: boolean;
+  cedearRatio?: number | null;
+  underlyingTicker?: string | null;
+  underlyingExchange?: string | null;
+  variacionDiaria?: number | null;
 }
 
 interface CashAccount {
@@ -139,24 +150,27 @@ const getInitialPortfolioForm = () => ({
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 function fmtCurrency(amount: number, currency = "USD") {
+  const safe = typeof amount === "number" && Number.isFinite(amount) ? amount : 0;
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(safe);
 }
 
 function fmtPct(value: number) {
-  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+  const safe = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  return `${safe >= 0 ? "+" : ""}${safe.toFixed(2)}%`;
 }
 
 function fmtCompact(value: number, currency = "USD") {
-  const abs = Math.abs(value);
-  const sign = value < 0 ? "-" : "";
+  const safe = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  const abs = Math.abs(safe);
+  const sign = safe < 0 ? "-" : "";
   if (abs >= 1_000_000) return `${sign}${currency} ${(abs / 1_000_000).toFixed(2)}M`;
   if (abs >= 1_000) return `${sign}${currency} ${(abs / 1_000).toFixed(1)}K`;
-  return fmtCurrency(value, currency);
+  return fmtCurrency(safe, currency);
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -176,20 +190,41 @@ function PrivacyBadge({ mode }: { mode: PrivacyMode }) {
   );
 }
 
-function StatPill({ label, value, delta, positive, currency }: {
-  label: string; value: number; delta?: number; positive: boolean; currency: string;
+function StatCard({
+  label,
+  value,
+  delta,
+  positive,
+  currency,
+  icon: Icon,
+  hideValues,
+}: {
+  label: string;
+  value: number;
+  delta?: number;
+  positive?: boolean;
+  currency: string;
+  icon?: any;
+  hideValues?: boolean;
 }) {
+  const isPos = positive ?? (delta !== undefined ? delta >= 0 : true);
   return (
-    <div className="flex flex-col gap-0.5">
-      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
-      <p className={cn("text-2xl font-extrabold tracking-tight tabular-nums", positive ? "text-emerald-400" : "text-red-400")}>
-        {fmtCompact(value, currency)}
-      </p>
-      {delta !== undefined && (
-        <span className={cn("text-[11px] font-bold", positive ? "text-emerald-500" : "text-red-500")}>
-          {fmtPct(delta)}
-        </span>
-      )}
+    <div className="flex-1 min-w-[150px] rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md px-4 py-3.5 shadow-xs transition-all hover:border-border/80">
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+        {Icon && <Icon className="w-4 h-4 text-muted-foreground/60" />}
+      </div>
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <p className="text-xl sm:text-2xl font-black tracking-tight tabular-nums text-foreground">
+          {hideValues ? "••••••" : fmtCompact(value, currency)}
+        </p>
+        {delta !== undefined && (
+          <span className={cn("text-xs font-bold flex items-center gap-0.5", isPos ? "text-emerald-500" : "text-red-500")}>
+            {isPos ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+            {fmtPct(delta)}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -210,8 +245,20 @@ function normalizeTickerSymbol(ticker: string): string {
   return t;
 }
 
-function AssetRow({ asset, totalPortfolioValue, currency, onSell }: {
-  asset: Asset; totalPortfolioValue: number; currency: string; onSell: () => void;
+function AssetRow({
+  asset,
+  totalPortfolioValue,
+  currency,
+  onSell,
+  onBuy,
+  hideValues,
+}: {
+  asset: Asset;
+  totalPortfolioValue: number;
+  currency: string;
+  onSell: () => void;
+  onBuy: () => void;
+  hideValues?: boolean;
 }) {
   const price = asset.precioActual ?? asset.ppc;
   const currentValue = asset.value ?? asset.cantidad * price;
@@ -224,49 +271,78 @@ function AssetRow({ asset, totalPortfolioValue, currency, onSell }: {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group flex items-center gap-4 rounded-2xl border border-transparent px-4 py-3.5 transition-all hover:border-border/60 hover:bg-card/50"
+      className="group flex flex-col md:grid md:grid-cols-[1fr_80px_100px_110px_90px] items-start md:items-center gap-3 rounded-2xl border border-border/40 hover:border-border/80 bg-card/40 hover:bg-card/90 px-4 py-3.5 transition-all shadow-2xs hover:shadow-xs"
     >
-      {/* Logo + Exchange + Name */}
-      <AssetRowInfo
-        symbol={symbol}
-        subtext={`${asset.cantidad.toFixed(4)} unid. · PPC ${fmtCurrency(asset.ppc, currency)}`}
-        size="md"
-        showLivePrice={false}
-        className="flex-1 min-w-0"
-      />
-
-      {/* Weight bar */}
-      <div className="hidden sm:flex flex-col items-end gap-1 w-20">
-        <span className="text-[10px] text-muted-foreground font-medium">{weight.toFixed(1)}%</span>
-        <div className="w-full h-1 rounded-full bg-border/50">
-          <div className="h-full rounded-full bg-primary/60" style={{ width: `${Math.min(weight, 100)}%` }} />
+      {/* 1: Logo + Exchange + Name */}
+      <div className="w-full md:w-auto min-w-0 flex items-center justify-between md:justify-start">
+        <AssetRowInfo
+          symbol={symbol}
+          subtext={`${asset.cantidad.toFixed(4)} unid. · PPC ${fmtCurrency(asset.ppc, currency)}${
+            asset.cedearRatio ? ` · Ratio ${asset.cedearRatio}:1 (${asset.underlyingTicker || ''})` : ''
+          }`}
+          size="md"
+          showLivePrice={false}
+          className="flex-1 min-w-0"
+        />
+        {/* Mobile-only value preview */}
+        <div className="flex md:hidden flex-col items-end shrink-0 pl-2">
+          <p className="text-sm font-bold tabular-nums">
+            {hideValues ? "••••••" : fmtCompact(currentValue, currency)}
+          </p>
+          <span className={cn("text-xs font-bold flex items-center gap-0.5", isUp ? "text-emerald-500" : "text-red-500")}>
+            {isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+            {fmtPct(pct)}
+          </span>
         </div>
       </div>
 
-      {/* Price */}
-      <div className="hidden md:block text-right min-w-[80px]">
-        <p className="text-[13px] font-semibold tabular-nums">{fmtCurrency(price, currency)}</p>
-        <p className="text-[10px] text-muted-foreground">precio actual</p>
+      {/* 2: Weight bar */}
+      <div className="hidden md:flex flex-col items-end gap-1 w-full">
+        <span className="text-[11px] text-muted-foreground font-semibold tabular-nums">{weight.toFixed(1)}%</span>
+        <div className="w-full h-1.5 rounded-full bg-border/50 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary"
+            style={{ width: `${Math.min(weight, 100)}%` }}
+          />
+        </div>
       </div>
 
-      {/* Value */}
-      <div className="text-right min-w-[90px]">
-        <p className="text-[14px] font-bold tabular-nums">{fmtCompact(currentValue, currency)}</p>
-        <p className={cn("text-[11px] font-semibold", isUp ? "text-emerald-500" : "text-red-500")}>
+      {/* 3: Price */}
+      <div className="hidden md:block text-right w-full">
+        <p className="text-[13px] font-semibold tabular-nums text-foreground">{fmtCurrency(price, currency)}</p>
+        <p className="text-[10px] text-muted-foreground font-medium">cotización</p>
+      </div>
+
+      {/* 4: Value & PnL */}
+      <div className="hidden md:block text-right w-full">
+        <p className="text-[14px] font-bold tabular-nums text-foreground">
+          {hideValues ? "••••••" : fmtCompact(currentValue, currency)}
+        </p>
+        <p className={cn("text-[11px] font-bold flex items-center justify-end gap-0.5", isUp ? "text-emerald-500" : "text-red-500")}>
           {isUp ? <ArrowUpRight className="inline w-3 h-3" /> : <ArrowDownRight className="inline w-3 h-3" />}
           {fmtPct(pct)}
         </p>
       </div>
 
-      {/* Actions */}
-      <button
-        onClick={onSell}
-        className="hidden group-hover:flex items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-red-400 transition-colors hover:bg-red-500/20 shrink-0"
-      >
-        <Minus className="w-3 h-3" /> Vender
-      </button>
+      {/* 5: Quick actions (Mobile & Desktop) */}
+      <div className="w-full md:w-auto flex items-center justify-end gap-1.5 pt-2 md:pt-0 border-t md:border-t-0 border-border/30 shrink-0">
+        <button
+          onClick={onBuy}
+          title={`Comprar más ${asset.ticker}`}
+          className="flex-1 md:flex-none inline-flex items-center justify-center gap-1 h-7 px-2.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-all cursor-pointer"
+        >
+          <Plus className="w-3 h-3" /> <span className="md:hidden">Comprar</span>
+        </button>
+        <button
+          onClick={onSell}
+          title={`Vender ${asset.ticker}`}
+          className="flex-1 md:flex-none inline-flex items-center justify-center gap-1 h-7 px-2.5 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[11px] font-bold transition-all cursor-pointer"
+        >
+          <Minus className="w-3 h-3" /> <span className="md:hidden">Vender</span>
+        </button>
+      </div>
     </motion.div>
   );
 }
@@ -356,7 +432,7 @@ const PortfolioPage = () => {
   const t = useTranslation();
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const isPro = (user as any)?.plan === 'PRO' || (user as any)?.accountType === 'PRO' || (user as any)?.role === 'ADMIN' || (user as any)?.isPro || (user as any)?.subscriptionTier === 'pro';
+  const isPro = (user as any)?.plan === 'PRO' || (user as any)?.accountType === 'PRO' || (user as any)?.role === 'ADMIN' || (user as any)?.isPro || (user as any)?.subscriptionTier === 'pro' || isJuanUser(user);
 
   if (!isPro) {
       return (
@@ -390,35 +466,19 @@ const PortfolioPage = () => {
   const [assetSearch, setAssetSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("value");
   const [activityFilter, setActivityFilter] = useState<string>("all");
+  const [assetClassFilter, setAssetClassFilter] = useState<string>("all");
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   // Currency
   const [viewCurrency, setViewCurrency] = useState<"ARS" | "USD" | null>(null);
   const [mepRate, setMepRate] = useState<number | null>(null);
+  const [cclRate, setCclRate] = useState<number | null>(null);
+  const [rateUpdatedAt, setRateUpdatedAt] = useState<string | null>(null);
 
   // Forms
   const [portfolioForm, setPortfolioForm] = useState(getInitialPortfolioForm);
 
   // ── Data loading ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    void loadPortfolios();
-    apiFetch("/market/dolar/mep")
-      .then((r) => r.json())
-      .then((d) => setMepRate(d.venta || d.compra || null))
-      .catch(() => null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (selectedPortfolio?.id) {
-      void loadMetrics(selectedPortfolio.id);
-      void loadMovements(selectedPortfolio.id);
-      return;
-    }
-    setMetrics(null);
-    setMovements([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPortfolio?.id]);
-
   const loadPortfolios = useCallback(async (preferredId?: string) => {
     setLoading(true);
     try {
@@ -447,6 +507,48 @@ const PortfolioPage = () => {
       setLoading(false);
     }
   }, []);
+
+  const loadRates = useCallback(async () => {
+    try {
+      const r = await apiFetch("/market/dolar/rates");
+      if (r.ok) {
+        const rates = await r.json();
+        if (Array.isArray(rates)) {
+          const mep = rates.find((rateItem: any) => rateItem.id === 'mep')?.sell;
+          const ccl = rates.find((rateItem: any) => rateItem.id === 'ccl')?.sell;
+          if (mep) setMepRate(mep);
+          if (ccl) setCclRate(ccl);
+          if (rates[0]?.updatedAt) setRateUpdatedAt(rates[0].updatedAt);
+        }
+      }
+    } catch {
+      // noop
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadPortfolios();
+    void loadRates();
+
+    const handleFocus = () => {
+      void loadPortfolios();
+      void loadRates();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [loadPortfolios, loadRates]);
+
+  useEffect(() => {
+    if (selectedPortfolio?.id) {
+      void loadMetrics(selectedPortfolio.id);
+      void loadMovements(selectedPortfolio.id);
+      return;
+    }
+    setMetrics(null);
+    setMovements([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPortfolio?.id]);
 
   const loadMetrics = async (id: string) => {
     try {
@@ -521,11 +623,12 @@ const PortfolioPage = () => {
   // ── Conversion ───────────────────────────────────────────────────────────────
   const activeCurrency = viewCurrency || selectedPortfolio?.monedaBase || "USD";
   const conversionRate = useMemo(() => {
-    if (!mepRate || !selectedPortfolio) return 1;
-    if (selectedPortfolio.monedaBase === "ARS" && activeCurrency === "USD") return 1 / mepRate;
-    if (selectedPortfolio.monedaBase === "USD" && activeCurrency === "ARS") return mepRate;
+    const fx = cclRate || mepRate;
+    if (!fx || !selectedPortfolio) return 1;
+    if (selectedPortfolio.monedaBase === "ARS" && activeCurrency === "USD") return 1 / fx;
+    if (selectedPortfolio.monedaBase === "USD" && activeCurrency === "ARS") return fx;
     return 1;
-  }, [mepRate, activeCurrency, selectedPortfolio?.monedaBase]);
+  }, [cclRate, mepRate, activeCurrency, selectedPortfolio?.monedaBase]);
 
   const { displayPortfolio, displayMetrics, displayMovements } = useMemo((): {
     displayPortfolio: Portfolio | null;
@@ -573,12 +676,46 @@ const PortfolioPage = () => {
   const currency = displayPortfolio?.monedaBase ?? "USD";
   const privacyMode: PrivacyMode = selectedPortfolio?.modoSocial ? "public" : "private";
 
+  // ── Asset filters & counts ───────────────────────────────────────────────────
+  const ASSET_CLASS_FILTERS = [
+    { id: "all", label: "Todos" },
+    { id: "acciones", label: "Acciones & CEDEARs" },
+    { id: "cripto", label: "Criptomonedas" },
+    { id: "bonos", label: "Bonos / Renta Fija" },
+    { id: "etf", label: "ETFs" },
+  ];
+
+  const assetClassCounts = useMemo(() => {
+    const assets = displayPortfolio?.assets ?? [];
+    const counts: Record<string, number> = { all: assets.length, acciones: 0, cripto: 0, bonos: 0, etf: 0 };
+    for (const a of assets) {
+      const t = (a.tipoActivo || "").toLowerCase();
+      if (t.includes("accion") || t.includes("cedear") || t.includes("stock") || t.includes("equity")) counts.acciones++;
+      else if (t.includes("cripto") || t.includes("crypto")) counts.cripto++;
+      else if (t.includes("bono") || t.includes("bond") || t.includes("fij")) counts.bonos++;
+      else if (t.includes("etf")) counts.etf++;
+    }
+    return counts;
+  }, [displayPortfolio?.assets]);
+
   // ── Asset processing ─────────────────────────────────────────────────────────
   const sortedAssets = useMemo(() => {
     const assets = displayPortfolio?.assets ?? [];
-    const filtered = assetSearch
-      ? assets.filter((a) => a.ticker.toLowerCase().includes(assetSearch.toLowerCase()))
+    let filtered = assetSearch.trim()
+      ? assets.filter((a) => a.ticker.toLowerCase().includes(assetSearch.trim().toLowerCase()))
       : assets;
+
+    if (assetClassFilter !== "all") {
+      filtered = filtered.filter((a) => {
+        const t = (a.tipoActivo || "").toLowerCase();
+        if (assetClassFilter === "acciones") return t.includes("accion") || t.includes("cedear") || t.includes("stock") || t.includes("equity");
+        if (assetClassFilter === "cripto") return t.includes("cripto") || t.includes("crypto");
+        if (assetClassFilter === "bonos") return t.includes("bono") || t.includes("bond") || t.includes("fij");
+        if (assetClassFilter === "etf") return t.includes("etf");
+        return true;
+      });
+    }
+
     return [...filtered].sort((a, b) => {
       const aPrice = a.precioActual ?? a.ppc;
       const bPrice = b.precioActual ?? b.ppc;
@@ -594,13 +731,44 @@ const PortfolioPage = () => {
       if (sortKey === "weight") return bVal - aVal;
       return 0;
     });
-  }, [displayPortfolio?.assets, assetSearch, sortKey]);
+  }, [displayPortfolio?.assets, assetSearch, assetClassFilter, sortKey]);
 
-  // ── Activity filter ──────────────────────────────────────────────────────────
+  // ── Activity filter & CSV export ─────────────────────────────────────────────
   const filteredMovements = useMemo(() =>
     activityFilter === "all" ? displayMovements : displayMovements.filter((m) => m.tipoMovimiento === activityFilter),
     [displayMovements, activityFilter]
   );
+
+  const exportMovementsCSV = () => {
+    if (!filteredMovements.length) return;
+    const headers = ["Fecha", "Tipo", "Ticker", "Clase", "Cantidad", "Precio", "Total", "Moneda"];
+    const rows = filteredMovements.map(m => [
+      `"${new Date(m.fecha).toLocaleDateString("es-AR")}"`,
+      `"${m.tipoMovimiento}"`,
+      `"${m.ticker}"`,
+      `"${m.claseActivo || ''}"`,
+      m.cantidad,
+      m.precio.toFixed(2),
+      m.total.toFixed(2),
+      `"${currency}"`
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `finix-movimientos-${selectedPortfolio?.nombre || 'portfolio'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleShare = () => {
+    if (selectedPortfolio) {
+      navigator.clipboard.writeText(`${window.location.origin}/portfolio?id=${selectedPortfolio.id}`);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    }
+  };
 
   const mask = (v: string) => hideValues ? "••••••" : v;
 
@@ -608,8 +776,13 @@ const PortfolioPage = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><PortfolioSkeleton /></div>;
 
   return (
-    <div className="min-h-screen pb-24">
-      <div className="max-w-[1400px] mx-auto px-4 md:px-6 xl:px-8 space-y-6 py-6">
+    <div className="min-h-screen pb-24 w-full">
+      <ErrorBoundary
+        fallbackTitle="Error al cargar el portafolio"
+        fallbackMessage="Ocurrió un problema al procesar los datos del portafolio. Podés reintentar recargar la vista."
+        onReset={() => window.location.reload()}
+      >
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 space-y-6 py-6">
 
         {/* ── HERO HEADER ──────────────────────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-3xl border border-border/60"
@@ -652,66 +825,103 @@ const PortfolioPage = () => {
                 </div>
 
                 {displayPortfolio && (
-                  <div className="flex flex-wrap gap-4 pt-1">
-                    <StatPill label="Activos" value={assetsValue} positive={true} currency={currency} />
-                    <div className="w-px h-10 bg-border/40 self-center" />
-                    <StatPill label="Efectivo" value={cashBalance} positive={true} currency={currency} />
-                    <div className="w-px h-10 bg-border/40 self-center" />
-                    <StatPill label="G/P Total" value={pnl} delta={pnlPct} positive={pnl >= 0} currency={currency} />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
+                    <StatCard
+                      label="Total en Activos"
+                      value={assetsValue}
+                      positive={true}
+                      currency={currency}
+                      icon={BarChart3}
+                      hideValues={hideValues}
+                    />
+                    <StatCard
+                      label="Efectivo Disponible"
+                      value={cashBalance}
+                      positive={true}
+                      currency={currency}
+                      icon={Wallet}
+                      hideValues={hideValues}
+                    />
+                    <StatCard
+                      label="G/P Total"
+                      value={pnl}
+                      delta={pnlPct}
+                      positive={pnl >= 0}
+                      currency={currency}
+                      icon={pnl >= 0 ? TrendingUp : TrendingDown}
+                      hideValues={hideValues}
+                    />
                   </div>
                 )}
               </div>
 
-              {/* Right: actions */}
-              <div className="flex flex-col gap-2 shrink-0">
+              {/* Right: actions toolbar */}
+              <div className="flex flex-col sm:items-end gap-3 shrink-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Hide values */}
-                  <button onClick={() => setHideValues(!hideValues)}
-                    className="w-9 h-9 rounded-xl border border-border/60 bg-card/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-border transition-colors"
-                    title={hideValues ? "Mostrar valores" : "Ocultar valores"}>
+                  <button
+                    onClick={() => setHideValues(!hideValues)}
+                    className={cn(
+                      "h-9 px-3 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer",
+                      hideValues
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border/60 bg-card/60 text-muted-foreground hover:text-foreground hover:border-border"
+                    )}
+                    title={hideValues ? "Mostrar saldos" : "Ocultar saldos"}
+                  >
                     {hideValues ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <span className="hidden sm:inline">{hideValues ? "Oculto" : "Visible"}</span>
                   </button>
 
                   {/* Currency toggle */}
-                  {mepRate && displayPortfolio && (
-                    <button onClick={() => setViewCurrency(activeCurrency === "ARS" ? "USD" : "ARS")}
-                      className="h-9 rounded-xl border border-border/60 bg-card/60 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
-                      title={`MEP ref: $${mepRate.toFixed(0)}`}>
-                      {activeCurrency === "ARS" ? "USD" : "ARS"} <RefreshCw className="inline w-3 h-3 ml-1" />
+                  {(cclRate || mepRate) && displayPortfolio && (
+                    <button
+                      onClick={() => setViewCurrency(activeCurrency === "ARS" ? "USD" : "ARS")}
+                      className="h-9 rounded-xl border border-border/60 bg-card/60 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors flex items-center gap-2 cursor-pointer shadow-2xs"
+                      title={`CCL: $${cclRate ?? mepRate} · MEP: $${mepRate ?? 'N/A'}${rateUpdatedAt ? ` · Cotización al día` : ''}`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      <span>{activeCurrency === "ARS" ? "USD" : "ARS"}</span>
+                      <RefreshCw className="w-3 h-3 opacity-70" />
                     </button>
                   )}
 
                   {/* Privacy toggle */}
                   {selectedPortfolio && (
-                    <button onClick={() => updateVisibility(!selectedPortfolio.modoSocial)}
+                    <button
+                      onClick={() => updateVisibility(!selectedPortfolio.modoSocial)}
                       disabled={isUpdatingVisibility}
-                      className="h-9 rounded-xl border border-border/60 bg-card/60 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors gap-2 flex items-center">
-                      {selectedPortfolio.modoSocial ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                      {selectedPortfolio.modoSocial ? "Público" : "Privado"}
+                      className="h-9 rounded-xl border border-border/60 bg-card/60 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors gap-1.5 flex items-center cursor-pointer shadow-2xs"
+                    >
+                      {selectedPortfolio.modoSocial ? <Globe className="w-3.5 h-3.5 text-emerald-400" /> : <Lock className="w-3.5 h-3.5 text-zinc-400" />}
+                      <span className="hidden sm:inline">{selectedPortfolio.modoSocial ? "Público" : "Privado"}</span>
                     </button>
                   )}
 
                   {/* Share */}
                   <button
-                    onClick={() => {
-                      if (selectedPortfolio) {
-                        navigator.clipboard.writeText(`${window.location.origin}/portfolio?id=${selectedPortfolio.id}`);
-                        alert('Enlace copiado al portapapeles');
-                      }
-                    }}
-                    title="Compartir Portfolio"
-                    className="w-9 h-9 rounded-xl border border-border/60 bg-card/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                    <Share2 className="w-4 h-4" />
+                    onClick={handleShare}
+                    title="Compartir enlace al portfolio"
+                    className="h-9 px-3 rounded-xl border border-border/60 bg-card/60 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-colors cursor-pointer shadow-2xs"
+                  >
+                    {copyFeedback ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
+                    <span className="hidden sm:inline">{copyFeedback ? "¡Copiado!" : "Compartir"}</span>
                   </button>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  {/* Add asset */}
+                  {/* Add asset CTA */}
                   {displayPortfolio && (
-                    <Button size="sm" className="gap-1.5 h-9 rounded-xl font-semibold"
-                      onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}>
-                      <Plus className="w-4 h-4" /> Agregar activo
-                    </Button>
+                    <button
+                      type="button"
+                      className="group inline-flex items-center gap-2 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 shadow-[0_2px_12px_rgba(16,185,129,0.35)] hover:shadow-[0_4px_18px_rgba(16,185,129,0.5)] border border-emerald-400/30 active:scale-[0.97] transition-all duration-200 cursor-pointer select-none"
+                      onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
+                    >
+                      <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-white group-hover:rotate-90 transition-transform duration-200">
+                        <Plus className="w-2.5 h-2.5 stroke-[3]" />
+                      </span>
+                      <span>Agregar transacción</span>
+                    </button>
                   )}
 
                   {/* Create portfolio */}
@@ -833,38 +1043,52 @@ const PortfolioPage = () => {
         {displayPortfolio && (
           <div className="space-y-6">
             {/* ── Dashboard charts (Performance + Allocation) */}
-            <PortfolioDashboard
-              portfolioName={displayPortfolio.nombre}
-              currency={currency}
-              metrics={displayMetrics}
-              assets={displayPortfolio.assets}
-              movements={movements}
-            />
+            <ErrorBoundary fallbackTitle="Panel de rendimiento temporalmente inaccesible">
+              <PortfolioDashboard
+                portfolioId={displayPortfolio.id}
+                portfolioName={displayPortfolio.nombre}
+                currency={currency}
+                metrics={displayMetrics}
+                assets={displayPortfolio.assets}
+                movements={movements}
+              />
+            </ErrorBoundary>
 
             {/* ── HOLDINGS ─────────────────────────────────────────────────────── */}
-            <Card className="border-border/60 bg-card/80">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between flex-wrap gap-3">
+            <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <CardTitle className="text-lg font-bold">Mis activos</CardTitle>
-                    <Badge variant="secondary" className="text-xs">{displayPortfolio.assets.length} posiciones</Badge>
+                    <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                      {displayPortfolio.assets.length} {displayPortfolio.assets.length === 1 ? 'posición' : 'posiciones'}
+                    </Badge>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     {/* Search */}
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <div className="relative flex items-center">
+                      <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                       <input
                         type="text"
-                        placeholder="AAPL, BTC..."
+                        placeholder="Buscar por ticker..."
                         value={assetSearch}
                         onChange={(e) => setAssetSearch(e.target.value)}
-                        className="w-32 pl-8 pr-3 h-8 text-[12px] rounded-xl border border-border/60 bg-background outline-none focus:border-primary/50 transition-colors"
+                        className="w-36 sm:w-48 pl-8.5 pr-7 h-9 text-xs rounded-xl border border-border/70 bg-card/60 backdrop-blur-xs outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-muted-foreground/60 shadow-xs"
                       />
+                      {assetSearch && (
+                        <button
+                          onClick={() => setAssetSearch("")}
+                          className="absolute right-2.5 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer rounded-md transition-colors"
+                          title="Limpiar búsqueda"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                     {/* Sort */}
                     <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-                      <SelectTrigger className="h-8 text-xs w-32 rounded-xl border-border/60">
-                        <SortAsc className="w-3.5 h-3.5 mr-1" /><SelectValue />
+                      <SelectTrigger className="h-9 text-xs w-32 rounded-xl border-border/70 bg-card/60 backdrop-blur-xs hover:border-border transition-colors cursor-pointer shadow-xs">
+                        <SortAsc className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" /><SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="value">Por valor</SelectItem>
@@ -874,21 +1098,89 @@ const PortfolioPage = () => {
                       </SelectContent>
                     </Select>
                     {/* Buy */}
-                    <Button size="sm" className="h-8 gap-1.5 rounded-xl text-xs"
-                      onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}>
-                      <Plus className="w-3.5 h-3.5" /> Comprar
-                    </Button>
+                    <button
+                      type="button"
+                      className="group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 shadow-[0_2px_10px_rgba(16,185,129,0.32)] hover:shadow-[0_4px_16px_rgba(16,185,129,0.48)] border border-emerald-400/30 active:scale-[0.97] transition-all duration-200 cursor-pointer select-none"
+                      onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
+                    >
+                      <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-white group-hover:rotate-90 transition-transform duration-200">
+                        <Plus className="w-2.5 h-2.5 stroke-[3]" />
+                      </span>
+                      <span>Comprar</span>
+                    </button>
                   </div>
                 </div>
+
+                {/* Asset Class Filter Pills */}
+                {displayPortfolio.assets.length > 0 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-3 scrollbar-hide">
+                    {ASSET_CLASS_FILTERS.filter(f => f.id === "all" || (assetClassCounts[f.id] ?? 0) > 0).map(f => {
+                      const isSelected = assetClassFilter === f.id;
+                      const count = assetClassCounts[f.id] ?? 0;
+                      return (
+                        <button
+                          key={f.id}
+                          onClick={() => setAssetClassFilter(f.id)}
+                          className={cn(
+                            "px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all border cursor-pointer select-none",
+                            isSelected
+                              ? "bg-primary text-primary-foreground border-primary shadow-xs font-bold"
+                              : "bg-background/80 hover:bg-muted/80 text-muted-foreground hover:text-foreground border-border/60 hover:border-border"
+                          )}
+                        >
+                          {f.label}
+                          <span className={cn("text-[10px] ml-1.5 px-1.5 py-0.5 rounded-full font-bold", isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </CardHeader>
-              <CardContent className="pt-0">
+
+              <CardContent className="pt-2">
                 {sortedAssets.length === 0 ? (
-                  <EmptyPortfolio onAdd={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }} isFirstCreation={false} />
+                  <div className="py-12 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-muted/40 flex items-center justify-center mx-auto text-muted-foreground">
+                      <Search className="w-5 h-5" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">No se encontraron activos</p>
+                    <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                      {assetSearch ? `No hay resultados para "${assetSearch}" con el filtro seleccionado.` : "No hay activos en esta categoría."}
+                    </p>
+                    {(assetSearch || assetClassFilter !== "all") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setAssetSearch(""); setAssetClassFilter("all"); }}
+                        className="text-xs rounded-xl"
+                      >
+                        Restablecer filtros
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-1">
+                    {/* Desktop Table Header */}
+                    <div className="hidden md:grid md:grid-cols-[1fr_80px_100px_110px_90px] items-center gap-3 px-4 py-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40 mb-1">
+                      <span>Activo</span>
+                      <span className="text-right">Peso</span>
+                      <span className="text-right">Cotización</span>
+                      <span className="text-right">Valor & PnL</span>
+                      <span className="text-center">Operar</span>
+                    </div>
+
                     {sortedAssets.map((asset) => (
-                      <AssetRow key={asset.id} asset={asset} totalPortfolioValue={totalValue} currency={currency}
-                        onSell={() => { setModalMode("SELL"); setModalInitialSymbol(asset.ticker); setAddAssetOpen(true); }} />
+                      <AssetRow
+                        key={asset.id}
+                        asset={asset}
+                        totalPortfolioValue={totalValue}
+                        currency={currency}
+                        hideValues={hideValues}
+                        onBuy={() => { setModalMode("BUY"); setModalInitialSymbol(asset.ticker); setAddAssetOpen(true); }}
+                        onSell={() => { setModalMode("SELL"); setModalInitialSymbol(asset.ticker); setAddAssetOpen(true); }}
+                      />
                     ))}
                   </div>
                 )}
@@ -898,20 +1190,34 @@ const PortfolioPage = () => {
             {/* ── ACTIVITY + DIVERSIFICATION Grid ─────────────────────────────── */}
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
               {/* Activity */}
-              <Card className="border-border/60 bg-card/80">
+              <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-base font-bold">Actividad</CardTitle>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {["all", "compra", "venta"].map((f) => (
-                        <button key={f} onClick={() => setActivityFilter(f)}
-                          className={cn("text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors",
-                            activityFilter === f ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground")}>
+                        <button
+                          key={f}
+                          onClick={() => setActivityFilter(f)}
+                          className={cn(
+                            "text-xs font-semibold px-3 py-1 rounded-lg transition-colors cursor-pointer",
+                            activityFilter === f
+                              ? "bg-primary/15 text-primary font-bold"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                          )}
+                        >
                           {f === "all" ? "Todo" : f === "compra" ? "Compras" : "Ventas"}
                         </button>
                       ))}
-                      <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 rounded-lg ml-1">
-                        <Download className="w-3 h-3" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={exportMovementsCSV}
+                        title="Descargar historial de movimientos en CSV"
+                        className="h-7.5 px-2.5 text-xs gap-1.5 rounded-lg ml-1 border-border/60 hover:border-primary/40 cursor-pointer shadow-2xs"
+                      >
+                        <Download className="w-3.5 h-3.5 text-primary" />
+                        <span className="hidden sm:inline font-semibold">CSV</span>
                       </Button>
                     </div>
                   </div>
@@ -928,7 +1234,7 @@ const PortfolioPage = () => {
                         <MovementRow key={mv.id} movement={mv} currency={currency} />
                       ))}
                       {filteredMovements.length > 12 && (
-                        <button className="w-full flex items-center justify-center gap-1.5 py-3 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                        <button className="w-full flex items-center justify-center gap-1.5 py-3 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                           Ver más <ChevronRight className="w-3.5 h-3.5" />
                         </button>
                       )}
@@ -937,25 +1243,38 @@ const PortfolioPage = () => {
                 </CardContent>
               </Card>
 
-              {/* Quick insights */}
+              {/* Quick insights & Cash */}
               <div className="space-y-4">
                 {/* Cash Card */}
-                <Card className="border-emerald-500/20 bg-emerald-500/5">
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between mb-3">
+                <Card className="border-emerald-500/25 bg-emerald-500/5 overflow-hidden relative shadow-xs">
+                  <div className="absolute right-0 top-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+                  <CardContent className="p-5 relative">
+                    <div className="flex items-start justify-between mb-2">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Efectivo disponible</p>
-                        <p className="mt-1 text-2xl font-extrabold text-emerald-400 tabular-nums">{mask(fmtCurrency(cashBalance, currency))}</p>
+                        <p className="mt-1 text-2xl font-black text-emerald-400 tabular-nums">{mask(fmtCurrency(cashBalance, currency))}</p>
                       </div>
-                      <DollarSign className="w-5 h-5 text-emerald-500/50 mt-1" />
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                        <Wallet className="w-4.5 h-4.5" />
+                      </div>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">Listo para reinvertir</p>
+                    <div className="flex items-center justify-between pt-1">
+                      <p className="text-[11px] text-muted-foreground">Listo para reinvertir en activos</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
+                        className="h-6.5 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/15 px-2 rounded-md cursor-pointer"
+                      >
+                        Invertir <ChevronRight className="w-3 h-3 ml-0.5" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
 
                 {/* Insights */}
                 {displayPortfolio.assets.length > 0 && (
-                  <Card className="border-border/60 bg-card/80">
+                  <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base font-bold flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-primary" /> Insights
@@ -980,30 +1299,36 @@ const PortfolioPage = () => {
                         return (
                           <>
                             {best && (
-                              <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/8 border border-emerald-500/15">
-                                <span className="text-lg">🥇</span>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[12px] font-bold">{best.ticker}</p>
-                                  <p className="text-[10px] text-muted-foreground">Mejor rendimiento</p>
+                              <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/8 border border-emerald-500/20">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                                  <Trophy className="w-4 h-4" />
                                 </div>
-                                <span className="text-[13px] font-bold text-emerald-400">{fmtPct(bestR)}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-foreground">{best.ticker}</p>
+                                  <p className="text-[10px] text-muted-foreground font-medium">Mejor rendimiento</p>
+                                </div>
+                                <span className="text-[13px] font-bold text-emerald-400 tabular-nums">{fmtPct(bestR)}</span>
                               </div>
                             )}
                             {worst && worst.id !== best?.id && (
-                              <div className="flex items-center gap-3 p-3 rounded-xl bg-red-500/8 border border-red-500/15">
-                                <span className="text-lg">📉</span>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[12px] font-bold">{worst.ticker}</p>
-                                  <p className="text-[10px] text-muted-foreground">Mayor drawdown</p>
+                              <div className="flex items-center gap-3 p-3 rounded-xl bg-red-500/8 border border-red-500/20">
+                                <div className="w-8 h-8 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                                  <TrendingDown className="w-4 h-4" />
                                 </div>
-                                <span className="text-[13px] font-bold text-red-400">{fmtPct(worstR)}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-foreground">{worst.ticker}</p>
+                                  <p className="text-[10px] text-muted-foreground font-medium">Mayor drawdown</p>
+                                </div>
+                                <span className="text-[13px] font-bold text-red-400 tabular-nums">{fmtPct(worstR)}</span>
                               </div>
                             )}
-                            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/40">
-                              <span className="text-lg">📊</span>
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-card/60 border border-border/50">
+                              <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+                                <PieChart className="w-4 h-4" />
+                              </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[12px] font-bold">{displayPortfolio.assets.length} activos</p>
-                                <p className="text-[10px] text-muted-foreground">en el portfolio</p>
+                                <p className="text-xs font-bold text-foreground">{displayPortfolio.assets.length} activos</p>
+                                <p className="text-[10px] text-muted-foreground font-medium">en cartera diversificada</p>
                               </div>
                               <ChevronRight className="w-4 h-4 text-muted-foreground" />
                             </div>
@@ -1039,7 +1364,9 @@ const PortfolioPage = () => {
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <PortfolioAdvancedMetrics metrics={displayMetrics} assets={displayPortfolio.assets} />
+                  <ErrorBoundary fallbackTitle="Análisis de diversificación temporalmente inaccesible">
+                    <PortfolioAdvancedMetrics metrics={displayMetrics} assets={displayPortfolio.assets} />
+                  </ErrorBoundary>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1058,7 +1385,8 @@ const PortfolioPage = () => {
             onSuccess={() => void loadPortfolios(displayPortfolio.id)}
           />
         )}
-      </div>
+        </div>
+      </ErrorBoundary>
     </div>
   );
 };

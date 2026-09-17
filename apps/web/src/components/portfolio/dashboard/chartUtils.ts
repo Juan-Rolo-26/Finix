@@ -31,28 +31,34 @@ export const CHART_AXIS_TICK = {
 };
 
 export function formatCurrency(value: number, currency = 'USD') {
+    const safe = typeof value === 'number' && Number.isFinite(value) ? value : 0;
     return new Intl.NumberFormat('es-AR', {
         style: 'currency',
         currency,
         maximumFractionDigits: 0,
-    }).format(value);
+    }).format(safe);
 }
 
 export function formatCompactCurrency(value: number, currency = 'USD') {
+    const safe = typeof value === 'number' && Number.isFinite(value) ? value : 0;
     return new Intl.NumberFormat('es-AR', {
         style: 'currency',
         currency,
         notation: 'compact',
         maximumFractionDigits: 1,
-    }).format(value);
+    }).format(safe);
 }
 
 export function formatPercent(value: number, fractionDigits = 1, signed = false) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return signed ? '+0.0%' : '0.0%';
+    }
     const sign = signed && value > 0 ? '+' : '';
     return `${sign}${value.toFixed(fractionDigits)}%`;
 }
 
 export function truncateLabel(value: string, maxLength = 14) {
+    if (!value || typeof value !== 'string') return '';
     if (value.length <= maxLength) {
         return value;
     }
@@ -61,7 +67,8 @@ export function truncateLabel(value: string, maxLength = 14) {
 }
 
 export function clamp(value: number, min: number, max: number) {
-    return Math.min(Math.max(value, min), max);
+    const safe = typeof value === 'number' && Number.isFinite(value) ? value : min;
+    return Math.min(Math.max(safe, min), max);
 }
 
 export function titleCase(value: string) {

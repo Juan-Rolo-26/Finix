@@ -9,31 +9,31 @@ export default function About() {
             <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl transition-colors">
                 <div className="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
                     <BackButton to="/dashboard" label="Volver a Finix" />
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center">
-                            <span className="text-primary font-bold text-base">F</span>
+                    <Link to="/dashboard" className="flex items-center gap-3 group cursor-pointer">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border border-black/20 dark:border-white/30 bg-white dark:bg-zinc-900 shadow-2xs transition-transform group-hover:scale-105">
+                            <img src="/logo.png" alt="Finix" className="h-5 w-5 object-contain" />
                         </div>
-                        <span className="font-heading font-black text-lg tracking-tight">Finix</span>
-                    </div>
+                        <span className="font-heading font-black text-xl tracking-tight text-foreground">Finix</span>
+                    </Link>
                 </div>
             </nav>
 
             <main className="container mx-auto px-4 md:px-8 pt-28 pb-20 max-w-5xl">
                 {/* ── Navigation Tabs between Legal & Info pages ── */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-hide border-b border-border/40 text-xs font-semibold">
-                    <Link to="/about" className="px-3.5 py-1.5 rounded-full bg-primary/15 text-primary border border-primary/30 whitespace-nowrap shadow-sm">
+                <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-hide border-b border-border/40 text-sm font-semibold">
+                    <Link to="/about" className="px-4 py-2 rounded-full bg-primary/15 text-primary border border-primary/30 whitespace-nowrap shadow-sm">
                         Sobre Finix
                     </Link>
-                    <Link to="/help" className="px-3.5 py-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
+                    <Link to="/help" className="px-4 py-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
                         Centro de Ayuda
                     </Link>
-                    <Link to="/terms" className="px-3.5 py-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
+                    <Link to="/terms" className="px-4 py-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
                         Términos de Servicio
                     </Link>
-                    <Link to="/privacy" className="px-3.5 py-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
+                    <Link to="/privacy" className="px-4 py-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
                         Política de Privacidad
                     </Link>
-                    <Link to="/cookies" className="px-3.5 py-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
+                    <Link to="/cookies" className="px-4 py-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap">
                         Cookies
                     </Link>
                 </div>
@@ -174,6 +174,8 @@ export default function About() {
                 <footer className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
                     <p>© 2026 Finix Network Inc. Todos los derechos reservados.</p>
                     <div className="flex items-center gap-4">
+                        <a href="https://t.me/Finixcomunidad" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors font-medium text-sky-400">Telegram</a>
+                        <a href="https://instagram.com/finixarg_" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors font-medium text-pink-400">Instagram</a>
                         <Link to="/terms" className="hover:text-foreground transition-colors">Términos</Link>
                         <Link to="/privacy" className="hover:text-foreground transition-colors">Privacidad</Link>
                         <Link to="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>

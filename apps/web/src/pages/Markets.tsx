@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, isJuanUser } from '@/stores/authStore';
 import { ProGate } from '@/components/ProGate';
 import {
     Activity,
@@ -16,6 +16,7 @@ import {
     X,
     Sparkles,
     SearchX,
+    Flame,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,6 +28,7 @@ import { cn } from '@/lib/utils';
 import TradingViewChart from '@/components/TradingViewChart';
 import TradingViewSymbolInfo from '@/components/TradingViewSymbolInfo';
 import MarketDashboard, { type MarketDashboardData } from '@/components/markets/MarketDashboard';
+import MarketHeatmap from '@/components/markets/MarketHeatmap';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import { useTranslation } from '@/i18n';
 
@@ -103,7 +105,7 @@ export default function Markets() {
     const t = useTranslation();
     const { user } = useAuthStore();
     const navigate = useNavigate();
-    const isPro = (user as any)?.plan === 'PRO' || (user as any)?.accountType === 'PRO' || (user as any)?.role === 'ADMIN' || (user as any)?.isPro || (user as any)?.subscriptionTier === 'pro';
+    const isPro = (user as any)?.plan === 'PRO' || (user as any)?.accountType === 'PRO' || (user as any)?.role === 'ADMIN' || (user as any)?.isPro || (user as any)?.subscriptionTier === 'pro' || isJuanUser(user);
 
     if (!isPro) {
         return (
@@ -207,6 +209,8 @@ export default function Markets() {
         };
     }, [selectedAsset, symbolParam]);
 
+    const fetchDashboardRef = useRef<((showLoader: boolean) => Promise<void>) | null>(null);
+
     useEffect(() => {
         let disposed = false;
         let currentController: AbortController | null = null;
@@ -221,7 +225,7 @@ export default function Markets() {
             currentController = controller;
 
             try {
-                const res = await apiFetch('/market/dashboard', {
+                const res = await apiFetch(`/market/dashboard?_t=${Date.now()}`, {
                     signal: controller.signal,
                 });
                 const data = res.ok ? await res.json() : null;
@@ -240,13 +244,22 @@ export default function Markets() {
             }
         };
 
+        fetchDashboardRef.current = fetchDashboard;
         fetchDashboard(true);
-        const intervalId = window.setInterval(() => fetchDashboard(false), 60000);
+        const intervalId = window.setInterval(() => fetchDashboard(false), 45000);
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                fetchDashboard(false);
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
             disposed = true;
             currentController?.abort();
             window.clearInterval(intervalId);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, []);
 
@@ -264,27 +277,39 @@ export default function Markets() {
     };
 
     return (
-        <div className="relative w-full overflow-hidden pb-20">
-            <div className="absolute inset-x-0 top-0 -z-10 h-[520px] bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.22),transparent_35%),radial-gradient(circle_at_top_right,rgba(6,182,212,0.18),transparent_30%),linear-gradient(180deg,rgba(5,10,8,0.95),transparent_70%)]" />
+        <div className="relative w-full overflow-hidden pb-20 markets-view">
+            <div className="absolute inset-x-0 top-0 -z-10 h-[360px] opacity-40 dark:opacity-100 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.08),transparent_70%)] pointer-events-none" />
 
             <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-4 md:px-6 lg:px-8">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="grid h-auto w-full max-w-xl mx-auto mb-4 grid-cols-2 rounded-[24px] border border-border/40 bg-secondary/30 p-1.5 backdrop-blur-sm">
+                    <TabsList className="grid h-auto w-full max-w-2xl mx-auto mb-4 grid-cols-3 rounded-[24px] border border-border/40 bg-secondary/30 p-1.5 backdrop-blur-sm">
                         <TabsTrigger
                             value="overview"
-                            className="gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                            className="gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                         >
-                            <Activity className="h-4 w-4" />
-                            {t.markets.tabs.overview}
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+                                <Activity className="h-3.5 w-3.5" />
+                            </span>
+                            <span className="font-semibold text-sm">{t.markets.tabs.overview}</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="heatmap"
+                            className="gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+                                <Flame className="h-3.5 w-3.5 fill-emerald-500/20 text-emerald-600 dark:text-emerald-400" />
+                            </span>
+                            <span className="font-semibold text-sm">Mapa de Calor</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="chart"
-                            className="gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                            className="gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                         >
-                            <LineChart className="h-4 w-4" />
-                            {t.markets.tabs.chart}
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+                                <LineChart className="h-3.5 w-3.5" />
+                            </span>
+                            <span className="font-semibold text-sm">{t.markets.tabs.chart}</span>
                         </TabsTrigger>
-
                     </TabsList>
 
                     <TabsContent value="overview" className="space-y-4">
@@ -292,6 +317,16 @@ export default function Markets() {
                             data={dashboardData}
                             loading={isDashboardLoading}
                             onSelectSymbol={handleOpenMarketSymbol}
+                            onRefresh={() => fetchDashboardRef.current?.(true)}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="heatmap" className="space-y-4">
+                        <MarketHeatmap
+                            onSelectSymbol={(sym) => {
+                                handleOpenMarketSymbol(sym);
+                                setActiveTab('chart');
+                            }}
                         />
                     </TabsContent>
 
@@ -319,7 +354,7 @@ export default function Markets() {
                                                     </kbd>
                                                 </Button>
                                             </DialogTrigger>
-                                            <DialogContent className="sm:max-w-xl p-0 overflow-hidden border border-border/80 bg-card/95 backdrop-blur-2xl shadow-2xl shadow-emerald-950/20 rounded-[28px] gap-0">
+                                            <DialogContent className="sm:max-w-xl p-0 overflow-hidden border border-border/80 bg-card/95 backdrop-blur-2xl shadow-2xl shadow-emerald-950/20 rounded-[28px] gap-0 markets-view">
                                                 <MarketAssetSearch
                                                     onSelect={(sym) => {
                                                         setIsSearchOpen(false);
@@ -333,27 +368,33 @@ export default function Markets() {
 
                                 <div className="h-px w-full bg-border/60" />
 
-                                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                                    <div className="space-y-1.5 mt-1">
-                                        <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">
-                                            Intervalos
-                                        </p>
-                                        <p className="text-base font-medium text-zinc-600 dark:text-zinc-300">
-                                            Cambia la temporalidad sin perder el contexto del activo ni salir del chart.
-                                        </p>
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="relative flex h-2.5 w-2.5">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                        </span>
+                                        <div>
+                                            <p className="text-sm font-bold text-foreground">
+                                                Gráfico TradingView en Tiempo Real
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                Herramientas de análisis técnico e indicadores avanzados
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
                                         {CHART_INTERVALS.map((interval) => (
                                             <button
                                                 key={interval.value}
                                                 type="button"
                                                 onClick={() => setChartInterval(interval.value)}
                                                 className={cn(
-                                                    'rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
+                                                    'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all',
                                                     chartInterval === interval.value
-                                                        ? 'border-foreground/20 bg-foreground text-background shadow-sm'
-                                                        : 'border-border/60 bg-background/50 text-muted-foreground hover:border-foreground/30 hover:text-foreground'
+                                                        ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
+                                                        : 'border-border/60 bg-background/50 text-muted-foreground hover:border-emerald-500/50 hover:text-foreground'
                                                 )}
                                             >
                                                 {interval.label}
@@ -365,12 +406,14 @@ export default function Markets() {
                         </Card>
 
                         {selectedAsset && (
-                            <TradingViewChart
-                                symbol={selectedAsset.symbol}
-                                interval={chartInterval}
-                                height={760}
-                                theme={widgetTheme}
-                            />
+                            <div className="w-full min-h-[760px]">
+                                <TradingViewChart
+                                    symbol={selectedAsset.symbol}
+                                    interval={chartInterval}
+                                    height={760}
+                                    theme={widgetTheme}
+                                />
+                            </div>
                         )}
                     </TabsContent>
 

@@ -36,6 +36,7 @@ import CommentsPanel from './CommentsPanel';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import ReportModal from '@/components/ReportModal';
 import DeletePostModal from '@/components/DeletePostModal';
+import PostChartViewer from './PostChartViewer';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -196,6 +197,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     const [repostComment, setRepostComment] = useState('');
     const [showReportModal, setShowReportModal] = useState(false);
     const [commentsCount, setCommentsCount] = useState(post.commentsCount);
+    const [showLiveChart, setShowLiveChart] = useState(false);
 
     const isOwner = currentUserId === post.author.id;
     const canEdit = isOwner && !post.contentEditedAt &&
@@ -457,7 +459,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             {/* Auto TradingView Chart if ticker is mentioned and no media provided (for text posts only) */}
             {post.type !== 'chart' && !post.media?.length && !post.mediaUrl && !tradingViewUrl && post.tickers && String(post.tickers).trim() && (
                 <div className="px-4 pb-3">
-                    <div className="rounded-xl overflow-hidden border border-border/50 h-[300px] w-full bg-black/10">
+                    <div className="rounded-xl overflow-hidden border border-border/50 h-[480px] sm:h-[540px] w-full bg-black/10">
                         <iframe
                             src={`https://s.tradingview.com/widgetembed/?symbol=${(Array.isArray(post.tickers) ? post.tickers[0] : String(post.tickers).split(',')[0]).trim().replace('$', '')}&interval=D&theme=dark&style=1&timezone=America%2FArgentina%2FBuenos_Aires&hide_top_toolbar=1&hide_legend=1&saveimage=0&locale=es`}
                             width="100%"
@@ -510,7 +512,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                 <div className="px-4 pb-3">
                     {tradingViewUrl.includes('/x/') ? (
                         <div className="relative rounded-xl overflow-hidden border border-border/50 bg-black/20 group">
-                            <img src={tradingViewUrl} alt="TradingView Chart" className="w-full h-auto object-contain max-h-[500px]" loading="lazy" />
+                            <img src={tradingViewUrl} alt="TradingView Chart" className="w-full h-auto object-contain max-h-[600px]" loading="lazy" />
                             <a href={tradingViewUrl} target="_blank" rel="noreferrer" className="absolute bottom-3 right-3 flex flex-row items-center gap-2 p-2 rounded-lg bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm shadow-xl">
                                 <span className="text-xs font-semibold">TradingView</span>
                                 <ExternalLink className="w-4 h-4" />
@@ -531,19 +533,65 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                 </div>
             )}
 
-            {/* Media */}
-            {post.media && post.media.length > 0 && (
-                <div className="px-4 pb-3">
-                    <MediaCarousel media={post.media} />
-                </div>
-            )}
+            {/* Media & Chart Projection */}
+            {(() => {
+                const regularMedia = (post.media || []).filter((m: any) => !m.url?.startsWith('tvchart:'));
+                const chartSymbol = post.assetSymbol || (post.tickers ? String(post.tickers).split(',')[0].trim().replace('$', '') : 'AAPL');
+                const hasCapturedMedia = regularMedia.length > 0;
 
-            {/* Legacy single media */}
-            {!post.media?.length && post.mediaUrl && (
-                <div className="px-4 pb-3">
-                    <img src={resolveMediaUrl(post.mediaUrl)} alt="Post" className="w-full rounded-xl max-h-[500px] object-contain" loading="lazy" />
-                </div>
-            )}
+                if (post.type === 'chart') {
+                    return (
+                        <div className="px-4 pb-3 space-y-2.5">
+                            {hasCapturedMedia && (
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                                        <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                                        {showLiveChart ? 'Gráfico interactivo en vivo' : 'Análisis y trazado original'}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowLiveChart(!showLiveChart)}
+                                        className="text-xs font-bold px-2.5 py-1 rounded-lg border border-border/60 bg-secondary/40 hover:bg-secondary text-foreground transition-all flex items-center gap-1.5 shadow-xs"
+                                    >
+                                        <BarChart2 className="w-3.5 h-3.5 text-primary" />
+                                        {showLiveChart ? 'Ver captura con dibujos' : 'Ver en vivo'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {hasCapturedMedia && !showLiveChart ? (
+                                <MediaCarousel media={regularMedia} />
+                            ) : (
+                                <PostChartViewer
+                                    versionId={post.chartAnalysisVersionId || post.chartAnalysisVersion?.id}
+                                    chartState={post.chartAnalysisVersion?.chartState}
+                                    symbol={chartSymbol}
+                                    authorUsername={post.author?.username}
+                                    height={520}
+                                />
+                            )}
+                        </div>
+                    );
+                }
+
+                return (
+                    <>
+                        {/* Media Regular (Imágenes / Vídeos para posts no-chart) */}
+                        {regularMedia.length > 0 && (
+                            <div className="px-4 pb-3">
+                                <MediaCarousel media={regularMedia} />
+                            </div>
+                        )}
+
+                        {/* Legacy single media */}
+                        {!post.media?.length && post.mediaUrl && (
+                            <div className="px-4 pb-3">
+                                <img src={resolveMediaUrl(post.mediaUrl)} alt="Post" className="w-full rounded-xl max-h-[600px] object-contain" loading="lazy" />
+                            </div>
+                        )}
+                    </>
+                );
+            })()}
 
             {/* Action bar */}
             <div className="px-4 py-3 border-t border-border/30 flex items-center justify-between">

@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { MailService } from '../mail/mail.service';
 import Stripe from 'stripe';
 import {
     PLAN_PERMISSIONS,
@@ -23,7 +24,10 @@ export class StripeService {
     });
     private readonly frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly mailService: MailService,
+    ) { }
 
     async createSubscription(userId: string, planType: 'pro_investor' | 'pro_creator') {
         this.ensureStripeConfigured();
@@ -483,6 +487,30 @@ export class StripeService {
                     },
                 });
             }
+
+            // Notify admin about Stripe plan payment
+            const user = await this.prisma.user.findUnique({
+                where: { id: userId },
+                select: { username: true, email: true },
+            });
+            this.mailService.sendAdminAlert({
+                eventType: 'PAYMENT_RECEIVED',
+                title: `Nuevo Pago Recibido en Stripe (${planType.toUpperCase()})`,
+                badgeText: 'PAGO STRIPE',
+                badgeColor: '#6366f1',
+                summary: `Se ha procesado un cobro exitoso por suscripción de Stripe para el usuario @${user?.username || 'usuario'}.`,
+                details: [
+                    { label: 'Usuario', value: `@${user?.username || 'N/A'} (${user?.email || 'N/A'})` },
+                    { label: 'Plan', value: planType.toUpperCase() },
+                    { label: 'Monto Cobrado', value: `$${totalAmount} USD` },
+                    { label: 'Pasarela', value: 'Stripe' },
+                    { label: 'ID Factura', value: invoice.id },
+                    { label: 'Fecha y Hora', value: new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) },
+                ],
+                actionUrl: `${this.mailService.getAdminUrl()}/users`,
+                actionLabel: 'Ver en Panel Admin',
+            });
+
             return;
         }
 
@@ -508,6 +536,28 @@ export class StripeService {
                 amount,
                 billingType,
                 expiresAt: endDate,
+            });
+
+            // Notify admin about community payment
+            const member = await this.prisma.user.findUnique({
+                where: { id: userId },
+                select: { username: true, email: true },
+            });
+            this.mailService.sendAdminAlert({
+                eventType: 'PAYMENT_RECEIVED',
+                title: `Nueva Suscripción a Comunidad en Stripe`,
+                badgeText: 'SUSCRIPCIÓN COMUNIDAD',
+                badgeColor: '#6366f1',
+                summary: `El usuario @${member?.username || 'usuario'} se ha suscrito a una comunidad en Finix.`,
+                details: [
+                    { label: 'Usuario', value: `@${member?.username || 'N/A'} (${member?.email || 'N/A'})` },
+                    { label: 'ID Comunidad', value: communityId },
+                    { label: 'Monto Cobrado', value: `$${amount} USD` },
+                    { label: 'Pasarela', value: 'Stripe' },
+                    { label: 'Fecha y Hora', value: new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) },
+                ],
+                actionUrl: `${this.mailService.getAppUrl()}/communities/${communityId}`,
+                actionLabel: 'Ver Comunidad en Finix',
             });
         }
     }

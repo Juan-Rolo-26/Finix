@@ -27,7 +27,7 @@ export function TopLosersCard({
         <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } }}
-            className="rounded-2xl overflow-hidden border border-border/50 bg-card"
+            className="rounded-2xl overflow-hidden border border-border/50 bg-card shrink-0"
         >
             {/* ── Card Header ── */}
             <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border/30">
@@ -63,7 +63,7 @@ export function TopLosersCard({
             </div>
 
             {/* ── Card Content / States ── */}
-            <div className="p-2 space-y-1">
+            <div className="p-2.5 pb-3.5 space-y-1">
                 {/* 1. State: Loading Skeleton */}
                 {isLoading && (
                     <div className="space-y-1.5 p-1">

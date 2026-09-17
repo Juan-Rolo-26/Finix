@@ -10,6 +10,8 @@ import {
     Query,
     Request,
     UseGuards,
+    NotFoundException,
+    BadRequestException,
 } from '@nestjs/common';
 import { PortfolioService } from './portfolio.service';
 import { CreatePortfolioDto, UpdatePortfolioDto, CreateAssetDto, UpdateAssetDto, CreateTransactionDto, CreateWatchlistDto, UpdateWatchlistDto } from './dto/portfolio.dto';
@@ -104,6 +106,17 @@ export class PortfolioController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Get(':id/history')
+    async getPortfolioHistory(
+        @Request() req,
+        @Param('id') id: string,
+        @Query('range') range?: string,
+    ) {
+        const userId = this.resolveUserId(req);
+        return this.portfolioService.getPortfolioHistory(id, userId, range || '1M');
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Put(':id')
     async updatePortfolio(
         @Request() req,
@@ -195,6 +208,15 @@ export class PortfolioController {
         @Body() dto: CreateTransactionDto,
     ) {
         const userId = this.resolveUserId(req);
-        return this.portfolioService.createTransaction(portfolioId, userId, dto);
+        console.log('[PortfolioController] createTransaction received:', { portfolioId, userId, dto });
+        try {
+            return await this.portfolioService.createTransaction(portfolioId, userId, dto);
+        } catch (err: any) {
+            console.error('[PortfolioController] createTransaction error:', err);
+            if (err instanceof NotFoundException || err instanceof BadRequestException) {
+                throw err;
+            }
+            throw new BadRequestException(err?.message || 'Error al registrar la transacción');
+        }
     }
 }

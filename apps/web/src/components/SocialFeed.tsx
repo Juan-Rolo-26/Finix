@@ -428,8 +428,8 @@ function FeedItem({ post }: { post: Post }) {
 
                     {/* TradingView chart */}
                     {!mediaUrl && tvSymbol && (
-                        <div className="h-[280px] w-full rounded-xl overflow-hidden" style={{ border: '1px solid hsl(var(--border) / 0.25)' }}>
-                            <TradingViewWidget symbol={tvSymbol} autosize={true} />
+                        <div className="h-[500px] sm:h-[540px] min-h-[500px] sm:min-h-[540px] w-full shrink-0 rounded-xl overflow-hidden bg-black/20" style={{ border: '1px solid hsl(var(--border) / 0.3)' }}>
+                            <TradingViewWidget symbol={tvSymbol} height={540} />
                         </div>
                     )}
 

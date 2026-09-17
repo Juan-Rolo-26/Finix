@@ -4,6 +4,7 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
+import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma.service';
 import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
@@ -40,6 +41,20 @@ const POST_INCLUDE = (userId?: string) => ({
             content: true,
             author: { select: AUTHOR_SELECT },
         }
+    },
+    chartAnalysisVersion: {
+        include: {
+            analysis: {
+                select: {
+                    id: true,
+                    title: true,
+                    symbol: true,
+                    exchange: true,
+                    timeframe: true,
+                    userId: true,
+                },
+            },
+        },
     },
     _count: { select: { likes: true, replies: true } },
 });
@@ -107,6 +122,7 @@ export class PostsService {
     constructor(
         private prisma: PrismaService,
         private notificationsService: NotificationsService,
+        private mailService: MailService,
     ) { }
 
     private async getActorUsername(userId: string) {
@@ -115,11 +131,7 @@ export class PostsService {
             select: { username: true },
         });
 
-        if (!actor) {
-            throw new NotFoundException('Usuario no encontrado');
-        }
-
-        return actor.username;
+        return actor?.username || 'usuario';
     }
 
     private async loadCommentRepliesMap(postId: string, rootIds: string[]) {
@@ -187,26 +199,52 @@ export class PostsService {
             mediaUrls?: { url: string; mediaType: string }[];
             parentId?: string;
             quotedPostId?: string;
+            chartAnalysisId?: string;
+            chartAnalysisVersionId?: string;
         },
     ) {
         const content = sanitize(dto.content || '');
-        if (!content && (!dto.mediaUrls || dto.mediaUrls.length === 0)) {
-            throw new BadRequestException('El post debe tener contenido o media');
+        if (!content && (!dto.mediaUrls || dto.mediaUrls.length === 0) && !dto.chartAnalysisId && !dto.chartAnalysisVersionId) {
+            throw new BadRequestException('El post debe tener contenido, media o un análisis gráfico');
         }
         moderateContent(content);
 
-        const type = dto.type || 'post';
+        const type = dto.type || (dto.chartAnalysisId || dto.chartAnalysisVersionId ? 'chart' : 'post');
         const tickers = dto.tickers ? dto.tickers.join(',') : '';
+
+        // Resuelve o congela snapshot de la versión del análisis
+        let resolvedVersionId = dto.chartAnalysisVersionId || null;
+        let detectedSymbol = dto.assetSymbol || null;
+
+        if (!resolvedVersionId && dto.chartAnalysisId) {
+            const analysis = await this.prisma.chartAnalysis.findUnique({
+                where: { id: dto.chartAnalysisId },
+                include: { versions: { orderBy: { versionNumber: 'desc' }, take: 1 } },
+            });
+            if (analysis) {
+                detectedSymbol = detectedSymbol || analysis.symbol;
+                const nextVer = (analysis.versions[0]?.versionNumber || 0) + 1;
+                const newVersion = await this.prisma.chartAnalysisVersion.create({
+                    data: {
+                        analysisId: analysis.id,
+                        versionNumber: nextVer,
+                        chartState: analysis.chartState as any,
+                    },
+                });
+                resolvedVersionId = newVersion.id;
+            }
+        }
 
         const post = await this.prisma.post.create({
             data: {
                 authorId: userId,
                 content,
                 type,
-                assetSymbol: dto.assetSymbol || null,
-                analysisType: dto.analysisType || null,
+                assetSymbol: detectedSymbol,
+                analysisType: dto.analysisType || (type === 'chart' ? 'technical' : null),
                 riskLevel: dto.riskLevel || null,
                 tickers,
+                chartAnalysisVersionId: resolvedVersionId,
                 media: dto.mediaUrls?.length
                     ? {
                         create: dto.mediaUrls.map((m, i) => ({
@@ -223,7 +261,71 @@ export class PostsService {
         });
 
         this.clearFeedCache();
-        return enrichPost(post, userId);
+        const enriched = enrichPost(post, userId);
+
+        // Notify admin about new post
+        const authorUsername = post.author?.username || 'usuario';
+        const snippet = post.content
+            ? (post.content.length > 200 ? `${post.content.slice(0, 200)}...` : post.content)
+            : '(Publicación con imagen o análisis interactivo)';
+
+        // Notify author if quoting another post
+        if (dto.quotedPostId) {
+            this.prisma.post.findUnique({
+                where: { id: dto.quotedPostId },
+                select: { authorId: true },
+            }).then((quotedPost) => {
+                if (quotedPost && quotedPost.authorId !== userId) {
+                    this.notificationsService.createNotification({
+                        userId: quotedPost.authorId,
+                        actorId: userId,
+                        type: 'SOCIAL_REPOST',
+                        title: `@${authorUsername} citó tu publicación.`,
+                        message: snippet,
+                        link: `/posts/${post.id}`,
+                    }).catch(() => { });
+                }
+            }).catch(() => { });
+        }
+
+        // Notify author if replying to another post
+        if (dto.parentId) {
+            this.prisma.post.findUnique({
+                where: { id: dto.parentId },
+                select: { authorId: true },
+            }).then((parentPost) => {
+                if (parentPost && parentPost.authorId !== userId) {
+                    this.notificationsService.createNotification({
+                        userId: parentPost.authorId,
+                        actorId: userId,
+                        type: 'SOCIAL_REPLY',
+                        title: `@${authorUsername} respondió a tu publicación.`,
+                        message: snippet,
+                        link: `/posts/${post.id}`,
+                    }).catch(() => { });
+                }
+            }).catch(() => { });
+        }
+
+        this.mailService.sendAdminAlert({
+            eventType: 'POST_CREATED',
+            title: `Nueva Publicación de @${authorUsername}`,
+            badgeText: 'NUEVA PUBLICACIÓN',
+            badgeColor: '#3b82f6',
+            summary: `El usuario @${authorUsername} ha subido una nueva publicación a Finix.`,
+            details: [
+                { label: 'Autor', value: `@${authorUsername}` },
+                { label: 'Tipo de Publicación', value: post.type || 'post' },
+                { label: 'Símbolo / Tickers', value: post.assetSymbol || post.tickers || 'N/A' },
+                { label: 'Contenido / Extracto', value: snippet },
+                { label: 'ID Publicación', value: post.id },
+                { label: 'Fecha y Hora', value: new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) },
+            ],
+            actionUrl: `${this.mailService.getAppUrl()}/post/${post.id}`,
+            actionLabel: 'Ver Publicación en Finix',
+        });
+
+        return enriched;
     }
 
     // ── FEED ──────────────────────────────────────────────────────────────────

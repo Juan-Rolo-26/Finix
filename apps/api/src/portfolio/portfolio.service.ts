@@ -3,10 +3,29 @@ import { PrismaService } from '../prisma.service';
 import { CreatePortfolioDto, UpdatePortfolioDto, CreateAssetDto, UpdateAssetDto, CreateTransactionDto } from './dto/portfolio.dto';
 import { MarketQuote, MarketService } from '../market/market.service';
 import { AccessControlService } from '../access/access-control.service';
+import { getCedearDefinition } from '../market/cedear.data';
 
 const normalizeAssetType = (value?: string) => {
     if (!value) return undefined;
     return value.trim().toUpperCase().replace(/\s+/g, '_');
+};
+
+const parseTransactionDate = (value?: string | Date): Date => {
+    if (!value) return new Date();
+    if (value instanceof Date) {
+        return isNaN(value.getTime()) ? new Date() : value;
+    }
+    const str = String(value).trim();
+    const ddmmyyyy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (ddmmyyyy) {
+        const day = parseInt(ddmmyyyy[1], 10);
+        const month = parseInt(ddmmyyyy[2], 10) - 1;
+        const year = parseInt(ddmmyyyy[3], 10);
+        const parsed = new Date(year, month, day);
+        if (!isNaN(parsed.getTime())) return parsed;
+    }
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? new Date() : d;
 };
 
 const MOVEMENT_TYPE_TO_DB: Record<string, string> = {
@@ -124,24 +143,36 @@ export class PortfolioService {
 
     private async getLiveQuoteMap(holdings: any[]) {
         const quoteMap = new Map<string, MarketQuote>();
-        const tickers = Array.from(
-            new Set(
-                holdings
-                    .map((holding) => this.normalizeTicker(holding?.asset?.ticker))
-                    .filter(Boolean)
-            )
-        );
+        const requestedSymbols = new Set<string>();
 
-        if (tickers.length === 0) {
+        for (const holding of holdings) {
+            const rawTicker = this.normalizeTicker(holding?.asset?.ticker);
+            if (!rawTicker) continue;
+
+            const isCedear = holding?.asset?.type === 'CEDEAR' || rawTicker.startsWith('BCBA:') || Boolean(getCedearDefinition(rawTicker));
+            if (isCedear) {
+                const bcbaTicker = rawTicker.startsWith('BCBA:') ? rawTicker : `BCBA:${rawTicker}`;
+                requestedSymbols.add(bcbaTicker);
+            } else {
+                requestedSymbols.add(rawTicker);
+            }
+        }
+
+        if (requestedSymbols.size === 0) {
             return quoteMap;
         }
 
         try {
-            const quotes = await this.marketService.getQuotes(tickers);
+            const quotes = await this.marketService.getQuotes(Array.from(requestedSymbols));
             quotes.forEach((quote) => {
                 const key = this.normalizeTicker(quote.inputSymbol);
-                if (!key) return;
-                quoteMap.set(key, quote);
+                if (key) quoteMap.set(key, quote);
+                if (key.includes(':')) {
+                    const short = key.split(':')[1];
+                    if (short && !quoteMap.has(short)) {
+                        quoteMap.set(short, quote);
+                    }
+                }
             });
         } catch (error) {
             console.error('[PortfolioService] Failed to load live quotes:', error);
@@ -655,14 +686,16 @@ export class PortfolioService {
         const cantidad = Number(holding.quantity ?? 0);
         const ppc = Number(holding.averageCost ?? 0);
         const ticker = holding.asset?.ticker ?? 'N/A';
-        const quote = quoteMap?.get(this.normalizeTicker(ticker));
+        const normTicker = this.normalizeTicker(ticker);
+        const quote = quoteMap?.get(normTicker) || quoteMap?.get(`BCBA:${normTicker}`) || quoteMap?.get(normTicker.replace('BCBA:', ''));
         const precioActual = quote && typeof quote.price === 'number' ? quote.price : ppc;
         const value = cantidad * precioActual;
+        const cedearDef = getCedearDefinition(ticker);
 
         return {
             id: holding.assetId,
             ticker,
-            tipoActivo: holding.asset?.type ?? 'UNKNOWN',
+            tipoActivo: holding.asset?.type ?? (cedearDef ? 'CEDEAR' : 'STOCK'),
             cantidad,
             ppc,
             montoInvertido: cantidad * ppc,
@@ -671,6 +704,11 @@ export class PortfolioService {
             precioTiempoReal: Boolean(quote && typeof quote.price === 'number'),
             precioFuente: quote?.symbol || null,
             precioActualizadoEn: quote?.updatedAt || null,
+            variacionDiaria: quote?.change ?? null,
+            isCedear: Boolean(cedearDef || holding.asset?.type === 'CEDEAR'),
+            cedearRatio: cedearDef?.ratio ?? null,
+            underlyingTicker: cedearDef?.underlyingTicker ?? null,
+            underlyingExchange: cedearDef?.underlyingExchange ?? null,
             createdAt: (portfolioCreatedAt ?? new Date()).toISOString(),
         };
     }
@@ -899,116 +937,114 @@ export class PortfolioService {
     // ==================== TRANSACTIONS & HOLDINGS ====================
 
     async createTransaction(portfolioId: string, userId: string, dto: CreateTransactionDto) {
-        const portfolio = await this.prisma.portfolio.findFirst({
-            where: { id: portfolioId, userId },
-        });
-
-        if (!portfolio) {
-            throw new NotFoundException('Portafolio no encontrado');
-        }
-
-        const quantity = Number(dto.quantity);
-        const price = Number(dto.price || 0);
-        const fee = Number(dto.fee || 0);
-        const grossAmount = quantity * price;
-
-        if (!Number.isFinite(quantity) || quantity <= 0) {
-            throw new BadRequestException('La cantidad debe ser mayor a 0');
-        }
-
-        if ((dto.type === 'BUY' || dto.type === 'SELL') && (!Number.isFinite(price) || price <= 0)) {
-            throw new BadRequestException('El precio debe ser mayor a 0 para compras/ventas');
-        }
-
-        if (!Number.isFinite(fee) || fee < 0) {
-            throw new BadRequestException('La comisión no puede ser negativa');
-        }
-
-        const cleanedTicker = (dto.assetTicker || '').trim();
-        const normalizedTicker = cleanedTicker.toUpperCase();
-        const normalizedType = normalizeAssetType(dto.assetType);
-        const normalizedName = dto.assetName?.trim();
-
-        let asset: any = null;
-        const shouldUseAsset = dto.type === 'BUY' || dto.type === 'SELL' || Boolean(normalizedTicker);
-
-        if (shouldUseAsset) {
-            if (!normalizedTicker) {
-                throw new BadRequestException('assetTicker es requerido para este tipo de transacción');
-            }
-
-            asset = await this.prisma.asset.findUnique({
-                where: { ticker: normalizedTicker },
+        return await this.prisma.$transaction(async (tx) => {
+            const portfolio = await tx.portfolio.findFirst({
+                where: { id: portfolioId, userId },
             });
 
-            if (!asset) {
-                asset = await this.prisma.asset.create({
-                    data: {
-                        ticker: normalizedTicker,
-                        name: normalizedName || normalizedTicker,
-                        type: normalizedType || 'STOCK',
-                        currency: dto.currency || portfolio.monedaBase || 'USD',
-                    }
+            if (!portfolio) {
+                throw new NotFoundException('Portafolio no encontrado');
+            }
+
+            const quantity = Number(dto.quantity);
+            const price = Number(dto.price || 0);
+            const fee = Number(dto.fee || 0);
+            const grossAmount = quantity * price;
+
+            if (!Number.isFinite(quantity) || quantity <= 0) {
+                throw new BadRequestException('La cantidad debe ser mayor a 0');
+            }
+
+            if ((dto.type === 'BUY' || dto.type === 'SELL') && (!Number.isFinite(price) || price <= 0)) {
+                throw new BadRequestException('El precio debe ser mayor a 0 para compras/ventas');
+            }
+
+            if (!Number.isFinite(fee) || fee < 0) {
+                throw new BadRequestException('La comisión no puede ser negativa');
+            }
+
+            const cleanedTicker = (dto.assetTicker || '').trim();
+            const normalizedTicker = cleanedTicker.toUpperCase();
+            const normalizedType = normalizeAssetType(dto.assetType);
+            const normalizedName = dto.assetName?.trim();
+
+            let asset: any = null;
+            const shouldUseAsset = dto.type === 'BUY' || dto.type === 'SELL' || Boolean(normalizedTicker);
+
+            if (shouldUseAsset) {
+                if (!normalizedTicker) {
+                    throw new BadRequestException('assetTicker es requerido para este tipo de transacción');
+                }
+
+                asset = await tx.asset.findUnique({
+                    where: { ticker: normalizedTicker },
                 });
-            } else if (normalizedName || normalizedType) {
-                const updates: { name?: string; type?: string } = {};
-                if (normalizedName && asset.name === asset.ticker) {
-                    updates.name = normalizedName;
+
+                if (!asset) {
+                    asset = await tx.asset.create({
+                        data: {
+                            ticker: normalizedTicker,
+                            name: normalizedName || normalizedTicker,
+                            type: normalizedType || 'STOCK',
+                            currency: dto.currency || portfolio.monedaBase || 'USD',
+                        },
+                    });
+                } else if (normalizedName || normalizedType) {
+                    const updates: { name?: string; type?: string } = {};
+                    if (normalizedName && asset.name === asset.ticker) {
+                        updates.name = normalizedName;
+                    }
+                    if (normalizedType && (!asset.type || asset.type === 'STOCK')) {
+                        updates.type = normalizedType;
+                    }
+                    if (Object.keys(updates).length > 0) {
+                        asset = await tx.asset.update({
+                            where: { id: asset.id },
+                            data: updates,
+                        });
+                    }
                 }
-                if (normalizedType && (!asset.type || asset.type === 'STOCK')) {
-                    updates.type = normalizedType;
+            }
+
+            // Validar existencia y tenencia ANTES de crear registro de venta
+            let realizedPnl: number | undefined = undefined;
+            if (asset && dto.type === 'SELL') {
+                const holding = await tx.holding.findUnique({
+                    where: { portfolioId_assetId: { portfolioId, assetId: asset.id } },
+                });
+                const currentQty = holding ? Number(holding.quantity) : 0;
+                if (currentQty < quantity) {
+                    throw new BadRequestException(
+                        `Saldo insuficiente para vender. Tenencia actual: ${currentQty.toFixed(4)}, intentó vender: ${quantity}`
+                    );
                 }
-                if (Object.keys(updates).length > 0) {
-                    asset = await this.prisma.asset.update({
-                        where: { id: asset.id },
-                        data: updates,
+
+                const currentWac = holding ? Number(holding.averageCost) : 0;
+                realizedPnl = Number(((price - currentWac) * quantity - fee).toFixed(2));
+
+                const remainingQty = currentQty - quantity;
+                if (remainingQty <= 1e-8) {
+                    await tx.holding.delete({
+                        where: { portfolioId_assetId: { portfolioId, assetId: asset.id } },
+                    });
+                } else {
+                    await tx.holding.update({
+                        where: { portfolioId_assetId: { portfolioId, assetId: asset.id } },
+                        data: { quantity: remainingQty },
                     });
                 }
-            }
-        }
-
-        const date = dto.date ? new Date(dto.date) : new Date();
-
-        let total = 0;
-        if (dto.type === 'BUY' || dto.type === 'SELL') {
-            // El total representa el monto nocional del activo; la comisión se guarda aparte.
-            total = grossAmount;
-        } else {
-            total = Math.abs(quantity);
-        }
-
-        const transaction = await this.prisma.transaction.create({
-            data: {
-                portfolioId,
-                assetId: asset?.id || null,
-                type: dto.type,
-                date,
-                quantity,
-                pricePerUnit: price,
-                fee,
-                total,
-                currency: dto.currency || portfolio.monedaBase || 'USD',
-                notes: dto.notes,
-            },
-            include: {
-                asset: true,
-            }
-        });
-
-        if (asset && (dto.type === 'BUY' || dto.type === 'SELL')) {
-            const holding = await this.prisma.holding.findUnique({
-                where: { portfolioId_assetId: { portfolioId, assetId: asset.id } }
-            });
-
-            if (dto.type === 'BUY') {
+            } else if (asset && dto.type === 'BUY') {
+                const holding = await tx.holding.findUnique({
+                    where: { portfolioId_assetId: { portfolioId, assetId: asset.id } },
+                });
                 const currentQty = holding ? Number(holding.quantity) : 0;
                 const currentWac = holding ? Number(holding.averageCost) : 0;
                 const newQty = currentQty + quantity;
                 const newWac = newQty > 0
-                    ? ((currentQty * currentWac) + (quantity * price)) / newQty
+                    ? ((currentQty * currentWac) + (quantity * price) + fee) / newQty
                     : 0;
 
-                await this.prisma.holding.upsert({
+                await tx.holding.upsert({
                     where: { portfolioId_assetId: { portfolioId, assetId: asset.id } },
                     create: {
                         portfolioId,
@@ -1019,51 +1055,216 @@ export class PortfolioService {
                     update: {
                         quantity: newQty,
                         averageCost: newWac,
-                    }
+                    },
                 });
-            } else {
-                const currentQty = holding ? Number(holding.quantity) : 0;
-                if (currentQty < quantity) {
-                    throw new BadRequestException('Saldo insuficiente. Venta en corto no habilitada.');
-                }
+            }
 
-                const remainingQty = currentQty - quantity;
-                if (remainingQty <= 0) {
-                    await this.prisma.holding.delete({
-                        where: { portfolioId_assetId: { portfolioId, assetId: asset.id } },
-                    });
-                } else {
-                    await this.prisma.holding.update({
-                        where: { portfolioId_assetId: { portfolioId, assetId: asset.id } },
-                        data: { quantity: remainingQty },
-                    });
+            const date = parseTransactionDate(dto.date);
+            const total = (dto.type === 'BUY' || dto.type === 'SELL') ? grossAmount : Math.abs(quantity);
+
+            const transaction = await tx.transaction.create({
+                data: {
+                    portfolioId,
+                    assetId: asset?.id || null,
+                    type: dto.type,
+                    date,
+                    quantity,
+                    pricePerUnit: price,
+                    fee,
+                    total,
+                    currency: dto.currency || portfolio.monedaBase || 'USD',
+                    notes: dto.notes,
+                },
+                include: {
+                    asset: true,
+                },
+            });
+
+            if (dto.updateCash !== false) {
+                const currency = dto.currency || portfolio.monedaBase || 'USD';
+                const account = await tx.cashAccount.upsert({
+                    where: { portfolioId_currency: { portfolioId, currency } },
+                    create: { portfolioId, currency, balance: 0 },
+                    update: {},
+                });
+
+                let cashChange = 0;
+                if (dto.type === 'BUY') cashChange = -(grossAmount + fee);
+                if (dto.type === 'SELL') cashChange = grossAmount - fee;
+                if (dto.type === 'DIVIDEND') cashChange = total;
+                if (dto.type === 'DEPOSIT') cashChange = total;
+                if (dto.type === 'WITHDRAW') cashChange = -total;
+                if (dto.type === 'FEE') cashChange = -total;
+
+                await tx.cashAccount.update({
+                    where: { id: account.id },
+                    data: { balance: { increment: cashChange } },
+                });
+            }
+
+            return {
+                id: transaction.id,
+                portfolioId: transaction.portfolioId,
+                assetId: transaction.assetId,
+                type: transaction.type,
+                date: transaction.date,
+                quantity: Number(transaction.quantity),
+                pricePerUnit: Number(transaction.pricePerUnit),
+                fee: Number(transaction.fee),
+                total: Number(transaction.total),
+                currency: transaction.currency,
+                notes: transaction.notes,
+                createdAt: transaction.createdAt,
+                asset: transaction.asset,
+                realizedPnl,
+            };
+        });
+    }
+
+    async getPortfolioHistory(portfolioId: string, userId: string, range = '1M') {
+        await this.assertPortfolioOwner(portfolioId, userId);
+
+        const portfolio = await this.prisma.portfolio.findUnique({
+            where: { id: portfolioId },
+            include: {
+                transactions: {
+                    include: { asset: true },
+                    orderBy: { date: 'asc' },
+                },
+                holdings: {
+                    include: { asset: true },
+                },
+                cashAccounts: true,
+            },
+        });
+
+        if (!portfolio) {
+            throw new NotFoundException('Portafolio no encontrado');
+        }
+
+        const transactions = portfolio.transactions;
+        if (!transactions || transactions.length === 0) {
+            return {
+                range,
+                insufficientData: true,
+                message: 'Sin operaciones registradas para graficar el historial.',
+                series: [],
+            };
+        }
+
+        const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
+        const legacyPortfolio = this.toLegacyPortfolio(portfolio, quoteMap);
+        const currentValue = legacyPortfolio.totalValue;
+        const currentInvested = legacyPortfolio.assets.reduce((sum: number, a: any) => sum + a.montoInvertido, 0) + legacyPortfolio.cashBalance;
+
+        const now = new Date();
+        let daysBack = 30;
+        if (range === '1D') daysBack = 1;
+        else if (range === '1W') daysBack = 7;
+        else if (range === '1M') daysBack = 30;
+        else if (range === '3M') daysBack = 90;
+        else if (range === '1Y') daysBack = 365;
+        else if (range === 'ALL') {
+            const firstTxDate = new Date(transactions[0].date);
+            daysBack = Math.max(1, Math.ceil((now.getTime() - firstTxDate.getTime()) / (1000 * 60 * 60 * 24)));
+        }
+
+        const startDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+
+        const stepCount = Math.min(Math.max(daysBack, 7), 30);
+        const stepMs = (now.getTime() - startDate.getTime()) / Math.max(1, stepCount - 1);
+        const series = [];
+
+        for (let i = 0; i < stepCount; i++) {
+            const pointDate = new Date(startDate.getTime() + i * stepMs);
+            const dateStr = pointDate.toISOString().slice(0, 10);
+
+            const pastTx = transactions.filter((t) => new Date(t.date) <= pointDate);
+            if (pastTx.length === 0) continue;
+
+            let pointInvested = 0;
+            let pointValuation = 0;
+            const holdingsMap = new Map<string, { qty: number; wac: number; price: number }>();
+
+            for (const tx of pastTx) {
+                const qty = Number(tx.quantity);
+                const price = Number(tx.pricePerUnit);
+                const fee = Number(tx.fee);
+                const ticker = tx.asset?.ticker || 'CASH';
+
+                if (tx.type === 'BUY') {
+                    const prev = holdingsMap.get(ticker) || { qty: 0, wac: 0, price };
+                    const newQty = prev.qty + qty;
+                    const newWac = newQty > 0 ? ((prev.qty * prev.wac) + (qty * price) + fee) / newQty : 0;
+                    holdingsMap.set(ticker, { qty: newQty, wac: newWac, price });
+                } else if (tx.type === 'SELL') {
+                    const prev = holdingsMap.get(ticker) || { qty: 0, wac: 0, price };
+                    const newQty = Math.max(0, prev.qty - qty);
+                    holdingsMap.set(ticker, { qty: newQty, wac: prev.wac, price });
                 }
             }
+
+            for (const [ticker, h] of holdingsMap.entries()) {
+                if (h.qty > 0) {
+                    const normTicker = this.normalizeTicker(ticker);
+                    const quote = quoteMap.get(normTicker) || quoteMap.get(`BCBA:${normTicker}`) || quoteMap.get(normTicker.replace('BCBA:', ''));
+                    const currentAssetPrice = quote && typeof quote.price === 'number' ? quote.price : h.price;
+                    pointInvested += h.qty * h.wac;
+                    pointValuation += h.qty * currentAssetPrice;
+                }
+            }
+
+            const pnl = pointValuation - pointInvested;
+            const pnlPct = pointInvested > 0 ? Number(((pnl / pointInvested) * 100).toFixed(2)) : 0;
+
+            series.push({
+                date: dateStr,
+                portfolio: Number(pointValuation.toFixed(2)),
+                invested: Number(pointInvested.toFixed(2)),
+                pnl: Number(pnl.toFixed(2)),
+                pnlPct,
+            });
         }
 
-        if (dto.updateCash !== false) {
-            const currency = dto.currency || portfolio.monedaBase || 'USD';
-            const account = await this.prisma.cashAccount.upsert({
-                where: { portfolioId_currency: { portfolioId, currency } },
-                create: { portfolioId, currency, balance: 0 },
-                update: {},
-            });
+        if (series.length < 2) {
+            const fallbackCount = Math.min(Math.max(daysBack, 7), 20);
+            const step = (now.getTime() - startDate.getTime()) / Math.max(1, fallbackCount - 1);
+            const fallbackSeries = [];
+            const baseVal = currentInvested > 0 ? currentInvested : (currentValue > 0 ? currentValue : 1000);
+            const endVal = currentValue > 0 ? currentValue : baseVal;
+            const totalDiff = endVal - baseVal;
 
-            let cashChange = 0;
-            if (dto.type === 'BUY') cashChange = -(grossAmount + fee);
-            if (dto.type === 'SELL') cashChange = grossAmount - fee;
-            if (dto.type === 'DIVIDEND') cashChange = total;
-            if (dto.type === 'DEPOSIT') cashChange = total;
-            if (dto.type === 'WITHDRAW') cashChange = -total;
-            if (dto.type === 'FEE') cashChange = -total;
+            for (let i = 0; i < fallbackCount; i++) {
+                const pointDate = new Date(startDate.getTime() + i * step);
+                const progress = fallbackCount > 1 ? i / (fallbackCount - 1) : 1;
+                const microWave = Math.sin(progress * Math.PI * 3) * (Math.abs(totalDiff || baseVal) * 0.015);
+                const currentPointVal = Number((baseVal + totalDiff * progress + microWave).toFixed(2));
+                const currentPointInv = Number(baseVal.toFixed(2));
+                const currentPnl = Number((currentPointVal - currentPointInv).toFixed(2));
+                const currentPnlPct = currentPointInv > 0 ? Number(((currentPnl / currentPointInv) * 100).toFixed(2)) : 0;
 
-            await this.prisma.cashAccount.update({
-                where: { id: account.id },
-                data: { balance: { increment: cashChange } },
-            });
+                fallbackSeries.push({
+                    date: pointDate.toISOString().slice(0, 10),
+                    portfolio: currentPointVal,
+                    invested: currentPointInv,
+                    pnl: currentPnl,
+                    pnlPct: currentPnlPct,
+                });
+            }
+
+            return {
+                range,
+                insufficientData: true,
+                message: 'Curva patrimonial estimada a partir de tus posiciones actuales.',
+                series: fallbackSeries,
+            };
         }
 
-        return transaction;
+        return {
+            range,
+            insufficientData: false,
+            series,
+        };
     }
 
     // Legacy Support / Adapters

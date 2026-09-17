@@ -40,20 +40,23 @@ export class ReportsService {
         // Search for reporter details context
         const reporter = await this.prisma.user.findUnique({ where: { id: reporterId } });
 
-        // Send email to admin
-        await this.mailService.sendEmail({
-            to: 'juanpablorolo2007@gmail.com', // Admin email
-            subject: `Nuevo Reporte en Finix: ${targetType}`,
-            text: `Reporte de ${targetType}`,
-            html: `<div style="font-family: sans-serif; padding: 20px;">
-                <h2 style="color: #ef4444;">Nuevo Reporte de Finix</h2>
-                <p><strong>Hecho por:</strong> ${reporter?.username} (${reporter?.email})</p>
-                <p><strong>Tipo:</strong> ${targetType}</p>
-                <p><strong>Objetivo Reportado:</strong> ${targetDetail}</p>
-                <p><strong>Motivo / Descripción:</strong><br/> ${reason}</p>
-                <br/>
-                <a href="https://admin.finixarg.com" style="background: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Ir al Panel Admin</a>
-            </div>`
+        // Send email alert to admin
+        await this.mailService.sendAdminAlert({
+            eventType: 'REPORT_CREATED',
+            title: `Nuevo Reporte: ${targetType}`,
+            badgeText: 'REPORTE RECIBIDO',
+            badgeColor: '#ef4444',
+            summary: `Se ha recibido un nuevo reporte en Finix contra un elemento de tipo ${targetType}.`,
+            details: [
+                { label: 'Tipo de Elemento', value: targetType },
+                { label: 'Detalle del Objetivo', value: targetDetail },
+                { label: 'Denunciante', value: `${reporter?.username || 'Anónimo'} (${reporter?.email || 'N/A'})` },
+                { label: 'Motivo / Descripción', value: reason },
+                { label: 'ID Reporte', value: report.id },
+                { label: 'Fecha y Hora', value: new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) },
+            ],
+            actionUrl: `${this.mailService.getAdminUrl()}/reports`,
+            actionLabel: 'Moderar Reporte en Panel Admin',
         });
 
         return report;

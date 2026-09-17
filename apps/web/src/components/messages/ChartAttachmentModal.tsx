@@ -69,7 +69,7 @@ function EmbeddedChart({ symbol, interval, theme, onWidgetReady }: EmbeddedChart
             const widget = new TV.widget({
                 container_id: containerId,
                 width: '100%',
-                height: 440,
+                height: 520,
                 symbol,
                 interval,
                 timezone: 'America/Argentina/Buenos_Aires',
@@ -124,8 +124,8 @@ function EmbeddedChart({ symbol, interval, theme, onWidgetReady }: EmbeddedChart
     }, [interval, onWidgetReady, symbol, theme]);
 
     return (
-        <div className="w-full rounded-2xl overflow-hidden border border-border/40" style={{ height: 440 }}>
-            <div ref={wrapRef} className="w-full h-full" />
+        <div className="w-full shrink-0 rounded-2xl overflow-hidden border border-border/40" style={{ height: 520, minHeight: 520 }}>
+            <div ref={wrapRef} className="w-full h-full" style={{ minHeight: 520 }} />
         </div>
     );
 }

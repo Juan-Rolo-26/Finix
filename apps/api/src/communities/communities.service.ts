@@ -2,13 +2,17 @@ import {
     BadRequestException, ForbiddenException, Injectable, NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { MailService } from '../mail/mail.service';
 import { Prisma } from '@prisma/client';
 
 const ACTIVE_MEMBER_STATUSES = new Set(['ACTIVE']);
 
 @Injectable()
 export class CommunitiesService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly mailService: MailService,
+    ) { }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -178,6 +182,31 @@ export class CommunitiesService {
         await this.prisma.user.update({
             where: { id: userId },
             data: { isCreator: true },
+        });
+
+        // Notify admin about new community
+        const creator = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { username: true, email: true },
+        });
+
+        this.mailService.sendAdminAlert({
+            eventType: 'COMMUNITY_CREATED',
+            title: `Nueva Comunidad Creada: "${community.name}"`,
+            badgeText: 'NUEVA COMUNIDAD',
+            badgeColor: '#8b5cf6',
+            summary: `Se ha creado una nueva comunidad en Finix por @${creator?.username || 'usuario'}.`,
+            details: [
+                { label: 'Nombre de Comunidad', value: community.name },
+                { label: 'Creador / Owner', value: `@${creator?.username || 'N/A'} (${creator?.email || 'N/A'})` },
+                { label: 'Categoría', value: community.category || 'General' },
+                { label: 'Privacidad', value: community.privacyType || 'PUBLIC' },
+                { label: 'Descripción', value: community.description ? (community.description.length > 200 ? `${community.description.slice(0, 200)}...` : community.description) : 'Sin descripción' },
+                { label: 'ID Comunidad', value: community.id },
+                { label: 'Fecha y Hora', value: new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) },
+            ],
+            actionUrl: `${this.mailService.getAppUrl()}/communities/${community.id}`,
+            actionLabel: 'Ver Comunidad en Finix',
         });
 
         return this.findOne(community.id, userId);

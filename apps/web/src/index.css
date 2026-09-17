@@ -250,11 +250,6 @@
         --auth-footer-bg: linear-gradient(180deg, transparent 0%, hsl(210 22% 95%) 100%);
     }
 
-    @media (min-width: 1024px) {
-        :root {
-            font-size: 16px;
-        }
-    }
 
     body {
         background-color: hsl(var(--background));
@@ -580,6 +575,17 @@
     height: 100% !important;
 }
 
+.tradingview-widget-container {
+    width: 100% !important;
+}
+
+.tradingview-widget-container iframe {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    display: block;
+}
+
 .market-overview-widget iframe {
     display: block;
 }
@@ -634,19 +640,31 @@
     background-color: hsl(0 0% 95%) !important;
 }
 
-.light .text-white {
+.light .text-white:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *) {
     color: hsl(222 15% 10%) !important;
 }
 
-.light .text-gray-100,
-.light .text-gray-200,
-.light .text-gray-300 {
+.light .text-gray-100:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *),
+.light .text-gray-200:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *),
+.light .text-gray-300:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *) {
     color: hsl(222 15% 20%) !important;
 }
 
-.light .text-gray-400,
-.light .text-gray-500 {
+.light .text-gray-400:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *),
+.light .text-gray-500:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *) {
     color: hsl(222 10% 40%) !important;
+}
+
+/* Force white text in cards/heroes with dark backgrounds */
+.keep-white,
+.keep-white * {
+    color: #ffffff !important;
+}
+.keep-white .text-white-subtle {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+.keep-white .text-white-muted {
+    color: rgba(255, 255, 255, 0.72) !important;
 }
 
 .light .border-border-dark {
@@ -1250,3 +1268,24 @@
         animation-duration: 0.01ms !important;
     }
 }
+
+/* ─── Markets section typography scaling (+5% font size across all elements) ─── */
+.markets-view {
+    font-size: 1.05rem;
+}
+
+.markets-view .text-xs { font-size: 0.7875rem !important; line-height: 1.05rem !important; }
+.markets-view .text-sm { font-size: 0.91875rem !important; line-height: 1.3125rem !important; }
+.markets-view .text-base { font-size: 1.05rem !important; line-height: 1.575rem !important; }
+.markets-view .text-lg { font-size: 1.18125rem !important; line-height: 1.8375rem !important; }
+.markets-view .text-xl { font-size: 1.3125rem !important; line-height: 1.8375rem !important; }
+.markets-view .text-2xl { font-size: 1.575rem !important; line-height: 2.1rem !important; }
+.markets-view .text-3xl { font-size: 1.96875rem !important; line-height: 2.3625rem !important; }
+.markets-view .text-4xl { font-size: 2.3625rem !important; line-height: 2.625rem !important; }
+.markets-view [class*="text-[9.5px]"] { font-size: 10px !important; }
+.markets-view [class*="text-[10px]"] { font-size: 10.5px !important; }
+.markets-view [class*="text-[11px]"] { font-size: 11.55px !important; }
+.markets-view [class*="text-[12px]"] { font-size: 12.6px !important; }
+.markets-view [class*="text-[13px]"] { font-size: 13.65px !important; }
+.markets-view [class*="text-[14px]"] { font-size: 14.7px !important; }
+.markets-view [class*="text-[15px]"] { font-size: 15.75px !important; }

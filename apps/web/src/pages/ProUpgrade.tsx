@@ -20,18 +20,23 @@ export default function ProUpgrade() {
     const [loading, setLoading] = useState(false);
 
     const handleUpgrade = async () => {
-        if (!user) return;
+        if (!user) {
+            navigate(`/auth?redirect=${encodeURIComponent('/pro')}&plan=PRO`);
+            return;
+        }
         setLoading(true);
         try {
-            const res = await apiFetch('/stripe/subscriptions/pro/checkout', { method: 'POST' });
+            const res = await apiFetch('/mercadopago/checkout/pro', { method: 'POST' });
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.message || 'Error al conectar con la pasarela de pago');
+                throw new Error(data.message || 'Error al conectar con Mercado Pago');
             }
-            const { url } = await res.json();
-            if (url) {
-                // Redirigir a la pasarela de Stripe
-                window.location.href = url;
+            const data = await res.json();
+            const checkoutUrl = data.init_point || data.sandbox_init_point || data.url;
+            if (checkoutUrl) {
+                window.location.href = checkoutUrl;
+            } else {
+                throw new Error('No se recibió la URL de checkout de Mercado Pago');
             }
         } catch (error: any) {
             alert(error.message || 'Ocurrió un error inesperado.');
@@ -148,6 +153,8 @@ export default function ProUpgrade() {
                                         <Loader2 className="w-5 h-5 animate-spin" />
                                         Conectando...
                                     </>
+                                ) : !user ? (
+                                    'Iniciar sesión para mejorar a PRO'
                                 ) : user?.plan === 'PRO' ? (
                                     'Ya eres PRO'
                                 ) : (
@@ -155,7 +162,7 @@ export default function ProUpgrade() {
                                 )}
                             </button>
                             <p className="text-center text-xs text-muted-foreground mt-4 mb-8">
-                                Pago seguro procesado por <strong className="text-foreground">Stripe</strong>. Cancela cuando quieras.
+                                Pago seguro procesado por <strong className="text-foreground">Mercado Pago</strong>. Cancela cuando quieras.
                             </p>
 
                             <div className="space-y-4 pt-6 border-t border-border/40">

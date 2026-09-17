@@ -13,8 +13,16 @@ export class MailService {
             .replace(/'/g, '&#39;');
     }
 
-    private getAppUrl() {
-        return (process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    getAppUrl() {
+        return (process.env.FRONTEND_URL || process.env.APP_URL || 'https://finixarg.com').replace(/\/$/, '');
+    }
+
+    getAdminUrl() {
+        return (process.env.ADMIN_URL || 'https://admin.finixarg.com').replace(/\/$/, '');
+    }
+
+    getAdminNotificationEmail() {
+        return process.env.ADMIN_OWNER_EMAIL?.trim() || 'juanpablorolo2007@gmail.com';
     }
 
     private getResendApiKey() {
@@ -299,5 +307,146 @@ export class MailService {
                 </div>
             `,
         });
+    }
+
+    private renderAdminAlertEmail(
+        params: {
+            title: string;
+            badgeText: string;
+            badgeColor?: string;
+            summary: string;
+            details: Array<{ label: string; value: string | number }>;
+            actionUrl?: string;
+            actionLabel?: string;
+        },
+        destination: string,
+    ) {
+        const badgeColor = params.badgeColor || '#10b981';
+        const badgeBg = `${badgeColor}22`;
+        const badgeBorder = `${badgeColor}55`;
+
+        const detailRows = (params.details || [])
+            .map(
+                (d) => `
+                <tr>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #1e293b; font-size: 12px; font-weight: 600; color: #94a3b8; width: 32%; vertical-align: top;">
+                        ${this.escapeHtml(d.label)}
+                    </td>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #1e293b; font-size: 13px; font-weight: 500; color: #f8fafc; vertical-align: top; word-break: break-word;">
+                        ${this.escapeHtml(String(d.value))}
+                    </td>
+                </tr>
+            `,
+            )
+            .join('');
+
+        const actionButtonHtml = params.actionUrl
+            ? `
+            <div style="margin-top: 24px; text-align: left;">
+                <a
+                    href="${this.escapeHtml(params.actionUrl)}"
+                    style="display: inline-block; padding: 12px 22px; border-radius: 10px; background: #10b981; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 13px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);"
+                >
+                    ${this.escapeHtml(params.actionLabel || 'Ver en Finix')} &rarr;
+                </a>
+            </div>
+        `
+            : '';
+
+        return `
+            <div style="background-color: #0b0f17; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 32px 16px; color: #f1f5f9;">
+                <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background-color: #111827; border: 1px solid #1f2937; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);">
+                    <tr>
+                        <td style="padding: 20px 24px; border-bottom: 1px solid #1f2937; background: linear-gradient(180deg, #182234 0%, #111827 100%);">
+                            <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td>
+                                        <span style="font-size: 20px; font-weight: 900; letter-spacing: -0.03em; color: #ffffff;">FINIX</span>
+                                        <span style="display: inline-block; margin-left: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: #94a3b8; font-weight: 600;">Control Center</span>
+                                    </td>
+                                    <td align="right">
+                                        <span style="display: inline-block; padding: 5px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; background-color: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder};">
+                                            ${this.escapeHtml(params.badgeText)}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 24px 28px;">
+                            <h1 style="margin: 0 0 10px; font-size: 19px; font-weight: 700; color: #f8fafc; line-height: 1.35;">
+                                ${this.escapeHtml(params.title)}
+                            </h1>
+                            <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #94a3b8;">
+                                ${this.escapeHtml(params.summary)}
+                            </p>
+                            <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #0d131f; border: 1px solid #1e293b; border-radius: 12px; overflow: hidden;">
+                                ${detailRows}
+                            </table>
+                            ${actionButtonHtml}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 18px 24px; background-color: #0a0e17; border-top: 1px solid #1f2937; text-align: center;">
+                            <p style="margin: 0 0 4px; font-size: 12px; color: #64748b;">
+                                Alerta enviada a <strong style="color: #94a3b8;">${this.escapeHtml(destination)}</strong>
+                            </p>
+                            <p style="margin: 0; font-size: 11px; color: #475569;">
+                                Finix Platform © ${new Date().getFullYear()} — Plataforma de Mercados y Comunidad
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        `;
+    }
+
+    async sendAdminAlert(options: {
+        eventType:
+            | 'USER_REGISTERED'
+            | 'REPORT_CREATED'
+            | 'POST_CREATED'
+            | 'COMMUNITY_CREATED'
+            | 'CREATOR_APPLICATION'
+            | 'PAYMENT_RECEIVED'
+            | 'CONTACT_MESSAGE';
+        title: string;
+        badgeText: string;
+        badgeColor?: string;
+        summary: string;
+        details: Array<{ label: string; value: string | number }>;
+        actionUrl?: string;
+        actionLabel?: string;
+    }): Promise<void> {
+        try {
+            const destination = this.getAdminNotificationEmail();
+            const subject = `[Finix] ${options.badgeText}: ${options.title}`;
+
+            const textLines = [
+                `FINIX - NOTIFICACIÓN ADMINISTRATIVA`,
+                `[${options.badgeText}] ${options.title}`,
+                '',
+                options.summary,
+                '',
+                ...(options.details || []).map((d) => `${d.label}: ${d.value}`),
+            ];
+            if (options.actionUrl) {
+                textLines.push('', `${options.actionLabel || 'Ver en Finix'}: ${options.actionUrl}`);
+            }
+
+            const html = this.renderAdminAlertEmail(options, destination);
+
+            await this.sendEmail({
+                to: destination,
+                subject,
+                text: textLines.join('\n'),
+                html,
+            });
+
+            this.logger.log(`Admin alert [${options.eventType}] sent to ${destination}`);
+        } catch (error: any) {
+            this.logger.error(`Error sending admin alert [${options.eventType}]: ${error?.message || error}`);
+        }
     }
 }

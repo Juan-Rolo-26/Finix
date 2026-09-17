@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Bell, Heart, MessageSquare, TrendingUp, UserPlus, Loader2, CheckCheck, Settings, ShieldAlert, Sparkles, Building2 } from 'lucide-react';
+import { Bell, Heart, MessageSquare, TrendingUp, UserPlus, Loader2, CheckCheck, Settings, ShieldAlert, Sparkles, Building2, Repeat } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { type NotificationItem, groupNotificationsByDay } from '@/lib/notifications';
 
 const CATEGORIES = [
@@ -18,6 +19,7 @@ const getNotificationConfig = (type: string) => {
     if (type.startsWith('SOCIAL_FOLLOW')) return { icon: UserPlus, color: 'var(--primary)', bg: 'var(--primary) / 0.1' };
     if (type.startsWith('SOCIAL_LIKE')) return { icon: Heart, color: 'hsl(0 68% 54%)', bg: 'hsl(0 68% 54% / 0.1)' };
     if (type.startsWith('SOCIAL_COMMENT') || type.startsWith('SOCIAL_REPLY')) return { icon: MessageSquare, color: 'hsl(145 65% 38%)', bg: 'hsl(145 65% 38% / 0.1)' };
+    if (type.startsWith('SOCIAL_REPOST')) return { icon: Repeat, color: 'hsl(280 65% 58%)', bg: 'hsl(280 65% 58% / 0.1)' };
     if (type.startsWith('COMMUNITY_')) return { icon: Building2, color: 'hsl(280 65% 58%)', bg: 'hsl(280 65% 58% / 0.1)' };
     if (type.startsWith('MARKET_')) return { icon: TrendingUp, color: 'hsl(38 88% 52%)', bg: 'hsl(38 88% 52% / 0.1)' };
     if (type.startsWith('SECURITY_')) return { icon: ShieldAlert, color: 'hsl(0 80% 50%)', bg: 'hsl(0 80% 50% / 0.1)' };
@@ -207,7 +209,7 @@ export default function Notifications() {
                                                 <div className="relative shrink-0">
                                                     {n.actor?.avatarUrl ? (
                                                         <div className="w-11 h-11 rounded-full overflow-hidden border border-border">
-                                                            <img src={n.actor.avatarUrl} alt="" className="w-full h-full object-cover" />
+                                                            <img src={resolveMediaUrl(n.actor.avatarUrl)} alt="" className="w-full h-full object-cover" />
                                                         </div>
                                                     ) : (
                                                         <div

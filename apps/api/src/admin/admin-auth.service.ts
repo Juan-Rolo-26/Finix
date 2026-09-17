@@ -75,30 +75,36 @@ export class AdminAuthService {
     }
 
     buildAccessCookieOptions() {
+        const domain = process.env.ADMIN_COOKIE_DOMAIN || process.env.COOKIE_DOMAIN || undefined;
         return {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict' as const,
+            sameSite: (domain ? 'lax' : 'strict') as 'lax' | 'strict',
+            ...(domain ? { domain } : {}),
             path: '/api',
             maxAge: this.accessTtlSeconds * 1000,
         };
     }
 
     buildRefreshCookieOptions() {
+        const domain = process.env.ADMIN_COOKIE_DOMAIN || process.env.COOKIE_DOMAIN || undefined;
         return {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict' as const,
+            sameSite: (domain ? 'lax' : 'strict') as 'lax' | 'strict',
+            ...(domain ? { domain } : {}),
             path: '/api',
             maxAge: this.refreshTtlSeconds * 1000,
         };
     }
 
     buildClearCookieOptions() {
+        const domain = process.env.ADMIN_COOKIE_DOMAIN || process.env.COOKIE_DOMAIN || undefined;
         return {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict' as const,
+            sameSite: (domain ? 'lax' : 'strict') as 'lax' | 'strict',
+            ...(domain ? { domain } : {}),
             path: '/api',
         };
     }

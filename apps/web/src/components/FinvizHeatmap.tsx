@@ -51,13 +51,20 @@ interface TreemapNodeRendererProps {
     perf?: number | string;
     subtype?: HeatmapSubtype | string;
     children?: unknown[];
+    onSelectSymbol?: (symbol: string) => void;
     payload?: {
         perf?: number | string;
         children?: unknown[];
+        onSelectSymbol?: (symbol: string) => void;
         payload?: {
             perf?: number | string;
+            onSelectSymbol?: (symbol: string) => void;
         };
     };
+}
+
+export interface FinvizHeatmapProps {
+    onSelectSymbol?: (symbol: string) => void;
 }
 
 const subtypeOptions: Array<{ value: HeatmapSubtype; label: string }> = [
@@ -183,18 +190,25 @@ function FinvizTreemapNode({
     const stroke = isSectorNode ? '#334155' : 'rgba(0,0,0,0.1)';
     const strokeWidth = isSectorNode ? 2 : 1;
 
-    // Font Sizing - slightly larger for better readability
-    const primaryFontSize = Math.min(18, Math.max(10, Math.min(width, height) / 4));
-    const secondaryFontSize = Math.min(14, Math.max(9, Math.min(width, height) / 6));
+    // Font Sizing - larger for better readability
+    const primaryFontSize = Math.min(22, Math.max(12, Math.min(width, height) / 3.4));
+    const secondaryFontSize = Math.min(16, Math.max(10, Math.min(width, height) / 5.2));
 
     // Visibility Logic
-    const showPrimary = width > 40 && height > 20;
-    const showSecondary = width > 60 && height > 35;
+    const showPrimary = width > 36 && height > 18;
+    const showSecondary = width > 52 && height > 32;
 
     const label = String(name || '').replace(/^Root$/i, '');
 
     return (
-        <g>
+        <g
+            style={{ cursor: !isSectorNode ? 'pointer' : 'default' }}
+            onClick={() => {
+                if (!isSectorNode && label && payload?.onSelectSymbol) {
+                    payload.onSelectSymbol(label);
+                }
+            }}
+        >
             <rect
                 x={adjustedX}
                 y={adjustedY}
@@ -207,12 +221,12 @@ function FinvizTreemapNode({
 
             {isSectorNode && width > 50 && height > 20 && (
                 <text
-                    x={adjustedX + 4}
-                    y={adjustedY + 16}
-                    fill="#94a3b8"
-                    fontSize={12}
-                    fontWeight={700}
-                    style={{ pointerEvents: 'none', textTransform: 'uppercase' }}
+                    x={adjustedX + 6}
+                    y={adjustedY + 18}
+                    fill="#cbd5e1"
+                    fontSize={14}
+                    fontWeight={800}
+                    style={{ pointerEvents: 'none', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                 >
                     {label}
                 </text>
@@ -225,8 +239,8 @@ function FinvizTreemapNode({
                     textAnchor="middle"
                     fill="#ffffff"
                     fontSize={primaryFontSize}
-                    fontWeight={700}
-                    style={{ pointerEvents: 'none', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
+                    fontWeight={800}
+                    style={{ pointerEvents: 'none', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}
                 >
                     {label}
                 </text>
@@ -239,8 +253,8 @@ function FinvizTreemapNode({
                     textAnchor="middle"
                     fill="#ffffff" // Always white for contrast on colored bg
                     fontSize={secondaryFontSize}
-                    fontWeight={600}
-                    style={{ pointerEvents: 'none', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
+                    fontWeight={700}
+                    style={{ pointerEvents: 'none', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}
                 >
                     {formatPerf(perf)}
                 </text>
@@ -249,7 +263,7 @@ function FinvizTreemapNode({
     );
 }
 
-export default function FinvizHeatmap() {
+export default function FinvizHeatmap({ onSelectSymbol }: FinvizHeatmapProps = {}) {
     const [subtype, setSubtype] = useState<HeatmapSubtype>('d1');
     const [data, setData] = useState<FinvizHeatmapPayload | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -266,14 +280,13 @@ export default function FinvizHeatmap() {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
-
-                const payload = await response.json() as FinvizHeatmapPayload;
+                const result = (await response.json()) as FinvizHeatmapPayload;
                 if (!cancelled) {
-                    setData(payload);
+                    setData(result);
                 }
             } catch (err) {
                 if (!cancelled) {
-                    setError(err instanceof Error ? err.message : 'Error desconocido');
+                    setError(err instanceof Error ? err.message : 'Error al cargar');
                 }
             } finally {
                 if (!cancelled) {
@@ -283,65 +296,72 @@ export default function FinvizHeatmap() {
         };
 
         load();
+
         return () => {
             cancelled = true;
         };
     }, [subtype]);
 
-    const gainers = data?.stats?.topMovers?.gainers || [];
-    const losers = data?.stats?.topMovers?.losers || [];
-    const sectorCount = data?.sectors?.length || 0;
+    const gainers = useMemo(() => data?.stats?.topMovers?.gainers || [], [data]);
+    const losers = useMemo(() => data?.stats?.topMovers?.losers || [], [data]);
+    const sectorCount = useMemo(() => data?.sectors?.length || 0, [data]);
 
     const marketBreadth = useMemo(() => {
-        if (!data?.stats?.tickerCount) return '--';
-        const percentUp = (data.stats.upCount / data.stats.tickerCount) * 100;
-        return `${percentUp.toFixed(1)}% en verde`;
+        if (!data?.stats) return '--';
+        const { upCount, downCount } = data.stats;
+        const total = upCount + downCount;
+        if (!total) return '--';
+        return `${((upCount / total) * 100).toFixed(1)}% alcista`;
     }, [data]);
 
     return (
-        <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap gap-2">
+        <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl border border-border/70 bg-card/60 backdrop-blur-xl">
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mr-1">
+                        Período:
+                    </span>
                     {subtypeOptions.map((option) => (
                         <Button
                             key={option.value}
                             size="sm"
                             variant={subtype === option.value ? 'default' : 'outline'}
                             onClick={() => setSubtype(option.value)}
+                            className="rounded-xl px-4 font-bold text-xs"
                         >
                             {option.label}
                         </Button>
                     ))}
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="border-primary/40 text-primary">
-                        Finviz
+                <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-500 font-bold px-3 py-1">
+                        Finviz S&P 500
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs font-semibold text-muted-foreground">
                         Actualizado: {getUpdatedLabel(data?.updatedAt)}
                     </span>
                 </div>
             </div>
 
-            <div className="h-[860px] w-full overflow-hidden rounded-xl border border-primary/30 bg-[#020617] shadow-xl">
+            <div className="h-[860px] w-full overflow-hidden rounded-[24px] border border-border/80 bg-[#020617] shadow-2xl">
                 {isLoading && (
                     <div className="flex h-full items-center justify-center">
-                        <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                        <div className="h-12 w-12 rounded-full border-3 border-emerald-500 border-t-transparent animate-spin" />
                     </div>
                 )}
 
                 {!isLoading && error && (
                     <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-                        <AlertTriangle className="h-8 w-8 text-amber-400" />
-                        <p className="text-sm text-muted-foreground">
+                        <AlertTriangle className="h-10 w-10 text-amber-400" />
+                        <p className="text-base font-semibold text-muted-foreground">
                             No se pudo cargar el mapa de calor de Finviz ahora mismo.
                         </p>
                         <a
                             href="https://finviz.com/map.ashx?t=sec"
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-2 rounded-md border border-primary/40 px-4 py-2 text-sm text-primary hover:bg-primary/10"
+                            className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-2.5 text-sm font-bold text-emerald-400 hover:bg-emerald-500/20"
                         >
                             Abrir Finviz
                             <ExternalLink className="h-4 w-4" />
@@ -356,7 +376,7 @@ export default function FinvizHeatmap() {
                             dataKey="value"
                             stroke="rgba(0,0,0,0)"
                             isAnimationActive={false}
-                            content={<FinvizTreemapNode subtype={(data?.subtype as HeatmapSubtype) || subtype} />}
+                            content={<FinvizTreemapNode subtype={(data?.subtype as HeatmapSubtype) || subtype} onSelectSymbol={onSelectSymbol} />}
                             style={{ background: 'transparent' }}
                         />
                     </ResponsiveContainer>
@@ -364,48 +384,56 @@ export default function FinvizHeatmap() {
             </div>
 
             <div className="grid gap-4 xl:grid-cols-3">
-                <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Mayores subas</p>
-                    <div className="mt-3 space-y-2">
+                <div className="rounded-[20px] border border-border/70 bg-card/60 p-5 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Mayores subas</p>
+                    <div className="mt-4 space-y-3">
                         {gainers.slice(0, 5).map((ticker) => (
-                            <div key={`gain-${ticker.name}`} className="flex items-center justify-between text-sm">
-                                <span className="font-semibold text-foreground">{ticker.name}</span>
-                                <span className="text-emerald-400">{formatPerf(ticker.perf)}</span>
+                            <div
+                                key={`gain-${ticker.name}`}
+                                onClick={() => onSelectSymbol?.(ticker.name)}
+                                className="flex items-center justify-between text-sm hover:bg-muted/40 p-1.5 rounded-lg cursor-pointer transition-colors"
+                            >
+                                <span className="font-extrabold text-foreground">{ticker.name}</span>
+                                <span className="text-emerald-500 font-black">{formatPerf(ticker.perf)}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Mayores bajas</p>
-                    <div className="mt-3 space-y-2">
+                <div className="rounded-[20px] border border-border/70 bg-card/60 p-5 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Mayores bajas</p>
+                    <div className="mt-4 space-y-3">
                         {losers.slice(0, 5).map((ticker) => (
-                            <div key={`loss-${ticker.name}`} className="flex items-center justify-between text-sm">
-                                <span className="font-semibold text-foreground">{ticker.name}</span>
-                                <span className="text-red-400">{formatPerf(ticker.perf)}</span>
+                            <div
+                                key={`loss-${ticker.name}`}
+                                onClick={() => onSelectSymbol?.(ticker.name)}
+                                className="flex items-center justify-between text-sm hover:bg-muted/40 p-1.5 rounded-lg cursor-pointer transition-colors"
+                            >
+                                <span className="font-extrabold text-foreground">{ticker.name}</span>
+                                <span className="text-rose-500 font-black">{formatPerf(ticker.perf)}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Panorama del mercado</p>
-                    <div className="mt-3 space-y-2 text-sm">
+                <div className="rounded-[20px] border border-border/70 bg-card/60 p-5 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Panorama del mercado</p>
+                    <div className="mt-4 space-y-3 text-sm">
                         <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Sectores</span>
-                            <span className="font-semibold">{sectorCount}</span>
+                            <span className="text-muted-foreground font-medium">Sectores</span>
+                            <span className="font-extrabold text-foreground">{sectorCount}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Acciones</span>
-                            <span className="font-semibold">{data?.stats?.tickerCount || 0}</span>
+                            <span className="text-muted-foreground font-medium">Acciones analizadas</span>
+                            <span className="font-extrabold text-foreground">{data?.stats?.tickerCount || 0}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Capitalización total</span>
-                            <span className="font-semibold">{formatMarketCap(data?.stats?.totalMarketCap || 0)}</span>
+                            <span className="text-muted-foreground font-medium">Capitalización total</span>
+                            <span className="font-extrabold text-foreground">{formatMarketCap(data?.stats?.totalMarketCap || 0)}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Amplitud</span>
-                            <span className="font-semibold text-emerald-400">{marketBreadth}</span>
+                            <span className="text-muted-foreground font-medium">Amplitud de mercado</span>
+                            <span className="font-black text-emerald-500">{marketBreadth}</span>
                         </div>
                     </div>
                 </div>

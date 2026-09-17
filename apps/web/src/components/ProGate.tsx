@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Lock, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/stores/authStore';
 
 export interface ProGateProps {
     title?: string;
@@ -21,7 +22,14 @@ export function ProGate({
     className = '',
 }: ProGateProps) {
     const navigate = useNavigate();
-    const handleUpgrade = onUpgrade || (() => navigate('/pro'));
+    const user = useAuthStore(s => s.user);
+    const handleUpgrade = onUpgrade || (() => {
+        if (!user) {
+            navigate(`/auth?redirect=${encodeURIComponent('/pro')}&plan=PRO`);
+        } else {
+            navigate('/pro');
+        }
+    });
 
     return (
         <div className={`flex-1 w-full flex flex-col items-center justify-center min-h-[calc(100vh-theme(spacing.16))] sm:min-h-[calc(100vh-80px)] px-6 py-16 text-center relative overflow-hidden my-auto ${className}`}>

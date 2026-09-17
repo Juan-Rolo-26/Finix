@@ -29,6 +29,8 @@ import { HealthModule } from './health/health.module';
 import { ReportsModule } from './reports/reports.module';
 import { MarketRankingModule } from './market-ranking/market-ranking.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { ChartAnalysisModule } from './chart-analysis/chart-analysis.module';
+import { MercadoPagoModule } from './mercadopago/mercadopago.module';
 
 @Module({
     imports: [
@@ -77,6 +79,8 @@ import { CalendarModule } from './calendar/calendar.module';
         ReportsModule,
         MarketRankingModule,
         CalendarModule,
+        ChartAnalysisModule,
+        MercadoPagoModule,
     ],
     controllers: [],
     providers: [

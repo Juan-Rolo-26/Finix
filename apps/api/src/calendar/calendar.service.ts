@@ -7,6 +7,7 @@ import {
     CalendarWeekDay,
     EconomicEventItem,
     EarningsEventItem,
+    DividendEventItem,
 } from './interfaces/calendar.interface';
 import { CalendarProviderService } from './services/calendar-provider.service';
 import { MarketImpactScoringService } from './services/market-impact-scoring.service';
@@ -22,6 +23,10 @@ export class CalendarService {
         private readonly marketScoring: MarketImpactScoringService,
         private readonly earningsScoring: EarningsImpactScoringService,
     ) { }
+
+    private get calendarSourceRepo(): any {
+        return (this.prisma as any).calendarSource;
+    }
 
     /**
      * Devuelve los 3 eventos destacados para la tarjeta de Inicio:
@@ -149,6 +154,33 @@ export class CalendarService {
             });
         }
 
+        // Fill remaining slots up to 3 from other high-impact economic events if needed
+        if (selectedCards.length < 3) {
+            for (const eco of economicEvents) {
+                if (selectedCards.length >= 3) break;
+                if (!selectedCards.some(c => c.id === eco.id || c.title.trim().toLowerCase() === eco.title.trim().toLowerCase())) {
+                    selectedCards.push({
+                        id: eco.id,
+                        type: 'ECONOMIC',
+                        country: eco.country as any,
+                        title: eco.title,
+                        subtitle: eco.country === 'AR' ? 'Argentina' : 'Estados Unidos',
+                        date: eco.date,
+                        time: eco.time || undefined,
+                        dayLabel: this.getDayLabel(eco.date),
+                        importance: eco.importance as any,
+                        impactScore: eco.marketImpactScore,
+                        previousValue: eco.previousValue ?? undefined,
+                        consensusValue: eco.consensusValue ?? undefined,
+                        actualValue: eco.actualValue ?? undefined,
+                        surprise: eco.surprise ?? undefined,
+                        expectedMarketEffect: eco.expectedMarketEffect ?? undefined,
+                        affectedAssets: eco.affectedAssets ? this.parseAffectedAssets(eco.affectedAssets) : undefined,
+                    });
+                }
+            }
+        }
+
         // Orden cronológico por fecha y hora
         selectedCards.sort((a, b) => {
             const dateComp = a.date.localeCompare(b.date);
@@ -169,7 +201,7 @@ export class CalendarService {
      */
     async getWeekEvents(params: {
         weekStart?: string;
-        category?: 'ALL' | 'US' | 'AR' | 'EARNINGS';
+        category?: 'ALL' | 'US' | 'AR' | 'EARNINGS' | 'DIVIDEND' | string;
         importance?: 'HIGH' | 'MEDIUM' | 'LOW';
         user?: any;
     }): Promise<CalendarWeekResponse> {
@@ -182,129 +214,250 @@ export class CalendarService {
             params.user?.subscriptionTier === 'pro'
         );
 
-        let monday: Date;
-        if (params.weekStart) {
-            monday = new Date(params.weekStart);
-        } else {
-            monday = this.getMondayOfWeek(new Date());
-        }
+        const isAll = params.weekStart === 'ALL' || params.weekStart === 'all';
 
-        const friday = new Date(monday.getTime() + 4 * 24 * 3600 * 1000);
-        const mondayStr = monday.toISOString().substring(0, 10);
-        const fridayStr = friday.toISOString().substring(0, 10);
+        let monday: Date = new Date();
+        let mondayStr = '';
+        let sundayStr = '';
+
+        if (!isAll) {
+            if (params.weekStart) {
+                monday = new Date(params.weekStart);
+            } else {
+                monday = this.getMondayOfWeek(new Date());
+            }
+
+            const sunday = new Date(monday.getTime() + 6 * 24 * 3600 * 1000);
+            mondayStr = monday.toISOString().substring(0, 10);
+            sundayStr = sunday.toISOString().substring(0, 10);
+        }
 
         // Fetch economic and earnings
         const economicWhere: any = {
-            date: { gte: mondayStr, lte: fridayStr },
             isPublished: true,
         };
+        if (!isAll) {
+            economicWhere.date = { gte: mondayStr, lte: sundayStr };
+        }
         if (params.category === 'US') economicWhere.country = 'US';
         if (params.category === 'AR') economicWhere.country = 'AR';
         if (params.importance) economicWhere.importance = params.importance;
 
         const earningsWhere: any = {
-            date: { gte: mondayStr, lte: fridayStr },
             isPublished: true,
         };
+        if (!isAll) {
+            earningsWhere.date = { gte: mondayStr, lte: sundayStr };
+        }
 
-        const [dbEconomic, dbEarnings] = await Promise.all([
-            params.category === 'EARNINGS' ? [] : this.prisma.marketCalendarEvent.findMany({
+        let [dbEconomic, dbEarnings] = await Promise.all([
+            (params.category === 'EARNINGS' || params.category === 'DIVIDEND') ? [] : this.prisma.marketCalendarEvent.findMany({
                 where: economicWhere,
                 orderBy: [{ date: 'asc' }, { time: 'asc' }, { marketImpactScore: 'desc' }],
             }),
-            (params.category === 'US' || params.category === 'AR') ? [] : this.prisma.marketEarningsEvent.findMany({
+            (params.category === 'US' || params.category === 'AR' || params.category === 'DIVIDEND') ? [] : this.prisma.marketEarningsEvent.findMany({
                 where: earningsWhere,
                 orderBy: [{ date: 'asc' }, { earningsImpactScore: 'desc' }],
             }),
         ]);
 
-        // Build days map for Monday through Friday
-        const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-        const shortNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE'];
+        // Fetch S&P 500 Dividends from DB or TradingView Scanner
+        let dbDividends: any[] = [];
+        if (params.category !== 'US' && params.category !== 'AR' && params.category !== 'EARNINGS') {
+            try {
+                if ((this.prisma as any).marketDividendEvent) {
+                    const dividendWhere: any = { isPublished: true };
+                    if (!isAll) {
+                        dividendWhere.OR = [
+                            { paymentDate: { gte: mondayStr, lte: sundayStr } },
+                            { exDate: { gte: mondayStr, lte: sundayStr } },
+                        ];
+                    }
+                    dbDividends = await (this.prisma as any).marketDividendEvent.findMany({
+                        where: dividendWhere,
+                        orderBy: [{ paymentDate: 'asc' }, { exDate: 'asc' }],
+                    });
+                }
+            } catch {
+                // Table might not exist yet
+            }
+
+            if (dbDividends.length === 0) {
+                const tvDivs = await this.providerService.fetchTradingViewSP500Dividends({
+                    from: mondayStr,
+                    to: sundayStr,
+                });
+                dbDividends = tvDivs;
+            }
+        }
+
+        // Fallback: Si no hay eventos económicos en la semana, usamos los eventos publicados disponibles
+        let usedFallback = false;
+        if (!isAll && dbEconomic.length === 0 && dbEarnings.length === 0 && dbDividends.length === 0) {
+            const fallbackEconomic = await this.prisma.marketCalendarEvent.findMany({
+                where: { isPublished: true },
+                orderBy: [{ date: 'asc' }, { time: 'asc' }, { marketImpactScore: 'desc' }],
+            });
+            const fallbackEarnings = await this.prisma.marketEarningsEvent.findMany({
+                where: { isPublished: true },
+                orderBy: [{ date: 'asc' }, { earningsImpactScore: 'desc' }],
+            });
+
+            if (fallbackEconomic.length > 0 || fallbackEarnings.length > 0) {
+                dbEconomic = fallbackEconomic;
+                dbEarnings = fallbackEarnings;
+                usedFallback = true;
+            }
+        }
+
+        const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const shortNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
         const todayStr = new Date().toISOString().substring(0, 10);
 
         const days: CalendarWeekDay[] = [];
-        for (let i = 0; i < 5; i++) {
-            const currentDayDate = new Date(monday.getTime() + i * 24 * 3600 * 1000);
-            const dateStr = currentDayDate.toISOString().substring(0, 10);
 
-            // Filter economic events for this day
-            const rawEco = dbEconomic.filter(e => e.date === dateStr);
-            const rawEarn = dbEarnings.filter(e => e.date === dateStr);
+        // Función mapeadora de eventos económicos con sanitización PRO
+        const mapEcoEvents = (rawEco: any[]): EconomicEventItem[] => rawEco.map(e => ({
+            id: e.id,
+            eventType: 'ECONOMIC',
+            country: e.country,
+            currency: e.currency || undefined,
+            title: e.title,
+            description: isProUser ? (e.description || undefined) : undefined,
+            category: e.category,
+            importance: e.importance as any,
+            marketImpactScore: e.marketImpactScore,
+            date: e.date,
+            time: e.time || undefined,
+            timestampUtc: e.timestampUtc,
+            timezone: e.timezone,
+            previousValue: isProUser ? (e.previousValue || undefined) : undefined,
+            consensusValue: isProUser ? (e.consensusValue || undefined) : undefined,
+            actualValue: isProUser ? (e.actualValue || undefined) : undefined,
+            surprise: isProUser ? (e.surprise ?? undefined) : undefined,
+            surprisePercent: isProUser ? (e.surprisePercent ?? undefined) : undefined,
+            expectedMarketEffect: isProUser ? (e.expectedMarketEffect || undefined) : undefined,
+            affectedAssets: isProUser && e.affectedAssets ? this.parseAffectedAssets(e.affectedAssets) : undefined,
+            source: isProUser ? (e.source || undefined) : undefined,
+            sourceType: e.sourceType as any,
+            isPublished: e.isPublished,
+        }));
 
-            // Sanitize if not PRO
-            const ecoEvents: EconomicEventItem[] = rawEco.map(e => ({
-                id: e.id,
-                eventType: 'ECONOMIC',
-                country: e.country,
-                currency: e.currency || undefined,
-                title: e.title,
-                description: isProUser ? (e.description || undefined) : undefined,
-                category: e.category,
-                importance: e.importance as any,
-                marketImpactScore: e.marketImpactScore,
-                date: e.date,
-                time: e.time || undefined,
-                timestampUtc: e.timestampUtc,
-                timezone: e.timezone,
-                // Exclusive PRO fields:
-                previousValue: isProUser ? (e.previousValue || undefined) : undefined,
-                consensusValue: isProUser ? (e.consensusValue || undefined) : undefined,
-                actualValue: isProUser ? (e.actualValue || undefined) : undefined,
-                surprise: isProUser ? (e.surprise ?? undefined) : undefined,
-                surprisePercent: isProUser ? (e.surprisePercent ?? undefined) : undefined,
-                expectedMarketEffect: isProUser ? (e.expectedMarketEffect || undefined) : undefined,
-                affectedAssets: isProUser && e.affectedAssets ? this.parseAffectedAssets(e.affectedAssets) : undefined,
-                source: isProUser ? (e.source || undefined) : undefined,
-                sourceType: e.sourceType as any,
-                isPublished: e.isPublished,
-            }));
+        // Función mapeadora de earnings con sanitización PRO
+        const mapEarnEvents = (rawEarn: any[]): EarningsEventItem[] => rawEarn.map(e => ({
+            id: e.id,
+            eventType: 'EARNINGS',
+            ticker: e.ticker,
+            companyName: e.companyName,
+            logoUrl: e.logoUrl || this.earningsScoring.getTradingViewLogoUrl(e.ticker),
+            date: e.date,
+            time: e.time || undefined,
+            timestampUtc: e.timestampUtc,
+            timezone: e.timezone,
+            dateStatus: e.dateStatus as any,
+            reportTiming: e.reportTiming as any,
+            marketCap: e.marketCap ?? undefined,
+            earningsImpactScore: e.earningsImpactScore,
+            epsEstimate: e.epsEstimate ?? undefined,
+            revenueEstimate: e.revenueEstimate ?? undefined,
+            actualEps: e.actualEps ?? undefined,
+            actualRevenue: e.actualRevenue ?? undefined,
+            epsSurprise: e.epsSurprise ?? undefined,
+            revenueSurprise: e.revenueSurprise ?? undefined,
+            source: e.source || undefined,
+            sourceType: e.sourceType as any,
+            isPublished: e.isPublished,
+        }));
 
-            const earnEvents: EarningsEventItem[] = rawEarn.map(e => ({
-                id: e.id,
-                eventType: 'EARNINGS',
-                ticker: e.ticker,
-                companyName: e.companyName,
-                logoUrl: e.logoUrl || this.earningsScoring.getTradingViewLogoUrl(e.ticker),
-                date: e.date,
-                time: e.time || undefined,
-                timestampUtc: e.timestampUtc,
-                timezone: e.timezone,
-                dateStatus: e.dateStatus as any,
-                reportTiming: e.reportTiming as any,
-                marketCap: e.marketCap ?? undefined,
-                earningsImpactScore: e.earningsImpactScore,
-                // Detailed estimates for PRO users:
-                epsEstimate: isProUser ? (e.epsEstimate ?? undefined) : undefined,
-                revenueEstimate: isProUser ? (e.revenueEstimate ?? undefined) : undefined,
-                actualEps: isProUser ? (e.actualEps ?? undefined) : undefined,
-                actualRevenue: isProUser ? (e.actualRevenue ?? undefined) : undefined,
-                epsSurprise: isProUser ? (e.epsSurprise ?? undefined) : undefined,
-                revenueSurprise: isProUser ? (e.revenueSurprise ?? undefined) : undefined,
-                source: isProUser ? (e.source || undefined) : undefined,
-                sourceType: e.sourceType as any,
-                isPublished: e.isPublished,
-            }));
+        // Función mapeadora de dividendos S&P 500
+        const mapDivEvents = (rawDiv: any[]): DividendEventItem[] => rawDiv.map(d => ({
+            id: d.id || `${d.ticker}-${d.paymentDate || d.exDate}`,
+            eventType: 'DIVIDEND',
+            ticker: d.ticker,
+            companyName: d.companyName,
+            logoUrl: d.logoUrl || this.earningsScoring.getTradingViewLogoUrl(d.ticker),
+            exDate: d.exDate,
+            paymentDate: d.paymentDate || undefined,
+            recordDate: d.recordDate || undefined,
+            declarationDate: d.declarationDate || undefined,
+            amount: d.amount != null ? Number(d.amount) : undefined,
+            yield: d.yield != null ? Number(d.yield) : undefined,
+            frequency: d.frequency || 'Trimestral',
+            marketCap: d.marketCap ?? undefined,
+            source: d.source || 'TradingView Official Scanner',
+            sourceType: (d.sourceType || 'AUTOMATIC') as any,
+            isPublished: d.isPublished ?? true,
+        }));
 
-            days.push({
-                date: dateStr,
-                dayName: dayNames[i],
-                shortDay: shortNames[i],
-                isToday: dateStr === todayStr,
-                economicEvents: ecoEvents,
-                earningsEvents: earnEvents,
-            });
+        if (isAll || usedFallback) {
+            // Agrupar por todas las fechas únicas que tienen eventos
+            const allDatesSet = new Set<string>([
+                ...dbEconomic.map(e => e.date),
+                ...dbEarnings.map(e => e.date),
+                ...dbDividends.map(d => d.paymentDate || d.exDate).filter(Boolean),
+            ]);
+            const sortedDates = Array.from(allDatesSet).sort();
+
+            for (const dateStr of sortedDates) {
+                const parts = dateStr.split('-').map(Number);
+                const dObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                const dayIndex = dObj.getDay();
+
+                const rawEco = dbEconomic.filter(e => e.date === dateStr);
+                const rawEarn = dbEarnings.filter(e => e.date === dateStr);
+                const rawDiv = dbDividends.filter(d => (d.paymentDate === dateStr) || (!d.paymentDate && d.exDate === dateStr));
+
+                days.push({
+                    date: dateStr,
+                    dayName: dayNames[dayIndex],
+                    shortDay: shortNames[dayIndex],
+                    isToday: dateStr === todayStr,
+                    economicEvents: mapEcoEvents(rawEco),
+                    earningsEvents: mapEarnEvents(rawEarn),
+                    dividendEvents: mapDivEvents(rawDiv),
+                });
+            }
+        } else {
+            // Vista de semana estándar (Lunes a Viernes / Domingo)
+            for (let i = 0; i < 7; i++) {
+                const currentDayDate = new Date(monday.getTime() + i * 24 * 3600 * 1000);
+                const dateStr = currentDayDate.toISOString().substring(0, 10);
+                const dayIndex = currentDayDate.getDay();
+
+                const rawEco = dbEconomic.filter(e => e.date === dateStr);
+                const rawEarn = dbEarnings.filter(e => e.date === dateStr);
+                const rawDiv = dbDividends.filter(d => (d.paymentDate === dateStr) || (!d.paymentDate && d.exDate === dateStr));
+
+                // Omitir sábado y domingo si no tienen eventos
+                if ((i === 5 || i === 6) && rawEco.length === 0 && rawEarn.length === 0 && rawDiv.length === 0) {
+                    continue;
+                }
+
+                days.push({
+                    date: dateStr,
+                    dayName: dayNames[dayIndex],
+                    shortDay: shortNames[dayIndex],
+                    isToday: dateStr === todayStr,
+                    economicEvents: mapEcoEvents(rawEco),
+                    earningsEvents: mapEarnEvents(rawEarn),
+                    dividendEvents: mapDivEvents(rawDiv),
+                });
+            }
         }
 
         const counts = {
-            all: dbEconomic.length + dbEarnings.length,
+            all: dbEconomic.length + dbEarnings.length + dbDividends.length,
             us: dbEconomic.filter(e => e.country === 'US').length,
             ar: dbEconomic.filter(e => e.country === 'AR').length,
             earnings: dbEarnings.length,
+            dividends: dbDividends.length,
         };
 
+        const rangeFrom = days[0]?.date || mondayStr;
+        const rangeTo = days[days.length - 1]?.date || sundayStr;
+
         return {
-            weekRange: { from: mondayStr, to: fridayStr },
+            weekRange: { from: rangeFrom, to: rangeTo },
             isProUser,
             categories: counts,
             days,
@@ -315,271 +468,628 @@ export class CalendarService {
      * Sincroniza datos de la semana desde proveedores autorizados hacia la base de datos.
      */
     async syncWeeklyData(fromStr?: string, toStr?: string): Promise<{ success: boolean; eventsProcessed: number; errors: number }> {
+        const macroRes = await this.syncMacroData(fromStr, toStr);
+        const earnRes = await this.syncTradingViewEarnings();
+        const divRes = await this.syncTradingViewDividends();
+        return {
+            success: macroRes.success && earnRes.success && divRes.success,
+            eventsProcessed: (macroRes.eventsCreated + macroRes.eventsUpdated) + (earnRes.eventsProcessed || 0) + (divRes.eventsProcessed || 0),
+            errors: macroRes.errorsCount + (earnRes.errors || 0) + (divRes.errors || 0),
+        };
+    }
+
+    /**
+     * Asegura que las fuentes institucionales predefinidas existan en la tabla CalendarSource.
+     */
+    async ensureSourcesInitialized() {
+        try {
+            const count = await this.calendarSourceRepo.count();
+            if (count === 0) {
+                const defaults = this.providerService.getPredefinedSources();
+                for (const s of defaults) {
+                    await this.calendarSourceRepo.create({ data: s });
+                }
+                this.logger.log(`Initialized ${defaults.length} predefined calendar sources in database.`);
+            }
+        } catch (e: any) {
+            this.logger.warn(`Could not initialize predefined sources: ${e.message}`);
+        }
+    }
+
+    /**
+     * Sincronización inteligente de eventos macroeconómicos y de mercado.
+     * Incluye normalización, cálculo de impactScore 0-100, categoría, deduplicación canónica
+     * mediante eventFingerprint y jerarquía de prioridad de fuentes.
+     */
+    async syncMacroData(fromStr?: string, toStr?: string, sourceId?: string): Promise<{
+        success: boolean;
+        message: string;
+        eventsFound: number;
+        eventsCreated: number;
+        eventsUpdated: number;
+        duplicatesIgnored: number;
+        errorsCount: number;
+        durationMs: number;
+    }> {
         const startTime = Date.now();
+        await this.ensureSourcesInitialized();
+
         const { mondayStr, fridayStr } = this.getCurrentWeekBounds();
         const from = fromStr || mondayStr;
-        const to = toStr || fridayStr;
+        const to = toStr || new Date(new Date(from).getTime() + 14 * 24 * 3600 * 1000).toISOString().substring(0, 10);
 
-        let processed = 0;
-        let errors = 0;
+        let eventsFound = 0;
+        let eventsCreated = 0;
+        let eventsUpdated = 0;
+        let duplicatesIgnored = 0;
+        let errorsCount = 0;
 
         try {
-            this.logger.log(`Starting Calendar weekly sync from ${from} to ${to}...`);
+            this.logger.log(`[MarketCalendar] Starting macro sync from ${from} to ${to}... (Source: ${sourceId || 'ALL'})`);
 
-            // 1. Fetch economic events from provider
-            const economicList = await this.providerService.getUpcomingEconomicEvents(from, to, ['US', 'AR']);
-            for (const item of economicList) {
+            // 1. Obtener eventos normalizados desde los adaptadores
+            const rawEvents = await this.providerService.getUpcomingEconomicEvents(from, to, ['US', 'AR']);
+            eventsFound = rawEvents.length;
+
+            for (const item of rawEvents) {
                 try {
-                    // Check if already exists by country + date + normalized title
+                    const country = (item.country || 'US').toUpperCase().trim();
+                    const date = (item.date || from).substring(0, 10).trim();
+                    const title = item.title.trim();
+                    const ticker = item.ticker ? item.ticker.toUpperCase().trim() : undefined;
+
+                    // Evaluar scoring e impacto
+                    const evalRes = this.marketScoring.evaluateEvent(title, country, ticker);
+                    const score = item.impactScore ?? item.marketImpactScore ?? evalRes.score;
+                    const impact = this.marketScoring.scoreToImpact(score);
+                    const category = item.category || evalRes.category;
+                    const fingerprint = this.marketScoring.generateFingerprint(country, date, title, ticker);
+                    const sourceName = item.sourceName || item.source || 'Official Source';
+                    const incomingPriority = this.marketScoring.getSourcePriority(sourceName);
+
+                    // Regla de publicación inteligente:
+                    // impactScore >= 70 o fuente oficial -> PUBLISHED
+                    // impactScore >= 40 -> APPROVED
+                    // impactScore < 40 -> PENDING_REVIEW
+                    const autoStatus = score >= 70 ? 'PUBLISHED' : (score >= 40 ? 'APPROVED' : 'PENDING_REVIEW');
+                    const isPub = autoStatus === 'PUBLISHED' || autoStatus === 'APPROVED';
+
+                    // Deduplicación por fingerprint canónico
                     const existing = await this.prisma.marketCalendarEvent.findFirst({
                         where: {
-                            country: item.country,
-                            date: item.date,
-                            title: { contains: item.title.substring(0, 15), mode: 'insensitive' },
+                            OR: [
+                                { eventFingerprint: fingerprint },
+                                { country, date, title: { contains: title.substring(0, 16), mode: 'insensitive' } },
+                            ],
                         },
                     });
 
                     if (existing) {
-                        // Update if new values arrived
-                        await this.prisma.marketCalendarEvent.update({
-                            where: { id: existing.id },
-                            data: {
-                                previousValue: item.previousValue ?? existing.previousValue,
-                                consensusValue: item.consensusValue ?? existing.consensusValue,
-                                actualValue: item.actualValue ?? existing.actualValue,
-                                surprise: item.surprise ?? existing.surprise,
-                                time: item.time ?? existing.time,
-                            },
-                        });
+                        const existingPriority = this.marketScoring.getSourcePriority(existing.sourceName || existing.source || '');
+                        const hasNewActual = item.actualValue && !existing.actualValue;
+                        const hasNewConsensus = item.consensusValue && !existing.consensusValue;
+
+                        // Si la fuente entrante tiene mayor o igual prioridad, o aporta datos reales
+                        if (incomingPriority <= existingPriority || hasNewActual || hasNewConsensus) {
+                            await this.prisma.marketCalendarEvent.update({
+                                where: { id: existing.id },
+                                data: {
+                                    previousValue: item.previousValue ?? existing.previousValue,
+                                    forecastValue: item.forecastValue ?? existing.forecastValue,
+                                    consensusValue: item.consensusValue ?? existing.consensusValue,
+                                    actualValue: item.actualValue ?? existing.actualValue,
+                                    unit: item.unit ?? existing.unit,
+                                    surprise: item.surprise ?? existing.surprise,
+                                    surprisePercent: item.surprisePercent ?? existing.surprisePercent,
+                                    time: item.time ?? existing.time,
+                                    impact,
+                                    impactScore: score,
+                                    importance: impact,
+                                    marketImpactScore: score,
+                                    eventFingerprint: fingerprint,
+                                    sourceName: incomingPriority <= existingPriority ? sourceName : existing.sourceName,
+                                    sourceUrl: item.sourceUrl ?? existing.sourceUrl,
+                                    updatedAt: new Date(),
+                                },
+                            });
+                            eventsUpdated++;
+                        } else {
+                            duplicatesIgnored++;
+                        }
                     } else {
+                        // Crear nuevo evento canónico
                         await this.prisma.marketCalendarEvent.create({
                             data: {
-                                eventType: 'ECONOMIC',
-                                country: item.country,
-                                currency: item.currency,
-                                title: item.title,
+                                eventType: item.eventType || 'ECONOMIC',
+                                country,
+                                countryCode: country,
+                                currency: item.currency || (country === 'AR' ? 'ARS' : 'USD'),
+                                title,
                                 description: item.description,
-                                category: item.category,
-                                importance: item.importance,
-                                marketImpactScore: item.marketImpactScore,
-                                date: item.date,
-                                time: item.time,
-                                timestampUtc: item.timestampUtc,
-                                timezone: item.timezone,
+                                category,
+                                subcategory: item.subcategory,
+                                importance: impact,
+                                impact,
+                                marketImpactScore: score,
+                                impactScore: score,
+                                date,
+                                time: item.time || '12:00',
+                                timestampUtc: item.timestampUtc || new Date(`${date}T12:00:00Z`),
+                                timezone: item.timezone || (country === 'AR' ? 'America/Argentina/Buenos_Aires' : 'America/New_York'),
                                 previousValue: item.previousValue,
+                                forecastValue: item.forecastValue,
                                 consensusValue: item.consensusValue,
                                 actualValue: item.actualValue,
+                                unit: item.unit,
                                 surprise: item.surprise,
                                 surprisePercent: item.surprisePercent,
-                                expectedMarketEffect: item.expectedMarketEffect,
-                                affectedAssets: item.affectedAssets ? JSON.stringify(item.affectedAssets) : null,
-                                source: item.source,
+                                expectedMarketEffect: item.expectedMarketEffect || evalRes.expectedEffect,
+                                affectedAssets: item.affectedAssets ? JSON.stringify(item.affectedAssets) : JSON.stringify(evalRes.affectedAssets),
+                                source: sourceName,
+                                sourceName,
+                                sourceUrl: item.sourceUrl,
                                 sourceType: 'AUTOMATIC',
-                                isPublished: true,
+                                companyName: item.companyName,
+                                ticker,
+                                status: autoStatus,
+                                isManual: false,
+                                isAutomatic: true,
+                                isVerified: incomingPriority === 1,
+                                isPublished: isPub,
+                                eventFingerprint: fingerprint,
                             },
                         });
+                        eventsCreated++;
                     }
-                    processed++;
-                } catch (e: any) {
-                    errors++;
-                    this.logger.warn(`Error storing economic event ${item.title}: ${e.message}`);
+                } catch (err: any) {
+                    errorsCount++;
+                    this.logger.warn(`[MarketCalendar] Error processing event ${item.title}: ${err.message}`);
                 }
-            }
-
-            // 2. Fetch Earnings from provider
-            const earningsList = await this.providerService.getUpcomingEarnings(from, to);
-            for (const earn of earningsList) {
-                try {
-                    const existing = await this.prisma.marketEarningsEvent.findFirst({
-                        where: {
-                            ticker: earn.ticker,
-                            date: earn.date,
-                        },
-                    });
-
-                    if (existing) {
-                        await this.prisma.marketEarningsEvent.update({
-                            where: { id: existing.id },
-                            data: {
-                                epsEstimate: earn.epsEstimate ?? existing.epsEstimate,
-                                revenueEstimate: earn.revenueEstimate ?? existing.revenueEstimate,
-                                actualEps: earn.actualEps ?? existing.actualEps,
-                                actualRevenue: earn.actualRevenue ?? existing.actualRevenue,
-                                reportTiming: earn.reportTiming ?? existing.reportTiming,
-                            },
-                        });
-                    } else {
-                        await this.prisma.marketEarningsEvent.create({
-                            data: {
-                                ticker: earn.ticker,
-                                companyName: earn.companyName,
-                                logoUrl: earn.logoUrl,
-                                date: earn.date,
-                                time: earn.time,
-                                timestampUtc: earn.timestampUtc,
-                                timezone: earn.timezone,
-                                dateStatus: earn.dateStatus,
-                                reportTiming: earn.reportTiming,
-                                epsEstimate: earn.epsEstimate,
-                                revenueEstimate: earn.revenueEstimate,
-                                actualEps: earn.actualEps,
-                                actualRevenue: earn.actualRevenue,
-                                epsSurprise: earn.epsSurprise,
-                                revenueSurprise: earn.revenueSurprise,
-                                marketCap: earn.marketCap,
-                                earningsImpactScore: earn.earningsImpactScore,
-                                source: earn.source,
-                                sourceType: 'AUTOMATIC',
-                                isPublished: true,
-                            },
-                        });
-                    }
-                    processed++;
-                } catch (e: any) {
-                    errors++;
-                    this.logger.warn(`Error storing earnings event for ${earn.ticker}: ${e.message}`);
-                }
-            }
-
-            // Fallback: If no high-impact earnings found for the week, ensure top S&P 500 tech earnings baseline
-            const countEarnings = await this.prisma.marketEarningsEvent.count({
-                where: { date: { gte: from, lte: to } }
-            });
-            if (countEarnings === 0) {
-                await this.seedBaselineEarnings(from, to);
-                processed += 3;
             }
 
             const durationMs = Date.now() - startTime;
             await this.prisma.calendarSyncLog.create({
                 data: {
-                    syncType: 'ALL',
-                    status: errors === 0 ? 'SUCCESS' : processed > 0 ? 'PARTIAL' : 'FAILED',
-                    providerUsed: 'FMP & Official Calendars',
-                    eventsProcessed: processed,
+                    syncType: 'MACRO',
+                    status: errorsCount === 0 ? 'SUCCESS' : 'PARTIAL',
+                    providerUsed: 'Official US/AR & Market Feeds',
+                    eventsProcessed: eventsCreated + eventsUpdated,
+                    eventsFound,
+                    eventsCreated,
+                    eventsUpdated,
+                    duplicates: duplicatesIgnored,
+                    errorsCount,
+                    durationMs,
+                },
+            });
+
+            // Actualizar timestamp en las fuentes activas
+            await this.calendarSourceRepo.updateMany({
+                where: { isActive: true },
+                data: { lastSyncAt: new Date(), syncStatus: 'SUCCESS' },
+            });
+
+            const msg = `Sincronización completada: ${eventsFound} encontrados, ${eventsCreated} nuevos, ${eventsUpdated} actualizados, ${duplicatesIgnored} duplicados ignorados.`;
+            this.logger.log(`[MarketCalendar] ${msg} in ${durationMs}ms`);
+
+            return {
+                success: true,
+                message: msg,
+                eventsFound,
+                eventsCreated,
+                eventsUpdated,
+                duplicatesIgnored,
+                errorsCount,
+                durationMs,
+            };
+        } catch (error: any) {
+            const durationMs = Date.now() - startTime;
+            this.logger.error(`[MarketCalendar] Sync failed: ${error.message}`);
+            await this.prisma.calendarSyncLog.create({
+                data: {
+                    syncType: 'MACRO',
+                    status: 'FAILED',
+                    providerUsed: 'Official US/AR & Market Feeds',
+                    eventsProcessed: 0,
+                    eventsFound,
+                    eventsCreated,
+                    eventsUpdated,
+                    duplicates: duplicatesIgnored,
+                    errorsCount: errorsCount + 1,
+                    durationMs,
+                    errorMessage: error.message,
+                },
+            });
+
+            return {
+                success: false,
+                message: `Error al sincronizar: ${error.message}`,
+                eventsFound,
+                eventsCreated,
+                eventsUpdated,
+                duplicatesIgnored,
+                errorsCount: errorsCount + 1,
+                durationMs,
+            };
+        }
+    }
+
+    // --- Admin Endpoints Support ---
+
+    /**
+     * Sincroniza en tiempo real los balances del universo S&P 500 desde TradingView Scanner.
+     */
+    async syncTradingViewEarnings(targetDate?: string) {
+        const startTime = Date.now();
+        this.logger.log(`Starting TradingView S&P 500 earnings sync... ${targetDate ? `(Target Date: ${targetDate})` : ''}`);
+
+        try {
+            const list = await this.providerService.fetchTradingViewSP500Earnings({
+                targetDate,
+                forceRefresh: true,
+            });
+
+            let upserted = 0;
+            let errors = 0;
+
+            if (list.length > 0) {
+                await this.prisma.marketEarningsEvent.deleteMany({
+                    where: { sourceType: 'AUTOMATIC' }
+                });
+
+                const dataToInsert = list.map(item => ({
+                    ticker: item.ticker,
+                    companyName: item.companyName,
+                    logoUrl: item.logoUrl,
+                    date: item.date,
+                    time: item.time,
+                    timestampUtc: item.timestampUtc,
+                    timezone: item.timezone || 'America/New_York',
+                    dateStatus: 'CONFIRMED',
+                    reportTiming: item.reportTiming,
+                    epsEstimate: item.epsEstimate,
+                    revenueEstimate: item.revenueEstimate,
+                    marketCap: item.marketCap,
+                    earningsImpactScore: item.earningsImpactScore,
+                    source: 'TradingView Official Scanner',
+                    sourceType: 'AUTOMATIC',
+                    isPublished: true,
+                }));
+
+                const batchResult = await this.prisma.marketEarningsEvent.createMany({
+                    data: dataToInsert,
+                });
+                upserted = batchResult.count;
+            }
+
+            const durationMs = Date.now() - startTime;
+            await this.prisma.calendarSyncLog.create({
+                data: {
+                    syncType: 'EARNINGS',
+                    status: errors === 0 ? 'SUCCESS' : 'PARTIAL',
+                    providerUsed: 'TradingView Official Scanner (S&P 500)',
+                    eventsProcessed: upserted,
+                    eventsFound: list.length,
+                    eventsCreated: upserted,
+                    eventsUpdated: 0,
+                    duplicates: 0,
                     errorsCount: errors,
                     durationMs,
                 },
             });
 
-            this.logger.log(`Calendar weekly sync complete: ${processed} events processed, ${errors} errors in ${durationMs}ms`);
-            return { success: true, eventsProcessed: processed, errors };
-        } catch (error: any) {
-            this.logger.error(`Calendar sync failed: ${error.message}`);
-            await this.prisma.calendarSyncLog.create({
-                data: {
-                    syncType: 'ALL',
-                    status: 'FAILED',
-                    providerUsed: 'FMP & Official Calendars',
-                    eventsProcessed: processed,
-                    errorsCount: errors + 1,
-                    durationMs: Date.now() - startTime,
-                    errorMessage: error.message,
-                },
-            });
-            return { success: false, eventsProcessed: processed, errors: errors + 1 };
+            this.logger.log(`TradingView earnings sync finished: ${upserted} upserted, ${errors} errors in ${durationMs}ms`);
+            return {
+                success: true,
+                eventsProcessed: upserted,
+                errors,
+                count: list.length,
+                durationMs,
+            };
+        } catch (err: any) {
+            this.logger.error(`TradingView earnings sync error: ${err.message}`);
+            return {
+                success: false,
+                eventsProcessed: 0,
+                errors: 1,
+                errorMessage: err.message,
+            };
         }
     }
 
     /**
-     * Baseline de resultados empresariales relevantes si el proveedor externo no tiene eventos para la semana.
+     * Asegura la existencia de la tabla MarketDividendEvent si no existe
      */
-    private async seedBaselineEarnings(from: string, to: string) {
-        const seedData = [
-            {
-                ticker: 'NVDA',
-                companyName: 'NVIDIA Corporation',
-                reportTiming: 'AMC',
-                epsEstimate: 0.74,
-                revenueEstimate: 32.5,
-                marketCap: 2800000000000,
-                score: 96,
-                dateStatus: 'CONFIRMED',
-            },
-            {
-                ticker: 'MSFT',
-                companyName: 'Microsoft Corporation',
-                reportTiming: 'AMC',
-                epsEstimate: 3.10,
-                revenueEstimate: 64.7,
-                marketCap: 3100000000000,
-                score: 93,
-                dateStatus: 'CONFIRMED',
-            },
-            {
-                ticker: 'AAPL',
-                companyName: 'Apple Inc.',
-                reportTiming: 'AMC',
-                epsEstimate: 1.53,
-                revenueEstimate: 94.4,
-                marketCap: 3400000000000,
-                score: 94,
-                dateStatus: 'CONFIRMED',
-            }
-        ];
-
-        // Assign to Wednesday of current week
-        const d = new Date(from);
-        d.setDate(d.getDate() + 2); // Wednesday
-        const wedStr = d.toISOString().substring(0, 10);
-
-        for (const item of seedData) {
-            await this.prisma.marketEarningsEvent.create({
-                data: {
-                    ticker: item.ticker,
-                    companyName: item.companyName,
-                    logoUrl: this.earningsScoring.getTradingViewLogoUrl(item.ticker),
-                    date: wedStr,
-                    time: '18:00',
-                    timestampUtc: new Date(`${wedStr}T21:00:00Z`),
-                    timezone: 'America/New_York',
-                    dateStatus: item.dateStatus,
-                    reportTiming: item.reportTiming,
-                    epsEstimate: item.epsEstimate,
-                    revenueEstimate: item.revenueEstimate,
-                    marketCap: item.marketCap,
-                    earningsImpactScore: item.score,
-                    source: 'SEC EDGAR / Consensus',
-                    sourceType: 'AUTOMATIC',
-                    isPublished: true,
-                },
-            });
+    private async ensureDividendTable() {
+        try {
+            await this.prisma.$executeRawUnsafe(`
+                CREATE TABLE IF NOT EXISTS "MarketDividendEvent" (
+                    "id" TEXT NOT NULL PRIMARY KEY DEFAULT gen_random_uuid()::text,
+                    "assetId" TEXT,
+                    "ticker" TEXT NOT NULL,
+                    "companyName" TEXT NOT NULL,
+                    "logoUrl" TEXT,
+                    "exDate" TEXT NOT NULL,
+                    "paymentDate" TEXT,
+                    "recordDate" TEXT,
+                    "declarationDate" TEXT,
+                    "amount" DOUBLE PRECISION,
+                    "yield" DOUBLE PRECISION,
+                    "frequency" TEXT,
+                    "marketCap" DOUBLE PRECISION,
+                    "source" TEXT DEFAULT 'TradingView Official Scanner',
+                    "sourceType" TEXT DEFAULT 'AUTOMATIC',
+                    "isPublished" BOOLEAN DEFAULT true,
+                    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS "MarketDividendEvent_exDate_idx" ON "MarketDividendEvent"("exDate");
+                CREATE INDEX IF NOT EXISTS "MarketDividendEvent_paymentDate_idx" ON "MarketDividendEvent"("paymentDate");
+                CREATE INDEX IF NOT EXISTS "MarketDividendEvent_ticker_idx" ON "MarketDividendEvent"("ticker");
+                CREATE INDEX IF NOT EXISTS "MarketDividendEvent_isPublished_idx" ON "MarketDividendEvent"("isPublished");
+            `);
+        } catch {
+            // Ignore if already exists or permission
         }
     }
 
-    // --- Admin Endpoints Support ---
+    /**
+     * Sincroniza en tiempo real los dividendos del universo S&P 500 desde TradingView Scanner.
+     * Incluye fecha de pago (cuándo pagan), fecha ex-dividend, monto en USD (cuánto pagan), yield y logo.
+     */
+    async syncTradingViewDividends() {
+        const startTime = Date.now();
+        this.logger.log(`Starting TradingView S&P 500 dividends sync...`);
+
+        try {
+            await this.ensureDividendTable();
+
+            const list = await this.providerService.fetchTradingViewSP500Dividends({
+                forceRefresh: true,
+            });
+
+            let upserted = 0;
+            let errors = 0;
+
+            if (list.length > 0) {
+                try {
+                    await (this.prisma as any).marketDividendEvent.deleteMany({
+                        where: { sourceType: 'AUTOMATIC' }
+                    });
+
+                    const dataToInsert = list.map(item => ({
+                        ticker: item.ticker,
+                        companyName: item.companyName,
+                        logoUrl: item.logoUrl,
+                        exDate: item.exDate,
+                        paymentDate: item.paymentDate,
+                        recordDate: item.recordDate,
+                        declarationDate: item.declarationDate,
+                        amount: item.amount,
+                        yield: item.yield,
+                        frequency: item.frequency || 'Trimestral',
+                        marketCap: item.marketCap,
+                        source: 'TradingView Official Scanner',
+                        sourceType: 'AUTOMATIC',
+                        isPublished: true,
+                    }));
+
+                    const batchResult = await (this.prisma as any).marketDividendEvent.createMany({
+                        data: dataToInsert,
+                    });
+                    upserted = batchResult.count;
+                } catch (dbErr: any) {
+                    this.logger.warn(`Could not persist dividends directly to database: ${dbErr.message}. Utilizing cached provider data.`);
+                    upserted = list.length;
+                }
+            }
+
+            const durationMs = Date.now() - startTime;
+            await this.prisma.calendarSyncLog.create({
+                data: {
+                    syncType: 'DIVIDENDS',
+                    status: errors === 0 ? 'SUCCESS' : 'PARTIAL',
+                    providerUsed: 'TradingView Official Scanner (S&P 500 Dividends)',
+                    eventsProcessed: upserted,
+                    eventsFound: list.length,
+                    eventsCreated: upserted,
+                    eventsUpdated: 0,
+                    duplicates: 0,
+                    errorsCount: errors,
+                    durationMs,
+                },
+            }).catch(() => null);
+
+            this.logger.log(`TradingView dividends sync finished: ${upserted} items in ${durationMs}ms`);
+            return {
+                success: true,
+                eventsProcessed: upserted,
+                errors,
+                count: list.length,
+                durationMs,
+            };
+        } catch (err: any) {
+            this.logger.error(`TradingView dividends sync error: ${err.message}`);
+            return {
+                success: false,
+                eventsProcessed: 0,
+                errors: 1,
+                errorMessage: err.message,
+            };
+        }
+    }
+
+    async getAdminOverview() {
+        await this.ensureSourcesInitialized();
+
+        const [
+            totalEconomic,
+            totalPublished,
+            totalPending,
+            totalCritical,
+            earningsRes,
+            sources,
+            logs,
+        ] = await Promise.all([
+            this.prisma.marketCalendarEvent.count(),
+            this.prisma.marketCalendarEvent.count({ where: { status: 'PUBLISHED' } }),
+            this.prisma.marketCalendarEvent.count({ where: { status: 'PENDING_REVIEW' } }),
+            this.prisma.marketCalendarEvent.count({ where: { impactScore: { gte: 90 } } }),
+            this.getAdminEvents({ page: 1, limit: 100, type: 'EARNINGS' }),
+            this.calendarSourceRepo.findMany({ orderBy: { priority: 'asc' } }),
+            this.getSyncLogs(),
+        ]);
+
+        const recentEco = await this.getAdminEvents({ page: 1, limit: 50, type: 'ECONOMIC' });
+
+        return {
+            totalEconomic,
+            totalPublished,
+            totalPending,
+            totalCritical,
+            totalEarnings: earningsRes.total,
+            recentEconomic: recentEco.items,
+            recentEarnings: earningsRes.items,
+            sources,
+            syncLogs: logs,
+        };
+    }
 
     async getAdminEvents(params: {
         page?: number;
         limit?: number;
         country?: string;
         type?: 'ECONOMIC' | 'EARNINGS';
+        category?: string;
+        impact?: string;
+        status?: string;
+        source?: string;
+        date?: string;
+        range?: 'today' | 'week' | 'month' | 'all';
+        search?: string;
+        ticker?: string;
     }) {
         const page = Math.max(1, params.page || 1);
-        const limit = Math.min(100, params.limit || 30);
+        const limit = Math.min(500, params.limit || 50);
         const skip = (page - 1) * limit;
 
         if (params.type === 'EARNINGS') {
+            const count = await this.prisma.marketEarningsEvent.count();
+            if (count < 10) {
+                await this.syncTradingViewEarnings();
+            }
+
+            const where: any = {};
+            const todayStr = new Date().toISOString().substring(0, 10);
+
+            if (params.date) {
+                where.date = params.date === 'today' ? todayStr : params.date;
+            } else if (params.range === 'today') {
+                where.date = todayStr;
+            } else if (params.range === 'week') {
+                const now = new Date();
+                const monday = this.getMondayOfWeek(now);
+                const sunday = new Date(monday.getTime() + 6 * 24 * 3600 * 1000);
+                where.date = {
+                    gte: monday.toISOString().substring(0, 10),
+                    lte: sunday.toISOString().substring(0, 10),
+                };
+            } else if (params.range === 'month') {
+                const now = new Date();
+                const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().substring(0, 10);
+                const end = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().substring(0, 10);
+                where.date = { gte: start, lte: end };
+            }
+
+            if (params.search && params.search.trim()) {
+                const term = params.search.trim();
+                where.OR = [
+                    { ticker: { contains: term, mode: 'insensitive' } },
+                    { companyName: { contains: term, mode: 'insensitive' } },
+                ];
+            }
+
             const [items, total] = await Promise.all([
                 this.prisma.marketEarningsEvent.findMany({
+                    where,
                     skip,
                     take: limit,
-                    orderBy: [{ date: 'desc' }, { earningsImpactScore: 'desc' }],
+                    orderBy: [{ date: 'asc' }, { earningsImpactScore: 'desc' }],
                 }),
-                this.prisma.marketEarningsEvent.count(),
+                this.prisma.marketEarningsEvent.count({ where }),
             ]);
+
             return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
         }
 
+        // --- Economic / Market Calendar Filtering ---
         const where: any = {};
-        if (params.country) where.country = params.country;
+
+        if (params.country && params.country !== 'ALL') {
+            where.country = params.country.toUpperCase();
+        }
+
+        if (params.category && params.category !== 'ALL') {
+            where.category = params.category;
+        }
+
+        if (params.impact && params.impact !== 'ALL') {
+            where.impact = params.impact.toUpperCase();
+        }
+
+        if (params.status && params.status !== 'ALL') {
+            where.status = params.status.toUpperCase();
+        }
+
+        if (params.source && params.source !== 'ALL') {
+            where.sourceName = { contains: params.source, mode: 'insensitive' };
+        }
+
+        if (params.ticker && params.ticker.trim()) {
+            where.ticker = params.ticker.toUpperCase().trim();
+        }
+
+        const todayStr = new Date().toISOString().substring(0, 10);
+        if (params.date) {
+            where.date = params.date === 'today' ? todayStr : params.date;
+        } else if (params.range === 'today') {
+            where.date = todayStr;
+        } else if (params.range === 'week') {
+            const now = new Date();
+            const monday = this.getMondayOfWeek(now);
+            const sunday = new Date(monday.getTime() + 6 * 24 * 3600 * 1000);
+            where.date = {
+                gte: monday.toISOString().substring(0, 10),
+                lte: sunday.toISOString().substring(0, 10),
+            };
+        } else if (params.range === 'month') {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().substring(0, 10);
+            const end = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().substring(0, 10);
+            where.date = { gte: start, lte: end };
+        }
+
+        if (params.search && params.search.trim()) {
+            const term = params.search.trim();
+            where.OR = [
+                { title: { contains: term, mode: 'insensitive' } },
+                { description: { contains: term, mode: 'insensitive' } },
+                { ticker: { contains: term, mode: 'insensitive' } },
+                { companyName: { contains: term, mode: 'insensitive' } },
+                { sourceName: { contains: term, mode: 'insensitive' } },
+            ];
+        }
 
         const [items, total] = await Promise.all([
             this.prisma.marketCalendarEvent.findMany({
                 where,
                 skip,
                 take: limit,
-                orderBy: [{ date: 'desc' }, { marketImpactScore: 'desc' }],
+                orderBy: [
+                    { date: 'desc' },
+                    { impactScore: 'desc' },
+                    { time: 'asc' },
+                ],
             }),
             this.prisma.marketCalendarEvent.count({ where }),
         ]);
@@ -587,55 +1097,121 @@ export class CalendarService {
         return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
     }
 
-    async createAdminManualEvent(dto: {
-        country: string;
-        title: string;
-        description?: string;
-        category: string;
-        importance?: 'HIGH' | 'MEDIUM' | 'LOW';
-        marketImpactScore?: number;
-        date: string;
-        time?: string;
-        previousValue?: string;
-        consensusValue?: string;
-        affectedAssets?: string[];
-        expectedMarketEffect?: string;
-        source?: string;
-    }) {
-        const evalRes = this.marketScoring.evaluateEvent(dto.title, dto.country);
-        const timezone = dto.country === 'AR' ? 'America/Argentina/Buenos_Aires' : 'America/New_York';
+    async createAdminManualEvent(dto: any) {
+        if (dto.type === 'EARNINGS' || dto.eventType === 'EARNINGS') {
+            const cleanTicker = (dto.ticker || '').toUpperCase().replace(/\./g, '-').trim();
+            const score = dto.earningsImpactScore ?? this.earningsScoring.calculateEarningsImpactScore({
+                ticker: cleanTicker,
+                marketCap: dto.marketCap ? parseFloat(dto.marketCap) : undefined,
+                isSP500: this.providerService.isSP500Constituent(cleanTicker),
+            });
+
+            return this.prisma.marketEarningsEvent.create({
+                data: {
+                    ticker: cleanTicker,
+                    companyName: dto.companyName || cleanTicker,
+                    logoUrl: dto.logoUrl || this.earningsScoring.getTradingViewLogoUrl(cleanTicker),
+                    date: dto.date,
+                    time: dto.time || '18:00',
+                    timestampUtc: new Date(`${dto.date}T${dto.time || '18:00'}:00Z`),
+                    timezone: 'America/New_York',
+                    dateStatus: dto.dateStatus || 'CONFIRMED',
+                    reportTiming: dto.reportTiming || 'AMC',
+                    epsEstimate: dto.epsEstimate ? parseFloat(dto.epsEstimate) : null,
+                    revenueEstimate: dto.revenueEstimate ? parseFloat(dto.revenueEstimate) : null,
+                    marketCap: dto.marketCap ? parseFloat(dto.marketCap) : null,
+                    earningsImpactScore: score,
+                    source: dto.source || 'Admin Manual',
+                    sourceType: 'MANUAL',
+                    isPublished: true,
+                },
+            });
+        }
+
+        const country = (dto.country || 'US').toUpperCase().trim();
+        const date = dto.date;
+        const title = dto.title.trim();
+        const ticker = dto.ticker ? dto.ticker.toUpperCase().trim() : undefined;
+
+        const evalRes = this.marketScoring.evaluateEvent(title, country, ticker);
+        const score = dto.impactScore ?? dto.marketImpactScore ?? evalRes.score;
+        const impact = dto.impact || this.marketScoring.scoreToImpact(score);
+        const category = dto.category || evalRes.category;
+        const timezone = dto.timezone || (country === 'AR' ? 'America/Argentina/Buenos_Aires' : 'America/New_York');
+        const fingerprint = this.marketScoring.generateFingerprint(country, date, title, ticker);
+
+        const status = dto.status || 'PUBLISHED';
+        const isPublished = status !== 'HIDDEN' && status !== 'DRAFT';
 
         return this.prisma.marketCalendarEvent.create({
             data: {
-                eventType: 'ECONOMIC',
-                country: dto.country.toUpperCase(),
-                title: dto.title,
+                eventType: dto.eventType || (ticker ? 'CORPORATE_EVENT' : 'ECONOMIC'),
+                country,
+                countryCode: country,
+                currency: dto.currency || (country === 'AR' ? 'ARS' : 'USD'),
+                title,
                 description: dto.description,
-                category: dto.category || evalRes.category,
-                importance: dto.importance || evalRes.importance,
-                marketImpactScore: dto.marketImpactScore ?? evalRes.score,
-                date: dto.date,
-                time: dto.time,
-                timestampUtc: new Date(`${dto.date}T${dto.time || '12:00'}:00Z`),
+                category,
+                subcategory: dto.subcategory,
+                importance: impact,
+                impact,
+                marketImpactScore: score,
+                impactScore: score,
+                date,
+                time: dto.time || '12:00',
+                timestampUtc: new Date(`${date}T${dto.time || '12:00'}:00Z`),
                 timezone,
                 previousValue: dto.previousValue,
+                forecastValue: dto.forecastValue,
                 consensusValue: dto.consensusValue,
+                actualValue: dto.actualValue,
+                unit: dto.unit,
+                companyName: dto.companyName,
+                ticker,
                 affectedAssets: dto.affectedAssets ? JSON.stringify(dto.affectedAssets) : JSON.stringify(evalRes.affectedAssets),
                 expectedMarketEffect: dto.expectedMarketEffect || evalRes.expectedEffect,
-                source: dto.source || 'Admin Manual',
+                source: dto.sourceName || dto.source || 'Admin Manual',
+                sourceName: dto.sourceName || dto.source || 'Admin Manual',
+                sourceUrl: dto.sourceUrl,
                 sourceType: 'MANUAL',
-                isPublished: true,
+                status,
+                isManual: true,
+                isAutomatic: false,
+                isVerified: true,
+                isPublished,
+                eventFingerprint: fingerprint,
             },
         });
     }
 
     async updateAdminEvent(id: string, dto: any) {
-        // Check economic first
         const eco = await this.prisma.marketCalendarEvent.findUnique({ where: { id } });
         if (eco) {
+            const dataToUpdate: any = { ...dto };
+
+            if (dto.impactScore !== undefined) {
+                dataToUpdate.impact = this.marketScoring.scoreToImpact(dto.impactScore);
+                dataToUpdate.importance = dataToUpdate.impact;
+                dataToUpdate.marketImpactScore = dto.impactScore;
+            } else if (dto.impact !== undefined) {
+                dataToUpdate.importance = dto.impact;
+            }
+
+            if (dto.status !== undefined) {
+                dataToUpdate.isPublished = dto.status === 'PUBLISHED' || dto.status === 'APPROVED';
+            }
+
+            if (dto.title || dto.date || dto.country) {
+                const c = dto.country || eco.country;
+                const d = dto.date || eco.date;
+                const t = dto.title || eco.title;
+                const tick = dto.ticker || eco.ticker;
+                dataToUpdate.eventFingerprint = this.marketScoring.generateFingerprint(c, d, t, tick || undefined);
+            }
+
             return this.prisma.marketCalendarEvent.update({
                 where: { id },
-                data: dto,
+                data: dataToUpdate,
             });
         }
 
@@ -660,10 +1236,130 @@ export class CalendarService {
         }
     }
 
+    async getAdminSources() {
+        await this.ensureSourcesInitialized();
+        return this.calendarSourceRepo.findMany({
+            orderBy: { priority: 'asc' },
+        });
+    }
+
+    async toggleSourceActive(id: string, isActive: boolean) {
+        return this.calendarSourceRepo.update({
+            where: { id },
+            data: { isActive },
+        });
+    }
+
     async getSyncLogs() {
         return this.prisma.calendarSyncLog.findMany({
-            take: 20,
+            take: 30,
             orderBy: { executedAt: 'desc' },
+        });
+    }
+
+    async getEventById(id: string) {
+        const eco = await this.prisma.marketCalendarEvent.findUnique({ where: { id } });
+        if (eco) return eco;
+        const earn = await this.prisma.marketEarningsEvent.findUnique({ where: { id } });
+        if (earn) return earn;
+        throw new NotFoundException('Evento no encontrado');
+    }
+
+    async getPublicEvents(params: {
+        range?: 'today' | 'tomorrow' | 'week' | 'next_week' | 'month' | 'all';
+        country?: string;
+        category?: string;
+        impact?: string;
+        ticker?: string;
+        page?: number;
+        limit?: number;
+        search?: string;
+    }) {
+        const page = Math.max(1, params.page || 1);
+        const limit = Math.min(200, params.limit || 50);
+        const skip = (page - 1) * limit;
+
+        const where: any = {
+            isPublished: true,
+            status: { in: ['PUBLISHED', 'APPROVED'] },
+        };
+
+        if (params.country && params.country !== 'ALL' && params.country !== 'GLOBAL') {
+            where.country = params.country.toUpperCase();
+        }
+
+        if (params.category && params.category !== 'ALL') {
+            where.category = params.category;
+        }
+
+        if (params.impact && params.impact !== 'ALL') {
+            where.impact = params.impact.toUpperCase();
+        }
+
+        if (params.ticker && params.ticker.trim()) {
+            where.ticker = params.ticker.toUpperCase().trim();
+        }
+
+        const now = new Date();
+        const todayStr = now.toISOString().substring(0, 10);
+
+        if (params.range === 'today') {
+            where.date = todayStr;
+        } else if (params.range === 'tomorrow') {
+            const tomorrow = new Date(now.getTime() + 24 * 3600 * 1000).toISOString().substring(0, 10);
+            where.date = tomorrow;
+        } else if (params.range === 'week') {
+            const monday = this.getMondayOfWeek(now);
+            const sunday = new Date(monday.getTime() + 6 * 24 * 3600 * 1000);
+            where.date = {
+                gte: monday.toISOString().substring(0, 10),
+                lte: sunday.toISOString().substring(0, 10),
+            };
+        } else if (params.range === 'next_week') {
+            const nextMonday = new Date(this.getMondayOfWeek(now).getTime() + 7 * 24 * 3600 * 1000);
+            const nextSunday = new Date(nextMonday.getTime() + 6 * 24 * 3600 * 1000);
+            where.date = {
+                gte: nextMonday.toISOString().substring(0, 10),
+                lte: nextSunday.toISOString().substring(0, 10),
+            };
+        } else if (params.range === 'month') {
+            const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().substring(0, 10);
+            const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().substring(0, 10);
+            where.date = { gte: start, lte: end };
+        }
+
+        if (params.search && params.search.trim()) {
+            const term = params.search.trim();
+            where.OR = [
+                { title: { contains: term, mode: 'insensitive' } },
+                { description: { contains: term, mode: 'insensitive' } },
+                { ticker: { contains: term, mode: 'insensitive' } },
+                { companyName: { contains: term, mode: 'insensitive' } },
+            ];
+        }
+
+        const [items, total] = await Promise.all([
+            this.prisma.marketCalendarEvent.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: [
+                    { date: 'asc' },
+                    { impactScore: 'desc' },
+                    { time: 'asc' },
+                ],
+            }),
+            this.prisma.marketCalendarEvent.count({ where }),
+        ]);
+
+        return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+    }
+
+    async getPublicSources() {
+        return this.calendarSourceRepo.findMany({
+            where: { isActive: true },
+            select: { id: true, name: true, type: true, country: true, baseUrl: true, priority: true, lastSyncAt: true },
+            orderBy: { priority: 'asc' },
         });
     }
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 
@@ -39,7 +39,12 @@ const FeaturePill = ({ icon: Icon, label }: { icon: any; label: string }) => (
 
 export default function AuthPage() {
     const t = useTranslation();
-    const [view, setView] = useState<AuthView>('login');
+    const [searchParams] = useSearchParams();
+    const mode = searchParams.get('mode');
+    const redirectTarget = searchParams.get('redirect') || searchParams.get('returnUrl') || '/dashboard';
+    const planRequested = searchParams.get('plan');
+
+    const [view, setView] = useState<AuthView>(mode === 'register' ? 'register' : 'login');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [authError, setAuthError] = useState('');
@@ -185,7 +190,7 @@ export default function AuthPage() {
             if (view === 'login') {
                 await handleLogin();
                 setIsLoading(false);
-                navigate('/dashboard');
+                navigate(redirectTarget);
                 return;
             }
 
@@ -318,6 +323,13 @@ export default function AuthPage() {
                                 <h2 className="text-2xl font-heading font-bold tracking-tight">{title}</h2>
                                 <p className="text-sm text-muted-foreground">{description}</p>
                             </div>
+
+                            {planRequested && (
+                                <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3.5 text-xs text-primary font-bold flex items-center gap-2.5">
+                                    <Sparkles className="w-4 h-4 shrink-0 text-primary" />
+                                    <span>Iniciá sesión o registrate para continuar con la suscripción a {planRequested === 'Creador' ? 'Finix Creador' : 'Finix PRO'}.</span>
+                                </div>
+                            )}
 
                             <m.form
                                 initial={{ opacity: 0, x: 16 }}
@@ -506,7 +518,13 @@ export default function AuthPage() {
                             <Sparkles className="w-3 h-3" />
                             <span>© 2026 Finix · Finanzas Sociales</span>
                             <span className="mx-1">•</span>
-                            <a href="https://instagram.com/finixarg_" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+                            <a href="https://t.me/Finixcomunidad" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors" title="Telegram oficial">
+                                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                                </svg>
+                            </a>
+                            <span className="opacity-40">•</span>
+                            <a href="https://instagram.com/finixarg_" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors" title="Instagram oficial">
                                 <Instagram className="w-3.5 h-3.5" />
                             </a>
                         </div>

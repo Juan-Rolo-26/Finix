@@ -81,9 +81,9 @@ function formatDate(value?: string) {
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
     PUBLISHED: { label: 'Publicado', className: 'bg-green-500/15 text-green-600 border-green-500/30' },
     DRAFT: { label: 'Borrador', className: 'bg-yellow-500/15 text-yellow-600 border-yellow-500/30' },
-    INACTIVE: { label: 'Inactivo', className: 'bg-zinc-500/15 text-zinc-500 border-zinc-500/30' },
+    INACTIVE: { label: 'Inactivo', className: 'bg-muted text-muted-foreground border-border' },
     ERROR: { label: 'Error', className: 'bg-red-500/15 text-red-600 border-red-500/30' },
-    EMPTY: { label: 'Vacío', className: 'bg-zinc-200/50 text-zinc-400 border-zinc-300/50 dark:bg-zinc-700/30 dark:text-zinc-500 dark:border-zinc-600/30' },
+    EMPTY: { label: 'Vacío', className: 'bg-muted/50 text-muted-foreground border-border' },
 };
 
 // ─── SlotCard ──────────────────────────────────────────────────────────────────
@@ -316,7 +316,7 @@ function SlotEditModal({
                             onClick={handleToggleActive}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${slot.isActive
                                 ? 'bg-green-500/10 text-green-600 border-green-500/30 hover:bg-red-500/10 hover:text-red-600 hover:border-red-500/30'
-                                : 'bg-zinc-500/10 text-zinc-500 border-zinc-500/30 hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/30'
+                                : 'bg-muted text-muted-foreground border-border hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/30'
                             }`}
                             title={slot.isActive ? 'Desactivar slot' : 'Activar slot'}
                         >

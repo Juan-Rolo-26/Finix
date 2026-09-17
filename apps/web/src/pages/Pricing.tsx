@@ -1,39 +1,58 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, X, Sparkles, Zap, Shield, ChevronLeft, Loader2 } from 'lucide-react';
+import { Check, X, Sparkles, Zap, Shield, ChevronLeft, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
 
 export default function Pricing() {
+    const navigate = useNavigate();
     const user = useAuthStore(s => s.user);
+    const syncFromSession = useAuthStore(s => s.syncFromSession);
+    const [searchParams] = useSearchParams();
     const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+    const [paymentStatus, setPaymentStatus] = useState<string | null>(searchParams.get('status'));
+
+    useEffect(() => {
+        const status = searchParams.get('status');
+        if (status === 'approved') {
+            setPaymentStatus('approved');
+            syncFromSession().catch(() => {});
+        } else if (status === 'failure') {
+            setPaymentStatus('failure');
+        } else if (status === 'pending') {
+            setPaymentStatus('pending');
+        }
+    }, [searchParams, syncFromSession]);
 
     const handleUpgrade = async (planType: 'PRO' | 'Creador') => {
         if (!user) {
-            alert('Debes iniciar sesión para mejorar tu plan.');
+            navigate(`/auth?redirect=${encodeURIComponent('/pricing')}&plan=${planType}`);
             return;
         }
         
         setLoadingPlan(planType);
         
         const endpoint = planType === 'PRO' 
-            ? '/stripe/subscriptions/pro/checkout' 
-            : '/stripe/subscriptions/creator/checkout';
+            ? '/mercadopago/checkout/pro' 
+            : '/mercadopago/checkout/creator';
 
         try {
             const res = await apiFetch(endpoint, { method: 'POST' });
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.message || 'Error al conectar con la pasarela de pago');
+                throw new Error(data.message || 'Error al conectar con Mercado Pago');
             }
-            const { url } = await res.json();
-            if (url) {
-                window.location.href = url;
+            const data = await res.json();
+            const checkoutUrl = data.init_point || data.sandbox_init_point || data.url;
+            if (checkoutUrl) {
+                window.location.href = checkoutUrl;
+            } else {
+                throw new Error('No se recibió la URL de checkout de Mercado Pago');
             }
         } catch (error: any) {
-            alert(error.message || 'Ocurrió un error inesperado.');
+            alert(error.message || 'Ocurrió un error inesperado al conectar con Mercado Pago.');
             setLoadingPlan(null);
         }
     };
@@ -54,7 +73,7 @@ export default function Pricing() {
                 'Noticias del mercado sin límites',
                 'Creación de comunidades',
             ],
-            buttonText: 'Tu plan actual',
+            buttonText: !user ? 'Crear cuenta gratis' : 'Tu plan actual',
             buttonVariant: 'outline' as const,
             highlight: false,
         },
@@ -132,6 +151,34 @@ export default function Pricing() {
                     </p>
                 </div>
 
+                {paymentStatus === 'approved' && (
+                    <div className="max-w-2xl mx-auto mb-8 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-3 text-emerald-400 animate-in fade-in">
+                        <CheckCircle2 className="w-5 h-5 shrink-0" />
+                        <div>
+                            <h4 className="font-bold text-sm">¡Pago procesado con éxito en Mercado Pago!</h4>
+                            <p className="text-xs text-emerald-400/80 mt-0.5">Tu membresía ha sido activada. Ya tenés acceso a todas las funciones premium de Finix.</p>
+                        </div>
+                    </div>
+                )}
+                {paymentStatus === 'failure' && (
+                    <div className="max-w-2xl mx-auto mb-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 text-red-400 animate-in fade-in">
+                        <AlertCircle className="w-5 h-5 shrink-0" />
+                        <div>
+                            <h4 className="font-bold text-sm">El pago no pudo completarse</h4>
+                            <p className="text-xs text-red-400/80 mt-0.5">La operación fue rechazada o cancelada en Mercado Pago. Podés intentar nuevamente.</p>
+                        </div>
+                    </div>
+                )}
+                {paymentStatus === 'pending' && (
+                    <div className="max-w-2xl mx-auto mb-8 p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 flex items-center gap-3 text-yellow-400 animate-in fade-in">
+                        <AlertCircle className="w-5 h-5 shrink-0" />
+                        <div>
+                            <h4 className="font-bold text-sm">Pago pendiente de acreditación</h4>
+                            <p className="text-xs text-yellow-400/80 mt-0.5">Mercado Pago está procesando tu pago. Tu suscripción se activará automáticamente al acreditarse.</p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto w-full items-stretch">
                     {plans.map((plan, idx) => {
                         const Icon = plan.icon;
@@ -175,9 +222,13 @@ export default function Pricing() {
                                     variant={plan.buttonVariant} 
                                     size="lg" 
                                     className={`w-full mb-8 font-bold ${plan.highlight ? 'shadow-glow' : ''}`}
-                                    disabled={plan.name === 'Free' || loadingPlan === plan.name}
+                                    disabled={Boolean(user && plan.name === 'Free') || loadingPlan === plan.name}
                                     onClick={() => {
-                                        if (plan.name !== 'Free') {
+                                        if (plan.name === 'Free') {
+                                            if (!user) {
+                                                navigate('/auth?mode=register');
+                                            }
+                                        } else {
                                             handleUpgrade(plan.name as 'PRO' | 'Creador');
                                         }
                                     }}
@@ -187,6 +238,8 @@ export default function Pricing() {
                                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                             Conectando...
                                         </>
+                                    ) : (!user && plan.name !== 'Free') ? (
+                                        'Iniciar sesión para comprar'
                                     ) : plan.buttonText}
                                 </Button>
 

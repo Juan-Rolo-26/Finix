@@ -78,6 +78,8 @@ export interface Post {
     createdAt: string;
     tickers?: string;
     quotedPost?: Post;
+    chartAnalysisVersionId?: string;
+    chartAnalysisVersion?: any;
 }
 
 // ─── Sort tabs ────────────────────────────────────────────────────────────────

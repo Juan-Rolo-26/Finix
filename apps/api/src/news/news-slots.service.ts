@@ -89,6 +89,68 @@ export class NewsSlotsService {
         });
     }
 
+    async getPublicHeadlines(limit = 6) {
+        const slots = await this.prisma.newsSlot.findMany({
+            where: {
+                isActive: true,
+                article: {
+                    isPublished: true,
+                    isActive: true,
+                    status: 'PUBLISHED',
+                },
+                category: {
+                    isActive: true,
+                },
+            },
+            include: {
+                category: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                        color: true,
+                        icon: true,
+                    },
+                },
+                article: {
+                    select: {
+                        id: true,
+                        url: true,
+                        title: true,
+                        description: true,
+                        imageUrl: true,
+                        sourceName: true,
+                        publishedAt: true,
+                        author: true,
+                    },
+                },
+            },
+            orderBy: [
+                { article: { publishedAt: 'desc' } },
+                { updatedAt: 'desc' },
+            ],
+            take: limit,
+        });
+
+        return slots
+            .filter((s) => s.article)
+            .map((s) => ({
+                id: s.article!.id,
+                slotId: s.id,
+                slotKey: s.slotKey,
+                title: s.article!.title,
+                description: s.article!.description,
+                imageUrl: s.article!.imageUrl,
+                url: s.article!.url,
+                sourceName: s.article!.sourceName || 'Finix',
+                publishedAt: s.article!.publishedAt,
+                category: s.category.name,
+                categorySlug: s.category.slug,
+                categoryColor: s.category.color || 'hsl(var(--primary))',
+            }));
+    }
+
+
     async getPublicCategorySlots(slug: string) {
         const category = await this.prisma.newsCategory.findUnique({ where: { slug } });
         if (!category || !category.isActive) {

@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Newspaper } from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, isJuanUser } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
 import { NewsMosaic, NewsMosaicSkeleton } from '@/components/news/NewsMosaic';
 import type { NewsSlotData } from '@/components/news/NewsCard';
@@ -36,42 +36,52 @@ function CategoryTabs({
     selected: string;
     onSelect: (slug: string) => void;
 }) {
-    const ref = useRef<HTMLDivElement>(null);
-
-    // Scroll active tab into view
-    useEffect(() => {
-        const btn = ref.current?.querySelector(`[data-slug="${selected}"]`) as HTMLElement | null;
-        btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }, [selected]);
-
     return (
-        <div
-            ref={ref}
-            className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-            {categories.map((cat) => {
-                const isActive = cat.slug === selected;
-                return (
-                    <button
-                        key={cat.slug}
-                        data-slug={cat.slug}
-                        onClick={() => onSelect(cat.slug)}
-                        className={`shrink-0 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all duration-200 border outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                            isActive
-                                ? 'text-white shadow-lg scale-[1.02]'
-                                : 'bg-transparent text-muted-foreground border-border/50 hover:text-foreground hover:border-border'
-                        }`}
-                        style={isActive ? {
-                            background: cat.color || 'hsl(var(--primary))',
-                            borderColor: cat.color || 'hsl(var(--primary))',
-                            boxShadow: `0 4px 24px ${cat.color || 'hsl(var(--primary))'}50`,
-                        } : undefined}
-                    >
-                        {cat.name}
-                    </button>
-                );
-            })}
+        <div className="w-full flex justify-center py-1">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 max-w-5xl mx-auto">
+                {categories.map((cat) => {
+                    const isActive = cat.slug === selected;
+                    const catColor = cat.color || 'hsl(var(--primary))';
+                    return (
+                        <button
+                            key={cat.slug}
+                            data-slug={cat.slug}
+                            onClick={() => onSelect(cat.slug)}
+                            className={`group relative inline-flex items-center gap-2 px-4 py-2 sm:px-4.5 sm:py-2 rounded-full text-xs sm:text-[13px] font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer select-none border ${
+                                isActive
+                                    ? 'shadow-md scale-[1.03] font-bold keep-white'
+                                    : 'bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground border-border/70 hover:border-foreground/20 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 active:scale-95'
+                            }`}
+                            style={
+                                isActive
+                                    ? {
+                                          backgroundColor: catColor,
+                                          borderColor: catColor,
+                                          boxShadow: `0 4px 16px -2px ${catColor}55`,
+                                          color: '#ffffff',
+                                      }
+                                    : undefined
+                            }
+                        >
+                            {/* Signature category color indicator dot */}
+                            <span
+                                className={`w-2 h-2 rounded-full shrink-0 transition-transform duration-200 ${
+                                    isActive
+                                        ? 'bg-white scale-110 shadow-xs'
+                                        : 'group-hover:scale-125 opacity-80 group-hover:opacity-100'
+                                }`}
+                                style={!isActive ? { backgroundColor: catColor } : undefined}
+                            />
+                            <span
+                                className={isActive ? 'keep-white font-bold' : ''}
+                                style={isActive ? { color: '#ffffff' } : undefined}
+                            >
+                                {cat.name}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
         </div>
     );
 }
@@ -80,13 +90,15 @@ function CategoryTabs({
 
 function EmptyState({ categoryName }: { categoryName?: string }) {
     return (
-        <div className="flex flex-col items-center justify-center py-32 text-center">
-            <Newspaper className="w-12 h-12 text-muted-foreground/25 mb-4" />
-            <p className="font-semibold text-muted-foreground">
+        <div className="flex flex-col items-center justify-center py-28 text-center px-4">
+            <div className="w-16 h-16 rounded-3xl bg-secondary/40 border border-border/60 flex items-center justify-center mb-4 text-muted-foreground">
+                <Newspaper className="w-8 h-8 opacity-60" />
+            </div>
+            <p className="text-base sm:text-lg font-bold text-foreground">
                 {categoryName ? `No hay noticias publicadas en ${categoryName}` : 'Sin contenido disponible'}
             </p>
-            <p className="text-sm text-muted-foreground/60 mt-1">
-                Nuestro equipo editorial actualizará esta sección pronto.
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                Nuestro equipo editorial actualizará esta sección pronto con la información más relevante.
             </p>
         </div>
     );
@@ -105,7 +117,14 @@ export default function NewsPage() {
     const [slotsLoading, setSlotsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const isPro = (user as any)?.isPro || (user as any)?.subscriptionTier === 'pro' || (user as any)?.role === 'ADMIN';
+    const isPro = Boolean(
+        (user as any)?.isPro ||
+        (user as any)?.subscriptionTier === 'pro' ||
+        (user as any)?.role === 'ADMIN' ||
+        (user as any)?.plan === 'PRO' ||
+        (user as any)?.accountType === 'PRO' ||
+        isJuanUser(user)
+    );
 
     // Load categories from API
     useEffect(() => {
@@ -165,34 +184,36 @@ export default function NewsPage() {
     const hasContent = categoryData?.slots.some((s) => s.article !== null) ?? false;
 
     return (
-        <div className="min-h-screen bg-background">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <div className="min-h-screen bg-background w-full">
+            <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-6 lg:py-8 space-y-6 lg:space-y-8">
                 {/* Header */}
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl lg:text-4xl font-black text-foreground tracking-tight">
+                        <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
                             Noticias
                         </h1>
-                        <p className="text-muted-foreground mt-1">
+                        <p className="text-muted-foreground text-sm sm:text-base mt-1">
                             Información financiera curada por nuestro equipo editorial
                         </p>
                     </div>
                     <button
                         onClick={() => selectedSlug && loadSlots(selectedSlug)}
                         disabled={slotsLoading}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-secondary text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                        className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-secondary text-sm font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                     >
                         <RefreshCw className={`w-4 h-4 ${slotsLoading ? 'animate-spin' : ''}`} />
-                        <span className="hidden sm:inline">Actualizar</span>
+                        <span>Actualizar</span>
                     </button>
                 </div>
 
                 {/* Category tabs */}
                 {categoriesLoading ? (
-                    <div className="flex gap-2">
-                        {[...Array(6)].map((_, i) => (
-                            <div key={i} className="h-10 w-24 rounded-2xl bg-secondary/50 animate-pulse" />
-                        ))}
+                    <div className="w-full flex justify-center py-1">
+                        <div className="flex flex-wrap items-center justify-center gap-2 max-w-5xl mx-auto">
+                            {[...Array(10)].map((_, i) => (
+                                <div key={i} className="h-8 sm:h-9 w-24 sm:w-28 rounded-full bg-secondary/50 animate-pulse" />
+                            ))}
+                        </div>
                     </div>
                 ) : categories.length > 0 ? (
                     <CategoryTabs

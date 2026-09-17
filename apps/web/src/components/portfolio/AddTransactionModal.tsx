@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { apiFetch } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import BackButton from '@/components/BackButton';
 import { SymbolLogo } from '@/components/SymbolLogo';
+import { AlertCircle, Search, X, Loader2 } from 'lucide-react';
 
 import { resolveAssetInfo } from '@/lib/tradingview';
 
@@ -32,7 +34,7 @@ interface AssetResult {
     matchScore?: number;
 }
 
-const MAG7_RECOMMENDATIONS: AssetResult[] = [
+const POPULAR_RECOMMENDATIONS: AssetResult[] = [
     { symbol: 'NASDAQ:AAPL', name: 'Apple Inc.', type: 'stock', exchange: 'NASDAQ' },
     { symbol: 'NASDAQ:MSFT', name: 'Microsoft Corp.', type: 'stock', exchange: 'NASDAQ' },
     { symbol: 'NASDAQ:GOOGL', name: 'Alphabet Class A', type: 'stock', exchange: 'NASDAQ' },
@@ -40,24 +42,74 @@ const MAG7_RECOMMENDATIONS: AssetResult[] = [
     { symbol: 'NASDAQ:NVDA', name: 'NVIDIA Corp.', type: 'stock', exchange: 'NASDAQ' },
     { symbol: 'NASDAQ:TSLA', name: 'Tesla Inc.', type: 'stock', exchange: 'NASDAQ' },
     { symbol: 'NASDAQ:META', name: 'Meta Platforms Inc.', type: 'stock', exchange: 'NASDAQ' },
+    { symbol: 'AMEX:SPY', name: 'SPDR S&P 500 ETF', type: 'etf', exchange: 'AMEX' },
 ];
+
+const EXCLUDED_EXCHANGE_PREFIXES = ['PYTH', 'SPREADEX', 'CAPITALCOM', 'FX', 'OANDA', 'FOREX', 'CURRENCYCOM'];
 
 const normalizeAssetResults = (data: unknown): AssetResult[] => {
     if (!Array.isArray(data)) return [];
     const stripHtml = (value: string) => value.replace(/<[^>]*>/g, '').trim();
+
     const mapped = data.map((item: any) => {
         const rawSymbol = String(item?.symbol || item?.ticker || '').trim();
         const symbol = stripHtml(rawSymbol);
         if (!symbol) return null;
         const rawName = String(item?.name || item?.description || item?.full_name || symbol).trim();
         const name = stripHtml(rawName || symbol);
-        const type = String(item?.type || item?.assetType || item?.contract || 'other').trim();
+        let type = String(item?.type || item?.assetType || item?.contract || 'other').trim().toLowerCase();
         const rawExchange = String(item?.exchange || item?.exchange_name || '').trim();
         const exchange = stripHtml(rawExchange);
+
+        const upperExchange = exchange.toUpperCase();
+        if (EXCLUDED_EXCHANGE_PREFIXES.some(prefix => upperExchange.includes(prefix) || symbol.toUpperCase().startsWith(`${prefix}:`))) {
+            return null;
+        }
+
+        const isArg = upperExchange === 'BYMA' || upperExchange === 'BCBA' || symbol.toUpperCase().includes('.BA');
+        if (isArg && (type === 'dr' || type === 'fund' || type === 'stock' || type === 'cedear')) {
+            type = 'cedear';
+        } else if (type === 'fund' || /etf/i.test(name) || /SPY|QQQ|DIA|IWM/i.test(symbol)) {
+            type = 'etf';
+        }
+
         const matchScore = typeof item?.matchScore === 'number' ? item.matchScore : (typeof item?.score === 'number' ? item.score : undefined);
         return { symbol, name, type, exchange, matchScore } as AssetResult;
     });
-    return mapped.filter((item): item is AssetResult => Boolean(item));
+
+    const valid = mapped.filter((item): item is AssetResult => Boolean(item));
+
+    const getRank = (item: AssetResult) => {
+        const ex = (item.exchange || '').toUpperCase();
+        if (ex === 'AMEX' || ex === 'NYSE ARCA' || ex === 'NYSE' || ex === 'NASDAQ') return 1;
+        if (ex === 'BCBA' || ex === 'BYMA') return 2;
+        if (ex.includes('BINANCE') || ex.includes('COINBASE')) return 3;
+        return 10;
+    };
+
+    return valid.sort((a, b) => getRank(a) - getRank(b));
+};
+
+const getAssetBadgeInfo = (type?: string, exchange?: string) => {
+    const t = (type || '').toLowerCase();
+    const ex = (exchange || '').toUpperCase();
+
+    if (t === 'cedear' || ex === 'BCBA' || ex === 'BYMA') {
+        return { label: 'CEDEAR', badgeCls: 'border-purple-500/30 bg-purple-500/10 text-purple-400' };
+    }
+    if (t === 'etf' || t === 'fund') {
+        return { label: 'ETF', badgeCls: 'border-sky-500/30 bg-sky-500/10 text-sky-400' };
+    }
+    if (t === 'stock' || t === 'equity') {
+        return { label: 'ACCIÓN', badgeCls: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' };
+    }
+    if (t === 'crypto') {
+        return { label: 'CRIPTO', badgeCls: 'border-amber-500/30 bg-amber-500/10 text-amber-400' };
+    }
+    if (t === 'bond') {
+        return { label: 'BONO', badgeCls: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400' };
+    }
+    return { label: (type || 'OTRO').toUpperCase(), badgeCls: 'border-border/60 bg-muted/40 text-muted-foreground' };
 };
 
 const formatAssetType = (value?: string) => {
@@ -82,18 +134,33 @@ const buildQuoteRequestCandidates = (symbol: string) => {
     if (exchangeMatch) {
         const [, exchange, ticker] = exchangeMatch;
         if (exchange === 'BYMA') {
-            candidates.push(`BCBA:${ticker}`);
+            candidates.push(`BCBA:${ticker}`, ticker);
+        } else if (exchange === 'BCBA') {
+            candidates.push(`BYMA:${ticker}`, ticker);
+        } else if (exchange === 'NYSE' || exchange === 'NYSE ARCA' || exchange === 'AMEX') {
+            candidates.push(`AMEX:${ticker}`, `NYSE:${ticker}`, ticker);
+        } else {
+            candidates.push(ticker);
         }
     } else {
-        candidates.push(`BCBA:${normalized}`);
+        candidates.push(`BCBA:${normalized}`, `BYMA:${normalized}`, `AMEX:${normalized}`, `NASDAQ:${normalized}`);
     }
 
     return Array.from(new Set(candidates));
 };
 
+const KNOWN_CEDEARS = new Set([
+    'AAPL', 'NVDA', 'MELI', 'MSFT', 'AMZN', 'GOOGL', 'TSLA', 'META',
+    'SPY', 'QQQ', 'DIA', 'IWM', 'EEM', 'XLE', 'XLF', 'KO', 'MCD',
+    'BBD', 'VALE', 'PBR', 'V', 'WMT', 'DIS', 'JNJ', 'JPM', 'BA',
+    'BABA', 'PLTR', 'AMD', 'INTC', 'NFLX', 'PYPL', 'COIN', 'NKE',
+    'PFE', 'XOM', 'CVX', 'DESP', 'GLOB', 'BIOX', 'VIST', 'TS',
+]);
+
 const isCedearSymbol = (symbol?: string) => {
     if (!symbol) return false;
-    return symbol.toUpperCase().startsWith('BCBA:');
+    const s = symbol.toUpperCase();
+    return s.startsWith('BCBA:') || s.startsWith('BYMA:') || s.includes('.BA');
 };
 
 const parseInputNumber = (value: string) => {
@@ -156,15 +223,16 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
     const [notes, setNotes] = useState('');
     const [currency, setCurrency] = useState('USD');
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // TradingView direct fetch functions removed in favor of backend proxy
-
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [cedearValuation, setCedearValuation] = useState<any>(null);
 
     const resetState = (nextQuery?: string) => {
         setStep('search');
         setSelectedAsset(null);
         setBaseAsset(null);
         setIsCedear(false);
+        setCedearValuation(null);
+        setSubmitError(null);
         setTransactionType(mode);
         setDate(new Date().toISOString().split('T')[0]);
         setQuantity('');
@@ -284,24 +352,65 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
         }
     };
 
+    const fetchCedearValuation = async (symbol: string) => {
+        const clean = extractBaseSymbol(symbol);
+        if (!clean) return;
+        try {
+            const res = await apiFetch(`/market/cedears/${clean}`);
+            if (res.ok) {
+                const data = await res.json();
+                setCedearValuation(data);
+                if (data.cedearPriceArs) {
+                    setPrice(String(data.cedearPriceArs));
+                    setHasLivePrice(true);
+                }
+            } else {
+                setCedearValuation(null);
+            }
+        } catch {
+            setCedearValuation(null);
+        }
+    };
+
     const handleSelectAsset = async (asset: AssetResult) => {
         setBaseAsset(asset);
-        setSelectedAsset(asset);
-        const cedearSelected = isCedearSymbol(asset.symbol);
+        let effectiveAsset = asset;
+        const clean = extractBaseSymbol(asset.symbol).toUpperCase();
+        const cedearSelected = isCedearSymbol(asset.symbol) || asset.type.toLowerCase() === 'cedear';
+
+        if (cedearSelected && !asset.symbol.toUpperCase().startsWith('BCBA:')) {
+            effectiveAsset = {
+                ...asset,
+                symbol: `BCBA:${clean}`,
+                exchange: 'BCBA',
+                type: 'cedear',
+            };
+        }
+
+        setSelectedAsset(effectiveAsset);
         setIsCedear(cedearSelected);
         setCurrency(cedearSelected ? 'ARS' : 'USD');
         setStep('details');
         setPrice('');
-        await fetchQuote(asset.symbol);
+        setCedearValuation(null);
+        if (cedearSelected) {
+            await Promise.all([
+                fetchQuote(effectiveAsset.symbol),
+                fetchCedearValuation(clean),
+            ]);
+        } else {
+            await fetchQuote(effectiveAsset.symbol);
+        }
     };
 
     const handleCedearToggle = async (checked: boolean) => {
         if (!baseAsset) return;
-        if (!baseSymbol) return;
+        const base = extractBaseSymbol(baseAsset.symbol).toUpperCase();
+        if (!base) return;
         if (checked) {
             const cedearAsset: AssetResult = {
                 ...baseAsset,
-                symbol: `BCBA:${baseSymbol}`,
+                symbol: `BCBA:${base}`,
                 exchange: 'BCBA',
                 type: 'cedear',
             };
@@ -309,12 +418,16 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
             setIsCedear(true);
             setCurrency('ARS');
             setPrice('');
-            await fetchQuote(cedearAsset.symbol);
+            await Promise.all([
+                fetchQuote(cedearAsset.symbol),
+                fetchCedearValuation(base),
+            ]);
         } else {
             setSelectedAsset(baseAsset);
             setIsCedear(false);
             setCurrency('USD');
             setPrice('');
+            setCedearValuation(null);
             await fetchQuote(baseAsset.symbol);
         }
     };
@@ -322,7 +435,15 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
     const handleRefreshPrice = async () => {
         if (!selectedAsset?.symbol) return;
         setPrice('');
-        await fetchQuote(selectedAsset.symbol);
+        const base = extractBaseSymbol(selectedAsset.symbol).toUpperCase();
+        if (isCedear && base) {
+            await Promise.all([
+                fetchQuote(selectedAsset.symbol),
+                fetchCedearValuation(base),
+            ]);
+        } else {
+            await fetchQuote(selectedAsset.symbol);
+        }
     };
 
     const needsPrice = transactionType === 'BUY' || transactionType === 'SELL';
@@ -334,6 +455,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
         if (!Number.isFinite(numericQuantity) || numericQuantity <= 0) return;
         if (needsPrice && (!Number.isFinite(numericPrice) || numericPrice <= 0)) return;
         setIsSubmitting(true);
+        setSubmitError(null);
         try {
             const payload = {
                 assetTicker: selectedAsset.symbol,
@@ -357,15 +479,16 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
             });
 
             if (!response.ok) {
-                throw new Error((await getErrorMessage(response)) || 'Error creating transaction');
+                const errMsg = await getErrorMessage(response);
+                throw new Error(errMsg || 'Error al registrar la transacción');
             }
 
             onSuccess();
             onOpenChange(false);
             resetState(initialSymbol || '');
-        } catch (error) {
-            console.error(error);
-            alert((error as any)?.message || 'Error creating transaction');
+        } catch (error: any) {
+            console.error('Error in AddTransactionModal:', error);
+            setSubmitError(error?.message || 'Error al registrar la transacción');
         } finally {
             setIsSubmitting(false);
         }
@@ -374,13 +497,14 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
     const total = (numericQuantity || 0) * (numericPrice || 0);
     const trimmedQuery = searchQuery.trim();
     const isConfirmDisabled = isSubmitting || !quantity || (needsPrice && (priceLoading || !price));
-    const baseSymbol = baseAsset ? extractBaseSymbol(baseAsset.symbol).toUpperCase() : '';
+    const cleanBase = baseAsset ? extractBaseSymbol(baseAsset.symbol).toUpperCase() : '';
     const canCedear = Boolean(
         baseAsset &&
         !isCedearSymbol(baseAsset.symbol) &&
-        (/stock|etf/i.test(baseAsset.type) ||
-            /NASDAQ|NYSE|AMEX/i.test(baseAsset.exchange || '') ||
-            /^(NASDAQ|NYSE|AMEX):/i.test(baseAsset.symbol))
+        (/stock|etf|fund/i.test(baseAsset.type) ||
+            /NASDAQ|NYSE|AMEX|ARCA/i.test(baseAsset.exchange || '') ||
+            /^(NASDAQ|NYSE|AMEX|ARCA):/i.test(baseAsset.symbol) ||
+            KNOWN_CEDEARS.has(cleanBase))
     );
 
     return (
@@ -398,15 +522,16 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                         mode === 'SELL' ? (
                             <div className="space-y-4">
                                 <div className="text-sm text-foreground mb-4">Selecciona el activo de tu portafolio que deseas vender:</div>
-                                <div className="max-h-[300px] overflow-y-auto space-y-2">
+                                <div className="max-h-[340px] overflow-y-auto overflow-x-hidden space-y-1.5 pr-1 -mr-1">
                                     {portfolioAssets.length === 0 ? (
-                                        <div className="text-center text-muted-foreground py-4">
+                                        <div className="text-center text-muted-foreground py-6">
                                             No hay activos en este portafolio aún.
                                         </div>
                                     ) : portfolioAssets.filter(a => a.cantidad > 0).map((asset, index) => (
                                         <button
                                             key={`portfolio-asset-${asset.ticker}-${index}`}
-                                            className="w-full flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
+                                            type="button"
+                                            className="w-full max-w-full min-w-0 flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-muted/70 transition-colors text-left cursor-pointer border border-transparent hover:border-border/50"
                                             onClick={() => handleSelectAsset({
                                                 symbol: asset.ticker,
                                                 name: asset.ticker,
@@ -415,98 +540,133 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                                 matchScore: 100
                                             })}
                                         >
-                                            <div>
-                                                <div className="font-bold">{asset.ticker}</div>
-                                                <div className="text-sm text-muted-foreground mt-0.5">Cantidad disponible: <span className="font-semibold text-foreground/80">{asset.cantidad.toFixed(4)}</span></div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="font-bold text-sm truncate">{asset.ticker}</div>
+                                                <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                                                    Cantidad disponible: <span className="font-semibold text-foreground/80">{asset.cantidad.toFixed(4)}</span>
+                                                </div>
                                             </div>
-                                            <Badge variant="outline">{formatAssetType(asset.tipoActivo)}</Badge>
+                                            <Badge variant="outline" className="text-[10px] font-bold uppercase shrink-0 px-2 py-0.5 ml-2">
+                                                {formatAssetType(asset.tipoActivo)}
+                                            </Badge>
                                         </button>
                                     ))}
                                 </div>
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                <Input
-                                    placeholder="Buscar... (ej: NASDAQ:TSLA, BYBIT:BTCUSDT)"
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                    autoFocus
-                                    className="text-lg h-12"
-                                />
-                                <div className="max-h-[300px] overflow-y-auto space-y-2">
-                                    {isSearching && (
-                                        <div className="text-center text-muted-foreground py-4">Buscando en TradingView...</div>
-                                    )}
-                                    {!isSearching && searchError && (
-                                        <div className="text-center text-red-400 py-4">{searchError}</div>
-                                    )}
-                                    {!isSearching && trimmedQuery.length < 1 && (
-                                        <div className="text-center text-muted-foreground py-4">
-                                            Escribe al menos 1 caracter para buscar en TradingView.
-                                        </div>
-                                    )}
-                                    {!isSearching && !searchError && trimmedQuery.length >= 1 && searchResults.map((asset, index) => {
-                                        const info = resolveAssetInfo(asset.symbol);
-                                        return (
-                                            <button
-                                                key={`${asset.symbol}-${asset.exchange || 'na'}-${asset.type || 'na'}-${index}`}
-                                                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
-                                                onClick={() => handleSelectAsset(asset)}
-                                            >
-                                                <SymbolLogo symbol={asset.symbol} size={36} />
-                                                <div className="flex-1 min-w-0">
-                                                    <span className="font-bold text-[13px]">
-                                                        {asset.exchange || info.exchange ? `${asset.exchange || info.exchange}:${info.ticker}` : info.ticker}
-                                                    </span>
-                                                    <div className="text-[11px] text-muted-foreground truncate">{asset.name || info.displayName}</div>
-                                                </div>
-                                                <Badge variant="outline" className="text-[10px] uppercase shrink-0">{formatAssetType(asset.type)}</Badge>
-                                            </button>
-                                        );
-                                    })}
-                                    {!isSearching && !searchError && trimmedQuery.length >= 1 && searchResults.length === 0 && (
-                                        <div className="text-center text-muted-foreground py-4">
-                                            No se encontraron resultados en TradingView.
-                                            <Button
-                                                variant="link"
-                                                onClick={() =>
-                                                    handleSelectAsset({
-                                                        symbol: trimmedQuery.toUpperCase(),
-                                                        name: trimmedQuery.toUpperCase(),
-                                                        type: 'custom',
-                                                    })
-                                                }
-                                            >
-                                                Crear "{trimmedQuery.toUpperCase()}" manualmente
-                                            </Button>
-                                        </div>
+                                <div className="relative">
+                                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Buscar por ticker o nombre (ej: SPY, AAPL, BTC)..."
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        autoFocus
+                                        className="pl-10 pr-9 text-base h-11 rounded-xl"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md cursor-pointer"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
                                     )}
                                 </div>
-                                <div className="pt-3 border-t border-border/60">
-                                    <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                                        Recomendados · 7 Magníficas
+
+                                {trimmedQuery.length === 0 ? (
+                                    /* When empty: show recommendations */
+                                    <div className="pt-1">
+                                        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
+                                            Activos Populares
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {POPULAR_RECOMMENDATIONS.map((asset) => {
+                                                const info = resolveAssetInfo(asset.symbol);
+                                                return (
+                                                    <button
+                                                        key={asset.symbol}
+                                                        type="button"
+                                                        className="flex items-center gap-2.5 rounded-xl border border-border/70 p-2.5 text-left transition-colors hover:bg-muted/80 cursor-pointer min-w-0 overflow-hidden"
+                                                        onClick={() => handleSelectAsset(asset)}
+                                                    >
+                                                        <SymbolLogo symbol={asset.symbol} size={28} className="shrink-0" />
+                                                        <div className="min-w-0 flex-1">
+                                                            <span className="font-bold text-[11px] block truncate">
+                                                                {asset.exchange || 'NASDAQ' ? `${asset.exchange || 'NASDAQ'}:${info.ticker}` : info.ticker}
+                                                            </span>
+                                                            <div className="text-[10px] text-muted-foreground truncate">{asset.name}</div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {MAG7_RECOMMENDATIONS.map((asset) => {
+                                ) : (
+                                    /* When searching: ONLY show search results */
+                                    <div className="max-h-[360px] overflow-y-auto space-y-1.5 pr-2">
+                                        {isSearching && (
+                                            <div className="flex items-center justify-center gap-2 text-muted-foreground py-8">
+                                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                                <span className="text-sm">Buscando en TradingView...</span>
+                                            </div>
+                                        )}
+                                        {!isSearching && searchError && (
+                                            <div className="text-center text-red-500 py-6 text-sm">{searchError}</div>
+                                        )}
+                                        {!isSearching && !searchError && searchResults.map((asset, index) => {
                                             const info = resolveAssetInfo(asset.symbol);
+                                            const badge = getAssetBadgeInfo(asset.type, asset.exchange);
                                             return (
                                                 <button
-                                                    key={asset.symbol}
-                                                    className="flex items-center gap-2.5 rounded-lg border border-border/70 p-2.5 text-left transition-colors hover:bg-muted"
+                                                    key={`${asset.symbol}-${asset.exchange || 'na'}-${asset.type || 'na'}-${index}`}
+                                                    type="button"
+                                                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/80 transition-all text-left cursor-pointer border border-transparent hover:border-border/60 group"
                                                     onClick={() => handleSelectAsset(asset)}
                                                 >
-                                                    <SymbolLogo symbol={asset.symbol} size={30} />
-                                                    <div className="min-w-0">
-                                                        <span className="font-bold text-[11px]">
-                                                            {asset.exchange || 'NASDAQ' ? `${asset.exchange || 'NASDAQ'}:${info.ticker}` : info.ticker}
+                                                    <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden mr-2">
+                                                        <SymbolLogo symbol={asset.symbol} size={36} className="shrink-0" />
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-[13px] block truncate text-foreground group-hover:text-primary transition-colors">
+                                                                    {asset.exchange || info.exchange ? `${asset.exchange || info.exchange}:${info.ticker}` : info.ticker}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                                                                {asset.name || info.displayName}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center shrink-0">
+                                                        <span className={cn('text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border tracking-wide', badge.badgeCls)}>
+                                                            {badge.label}
                                                         </span>
-                                                        <div className="text-[10px] text-muted-foreground truncate">{asset.name}</div>
                                                     </div>
                                                 </button>
                                             );
                                         })}
+                                        {!isSearching && !searchError && searchResults.length === 0 && (
+                                            <div className="text-center text-muted-foreground py-8 space-y-3">
+                                                <p className="text-sm">No se encontraron resultados para "{trimmedQuery}".</p>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="rounded-xl font-medium"
+                                                    onClick={() =>
+                                                        handleSelectAsset({
+                                                            symbol: trimmedQuery.toUpperCase(),
+                                                            name: trimmedQuery.toUpperCase(),
+                                                            type: 'custom',
+                                                        })
+                                                    }
+                                                >
+                                                    Crear "{trimmedQuery.toUpperCase()}" manualmente
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
+                                )}
                             </div>
                         )
                     ) : (
@@ -526,10 +686,37 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                     )}
                                 </div>
                                 {priceLoading && (
-                                    <div className="text-xs text-muted-foreground">Actualizando precio desde TradingView...</div>
+                                    <div className="text-xs text-muted-foreground">Actualizando precio desde TradingView / BYMA...</div>
                                 )}
                                 {priceError && !priceLoading && (
                                     <div className="text-xs text-red-400">{priceError}</div>
+                                )}
+
+                                {isCedear && cedearValuation && (
+                                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs space-y-1.5 backdrop-blur-sm mt-1">
+                                        <div className="flex justify-between items-center font-bold text-foreground">
+                                            <span>Ratio CEDEAR:</span>
+                                            <Badge variant="secondary" className="font-mono text-[11px]">{cedearValuation.ratio}:1</Badge>
+                                        </div>
+                                        <div className="flex justify-between text-muted-foreground">
+                                            <span>Subyacente en EEUU ({cedearValuation.underlyingTicker}):</span>
+                                            <span className="font-semibold text-foreground">${cedearValuation.underlyingPriceUsd?.toFixed(2) ?? 'N/A'} USD</span>
+                                        </div>
+                                        <div className="flex justify-between text-muted-foreground">
+                                            <span>Dólar CCL Utilizado:</span>
+                                            <span className="font-semibold text-foreground">${cedearValuation.dolarCcl?.toFixed(2) ?? 'N/A'} ARS</span>
+                                        </div>
+                                        <div className="flex justify-between border-t border-border/40 pt-1 text-muted-foreground">
+                                            <span>Valor Teórico en ARS:</span>
+                                            <span className="font-bold text-primary">${cedearValuation.theoreticalPriceArs?.toLocaleString('es-AR') ?? 'N/A'} ARS</span>
+                                        </div>
+                                        {cedearValuation.implicitCcl && (
+                                            <div className="flex justify-between text-muted-foreground text-[11px]">
+                                                <span>CCL Implícito del CEDEAR:</span>
+                                                <span className="font-mono">${cedearValuation.implicitCcl.toFixed(2)} ARS ({cedearValuation.discrepancyPct >= 0 ? '+' : ''}{cedearValuation.discrepancyPct}%)</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
@@ -587,16 +774,40 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                     )}
                 </div>
 
-                <DialogFooter className="p-6 pt-2 gap-2">
-                    {step === 'details' && (
-                        <BackButton onClick={() => setStep('search')} label="Volver" />
+                {submitError && (
+                    <div className="mx-6 mb-2 flex items-center gap-2.5 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-600 dark:text-rose-400 font-semibold animate-in fade-in-50">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                        <span className="flex-1">{submitError}</span>
+                    </div>
+                )}
+
+                <DialogFooter className="p-6 pt-3 border-t border-border/40 gap-2">
+                    {step === 'details' ? (
+                        <div className="flex w-full items-center justify-between gap-2">
+                            <BackButton onClick={() => setStep('search')} label="Volver" />
+                            <Button
+                                onClick={() => handleSubmit()}
+                                disabled={isConfirmDisabled}
+                                className="font-bold gap-1.5"
+                            >
+                                {isSubmitting ? 'Guardando...' : 'Confirmar Operación'}
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="flex w-full items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                                Selecciona un activo para continuar
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onOpenChange(false)}
+                                className="text-xs font-semibold cursor-pointer"
+                            >
+                                Cancelar
+                            </Button>
+                        </div>
                     )}
-                    <Button
-                        onClick={() => (step === 'search' ? onOpenChange(false) : handleSubmit())}
-                        disabled={step === 'details' ? isConfirmDisabled : isSubmitting}
-                    >
-                        {isSubmitting ? 'Guardando...' : step === 'search' ? 'Cancelar' : 'Confirmar'}
-                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

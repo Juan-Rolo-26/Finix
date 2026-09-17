@@ -9,6 +9,7 @@ import {
     Req,
     HttpCode,
     HttpStatus,
+    Query,
 } from '@nestjs/common';
 import { NewsSlotsService } from './news-slots.service';
 import { AdminGuard } from '../admin/admin.guard';
@@ -24,6 +25,12 @@ export class NewsSlotsPublicController {
     @Get('categories')
     getCategories() {
         return this.slotsService.getPublicCategories();
+    }
+
+    /** GET /news/slots/headlines — published headlines across active slots */
+    @Get('headlines')
+    getHeadlines(@Query('limit') limit?: string) {
+        return this.slotsService.getPublicHeadlines(limit ? parseInt(limit, 10) : 6);
     }
 
     /** GET /news/slots/category/:slug — category + 5 slots with published articles */

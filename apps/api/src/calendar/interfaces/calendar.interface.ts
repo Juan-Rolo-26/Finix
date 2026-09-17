@@ -1,25 +1,59 @@
-export type CalendarImportance = 'HIGH' | 'MEDIUM' | 'LOW';
+export type CalendarImportance = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type CalendarImpact = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type MarketCalendarStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'HIDDEN' | 'CANCELLED';
 export type CalendarSourceType = 'AUTOMATIC' | 'MANUAL';
 export type EarningsReportTiming = 'BMO' | 'AMC' | 'DMH'; // Before Market Open, After Market Close, During Market Hours
 export type EarningsDateStatus = 'CONFIRMED' | 'ESTIMATED';
 
+export type MarketCalendarCategory =
+    | 'MACROECONOMIC'
+    | 'MONETARY_POLICY'
+    | 'INFLATION'
+    | 'EMPLOYMENT'
+    | 'GDP'
+    | 'INTEREST_RATES'
+    | 'CENTRAL_BANK'
+    | 'CONSUMER'
+    | 'HOUSING'
+    | 'MANUFACTURING'
+    | 'TRADE'
+    | 'FISCAL'
+    | 'BOND_AUCTION'
+    | 'COMMODITIES'
+    | 'EARNINGS'
+    | 'CORPORATE_EVENT'
+    | 'IPO'
+    | 'DIVIDEND'
+    | 'SHAREHOLDER_MEETING'
+    | 'ECONOMIC_SPEECH'
+    | 'OTHER';
+
 export interface EconomicEventItem {
     id?: string;
-    eventType: 'ECONOMIC';
+    externalId?: string;
+    sourceId?: string;
+    sourceName?: string;
+    eventType: 'ECONOMIC' | 'CORPORATE_EVENT' | 'EARNINGS' | 'MARKET';
     country: 'US' | 'AR' | string;
+    countryCode?: string;
     currency?: string;
     title: string;
     description?: string;
-    category: 'INFLATION' | 'CENTRAL_BANK' | 'EMPLOYMENT' | 'ACTIVITY' | 'FISCAL' | 'TRADE' | 'OTHER' | string;
+    category: MarketCalendarCategory | string;
+    subcategory?: string;
     importance: CalendarImportance;
+    impact?: CalendarImpact;
     marketImpactScore: number;
+    impactScore?: number;
     date: string; // YYYY-MM-DD
     time?: string; // e.g. "10:30"
     timestampUtc: Date;
     timezone: string;
     previousValue?: string;
+    forecastValue?: string;
     consensusValue?: string;
     actualValue?: string;
+    unit?: string;
     surprise?: number;
     surprisePercent?: number;
     expectedMarketEffect?: string;
@@ -27,8 +61,15 @@ export interface EconomicEventItem {
     source?: string;
     sourceUrl?: string;
     sourceType?: CalendarSourceType;
+    companyName?: string;
+    ticker?: string;
+    status?: MarketCalendarStatus;
+    isManual?: boolean;
+    isAutomatic?: boolean;
+    isVerified?: boolean;
     isPublished?: boolean;
     isFeatured?: boolean;
+    eventFingerprint?: string;
 }
 
 export interface EarningsEventItem {
@@ -56,6 +97,25 @@ export interface EarningsEventItem {
     sourceType?: CalendarSourceType;
     isPublished?: boolean;
     isFeatured?: boolean;
+}
+
+export interface DividendEventItem {
+    id?: string;
+    eventType?: 'DIVIDEND';
+    ticker: string;
+    companyName: string;
+    logoUrl?: string;
+    exDate: string; // YYYY-MM-DD
+    paymentDate?: string; // YYYY-MM-DD (cuándo pagan)
+    recordDate?: string; // YYYY-MM-DD
+    declarationDate?: string;
+    amount?: number; // Monto en USD por acción (cuánto pagan)
+    yield?: number; // Rendimiento por dividendo en %
+    frequency?: string;
+    marketCap?: number;
+    source?: string;
+    sourceType?: CalendarSourceType;
+    isPublished?: boolean;
 }
 
 export interface HomeCalendarEventCard {
@@ -99,6 +159,7 @@ export interface CalendarWeekDay {
     isToday: boolean;
     economicEvents: EconomicEventItem[];
     earningsEvents: EarningsEventItem[];
+    dividendEvents: DividendEventItem[];
 }
 
 export interface CalendarWeekResponse {
@@ -112,6 +173,7 @@ export interface CalendarWeekResponse {
         us: number;
         ar: number;
         earnings: number;
+        dividends: number;
     };
     days: CalendarWeekDay[];
 }

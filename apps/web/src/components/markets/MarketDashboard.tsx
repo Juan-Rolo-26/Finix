@@ -7,11 +7,15 @@ import {
     Flame,
     Globe2,
     Landmark,
+    RotateCw,
+    TrendingDown,
     TrendingUp,
     Users,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { SymbolLogo } from '@/components/SymbolLogo';
 import { cn } from '@/lib/utils';
 
 export interface MarketDashboardAsset {
@@ -82,6 +86,13 @@ interface MarketDashboardProps {
     data: MarketDashboardData | null;
     loading?: boolean;
     onSelectSymbol?: (symbol: string) => void;
+    onRefresh?: () => void;
+}
+
+function toShortSymbol(symbol: string) {
+    const clean = (symbol || '').trim().toUpperCase();
+    if (!clean) return '';
+    return clean.includes(':') ? clean.split(':').pop() || clean : clean;
 }
 
 const sectionMeta = {
@@ -207,13 +218,21 @@ function AssetTile({
     const content = (
         <>
             <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.description}</p>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <SymbolLogo symbol={item.symbol} size={36} className="shrink-0" />
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                            <p className="text-sm font-bold text-foreground truncate">{item.label}</p>
+                            <span className="text-[10px] font-semibold text-muted-foreground uppercase bg-muted/40 px-1.5 py-0.5 rounded tracking-wider shrink-0">
+                                {toShortSymbol(item.symbol)}
+                            </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-muted-foreground truncate">{item.description}</p>
+                    </div>
                 </div>
                 <div
                     className={cn(
-                        'inline-flex h-9 w-9 items-center justify-center rounded-xl border',
+                        'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border',
                         positive
                             ? 'market-trend-chip market-trend-chip--positive'
                             : negative
@@ -225,18 +244,20 @@ function AssetTile({
                 </div>
             </div>
 
-            <div className="mt-5 space-y-2">
-                <p className="text-2xl font-bold tracking-tight text-foreground">{formatValue(item)}</p>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="mt-4 flex items-end justify-between gap-2">
+                <div>
+                    <p className="text-2xl font-black tracking-tight text-foreground">{formatValue(item)}</p>
+                    <span className="text-xs text-muted-foreground">{formatRelativeTime(item.updatedAt)}</span>
+                </div>
+                <div className="text-right">
                     <span
                         className={cn(
-                            'text-sm font-semibold',
-                            positive ? 'market-tone-positive' : negative ? 'market-tone-negative' : 'text-muted-foreground'
+                            'inline-block text-sm font-bold px-2 py-0.5 rounded-lg',
+                            positive ? 'market-trend-chip--positive text-emerald-400' : negative ? 'market-trend-chip--negative text-red-400' : 'text-muted-foreground'
                         )}
                     >
                         {formatChange(item.change)}
                     </span>
-                    <span className="text-xs text-muted-foreground">{formatRelativeTime(item.updatedAt)}</span>
                 </div>
             </div>
         </>
@@ -247,7 +268,7 @@ function AssetTile({
             <button
                 type="button"
                 onClick={() => onSelect?.(item.symbol)}
-                className="rounded-[24px] border border-border/60 bg-background/30 p-5 text-left transition-all hover:border-primary/30 hover:bg-background/50"
+                className="rounded-[24px] border border-border/60 bg-background/30 p-5 text-left transition-all hover:border-primary/40 hover:bg-background/50 hover:shadow-sm"
             >
                 {content}
             </button>
@@ -266,9 +287,14 @@ function DollarTile({ item }: { item: MarketDollarRate }) {
     return (
         <div className="rounded-[24px] border border-border/60 bg-background/35 p-5">
             <div className="flex items-start justify-between gap-3">
-                <div>
-                    <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Actualizacion {formatRelativeTime(item.updatedAt).toLowerCase()}</p>
+                <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 border border-black/20 text-sm font-black shadow-sm">
+                        $
+                    </div>
+                    <div>
+                        <p className="text-sm font-bold text-foreground">{item.label}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">Actualización {formatRelativeTime(item.updatedAt).toLowerCase()}</p>
+                    </div>
                 </div>
                 <Badge
                     variant="outline"
@@ -296,8 +322,6 @@ function DollarTile({ item }: { item: MarketDollarRate }) {
     );
 }
 
-
-
 function SectionCard({
     sectionKey,
     items,
@@ -321,10 +345,10 @@ function SectionCard({
                         </CardTitle>
                         <CardDescription className="mt-2 text-sm">{meta.description}</CardDescription>
                     </div>
-                    <Badge variant="outline" className={meta.badge}>{items.length} items</Badge>
+                    <Badge variant="outline" className={meta.badge}>{items.length} activos</Badge>
                 </div>
             </CardHeader>
-            <CardContent className="grid gap-5 md:gap-6 sm:grid-cols-2">
+            <CardContent className="grid gap-4 sm:grid-cols-2">
                 {items.map((item) => (
                     <AssetTile key={item.id} item={item} onSelect={onSelectSymbol} />
                 ))}
@@ -351,7 +375,7 @@ function LoadingState() {
     );
 }
 
-export default function MarketDashboard({ data, loading = false, onSelectSymbol }: MarketDashboardProps) {
+export default function MarketDashboard({ data, loading = false, onSelectSymbol, onRefresh }: MarketDashboardProps) {
     if (loading && !data) {
         return <LoadingState />;
     }
@@ -372,6 +396,40 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol 
 
     return (
         <div className="space-y-8 xl:space-y-10">
+            {/* Live Real-time Status Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-[26px] border border-border/60 bg-card/50 backdrop-blur-xl px-6 py-4 shadow-sm">
+                <div className="flex items-center gap-3.5">
+                    <span className="relative flex h-3.5 w-3.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+                    </span>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-base font-bold text-foreground">Mercado en Tiempo Real</span>
+                            <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase tracking-wider py-0.5 px-2">
+                                En vivo
+                            </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            Cotizaciones oficiales en directo de BYMA, Wall Street, Cripto y Commodities • Sincronizado {formatRelativeTime(data.updatedAt).toLowerCase()}
+                        </p>
+                    </div>
+                </div>
+                {onRefresh && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onRefresh}
+                        disabled={loading}
+                        className="rounded-xl border-border/60 bg-background/50 hover:bg-background/80 gap-2 text-xs font-semibold h-9 px-4 transition-colors"
+                    >
+                        <RotateCw className={cn('h-3.5 w-3.5 text-primary', loading && 'animate-spin')} />
+                        <span>{loading ? 'Actualizando...' : 'Actualizar ahora'}</span>
+                    </Button>
+                )}
+            </div>
+
+            {/* Quick Metrics Grid */}
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
                 <Card className={cn('rounded-[30px] border backdrop-blur-xl', pulseToneClass)}>
                     <CardHeader className="pb-4">
@@ -379,7 +437,7 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol 
                             <Activity className="h-5 w-5" />
                             Pulso del mercado
                         </CardTitle>
-                        <CardDescription className="market-pulse-subtle !text-current">Lectura rapida de la jornada</CardDescription>
+                        <CardDescription className="market-pulse-subtle !text-current">Lectura rápida de la jornada</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <p className="text-2xl font-bold">{data.pulse.label}</p>
@@ -398,7 +456,7 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol 
                             <DollarSign className="h-5 w-5 text-primary" />
                             Brecha cambiaria
                         </CardTitle>
-                        <CardDescription>Dolar blue vs oficial</CardDescription>
+                        <CardDescription>Dólar blue vs oficial</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <p className="text-2xl font-bold text-foreground">
@@ -423,21 +481,28 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol 
                         </CardTitle>
                         <CardDescription>Mayor suba dentro del tablero seguido</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-3">
                         {topGainer ? (
                             <>
                                 <button
                                     type="button"
                                     onClick={() => onSelectSymbol?.(topGainer.symbol)}
-                                    className="text-left transition-colors hover:text-primary"
+                                    className="flex items-center gap-3 text-left transition-transform hover:translate-x-1 group"
                                 >
-                                    <p className="text-2xl font-bold text-foreground">{topGainer.label}</p>
+                                    <SymbolLogo symbol={topGainer.symbol} size={38} className="shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-lg font-bold text-foreground truncate group-hover:text-primary transition-colors">{topGainer.label}</p>
+                                        <p className="text-xs text-muted-foreground uppercase">{toShortSymbol(topGainer.symbol)}</p>
+                                    </div>
                                 </button>
-                                <p className="market-tone-positive text-sm font-semibold">{formatChange(topGainer.change)}</p>
-                                <p className="text-sm text-muted-foreground">{topGainer.description}</p>
+                                <div className="flex items-baseline justify-between gap-2 pt-1">
+                                    <span className="market-tone-positive text-base font-black">{formatChange(topGainer.change)}</span>
+                                    <span className="text-sm font-bold text-foreground">{formatValue(topGainer)}</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-1">{topGainer.description}</p>
                             </>
                         ) : (
-                            <p className="text-sm text-muted-foreground">Sin datos para calcular lideres.</p>
+                            <p className="text-sm text-muted-foreground">Sin datos para calcular líderes.</p>
                         )}
                     </CardContent>
                 </Card>
@@ -448,19 +513,23 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol 
                             <Users className="h-5 w-5 text-primary" />
                             Radar Finix
                         </CardTitle>
-                        <CardDescription>Lo mas comentado por la comunidad</CardDescription>
+                        <CardDescription>Lo más comentado por la comunidad</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-3">
                         {topCommunity ? (
                             <>
                                 <button
                                     type="button"
                                     onClick={() => onSelectSymbol?.(topCommunity.symbol)}
-                                    className="text-left transition-colors hover:text-primary"
+                                    className="flex items-center gap-3 text-left transition-transform hover:translate-x-1 group"
                                 >
-                                    <p className="text-2xl font-bold text-foreground">{topCommunity.label}</p>
+                                    <SymbolLogo symbol={topCommunity.symbol} size={38} className="shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-lg font-bold text-foreground truncate group-hover:text-primary transition-colors">{topCommunity.label}</p>
+                                        <p className="text-xs text-muted-foreground uppercase">{toShortSymbol(topCommunity.symbol)}</p>
+                                    </div>
                                 </button>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-muted-foreground pt-1">
                                     {formatCount(topCommunity.mentions)} menciones y {formatCount(topCommunity.engagement)} interacciones.
                                 </p>
                                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/70">
@@ -468,17 +537,18 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol 
                                 </p>
                             </>
                         ) : (
-                            <p className="text-sm text-muted-foreground">Todavia no hay suficiente conversacion para armar el radar social.</p>
+                            <p className="text-sm text-muted-foreground">Todavía no hay suficiente conversación para armar el radar social.</p>
                         )}
                     </CardContent>
                 </Card>
             </div>
 
+            {/* Dólar Hoy Section */}
             <Card className="rounded-[30px] border-border/60 bg-card/60 backdrop-blur-xl">
                 <CardHeader className="pb-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
-                            <CardTitle className="text-2xl">Dolar hoy</CardTitle>
+                            <CardTitle className="text-2xl">Dólar hoy</CardTitle>
                             <CardDescription className="mt-2 text-base">
                                 Tipos de cambio clave para seguir Argentina en segundos.
                             </CardDescription>
@@ -495,6 +565,42 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol 
                 </CardContent>
             </Card>
 
+            {/* Top Gainers & Losers Section */}
+            {(data.leaders.gainers.length > 0 || data.leaders.losers.length > 0) && (
+                <div className="grid gap-8 xl:grid-cols-2">
+                    <Card className="rounded-[30px] border-border/60 bg-card/60 backdrop-blur-xl">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="flex items-center gap-2 text-xl">
+                                <TrendingUp className="h-5 w-5 text-emerald-400" />
+                                Top Ganadoras
+                            </CardTitle>
+                            <CardDescription>Activos con mayor rendimiento positivo en la jornada</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-3 sm:grid-cols-2">
+                            {data.leaders.gainers.slice(0, 4).map((item) => (
+                                <AssetTile key={`gainer-${item.id}`} item={item} onSelect={onSelectSymbol} />
+                            ))}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="rounded-[30px] border-border/60 bg-card/60 backdrop-blur-xl">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="flex items-center gap-2 text-xl">
+                                <TrendingDown className="h-5 w-5 text-red-400" />
+                                Top Perdedoras
+                            </CardTitle>
+                            <CardDescription>Activos con mayor corrección o retroceso de la jornada</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-3 sm:grid-cols-2">
+                            {data.leaders.losers.slice(0, 4).map((item) => (
+                                <AssetTile key={`loser-${item.id}`} item={item} onSelect={onSelectSymbol} />
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Market Sections Grid */}
             <div className="grid gap-8 xl:grid-cols-2">
                 <SectionCard sectionKey="argentina" items={data.sections.argentina} onSelectSymbol={onSelectSymbol} />
                 <SectionCard sectionKey="global" items={data.sections.global} onSelectSymbol={onSelectSymbol} />

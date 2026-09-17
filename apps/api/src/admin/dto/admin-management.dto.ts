@@ -14,7 +14,7 @@ import {
 const USER_ROLES = ['USER', 'CREATOR', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN'] as const;
 const USER_STATUSES = ['ACTIVE', 'BANNED'] as const;
 const POST_VISIBILITY = ['VISIBLE', 'HIDDEN'] as const;
-const REPORT_STATUSES = ['OPEN', 'IN_REVIEW', 'RESOLVED'] as const;
+const REPORT_STATUSES = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'DISMISSED'] as const;
 
 const trimString = ({ value }: { value: unknown }) => {
     if (typeof value !== 'string') {

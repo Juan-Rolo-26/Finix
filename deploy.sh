@@ -1,43 +1,83 @@
 #!/bin/bash
+# ==============================================================================
 # Script de Despliegue Automático para Finix (VPS)
-# Este script descarga los últimos cambios de GitHub, instala y compila todo, y reinicia los servicios.
+# Actualiza código, migraciones de base de datos, compila Web, Admin y API,
+# y reinicia el servicio backend de manera segura.
+# ==============================================================================
+
+set -e # Detener ante cualquier error crítico
 
 echo "============================================="
-echo "   Iniciando Despliegue Automático FINIX     "
+echo "   🚀 Iniciando Despliegue Automático FINIX  "
 echo "============================================="
 
-# 1. Movernos a la carpeta del proyecto
-cd /var/www/finix || { echo "La carpeta /var/www/finix no existe."; exit 1; }
+# 1. Movernos al directorio del proyecto
+cd /var/www/finix || { echo "❌ Error: La carpeta /var/www/finix no existe."; exit 1; }
 
-# 2. Descargar los últimos cambios (sin que pregunte contraseñas)
-echo "Descargando código desde GitHub..."
+# 2. Descargar los últimos cambios de GitHub
+echo "[1/7] Descargando últimos cambios desde GitHub (main)..."
 git fetch --all
 git reset --hard origin/main
 
-# 3. Instalar nuevas dependencias
-echo "Instalando dependencias de NPM..."
+# 3. Instalar dependencias del monorepo
+echo "[2/7] Instalando dependencias de NPM..."
 npm install
 
-# 4. Compilar las 3 aplicaciones
-echo "Compilando Backend (NestJS)..."
+# 4. Generar Prisma Client y aplicar migraciones
+echo "[3/7] Sincronizando base de datos con Prisma..."
+npx prisma generate --schema=apps/api/prisma/schema.prisma
+npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma || {
+    echo "⚠️ Advertencia: Error en prisma migrate deploy. Continuando con el build..."
+}
+
+# 5. Compilar Backend, Web y Admin
+echo "[4/7] Compilando Backend (NestJS)..."
 npm run build -w api
 
-echo "Compilando Frontend (Web)..."
+echo "[5/7] Compilando Frontend Web (finixarg.com)..."
 npm run build -w web
 
-echo "Compilando Admin..."
+echo "[6/7] Compilando Panel Admin (admin.finixarg.com)..."
 npm run build -w admin
 
-# 5. Reiniciar el Backend
-echo "Reiniciando servidor PM2..."
-pm2 restart finix-api
+# 6. Gestionar proceso PM2
+echo "[7/7] Gestionando proceso en PM2..."
+if pm2 describe finix-api > /dev/null 2>&1; then
+    echo "🔄 Reiniciando finix-api con nuevas variables y código..."
+    pm2 restart finix-api --update-env
+else
+    echo "⚡ Iniciando finix-api por primera vez en PM2..."
+    cd /var/www/finix/apps/api
+    pm2 start dist/main.js --name "finix-api"
+    cd /var/www/finix
+    pm2 save
+fi
 
-# 6. Re-aplicar permisos limpios para NGINX
-echo "Asegurando permisos web..."
+# 7. Permisos y carpetas necesarias
+echo "🔒 Ajustando permisos del servidor web..."
+mkdir -p apps/api/uploads
 chown -R www-data:www-data apps/web/dist
 chown -R www-data:www-data apps/admin/dist
+chown -R www-data:www-data apps/api/uploads
 chmod -R 755 /var/www/finix
 
-echo "============================================="
-echo "   ¡Despliegue finalizado exitosamente! 🚀   "
-echo "================================================="
+# 8. Verificación de salud (Health Check)
+echo "🩺 Verificando estado del backend..."
+sleep 3
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/health || echo "error")
+
+if [ "$HTTP_STATUS" = "200" ]; then
+    echo "============================================="
+    echo "   ✅ ¡Despliegue finalizado exitosamente!   "
+    echo "   Backend: OK (HTTP 200)                    "
+    echo "   Web: https://finixarg.com                 "
+    echo "   Admin: https://admin.finixarg.com         "
+    echo "============================================="
+else
+    echo "============================================="
+    echo "   ⚠️ Despliegue completado con advertencia: "
+    echo "   Health check respondió código: $HTTP_STATUS"
+    echo "   Revisa los logs con: pm2 logs finix-api   "
+    echo "============================================="
+fi
+
