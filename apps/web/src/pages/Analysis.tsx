@@ -1064,6 +1064,20 @@ export default function Analysis() {
                     </div>
                 </div>
 
+                <Link to="/market?view=value-creation" className="group flex flex-col gap-4 rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/15 via-card to-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-500/60 hover:shadow-lg sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                    <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                            <Building2 className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">Nueva herramienta fundamental</p>
+                            <h2 className="mt-1 text-xl font-black text-foreground">Radar ROIC vs WACC · Creación real de valor</h2>
+                            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Explorá el S&P 500 completo por spread de valor: quién crea riqueza sobre su coste de capital y quién la destruye.</p>
+                        </div>
+                    </div>
+                    <span className="inline-flex shrink-0 items-center gap-2 font-bold text-emerald-700 dark:text-emerald-300">Abrir radar <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></span>
+                </Link>
+
                 {filtered.length === 0 ? (
                     <div className="p-16 text-center rounded-3xl border border-border/50 bg-card/40 space-y-4">
                         <BarChart3 className="w-16 h-16 text-muted-foreground/40 mx-auto" />
@@ -1879,7 +1893,7 @@ export default function Analysis() {
                                         </div>
 
                                         {/* Gráfico Interactivo Único con Persistencia de Dibujos */}
-                                        <div className="rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-card w-full min-h-[760px]">
+                            <div className="rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-card w-full min-h-[420px] sm:min-h-[600px] lg:min-h-[760px]">
                                             <TradingViewChart 
                                                 symbol={fullSymbol} 
                                                 height={760} 

@@ -175,6 +175,24 @@ export class MessagesService {
         return this.serializeConversationSummary(conversation, userId, 0);
     }
 
+    async updateConversation(conversationId: string, userId: string, payload: { title?: string; description?: string }) {
+        const conversation = await this.getConversationForMember(conversationId, userId);
+        if (!conversation.isGroup) {
+            throw new BadRequestException('Los chats directos no tienen información de grupo editable');
+        }
+
+        const updated = await this.prisma.conversation.update({
+            where: { id: conversationId },
+            data: {
+                ...(payload.title !== undefined ? { title: payload.title.trim().slice(0, 80) || null } : {}),
+                ...(payload.description !== undefined ? { description: payload.description.trim().slice(0, 500) || null } : {}),
+            },
+            include: CONVERSATION_INCLUDE,
+        });
+
+        return this.serializeConversationSummary(updated, userId, 0);
+    }
+
     /** Get all conversations for a user, ordered by recent activity */
     async getConversations(userId: string) {
         const conversations = await this.prisma.conversation.findMany({
@@ -424,6 +442,7 @@ export class MessagesService {
             id: conversation.id,
             isGroup: conversation.isGroup,
             title,
+            description: conversation.isGroup ? conversation.description : null,
             otherUser,
             participants,
             participantCount: participants.length,

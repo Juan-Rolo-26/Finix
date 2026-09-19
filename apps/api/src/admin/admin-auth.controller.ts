@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AdminAuthService } from './admin-auth.service';
-import { AdminRefreshDto, AdminLoginDto, AdminVerifyTwoFactorDto } from './dto/admin-auth.dto';
+import { AdminRefreshDto, AdminLoginDto, AdminVerifyTwoFactorDto, AdminResendCodeDto } from './dto/admin-auth.dto';
 import { AdminGuard } from './admin.guard';
 
 @Controller('admin/auth')
@@ -24,11 +24,11 @@ export class AdminAuthController {
     async login(@Body() dto: AdminLoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
         const result = await this.adminAuthService.login(dto, this.getRequestMeta(req));
         
-        if ('user' in result && result.user) {
-            this.attachSessionCookies(res, result.accessToken, result.refreshToken);
+        if ('user' in result && (result as any).user && (result as any).accessToken) {
+            this.attachSessionCookies(res, (result as any).accessToken, (result as any).refreshToken);
             return {
-                user: result.user,
-                expiresInMs: result.accessTokenTtlMs,
+                user: (result as any).user,
+                expiresInMs: (result as any).accessTokenTtlMs,
             };
         }
 
@@ -39,9 +39,18 @@ export class AdminAuthController {
     @HttpCode(HttpStatus.OK)
     async verifyEmail(
         @Body() dto: AdminVerifyTwoFactorDto,
-        @Req() req: Request
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
     ) {
-        return this.adminAuthService.verifyEmail(dto, this.getRequestMeta(req));
+        const result = await this.adminAuthService.verifyEmail(dto, this.getRequestMeta(req));
+        if ('user' in result && (result as any).user && (result as any).accessToken) {
+            this.attachSessionCookies(res, (result as any).accessToken, (result as any).refreshToken);
+            return {
+                user: (result as any).user,
+                expiresInMs: (result as any).accessTokenTtlMs,
+            };
+        }
+        return result;
     }
 
     @Post('verify-2fa')
@@ -58,6 +67,24 @@ export class AdminAuthController {
             user: session.user,
             expiresInMs: session.accessTokenTtlMs,
         };
+    }
+
+    @Post('resend-code')
+    @HttpCode(HttpStatus.OK)
+    async resendCode(
+        @Body() dto: AdminResendCodeDto,
+        @Req() req: Request
+    ) {
+        return this.adminAuthService.resendCode(dto.token, this.getRequestMeta(req));
+    }
+
+    @Post('setup-totp')
+    @HttpCode(HttpStatus.OK)
+    async setupTotp(
+        @Body() dto: AdminResendCodeDto,
+        @Req() req: Request
+    ) {
+        return this.adminAuthService.setupNewTotp(dto.token, this.getRequestMeta(req));
     }
 
     @Post('refresh')

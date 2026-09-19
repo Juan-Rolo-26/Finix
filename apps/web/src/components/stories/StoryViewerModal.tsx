@@ -419,7 +419,7 @@ ${replyText.trim()}`,
                             </div>
 
                             <div
-                                className="relative aspect-[9/16] min-h-[72vh] w-full overflow-hidden"
+                                className="relative aspect-[9/16] max-h-[min(82vh,760px)] min-h-[min(62vh,620px)] w-full overflow-hidden"
                                 style={{ background: currentStory.background || 'linear-gradient(135deg, #0f172a 0%, #111827 45%, #10b981 100%)' }}
                             >
                                 {currentStory.mediaUrl ? (

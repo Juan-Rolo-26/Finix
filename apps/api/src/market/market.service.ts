@@ -453,6 +453,28 @@ export class MarketService {
                 description: 'Cereal fundamental de exportación y consumo',
                 format: 'number',
             },
+            {
+                id: 'silver',
+                symbol: 'COMEX:SI1!',
+                label: 'Plata',
+                description: 'Metal precioso con uso industrial y monetario',
+                format: 'number',
+            },
+            {
+                id: 'corn',
+                symbol: 'CBOT:ZC1!',
+                label: 'Maíz',
+                description: 'Grano clave para alimentos, energía y exportaciones',
+                format: 'number',
+            },
+            {
+                id: 'wti',
+                symbol: 'NYMEX:CL1!',
+                label: 'Petróleo WTI',
+                description: 'Referencia del crudo estadounidense',
+                format: 'currency',
+                currency: 'USD',
+            },
         ],
         indicators: [
             {
@@ -481,6 +503,13 @@ export class MarketService {
                 symbol: 'TVC:VIX',
                 label: 'Índice VIX',
                 description: 'Volatilidad implícita y termómetro de riesgo',
+                format: 'number',
+            },
+            {
+                id: 'spx',
+                symbol: 'TVC:SPX',
+                label: 'S&P 500',
+                description: 'Referencia principal de la renta variable estadounidense',
                 format: 'number',
             },
             {
@@ -930,8 +959,8 @@ export class MarketService {
         }
     }
 
-    async getSP500TechnicalHeatmap() {
-        if (this.sp500TechnicalHeatmapCache && Date.now() - this.sp500TechnicalHeatmapCache.fetchedAt < this.sp500TechnicalHeatmapTtlMs) {
+    async getSP500TechnicalHeatmap(forceRefresh = false) {
+        if (!forceRefresh && this.sp500TechnicalHeatmapCache && Date.now() - this.sp500TechnicalHeatmapCache.fetchedAt < this.sp500TechnicalHeatmapTtlMs) {
             return this.sp500TechnicalHeatmapCache.data;
         }
 

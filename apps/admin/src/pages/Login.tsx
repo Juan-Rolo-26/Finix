@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Loader2, KeyRound, Mail } from 'lucide-react';
+import { Shield, Loader2, Smartphone, CheckCircle2, RefreshCw, Copy, Check, QrCode } from 'lucide-react';
 import { adminFetch } from '../lib/api';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -14,13 +14,25 @@ export default function Login() {
     const [preAuthToken, setPreAuthToken] = useState('');
     const [mfaSecret, setMfaSecret] = useState('');
     const [loading, setLoading] = useState(false);
+    const [resending, setResending] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+    const [copied, setCopied] = useState(false);
+    const [resendCooldown, setResendCooldown] = useState(0);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (resendCooldown > 0) {
+            const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [resendCooldown]);
 
     const handleCredentialLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
+        setSuccessMessage('');
 
         try {
             const res = await adminFetch('/admin/auth/login', {
@@ -37,6 +49,7 @@ export default function Login() {
                 setPreAuthToken(data.token);
                 setStep('verify_email');
                 setCode('');
+                setSuccessMessage('¡Enviamos un código de verificación a tu correo!');
                 return;
             }
 
@@ -53,10 +66,11 @@ export default function Login() {
         }
     };
 
-    const handleVerifyEmail = async (e: React.FormEvent) => {
+    const handleVerifyEmailCode = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
+        setSuccessMessage('');
 
         try {
             const res = await adminFetch('/admin/auth/verify-email', {
@@ -66,7 +80,21 @@ export default function Login() {
 
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                throw new Error(data.message || data.error || 'Código de email inválido');
+                throw new Error(data.message || data.error || 'Código incorrecto o expirado');
+            }
+
+            if (data.user) {
+                navigate('/dashboard');
+                return;
+            }
+
+            if (data.step === 'SETUP_2FA') {
+                setPreAuthToken(data.token);
+                setMfaSecret(data.secret);
+                setStep('setup_2fa');
+                setCode('');
+                setSuccessMessage('Código de email validado. Ahora ingresá el código de Google Authenticator.');
+                return;
             }
 
             if (data.step === 'VERIFY_2FA') {
@@ -74,17 +102,11 @@ export default function Login() {
                 setStep('verify_2fa');
                 setCode('');
                 return;
-            } else if (data.step === 'SETUP_2FA') {
-                setPreAuthToken(data.token);
-                setMfaSecret(data.secret);
-                setStep('setup_2fa');
-                setCode('');
-                return;
             }
 
-            throw new Error('Respuesta de validación inesperada');
+            navigate('/dashboard');
         } catch (err: any) {
-            setError(err.message || 'Error validando código de email');
+            setError(err.message || 'Error validando código');
         } finally {
             setLoading(false);
         }
@@ -94,6 +116,7 @@ export default function Login() {
         e.preventDefault();
         setLoading(true);
         setError('');
+        setSuccessMessage('');
 
         try {
             const res = await adminFetch('/admin/auth/verify-2fa', {
@@ -103,7 +126,7 @@ export default function Login() {
 
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                throw new Error(data.message || data.error || 'Código 2FA inválido');
+                throw new Error(data.message || data.error || 'Código 2FA incorrecto');
             }
 
             navigate('/dashboard');
@@ -114,132 +137,353 @@ export default function Login() {
         }
     };
 
+    const handleResendCode = async () => {
+        if (resendCooldown > 0 || !preAuthToken) return;
+        setResending(true);
+        setError('');
+        setSuccessMessage('');
+
+        try {
+            const res = await adminFetch('/admin/auth/resend-code', {
+                method: 'POST',
+                body: JSON.stringify({ token: preAuthToken }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(data.message || 'No se pudo reenviar el código');
+            }
+
+            setSuccessMessage(data.message || '¡Código reenviado a tu correo electrónico!');
+            setResendCooldown(30);
+        } catch (err: any) {
+            setError(err.message || 'Error reenviando código');
+        } finally {
+            setResending(false);
+        }
+    };
+
+    const handleSetupNewTotp = async () => {
+        if (!preAuthToken) return;
+        setLoading(true);
+        setError('');
+        try {
+            const res = await adminFetch('/admin/auth/setup-totp', {
+                method: 'POST',
+                body: JSON.stringify({ token: preAuthToken }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(data.message || 'Error generando código QR');
+            }
+            setMfaSecret(data.secret);
+            setStep('setup_2fa');
+            setCode('');
+            setSuccessMessage('Escaneá este nuevo código QR en tu celular.');
+        } catch (err: any) {
+            setError(err.message || 'Error al configurar autenticador');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const copySecret = () => {
+        if (!mfaSecret) return;
+        navigator.clipboard.writeText(mfaSecret);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+    };
+
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background text-foreground font-sans p-4">
-            <div className="w-full max-w-sm">
-                <div className="flex flex-col items-center mb-8 gap-3">
-                    <div className="w-16 h-16 rounded-2xl bg-card border border-border flex items-center justify-center shadow-xl">
-                        {step === 'credentials' ? <Shield className="w-8 h-8 text-primary" /> :
-                            step === 'verify_email' ? <Mail className="w-8 h-8 text-primary" /> :
-                                <KeyRound className="w-8 h-8 text-primary" />}
+        <div className="min-h-screen flex items-center justify-center bg-background text-foreground font-sans p-4 select-none">
+            <div className="w-full max-w-md">
+                {/* Header Brand */}
+                <div className="flex flex-col items-center mb-6 gap-3">
+                    <div className="w-16 h-16 rounded-2xl bg-card border border-border flex items-center justify-center shadow-xl shadow-primary/5">
+                        {step === 'credentials' ? (
+                            <Shield className="w-8 h-8 text-primary" />
+                        ) : step === 'setup_2fa' ? (
+                            <QrCode className="w-8 h-8 text-primary" />
+                        ) : (
+                            <Smartphone className="w-8 h-8 text-primary" />
+                        )}
                     </div>
-                    <h1 className="text-2xl font-bold tracking-tight">Finix Admin</h1>
-                    <p className="text-muted-foreground text-sm">
-                        {step === 'credentials' ? 'Ingreso restringido para administradores' :
-                            step === 'verify_email' ? 'Verificación Requerida' :
-                                step === 'setup_2fa' ? 'Configuración 2FA Requerida' :
-                                    'Verificación 2FA obligatoria'}
+                    <div className="text-center">
+                        <h1 className="text-2xl font-bold tracking-tight">Finix Admin</h1>
+                        <div className="inline-flex items-center gap-1.5 mt-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold">
+                            <Shield className="w-3 h-3" />
+                            Acceso Protegido con 2FA
+                        </div>
+                    </div>
+                    <p className="text-muted-foreground text-xs text-center max-w-xs">
+                        {step === 'credentials'
+                            ? 'Ingreso de seguridad restringido para administradores de Finix'
+                            : step === 'setup_2fa'
+                            ? 'Vincular Google Authenticator / Authy a tu celular'
+                            : 'Autenticación de 2 Factores (Email + Google Authenticator)'}
                     </p>
                 </div>
 
+                {/* Main Card */}
                 <form
-                    onSubmit={step === 'credentials' ? handleCredentialLogin : step === 'verify_email' ? handleVerifyEmail : handleVerify2FA}
-                    className="bg-card/50 backdrop-blur-xl border border-border p-6 rounded-2xl shadow-2xl"
+                    onSubmit={
+                        step === 'credentials'
+                            ? handleCredentialLogin
+                            : step === 'verify_email'
+                            ? handleVerifyEmailCode
+                            : handleVerify2FA
+                    }
+                    className="bg-card/70 backdrop-blur-xl border border-border p-6 rounded-2xl shadow-2xl space-y-4"
                 >
-                    <div className="space-y-4">
-                        {step === 'credentials' && (
-                            <>
-                                <div>
-                                    <label htmlFor="admin-email" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Email</label>
-                                    <input
-                                        id="admin-email" type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                                        className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                                        placeholder="admin@finix.com" autoComplete="email"
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="admin-password" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Contraseña</label>
-                                    <input
-                                        id="admin-password" type="password" required value={password} onChange={e => setPassword(e.target.value)}
-                                        className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                                        placeholder="••••••••" autoComplete="current-password"
-                                    />
-                                </div>
-                            </>
-                        )}
-
-                        {step === 'verify_email' && (
-                            <>
-                                <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/10 p-3 text-[13px] text-primary text-center mb-4">
-                                    <p>¡Hemos enviado un código de 6 dígitos a tu correo electrónico!</p>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 text-center">Código Email</label>
-                                    <input
-                                        type="text" required inputMode="numeric" pattern="[0-9]{6}" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all tracking-[0.3em] text-center font-mono"
-                                        placeholder="000000"
-                                    />
-                                </div>
-                            </>
-                        )}
-
-                        {step === 'setup_2fa' && (
-                            <>
-                                <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/10 p-3 text-[13px] text-primary text-center mb-4">
-                                    <p>Escanea este código QR con Google Authenticator o Authy para habilitar el acceso seguro con 2FA.</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-lg flex justify-center mb-2 mx-auto w-fit">
-                                    <QRCodeSVG value={`otpauth://totp/Finix%20Admin:${email}?secret=${mfaSecret}&issuer=Finix%20Admin`} size={150} />
-                                </div>
-                                <p className="text-center text-[10px] text-muted-foreground font-mono mb-4 break-all px-2">{mfaSecret}</p>
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 text-center">Código de la App</label>
-                                    <input
-                                        type="text" required inputMode="numeric" pattern="[0-9]{6}" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all tracking-[0.3em] text-center font-mono"
-                                        placeholder="000000"
-                                    />
-                                </div>
-                            </>
-                        )}
-
-                        {step === 'verify_2fa' && (
-                            <>
-                                <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/10 p-3 text-[13px] text-primary text-center mb-4">
-                                    <p>Por favor, ingresa el código generado por tu aplicación Authenticator.</p>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 text-center">Código 2FA Autenticador</label>
-                                    <input
-                                        type="text" required inputMode="numeric" pattern="[0-9]{6}" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all tracking-[0.3em] text-center font-mono"
-                                        placeholder="000000"
-                                    />
-                                </div>
-                            </>
-                        )}
-
-                        {error && (
-                            <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-sm p-3 rounded-lg text-center animate-in fade-in duration-300">
-                                {error}
+                    {/* CREDENTIALS STEP */}
+                    {step === 'credentials' && (
+                        <div className="space-y-4">
+                            <div>
+                                <label
+                                    htmlFor="admin-email"
+                                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2"
+                                >
+                                    Email Admin
+                                </label>
+                                <input
+                                    id="admin-email"
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                    placeholder="admin@finixarg.com"
+                                    autoComplete="email"
+                                />
                             </div>
-                        )}
+                            <div>
+                                <label
+                                    htmlFor="admin-password"
+                                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2"
+                                >
+                                    Contraseña
+                                </label>
+                                <input
+                                    id="admin-password"
+                                    type="password"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                    placeholder="••••••••"
+                                    autoComplete="current-password"
+                                />
+                            </div>
+                        </div>
+                    )}
 
-                        <button
-                            type="submit" disabled={loading}
-                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg px-4 py-3 text-sm transition-all disabled:opacity-50 flex justify-center items-center"
-                        >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                                step === 'credentials' ? 'Continuar' :
-                                    step === 'verify_email' ? 'Verificar Correo' : 'Verificar 2FA'
-                            )}
-                        </button>
+                    {/* VERIFY EMAIL STEP */}
+                    {step === 'verify_email' && (
+                        <div className="space-y-4">
+                            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-center text-xs space-y-1.5">
+                                <div className="flex items-center justify-center gap-1.5 font-bold text-emerald-400">
+                                    <Smartphone className="w-4 h-4" />
+                                    Código enviado a tu email
+                                </div>
+                                <p className="text-foreground/90 font-mono font-medium">juanpablorolo2007@gmail.com</p>
+                                <p className="text-[11px] text-muted-foreground">
+                                    Ingresá el código de 6 dígitos que enviamos a tu email para verificar tu identidad.
+                                </p>
+                            </div>
 
-                        {step !== 'credentials' && (
+                            <div>
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 text-center">
+                                    Código de 6 dígitos
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    autoFocus
+                                    inputMode="numeric"
+                                    pattern="[0-9]{6}"
+                                    value={code}
+                                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-lg font-bold text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all tracking-[0.4em] text-center font-mono"
+                                    placeholder="000000"
+                                />
+                            </div>
+
                             <button
                                 type="button"
-                                onClick={() => { setStep('credentials'); setCode(''); setError(''); setPreAuthToken(''); }}
-                                className="w-full border border-border hover:border-zinc-600 text-foreground/90 rounded-lg px-4 py-2.5 text-sm"
+                                disabled={resending || resendCooldown > 0}
+                                onClick={handleResendCode}
+                                className="w-full flex items-center justify-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50 py-1"
                             >
-                                Volver al login
+                                <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
+                                {resendCooldown > 0
+                                    ? `Reenviar código en ${resendCooldown}s`
+                                    : 'Reenviar código a mi email'}
                             </button>
+                        </div>
+                    )}
+
+                    {/* SETUP 2FA (TOTP en Celular) */}
+                    {step === 'setup_2fa' && (
+                        <div className="space-y-4">
+                            <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs space-y-2 text-center">
+                                <p className="font-semibold text-primary">Configuración de Google Authenticator</p>
+                                <ol className="text-[11px] text-muted-foreground text-left space-y-1 list-decimal list-inside px-1">
+                                    <li>Abrí <b>Google Authenticator</b> o <b>Authy</b> en tu celular.</li>
+                                    <li>Tocá <b>+</b> y elegí <b>Escanear código QR</b>.</li>
+                                    <li>Escaneá el código que aparece aquí abajo:</li>
+                                </ol>
+                            </div>
+
+                            <div className="bg-white p-3.5 rounded-2xl flex flex-col items-center justify-center mx-auto w-fit shadow-md">
+                                <QRCodeSVG
+                                    value={`otpauth://totp/Finix%20Admin:${encodeURIComponent(email)}?secret=${mfaSecret}&issuer=Finix%20Admin`}
+                                    size={160}
+                                    level="M"
+                                />
+                            </div>
+
+                            <div className="bg-background/80 border border-border/60 rounded-xl p-2.5 flex items-center justify-between gap-2">
+                                <div className="overflow-hidden">
+                                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Clave secreta manual</p>
+                                    <p className="font-mono text-xs text-foreground tracking-wider truncate select-all">{mfaSecret}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={copySecret}
+                                    className="p-1.5 rounded-lg hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+                                    title="Copiar clave secreta"
+                                >
+                                    {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 text-center">
+                                    Código generado en la App de tu celular
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    autoFocus
+                                    inputMode="numeric"
+                                    pattern="[0-9]{6}"
+                                    value={code}
+                                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-lg font-bold text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all tracking-[0.4em] text-center font-mono"
+                                    placeholder="000000"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* VERIFY 2FA (LOGIN HABITUAL) */}
+                    {step === 'verify_2fa' && (
+                        <div className="space-y-4">
+                            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-center text-xs space-y-1.5">
+                                <div className="flex items-center justify-center gap-1.5 font-bold text-emerald-400">
+                                    <Smartphone className="w-4 h-4" />
+                                    Verificación en 2 Pasos (2FA)
+                                </div>
+                                <p className="text-foreground/90 text-xs">
+                                    Código de Google Authenticator
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                    Ingresá el código de 6 dígitos que muestra tu app <b>Google Authenticator</b>.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 text-center">
+                                    Código 2FA de 6 dígitos
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    autoFocus
+                                    inputMode="numeric"
+                                    pattern="[0-9]{6}"
+                                    value={code}
+                                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-lg font-bold text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all tracking-[0.4em] text-center font-mono"
+                                    placeholder="000000"
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    disabled={resending || resendCooldown > 0}
+                                    onClick={handleResendCode}
+                                    className="flex items-center justify-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50 py-1"
+                                >
+                                    <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
+                                    {resendCooldown > 0
+                                        ? `Reenviar código en ${resendCooldown}s`
+                                        : 'El código de Google Authenticator cambia cada 30 segundos'}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleSetupNewTotp}
+                                    className="text-[11px] text-muted-foreground hover:text-foreground text-center transition-colors"
+                                >
+                                    ¿Configurar o cambiar app Authenticator en mi celular?
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Success notification */}
+                    {successMessage && (
+                        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs p-3 rounded-xl text-center flex items-center justify-center gap-1.5 animate-in fade-in duration-200">
+                            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                            <span>{successMessage}</span>
+                        </div>
+                    )}
+
+                    {/* Error notification */}
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-xl text-center animate-in fade-in duration-200">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <button
+                        type="submit"
+                        disabled={loading || (step !== 'credentials' && code.length !== 6)}
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl px-4 py-3 text-sm transition-all disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-primary/20"
+                    >
+                        {loading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : step === 'credentials' ? (
+                            'Continuar con 2FA'
+                        ) : step === 'setup_2fa' ? (
+                            'Confirmar y Activar 2FA'
+                        ) : (
+                            'Verificar y Acceder'
                         )}
-                    </div>
+                    </button>
+
+                    {step !== 'credentials' && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setStep('credentials');
+                                setCode('');
+                                setError('');
+                                setSuccessMessage('');
+                                setPreAuthToken('');
+                            }}
+                            className="w-full border border-border/70 hover:border-zinc-500 text-muted-foreground hover:text-foreground rounded-xl px-4 py-2.5 text-xs transition-colors"
+                        >
+                            Volver al login
+                        </button>
+                    )}
                 </form>
 
-                <p className="text-center text-xs text-muted-foreground mt-8">
-                    &copy; {new Date().getFullYear()} Finix Technologies.
+                <p className="text-center text-[11px] text-muted-foreground mt-6">
+                    &copy; {new Date().getFullYear()} Finix Platform &bull; Sistema de Seguridad 2FA
                 </p>
             </div>
         </div>

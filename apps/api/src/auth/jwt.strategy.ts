@@ -55,10 +55,40 @@ const resolveSupabaseIssuer = () => {
     return undefined;
 };
 
+const KNOWN_SUPABASE_JWKS: Record<string, any> = {
+    'bd7a8097-788e-498f-8c11-f79052d1f9cf': {
+        alg: 'ES256',
+        crv: 'P-256',
+        ext: true,
+        key_ops: ['verify'],
+        kid: 'bd7a8097-788e-498f-8c11-f79052d1f9cf',
+        kty: 'EC',
+        use: 'sig',
+        x: 'xV1YE6-ykDXYuo5X41LgzmkRbNBukpWeCboRdn2YQ-0',
+        y: 'BKUyJnWebib6tG6_GICKMqTr5nQvPAF5J_GGXYadn1k',
+    },
+};
+
 const fetchSigningKey = async (kid: string) => {
     const cached = signingKeyCache.get(kid);
     if (cached && cached.expiresAt > Date.now()) {
         return cached.key;
+    }
+
+    if (KNOWN_SUPABASE_JWKS[kid]) {
+        try {
+            const key = createPublicKey({
+                key: KNOWN_SUPABASE_JWKS[kid],
+                format: 'jwk',
+            });
+            signingKeyCache.set(kid, {
+                key,
+                expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+            });
+            return key;
+        } catch (e) {
+            console.warn('[JwtStrategy] Failed to create key from known JWK:', e);
+        }
     }
 
     const issuer = resolveSupabaseIssuer();
@@ -66,28 +96,42 @@ const fetchSigningKey = async (kid: string) => {
         throw new Error('Falta SUPABASE_URL o SUPABASE_JWT_ISSUER para validar JWTs de Supabase');
     }
 
-    const response = await fetch(`${issuer}/.well-known/jwks.json`);
-    if (!response.ok) {
-        throw new Error(`No se pudo obtener la JWKS de Supabase (${response.status})`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    try {
+        const response = await fetch(`${issuer}/.well-known/jwks.json`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+            throw new Error(`No se pudo obtener la JWKS de Supabase (${response.status})`);
+        }
+
+        const { keys = [] } = await response.json() as JwksResponse;
+        const jwk = keys.find((candidate) => candidate.kid === kid);
+        if (!jwk) {
+            throw new Error(`No existe la signing key ${kid} en la JWKS de Supabase`);
+        }
+
+        const key = createPublicKey({
+            key: jwk,
+            format: 'jwk',
+        });
+
+        signingKeyCache.set(kid, {
+            key,
+            expiresAt: Date.now() + JWKS_CACHE_TTL_MS,
+        });
+
+        return key;
+    } catch (err) {
+        clearTimeout(timeoutId);
+        if (KNOWN_SUPABASE_JWKS[kid]) {
+            return createPublicKey({
+                key: KNOWN_SUPABASE_JWKS[kid],
+                format: 'jwk',
+            });
+        }
+        throw err;
     }
-
-    const { keys = [] } = await response.json() as JwksResponse;
-    const jwk = keys.find((candidate) => candidate.kid === kid);
-    if (!jwk) {
-        throw new Error(`No existe la signing key ${kid} en la JWKS de Supabase`);
-    }
-
-    const key = createPublicKey({
-        key: jwk,
-        format: 'jwk',
-    });
-
-    signingKeyCache.set(kid, {
-        key,
-        expiresAt: Date.now() + JWKS_CACHE_TTL_MS,
-    });
-
-    return key;
 };
 
 const resolveLegacySecret = () => {
@@ -98,7 +142,11 @@ const resolveLegacySecret = () => {
     return secret;
 };
 
-const resolveFinixSecret = () => process.env.JWT_SECRET || 'secretKey';
+const resolveFinixSecret = () => {
+    const secret = process.env.JWT_SECRET?.trim();
+    if (!secret) throw new Error('JWT_SECRET no está configurado');
+    return secret;
+};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {

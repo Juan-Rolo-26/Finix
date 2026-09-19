@@ -14,9 +14,10 @@ import {
     BarChart3,
     ArrowUpRight,
     X,
-    Sparkles,
     SearchX,
     Flame,
+    Building2,
+    Sparkles,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,6 +30,9 @@ import TradingViewChart from '@/components/TradingViewChart';
 import TradingViewSymbolInfo from '@/components/TradingViewSymbolInfo';
 import MarketDashboard, { type MarketDashboardData } from '@/components/markets/MarketDashboard';
 import MarketHeatmap from '@/components/markets/MarketHeatmap';
+import ValueCreationHeatmap from '@/components/markets/ValueCreationHeatmap';
+import OpportunityScreener from '@/components/markets/OpportunityScreener';
+import AssetFundamentalPanel from '@/components/markets/AssetFundamentalPanel';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import { useTranslation } from '@/i18n';
 
@@ -107,19 +111,6 @@ export default function Markets() {
     const navigate = useNavigate();
     const isPro = (user as any)?.plan === 'PRO' || (user as any)?.accountType === 'PRO' || (user as any)?.role === 'ADMIN' || (user as any)?.isPro || (user as any)?.subscriptionTier === 'pro' || isJuanUser(user);
 
-    if (!isPro) {
-        return (
-            <div className="min-h-[calc(100vh-60px)] flex flex-col flex-1 bg-background">
-                <ProGate
-                    title="Funcionalidad Exclusiva PRO"
-                    description="La sección de Mercados es exclusiva para usuarios con Finix PRO. Mejorá tu plan para acceder a cotizaciones en tiempo real y análisis técnico avanzado."
-                    buttonText="Activar PRO"
-                    onUpgrade={() => navigate('/pro')}
-                />
-            </div>
-        );
-    }
-
     const { theme } = usePreferencesStore();
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
     const widgetTheme = isLight ? 'light' : 'dark';
@@ -135,7 +126,9 @@ export default function Markets() {
     const [dashboardData, setDashboardData] = useState<MarketDashboardData | null>(null);
     const [isDashboardLoading, setIsDashboardLoading] = useState(false);
 
-    const [activeTab, setActiveTab] = useState(initialSymbolParam ? 'chart' : 'overview');
+    const [activeTab, setActiveTab] = useState(
+        initialSymbolParam ? 'chart' : searchParams.get('view') === 'value-creation' ? 'value-creation' : 'overview'
+    );
     const [chartInterval, setChartInterval] = useState('D');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -151,6 +144,7 @@ export default function Markets() {
     }, []);
 
     useEffect(() => {
+        if (!isPro) return;
         const rawSymbol = symbolParam;
         if (!rawSymbol) {
             if (!selectedAsset) {
@@ -207,11 +201,12 @@ export default function Markets() {
             cancelled = true;
             controller.abort();
         };
-    }, [selectedAsset, symbolParam]);
+    }, [isPro, selectedAsset, symbolParam]);
 
     const fetchDashboardRef = useRef<((showLoader: boolean) => Promise<void>) | null>(null);
 
     useEffect(() => {
+        if (!isPro) return;
         let disposed = false;
         let currentController: AbortController | null = null;
 
@@ -261,11 +256,20 @@ export default function Markets() {
             window.clearInterval(intervalId);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, []);
+    }, [isPro]);
 
-
-
-
+    if (!isPro) {
+        return (
+            <div className="min-h-[calc(100vh-60px)] flex flex-col flex-1 bg-background">
+                <ProGate
+                    title="Funcionalidad Exclusiva PRO"
+                    description="La sección de Mercados es exclusiva para usuarios con Finix PRO. Mejorá tu plan para acceder a cotizaciones en tiempo real y análisis técnico avanzado."
+                    buttonText="Activar PRO"
+                    onUpgrade={() => navigate('/pro')}
+                />
+            </div>
+        );
+    }
 
     const handleOpenMarketSymbol = (symbol: string) => {
         if (!symbol) return;
@@ -282,10 +286,10 @@ export default function Markets() {
 
             <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-4 md:px-6 lg:px-8">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="grid h-auto w-full max-w-2xl mx-auto mb-4 grid-cols-3 rounded-[24px] border border-border/40 bg-secondary/30 p-1.5 backdrop-blur-sm">
+                    <TabsList className="grid h-auto w-full max-w-5xl mx-auto mb-4 grid-cols-2 sm:grid-cols-5 rounded-[24px] border border-border/40 bg-secondary/30 p-1.5 backdrop-blur-sm">
                         <TabsTrigger
                             value="overview"
-                            className="gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                         >
                             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
                                 <Activity className="h-3.5 w-3.5" />
@@ -294,7 +298,7 @@ export default function Markets() {
                         </TabsTrigger>
                         <TabsTrigger
                             value="heatmap"
-                            className="gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                         >
                             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
                                 <Flame className="h-3.5 w-3.5 fill-emerald-500/20 text-emerald-600 dark:text-emerald-400" />
@@ -303,12 +307,30 @@ export default function Markets() {
                         </TabsTrigger>
                         <TabsTrigger
                             value="chart"
-                            className="gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                         >
                             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
                                 <LineChart className="h-3.5 w-3.5" />
                             </span>
                             <span className="font-semibold text-sm">{t.markets.tabs.chart}</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="value-creation"
+                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+                                <Building2 className="h-3.5 w-3.5" />
+                            </span>
+                            <span className="font-semibold text-sm">Creación de valor</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="opportunities"
+                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-violet-600 dark:text-violet-300 shrink-0 shadow-2xs">
+                                <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            </span>
+                            <span className="font-semibold text-sm">Oportunidades</span>
                         </TabsTrigger>
                     </TabsList>
 
@@ -328,6 +350,19 @@ export default function Markets() {
                                 setActiveTab('chart');
                             }}
                         />
+                    </TabsContent>
+
+                    <TabsContent value="value-creation" className="space-y-4">
+                        <ValueCreationHeatmap
+                            onSelectSymbol={(sym) => {
+                                handleOpenMarketSymbol(sym);
+                                setActiveTab('chart');
+                            }}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="opportunities" className="space-y-4">
+                        <OpportunityScreener onOpenAnalysis={(ticker) => navigate(`/analysis/${ticker.toLowerCase()}`)} />
                     </TabsContent>
 
                     <TabsContent value="chart" className="space-y-6">
@@ -406,7 +441,7 @@ export default function Markets() {
                         </Card>
 
                         {selectedAsset && (
-                            <div className="w-full min-h-[760px]">
+                            <div className="w-full min-h-[420px] sm:min-h-[600px] lg:min-h-[760px]">
                                 <TradingViewChart
                                     symbol={selectedAsset.symbol}
                                     interval={chartInterval}
@@ -414,6 +449,10 @@ export default function Markets() {
                                     theme={widgetTheme}
                                 />
                             </div>
+                        )}
+
+                        {selectedAsset && (
+                            <AssetFundamentalPanel symbol={selectedAsset.symbol} />
                         )}
                     </TabsContent>
 

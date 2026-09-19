@@ -104,7 +104,7 @@ function MediaCarousel({ media }: { media: Post['media'] }) {
                     <video
                         ref={videoRef}
                         src={resolveMediaUrl(current.url)}
-                        className="w-full max-h-[500px] object-contain"
+                        className="w-full max-h-[360px] object-contain"
                         autoPlay
                         loop
                         muted={muted}
@@ -130,7 +130,7 @@ function MediaCarousel({ media }: { media: Post['media'] }) {
                 <img
                     src={resolveMediaUrl(current.url)}
                     alt="Post media"
-                    className="w-full max-h-[500px] object-contain"
+                    className="w-full max-h-[360px] object-contain"
                     loading="lazy"
                 />
             )}
@@ -312,7 +312,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     return (
         <motion.article
             layout
-            className={`rounded-2xl border ${typeBadge?.borderColor || 'border-border/50'} bg-card/60 backdrop-blur-sm hover:border-border/80 transition-colors`}
+            className={`rounded-[18px] border ${typeBadge?.borderColor || 'border-border/50'} bg-card/60 backdrop-blur-sm hover:border-border/80 transition-colors`}
         >
             {/* Header */}
             <div className="flex items-start justify-between p-4 pb-3">
@@ -459,7 +459,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             {/* Auto TradingView Chart if ticker is mentioned and no media provided (for text posts only) */}
             {post.type !== 'chart' && !post.media?.length && !post.mediaUrl && !tradingViewUrl && post.tickers && String(post.tickers).trim() && (
                 <div className="px-4 pb-3">
-                    <div className="rounded-xl overflow-hidden border border-border/50 h-[480px] sm:h-[540px] w-full bg-black/10">
+                    <div className="rounded-xl overflow-hidden border border-border/50 h-[300px] sm:h-[360px] w-full bg-black/10">
                         <iframe
                             src={`https://s.tradingview.com/widgetembed/?symbol=${(Array.isArray(post.tickers) ? post.tickers[0] : String(post.tickers).split(',')[0]).trim().replace('$', '')}&interval=D&theme=dark&style=1&timezone=America%2FArgentina%2FBuenos_Aires&hide_top_toolbar=1&hide_legend=1&saveimage=0&locale=es`}
                             width="100%"
@@ -512,7 +512,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                 <div className="px-4 pb-3">
                     {tradingViewUrl.includes('/x/') ? (
                         <div className="relative rounded-xl overflow-hidden border border-border/50 bg-black/20 group">
-                            <img src={tradingViewUrl} alt="TradingView Chart" className="w-full h-auto object-contain max-h-[600px]" loading="lazy" />
+                            <img src={tradingViewUrl} alt="TradingView Chart" className="w-full h-auto object-contain max-h-[360px]" loading="lazy" />
                             <a href={tradingViewUrl} target="_blank" rel="noreferrer" className="absolute bottom-3 right-3 flex flex-row items-center gap-2 p-2 rounded-lg bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm shadow-xl">
                                 <span className="text-xs font-semibold">TradingView</span>
                                 <ExternalLink className="w-4 h-4" />
@@ -567,7 +567,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                                     chartState={post.chartAnalysisVersion?.chartState}
                                     symbol={chartSymbol}
                                     authorUsername={post.author?.username}
-                                    height={520}
+                                height={360}
                                 />
                             )}
                         </div>
@@ -586,7 +586,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                         {/* Legacy single media */}
                         {!post.media?.length && post.mediaUrl && (
                             <div className="px-4 pb-3">
-                                <img src={resolveMediaUrl(post.mediaUrl)} alt="Post" className="w-full rounded-xl max-h-[600px] object-contain" loading="lazy" />
+                                <img src={resolveMediaUrl(post.mediaUrl)} alt="Post" className="w-full rounded-xl max-h-[360px] object-contain" loading="lazy" />
                             </div>
                         )}
                     </>

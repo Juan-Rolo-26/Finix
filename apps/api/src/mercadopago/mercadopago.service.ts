@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { MailService } from '../mail/mail.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class MercadoPagoService {
@@ -107,6 +108,30 @@ export class MercadoPagoService {
         }
     }
 
+    async createCommunityPreference(userId: string, communityId: string, planId: string) {
+        if (!this.isConfigured()) throw new BadRequestException('Mercado Pago no está configurado en Finix.');
+        const community = await this.prisma.community.findUnique({ where: { id: communityId }, include: { plans: true, creator: { select: { email: true } } } });
+        const plan = community?.plans.find(item => item.id === planId);
+        const buyer = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, username: true } });
+        if (!community || !plan || !buyer) throw new NotFoundException('Comunidad, plan o usuario no encontrado.');
+        if (Number(plan.price) <= 0) throw new BadRequestException('Este plan no requiere pago.');
+
+        const reference = `COMMUNITY:${community.id}:${plan.id}:${userId}:${Date.now()}`;
+        const payload = {
+            items: [{ id: plan.id, title: `${community.name} - ${plan.name}`, quantity: 1, currency_id: 'ARS', unit_price: Number(plan.price) }],
+            payer: { email: buyer.email, name: buyer.username },
+            external_reference: reference,
+            marketplace_fee: Number(plan.price) * 0.05,
+            back_urls: { success: `${this.frontendUrl}/comunidades/${community.slug || community.id}?payment=approved`, failure: `${this.frontendUrl}/comunidades/${community.slug || community.id}?payment=failure`, pending: `${this.frontendUrl}/comunidades/${community.slug || community.id}?payment=pending` },
+            auto_return: 'approved',
+            notification_url: `${this.apiUrl}/api/mercadopago/webhook`,
+        };
+        const response = await fetch('https://api.mercadopago.com/checkout/preferences', { method: 'POST', headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!response.ok) throw new BadRequestException('Mercado Pago no pudo crear el checkout de la comunidad.');
+        const data = await response.json();
+        return { id: data.id, init_point: data.init_point, sandbox_init_point: data.sandbox_init_point, commissionRate: 0.05 };
+    }
+
     async handleWebhook(body: any, query: any) {
         const topic = query?.topic || query?.type || body?.type || body?.topic;
         const paymentId = query?.id || query?.['data.id'] || body?.data?.id;
@@ -140,6 +165,10 @@ export class MercadoPagoService {
 
             if (payment.status === 'approved') {
                 const extRef = payment.external_reference || '';
+                if (extRef.startsWith('COMMUNITY:')) {
+                    await this.activateCommunityPayment(payment, extRef);
+                    return;
+                }
                 const [userId, plan] = extRef.split(':');
 
                 if (userId) {
@@ -151,6 +180,21 @@ export class MercadoPagoService {
         } catch (err: any) {
             this.logger.error(`Error processing Mercado Pago payment ${paymentId}:`, err);
         }
+    }
+
+    private async activateCommunityPayment(payment: any, reference: string) {
+        const [, communityId, planId, userId] = reference.split(':');
+        const community = await this.prisma.community.findUnique({ where: { id: communityId } });
+        const plan = await this.prisma.communityPlan.findUnique({ where: { id: planId } });
+        if (!community || !plan) return;
+        const amount = Number(payment.transaction_amount || plan.price);
+        const commission = Number((amount * 0.05).toFixed(2));
+        const providerId = String(payment.id);
+        const periodDays = plan.interval === 'yearly' || plan.interval === 'year' ? 365 : 30;
+        await this.prisma.$transaction(async tx => {
+            await tx.communityPayment.upsert({ where: { stripePaymentId: providerId }, update: { status: 'SUCCEEDED' }, create: { communityId, userId, creatorId: community.creatorId, amount: new Prisma.Decimal(amount), commissionAmount: new Prisma.Decimal(commission), creatorAmount: new Prisma.Decimal(amount - commission), stripePaymentId: providerId, status: 'SUCCEEDED', billingType: plan.interval || 'monthly' } });
+            await tx.communityMember.upsert({ where: { communityId_userId: { communityId, userId } }, update: { planId, subscriptionStatus: 'ACTIVE', paymentStatus: 'SUCCEEDED', expiresAt: new Date(Date.now() + periodDays * 86400000) }, create: { communityId, userId, planId, subscriptionStatus: 'ACTIVE', paymentStatus: 'SUCCEEDED', expiresAt: new Date(Date.now() + periodDays * 86400000) } });
+        });
     }
 
     async activateUserPlan(userId: string, plan: 'PRO' | 'CREATOR') {

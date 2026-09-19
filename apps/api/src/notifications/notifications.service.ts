@@ -99,20 +99,45 @@ export class NotificationsService {
             },
         });
 
-        // Email dispatch for high priority or specific settings
+        // Email dispatch for high priority notifications. Market emails require the
+        // separate Finix PRO investment-email opt-in, while security and other
+        // important account emails preserve their existing delivery behaviour.
         if (input.priority === 'CRITICAL' || input.priority === 'HIGH') {
-            const recipient = await this.prisma.user.findUnique({
+            const recipient: any = await this.prisma.user.findUnique({
                 where: { id: input.userId },
-                select: { email: true, username: true, emailVerified: true },
-            });
-            if (recipient?.email && recipient.emailVerified) {
+                select: {
+                    email: true,
+                    username: true,
+                    emailVerified: true,
+                    plan: true,
+                    subscriptionStatus: true,
+                    investmentEmailNotifications: true,
+                },
+            } as any);
+            const isInvestmentNotification = category === 'MARKET';
+            const canReceiveInvestmentEmail = recipient?.plan === 'PRO'
+                && recipient?.subscriptionStatus === 'ACTIVE'
+                && recipient?.investmentEmailNotifications === true;
+
+            if (recipient?.email && recipient.emailVerified && (!isInvestmentNotification || canReceiveInvestmentEmail)) {
                 try {
-                    await this.mailService.sendNotificationEmail(recipient.email, {
-                        username: recipient.username,
-                        title: input.title,
-                        content: input.message,
-                        link: input.link,
-                    });
+                    if (isInvestmentNotification) {
+                        await this.mailService.sendProInvestmentEmail(recipient.email, {
+                            username: recipient.username,
+                            subject: `Finix PRO · ${input.title}`,
+                            title: input.title,
+                            message: input.message || 'Tenés una nueva actualización de inversión en Finix.',
+                            ctaLabel: 'Ver en Finix',
+                            ctaUrl: input.link || undefined,
+                        });
+                    } else {
+                        await this.mailService.sendNotificationEmail(recipient.email, {
+                            username: recipient.username,
+                            title: input.title,
+                            content: input.message,
+                            link: input.link,
+                        });
+                    }
                 } catch (error) {
                     this.logger.warn(`Email notification failed for ${recipient.email}: ${String(error)}`);
                 }

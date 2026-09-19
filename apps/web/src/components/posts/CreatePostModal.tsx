@@ -405,7 +405,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                             <motion.div key="chart-panel" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.2 }} className="space-y-4">
                                 {/* Toolbar */}
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <div className="flex items-center gap-1.5 flex-1 min-w-[180px]">
+                                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                         <div className="relative flex-1">
                                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                                             <input type="text" placeholder="Símbolo: AAPL, BTCUSDT..." value={symbolInput}

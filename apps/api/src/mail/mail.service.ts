@@ -188,12 +188,12 @@ export class MailService {
         return this.sendCodeEmail({
             email,
             code,
-            subject: 'Tu código de acceso seguro al Panel Admin de Finix',
-            title: 'Acceso Admin (2FA)',
-            description: 'Se ha solicitado acceso al panel de administración de Finix. Este es tu código de verificación:',
-            footer: 'Si no solicitaste este acceso, por favor reportalo de inmediato. El código expira en 10 minutos.',
+            subject: `Tu código de verificación por email - Admin Finix: ${code}`,
+            title: 'Acceso Admin (verificación por email)',
+            description: 'Se ha solicitado acceso al panel de administración de Finix. Este es tu código de verificación por email:',
+            footer: 'Si no solicitaste este acceso, repórtalo de inmediato. El código expira en 10 minutos.',
             ctaLabel: 'Abrir Admin Finix',
-            ctaUrl: 'https://admin.finixarg.com',
+            ctaUrl: this.getAdminUrl(),
         });
     }
 
@@ -250,6 +250,64 @@ export class MailService {
                     >
                         Ver notificacion
                     </a>
+                </div>
+            `,
+        });
+    }
+
+    async sendProInvestmentEmail(
+        email: string,
+        params: {
+            username?: string | null;
+            subject: string;
+            title: string;
+            message: string;
+            imageUrl?: string | null;
+            ctaLabel?: string | null;
+            ctaUrl?: string | null;
+        },
+    ) {
+        const safeUsername = this.escapeHtml(params.username || 'inversor');
+        const safeTitle = this.escapeHtml(params.title);
+        const safeMessage = this.escapeHtml(params.message).replace(/\n/g, '<br />');
+        const safeImageUrl = params.imageUrl ? this.escapeHtml(params.imageUrl) : '';
+        const safeCtaLabel = this.escapeHtml(params.ctaLabel || 'Ver en Finix');
+        const targetUrl = params.ctaUrl || this.getAppUrl();
+        const safeTargetUrl = this.escapeHtml(targetUrl);
+        const settingsUrl = this.escapeHtml(`${this.getAppUrl()}/settings?tab=notificaciones`);
+
+        return this.sendEmail({
+            to: email,
+            subject: params.subject,
+            text: [
+                `Hola ${params.username || 'inversor'},`,
+                '',
+                params.title,
+                '',
+                params.message,
+                '',
+                `${params.ctaLabel || 'Ver en Finix'}: ${targetUrl}`,
+                '',
+                `Recibís este email porque activaste las notificaciones de inversión Finix PRO. Podés cambiarlas en: ${this.getAppUrl()}/settings?tab=notificaciones`,
+            ].join('\n'),
+            html: `
+                <div style="margin:0;padding:32px 16px;background:#f4f7f6;font-family:Arial,sans-serif;color:#12211c;">
+                    <table align="center" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #dce8e1;">
+                        <tr><td style="padding:24px 28px;background:#0d2a1c;color:#ffffff;">
+                            <span style="font-size:20px;font-weight:800;letter-spacing:.08em;">FINIX</span>
+                            <span style="margin-left:10px;font-size:11px;color:#9ee6be;font-weight:700;letter-spacing:.08em;">PRO INVERSIÓN</span>
+                        </td></tr>
+                        ${safeImageUrl ? `<tr><td><img src="${safeImageUrl}" alt="" width="620" style="display:block;width:100%;max-height:260px;object-fit:cover;border:0;" /></td></tr>` : ''}
+                        <tr><td style="padding:30px 28px 24px;">
+                            <p style="margin:0 0 12px;font-size:14px;color:#537061;">Hola ${safeUsername},</p>
+                            <h1 style="margin:0 0 16px;font-size:27px;line-height:1.25;color:#10251a;">${safeTitle}</h1>
+                            <p style="margin:0;font-size:15px;line-height:1.7;color:#40564a;">${safeMessage}</p>
+                            <a href="${safeTargetUrl}" style="display:inline-block;margin-top:24px;padding:13px 20px;border-radius:10px;background:#16a36a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;">${safeCtaLabel} &rarr;</a>
+                        </td></tr>
+                        <tr><td style="padding:18px 28px;background:#f7faf8;border-top:1px solid #e2ebe5;">
+                            <p style="margin:0;font-size:11px;line-height:1.6;color:#6b7f73;">Recibís este correo porque activaste las notificaciones de inversión de Finix PRO. <a href="${settingsUrl}" style="color:#168b5a;">Administrar preferencias</a>.</p>
+                        </td></tr>
+                    </table>
                 </div>
             `,
         });

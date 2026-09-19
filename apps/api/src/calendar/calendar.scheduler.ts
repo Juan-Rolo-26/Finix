@@ -10,9 +10,9 @@ export class CalendarScheduler {
 
     /**
      * Sincronización diaria matutina de eventos económicos y resultados corporativos.
-     * Se ejecuta todos los días a las 06:00 AM hora de Nueva York.
+     * Se ejecuta de lunes a viernes a las 06:00 AM hora de Nueva York.
      */
-    @Cron('0 6 * * *', {
+    @Cron('0 6 * * 1-5', {
         timeZone: 'America/New_York',
     })
     async handleMorningSync() {
@@ -26,15 +26,15 @@ export class CalendarScheduler {
     }
 
     /**
-     * Sincronización semanal automática todos los domingos por la tarde.
-     * Prepara todo el calendario completo para la semana entrante (Lunes a Viernes).
-     * Se ejecuta todos los domingos a las 18:00 hora de Nueva York (19:00 hora de Argentina).
+     * Sincronización semanal automática todos los domingos.
+     * Prepara todo el calendario completo para la semana entrante (Lunes a Domingo).
+     * Se ejecuta todos los domingos a las 12:00 PM hora de Nueva York.
      */
-    @Cron('0 18 * * 0', {
+    @Cron('0 12 * * 0', {
         timeZone: 'America/New_York',
     })
     async handleSundayWeeklySync() {
-        this.logger.log('[CalendarScheduler] Domingo a la tarde: Sincronizando y preparando todo el calendario semanal completo...');
+        this.logger.log('[CalendarScheduler] Domingo: Sincronizando y preparando todo el calendario semanal completo...');
         try {
             await this.calendarService.syncWeeklyData();
             this.logger.log('[CalendarScheduler] Sincronización dominical completada exitosamente.');
@@ -63,9 +63,9 @@ export class CalendarScheduler {
     }
 
     /**
-     * Sincronización periódica de balances S&P 500 (cada 6 horas).
+     * Sincronización periódica de balances S&P 500 durante días hábiles.
      */
-    @Cron('0 */6 * * *', {
+    @Cron('0 */6 * * 1-5', {
         timeZone: 'America/New_York',
     })
     async handlePeriodicEarningsSync() {
@@ -78,9 +78,9 @@ export class CalendarScheduler {
     }
 
     /**
-     * Sincronización periódica de dividendos S&P 500 (cada 6 horas).
+     * Sincronización periódica de dividendos S&P 500 durante días hábiles.
      */
-    @Cron('30 */6 * * *', {
+    @Cron('30 */6 * * 1-5', {
         timeZone: 'America/New_York',
     })
     async handlePeriodicDividendsSync() {
@@ -91,5 +91,22 @@ export class CalendarScheduler {
             this.logger.error(`[CalendarScheduler] Error en sincronización de dividendos: ${error.message}`);
         }
     }
-}
 
+    /**
+     * Sincronización diaria de Lunes a Viernes a las 11:00 AM (Hora Argentina / Local).
+     * Actualiza automáticamente los balances que ya reportaron: EPS real vs estimado,
+     * ingresos reales vs estimados, sorpresas y la reacción del mercado en la cotización.
+     */
+    @Cron('0 11 * * 1-5', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+    })
+    async handleWeekday11AmReportedEarningsSync() {
+        this.logger.log('[CalendarScheduler] 11:00 AM Lunes a Viernes: Sincronizando balances reportados, sorpresas y reacción del mercado...');
+        try {
+            await this.calendarService.syncReportedEarningsResults();
+            this.logger.log('[CalendarScheduler] Sincronización de balances 11:00 AM finalizada con éxito.');
+        } catch (error: any) {
+            this.logger.error(`[CalendarScheduler] Error en sincronización de balances 11:00 AM: ${error.message}`);
+        }
+    }
+}

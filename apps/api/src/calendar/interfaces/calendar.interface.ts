@@ -90,6 +90,7 @@ export interface EarningsEventItem {
     actualRevenue?: number;
     epsSurprise?: number;
     revenueSurprise?: number;
+    marketReaction?: number;
     marketCap?: number;
     earningsImpactScore: number;
     source?: string;

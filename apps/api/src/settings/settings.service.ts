@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
@@ -16,6 +16,9 @@ export class SettingsService {
 
     // ─── GET ALL SETTINGS ───────────────────────────────────────────────────────
     async getSettings(userId: string) {
+        // `investmentEmailNotifications` is present after the accompanying migration.
+        // Keep the select dynamic so an older generated Prisma client never prevents
+        // the API from starting while its deployment runs `prisma generate`.
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             select: {
@@ -58,13 +61,14 @@ export class SettingsService {
                 theme: true,
                 chartDensity: true,
                 marketNotifications: true,
+                investmentEmailNotifications: true,
                 timezone: true,
                 // Onboarding
                 onboardingCompleted: true,
                 onboardingStep: true,
                 createdAt: true,
             },
-        });
+        } as any);
 
         if (!user) throw new NotFoundException('Usuario no encontrado');
         return this.normalizeUserMedia(user);
@@ -119,6 +123,7 @@ export class SettingsService {
         theme?: string;
         chartDensity?: string;
         marketNotifications?: boolean;
+        investmentEmailNotifications?: boolean;
         timezone?: string;
     }) {
         const data: any = {};
@@ -148,6 +153,20 @@ export class SettingsService {
         if (dto.compactTables !== undefined) data.compactTables = Boolean(dto.compactTables);
         if (dto.showAdvancedMetrics !== undefined) data.showAdvancedMetrics = Boolean(dto.showAdvancedMetrics);
         if (dto.marketNotifications !== undefined) data.marketNotifications = Boolean(dto.marketNotifications);
+        if (dto.investmentEmailNotifications !== undefined) {
+            const enabled = Boolean(dto.investmentEmailNotifications);
+            if (enabled) {
+                const user = await this.prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { plan: true, subscriptionStatus: true },
+                });
+                const isPro = user?.plan === 'PRO' && user?.subscriptionStatus === 'ACTIVE';
+                if (!isPro) {
+                    throw new ForbiddenException('Las alertas por email de inversiones son exclusivas para Finix PRO');
+                }
+            }
+            data.investmentEmailNotifications = enabled;
+        }
         if (dto.timezone !== undefined) {
             if (typeof dto.timezone !== 'string' || dto.timezone.length > 60) throw new BadRequestException('Zona horaria no válida');
             data.timezone = dto.timezone;

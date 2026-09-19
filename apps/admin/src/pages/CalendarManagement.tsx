@@ -147,6 +147,8 @@ export default function CalendarManagement() {
     const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
     const [viewingEvent, setViewingEvent] = useState<CalendarEvent | null>(null);
     const [showSourcesModal, setShowSourcesModal] = useState<boolean>(false);
+    const [showAddSource, setShowAddSource] = useState<boolean>(false);
+    const [sourceForm, setSourceForm] = useState({ name: '', type: 'RSS', country: 'GLOBAL', baseUrl: '', apiUrl: '', priority: '5' });
 
     // Formulario de Creación Manual
     const [createForm, setCreateForm] = useState({
@@ -312,6 +314,27 @@ export default function CalendarManagement() {
             }
         } catch {
             setFeedback({ type: 'error', message: 'No se pudo actualizar el estado de la fuente' });
+        }
+    };
+
+    const createSource = async () => {
+        setFeedback(null);
+        try {
+            const res = await adminFetch('/calendar/admin/sources', {
+                method: 'POST',
+                body: JSON.stringify({ ...sourceForm, priority: Number(sourceForm.priority) }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.message || 'No se pudo agregar la fuente');
+            }
+            const source = await res.json();
+            setSources(prev => [...prev, source].sort((a, b) => a.priority - b.priority));
+            setSourceForm({ name: '', type: 'RSS', country: 'GLOBAL', baseUrl: '', apiUrl: '', priority: '5' });
+            setShowAddSource(false);
+            setFeedback({ type: 'success', message: 'Fuente agregada correctamente. Podés sincronizarla ahora.' });
+        } catch (err: any) {
+            setFeedback({ type: 'error', message: err.message || 'No se pudo agregar la fuente' });
         }
     };
 
@@ -1601,6 +1624,31 @@ export default function CalendarManagement() {
                                 );
                             })}
                         </div>
+
+                        <button
+                            onClick={() => setShowAddSource(prev => !prev)}
+                            className="w-full rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/15"
+                        >
+                            <Plus className="mr-1 inline h-3.5 w-3.5" /> Agregar fuente
+                        </button>
+
+                        {showAddSource && (
+                            <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2">
+                                <p className="text-xs font-bold text-foreground">Nueva fuente de calendario</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input aria-label="Nombre de la fuente" value={sourceForm.name} onChange={e => setSourceForm({ ...sourceForm, name: e.target.value })} placeholder="Nombre" className="rounded-lg border border-border bg-background px-2.5 py-2 text-xs" />
+                                    <select aria-label="Tipo de fuente" value={sourceForm.type} onChange={e => setSourceForm({ ...sourceForm, type: e.target.value })} className="rounded-lg border border-border bg-background px-2.5 py-2 text-xs"><option>RSS</option><option>OFFICIAL</option><option>FINANCIAL_API</option><option>SCRAPER</option><option>MANUAL</option></select>
+                                    <select aria-label="País de la fuente" value={sourceForm.country} onChange={e => setSourceForm({ ...sourceForm, country: e.target.value })} className="rounded-lg border border-border bg-background px-2.5 py-2 text-xs"><option>GLOBAL</option><option>US</option><option>AR</option></select>
+                                    <input aria-label="Prioridad de la fuente" value={sourceForm.priority} onChange={e => setSourceForm({ ...sourceForm, priority: e.target.value })} type="number" min="1" max="10" placeholder="Prioridad" className="rounded-lg border border-border bg-background px-2.5 py-2 text-xs" />
+                                    <input aria-label="URL pública de la fuente" value={sourceForm.baseUrl} onChange={e => setSourceForm({ ...sourceForm, baseUrl: e.target.value })} placeholder="URL pública" className="col-span-2 rounded-lg border border-border bg-background px-2.5 py-2 text-xs" />
+                                    <input aria-label="URL de API o feed RSS" value={sourceForm.apiUrl} onChange={e => setSourceForm({ ...sourceForm, apiUrl: e.target.value })} placeholder="URL de API o feed RSS (opcional)" className="col-span-2 rounded-lg border border-border bg-background px-2.5 py-2 text-xs" />
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <button onClick={() => setShowAddSource(false)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold">Cancelar</button>
+                                    <button onClick={createSource} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">Guardar fuente</button>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="flex justify-end pt-3 border-t border-border flex-shrink-0">
                             <button

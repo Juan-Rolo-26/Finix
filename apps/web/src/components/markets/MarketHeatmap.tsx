@@ -108,7 +108,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
         setLoading(true);
         setError(null);
         try {
-            const res = await apiFetch('/market/heatmap/sp500');
+            const res = await apiFetch(`/market/heatmap/sp500?refresh=true&_t=${Date.now()}`);
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`);
             }
@@ -619,8 +619,19 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                         /* MOSAIC TILES VIEW */
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2.5">
                             {filteredItems.map((item) => {
-                                const isBullish = item.signalType === 'STRONG_BUY' || item.signalType === 'BUY';
-                                const isBearish = item.signalType === 'STRONG_SELL' || item.signalType === 'SELL';
+                                // El mosaico representa la señal del indicador que se
+                                // está viendo: histograma para MACD y zonas 45/55 para RSI.
+                                const isBullish = activeMode === 'macd'
+                                    ? item.hist > 0
+                                    : item.rsi <= 45;
+                                const isBearish = activeMode === 'macd'
+                                    ? item.hist < 0
+                                    : item.rsi >= 55;
+                                const technicalLabel = isBullish
+                                    ? activeMode === 'macd' ? 'MACD ALCISTA' : 'RSI ALCISTA'
+                                    : isBearish
+                                        ? activeMode === 'macd' ? 'MACD BAJISTA' : 'RSI BAJISTA'
+                                        : 'NEUTRAL';
 
                                 return (
                                     <button
@@ -628,12 +639,12 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                         type="button"
                                         onClick={() => onSelectSymbol?.(item.symbol)}
                                         className={cn(
-                                            'group relative flex flex-col justify-between p-3.5 rounded-xl border transition-all text-left overflow-hidden cursor-pointer bg-white dark:bg-card hover:shadow-md hover:border-emerald-500/50',
+                                            'group relative flex flex-col justify-between p-3.5 rounded-xl border transition-all text-left overflow-hidden cursor-pointer hover:shadow-md',
                                             isBullish
-                                                ? 'border-emerald-500/40'
+                                                ? 'border-emerald-500/70 bg-gradient-to-br from-emerald-400/35 via-emerald-500/18 to-emerald-500/5 dark:from-emerald-500/40 dark:via-emerald-500/20 dark:to-card shadow-emerald-500/15 hover:border-emerald-500 hover:shadow-emerald-500/25'
                                                 : isBearish
-                                                ? 'border-rose-500/40'
-                                                : 'border-border/70'
+                                                ? 'border-rose-500/70 bg-gradient-to-br from-rose-400/35 via-rose-500/18 to-rose-500/5 dark:from-rose-500/40 dark:via-rose-500/20 dark:to-card shadow-rose-500/15 hover:border-rose-500 hover:shadow-rose-500/25'
+                                                : 'border-border/70 bg-white dark:bg-card hover:border-emerald-500/50'
                                         )}
                                     >
                                         <div className="flex items-center justify-between w-full">
@@ -669,17 +680,20 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                         <div className="w-full pt-2 border-t border-border/50 flex items-center justify-between">
                                             <span
                                                 className={cn(
-                                                    'text-[9.5px] font-bold uppercase tracking-wider',
+                                                    'text-[9.5px] font-bold uppercase tracking-wider rounded-md px-1.5 py-0.5',
                                                     isBullish
-                                                        ? 'text-emerald-600'
+                                                        ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/20'
                                                         : isBearish
-                                                        ? 'text-rose-600'
-                                                        : 'text-muted-foreground'
+                                                        ? 'text-rose-700 dark:text-rose-300 bg-rose-500/20'
+                                                        : 'text-muted-foreground px-0 py-0'
                                                 )}
                                             >
-                                                {item.signalLabel}
+                                                {technicalLabel}
                                             </span>
-                                            <ArrowUpRight className="w-3 h-3 text-muted-foreground group-hover:text-emerald-600 transition-colors" />
+                                            <ArrowUpRight className={cn(
+                                                'w-3 h-3 transition-colors',
+                                                isBullish ? 'text-emerald-700 dark:text-emerald-300' : isBearish ? 'text-rose-700 dark:text-rose-300' : 'text-muted-foreground group-hover:text-emerald-600',
+                                            )} />
                                         </div>
                                     </button>
                                 );

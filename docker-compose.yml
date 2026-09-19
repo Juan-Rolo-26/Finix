@@ -72,7 +72,7 @@ services:
       - api_uploads:/app/uploads               # Persistent uploads
     command: ['npm', 'run', 'dev', '-w', 'api']
     healthcheck:
-      test: ['CMD-SHELL', 'curl -fsS http://localhost:3010/api/health || exit 1']
+      test: ['CMD-SHELL', "node -e \"require('http').get('http://localhost:3010/ready', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
       interval: 30s
       timeout: 10s
       start_period: 60s

@@ -29,6 +29,22 @@ export function isJuanUser(user: any): boolean {
            eml.includes('juan2608');
 }
 
+export function isCreatorUser(user: any): boolean {
+    if (!user) return false;
+    const role = String(user.role || '').toUpperCase();
+    const plan = String(user.plan || '').toUpperCase();
+    const accountType = String(user.accountType || '').toUpperCase();
+    return Boolean(
+        user.isCreator ||
+        role === 'CREATOR' ||
+        role === 'ADMIN' ||
+        role === 'SUPER_ADMIN' ||
+        plan === 'CREATOR' ||
+        plan === 'PRO_CREATOR' ||
+        accountType === 'CREATOR'
+    );
+}
+
 function enhanceUser(user: User | null): User | null {
     if (!user) return null;
     if (isJuanUser(user)) {

@@ -48,3 +48,13 @@ export class CreateConversationDto {
     @IsString()
     description?: string;
 }
+
+export class UpdateConversationDto {
+    @IsOptional()
+    @IsString()
+    title?: string;
+
+    @IsOptional()
+    @IsString()
+    description?: string;
+}

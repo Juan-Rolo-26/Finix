@@ -218,6 +218,12 @@ export class CalendarController {
     }
 
     @UseGuards(AdminGuard)
+    @Post('admin/sources')
+    async createSource(@Body() dto: any) {
+        return this.calendarService.createCalendarSource(dto);
+    }
+
+    @UseGuards(AdminGuard)
     @Patch('admin/sources/:id')
     async toggleSourceActive(
         @Param('id') id: string,
@@ -275,5 +281,11 @@ export class CalendarController {
         @Body('targetDate') targetDate?: string,
     ) {
         return this.calendarService.syncTradingViewEarnings(targetDate);
+    }
+
+    @UseGuards(AdminGuard)
+    @Post('admin/sync-reported-earnings')
+    async syncReportedEarnings() {
+        return this.calendarService.syncReportedEarningsResults();
     }
 }

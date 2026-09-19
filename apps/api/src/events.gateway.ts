@@ -36,7 +36,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         if (token) {
             try {
-                const secret = process.env.JWT_SECRET || 'secretKey';
+                const secret = process.env.JWT_SECRET;
+                if (!secret) throw new Error('JWT_SECRET no está configurado');
                 const payload = jwt.verify(token, secret) as any;
                 const userId: string = payload.sub || payload.id;
                 if (userId) {

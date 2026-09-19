@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { PrismaService } from './prisma.service';
 import * as bodyParser from 'body-parser';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
@@ -10,6 +11,14 @@ import helmet from 'helmet';
 const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
+    if (process.env.NODE_ENV === 'production') {
+        const required = ['DATABASE_URL', 'JWT_SECRET', 'FRONTEND_URL', 'ALLOWED_ORIGINS'];
+        const missing = required.filter((name) => !process.env[name]?.trim());
+        const weakJwt = !process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32 || process.env.JWT_SECRET === 'secretKey';
+        if (missing.length || weakJwt) {
+            throw new Error(`Configuración de producción inválida${missing.length ? `; faltan: ${missing.join(', ')}` : ''}${weakJwt ? '; JWT_SECRET debe tener al menos 32 caracteres' : ''}`);
+        }
+    }
     const app = await NestFactory.create(AppModule, {
         bodyParser: false,
         logger: process.env.NODE_ENV === 'production'
@@ -25,7 +34,12 @@ async function bootstrap() {
     app.use(bodyParser.json({ limit: '2mb' }));
     app.use(bodyParser.urlencoded({ extended: true }));
     app.use(cookieParser());
-    app.use(helmet());
+    app.use(helmet({
+        contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+        crossOriginEmbedderPolicy: false,
+        hsts: process.env.NODE_ENV === 'production' ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
+        referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    }));
 
     // ── Validation ────────────────────────────────────────────────────────────
     app.useGlobalPipes(new ValidationPipe({
@@ -64,9 +78,14 @@ async function bootstrap() {
             environment: process.env.NODE_ENV || 'development',
         });
     });
-    httpAdapter.get('/ready', (_req, res) => {
-        // TODO: add DB + Redis ping when readiness probes are needed
-        res.status(200).json({ status: 'ready' });
+    httpAdapter.get('/ready', async (_req, res) => {
+        const prisma = app.get(PrismaService);
+        const databaseReady = await prisma.isDatabaseReady();
+
+        res.status(databaseReady ? 200 : 503).json({
+            status: databaseReady ? 'ready' : 'not_ready',
+            database: databaseReady ? 'connected' : 'unavailable',
+        });
     });
 
     // ── Static uploads (local filesystem fallback — use R2/S3 in production) ──

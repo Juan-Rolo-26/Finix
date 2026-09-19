@@ -35,6 +35,10 @@ const normalizeDatabaseUrl = (rawUrl?: string) => {
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+    private reconnectTimer?: NodeJS.Timeout;
+    private reconnectScheduled = false;
+    private shuttingDown = false;
+
     constructor() {
         const databaseUrl = normalizeDatabaseUrl(process.env.DATABASE_URL);
 
@@ -53,29 +57,68 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
 
     async onModuleInit() {
+        // Register the middleware before the first query so every database
+        // operation has the same bounded timeout.
+        this.$use(async (params, next) => {
+            let timeoutId: NodeJS.Timeout | undefined;
+            const timeout = new Promise<never>((_, reject) => {
+                timeoutId = setTimeout(
+                    () => reject(new Error(`[Prisma] Query timeout: ${params.model}.${params.action} exceeded 20s`)),
+                    20_000,
+                );
+            });
+
+            try {
+                return await Promise.race([next(params), timeout]);
+            } finally {
+                // Do not leave thousands of pending timers behind after fast queries.
+                if (timeoutId) clearTimeout(timeoutId);
+            }
+        });
+
+        await this.connectToDatabase();
+    }
+
+    /**
+     * Used by readiness checks. A failed probe schedules a single reconnect in
+     * the background, so a short Supabase outage does not require a manual API
+     * restart to recover.
+     */
+    async isDatabaseReady(): Promise<boolean> {
+        try {
+            await this.$queryRawUnsafe('SELECT 1');
+            return true;
+        } catch (err: any) {
+            this.scheduleReconnect();
+            return false;
+        }
+    }
+
+    private async connectToDatabase(): Promise<void> {
         try {
             await this.$connect();
             console.log('✅ [Prisma] Conectado a la base de datos');
         } catch (err: any) {
-            console.error('⚠️ [Prisma] Advertencia: No se pudo conectar a la base de datos al iniciar:', err?.message || err);
-            console.error('⚠️ Por favor verificá DATABASE_URL en apps/api/.env');
+            console.error('⚠️ [Prisma] No se pudo conectar a la base de datos:', err?.message || err);
+            console.error('⚠️ La API seguirá viva, pero no estará lista hasta recuperar DATABASE_URL.');
+            this.scheduleReconnect();
         }
+    }
 
-        // Setea statement_timeout = 20s por sesión.
-        // Si una query tarda más de 20s, PostgreSQL la cancela automáticamente
-        // y Prisma lanza un error controlado en lugar de colgar indefinidamente.
-        this.$use(async (params, next) => {
-            const timeout = new Promise<never>((_, reject) =>
-                setTimeout(
-                    () => reject(new Error(`[Prisma] Query timeout: ${params.model}.${params.action} exceeded 20s`)),
-                    20_000,
-                ),
-            );
-            return Promise.race([next(params), timeout]);
-        });
+    private scheduleReconnect() {
+        if (this.shuttingDown || this.reconnectScheduled) return;
+
+        this.reconnectScheduled = true;
+        this.reconnectTimer = setTimeout(async () => {
+            this.reconnectScheduled = false;
+            await this.connectToDatabase();
+        }, 5_000);
+        this.reconnectTimer.unref?.();
     }
 
     async onModuleDestroy() {
+        this.shuttingDown = true;
+        if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
         await this.$disconnect();
     }
 

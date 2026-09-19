@@ -3,6 +3,7 @@
     "compilerOptions": {
         "rootDir": "./src",
         "outDir": "./dist",
+        "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo",
         "paths": {}
     },
     "exclude": [
@@ -10,7 +11,7 @@
         "prisma",
         "dist",
         "test",
-        "**/*.spec.ts",
-        "*.ts"
-    ]
+        "**/*.spec.ts"
+    ],
+    "include": ["src/**/*.ts"]
 }

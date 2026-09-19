@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, UseGuards, Req } from '@nestjs/common';
 import { MarketRankingService } from './services/market-ranking.service';
 import { AdminGuard } from '../admin/admin.guard';
 import { AdminPermissionsGuard } from '../admin/permissions.guard';
 import { RequireAdminPermissions } from '../admin/permissions.decorator';
 import { AdminPermission } from '../admin/admin-permissions';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
 
 @Controller('market/rankings')
 export class MarketRankingController {
@@ -14,8 +15,11 @@ export class MarketRankingController {
      * Devuelve el TOP 5 de mejores rendimientos del S&P 500 para la tarjeta.
      */
     @Get('top-gainers')
-    async getTopGainers(@Query('date') date?: string) {
-        return await this.rankingService.getTopGainers(date);
+    async getTopGainers(
+        @Query('date') date?: string,
+        @Query('refresh') refresh?: string,
+    ) {
+        return await this.rankingService.getTopGainers(date, refresh === 'true' || refresh === '1');
     }
 
     /**
@@ -23,23 +27,33 @@ export class MarketRankingController {
      * Devuelve el TOP 5 de peores rendimientos del S&P 500 para la tarjeta.
      */
     @Get('top-losers')
-    async getTopLosers(@Query('date') date?: string) {
-        return await this.rankingService.getTopLosers(date);
+    async getTopLosers(
+        @Query('date') date?: string,
+        @Query('refresh') refresh?: string,
+    ) {
+        return await this.rankingService.getTopLosers(date, refresh === 'true' || refresh === '1');
     }
 
     /**
      * Endpoint para consulta extendida / página "Ver todos"
+     * TOP 5 es libre para todos los usuarios.
+     * Rangos > 5 (TOP 10, 25, 50) requieren membresía PRO.
      */
     @Get()
+    @UseGuards(OptionalJwtAuthGuard)
     async getRankings(
         @Query('type') type?: string,
         @Query('date') date?: string,
         @Query('limit') limit?: string,
+        @Query('refresh') refresh?: string,
+        @Req() req?: any,
     ) {
         return await this.rankingService.getRankingsList({
             type,
             date,
             limit: limit ? parseInt(limit, 10) : 50,
+            user: req?.user,
+            refresh: refresh === 'true' || refresh === '1',
         });
     }
 

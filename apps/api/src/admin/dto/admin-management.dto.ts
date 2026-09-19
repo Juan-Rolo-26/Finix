@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
     IsBoolean,
+    Equals,
     IsDateString,
     IsIn,
     IsInt,
@@ -153,4 +154,42 @@ export class AdminAuditLogsQueryDto extends AdminPaginationDto {
     @IsOptional()
     @IsDateString()
     to?: string;
+}
+
+export class AdminSendProEmailDto {
+    @Transform(trimString)
+    @IsString()
+    @MaxLength(160)
+    subject: string;
+
+    @Transform(trimString)
+    @IsString()
+    @MaxLength(160)
+    title: string;
+
+    @Transform(trimString)
+    @IsString()
+    @MaxLength(8000)
+    message: string;
+
+    @IsOptional()
+    @Transform(trimString)
+    @IsString()
+    @MaxLength(1000)
+    imageUrl?: string;
+
+    @IsOptional()
+    @Transform(trimString)
+    @IsString()
+    @MaxLength(80)
+    ctaLabel?: string;
+
+    @IsOptional()
+    @Transform(trimString)
+    @IsString()
+    @MaxLength(1000)
+    ctaUrl?: string;
+
+    @Equals(true, { message: 'Debés confirmar el envío a usuarios PRO' })
+    confirm: boolean;
 }

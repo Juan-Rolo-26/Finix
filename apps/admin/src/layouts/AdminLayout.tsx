@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Shield, LayoutDashboard, Users, FileText, AlertTriangle, LogOut, Menu, ScrollText, Newspaper, BadgeCheck, Sun, Moon, BarChart, Globe, Star, BarChart2, TrendingUp, Calendar } from 'lucide-react';
+import { Shield, LayoutDashboard, Users, FileText, AlertTriangle, LogOut, Menu, ScrollText, Newspaper, BadgeCheck, Sun, Moon, BarChart, Globe, Star, BarChart2, TrendingUp, Calendar, Mail } from 'lucide-react';
 import { adminFetch } from '../lib/api';
 
 export default function AdminLayout() {
@@ -31,6 +31,7 @@ export default function AdminLayout() {
         { name: 'Estadísticas', path: '/statistics', icon: BarChart },
         { name: 'Usuarios', path: '/users', icon: Users },
         { name: 'Usuarios PRO', path: '/pro-users', icon: Star },
+        { name: 'Emails PRO', path: '/pro-emails', icon: Mail },
         { name: 'Comunidades', path: '/communities', icon: Globe },
         { name: 'Publicaciones', path: '/posts', icon: FileText },
         { name: 'Noticias', path: '/news', icon: Newspaper },
@@ -43,7 +44,7 @@ export default function AdminLayout() {
     ];
 
     return (
-        <div className="min-h-screen bg-background text-foreground flex font-sans">
+        <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-background text-foreground flex font-sans">
             {/* Mobile Sidebar Toggle */}
             <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -115,7 +116,7 @@ export default function AdminLayout() {
 
             {/* Main content */}
             <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-                <div className="flex-1 p-6 md:p-8 xl:p-10 container mx-auto max-w-7xl animate-in fade-in duration-500">
+                <div className="flex-1 min-w-0 w-full p-4 sm:p-6 md:p-8 xl:p-10 container mx-auto max-w-7xl animate-in fade-in duration-500">
                     <Outlet />
                 </div>
             </main>

@@ -344,7 +344,7 @@ export default function FinvizHeatmap({ onSelectSymbol }: FinvizHeatmapProps = {
                 </div>
             </div>
 
-            <div className="h-[860px] w-full overflow-hidden rounded-[24px] border border-border/80 bg-[#020617] shadow-2xl">
+            <div className="h-[460px] w-full overflow-hidden rounded-[24px] border border-border/80 bg-[#020617] shadow-2xl sm:h-[640px] lg:h-[860px]">
                 {isLoading && (
                     <div className="flex h-full items-center justify-center">
                         <div className="h-12 w-12 rounded-full border-3 border-emerald-500 border-t-transparent animate-spin" />

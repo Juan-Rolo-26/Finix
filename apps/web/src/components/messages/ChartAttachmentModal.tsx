@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import type { ComposerAttachment } from './messageTypes';
+import { uploadChatBlob } from './mediaUpload';
 
 const POPULAR_SYMBOLS = [
     'AAPL',
@@ -146,6 +147,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
     const [riskLevel, setRiskLevel] = useState('medium');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const widgetRef = useRef<any | null>(null);
 
     const applySymbol = () => {
         const next = symbolInput.trim().toUpperCase();
@@ -159,15 +161,41 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
         setError('');
 
         try {
+            if (!widgetRef.current || typeof widgetRef.current.imageCanvas !== 'function') {
+                throw new Error('El gráfico todavía está cargando. Esperá un momento e intentá de nuevo.');
+            }
+
+            // TradingView devuelve una imagen del viewport actual. Eso congela
+            // zoom, velas, indicadores y trazados para que el receptor vea
+            // exactamente la misma composición, aunque no tenga TradingView.
+            const canvasPromise = widgetRef.current.imageCanvas();
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('La captura del gráfico tardó demasiado.')), 5000),
+            );
+            const canvas: any = await Promise.race([canvasPromise, timeoutPromise]);
+            if (!canvas || typeof canvas.toBlob !== 'function') {
+                throw new Error('No se pudo capturar el gráfico.');
+            }
+
+            const blob = await new Promise<Blob>((resolve, reject) => {
+                canvas.toBlob((value: Blob | null) => {
+                    if (value) resolve(value);
+                    else reject(new Error('No se pudo crear la imagen del gráfico.'));
+                }, 'image/png');
+            });
+            const uploaded = await uploadChatBlob(blob, `chart_${assetSymbol}_${Date.now()}.png`);
+
             onSelect({
                 type: 'chart',
-                url: '',
+                url: uploaded.url,
                 meta: {
                     symbol: assetSymbol,
                     interval,
                     title: `Grafico ${assetSymbol}`,
                     analysisType,
                     riskLevel,
+                    originalName: uploaded.originalName,
+                    size: uploaded.size,
                 },
             });
             onClose();
@@ -214,7 +242,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
 
                 <div className="p-5 space-y-5">
                     <div className="flex flex-wrap items-center gap-2">
-                        <div className="relative flex-1 min-w-[220px]">
+                        <div className="relative flex-1 min-w-0">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                             <input
                                 type="text"
@@ -270,7 +298,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                         symbol={assetSymbol}
                         interval={interval}
                         theme={tvTheme}
-                        onWidgetReady={() => { }}
+                        onWidgetReady={(widget) => { widgetRef.current = widget; }}
                     />
 
                     <div className="grid gap-3 sm:grid-cols-2">

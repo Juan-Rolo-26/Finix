@@ -587,7 +587,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                         </div>
 
                         {/* Diversification + Stats */}
-                        <div className="grid grid-cols-5 gap-3">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
                             {/* Pie chart */}
                             <div className="col-span-2 rounded-2xl p-4 flex flex-col items-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
                                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-3">Clases</p>
@@ -637,7 +637,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
 
                         {/* Stats row */}
                         {(showStats || isOwnProfile) && (
-                            <div className="grid grid-cols-3 gap-2.5">
+                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                                 {statsCards.map(({ label, value, color, icon: Icon }) => (
                                     <div key={label} className="rounded-xl p-3 text-center" style={{ background: 'hsl(var(--secondary) / 0.5)', border: '1px solid hsl(var(--border))' }}>
                                         <Icon className="w-4 h-4 mx-auto mb-1.5" style={{ color }} />
@@ -1450,7 +1450,7 @@ export default function Profile() {
                     </div>
 
                     {/* ── STATS ROW ────────────────────────────── */}
-                    <div className="grid grid-cols-3 gap-3 mb-6">
+                    <div className="grid grid-cols-1 gap-3 mb-6 sm:grid-cols-3">
                         {[
                             { value: profile._count?.followedBy?.toLocaleString() || '0', label: 'Seguidores' },
                             { value: profile._count?.following?.toLocaleString() || '0', label: 'Siguiendo' },

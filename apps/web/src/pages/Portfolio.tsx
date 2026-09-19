@@ -209,7 +209,7 @@ function StatCard({
 }) {
   const isPos = positive ?? (delta !== undefined ? delta >= 0 : true);
   return (
-    <div className="flex-1 min-w-[150px] rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md px-4 py-3.5 shadow-xs transition-all hover:border-border/80">
+    <div className="flex-1 min-w-0 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md px-3 py-3 sm:px-4 sm:py-3.5 shadow-xs transition-all hover:border-border/80">
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
         {Icon && <Icon className="w-4 h-4 text-muted-foreground/60" />}
@@ -350,9 +350,9 @@ function AssetRow({
 function MovementRow({ movement, currency }: { movement: Movement; currency: string }) {
   const isCompra = movement.tipoMovimiento === "compra";
   const isVenta = movement.tipoMovimiento === "venta";
-  const typeColor = isCompra ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-    : isVenta ? "text-red-400 bg-red-500/10 border-red-500/20"
-      : "text-blue-400 bg-blue-500/10 border-blue-500/20";
+  const typeColor = isCompra ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+    : isVenta ? "text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20"
+      : "text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/20";
 
   const symbol = normalizeTickerSymbol(movement.ticker);
 
@@ -373,7 +373,7 @@ function MovementRow({ movement, currency }: { movement: Movement; currency: str
 
       {/* Values */}
       <div className="text-right shrink-0">
-        <p className={cn("text-[13px] font-bold tabular-nums", isVenta ? "text-red-400" : "text-emerald-400")}>
+        <p className={cn("text-[13px] font-bold tabular-nums", isVenta ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400")}>
           {isVenta ? "-" : "+"}{fmtCompact(movement.total, currency)}
         </p>
         <span className={cn("text-[10px] font-semibold border rounded-full px-2 py-0.5", typeColor)}>
@@ -418,7 +418,7 @@ function PortfolioSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
       <div className="h-56 rounded-3xl bg-muted/30" />
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         {[0, 1, 2].map((i) => <div key={i} className="h-24 rounded-2xl bg-muted/20" />)}
       </div>
       <div className="h-80 rounded-3xl bg-muted/20" />
@@ -816,7 +816,7 @@ const PortfolioPage = () => {
                     </span>
                     {displayPortfolio && (
                       <div className={cn("flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-sm font-bold",
-                        pnl >= 0 ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400")}>
+                        pnl >= 0 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/15 text-rose-600 dark:text-rose-400")}>
                         {pnl >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
                         {mask(fmtCompact(pnl, currency))} ({fmtPct(pnlPct)})
                       </div>
@@ -1246,31 +1246,52 @@ const PortfolioPage = () => {
               {/* Quick insights & Cash */}
               <div className="space-y-4">
                 {/* Cash Card */}
-                <Card className="border-emerald-500/25 bg-emerald-500/5 overflow-hidden relative shadow-xs">
-                  <div className="absolute right-0 top-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-                  <CardContent className="p-5 relative">
-                    <div className="flex items-start justify-between mb-2">
+                <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-card via-card to-emerald-500/[0.04] p-5 shadow-xs transition-all duration-200 hover:border-emerald-500/30 hover:shadow-md">
+                  <div className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-emerald-500/10 blur-2xl" />
+                  
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs">
+                        <Wallet className="h-4.5 w-4.5" />
+                      </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Efectivo disponible</p>
-                        <p className="mt-1 text-2xl font-black text-emerald-400 tabular-nums">{mask(fmtCurrency(cashBalance, currency))}</p>
-                      </div>
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                        <Wallet className="w-4.5 h-4.5" />
+                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                          Efectivo disponible
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          <span className="text-[11px] text-muted-foreground font-medium">Liquidez en cuenta</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between pt-1">
-                      <p className="text-[11px] text-muted-foreground">Listo para reinvertir en activos</p>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
-                        className="h-6.5 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/15 px-2 rounded-md cursor-pointer"
-                      >
-                        Invertir <ChevronRight className="w-3 h-3 ml-0.5" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+
+                    {totalValue > 0 && (
+                      <Badge variant="outline" className="border-emerald-500/25 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-lg">
+                        {((cashBalance / totalValue) * 100).toFixed(1)}% cartera
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="my-3">
+                    <p className="text-2xl sm:text-3xl font-black tracking-tight text-foreground tabular-nums">
+                      {mask(fmtCurrency(cashBalance, currency))}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Capital disponible para operar o reinvertir en nuevos activos
+                    </p>
+                  </div>
+
+                  <div className="pt-3 flex items-center justify-between border-t border-border/50 mt-3">
+                    <span className="text-[11px] font-medium text-muted-foreground">¿Listo para operar?</span>
+                    <Button
+                      size="sm"
+                      onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
+                      className="h-8 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Invertir
+                    </Button>
+                  </div>
+                </div>
 
                 {/* Insights */}
                 {displayPortfolio.assets.length > 0 && (
@@ -1300,26 +1321,26 @@ const PortfolioPage = () => {
                           <>
                             {best && (
                               <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/8 border border-emerald-500/20">
-                                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
                                   <Trophy className="w-4 h-4" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-bold text-foreground">{best.ticker}</p>
                                   <p className="text-[10px] text-muted-foreground font-medium">Mejor rendimiento</p>
                                 </div>
-                                <span className="text-[13px] font-bold text-emerald-400 tabular-nums">{fmtPct(bestR)}</span>
+                                <span className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmtPct(bestR)}</span>
                               </div>
                             )}
                             {worst && worst.id !== best?.id && (
-                              <div className="flex items-center gap-3 p-3 rounded-xl bg-red-500/8 border border-red-500/20">
-                                <div className="w-8 h-8 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                              <div className="flex items-center gap-3 p-3 rounded-xl bg-rose-500/8 border border-rose-500/20">
+                                <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
                                   <TrendingDown className="w-4 h-4" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-bold text-foreground">{worst.ticker}</p>
                                   <p className="text-[10px] text-muted-foreground font-medium">Mayor drawdown</p>
                                 </div>
-                                <span className="text-[13px] font-bold text-red-400 tabular-nums">{fmtPct(worstR)}</span>
+                                <span className="text-[13px] font-bold text-rose-600 dark:text-rose-400 tabular-nums">{fmtPct(worstR)}</span>
                               </div>
                             )}
                             <div className="flex items-center gap-3 p-3 rounded-xl bg-card/60 border border-border/50">

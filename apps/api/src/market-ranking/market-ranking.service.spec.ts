@@ -109,4 +109,36 @@ describe('MarketRankingService Unit Tests', () => {
         expect(result.topResults[0].ticker).toBe('VALID');
         expect(result.errors).toBe(2);
     });
+
+    test('Always returns a complete top five instead of a newer partial ranking', async () => {
+        const ranking = (date: string, rank: number, ticker: string) => ({
+            date,
+            rank,
+            ticker,
+            companyName: ticker,
+            price: 100,
+            previousClose: 95,
+            change: 5,
+            changePercent: 5,
+            volume: 1_000_000,
+            logoUrl: null,
+            marketTimestamp: new Date('2026-09-17T20:00:00.000Z'),
+            updatedAt: new Date('2026-09-17T21:00:00.000Z'),
+        });
+
+        mockPrisma.dailyMarketRanking.findMany
+            .mockResolvedValueOnce([
+                ranking('2026-09-18', 1, 'NEW1'),
+                ranking('2026-09-18', 2, 'NEW2'),
+            ])
+            .mockResolvedValueOnce([1, 2, 3, 4, 5].map(rank => ranking('2026-09-17', rank, `OLD${rank}`)));
+
+        const result = await service.getTopGainers('2026-09-18');
+
+        expect(result.items).toHaveLength(5);
+        expect(result.items.map(item => item.rank)).toEqual([1, 2, 3, 4, 5]);
+        expect(result.items.map(item => item.ticker)).toEqual(['OLD1', 'OLD2', 'OLD3', 'OLD4', 'OLD5']);
+        expect(result.date).toBe('2026-09-17');
+        expect(result.isStale).toBe(true);
+    });
 });

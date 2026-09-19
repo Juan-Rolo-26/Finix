@@ -10,7 +10,13 @@ import {
     BarChart3,
     Coins,
     DollarSign,
+    ChevronLeft,
+    ChevronRight,
+    ArrowUpRight,
+    CheckCircle2,
+    TrendingDown,
     TrendingUp,
+    XCircle,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useAuthStore, isJuanUser } from '@/stores/authStore';
@@ -65,6 +71,7 @@ interface EarningsEvent {
     actualRevenue?: number;
     epsSurprise?: number;
     revenueSurprise?: number;
+    marketReaction?: number;
     marketCap?: number;
     earningsImpactScore: number;
 }
@@ -111,6 +118,26 @@ interface CalendarWeekData {
 
 type CalendarSection = 'GENERAL' | 'BALANCES' | 'DIVIDENDOS';
 
+// Helper: Get monday of a week offset from today
+function getWeekStartForOffset(offsetWeeks: number): string {
+    const today = new Date();
+    const day = today.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday + offsetWeeks * 7);
+    const year = monday.getFullYear();
+    const month = String(monday.getMonth() + 1).padStart(2, '0');
+    const date = String(monday.getDate()).padStart(2, '0');
+    return `${year}-${month}-${date}`;
+}
+
+function formatDateLabel(dateStr: string): string {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: 'short' }).format(dt);
+}
+
 export default function CalendarPage() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
@@ -127,6 +154,8 @@ export default function CalendarPage() {
     const [activeSection, setActiveSection] = useState<CalendarSection>('GENERAL');
     // Filtros de categoría para la sección General
     const [activeCategory, setActiveCategory] = useState<string>('ALL');
+    // Week navigation offset (0 = current week, 1 = next, -1 = previous)
+    const [weekOffset, setWeekOffset] = useState<number>(0);
 
     const [calendarData, setCalendarData] = useState<CalendarWeekData | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -154,8 +183,10 @@ export default function CalendarPage() {
         setIsLoading(true);
         setIsError(false);
         try {
-            // El backend calcula automáticamente la semana activa actual de lunes a domingo.
             const queryParams = new URLSearchParams();
+            // La semana elegida siempre se envía al servidor. Así los balances
+            // publicados siguen disponibles al volver a semanas anteriores.
+            queryParams.set('weekStart', getWeekStartForOffset(weekOffset));
             if (activeSection === 'BALANCES') {
                 queryParams.set('category', 'EARNINGS');
             } else if (activeSection === 'DIVIDENDOS') {
@@ -181,7 +212,7 @@ export default function CalendarPage() {
 
     useEffect(() => {
         loadCalendar();
-    }, [activeSection, activeCategory]);
+    }, [activeSection, activeCategory, weekOffset]);
 
     if (!isPro) {
         return (
@@ -316,22 +347,38 @@ export default function CalendarPage() {
                             </p>
                         </div>
 
-                        {/* Indicador de Semana Activa (Fijo a la semana en curso, sin selector a otras semanas) */}
-                        <div className="flex items-center gap-3 bg-secondary/50 px-4 py-2.5 rounded-2xl border border-border/50 self-start md:self-auto shadow-sm">
-                            <div className="flex items-center gap-2">
+                        {/* Indicador de Semana Activa con navegación */}
+                        <div className="flex items-center gap-2 bg-secondary/50 px-3 py-2 rounded-2xl border border-border/50 self-start md:self-auto shadow-sm">
+                            <button
+                                onClick={() => setWeekOffset(w => Math.max(-4, w - 1))}
+                                disabled={weekOffset <= -4}
+                                className="p-1 rounded-lg hover:bg-background/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                                title="Semana anterior"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <div className="flex items-center gap-2 px-1">
                                 <span className="relative flex h-2.5 w-2.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                                 </span>
                                 <span className="text-xs sm:text-sm font-black text-foreground">
-                                    Semana Activa
+                                    {weekOffset === 0 ? 'Semana Actual' : weekOffset > 0 ? `+${weekOffset} sem.` : `${weekOffset} sem.`}
                                 </span>
                             </div>
                             {calendarData?.weekRange && (
-                                <span className="text-xs sm:text-sm font-mono font-bold text-muted-foreground border-l border-border/60 pl-3">
-                                    {calendarData.weekRange.from} al {calendarData.weekRange.to}
+                                <span className="text-xs font-mono font-bold text-muted-foreground border-l border-border/60 pl-2">
+                                    {formatDateLabel(calendarData.weekRange.from)} al {formatDateLabel(calendarData.weekRange.to)}
                                 </span>
                             )}
+                            <button
+                                onClick={() => setWeekOffset(w => Math.min(4, w + 1))}
+                                disabled={weekOffset >= 4}
+                                className="p-1 rounded-lg hover:bg-background/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                                title="Semana siguiente"
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
 
@@ -581,6 +628,14 @@ export default function CalendarPage() {
                                                 : earn.reportTiming === 'BMO'
                                                     ? 'Antes de la apertura'
                                                     : 'Durante la rueda';
+                                            const hasReportedResult = earn.actualEps != null || earn.actualRevenue != null;
+                                            const epsWon = earn.epsSurprise != null && earn.epsSurprise >= 0;
+                                            const revenueWon = earn.revenueSurprise != null && earn.revenueSurprise >= 0;
+                                            const reportedMetrics = [earn.epsSurprise, earn.revenueSurprise].filter((value) => value != null);
+                                            const positiveMetrics = reportedMetrics.filter((value) => Number(value) >= 0).length;
+                                            const resultWon = reportedMetrics.length > 0 && positiveMetrics === reportedMetrics.length;
+                                            const resultMixed = reportedMetrics.length > 0 && positiveMetrics > 0 && !resultWon;
+                                            const marketUp = earn.marketReaction != null && earn.marketReaction >= 0;
 
                                             return (
                                                 <div
@@ -596,7 +651,11 @@ export default function CalendarPage() {
                                                                 <span className="text-xs font-semibold text-muted-foreground bg-secondary/80 px-2.5 py-1 rounded-lg border border-border/50">
                                                                     {timingLabel}
                                                                 </span>
-                                                                {earn.dateStatus === 'ESTIMATED' && (
+                                                                {hasReportedResult ? (
+                                                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${resultWon ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' : resultMixed ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' : 'text-rose-500 bg-rose-500/10 border-rose-500/20'}`}>
+                                                                        Publicado
+                                                                    </span>
+                                                                ) : earn.dateStatus === 'ESTIMATED' && (
                                                                     <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20">
                                                                         Est.
                                                                     </span>
@@ -631,43 +690,38 @@ export default function CalendarPage() {
                                                         </div>
                                                     </div>
 
-                                                    {/* Financial Estimates Bar: 2x2 Grid para diseño en cuadrado */}
-                                                    <div className="pt-3 border-t border-border/50 grid grid-cols-2 gap-2.5 text-xs font-mono">
-                                                        <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
-                                                            <div className="text-[10px] text-muted-foreground font-sans font-semibold mb-0.5 uppercase tracking-wider">
-                                                                EPS Est.
+                                                    <div className="pt-3 border-t border-border/50 space-y-2.5 text-xs">
+                                                        {hasReportedResult ? (
+                                                            <>
+                                                                <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${resultWon ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : resultMixed ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
+                                                                    {resultWon ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
+                                                                    <span className="font-bold">{resultWon ? 'Balance victorioso: superó las estimaciones.' : resultMixed ? 'Balance mixto: hubo métricas a favor y en contra.' : 'Balance por debajo del consenso.'}</span>
+                                                                </div>
+                                                                <div className="grid grid-cols-2 gap-2.5 font-mono">
+                                                                    <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
+                                                                        <div className="text-[10px] text-muted-foreground font-sans font-semibold uppercase tracking-wider">Ganancias (EPS)</div>
+                                                                        <div className="mt-1 flex items-baseline justify-between gap-1"><span className="text-muted-foreground">Est. {earn.epsEstimate != null ? `$${earn.epsEstimate.toFixed(2)}` : 'N/D'}</span><span className={`font-black ${epsWon ? 'text-emerald-500' : 'text-rose-500'}`}>Real {earn.actualEps != null ? `$${earn.actualEps.toFixed(2)}` : 'N/D'}</span></div>
+                                                                        <div className={`mt-1 font-bold ${epsWon ? 'text-emerald-500' : 'text-rose-500'}`}>{earn.epsSurprise != null ? `${epsWon ? '+' : ''}${earn.epsSurprise.toFixed(1)}% vs. consenso` : 'Sin comparación'}</div>
+                                                                    </div>
+                                                                    <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
+                                                                        <div className="text-[10px] text-muted-foreground font-sans font-semibold uppercase tracking-wider">Facturación</div>
+                                                                        <div className="mt-1 flex items-baseline justify-between gap-1"><span className="text-muted-foreground">Est. {formatRevenue(earn.revenueEstimate)}</span><span className={`font-black ${revenueWon ? 'text-emerald-500' : 'text-rose-500'}`}>Real {formatRevenue(earn.actualRevenue)}</span></div>
+                                                                        <div className={`mt-1 font-bold ${revenueWon ? 'text-emerald-500' : 'text-rose-500'}`}>{earn.revenueSurprise != null ? `${revenueWon ? '+' : ''}${earn.revenueSurprise.toFixed(1)}% vs. consenso` : 'Sin comparación'}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {earn.marketReaction != null && (
+                                                                    <div className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 ${marketUp ? 'border-emerald-500/25 bg-emerald-500/5' : 'border-rose-500/25 bg-rose-500/5'}`}>
+                                                                        <span className="flex items-center gap-1.5 font-semibold text-muted-foreground">{marketUp ? <TrendingUp className="h-4 w-4 text-emerald-500" /> : <TrendingDown className="h-4 w-4 text-rose-500" />} Reacción del mercado</span>
+                                                                        <span className={`font-black font-mono ${marketUp ? 'text-emerald-500' : 'text-rose-500'}`}>{marketUp ? '+' : ''}{earn.marketReaction.toFixed(2)}% · {marketUp ? 'recibido positivamente' : 'reacción negativa'}</span>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <div className="grid grid-cols-2 gap-2.5 font-mono">
+                                                                <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40"><div className="text-[10px] text-muted-foreground font-sans font-semibold uppercase tracking-wider">EPS estimado</div><div className="mt-1 text-sm sm:text-base font-black text-amber-500">{earn.epsEstimate != null ? `$${earn.epsEstimate.toFixed(2)}` : 'N/D'}</div></div>
+                                                                <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40"><div className="text-[10px] text-muted-foreground font-sans font-semibold uppercase tracking-wider">Facturación est.</div><div className="mt-1 text-sm sm:text-base font-black text-foreground">{formatRevenue(earn.revenueEstimate)}</div></div>
                                                             </div>
-                                                            <div className="text-sm sm:text-base font-black text-amber-500">
-                                                                {earn.epsEstimate != null ? `$${earn.epsEstimate.toFixed(2)}` : 'N/D'}
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
-                                                            <div className="text-[10px] text-muted-foreground font-sans font-semibold mb-0.5 uppercase tracking-wider">
-                                                                Facturación
-                                                            </div>
-                                                            <div className="text-sm sm:text-base font-black text-foreground">
-                                                                {formatRevenue(earn.revenueEstimate)}
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
-                                                            <div className="text-[10px] text-muted-foreground font-sans font-semibold mb-0.5 uppercase tracking-wider">
-                                                                EPS Actual
-                                                            </div>
-                                                            <div className="text-sm sm:text-base font-black text-foreground">
-                                                                {earn.actualEps != null ? `$${earn.actualEps.toFixed(2)}` : '-'}
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
-                                                            <div className="text-[10px] text-muted-foreground font-sans font-semibold mb-0.5 uppercase tracking-wider">
-                                                                Sorpresa EPS
-                                                            </div>
-                                                            <div className={`text-sm sm:text-base font-black ${earn.epsSurprise != null && earn.epsSurprise >= 0 ? 'text-emerald-400' : earn.epsSurprise != null ? 'text-rose-400' : 'text-muted-foreground'}`}>
-                                                                {earn.epsSurprise != null ? `${earn.epsSurprise >= 0 ? '+' : ''}${earn.epsSurprise}` : '-'}
-                                                            </div>
-                                                        </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
@@ -675,99 +729,73 @@ export default function CalendarPage() {
                                     </div>
                                 )}
 
-                                {/* 3. S&P 500 Dividend Events (Dividendos Section - Cuadrados 3 por fila) */}
+                                {/* 3. S&P 500 Dividend Events — TradingView Style */}
                                 {activeSection === 'DIVIDENDOS' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                                        {dayDividends.map((div) => {
-                                            return (
-                                                <div
-                                                    key={div.id}
-                                                    className="p-5 sm:p-6 rounded-2xl border border-border/60 bg-card/80 hover:bg-card transition-all flex flex-col justify-between space-y-4 shadow-sm group hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/5 min-h-[250px]"
-                                                >
-                                                    <div>
-                                                        <div className="flex items-center justify-between gap-2 mb-3">
-                                                            <span className="text-[11px] font-black tracking-wider uppercase text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20 flex items-center gap-1.5">
-                                                                <Coins className="w-3.5 h-3.5" />
-                                                                S&P 500
+                                    <div className="space-y-2">
+                                        {dayDividends.map((div) => (
+                                            <div
+                                                key={div.id}
+                                                className="flex items-center gap-3 sm:gap-4 px-4 py-3.5 rounded-2xl border border-border/50 bg-card/70 hover:bg-card hover:border-emerald-500/40 transition-all group shadow-sm"
+                                            >
+                                                {/* Logo */}
+                                                <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center ring-1 ring-border/60 bg-card p-1">
+                                                    <AssetLogoImg ticker={div.ticker} src={div.logoUrl} name={div.companyName} />
+                                                </div>
+
+                                                {/* Ticker + Company */}
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-base font-black text-foreground group-hover:text-emerald-400 transition-colors tracking-tight">
+                                                            {div.ticker}
+                                                        </span>
+                                                        {div.frequency && (
+                                                            <span className="text-[10px] font-bold text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded border border-border/40 hidden sm:inline-block">
+                                                                {div.frequency}
                                                             </span>
-                                                            {div.frequency && (
-                                                                <span className="text-xs font-semibold text-muted-foreground bg-secondary/80 px-2.5 py-1 rounded-lg border border-border/50">
-                                                                    {div.frequency}
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-12 h-12 rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center ring-1 ring-border/80 bg-card p-1 shadow-xs">
-                                                                <AssetLogoImg
-                                                                    ticker={div.ticker}
-                                                                    src={div.logoUrl}
-                                                                    name={div.companyName}
-                                                                />
-                                                            </div>
-                                                            <div className="min-w-0 flex-1">
-                                                                <div className="flex items-center justify-between gap-1">
-                                                                    <span className="text-xl font-black text-foreground tracking-tight group-hover:text-emerald-400 transition-colors">
-                                                                        {div.ticker}
-                                                                    </span>
-                                                                    {div.marketCap && (
-                                                                        <span className="text-[11px] font-mono text-muted-foreground">
-                                                                            {formatMarketCap(div.marketCap) ? `Cap: ${formatMarketCap(div.marketCap)}` : ''}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <p className="text-xs font-semibold text-muted-foreground truncate" title={div.companyName}>
-                                                                    {div.companyName}
-                                                                </p>
-                                                            </div>
-                                                        </div>
+                                                        )}
                                                     </div>
+                                                    <p className="text-xs text-muted-foreground font-medium truncate">{div.companyName}</p>
+                                                </div>
 
-                                                    {/* Key Dividend Details: 2x2 Grid */}
-                                                    <div className="pt-3 border-t border-border/50 grid grid-cols-2 gap-2.5 text-xs font-mono">
-                                                        <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
-                                                            <div className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1 mb-0.5">
-                                                                <CalendarIcon className="w-3 h-3 text-emerald-400" />
-                                                                Cuándo Pagan
-                                                            </div>
-                                                            <div className="text-sm font-black text-emerald-400 truncate">
-                                                                {div.paymentDate || 'Fecha de corte'}
-                                                            </div>
-                                                        </div>
+                                                {/* Ex-Date — most important field like TradingView */}
+                                                <div className="text-center flex-shrink-0 hidden sm:block">
+                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-0.5">Ex-Date</div>
+                                                    <div className="text-sm font-black text-foreground font-mono">{formatDateLabel(div.exDate)}</div>
+                                                </div>
 
-                                                        <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
-                                                            <div className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1 mb-0.5">
-                                                                <Clock className="w-3 h-3 text-muted-foreground" />
-                                                                Corte (Ex-Date)
-                                                            </div>
-                                                            <div className="text-sm font-bold text-foreground truncate">
-                                                                {div.exDate}
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
-                                                            <div className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1 mb-0.5">
-                                                                <DollarSign className="w-3 h-3 text-emerald-400" />
-                                                                Cuánto Pagan
-                                                            </div>
-                                                            <div className="text-sm sm:text-base font-black text-foreground">
-                                                                {div.amount != null ? `$${div.amount.toFixed(2)}` : 'A confirmar'}
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
-                                                            <div className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1 mb-0.5">
-                                                                <TrendingUp className="w-3 h-3 text-primary" />
-                                                                Rendimiento
-                                                            </div>
-                                                            <div className="text-sm sm:text-base font-black text-primary">
-                                                                {div.yield != null ? `${div.yield.toFixed(2)}%` : '-'}
-                                                            </div>
-                                                        </div>
+                                                {/* Payment Date */}
+                                                <div className="text-center flex-shrink-0 hidden md:block">
+                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                                                        <CalendarIcon className="w-2.5 h-2.5" /> Pago
+                                                    </div>
+                                                    <div className="text-sm font-bold text-emerald-400 font-mono">
+                                                        {div.paymentDate ? formatDateLabel(div.paymentDate) : '—'}
                                                     </div>
                                                 </div>
-                                            );
-                                        })}
+
+                                                {/* Amount per share */}
+                                                <div className="text-center flex-shrink-0">
+                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                                                        <DollarSign className="w-2.5 h-2.5" /> Por acción
+                                                    </div>
+                                                    <div className="text-sm font-black text-foreground font-mono">
+                                                        {div.amount != null ? `$${div.amount.toFixed(4).replace(/\.?0+$/, '')}` : '—'}
+                                                    </div>
+                                                </div>
+
+                                                {/* Yield — highlighted like TradingView */}
+                                                <div className="flex-shrink-0">
+                                                    {div.yield != null ? (
+                                                        <div className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/25 rounded-xl px-3 py-1.5">
+                                                            <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
+                                                            <span className="text-sm font-black text-emerald-400">{div.yield.toFixed(2)}%</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground">—</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>

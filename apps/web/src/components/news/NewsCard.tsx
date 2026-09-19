@@ -69,7 +69,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleClick}
-                className="group relative flex flex-col w-full rounded-3xl overflow-hidden border min-h-[420px] lg:min-h-[500px] transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/25"
+                className="group relative flex flex-col w-full rounded-3xl overflow-hidden border min-h-[300px] sm:min-h-[420px] lg:min-h-[500px] transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/25"
                 style={{ borderColor: 'hsl(var(--border) / 0.4)', background: '#0a0d14' }}
             >
                 <div className="absolute inset-0">

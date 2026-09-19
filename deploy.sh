@@ -5,7 +5,11 @@
 # y reinicia el servicio backend de manera segura.
 # ==============================================================================
 
-set -e # Detener ante cualquier error crítico
+set -Eeuo pipefail
+
+LOCK_FILE="${FINIX_DEPLOY_LOCK:-/tmp/finix-deploy.lock}"
+exec 9>"$LOCK_FILE"
+flock -n 9 || { echo '❌ Ya hay otro deploy ejecutándose.'; exit 1; }
 
 run_deploy() {
 echo "============================================="
@@ -26,8 +30,9 @@ fi
 
 # 3. Descargar los últimos cambios de GitHub
 echo "[1/7] Descargando últimos cambios desde GitHub (main)..."
-git fetch --all
-git reset --hard origin/main
+git fetch origin main
+git diff --quiet || { echo '❌ Hay cambios locales; deploy cancelado.'; exit 1; }
+git pull --ff-only origin main
 
 # 4. Instalar dependencias del monorepo
 echo "[2/7] Instalando dependencias de NPM..."
@@ -54,13 +59,12 @@ if [ -f "apps/api/.env" ]; then
 fi
 
 echo "[3/7] Sincronizando base de datos con Prisma..."
-npx prisma generate --schema=apps/api/prisma/schema.prisma
-if ! npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma; then
-    echo "ℹ️ Base de datos existente detectada (P3005). Sincronizando esquema directamente con prisma db push..."
-    npx prisma db push --schema=apps/api/prisma/schema.prisma --accept-data-loss || {
-        echo "⚠️ Advertencia: Error sincronizando Prisma. Continuando..."
-    }
+if [ -f "$SCRIPT_DIR/backup.sh" ]; then
+    echo "💾 Creando backup previo a migraciones..."
+    bash "$SCRIPT_DIR/backup.sh"
 fi
+npx prisma generate --schema=apps/api/prisma/schema.prisma
+npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma
 
 # 6. Compilar Backend, Web y Admin
 echo "[4/7] Compilando Backend (NestJS)..."
@@ -139,5 +143,3 @@ fi
 }
 
 run_deploy "$@"
-
-

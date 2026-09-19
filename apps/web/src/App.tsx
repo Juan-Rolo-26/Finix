@@ -28,8 +28,10 @@ const Settings = lazy(() => import('./pages/Settings'));
 const ProUpgrade = lazy(() => import('./pages/ProUpgrade'));
 const Explore = lazy(() => import('./pages/Explore'));
 const Messages = lazy(() => import('./pages/Messages'));
-const PostDetail = lazy(() => import('./pages/PostDetail'));
 const Comunidades = lazy(() => import('./pages/Comunidades'));
+const CommunityDetail = lazy(() => import('./pages/CommunityDetail'));
+const CommunityCreate = lazy(() => import('./pages/CommunityCreate'));
+const CommunityAdmin = lazy(() => import('./pages/CommunityAdmin'));
 const NewsPage = lazy(() => import('./pages/News'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
 const Pricing = lazy(() => import('./pages/Pricing'));
@@ -180,9 +182,14 @@ export default function App() {
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/settings/plan" element={<ProUpgrade />} />
                         <Route path="/explore" element={<Explore />} />
-                        <Route path="/posts/:id" element={<PostDetail />} />
                         <Route path="/messages" element={<Messages />} />
                         <Route path="/comunidades" element={<Comunidades />} />
+                        <Route path="/comunidades/crear" element={<CommunityCreate />} />
+                        <Route path="/comunidades/:id" element={<CommunityDetail />} />
+                        <Route path="/comunidades/:id/admin" element={<CommunityAdmin />} />
+                        <Route path="/comunidades/:id/moderacion" element={<CommunityAdmin />} />
+                        <Route path="/comunidades/:id/admin/finanzas" element={<CommunityAdmin />} />
+                        <Route path="/comunidades/:id/admin/configuracion" element={<CommunityAdmin />} />
                         <Route path="/news" element={<NewsPage />} />
                         <Route path="/notifications" element={<NotificationsPage />} />
                         <Route path="/analysis" element={<AnalysisPage />} />

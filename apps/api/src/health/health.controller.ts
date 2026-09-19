@@ -12,14 +12,13 @@ export class HealthController {
 
     @Get('db')
     async checkDb(@Res() res: any) {
-        try {
-            await this.prisma.$queryRawUnsafe('SELECT 1');
+        if (await this.prisma.isDatabaseReady()) {
             return res.status(HttpStatus.OK).json({ status: 'ok', message: 'Database is connected' });
-        } catch (error) {
-            return res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
-                status: 'error',
-                message: 'Database connection failed',
-            });
         }
+
+        return res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
+            status: 'error',
+            message: 'Database connection failed',
+        });
     }
 }

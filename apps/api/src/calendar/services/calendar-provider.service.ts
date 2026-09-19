@@ -473,9 +473,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
             const fromDate = options.from;
             const toDate = options.to;
             const filtered = allEarnings.filter(e => e.date >= fromDate && e.date <= toDate);
-            if (filtered.length > 0) {
-                return filtered;
-            }
+            return filtered;
         }
 
         return allEarnings;
@@ -605,9 +603,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                        (d.exDate && d.exDate >= fromDate && d.exDate <= toDate) ||
                        (targetDate >= fromDate && targetDate <= toDate);
             });
-            if (filtered.length > 0) {
-                return filtered;
-            }
+            return filtered;
         }
 
         return allDividends;

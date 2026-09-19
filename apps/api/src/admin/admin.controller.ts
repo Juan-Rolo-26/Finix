@@ -8,6 +8,7 @@ import {
     Query,
     Body,
     Param,
+    Post,
     UseGuards,
     Req,
 } from '@nestjs/common';
@@ -18,6 +19,7 @@ import {
     AdminAuditLogsQueryDto,
     AdminPostsQueryDto,
     AdminResolveReportDto,
+    AdminSendProEmailDto,
     AdminUpdatePostDto,
     AdminUpdateUserDto,
     AdminUsersQueryDto,
@@ -29,7 +31,8 @@ import { AdminAuditService } from './admin-audit.service';
 import { AdminManagementService } from './admin-management.service';
 import { NewsService } from '../news/news.service';
 import { AnalysisService } from '../analysis/analysis.service';
-import { Post } from '@nestjs/common';
+import { ProEmailCampaignService } from './pro-email-campaign.service';
+import { ValueCreationService } from '../market/value-creation.service';
 
 type AdminRequest = Request & {
     user?: {
@@ -49,6 +52,8 @@ export class AdminController {
         private readonly adminManagementService: AdminManagementService,
         private readonly newsService: NewsService,
         private readonly analysisService: AnalysisService,
+        private readonly proEmailCampaignService: ProEmailCampaignService,
+        private readonly valueCreationService: ValueCreationService,
     ) { }
 
     @Get('kpis')
@@ -67,6 +72,36 @@ export class AdminController {
                 pendingReports,
             },
         };
+    }
+
+    // ============================================
+    // PRO INVESTMENT EMAIL CAMPAIGNS
+    // ============================================
+
+    @Get('pro-email/summary')
+    @RequireAdminPermissions(AdminPermission.EMAIL_BROADCAST)
+    async getProEmailSummary() {
+        return this.proEmailCampaignService.getSummary();
+    }
+
+    @Post('pro-email/campaigns')
+    @RequireAdminPermissions(AdminPermission.EMAIL_BROADCAST)
+    async sendProEmailCampaign(
+        @Req() req: AdminRequest,
+        @Body() body: AdminSendProEmailDto,
+    ) {
+        const result = await this.proEmailCampaignService.sendCampaign(req.user!.id, body);
+        await this.adminAuditService.logFromRequest(req, {
+            action: 'SEND_PRO_EMAIL_CAMPAIGN',
+            targetId: result.campaign.id,
+            metadata: {
+                recipientCount: result.recipientCount,
+                sentCount: result.sentCount,
+                failedCount: result.failedCount,
+                subject: body.subject,
+            },
+        });
+        return result;
     }
 
     // ============================================
@@ -123,6 +158,16 @@ export class AdminController {
     @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
     async fetchTradingViewData(@Query('symbol') symbol: string) {
         const data = await this.analysisService.fetchTradingViewAssetData(symbol);
+        return { data };
+    }
+
+    @Get('analysis/value-creation/fetch')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async fetchValueCreationData(@Query('symbol') symbol: string) {
+        const cleanSymbol = String(symbol || '').trim().split(':').pop() || '';
+        if (!cleanSymbol) throw new BadRequestException('Se requiere un ticker');
+        const data = await this.valueCreationService.getTickerValueCreation(cleanSymbol);
+        if (!data) throw new BadRequestException(`No hay cobertura ROIC-WACC disponible para ${cleanSymbol.toUpperCase()}`);
         return { data };
     }
 
@@ -307,6 +352,43 @@ export class AdminController {
         const total = await this.prisma.community.count();
 
         return { data: communities, total, page: pageNumber, limit: limitNumber };
+    }
+
+    @Get('communities/:id')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    async getCommunity(@Param('id') id: string) {
+        const community = await this.prisma.community.findUnique({
+            where: { id },
+            include: {
+                creator: { select: { id: true, username: true, email: true } },
+                members: { include: { user: { select: { id: true, username: true, email: true } } }, orderBy: { joinedAt: 'asc' } },
+                posts: { where: { deletedAt: null }, orderBy: { createdAt: 'desc' }, take: 50, include: { author: { select: { username: true } } } },
+                _count: { select: { members: true, posts: true, reports: true } },
+            },
+        });
+        if (!community) throw new BadRequestException('Comunidad no encontrada');
+        return community;
+    }
+
+    @Patch('communities/:id/status')
+    @RequireAdminPermissions(AdminPermission.POSTS_MODERATE)
+    async updateCommunityStatus(@Param('id') id: string, @Body('status') status: string) {
+        const allowed = ['PUBLISHED', 'SUSPENDED', 'ARCHIVED'];
+        if (!allowed.includes(status)) throw new BadRequestException('Estado de comunidad inválido');
+        return this.prisma.community.update({ where: { id }, data: { status } });
+    }
+
+    @Patch('communities/:id/feature')
+    @RequireAdminPermissions(AdminPermission.POSTS_MODERATE)
+    async featureCommunity(@Param('id') id: string, @Body('isFeatured') isFeatured: boolean) {
+        return this.prisma.community.update({ where: { id }, data: { isFeatured: Boolean(isFeatured) } });
+    }
+
+    @Delete('communities/:id')
+    @RequireAdminPermissions(AdminPermission.POSTS_DELETE)
+    async deleteCommunity(@Param('id') id: string) {
+        await this.prisma.community.update({ where: { id }, data: { status: 'ARCHIVED' } });
+        return { success: true, message: 'Comunidad archivada correctamente' };
     }
 
     @Get('pro-users')

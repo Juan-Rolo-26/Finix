@@ -144,19 +144,19 @@ export function TopGainersCard({
                         {[1, 2, 3, 4, 5].map((i) => (
                             <div
                                 key={i}
-                                className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/[0.02] animate-pulse"
+                                className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-secondary/50 animate-pulse"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="w-4 h-3 bg-white/10 rounded" />
-                                    <div className="w-8 h-8 rounded-xl bg-white/10" />
+                                    <div className="w-4 h-3 bg-muted rounded" />
+                                    <div className="w-8 h-8 rounded-xl bg-muted" />
                                     <div className="space-y-1">
-                                        <div className="w-12 h-3.5 bg-white/10 rounded" />
-                                        <div className="w-20 h-2.5 bg-white/5 rounded" />
+                                        <div className="w-12 h-3.5 bg-muted rounded" />
+                                        <div className="w-20 h-2.5 bg-muted/60 rounded" />
                                     </div>
                                 </div>
                                 <div className="text-right space-y-1">
-                                    <div className="w-14 h-3.5 bg-white/10 rounded ml-auto" />
-                                    <div className="w-10 h-3 bg-white/5 rounded ml-auto" />
+                                    <div className="w-14 h-3.5 bg-muted rounded ml-auto" />
+                                    <div className="w-10 h-3 bg-muted/60 rounded ml-auto" />
                                 </div>
                             </div>
                         ))}
@@ -205,7 +205,7 @@ export function TopGainersCard({
                                 <button
                                     key={item.ticker}
                                     onClick={() => navigate(`/market?symbol=NASDAQ:${item.ticker}`)}
-                                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all hover:bg-white/[0.04] group text-left"
+                                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all hover:bg-secondary/70 group text-left"
                                 >
                                     {/* Left: Rank + Logo + Ticker/Name */}
                                     <div className="flex items-center gap-2.5 min-w-0">

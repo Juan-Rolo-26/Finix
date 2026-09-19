@@ -1,12 +1,16 @@
 import { Controller, Get, Query, Param, NotFoundException } from '@nestjs/common';
 import { MarketService } from './market.service';
 import { PrismaService } from '../prisma.service';
+import { ValueCreationService } from './value-creation.service';
+import { OpportunityScreenerService } from './opportunity-screener.service';
 
 @Controller('market')
 export class MarketController {
     constructor(
         private marketService: MarketService,
-        private prisma: PrismaService
+        private prisma: PrismaService,
+        private valueCreationService: ValueCreationService,
+        private opportunityScreenerService: OpportunityScreenerService,
     ) {
         console.log('MarketController initialized');
     }
@@ -55,8 +59,28 @@ export class MarketController {
     }
 
     @Get('heatmap/sp500')
-    getSP500TechnicalHeatmap() {
-        return this.marketService.getSP500TechnicalHeatmap();
+    getSP500TechnicalHeatmap(@Query('refresh') refresh?: string) {
+        return this.marketService.getSP500TechnicalHeatmap(refresh === 'true');
+    }
+
+    @Get('value-creation/sp500')
+    getSP500ValueCreation(@Query('refresh') refresh?: string) {
+        return this.valueCreationService.getSP500ValueCreation(refresh === 'true');
+    }
+
+    @Get('opportunities')
+    getOpportunities(@Query() query: any) {
+        const number = (value: unknown) => value === undefined || value === '' ? undefined : Number(value);
+        return this.opportunityScreenerService.getOpportunities({
+            category: query.category,
+            sector: query.sector,
+            query: query.query,
+            minMarketCap: number(query.minMarketCap), maxPe: number(query.maxPe), minRoic: number(query.minRoic),
+            minRevenueGrowth: number(query.minRevenueGrowth), minFcfGrowth: number(query.minFcfGrowth), maxNetDebtToEbitda: number(query.maxNetDebtToEbitda),
+            minPiotroski: number(query.minPiotroski), minAltman: number(query.minAltman), minUpside: number(query.minUpside), minDividendYield: number(query.minDividendYield),
+            sort: query.sort, limit: number(query.limit),
+            forceRefresh: query.refresh === 'true',
+        });
     }
 
     @Get('dolar/mep')

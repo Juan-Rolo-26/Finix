@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import {
     Search, Plus, Users, TrendingUp, Sparkles, Lock,
     Crown, ChevronRight, X, Check, ArrowLeft, Loader2,
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
+import { useAuthStore, isCreatorUser } from '@/stores/authStore';
 import CommunityDetail from './CommunityDetail';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -21,7 +22,7 @@ interface CommunityPlan {
 }
 
 interface Community {
-    id: string; name: string; description: string; category: string;
+    id: string; name: string; slug?: string; description: string; category: string;
     imageUrl?: string; bannerUrl?: string; privacyType: string;
     createdAt: string; rules?: string;
     creator: { id: string; username: string; avatarUrl?: string; isVerified: boolean };
@@ -746,13 +747,16 @@ function CreateCommunityModal({ onClose, onCreate }: {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Comunidades() {
+    const navigate = useNavigate();
+    const { user } = useAuthStore();
+    const isCreator = isCreatorUser(user);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [communities, setCommunities] = useState<Community[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategories, setActiveCategories] = useState<string[]>(['all']);
-    const [sortBy, setSortBy] = useState('members');
+    const [sortBy, setSortBy] = useState('popular');
     const [showCreate, setShowCreate] = useState(false);
     const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
 
@@ -780,13 +784,17 @@ export default function Comunidades() {
             if (!isAll && activeCategories.length === 1) {
                 params.set('category', activeCategories[0]);
             }
-            params.set('sort', sortBy);
+            if (sortBy === 'featured') {
+                params.set('tab', 'featured');
+            } else {
+                params.set('sort', sortBy);
+            }
             params.set('limit', '30');
 
             const res = await apiFetch(`/communities?${params}`);
             if (res.ok) {
                 const data = await res.json();
-                let results = Array.isArray(data) ? data : [];
+                let results = Array.isArray(data) ? data : (data.data || []);
                 // Client-side multi-category filter
                 if (!isAll && activeCategories.length > 1) {
                     results = results.filter((c: Community) => activeCategories.includes(c.category));
@@ -812,8 +820,7 @@ export default function Comunidades() {
     }, [communityIdParam]);
 
     const openCommunity = (c: Community) => {
-        setSelectedCommunity(c);
-        setSearchParams({ c: c.id });
+        navigate(`/comunidades/${c.slug || c.id}`);
     };
 
     const closeCommunity = () => {
@@ -821,7 +828,7 @@ export default function Comunidades() {
         setSearchParams({});
     };
 
-    // If a community is selected, show its detail
+    // If a community is selected in-modal, show its detail
     if (selectedCommunity) {
         return (
             <CommunityDetail
@@ -844,18 +851,30 @@ export default function Comunidades() {
                             Aprendé, compartí y conectate con inversores que piensan como vos.
                         </p>
                     </div>
-                    <button
-                        onClick={() => setShowCreate(true)}
-                        className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all btn-primary-glow shrink-0"
-                        style={{
-                            background: 'hsl(var(--primary))',
-                            color: 'hsl(var(--primary-foreground))',
-                        }}
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span className="hidden sm:inline">Crear comunidad</span>
-                        <span className="sm:hidden">Crear</span>
-                    </button>
+
+                    {isCreator ? (
+                        <button
+                            onClick={() => navigate('/comunidades/crear')}
+                            className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all btn-primary-glow shrink-0"
+                            style={{
+                                background: 'hsl(var(--primary))',
+                                color: 'hsl(var(--primary-foreground))',
+                            }}
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span className="hidden sm:inline">Crear comunidad</span>
+                            <span className="sm:hidden">Crear</span>
+                        </button>
+                    ) : (
+                        <Link
+                            to="/settings/plan"
+                            className="flex items-center gap-2 rounded-xl px-4 py-2 text-[12px] font-semibold transition-all border shrink-0 hover:bg-muted"
+                            style={{ borderColor: 'hsl(var(--primary)/0.4)', color: 'hsl(var(--primary))' }}
+                        >
+                            <Crown className="w-4 h-4" />
+                            <span>Convertite en Creator</span>
+                        </Link>
+                    )}
                 </div>
 
                 {/* Search */}
@@ -910,15 +929,20 @@ export default function Comunidades() {
                         {loading ? 'Cargando...' : `${communities.length} comunidades`}
                     </p>
                     <div className="ml-auto flex items-center gap-1">
-                        {['members', 'recent', 'posts'].map(s => (
-                            <button key={s}
-                                onClick={() => setSortBy(s)}
+                        {[
+                            { key: 'popular', label: 'Populares' },
+                            { key: 'new', label: 'Nuevas' },
+                            { key: 'active', label: 'Activas' },
+                            { key: 'featured', label: 'Destacadas' },
+                        ].map(s => (
+                            <button key={s.key}
+                                onClick={() => setSortBy(s.key)}
                                 className="text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all"
                                 style={{
-                                    background: sortBy === s ? 'hsl(var(--primary)/0.12)' : 'transparent',
-                                    color: sortBy === s ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
+                                    background: sortBy === s.key ? 'hsl(var(--primary)/0.12)' : 'transparent',
+                                    color: sortBy === s.key ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
                                 }}>
-                                {s === 'members' ? 'Populares' : s === 'recent' ? 'Nuevas' : 'Activas'}
+                                {s.label}
                             </button>
                         ))}
                     </div>

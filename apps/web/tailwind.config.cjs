@@ -39,7 +39,10 @@ module.exports = {
             },
             /* ── Design tokens → Tailwind utilities ── */
             colors: {
-                border: "hsl(var(--border))",
+                border: {
+                    DEFAULT: "hsl(var(--border))",
+                    strong: "hsl(var(--border-strong))",
+                },
                 input: "hsl(var(--input))",
                 ring: "hsl(var(--ring))",
                 background: "hsl(var(--background))",
@@ -51,10 +54,14 @@ module.exports = {
                 primary: {
                     DEFAULT: "hsl(var(--primary))",
                     foreground: "hsl(var(--primary-foreground))",
+                    hover: "hsl(var(--primary-hover))",
+                    active: "hsl(var(--primary-active))",
+                    disabled: "hsl(var(--primary-disabled))",
                 },
                 secondary: {
                     DEFAULT: "hsl(var(--secondary))",
                     foreground: "hsl(var(--secondary-foreground))",
+                    hover: "hsl(var(--secondary-hover))",
                 },
                 destructive: {
                     DEFAULT: "hsl(var(--destructive))",
@@ -106,15 +113,16 @@ module.exports = {
                 'intense': 'var(--shadow-intense)',
             },
             borderRadius: {
+                none: '0px',
                 '2xs': '4px',
                 xs: '6px',
                 sm: '8px',
                 DEFAULT: '10px',
                 md: '12px',
-                lg: 'var(--radius)',          /* 14px */
-                xl: 'calc(var(--radius) + 4px)', /* 18px */
-                '2xl': 'calc(var(--radius) + 8px)', /* 22px */
-                '3xl': '24px',
+                lg: '16px',
+                xl: '20px',
+                '2xl': '24px',
+                '3xl': '32px',
                 full: '9999px',
             },
             spacing: {

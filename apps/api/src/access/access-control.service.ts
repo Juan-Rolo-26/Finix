@@ -119,7 +119,11 @@ export class AccessControlService {
             where: { id: userId },
             select: {
                 id: true,
+                role: true,
+                plan: true,
+                accountType: true,
                 isCreator: true,
+                subscriptionStatus: true,
             },
         });
 
@@ -127,8 +131,25 @@ export class AccessControlService {
             throw new NotFoundException('Usuario no encontrado');
         }
 
-        if (!user.isCreator) {
-            throw new ForbiddenException('Debes ser un Creador verificado para realizar esta acción.');
+        const adminRoles = new Set(['ADMIN', 'SUPER_ADMIN']);
+        if (adminRoles.has(user.role)) {
+            return user;
+        }
+
+        const isCreatorPlan = (
+            user.isCreator ||
+            user.role === 'CREATOR' ||
+            user.accountType === 'CREATOR' ||
+            user.plan === 'CREATOR' ||
+            user.plan === 'PRO_CREATOR'
+        ) && (
+            user.isCreator ||
+            user.role === 'CREATOR' ||
+            ACTIVE_SUBSCRIPTION_STATUSES.has(user.subscriptionStatus)
+        );
+
+        if (!isCreatorPlan) {
+            throw new ForbiddenException('Esta funcionalidad requiere el plan Creator de Finix. Necesitas actualizar tu suscripción a Creator para crear y administrar comunidades.');
         }
 
         return user;

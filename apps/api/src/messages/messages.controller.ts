@@ -2,6 +2,7 @@ import {
     Controller,
     Get,
     Post,
+    Patch,
     Param,
     Body,
     Query,
@@ -11,7 +12,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { EventsGateway } from '../events.gateway';
 import { MessagesService } from './messages.service';
-import { SendMessageDto, CreateConversationDto } from './dto/messages.dto';
+import { SendMessageDto, CreateConversationDto, UpdateConversationDto } from './dto/messages.dto';
 
 @Controller('messages')
 @UseGuards(JwtAuthGuard)
@@ -42,6 +43,15 @@ export class MessagesController {
         }
 
         return conversation;
+    }
+
+    @Patch('conversations/:id')
+    updateConversation(
+        @Param('id') id: string,
+        @Request() req: any,
+        @Body() body: UpdateConversationDto,
+    ) {
+        return this.messagesService.updateConversation(id, req.user.id, body);
     }
 
     /** GET /api/messages/conversations/:id/messages */

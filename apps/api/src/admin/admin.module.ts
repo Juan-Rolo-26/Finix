@@ -7,22 +7,25 @@ import { AdminAuthService } from './admin-auth.service';
 import { AdminPermissionsGuard } from './permissions.guard';
 import { AdminAuditService } from './admin-audit.service';
 import { AdminManagementService } from './admin-management.service';
+import { ProEmailCampaignService } from './pro-email-campaign.service';
 
 import { MailModule } from '../mail/mail.module';
 import { NewsModule } from '../news/news.module';
 import { AnalysisModule } from '../analysis/analysis.module';
+import { MarketModule } from '../market/market.module';
 
 @Module({
     imports: [
         JwtModule.register({
-            secret: process.env.JWT_SECRET || 'secretKey',
+            secret: process.env.JWT_SECRET,
         }),
         MailModule,
         NewsModule,
         AnalysisModule,
+        MarketModule,
     ],
     controllers: [AdminController, AdminAuthController],
-    providers: [AdminGuard, AdminPermissionsGuard, AdminAuditService, AdminAuthService, AdminManagementService],
+    providers: [AdminGuard, AdminPermissionsGuard, AdminAuditService, AdminAuthService, AdminManagementService, ProEmailCampaignService],
     exports: [AdminGuard, JwtModule],
 })
 export class AdminModule { }

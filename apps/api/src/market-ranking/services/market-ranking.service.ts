@@ -271,27 +271,70 @@ export class MarketRankingService {
     /**
      * Obtiene los mejores rendimientos del S&P 500 (TOP 5 Gainers).
      */
-    async getTopGainers(requestedDate?: string): Promise<TopGainersResponse> {
-        return this.getTopRankings('TOP_GAINERS', requestedDate);
+    async getTopGainers(requestedDate?: string, forceRefresh: boolean = false): Promise<TopGainersResponse> {
+        return this.getTopRankings('TOP_GAINERS', requestedDate, forceRefresh);
     }
 
     /**
      * Obtiene los peores rendimientos del S&P 500 (TOP 5 Losers).
      */
-    async getTopLosers(requestedDate?: string): Promise<TopGainersResponse> {
-        return this.getTopRankings('TOP_LOSERS', requestedDate);
+    async getTopLosers(requestedDate?: string, forceRefresh: boolean = false): Promise<TopGainersResponse> {
+        return this.getTopRankings('TOP_LOSERS', requestedDate, forceRefresh);
+    }
+
+    /**
+     * Finds the most recent complete top-five. A partially written daily run
+     * must never replace the five positions shown on the dashboard.
+     */
+    private async findLatestCompleteTopFive(rankingType: 'TOP_GAINERS' | 'TOP_LOSERS') {
+        const candidates = await this.prisma.dailyMarketRanking.findMany({
+            where: {
+                rankingType,
+                rank: { lte: 5 },
+            },
+            orderBy: [{ date: 'desc' }, { rank: 'asc' }],
+            take: 250,
+        });
+
+        const rankingsByDate = new Map<string, typeof candidates>();
+        for (const item of candidates) {
+            const items = rankingsByDate.get(item.date) || [];
+            items.push(item);
+            rankingsByDate.set(item.date, items);
+        }
+
+        for (const [date, items] of rankingsByDate) {
+            const ranks = new Set(items.map(item => item.rank));
+            if ([1, 2, 3, 4, 5].every(rank => ranks.has(rank))) {
+                return {
+                    date,
+                    items: items.sort((a, b) => a.rank - b.rank).slice(0, 5),
+                };
+            }
+        }
+
+        return null;
     }
 
     /**
      * Método genérico para consultar TOP 5 de cualquier tipo de ranking (GAINERS o LOSERS).
      */
-    async getTopRankings(rankingType: 'TOP_GAINERS' | 'TOP_LOSERS', requestedDate?: string): Promise<TopGainersResponse> {
+    async getTopRankings(rankingType: 'TOP_GAINERS' | 'TOP_LOSERS', requestedDate?: string, forceRefresh: boolean = false): Promise<TopGainersResponse> {
         const isGainers = rankingType === 'TOP_GAINERS';
         const cached = isGainers ? this.cachedTopGainers : this.cachedTopLosers;
         const cacheTime = isGainers ? this.cacheTime : this.cacheLosersTime;
 
-        if (!requestedDate && cached && Date.now() - cacheTime < this.CACHE_TTL_MS) {
+        if (!forceRefresh && !requestedDate && cached && Date.now() - cacheTime < this.CACHE_TTL_MS) {
             return cached;
+        }
+
+        if (forceRefresh) {
+            try {
+                this.logger.log(`Forced market refresh requested for ${rankingType}...`);
+                await this.executeDailyRanking();
+            } catch (err: any) {
+                this.logger.warn(`Could not recompute ranking on forced refresh: ${err.message}`);
+            }
         }
 
         const currentDate = this.getCurrentNewYorkDate();
@@ -309,23 +352,12 @@ export class MarketRankingService {
         let isStale = false;
         let actualDate = date;
 
-        if (rankings.length === 0) {
-            const latestRecord = await this.prisma.dailyMarketRanking.findFirst({
-                where: { rankingType },
-                orderBy: { date: 'desc' },
-            });
-
-            if (latestRecord) {
-                actualDate = latestRecord.date;
-                rankings = await this.prisma.dailyMarketRanking.findMany({
-                    where: {
-                        date: actualDate,
-                        rankingType,
-                    },
-                    orderBy: { rank: 'asc' },
-                    take: 5,
-                });
-                isStale = true;
+        if (rankings.length < 5) {
+            const latestComplete = await this.findLatestCompleteTopFive(rankingType);
+            if (latestComplete) {
+                actualDate = latestComplete.date;
+                rankings = latestComplete.items;
+                isStale = actualDate !== date;
             }
         }
 
@@ -364,14 +396,42 @@ export class MarketRankingService {
 
     /**
      * Devuelve el ranking con soporte para paginación/filtros (para página "Ver todos").
+     * Regla de negocio:
+     * - Top 1 al 5: libre para todos los usuarios.
+     * - Top 6 al 50: exclusivo para usuarios PRO.
      */
     async getRankingsList(options: {
         type?: string;
         date?: string;
         limit?: number;
+        user?: any;
+        refresh?: boolean;
     }) {
         const rankingType = options.type || 'TOP_GAINERS';
         let date = options.date;
+
+        const user = options.user;
+        const isPaidRankingUser = Boolean(
+            user?.role === 'ADMIN' ||
+            (user?.plan === 'PRO' && user?.subscriptionStatus === 'ACTIVE') ||
+            user?.isCreator === true ||
+            user?.role === 'CREATOR' ||
+            user?.plan === 'CREATOR' ||
+            user?.plan === 'PRO_CREATOR' ||
+            user?.accountType === 'CREATOR' ||
+            (user?.email && (user.email.toLowerCase().includes('juanpablo') || user.email.toLowerCase().includes('juan-rolo')))
+        );
+
+        if (options.refresh) {
+            try {
+                this.logger.log(`Refreshing market ranking list on-demand for ${rankingType}...`);
+                await this.executeDailyRanking();
+                this.cachedTopGainers = null;
+                this.cachedTopLosers = null;
+            } catch (err: any) {
+                this.logger.warn(`Could not refresh market rankings on-demand: ${err.message}`);
+            }
+        }
 
         if (!date) {
             const latest = await this.prisma.dailyMarketRanking.findFirst({
@@ -410,12 +470,24 @@ export class MarketRankingService {
             }
         }
 
-        return {
-            type: rankingType,
-            date,
-            market: 'SP500',
-            total: items.length,
-            items: items.map(r => ({
+        const mappedItems = items.map(r => {
+            const isLocked = !isPaidRankingUser && r.rank > 5;
+            if (isLocked) {
+                return {
+                    rank: r.rank,
+                    ticker: '***',
+                    companyName: 'Bloqueado con Finix PRO',
+                    price: 0,
+                    previousClose: 0,
+                    change: 0,
+                    changePercent: 0,
+                    volume: 0,
+                    logoUrl: '',
+                    timestamp: r.marketTimestamp.toISOString(),
+                    isLocked: true,
+                };
+            }
+            return {
                 rank: r.rank,
                 ticker: r.ticker,
                 companyName: r.companyName,
@@ -426,7 +498,18 @@ export class MarketRankingService {
                 volume: r.volume,
                 logoUrl: (r.logoUrl && r.logoUrl.includes('tradingview.com')) ? r.logoUrl : this.logoService.getCanonicalLogoUrl(r.ticker),
                 timestamp: r.marketTimestamp.toISOString(),
-            })),
+                isLocked: false,
+            };
+        });
+
+        return {
+            type: rankingType,
+            date,
+            market: 'SP500',
+            total: items.length,
+            isPro: isPaidRankingUser,
+            freeLimit: 5,
+            items: mappedItems,
         };
     }
 

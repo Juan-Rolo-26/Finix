@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, X, Sparkles, Zap, Shield, ChevronLeft, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Check, X, Sparkles, Zap, Shield, ChevronLeft, Loader2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
 
@@ -218,10 +217,7 @@ export default function Pricing() {
                                     </div>
                                 </div>
 
-                                <Button 
-                                    variant={plan.buttonVariant} 
-                                    size="lg" 
-                                    className={`w-full mb-8 font-bold ${plan.highlight ? 'shadow-glow' : ''}`}
+                                <button 
                                     disabled={Boolean(user && plan.name === 'Free') || loadingPlan === plan.name}
                                     onClick={() => {
                                         if (plan.name === 'Free') {
@@ -232,16 +228,38 @@ export default function Pricing() {
                                             handleUpgrade(plan.name as 'PRO' | 'Creador');
                                         }
                                     }}
+                                    style={
+                                        plan.name === 'PRO'
+                                            ? { background: 'linear-gradient(135deg, #059669 0%, #10b981 50%, #0d9488 100%)', color: '#ffffff' }
+                                            : plan.name === 'Creador'
+                                                ? { background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#ffffff' }
+                                                : { color: 'hsl(var(--foreground))' }
+                                    }
+                                    className={`w-full h-14 px-6 rounded-2xl font-extrabold text-[15px] sm:text-base mb-8 flex items-center justify-center gap-2.5 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                                        plan.name === 'PRO'
+                                            ? 'shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.01] active:scale-[0.99] border border-emerald-400/40'
+                                            : plan.name === 'Creador'
+                                                ? 'border-2 border-emerald-500/50 hover:border-emerald-400 shadow-xl shadow-slate-950/30 hover:scale-[1.01] active:scale-[0.99]'
+                                                : 'border-2 border-border/90 bg-card hover:bg-muted text-foreground shadow-sm hover:border-primary/50 hover:shadow-md active:scale-[0.99]'
+                                    }`}
                                 >
                                     {loadingPlan === plan.name ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            Conectando...
-                                        </>
+                                        <div className="flex items-center justify-center gap-2" style={{ color: '#ffffff' }}>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            <span className="font-bold">Conectando...</span>
+                                        </div>
                                     ) : (!user && plan.name !== 'Free') ? (
-                                        'Iniciar sesión para comprar'
-                                    ) : plan.buttonText}
-                                </Button>
+                                        <div className="flex items-center justify-center gap-2" style={{ color: '#ffffff' }}>
+                                            <span className="font-extrabold" style={{ color: '#ffffff' }}>Iniciar sesión para comprar</span>
+                                            <ArrowRight className="w-4 h-4 stroke-[2.5]" style={{ color: '#ffffff' }} />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center gap-2" style={{ color: plan.name === 'Free' ? 'inherit' : '#ffffff' }}>
+                                            <span className="font-extrabold" style={{ color: plan.name === 'Free' ? 'inherit' : '#ffffff' }}>{plan.buttonText}</span>
+                                            <ArrowRight className="w-4 h-4 stroke-[2.5]" style={{ color: plan.name === 'Free' ? 'inherit' : '#ffffff' }} />
+                                        </div>
+                                    )}
+                                </button>
 
                                 <div className="space-y-4 flex-1">
                                     {plan.features.map(feature => (

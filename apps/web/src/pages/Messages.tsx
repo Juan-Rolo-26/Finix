@@ -28,6 +28,9 @@ import {
     MoreHorizontal,
     Sparkles,
     Flag,
+    Pencil,
+    Users,
+    Info,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
@@ -81,6 +84,7 @@ interface ConversationItem {
     id: string;
     isGroup: boolean;
     title: string;
+    description?: string | null;
     otherUser: MsgUser | null;
     participants: MsgUser[];
     participantCount: number;
@@ -849,6 +853,52 @@ function NewMessageModal({
     );
 }
 
+function ConversationInfoModal({
+    conversation,
+    currentUserId,
+    onClose,
+    onSaved,
+}: {
+    conversation: ConversationItem;
+    currentUserId?: string;
+    onClose: () => void;
+    onSaved: (conversation: ConversationItem) => void;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [title, setTitle] = useState(conversation.title || '');
+    const [description, setDescription] = useState(conversation.description || '');
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+    const members = conversation.participants;
+
+    const save = async () => {
+        setSaving(true); setError('');
+        try {
+            const res = await apiFetch(`/messages/conversations/${conversation.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description }),
+            });
+            if (!res.ok) throw new Error(await readApiErrorMessage(res, 'No se pudo actualizar el grupo'));
+            onSaved(await res.json());
+            setEditing(false);
+        } catch (err: any) { setError(err?.message || 'No se pudo actualizar el grupo'); }
+        finally { setSaving(false); }
+    };
+
+    return <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+        <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-border/50 bg-card shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4"><div><h2 className="text-lg font-black">Información del grupo</h2><p className="text-xs text-muted-foreground">Configurá el nombre, descripción y miembros</p></div><button onClick={onClose} className="rounded-full p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
+            <div className="max-h-[70vh] space-y-5 overflow-y-auto p-5">
+                <div className="flex flex-col items-center gap-3"><ConversationAvatar conversation={conversation} currentUserId={currentUserId} size={88} onlineUsers={new Set()} /><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Grupo Finix</span></div>
+                {editing ? <div className="space-y-3"><label className="block text-xs font-bold text-muted-foreground">Nombre<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} className="mt-1 w-full rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary" /></label><label className="block text-xs font-bold text-muted-foreground">Descripción<textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={500} rows={3} className="mt-1 w-full resize-none rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary" /></label>{error && <p className="text-xs text-red-400">{error}</p>}<div className="flex gap-2"><button onClick={() => setEditing(false)} className="flex-1 rounded-xl border border-border px-3 py-2 text-sm font-semibold">Cancelar</button><button onClick={save} disabled={saving} className="flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-black">{saving ? 'Guardando…' : 'Guardar cambios'}</button></div></div> : <div className="space-y-3"><div><p className="text-xl font-black text-center">{conversation.title}</p><p className="mt-1 text-center text-sm text-muted-foreground">{conversation.description || 'Sin descripción'}</p></div><button onClick={() => setEditing(true)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm font-bold text-primary"><Pencil className="h-4 w-4" /> Editar información</button></div>}
+                <div className="space-y-3 border-t border-border/40 pt-4"><div className="flex items-center gap-2 text-sm font-bold"><Users className="h-4 w-4 text-primary" /> {members.length} miembros</div>{members.map((member) => <div key={member.id} className="flex items-center gap-3 rounded-xl px-2 py-2"><UserAvatar user={member} size={36} online={false} /><div className="min-w-0"><p className="truncate text-sm font-semibold">{member.username}{member.id === currentUserId ? ' (vos)' : ''}</p><p className="text-xs text-muted-foreground">{member.title || 'Miembro del grupo'}</p></div></div>)}</div>
+                <div className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground"><Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />Las fotos de perfil de los miembros se sincronizan automáticamente con sus perfiles públicos de Finix.</div>
+            </div>
+        </div>
+    </div>;
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function MessagesPage() {
@@ -877,6 +927,7 @@ export default function MessagesPage() {
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
     const [composerError, setComposerError] = useState('');
     const [showNewMsg, setShowNewMsg] = useState(false);
+    const [showConversationInfo, setShowConversationInfo] = useState(false);
     const [conversationError, setConversationError] = useState('');
     const [isCreatingConversation, setIsCreatingConversation] = useState(false);
     const [isLoadingConvs, setIsLoadingConvs] = useState(true);
@@ -1297,6 +1348,17 @@ export default function MessagesPage() {
     return (
         <>
             <AnimatePresence>
+                {showConversationInfo && activeConv && (
+                    <ConversationInfoModal
+                        conversation={activeConv}
+                        currentUserId={user?.id}
+                        onClose={() => setShowConversationInfo(false)}
+                        onSaved={(updated) => {
+                            setConversations((current) => current.map((item) => item.id === updated.id ? updated : item));
+                            setShowConversationInfo(false);
+                        }}
+                    />
+                )}
                 {showNewMsg && (
                     <NewMessageModal
                         onClose={handleCloseNewMessage}
@@ -1713,6 +1775,12 @@ export default function MessagesPage() {
                                                         <DropdownMenuItem onClick={() => activeConv.otherUser && navigate(`/profile/${activeConv.otherUser.username}`)}>
                                                             <ExternalLink className="w-4 h-4" />
                                                             Ver perfil
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {activeConv.isGroup && (
+                                                        <DropdownMenuItem onClick={() => setShowConversationInfo(true)}>
+                                                            <Info className="w-4 h-4" />
+                                                            Información del grupo
                                                         </DropdownMenuItem>
                                                     )}
                                                     <DropdownMenuItem onClick={handleReturnToInbox}>
@@ -2168,7 +2236,7 @@ export default function MessagesPage() {
                                                                     <p className="text-[11px] font-medium" style={{ color: textMuted }}>
                                                                         {group.label}
                                                                     </p>
-                                                                    <div className="grid grid-cols-5 gap-2">
+                                                                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
                                                                         {group.items.map((emoji) => (
                                                                             <button
                                                                                 key={emoji}

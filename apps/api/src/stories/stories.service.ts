@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const STORY_DURATION_MS = 24 * 60 * 60 * 1000;
 const STORY_CONTENT_LIMIT = 220;
@@ -34,7 +35,7 @@ function normalizeOptionalText(value: unknown, maxLength: number) {
 
 @Injectable()
 export class StoriesService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService, private notifications: NotificationsService) { }
 
     private async pruneExpiredStories() {
         await this.prisma.story.deleteMany({
@@ -51,12 +52,9 @@ export class StoriesService {
                 where: { viewerId: userId },
                 select: { viewerId: true },
             },
-            // likes: {
-            //     where: { userId: userId },
-            //     select: { userId: true },
-            // },
+            likes: { where: { userId }, select: { userId: true } },
             _count: {
-                select: { views: true /*, likes: true*/ },
+                select: { views: true, likes: true },
             },
         };
     }
@@ -74,8 +72,8 @@ export class StoriesService {
             author: story.author,
             viewedByMe: story.authorId === userId || story.views?.length > 0,
             viewsCount: story._count?.views ?? 0,
-            isLiked: false, // story.likes?.length > 0,
-            likesCount: 0, // story._count?.likes ?? 0,
+            isLiked: story.likes?.length > 0,
+            likesCount: story._count?.likes ?? 0,
         };
     }
 
@@ -242,7 +240,7 @@ export class StoriesService {
     async likeStory(storyId: string, userId: string) {
         const story = await this.prisma.story.findUnique({
             where: { id: storyId },
-            select: { id: true, expiresAt: true },
+            select: { id: true, authorId: true, expiresAt: true },
         });
 
         if (!story || story.expiresAt <= new Date()) {
@@ -250,12 +248,8 @@ export class StoriesService {
         }
 
         try {
-            // await this.prisma.storyLike.create({
-            //     data: {
-            //         storyId,
-            //         userId,
-            //     },
-            // });
+            await this.prisma.storyLike.create({ data: { storyId, userId } });
+            await this.notifications.createNotification({ userId: story.authorId, actorId: userId, type: 'SOCIAL_LIKE', title: 'A alguien le gustó tu historia', message: 'Tu historia recibió un nuevo me gusta.', link: '/notifications', entityType: 'STORY', entityId: storyId });
         } catch (e) {
             // Might fail if already liked (unique constraint), that's fine
         }
@@ -264,12 +258,7 @@ export class StoriesService {
     }
 
     async unlikeStory(storyId: string, userId: string) {
-        // await this.prisma.storyLike.deleteMany({
-        //     where: {
-        //         storyId,
-        //         userId,
-        //     },
-        // });
+        await this.prisma.storyLike.deleteMany({ where: { storyId, userId } });
 
         return { success: true };
     }

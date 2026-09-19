@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Check, Sparkles, Zap, Shield, Target, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, Sparkles, Zap, Shield, Target, Loader2, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
@@ -142,10 +142,10 @@ export default function ProUpgrade() {
                             <button 
                                 onClick={handleUpgrade}
                                 disabled={loading || user?.plan === 'PRO'}
-                                className={`w-full py-4 px-6 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all ${
+                                className={`w-full py-4 px-6 rounded-2xl font-extrabold text-base sm:text-lg flex items-center justify-center gap-3 transition-all duration-200 ${
                                     user?.plan === 'PRO' 
                                         ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                                        : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40'
+                                        : 'bg-gradient-to-r from-emerald-600 via-primary to-emerald-500 hover:from-emerald-500 hover:to-primary text-white shadow-xl shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.01] active:scale-[0.99] border border-emerald-400/30 cursor-pointer'
                                 }`}
                             >
                                 {loading ? (
@@ -154,11 +154,17 @@ export default function ProUpgrade() {
                                         Conectando...
                                     </>
                                 ) : !user ? (
-                                    'Iniciar sesión para mejorar a PRO'
+                                    <>
+                                        <span>Iniciar sesión para mejorar a PRO</span>
+                                        <ArrowRight className="w-5 h-5" />
+                                    </>
                                 ) : user?.plan === 'PRO' ? (
                                     'Ya eres PRO'
                                 ) : (
-                                    'Mejorar a PRO'
+                                    <>
+                                        <span>Mejorar a PRO</span>
+                                        <ArrowRight className="w-5 h-5" />
+                                    </>
                                 )}
                             </button>
                             <p className="text-center text-xs text-muted-foreground mt-4 mb-8">

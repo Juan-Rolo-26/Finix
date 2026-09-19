@@ -94,6 +94,7 @@ model User {
   theme               String  @default("dark") // "dark" | "light" | "system"
   chartDensity        String  @default("normal") // "basic" | "normal" | "advanced"
   marketNotifications Boolean @default(false)
+  investmentEmailNotifications Boolean @default(false) // Opt-in exclusivo para alertas y campañas de inversión PRO
   timezone            String  @default("America/Argentina/Cordoba")
   notificationPrefs   String? // JSON for notification preferences
 
@@ -117,13 +118,18 @@ model User {
 
   // Relations: Communities
   createdCommunities   Community[]         @relation("CommunityCreator")
-  communityMemberships CommunityMember[]
-  communityResources   CommunityResource[]
-  communityPayments    CommunityPayment[]
-  subscriptions        Subscription[]
-  creatorBalance       CreatorBalance?
-  paymentLogs          PaymentLog[]
-  creatorApplication   CreatorApplication?
+  communityMemberships     CommunityMember[]
+  communityResources       CommunityResource[]
+  communityPayments        CommunityPayment[]
+  communityJoinRequests    CommunityJoinRequest[]
+  createdInvites           CommunityInvite[]       @relation("CommunityInviteCreator")
+  communityReportsSent     CommunityReport[]       @relation("CommunityReporter")
+  communityReportsReviewed CommunityReport[]       @relation("CommunityReportReviewer")
+  communityAuditLogs       CommunityAuditLog[]     @relation("CommunityAuditActor")
+  subscriptions            Subscription[]
+  creatorBalance           CreatorBalance?
+  paymentLogs              PaymentLog[]
+  creatorApplication       CreatorApplication?
 
   isCreator Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -137,9 +143,11 @@ model User {
   sentMessages            DirectMessage[]           @relation("SentMessages")
   stories                 Story[]
   storyViews              StoryView[]
+  storyLikes              StoryLike[]
 
   // Admin relations
   adminLogs      AdminAuditLog[] @relation("AdminActor")
+  proEmailCampaigns ProEmailCampaign[] @relation("ProEmailCampaignCreator")
   adminSessions  AdminSession[]
   reportsCreated Report[]        @relation("Reporter")
 
@@ -242,6 +250,13 @@ model Post {
   targetVisibility   String @default("PUBLIC") // PUBLIC, MEMBERS, PREMIUM_TIER
   requiredTierLevel  Int    @default(0)
 
+  // Community Section & Pinned
+  sectionId          String?
+  section            CommunitySection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  isPinned           Boolean           @default(false)
+  pinnedAt           DateTime?
+  isCommentsDisabled Boolean           @default(false)
+
   // Chart Analysis Integration
   chartAnalysisVersionId String?
   chartAnalysisVersion   ChartAnalysisVersion? @relation(fields: [chartAnalysisVersionId], references: [id], onDelete: SetNull)
@@ -250,6 +265,8 @@ model Post {
   @@index([authorId])
   @@index([parentId])
   @@index([communityId])
+  @@index([communityId, isPinned])
+  @@index([sectionId])
   @@index([chartAnalysisVersionId])
 }
 
@@ -608,29 +625,49 @@ model ProviderHealth {
 // ============================================
 
 model Community {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
+  slug        String? @unique
   creatorId   String
-  creator     User   @relation("CommunityCreator", fields: [creatorId], references: [id])
+  creator     User    @relation("CommunityCreator", fields: [creatorId], references: [id])
   name        String
   description String
   category    String // Actions, Crypto, ETFs, Argentina, USA
 
-  imageUrl  String?
-  bannerUrl String?
+  imageUrl    String?
+  bannerUrl   String?
+  accentColor String? @default("#10B981")
+  tags        String  @default("")
 
-  privacyType String  @default("PUBLIC") // PUBLIC, PRIVATE, EXCLUSIVE
-  rules       String?
-  maxMembers  Int? // nullable
+  privacyType           String  @default("PUBLIC") // PUBLIC, PRIVATE, EXCLUSIVE
+  status                String  @default("PUBLISHED") // DRAFT, PUBLISHED, SUSPENDED, ARCHIVED
+  isVerified            Boolean @default(false) // Comunidad de asesoramiento aprobada por Finix
+  isFeatured            Boolean @default(false)
+  popularityScore       Float   @default(0)
+  showContentBeforeJoin Boolean @default(true)
+  rules                 String?
+  maxMembers            Int? // nullable
+  paymentGatewayConfig  String? // JSON string: { provider, stripeAccountId, mpPublicKey, mpAccessToken, alias, cbu, bankName, holderName, currency, isEnabled }
 
-  members   CommunityMember[]
-  posts     Post[]
-  events    CommunityEvent[]
-  plans     CommunityPlan[]
-  payments  CommunityPayment[]
-  resources CommunityResource[]
+  members      CommunityMember[]
+  posts        Post[]
+  events       CommunityEvent[]
+  plans        CommunityPlan[]
+  payments     CommunityPayment[]
+  resources    CommunityResource[]
+  sections     CommunitySection[]
+  joinRequests CommunityJoinRequest[]
+  invites      CommunityInvite[]
+  reports      CommunityReport[]
+  auditLogs    CommunityAuditLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([creatorId])
+  @@index([createdAt])
+  @@index([popularityScore])
+  @@index([isFeatured])
 }
 
 model CommunityPlan {
@@ -685,7 +722,7 @@ model CommunityMember {
 
   subscriptionStatus   String    @default("ACTIVE") // ACTIVE | CANCELED | EXPIRED | PAST_DUE
   paymentStatus        String?   @default("SUCCEEDED")
-  role                 String    @default("MEMBER")
+  role                 String    @default("MEMBER") // OWNER | ADMIN | MODERATOR | MEMBER
   stripePaymentId      String?
   stripeSubscriptionId String?
   expiresAt            DateTime?
@@ -697,6 +734,7 @@ model CommunityMember {
 
   @@unique([communityId, userId])
   @@index([userId, subscriptionStatus])
+  @@index([communityId, role])
 }
 
 model CommunityPayment {
@@ -722,6 +760,89 @@ model CommunityPayment {
 
   @@index([communityId, createdAt])
   @@index([userId, createdAt])
+}
+
+model CommunitySection {
+  id          String    @id @default(uuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  icon        String?   @default("Hash")
+  order       Int       @default(0)
+  visibility  String    @default("PUBLIC") // PUBLIC, MEMBERS_ONLY, PREMIUM
+  isActive    Boolean   @default(true)
+  posts       Post[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([communityId, order])
+}
+
+model CommunityJoinRequest {
+  id           String    @id @default(uuid())
+  communityId  String
+  community    Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  note         String?
+  reviewedById String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([communityId, userId])
+  @@index([communityId, status])
+}
+
+model CommunityInvite {
+  id          String    @id @default(uuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  code        String    @unique
+  createdById String
+  createdBy   User      @relation("CommunityInviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  expiresAt   DateTime?
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([communityId])
+}
+
+model CommunityReport {
+  id           String    @id @default(uuid())
+  communityId  String
+  community    Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  reporterId   String
+  reporter     User      @relation("CommunityReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType   String    // POST, COMMENT, USER
+  targetId     String
+  reason       String    // SPAM, FRAUD, INAPPROPRIATE, FAKE_INFO, HARASSMENT, ADVERTISING, OTHER
+  details      String?
+  status       String    @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  actionTaken  String?   // NONE, DELETED, HIDDEN, WARNED, MUTED, BANNED
+  reviewedById String?
+  reviewedBy   User?     @relation("CommunityReportReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([communityId, status])
+}
+
+model CommunityAuditLog {
+  id          String    @id @default(uuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User      @relation("CommunityAuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+  action      String    // COMMUNITY_CREATED, COMMUNITY_UPDATED, MEMBER_BANNED, MEMBER_REMOVED, ROLE_CHANGED, PRICE_CHANGED, PLAN_CREATED, PLAN_UPDATED, POST_DELETED, POST_PINNED, SETTINGS_UPDATED, PAYOUT_UPDATED
+  targetId    String?
+  metadata    String?   // JSON payload
+  createdAt   DateTime  @default(now())
+
+  @@index([communityId, createdAt])
 }
 
 model Subscription {
@@ -859,6 +980,7 @@ model Story {
   createdAt  DateTime    @default(now())
   expiresAt  DateTime
   views      StoryView[]
+  likes      StoryLike[]
 
   @@index([authorId, createdAt])
   @@index([expiresAt])
@@ -873,6 +995,17 @@ model StoryView {
 
   @@id([storyId, viewerId])
   @@index([viewerId, viewedAt])
+}
+
+model StoryLike {
+  storyId  String
+  userId   String
+  story    Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([storyId, userId])
+  @@index([userId, createdAt])
 }
 
 model PlatformSetting {
@@ -950,6 +1083,25 @@ model AdminAuditLog {
   @@index([actorId, createdAt])
   @@index([action, createdAt])
   @@index([createdAt])
+}
+
+model ProEmailCampaign {
+  id             String   @id @default(uuid())
+  subject        String
+  title          String
+  message        String
+  imageUrl       String?
+  ctaLabel       String?
+  ctaUrl         String?
+  recipientCount Int      @default(0)
+  sentCount      Int      @default(0)
+  failedCount    Int      @default(0)
+  createdById    String
+  createdBy      User     @relation("ProEmailCampaignCreator", fields: [createdById], references: [id])
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([createdById, createdAt])
 }
 
 model Notification {
@@ -1572,6 +1724,7 @@ model MarketEarningsEvent {
   actualRevenue       Float?
   epsSurprise         Float?
   revenueSurprise     Float?
+  marketReaction      Float?   // Variación % de precio post-balance
   marketCap           Float?
   earningsImpactScore Int      @default(0) // 0 to 100
   source              String?

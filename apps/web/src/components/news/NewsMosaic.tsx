@@ -9,10 +9,10 @@ interface NewsMosaicProps {
 
 function SlotSkeleton({ variant }: { variant: 'hero' | 'featured' | 'standard' | 'banner' }) {
     const heightClass =
-        variant === 'hero' ? 'min-h-[420px] lg:min-h-[500px]' :
-        variant === 'featured' ? 'min-h-[420px] lg:min-h-[500px]' :
+        variant === 'hero' ? 'min-h-[300px] sm:min-h-[420px] lg:min-h-[500px]' :
+        variant === 'featured' ? 'min-h-[300px] sm:min-h-[420px] lg:min-h-[500px]' :
         variant === 'banner' ? 'min-h-[140px]' :
-        'min-h-[300px]';
+            'min-h-[240px] sm:min-h-[300px]';
     return (
         <div className={`rounded-3xl bg-secondary/40 border border-border/30 animate-pulse ${heightClass}`} />
     );

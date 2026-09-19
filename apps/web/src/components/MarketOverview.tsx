@@ -154,7 +154,7 @@ export default function MarketOverview() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="px-5 pb-5 pt-0">
-                        <div ref={forexRef} className="h-[700px] w-full" />
+                        <div ref={forexRef} className="h-[420px] w-full sm:h-[560px] lg:h-[700px]" />
                     </CardContent>
                 </Card>
 
@@ -170,7 +170,7 @@ export default function MarketOverview() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="px-5 pb-5 pt-0">
-                        <div ref={cryptoRef} className="h-[760px] w-full" />
+                        <div ref={cryptoRef} className="h-[460px] w-full sm:h-[600px] lg:h-[760px]" />
                     </CardContent>
                 </Card>
             </div>

@@ -2,7 +2,6 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { BottomNav } from '../components/BottomNav';
 import { MobileTopBar } from '../components/MobileTopBar';
-import PWAInstallPrompt from '../components/PWAInstallPrompt';
 import { GlobalSearch } from '../components/GlobalSearch';
 import { useState, useEffect } from 'react';
 import { usePreferencesStore } from '../stores/preferencesStore';
@@ -33,7 +32,7 @@ export default function DashboardLayout() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-background text-foreground flex">
+        <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-background text-foreground flex">
             {/* Sidebar — desktop only */}
             <Sidebar />
 
@@ -57,7 +56,7 @@ export default function DashboardLayout() {
                 {/* The sidebar is fixed, so we add padding-left on desktop to avoid overlap. */}
                 <div className="hidden lg:block flex-shrink-0" style={{ width: 0, minWidth: collapsed ? '72px' : '276px', display: 'none' }} />
                 <main
-                    className={`flex-1 flex flex-col w-full ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-[276px]'}`}
+                    className={`flex-1 min-w-0 flex flex-col w-full max-w-full overflow-x-hidden ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-[276px]'}`}
                     style={{
                         transition: 'padding-left 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
@@ -68,7 +67,6 @@ export default function DashboardLayout() {
 
             {/* Bottom Nav — mobile only */}
             <BottomNav />
-            <PWAInstallPrompt />
             <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         </div>
     );

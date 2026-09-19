@@ -28,6 +28,14 @@
         }
       } catch (e) {}
     })();
+
+    // Early capture of beforeinstallprompt for instant 1-tap PWA install
+    window.__finix_deferred_prompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.__finix_deferred_prompt = e;
+      window.dispatchEvent(new CustomEvent('finix:deferred-prompt-ready'));
+    });
   </script>
 
   <!-- Preconnect para Google Fonts (Raleway) -->

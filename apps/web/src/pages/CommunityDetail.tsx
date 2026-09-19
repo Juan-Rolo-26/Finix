@@ -1,27 +1,32 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, Users, Crown, Lock, BadgeCheck, MessageCircle,
     Heart, Bookmark, Plus, Loader2, AlertCircle,
     FileText, Settings, MoreHorizontal, Calendar,
     Trash2, Globe, Check, X, TrendingUp,
-    BookOpen, Play, ExternalLink, Image as ImageIcon,
+    BookOpen, Play, ExternalLink, Image as ImageIcon, CreditCard,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { useAuthStore } from '@/stores/authStore';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import ReportModal from '@/components/ReportModal';
+import CommunityPaymentModal from '@/components/CommunityPaymentModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Community {
-    id: string; name: string; description: string; category: string;
+    id: string; name: string; slug?: string; description: string; category: string;
     imageUrl?: string; bannerUrl?: string; privacyType: string; rules?: string;
+    accentColor?: string; tags?: string; showContentBeforeJoin?: boolean;
     creator: { id: string; username: string; avatarUrl?: string; isVerified: boolean; bio?: string; title?: string };
     plans: CommunityPlan[];
+    sections?: { id: string; name: string; icon?: string; visibility: string }[];
     _count: { members: number; posts: number; resources: number; events?: number };
     isMember: boolean; tierLevel: number; membership?: any; createdAt: string;
+    canManage?: boolean; canModerate?: boolean; isOwner?: boolean;
 }
 
 interface CommunityPlan {
@@ -32,6 +37,7 @@ interface CommunityPlan {
 interface Post {
     id: string; content: string | null; isLocked: boolean; requiredTierLevel?: number;
     type: string; createdAt: string; targetVisibility: string;
+    isPinned?: boolean; section?: { id: string; name: string };
     author: { id: string; username: string; avatarUrl?: string; isVerified: boolean };
     _count: { likes: number; comments: number };
     media?: any[];
@@ -148,10 +154,20 @@ function PostCard({ post, community, onDelete }: {
                         <AvatarFallback className="text-[11px]">{post.author.username[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-wrap">
                             <span className="font-semibold text-[13px]">@{post.author.username}</span>
                             {post.author.isVerified && (
                                 <BadgeCheck className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
+                            )}
+                            {post.isPinned && (
+                                <span className="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500">
+                                    📌 Fijada
+                                </span>
+                            )}
+                            {post.section && (
+                                <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                    {post.section.name}
+                                </span>
                             )}
                         </div>
                         <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -393,8 +409,8 @@ function CreatePost({ communityId, plans, onCreated }: {
                 <button
                     disabled={(!content.trim() && !image) || loading}
                     onClick={handleSubmit}
-                    className="ml-auto flex items-center gap-1.5 rounded-xl px-4 py-1.5 text-[12px] font-semibold transition-all disabled:opacity-40"
-                    style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
+                    className="ml-auto flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-semibold shadow-sm hover:shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-40 h-8"
+                    style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: '#ffffff' }}>
                     {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     Publicar
                 </button>
@@ -405,8 +421,8 @@ function CreatePost({ communityId, plans, onCreated }: {
 
 // ─── Subscribe Modal ──────────────────────────────────────────────────────────
 
-function SubscribeModal({ community, onClose, onJoined }: {
-    community: Community; onClose: () => void; onJoined: () => void;
+function SubscribeModal({ community, onClose, onJoined, onSelectPaidPlan }: {
+    community: Community; onClose: () => void; onJoined: () => void; onSelectPaidPlan?: (plan: any) => void;
 }) {
     const [loading, setLoading] = useState(false);
     const [activePlanId, setActivePlanId] = useState<string | null>(null);
@@ -545,14 +561,25 @@ function SubscribeModal({ community, onClose, onJoined }: {
                             </ul>
                             <button
                                 disabled={loading}
-                                className="w-full flex items-center justify-center rounded-xl py-2.5 text-sm font-semibold transition-all relative"
+                                className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all relative shadow-sm hover:brightness-105"
                                 style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', opacity: loading ? 0.7 : 1 }}
-                                onClick={() => handleJoinPaid(plan.id)}>
-                                {loading && activePlanId === plan.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin absolute" />
-                                ) : (
-                                    `Suscribirme — $${Number(plan.price).toFixed(2)}/${plan.interval === 'monthly' ? 'mes' : 'año'}`
-                                )}
+                                onClick={() => {
+                                    if (onSelectPaidPlan) {
+                                        onSelectPaidPlan(plan);
+                                    } else {
+                                        handleJoinPaid(plan.id);
+                                    }
+                                }}>
+                                <CreditCard className="w-4 h-4" />
+                                <span>Pagar con Tarjeta (Visa / Mastercard) — ${Number(plan.price).toFixed(2)}/{plan.interval === 'monthly' ? 'mes' : 'año'}</span>
+                            </button>
+                            <button
+                                type="button"
+                                disabled={loading}
+                                onClick={() => handleJoinPaid(plan.id)}
+                                className="w-full text-center text-[11px] text-muted-foreground hover:text-foreground pt-1 pb-0.5 transition-colors block"
+                            >
+                                {loading && activePlanId === plan.id ? 'Iniciando checkout...' : 'O pagar con Stripe Checkout externo →'}
                             </button>
                         </div>
                     ))}
@@ -571,15 +598,21 @@ function SubscribeModal({ community, onClose, onJoined }: {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function CommunityDetail({ community: initialCommunity, onBack, onRefresh }: {
-    community: Community;
-    onBack: () => void;
-    onRefresh: (c: Community) => void;
+export default function CommunityDetail(props?: {
+    community?: Community;
+    onBack?: () => void;
+    onRefresh?: (c: Community) => void;
 }) {
+    const { id: paramId } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const { user } = useAuthStore();
-    const [community, setCommunity] = useState(initialCommunity);
+    const [community, setCommunity] = useState<Community | null>(props?.community || null);
+    const [loading, setLoading] = useState(!props?.community);
     const [activeTab, setActiveTab] = useState('feed');
+    const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
     const [showSubscribe, setShowSubscribe] = useState(false);
+    const [showCardPayment, setShowCardPayment] = useState(false);
+    const [selectedPaidPlan, setSelectedPaidPlan] = useState<any>(null);
     const [posts, setPosts] = useState<Post[]>([]);
     const [postsLoading, setPostsLoading] = useState(false);
     const [hasMore, setHasMore] = useState(false);
@@ -588,26 +621,44 @@ export default function CommunityDetail({ community: initialCommunity, onBack, o
     const [members, setMembers] = useState<any[]>([]);
     const [tabLoaded, setTabLoaded] = useState<Record<string, boolean>>({});
 
-    const isOwner = user?.id === community.creator.id;
-    const isMember = community.isMember;
+    useEffect(() => {
+        if (!props?.community && paramId) {
+            setLoading(true);
+            apiFetch(`/communities/${paramId}`)
+                .then(r => r.ok ? r.json() : null)
+                .then(d => {
+                    if (d) setCommunity(d);
+                    else navigate('/comunidades');
+                })
+                .catch(() => navigate('/comunidades'))
+                .finally(() => setLoading(false));
+        }
+    }, [props?.community, paramId, navigate]);
 
-    const loadPosts = useCallback(async (tab = 'all', cursor?: string) => {
+    const isOwner = Boolean(user && community && (user.id === community.creator.id || community.isOwner));
+    const canManage = Boolean(community && (isOwner || community.canManage));
+    const isMember = Boolean(community?.isMember);
+
+    const loadPosts = useCallback(async (tab = 'all', cursor?: string, sectionId?: string | null) => {
+        if (!community?.id) return;
         setPostsLoading(true);
         try {
             const params = new URLSearchParams({ tab, limit: '20' });
             if (cursor) params.set('cursor', cursor);
+            if (sectionId) params.set('sectionId', sectionId);
             const res = await apiFetch(`/communities/${community.id}/posts?${params}`);
             if (res.ok) {
                 const data = await res.json();
-                if (cursor) setPosts(prev => [...prev, ...(data.posts || [])]);
-                else setPosts(data.posts || []);
+                const list = Array.isArray(data) ? data : (data.posts || []);
+                if (cursor) setPosts(prev => [...prev, ...list]);
+                else setPosts(list);
                 setHasMore(data.hasMore || false);
             }
         } finally { setPostsLoading(false); }
-    }, [community.id]);
+    }, [community?.id]);
 
     const loadTab = useCallback(async (tab: string) => {
-        if (tabLoaded[tab]) return;
+        if (!community?.id || tabLoaded[tab]) return;
         try {
             if (tab === 'eventos') {
                 const res = await apiFetch(`/communities/${community.id}/events`);
@@ -617,63 +668,90 @@ export default function CommunityDetail({ community: initialCommunity, onBack, o
                 if (res.ok) setResources(await res.json());
             } else if (tab === 'miembros') {
                 const res = await apiFetch(`/communities/${community.id}/members?limit=30`);
-                if (res.ok) setMembers(await res.json());
+                if (res.ok) {
+                    const data = await res.json();
+                    setMembers(data.members || data || []);
+                }
             }
             setTabLoaded(prev => ({ ...prev, [tab]: true }));
         } catch { }
-    }, [community.id, tabLoaded]);
+    }, [community?.id, tabLoaded]);
 
     useEffect(() => {
-        loadPosts(activeTab === 'exclusivo' ? 'exclusive' : 'all');
-        if (!['feed', 'exclusivo'].includes(activeTab)) loadTab(activeTab);
-    }, [activeTab]);
+        if (community) {
+            loadPosts(activeTab === 'exclusivo' ? 'exclusive' : 'all', undefined, selectedSectionId);
+            if (!['feed', 'exclusivo'].includes(activeTab)) loadTab(activeTab);
+        }
+    }, [activeTab, selectedSectionId, community, loadPosts, loadTab]);
 
     const handleJoined = async () => {
+        if (!community?.id) return;
         setShowSubscribe(false);
         const res = await apiFetch(`/communities/${community.id}`);
         if (res.ok) {
             const updated = await res.json();
             setCommunity(updated);
-            onRefresh(updated);
+            if (props?.onRefresh) props.onRefresh(updated);
             loadPosts();
         }
     };
 
     const handleLeave = async () => {
+        if (!community?.id) return;
         if (!confirm('¿Abandonar esta comunidad?')) return;
         await apiFetch(`/communities/${community.id}/leave`, { method: 'DELETE' });
         const res = await apiFetch(`/communities/${community.id}`);
         if (res.ok) {
             const updated = await res.json();
             setCommunity(updated);
-            onRefresh(updated);
+            if (props?.onRefresh) props.onRefresh(updated);
         }
     };
 
     const handleDeletePost = async (postId: string) => {
+        if (!community?.id) return;
         await apiFetch(`/communities/${community.id}/posts/${postId}`, { method: 'DELETE' });
         setPosts(prev => prev.filter(p => p.id !== postId));
     };
+
+    const handleBack = () => {
+        if (props?.onBack) props.onBack();
+        else navigate('/comunidades');
+    };
+
+    if (loading || !community) {
+        return (
+            <div className="flex h-96 items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-full overflow-hidden">
             {/* ── Banner + Header ── */}
             <div className="flex-shrink-0 relative">
                 {/* Banner */}
-                <div className="h-32 sm:h-44 relative overflow-hidden"
-                    style={{ background: 'hsl(var(--muted))' }}>
+                <div className="h-36 sm:h-52 relative overflow-hidden bg-slate-950">
                     {community.bannerUrl ? (
                         <img src={resolveMediaUrl(community.bannerUrl)} alt="" className="w-full h-full object-cover" />
                     ) : (
-                        <div className="w-full h-full"
-                            style={{ background: 'linear-gradient(135deg, hsl(var(--primary)/0.2) 0%, hsl(var(--primary)/0.05) 100%)' }} />
+                        <div
+                            className="w-full h-full relative"
+                            style={{
+                                background: 'radial-gradient(ellipse at 35% 20%, rgba(16, 185, 129, 0.45) 0%, rgba(5, 150, 105, 0.25) 40%, rgba(15, 23, 42, 0.98) 100%)',
+                            }}
+                        >
+                            <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:20px_20px] opacity-20" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                        </div>
                     )}
-                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, hsl(var(--background)/0.8))' }} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-black/20" />
                     {/* Back button */}
                     <button
-                        onClick={onBack}
-                        className="absolute top-3 left-3 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-medium"
-                        style={{ background: 'hsl(0 0% 0% / 0.5)', color: '#fff', backdropFilter: 'blur(8px)' }}>
+                        onClick={handleBack}
+                        className="absolute top-4 left-4 flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
+                        style={{ background: 'rgba(15, 23, 42, 0.75)', color: '#ffffff', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)' }}>
                         <ArrowLeft className="w-4 h-4" /> Comunidades
                     </button>
                 </div>
@@ -682,32 +760,37 @@ export default function CommunityDetail({ community: initialCommunity, onBack, o
                 <div className="px-4 sm:px-6 -mt-10 relative">
                     <div className="flex items-end justify-between gap-3">
                         {/* Avatar */}
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-3 shadow-lg flex-shrink-0"
-                            style={{ borderColor: 'hsl(var(--background))', border: '3px solid hsl(var(--background))', background: 'hsl(var(--muted))' }}>
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 relative border-4 border-background"
+                            style={{ background: 'linear-gradient(135deg, #064e3b 0%, #022c22 100%)' }}>
                             {community.imageUrl ? (
                                 <img src={resolveMediaUrl(community.imageUrl)} alt="" className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-2xl font-black"
-                                    style={{ background: 'hsl(var(--primary)/0.12)', color: 'hsl(var(--primary))' }}>
-                                    {community.name[0]}
+                                <div className="w-full h-full flex items-center justify-center text-3xl font-black shadow-inner"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                                        color: '#ffffff',
+                                    }}>
+                                    {community.name[0]?.toUpperCase() || 'C'}
                                 </div>
                             )}
                         </div>
                         {/* CTA */}
                         <div className="flex items-center gap-2 pb-1">
-                            {isOwner ? (
-                                <button className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[12px] font-semibold"
+                            {canManage ? (
+                                <button
+                                    onClick={() => navigate(`/comunidades/${community.slug || community.id}/admin`)}
+                                    className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold transition-colors hover:bg-muted"
                                     style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}>
-                                    <Settings className="w-3.5 h-3.5" /> Gestionar
+                                    <Settings className="w-4 h-4" /> Administrar
                                 </button>
                             ) : isMember ? (
                                 <div className="flex items-center gap-2">
-                                    <span className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-full"
+                                    <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full border border-emerald-500/30"
                                         style={{ background: 'hsl(var(--primary)/0.1)', color: 'hsl(var(--primary))' }}>
-                                        <Check className="w-3 h-3" /> Miembro
+                                        <Check className="w-3.5 h-3.5" /> Miembro Activo
                                     </span>
                                     <button onClick={handleLeave}
-                                        className="text-[11px] font-medium px-2.5 py-1.5 rounded-full"
+                                        className="text-xs font-medium px-3 py-2 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
                                         style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>
                                         Salir
                                     </button>
@@ -715,10 +798,10 @@ export default function CommunityDetail({ community: initialCommunity, onBack, o
                             ) : (
                                 <button
                                     onClick={() => setShowSubscribe(true)}
-                                    className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold"
-                                    style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
+                                    className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 active:scale-[0.98] transition-all"
+                                    style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: '#ffffff' }}>
                                     <Plus className="w-4 h-4" />
-                                    Unirse
+                                    Unirme a la comunidad
                                 </button>
                             )}
                         </div>
@@ -788,65 +871,226 @@ export default function CommunityDetail({ community: initialCommunity, onBack, o
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
-                        className="max-w-2xl mx-auto space-y-4"
+                        className={
+                            (activeTab === 'feed' || activeTab === 'exclusivo')
+                                ? "max-w-7xl mx-auto"
+                                : "max-w-3xl mx-auto space-y-4"
+                        }
                     >
-                        {/* Feed & Exclusivo */}
+                        {/* Feed & Exclusivo with 2-Column Responsive Layout */}
                         {(activeTab === 'feed' || activeTab === 'exclusivo') && (
-                            <>
-                                {isMember && (
-                                    <CreatePost
-                                        communityId={community.id}
-                                        plans={community.plans}
-                                        onCreated={post => setPosts(prev => [post as any, ...prev])}
-                                    />
-                                )}
-                                {!isMember && activeTab === 'exclusivo' && (
-                                    <div className="flex flex-col items-center py-12 gap-3"
-                                        style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        <Lock className="w-10 h-10 opacity-30" />
-                                        <p className="font-semibold text-sm">Contenido exclusivo</p>
-                                        <p className="text-xs text-center max-w-xs">
-                                            Unite a la comunidad para acceder a publicaciones exclusivas.
-                                        </p>
-                                        <button onClick={() => setShowSubscribe(true)}
-                                            className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold mt-1"
-                                            style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
-                                            <Crown className="w-4 h-4" /> Unirme
-                                        </button>
-                                    </div>
-                                )}
-                                {postsLoading && posts.length === 0 ? (
-                                    <div className="flex justify-center py-12">
-                                        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'hsl(var(--primary))' }} />
-                                    </div>
-                                ) : posts.length === 0 && !postsLoading ? (
-                                    <div className="flex flex-col items-center py-12 gap-3"
-                                        style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        <MessageCircle className="w-10 h-10 opacity-30" />
-                                        <p className="font-semibold text-sm">Sin publicaciones aún</p>
-                                    </div>
-                                ) : (
-                                    posts.map(post => post.isLocked ? (
-                                        <LockedCard
-                                            key={post.id} post={post} plans={community.plans}
-                                            onSubscribe={() => setShowSubscribe(true)}
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                                {/* ── Left/Center Main Column (Posts & Composer) ── */}
+                                <div className="lg:col-span-8 space-y-4">
+                                    {community.sections && community.sections.length > 0 && activeTab === 'feed' && (
+                                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                                            <button
+                                                onClick={() => setSelectedSectionId(null)}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${!selectedSectionId ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                                            >
+                                                Todas las secciones
+                                            </button>
+                                            {community.sections.map(sec => (
+                                                <button
+                                                    key={sec.id}
+                                                    onClick={() => setSelectedSectionId(sec.id)}
+                                                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${selectedSectionId === sec.id ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                                                >
+                                                    {sec.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {isMember ? (
+                                        <CreatePost
+                                            communityId={community.id}
+                                            plans={community.plans}
+                                            onCreated={post => setPosts(prev => [post as any, ...prev])}
                                         />
                                     ) : (
-                                        <PostCard
-                                            key={post.id} post={post} community={community}
-                                            onDelete={handleDeletePost}
-                                        />
-                                    ))
-                                )}
-                                {hasMore && (
-                                    <button
-                                        onClick={() => loadPosts(activeTab === 'exclusivo' ? 'exclusive' : 'all', posts[posts.length - 1]?.createdAt)}
-                                        className="w-full py-3 text-sm font-medium rounded-xl"
-                                        style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>
-                                        Cargar más
-                                    </button>
-                                )}
-                            </>
+                                        <div className="rounded-2xl p-4.5 border border-border/50 bg-card/70 backdrop-blur-xs flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+                                            <div className="space-y-1 text-center sm:text-left">
+                                                <p className="font-bold text-sm text-foreground">¿Querés publicar en esta comunidad?</p>
+                                                <p className="text-xs text-muted-foreground">Unite para compartir análisis, debatir mercados y conectar con otros inversores.</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setShowSubscribe(true)}
+                                                className="shrink-0 flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
+                                                style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: '#ffffff' }}
+                                            >
+                                                <Plus className="w-3.5 h-3.5" />
+                                                Unirme ahora
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {!isMember && activeTab === 'exclusivo' && (
+                                        <div className="flex flex-col items-center py-14 gap-3 bg-card/50 rounded-2xl border border-border/50 text-center px-4"
+                                            style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                                                <Lock className="w-6 h-6" />
+                                            </div>
+                                            <p className="font-bold text-base text-foreground">Contenido exclusivo para miembros</p>
+                                            <p className="text-xs text-muted-foreground max-w-sm">
+                                                Esta sección contiene análisis premium y recursos reservados. Elegí un plan de membresía para acceder de inmediato.
+                                            </p>
+                                            <button onClick={() => setShowSubscribe(true)}
+                                                className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold mt-2 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+                                                style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: '#ffffff' }}>
+                                                <Crown className="w-4 h-4 text-amber-300" /> Ver Planes y Suscribirme
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {postsLoading && posts.length === 0 ? (
+                                        <div className="flex justify-center py-16 bg-card/40 rounded-2xl border border-border/40">
+                                            <Loader2 className="w-7 h-7 animate-spin text-primary" />
+                                        </div>
+                                    ) : posts.length === 0 && !postsLoading ? (
+                                        <div className="flex flex-col items-center py-14 gap-3 bg-card/40 rounded-2xl border border-border/40 text-center px-4"
+                                            style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                            <div className="w-12 h-12 rounded-2xl bg-secondary/50 flex items-center justify-center text-muted-foreground">
+                                                <MessageCircle className="w-6 h-6" />
+                                            </div>
+                                            <p className="font-bold text-sm text-foreground">Sin publicaciones aún</p>
+                                            <p className="text-xs text-muted-foreground max-w-xs">Sé el primero en iniciar una conversación en esta comunidad.</p>
+                                        </div>
+                                    ) : (
+                                        posts.map(post => post.isLocked ? (
+                                            <LockedCard
+                                                key={post.id} post={post} plans={community.plans}
+                                                onSubscribe={() => setShowSubscribe(true)}
+                                            />
+                                        ) : (
+                                            <PostCard
+                                                key={post.id} post={post} community={community}
+                                                onDelete={handleDeletePost}
+                                            />
+                                        ))
+                                    )}
+
+                                    {hasMore && (
+                                        <button
+                                            onClick={() => loadPosts(activeTab === 'exclusivo' ? 'exclusive' : 'all', posts[posts.length - 1]?.createdAt)}
+                                            className="w-full py-3 text-xs font-bold rounded-xl border border-border/50 hover:bg-muted/50 transition-colors"
+                                            style={{ background: 'hsl(var(--card))', color: 'hsl(var(--foreground))' }}>
+                                            Cargar más publicaciones
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* ── Right Sidebar Column (Sticky Community Info & Widgets) ── */}
+                                <div className="hidden lg:flex flex-col gap-4 lg:col-span-4 sticky top-4">
+                                    {/* 1. Card: Sobre la Comunidad */}
+                                    <div className="rounded-2xl p-5 border border-border/50 bg-card/70 backdrop-blur-xs space-y-4 shadow-xs">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                                                <Globe className="w-4 h-4 text-emerald-500" />
+                                                Sobre la comunidad
+                                            </h3>
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground uppercase tracking-wider">
+                                                {community.category || 'General'}
+                                            </span>
+                                        </div>
+
+                                        <p className="text-xs text-muted-foreground leading-relaxed">
+                                            {community.description || 'Comunidad oficial en Finix.'}
+                                        </p>
+
+                                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/40 text-xs">
+                                            <div className="p-2.5 rounded-xl bg-secondary/40">
+                                                <span className="text-[10px] text-muted-foreground block font-medium">Miembros</span>
+                                                <span className="font-black text-foreground text-base">{community._count.members.toLocaleString()}</span>
+                                            </div>
+                                            <div className="p-2.5 rounded-xl bg-secondary/40">
+                                                <span className="text-[10px] text-muted-foreground block font-medium">Publicaciones</span>
+                                                <span className="font-black text-foreground text-base">{community._count.posts.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Creator summary */}
+                                        <div className="pt-2 border-t border-border/40 flex items-center gap-3">
+                                            <Avatar className="h-10 w-10 border border-border/50">
+                                                <AvatarImage src={community.creator.avatarUrl} />
+                                                <AvatarFallback className="text-xs font-bold">{community.creator.username[0]?.toUpperCase()}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-1">
+                                                    <span className="font-bold text-xs truncate text-foreground">@{community.creator.username}</span>
+                                                    {community.creator.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />}
+                                                </div>
+                                                <span className="text-[10px] text-muted-foreground block truncate">
+                                                    {community.creator.title || 'Creador & Administrador'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Card: Membresías & Acceso con Checkout de Tarjeta */}
+                                    {community.plans && community.plans.length > 0 && (
+                                        <div className="rounded-2xl p-5 border border-emerald-500/25 bg-emerald-500/5 backdrop-blur-xs space-y-3.5 shadow-xs">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                                                    <Crown className="w-4 h-4 text-amber-400" />
+                                                    Planes de Membresía
+                                                </h3>
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+                                                    Acceso Inmediato
+                                                </span>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                {community.plans.map(plan => {
+                                                    const isFree = Number(plan.price) === 0;
+                                                    return (
+                                                        <div key={plan.id} className="p-3.5 rounded-xl bg-card border border-border/50 space-y-2.5 shadow-2xs">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="font-bold text-xs text-foreground">{plan.name}</span>
+                                                                <span className="font-black text-sm text-emerald-500">
+                                                                    {isFree ? 'Gratis' : `$${Number(plan.price).toFixed(2)} USD`}
+                                                                </span>
+                                                            </div>
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (isFree) {
+                                                                        setShowSubscribe(true);
+                                                                    } else {
+                                                                        setSelectedPaidPlan(plan);
+                                                                        setShowCardPayment(true);
+                                                                    }
+                                                                }}
+                                                                className="w-full py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] transition-all"
+                                                                style={{
+                                                                    background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                                                                    color: '#ffffff',
+                                                                }}
+                                                            >
+                                                                <CreditCard className="w-3.5 h-3.5" />
+                                                                <span>{isFree ? 'Unirse Gratis' : 'Pagar con Visa / Mastercard'}</span>
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* 3. Card: Reglas de la Comunidad */}
+                                    {community.rules && (
+                                        <div className="rounded-2xl p-5 border border-border/50 bg-card/70 backdrop-blur-xs space-y-2 shadow-xs">
+                                            <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                                <FileText className="w-3.5 h-3.5 text-primary" />
+                                                Reglas
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
+                                                {community.rules}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         )}
 
                         {/* Recursos */}
@@ -1009,7 +1253,7 @@ export default function CommunityDetail({ community: initialCommunity, onBack, o
                                 </div>
 
                                 {/* Stats */}
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
                                     {[
                                         { label: 'Miembros', value: community._count.members.toLocaleString() },
                                         { label: 'Posts', value: community._count.posts.toLocaleString() },
@@ -1077,6 +1321,22 @@ export default function CommunityDetail({ community: initialCommunity, onBack, o
                         community={community}
                         onClose={() => setShowSubscribe(false)}
                         onJoined={handleJoined}
+                        onSelectPaidPlan={(plan) => {
+                            setShowSubscribe(false);
+                            setSelectedPaidPlan(plan);
+                            setShowCardPayment(true);
+                        }}
+                    />
+                )}
+
+                {/* ── Card Payment Modal (Visa & Mastercard) ── */}
+                {showCardPayment && (
+                    <CommunityPaymentModal
+                        isOpen={showCardPayment}
+                        onClose={() => setShowCardPayment(false)}
+                        community={community}
+                        initialPlan={selectedPaidPlan}
+                        onSuccess={handleJoined}
                     />
                 )}
             </AnimatePresence>

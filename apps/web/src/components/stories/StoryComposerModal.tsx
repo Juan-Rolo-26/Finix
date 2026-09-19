@@ -237,7 +237,7 @@ export function StoryComposerModal({
                                     <Sparkles className="h-4 w-4 text-primary" />
                                     Fondo
                                 </div>
-                                <div className="grid grid-cols-5 gap-2">
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                                     {BACKGROUNDS.map((preset) => (
                                         <button
                                             key={preset}

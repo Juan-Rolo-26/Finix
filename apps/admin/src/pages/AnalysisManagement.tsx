@@ -365,7 +365,7 @@ function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: ()
                         </div>
                         {analysis.currentPrice && (
                             <div className="bg-card border border-border px-7 py-5 rounded-2xl text-center shrink-0 shadow-lg space-y-1">
-                                <span className="text-xs sm:text-sm font-black text-muted-foreground uppercase tracking-wider block">Potencial (Upside)</span>
+                                <span className="text-xs sm:text-sm font-black text-muted-foreground uppercase tracking-wider block">Potencial alcista</span>
                                 <span className={`text-3xl sm:text-4xl font-black ${Number(analysis.estimatedFairValue) >= Number(analysis.currentPrice) ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                     {((Number(analysis.estimatedFairValue) / Number(analysis.currentPrice) - 1) * 100).toFixed(1)}%
                                 </span>
@@ -764,6 +764,7 @@ export default function AnalysisManagement() {
 
     // Estado de auto-completado con TradingView y publicación
     const [fetchingTV, setFetchingTV] = useState(false);
+    const [fetchingValueCreation, setFetchingValueCreation] = useState(false);
     const [autoTickerInput, setAutoTickerInput] = useState('');
     const [tvMessage, setTvMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [publishedFeedback, setPublishedFeedback] = useState<{ slug: string; ticker: string; companyName: string } | null>(null);
@@ -893,6 +894,45 @@ export default function AnalysisManagement() {
             setTvMessage({ type: 'error', text: error.message || 'Error al consultar TradingView' });
         } finally {
             setFetchingTV(false);
+        }
+    };
+
+    const handleImportValueCreation = async () => {
+        const target = (autoTickerInput || formData.ticker || formData.symbol || '').trim();
+        if (!target) {
+            setTvMessage({ type: 'error', text: 'Ingresá primero un ticker para consultar ROIC vs WACC.' });
+            return;
+        }
+
+        setFetchingValueCreation(true);
+        setTvMessage(null);
+        try {
+            const res = await adminFetch(`/admin/analysis/value-creation/fetch?symbol=${encodeURIComponent(target)}`);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || 'No hay datos de creación de valor para este ticker');
+            }
+            const { data } = await res.json();
+            const statusLabel = data.status === 'CREA_VALOR' ? 'Crea valor' : data.status === 'DESTRUYE_VALOR' ? 'Destruye valor' : 'En equilibrio';
+            setFormData((prev: any) => ({
+                ...prev,
+                roic: data.roic ?? prev.roic,
+                beta: data.beta ?? prev.beta,
+                valuationMethodology: {
+                    ...(prev.valuationMethodology || {}),
+                    method: 'ROIC vs WACC · Finix Value Creation',
+                    assumptions: `WACC estimado: ${data.wacc?.toFixed(2) ?? '—'}%. Coste de equity: ${data.costOfEquity?.toFixed(2) ?? '—'}%; coste de deuda: ${data.costOfDebt?.toFixed(2) ?? '—'}%.`,
+                    result: `${statusLabel}: spread ROIC - WACC de ${data.spread && data.spread > 0 ? '+' : ''}${data.spread?.toFixed(2) ?? '—'} pp.`,
+                    notes: `Referencia externa: ${data.alphaSpreadUrl}. Cálculo Finix con CAPM, estructura de capital y coste de deuda; verificar supuestos antes de publicar.`,
+                },
+                sources: [prev.sources, 'Finix Value Creation (ROIC-WACC)', `Alpha Spread reference: ${data.alphaSpreadUrl}`].filter(Boolean).join(' · '),
+            }));
+            setTvMessage({ type: 'success', text: `${data.ticker}: ROIC ${data.roic?.toFixed(1) ?? '—'}%, WACC ${data.wacc?.toFixed(1) ?? '—'}%, spread ${data.spread && data.spread > 0 ? '+' : ''}${data.spread?.toFixed(1) ?? '—'} pp. Se agregó a Valuación.` });
+            setActiveTab('valuation');
+        } catch (error: any) {
+            setTvMessage({ type: 'error', text: error.message || 'No se pudo calcular ROIC vs WACC.' });
+        } finally {
+            setFetchingValueCreation(false);
         }
     };
 
@@ -1339,13 +1379,13 @@ export default function AnalysisManagement() {
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <h3 className="text-sm font-bold text-foreground tracking-tight">Auto-relleno Instantáneo de TradingView</h3>
+                                    <h3 className="text-sm font-bold text-foreground tracking-tight">Auto-relleno fundamental y técnico</h3>
                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider border border-emerald-500/30">
                                         Scanner en Vivo
                                     </span>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-0.5">
-                                    Ingresa el ticker (ej. AAPL, TSLA, NVDA, GGAL, MELI) para auto-completar datos técnicos, fundamentales, ratios y el logo oficial.
+                                    Ingresá un ticker para importar datos técnicos, fundamentales, ratios y la lectura ROIC vs WACC de creación de valor.
                                 </p>
                             </div>
                         </div>
@@ -1367,6 +1407,16 @@ export default function AnalysisManagement() {
                             >
                                 {fetchingTV ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
                                 {fetchingTV ? 'Consultando TV...' : '⚡ Importar de TradingView'}
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={handleImportValueCreation}
+                                disabled={fetchingValueCreation}
+                                variant="outline"
+                                className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 font-bold text-xs px-4 h-10 whitespace-nowrap"
+                            >
+                                {fetchingValueCreation ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Building2 className="w-3.5 h-3.5 mr-1.5" />}
+                                ROIC vs WACC
                             </Button>
                         </div>
                     </div>

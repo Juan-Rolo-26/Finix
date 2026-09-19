@@ -29,9 +29,12 @@ import {
     Bell,
     Clock,
     ImagePlus,
-    BadgeCheck
+    BadgeCheck,
+    Mail,
+    Crown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import AvatarUpload from '@/components/AvatarUpload';
 import LocationQuickSelect from '@/components/LocationQuickSelect';
 import FinancialVerificationTab from '@/components/settings/FinancialVerificationTab';
@@ -60,6 +63,8 @@ interface FullSettings {
     isVerified: boolean;
     isCreator: boolean;
     accountType: string;
+    plan?: string;
+    subscriptionStatus?: string;
     // Notifications
     notificationPrefs?: { email: boolean; push: boolean };
     // Privacy
@@ -79,6 +84,7 @@ interface FullSettings {
     theme: string;
     chartDensity: string;
     marketNotifications: boolean;
+    investmentEmailNotifications: boolean;
     timezone: string;
     createdAt: string;
 }
@@ -166,6 +172,16 @@ export default function Settings() {
     const [bannerUploadError, setBannerUploadError] = useState('');
 
     const [notificationPrefs, setNotificationPrefs] = useState({ email: true, push: true });
+    const enableDeviceNotifications = async (enabled: boolean) => {
+        if (!enabled) { setNotificationPrefs((p) => ({ ...p, push: false })); return; }
+        if (!('Notification' in window)) { setNotificationPrefs((p) => ({ ...p, push: false })); return; }
+        const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+        if (permission === 'granted') {
+            setNotificationPrefs((p) => ({ ...p, push: true }));
+            new Notification('Finix activado', { body: 'Recibirás avisos de mensajes, likes y comentarios en este dispositivo.' });
+        }
+    };
+    const [isSavingInvestmentEmails, setIsSavingInvestmentEmails] = useState(false);
 
 
     // ── Privacy form state ──
@@ -266,6 +282,7 @@ export default function Settings() {
                         theme: 'dark',
                         chartDensity: 'normal',
                         marketNotifications: false,
+                        investmentEmailNotifications: false,
                         timezone: 'America/Argentina/Cordoba',
                         createdAt: new Date().toISOString(),
                     };
@@ -405,6 +422,34 @@ export default function Settings() {
         }, 700);
     };
 
+    const updateInvestmentEmailNotifications = async (enabled: boolean) => {
+        if (!settings) return;
+        const isPro = settings.plan === 'PRO' && settings.subscriptionStatus === 'ACTIVE';
+        if (!isPro) {
+            showToast('Las alertas por email de inversiones son exclusivas para Finix PRO', 'error');
+            return;
+        }
+
+        setIsSavingInvestmentEmails(true);
+        try {
+            const res = await apiFetch('/me/preferences', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ investmentEmailNotifications: enabled }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => null);
+                throw new Error(data?.message || 'No se pudo guardar la preferencia');
+            }
+            setSettings((previous) => previous ? { ...previous, investmentEmailNotifications: enabled } : previous);
+            showToast(enabled ? 'Emails de inversiones activados' : 'Emails de inversiones desactivados');
+        } catch (error: any) {
+            showToast(error.message || 'No se pudo guardar la preferencia', 'error');
+        } finally {
+            setIsSavingInvestmentEmails(false);
+        }
+    };
+
     // ─── Password change ──────────────────────────────────────────────────────
     const changePassword = async () => {
         const errors: string[] = [];
@@ -491,7 +536,7 @@ export default function Settings() {
 
             {/* Tabs */}
             <Tabs defaultValue="cuenta" className="space-y-6">
-                <TabsList className="grid h-auto w-full grid-cols-6 gap-1 p-1.5 bg-card/40 border border-border/40 rounded-2xl">
+                <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1.5 bg-card/40 border border-border/40 rounded-2xl sm:grid-cols-3 lg:grid-cols-6">
                     {[
                         { value: 'cuenta', label: 'Cuenta', icon: <User className="w-3.5 h-3.5" /> },
                         { value: 'privacidad', label: 'Privacidad', icon: <Shield className="w-3.5 h-3.5" /> },
@@ -1022,7 +1067,7 @@ export default function Settings() {
                                 description="Recibe alertas en la web o app sobre interacciones y mensajes."
                                 checked={notificationPrefs.push}
                                 onChange={(v) => {
-                                    setNotificationPrefs((p) => ({ ...p, push: v }));
+                                    void enableDeviceNotifications(v);
                                     // Save instantly like prefs or rely on save profile?
                                     // The existing saveProfile uses notificationPrefs so we make the user save or auto-save?
                                     // Well, let's keep it simple.
@@ -1036,6 +1081,38 @@ export default function Settings() {
                                     setNotificationPrefs((p) => ({ ...p, email: v }));
                                 }}
                             />
+
+                            <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-0.5 rounded-lg bg-primary/15 p-2 text-primary">
+                                            <Mail className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-medium text-sm">Emails de inversiones</p>
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-500">
+                                                    <Crown className="h-3 w-3" /> PRO
+                                                </span>
+                                            </div>
+                                            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                                                Recibí análisis, novedades de mercado y comunicaciones exclusivas seleccionadas por Finix.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={settings?.investmentEmailNotifications ?? false}
+                                        onCheckedChange={updateInvestmentEmailNotifications}
+                                        disabled={isSavingInvestmentEmails || !(settings?.plan === 'PRO' && settings?.subscriptionStatus === 'ACTIVE')}
+                                    />
+                                </div>
+                                {!(settings?.plan === 'PRO' && settings?.subscriptionStatus === 'ACTIVE') && (
+                                    <div className="flex items-center justify-between gap-3 rounded-lg bg-background/70 px-3 py-2.5">
+                                        <span className="text-xs text-muted-foreground">Disponible con tu suscripción Finix PRO.</span>
+                                        <Link to="/pricing" className="text-xs font-semibold text-primary hover:underline">Ver Finix PRO</Link>
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="flex justify-end pt-2 border-t border-border/30">
                                 <Button onClick={saveProfile} disabled={isSavingProfile} className="gap-2">

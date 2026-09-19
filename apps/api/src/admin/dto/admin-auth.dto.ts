@@ -23,3 +23,9 @@ export class AdminRefreshDto {
     @IsString()
     refreshToken?: string;
 }
+
+export class AdminResendCodeDto {
+    @IsString()
+    token!: string;
+}
+
