@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    ArrowLeft, ChevronRight, Check, Sparkles, Shield,
+    ArrowLeft, ChevronRight, Sparkles, Shield,
     FolderKanban, Upload, AlertCircle,
-    Loader2, Lock, Globe, Image as ImageIcon, Crown,
+    Loader2, Lock, Globe, Image as ImageIcon,
     DollarSign, CreditCard, Building, Wallet, Plus, X,
     Percent
 } from 'lucide-react';
