@@ -54,6 +54,8 @@ export default function AuthPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
+    const [loginCodeStep, setLoginCodeStep] = useState(false);
+    const [loginCode, setLoginCode] = useState('');
 
     const { } = useAuthStore();
     const navigate = useNavigate();
@@ -94,6 +96,8 @@ export default function AuthPage() {
         setView(nextView);
         setIsLoading(false);
         clearMessages();
+        setLoginCodeStep(false);
+        setLoginCode('');
 
         if (nextView !== 'register') {
             setUsername('');
@@ -136,15 +140,20 @@ export default function AuthPage() {
 
 
     const handleLogin = async () => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email.trim().toLowerCase(),
-            password,
+        const normalizedEmail = email.trim().toLowerCase();
+        const response = await apiFetch(loginCodeStep ? '/auth/login/verify-code' : '/auth/login/request-code', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(loginCodeStep ? { email: normalizedEmail, code: loginCode } : { email: normalizedEmail, password }),
         });
-
-        if (error) throw error;
-        if (!data.session || !data.user) throw new Error("No se pudo obtener la sesión.");
-
-        useAuthStore.getState().login(data.session.access_token, data.user as any);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data?.message || 'No se pudo iniciar sesión.');
+        if (!loginCodeStep) {
+            setLoginCodeStep(true);
+            setInfoMessage('Te enviamos un código de acceso a tu correo.');
+            return;
+        }
+        if (!data.token || !data.user) throw new Error('No se pudo completar el inicio de sesión.');
+        useAuthStore.getState().login(data.token, data.user);
     };
 
     const handleRegister = async () => {
@@ -172,18 +181,13 @@ export default function AuthPage() {
 
     const handleForgotPassword = async () => {
         const normalizedEmail = email.trim().toLowerCase();
-
-        try {
-            const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-                redirectTo: `${window.location.origin}/auth/callback`,
-            });
-
-            if (error) throw error;
-
-            setSuccessMessage('Te enviamos un correo con un enlace para restablecer tu contraseña.');
-        } catch (err: any) {
-            setAuthError(normalizeAuthError(err.message, t.auth.errors.connectionError));
-        }
+        const response = await apiFetch('/auth/forgot/request-code', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: normalizedEmail }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data?.message || 'No se pudo enviar el código.');
+        navigate(`/reset-password?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -194,6 +198,10 @@ export default function AuthPage() {
         }
         if (view !== 'forgot' && password.length < 6) {
             setAuthError('La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+        if (view === 'login' && loginCodeStep && loginCode.length !== 6) {
+            setAuthError('Ingresá el código de 6 dígitos que recibiste por correo.');
             return;
         }
 
@@ -391,7 +399,7 @@ export default function AuthPage() {
                                     />
                                 </div>
 
-                                {view !== 'forgot' ? (
+                                {view !== 'forgot' && (!loginCodeStep || view !== 'login') ? (
                                     <div className="relative">
                                         <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                                         <Input
@@ -410,6 +418,10 @@ export default function AuthPage() {
                                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                         </button>
                                     </div>
+                                ) : null}
+
+                                {view === 'login' && loginCodeStep ? (
+                                    <Input inputMode="numeric" placeholder="Código de 6 dígitos" className="h-11 text-center text-lg tracking-[0.35em]" value={loginCode} onChange={(e) => setLoginCode(e.target.value.replace(/\D/g, '').slice(0, 6))} required />
                                 ) : null}
 
                                 {view === 'login' ? (
@@ -438,7 +450,7 @@ export default function AuthPage() {
                                     ) : (
                                         <div className="flex items-center justify-center gap-2" style={{ color: '#ffffff' }}>
                                             <span className="font-bold text-sm">
-                                                {view === 'login' && t.auth.loginBtn}
+                                                {view === 'login' && (loginCodeStep ? 'Confirmar código' : t.auth.loginBtn)}
                                                 {view === 'register' && t.auth.createAccountBtn}
                                                 {view === 'forgot' && t.auth.sendLinkBtn}
                                             </span>

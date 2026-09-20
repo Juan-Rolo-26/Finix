@@ -46,7 +46,7 @@ export default function VerifyEmail() {
                 throw new Error('La cuenta fue verificada, pero no se pudo iniciar la sesión.');
             }
         } catch (err) {
-            setError('Error de conexión con el servidor.');
+            setError(err instanceof Error ? err.message : 'Error de conexión con el servidor.');
             setIsLoading(false);
         }
     };
@@ -71,7 +71,7 @@ export default function VerifyEmail() {
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data?.message || 'No pudimos reenviar el código.');
         } catch (err) {
-            setError('Error de conexión.');
+            setError(err instanceof Error ? err.message : 'Error de conexión.');
             setResending(false);
             return;
         }
