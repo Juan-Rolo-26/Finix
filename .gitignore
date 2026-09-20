@@ -1,5 +1,6 @@
 # ─── Dependencies ─────────────────────────────────────────────────────────────
 node_modules/
+**/node_modules/
 .pnp
 .pnp.js
 
@@ -17,6 +18,10 @@ node_modules/
 # ─── Build Output ─────────────────────────────────────────────────────────────
 dist/
 build/
+**/dist/
+**/build/
+**/.vite/
+**/.prisma/
 .next/
 out/
 apps/web/dist/
@@ -59,6 +64,8 @@ apps/api/node_modules/
 
 # ─── TypeScript ───────────────────────────────────────────────────────────────
 *.tsbuildinfo
+*.tmp
+*.temp
 
 # ─── Turbo ────────────────────────────────────────────────────────────────────
 .turbo/
