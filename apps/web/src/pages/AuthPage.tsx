@@ -5,6 +5,7 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 
 import { normalizeAuthError } from '@/lib/api-errors';
+import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import BackButton from '@/components/BackButton';
@@ -147,17 +148,17 @@ export default function AuthPage() {
         const normalizedUsername = username.trim();
 
         try {
-            const { error } = await supabase.auth.signUp({
-                email: normalizedEmail,
-                password,
-                options: {
-                    data: {
-                        username: normalizedUsername,
-                    },
-                },
+            const response = await apiFetch('/auth/register/request-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: normalizedEmail,
+                    username: normalizedUsername,
+                    password,
+                }),
             });
-
-            if (error) throw error;
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data?.message || 'No se pudo enviar el código de verificación.');
 
             navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
         } catch (err: any) {
