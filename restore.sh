@@ -7,5 +7,8 @@ if [[ -z "${DATABASE_URL:-}" && -f "apps/api/.env" ]]; then set -a; source apps/
 : "${DATABASE_URL:?DATABASE_URL es obligatorio}"
 read -r -p "ATENCIÓN: esto sobrescribirá datos. Escribí RESTAURAR para continuar: " CONFIRM
 [[ "$CONFIRM" == RESTAURAR ]] || { echo 'Cancelado.'; exit 1; }
-gzip -dc "$BACKUP" | psql --dbname="$DATABASE_URL" --set ON_ERROR_STOP=1
+PSQL="$(find /usr/lib/postgresql -type f -path '*/bin/psql' -perm -111 2>/dev/null | sort -V | tail -n 1)"
+PSQL="${PSQL:-$(command -v psql || true)}"
+[[ -n "$PSQL" ]] || { echo 'Falta psql' >&2; exit 1; }
+gzip -dc "$BACKUP" | "$PSQL" --dbname="$DATABASE_URL" --set ON_ERROR_STOP=1
 echo 'Restore completado.'
