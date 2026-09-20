@@ -105,12 +105,17 @@ NODE
 }
 
 check_git() {
+    local dirty
     git rev-parse --is-inside-work-tree >/dev/null
     [[ "$(git branch --show-current)" == main ]] || die "El checkout no está en main (actual: $(git branch --show-current))."
     git remote get-url origin >/dev/null || die 'No existe el remote origin.'
-    if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then git status --short; die 'Hay cambios tracked sin commit; deploy cancelado.'; fi
+    # Este repositorio histórico contiene algunos artifacts generados tracked. Se ignoran
+    # únicamente caches/dependencias/builds; cualquier fuente o configuración sí bloquea.
+    dirty="$(git status --porcelain --untracked-files=no | awk '{ path=substr($0,4); if (path !~ /(^|\/)node_modules\// && path !~ /(^|\/)\.vite\// && path !~ /(^|\/)(dist|build)\//) print }')"
+    if [[ -n "$dirty" ]]; then printf '%s\n' "$dirty"; die 'Hay cambios tracked de código/configuración; deploy cancelado.'; fi
     if [[ "$SKIP_PULL" -eq 0 ]]; then git fetch --prune origin main; git pull --ff-only origin main; fi
-    [[ -z "$(git status --porcelain --untracked-files=no)" ]] || die 'El checkout quedó sucio después del pull.'
+    dirty="$(git status --porcelain --untracked-files=no | awk '{ path=substr($0,4); if (path !~ /(^|\/)node_modules\// && path !~ /(^|\/)\.vite\// && path !~ /(^|\/)(dist|build)\//) print }')"
+    [[ -z "$dirty" ]] || { printf '%s\n' "$dirty"; die 'El checkout quedó sucio después del pull.'; }
 }
 
 check_resources() {
