@@ -21,12 +21,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || { echo "❌ Error al entrar en la carpeta $SCRIPT_DIR"; exit 1; }
 echo "📁 Directorio de Finix: $SCRIPT_DIR"
 
-# 2. Permisos INMEDIATOS para que NGINX (www-data) siempre pueda leer la carpeta
+# 2. No modificar permisos recursivamente dentro del repositorio.
+# Eso genera miles de cambios locales en Git y puede exponer archivos sensibles.
 echo "🔒 Verificando permisos del servidor web..."
-chmod -R 755 "$SCRIPT_DIR"
-if [[ "$SCRIPT_DIR" == /root* ]]; then
-    chmod 755 /root
-fi
+mkdir -p "$SCRIPT_DIR/apps/api/uploads"
+chmod 755 "$SCRIPT_DIR/apps/api/uploads"
 
 # 3. Descargar los últimos cambios de GitHub
 echo "[1/7] Descargando últimos cambios desde GitHub (main)..."
