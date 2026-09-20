@@ -15,18 +15,10 @@ interface AuthState {
 
 export function isJuanUser(user: any): boolean {
     if (!user) return false;
-    const usr = String(user.username || '').toLowerCase();
-    const eml = String(user.email || '').toLowerCase();
-    const cleanUsr = usr.replace(/[^a-z0-9]/g, '');
-    const cleanEml = eml.replace(/[^a-z0-9]/g, '');
-    return cleanUsr.includes('juan2608') ||
-           cleanUsr.includes('juan26') ||
-           usr.includes('juan26-08') ||
-           usr.includes('juan2608') ||
-           cleanEml.includes('juan2608') ||
-           cleanEml.includes('juan26') ||
-           eml.includes('juan26-08') ||
-           eml.includes('juan2608');
+    // The backend is the only authority for elevated access. Never infer it from identity.
+    const role = String(user.role || '').toUpperCase();
+    const plan = String(user.plan || '').toUpperCase();
+    return role === 'ADMIN' || role === 'SUPER_ADMIN' || plan === 'PRO';
 }
 
 export function isCreatorUser(user: any): boolean {
@@ -46,19 +38,6 @@ export function isCreatorUser(user: any): boolean {
 }
 
 function enhanceUser(user: User | null): User | null {
-    if (!user) return null;
-    if (isJuanUser(user)) {
-        return {
-            ...user,
-            plan: 'PRO',
-            accountType: 'PRO',
-            subscriptionStatus: 'ACTIVE',
-            subscriptionTier: 'pro',
-            role: 'ADMIN',
-            isPro: true,
-            isVerified: true,
-        } as any;
-    }
     return user;
 }
 

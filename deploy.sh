@@ -139,6 +139,8 @@ run_prisma() {
 build_all() {
     mkdir -p "$TMP_DIR"
     [[ -d apps/api/dist ]] && { cp -a apps/api/dist "$TMP_DIR/api-dist-backup"; API_DIST_BACKUP="$TMP_DIR/api-dist-backup"; } || true
+    npm run build -w @finix/shared
+    [[ -s packages/shared/dist/index.js && -s packages/shared/dist/index.d.ts ]] || die 'No se pudo construir packages/shared/dist.'
     npm run build -w api
     npm run build -w web
     npm run build -w admin
