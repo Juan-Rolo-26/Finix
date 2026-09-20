@@ -12,7 +12,7 @@ read_env_value() {
     local key="$1"
     node - "$ENV_FILE" "$key" <<'NODE' | base64 -d
 const fs = require('fs');
-const dotenv = require('./apps/api/node_modules/dotenv');
+const dotenv = require('dotenv');
 const env = dotenv.parse(fs.readFileSync(process.argv[2]));
 const value = env[process.argv[3]] || '';
 process.stdout.write(Buffer.from(value, 'utf8').toString('base64'));

@@ -93,7 +93,7 @@ validate_environment() {
     [[ -f apps/api/.env ]] || die 'No existe apps/api/.env en el VPS.'
     node - <<'NODE'
 const fs = require('fs');
-const dotenv = require('./apps/api/node_modules/dotenv');
+const dotenv = require('dotenv');
 const env = dotenv.parse(fs.readFileSync('apps/api/.env'));
 const required = ['NODE_ENV', 'PORT', 'DATABASE_URL', 'DIRECT_URL', 'JWT_SECRET', 'FRONTEND_URL', 'ADMIN_URL'];
 const missing = required.filter((key) => !env[key] || env[key].startsWith('REPLACE_WITH_'));
