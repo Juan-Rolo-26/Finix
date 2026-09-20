@@ -68,7 +68,7 @@ Pegá y completá con tus claves reales:
 ```env
 # ── Servidor y URLs ─────────────────────────────────────────────────────────
 NODE_ENV=production
-PORT=3001
+PORT=3010
 API_URL=https://finixarg.com
 FRONTEND_URL=https://finixarg.com
 APP_URL=https://finixarg.com
@@ -140,7 +140,21 @@ VITE_ADMIN_BASE_PATH="/"
 
 ## 🔒 4. Configuración de NGINX y Certificados SSL (HTTPS)
 
-### 4.1. Instalar la configuración del sitio
+### 4.1. Obtener primero los certificados SSL
+
+La configuración final de Nginx referencia los certificados de Let's Encrypt, por
+lo que en una instalación nueva hay que obtenerlos antes de activarla. Con DNS
+ya propagado, ejecutá:
+
+```bash
+sudo systemctl stop nginx
+sudo certbot certonly --standalone \
+  -d finixarg.com -d www.finixarg.com -d admin.finixarg.com \
+  --agree-tos --no-eff-email -m admin@finixarg.com
+sudo systemctl start nginx
+```
+
+### 4.2. Instalar la configuración del sitio
 Copia el archivo de configuración listo para producción:
 
 ```bash
@@ -157,14 +171,14 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-### 4.2. Obtener Certificados SSL Gratuitos (HTTPS)
-Con Certbot obtenés certificados automáticos para todos tus subdominios en un solo comando:
+### 4.3. Verificar la renovación SSL
+
+Certbot instala la renovación automática. Verificala sin modificar el
+certificado actual:
 
 ```bash
-sudo certbot --nginx -d finixarg.com -d www.finixarg.com -d admin.finixarg.com
+sudo certbot renew --dry-run
 ```
-
-> Certbot configurará automáticamente la renovación periódica y el desvío de tráfico HTTP hacia HTTPS.
 
 ---
 
@@ -291,4 +305,3 @@ cd ~/Finix && bash deploy.sh
 # Ver logs de Nginx en caso de problemas de red
 sudo tail -f /var/log/nginx/error.log
 ```
-

@@ -103,7 +103,7 @@ async function bootstrap() {
     // ── Graceful shutdown ─────────────────────────────────────────────────────
     app.enableShutdownHooks();
 
-    const port = Number(process.env.PORT || 3001);
+    const port = Number(process.env.PORT || 3010);
     await app.listen(port, '0.0.0.0');
 
     console.log('\n\n=============================================');

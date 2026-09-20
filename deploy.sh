@@ -35,7 +35,7 @@ git pull --ff-only origin main
 
 # 4. Instalar dependencias del monorepo
 echo "[2/7] Instalando dependencias de NPM..."
-npm install
+npm ci
 
 # 5. Cargar variables de apps/api/.env de forma segura
 if [ -f "apps/api/.env" ]; then
