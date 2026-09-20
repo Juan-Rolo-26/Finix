@@ -164,8 +164,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                 try {
                     const header = decodeJwtHeader(rawJwtToken);
                     const payload = decodeJwtPayload(rawJwtToken);
-                    console.log('[JwtStrategy] decoding token:', { header, payload });
-
                     if (payload.iss === 'finix-api') {
                         done(null, resolveFinixSecret());
                         return;

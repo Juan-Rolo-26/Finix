@@ -208,11 +208,9 @@ export class PortfolioController {
         @Body() dto: CreateTransactionDto,
     ) {
         const userId = this.resolveUserId(req);
-        console.log('[PortfolioController] createTransaction received:', { portfolioId, userId, dto });
         try {
             return await this.portfolioService.createTransaction(portfolioId, userId, dto);
         } catch (err: any) {
-            console.error('[PortfolioController] createTransaction error:', err);
             if (err instanceof NotFoundException || err instanceof BadRequestException) {
                 throw err;
             }

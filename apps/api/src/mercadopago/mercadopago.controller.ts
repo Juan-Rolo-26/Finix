@@ -35,9 +35,10 @@ export class MercadoPagoController {
         return this.mpService.handleWebhook(body, query);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Get('status/:paymentId')
-    getStatus(@Param('paymentId') paymentId: string) {
-        return this.mpService.getStatus(paymentId);
+    getStatus(@Param('paymentId') paymentId: string, @Req() req: any) {
+        return this.mpService.getStatus(paymentId, req.user.id);
     }
 
     @Get('config')

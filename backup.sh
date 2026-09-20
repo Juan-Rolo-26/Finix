@@ -2,11 +2,25 @@
 set -Eeuo pipefail
 umask 077
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT_DIR"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/finix}"
 RETENTION_DAYS="${RETENTION_DAYS:-28}"
 mkdir -p "$BACKUP_DIR"
-if [[ -z "${DATABASE_URL:-}" && -f "$ROOT_DIR/apps/api/.env" ]]; then set -a; source "$ROOT_DIR/apps/api/.env"; set +a; fi
-: "${DATABASE_URL:?DATABASE_URL es obligatorio}"
+ENV_FILE="$ROOT_DIR/apps/api/.env"
+[[ -f "$ENV_FILE" ]] || { echo 'Falta apps/api/.env' >&2; exit 1; }
+read_env_value() {
+    local key="$1"
+    node - "$ENV_FILE" "$key" <<'NODE' | base64 -d
+const fs = require('fs');
+const dotenv = require('./apps/api/node_modules/dotenv');
+const env = dotenv.parse(fs.readFileSync(process.argv[2]));
+const value = env[process.argv[3]] || '';
+process.stdout.write(Buffer.from(value, 'utf8').toString('base64'));
+NODE
+}
+DATABASE_URL="${DATABASE_URL:-$(read_env_value DATABASE_URL)}"
+DIRECT_URL="${DIRECT_URL:-$(read_env_value DIRECT_URL)}"
+[[ -n "$DATABASE_URL" ]] || { echo 'DATABASE_URL es obligatorio' >&2; exit 1; }
 BACKUP_DATABASE_URL="${DIRECT_URL:-$DATABASE_URL}"
 PG_DUMP="$(find /usr/lib/postgresql -type f -path '*/bin/pg_dump' -perm -111 2>/dev/null | sort -V | tail -n 1)"
 PG_DUMP="${PG_DUMP:-$(command -v pg_dump || true)}"

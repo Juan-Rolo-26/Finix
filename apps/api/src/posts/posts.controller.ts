@@ -17,7 +17,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'fs';
 import { Response } from 'express';
 import { PostsService } from './posts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -31,6 +31,17 @@ const ALLOWED_IMAGE = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const ALLOWED_VIDEO = ['video/mp4', 'video/webm', 'video/quicktime'];
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100 MB
+
+function hasExpectedMediaSignature(path: string, mimeType: string) {
+    const header = readFileSync(path).subarray(0, 16);
+    if (mimeType === 'image/jpeg') return header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
+    if (mimeType === 'image/png') return header.subarray(0, 8).toString('hex') === '89504e470d0a1a0a';
+    if (mimeType === 'image/gif') return header.subarray(0, 6).toString('ascii') === 'GIF87a' || header.subarray(0, 6).toString('ascii') === 'GIF89a';
+    if (mimeType === 'image/webp') return header.subarray(0, 4).toString('ascii') === 'RIFF' && header.subarray(8, 12).toString('ascii') === 'WEBP';
+    if (mimeType === 'video/webm') return header.subarray(0, 4).toString('hex') === '1a45dfa3';
+    if (mimeType === 'video/mp4' || mimeType === 'video/quicktime') return header.subarray(4, 8).toString('ascii') === 'ftyp';
+    return false;
+}
 
 const postMediaStorage = diskStorage({
     destination: (_req, _file, cb) => {
@@ -163,6 +174,13 @@ export class PostsController {
     )
     uploadMedia(@UploadedFiles() files: Express.Multer.File[]) {
         if (!files || files.length === 0) throw new BadRequestException('No se recibieron archivos');
+
+        for (const file of files) {
+            if (!hasExpectedMediaSignature(file.path, file.mimetype)) {
+                try { unlinkSync(file.path); } catch { /* best effort cleanup */ }
+                throw new BadRequestException('El contenido del archivo no coincide con su tipo declarado');
+            }
+        }
 
         return files.map((file) => ({
             url: buildUploadPublicPath('posts', file.filename),

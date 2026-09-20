@@ -85,11 +85,16 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // ─── Conversation rooms ──────────────────────────────────────────────────
 
     @SubscribeMessage('joinConversation')
-    handleJoinConversation(
+    async handleJoinConversation(
         @ConnectedSocket() client: Socket,
         @MessageBody() data: { conversationId: string },
     ) {
-        client.join(`conv:${data.conversationId}`);
+        const userId: string | undefined = client.data.userId;
+        if (!userId || !data?.conversationId) return;
+        const participantIds = await this.messagesService.getConversationParticipantIds(data.conversationId);
+        if (participantIds.includes(userId)) {
+            client.join(`conv:${data.conversationId}`);
+        }
     }
 
     @SubscribeMessage('leaveConversation')

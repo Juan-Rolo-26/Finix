@@ -244,7 +244,7 @@ export class MercadoPagoService {
         } catch {}
     }
 
-    async getStatus(paymentId: string) {
+    async getStatus(paymentId: string, userId: string) {
         if (!this.isConfigured()) {
             return { configured: false };
         }
@@ -258,6 +258,10 @@ export class MercadoPagoService {
 
             if (!res.ok) return { status: 'unknown' };
             const payment = await res.json();
+            const externalReference = String(payment.external_reference || '');
+            if (!externalReference.startsWith(`${userId}:`)) {
+                return { status: 'unknown' };
+            }
             return {
                 id: payment.id,
                 status: payment.status,

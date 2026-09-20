@@ -1,5 +1,6 @@
-import { Controller, Get, Query, Param, Post, Body } from '@nestjs/common';
+import { Controller, Get, Query, Param, Post, Body, ForbiddenException, Request, UseGuards } from '@nestjs/common';
 import { NewsService } from './news.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('news')
 export class NewsController {
@@ -93,7 +94,11 @@ export class NewsController {
      * Manually trigger news fetch (admin)
      */
     @Post('fetch')
-    async triggerFetch() {
+    @UseGuards(JwtAuthGuard)
+    async triggerFetch(@Request() req: any) {
+        if (req.user?.role !== 'ADMIN') {
+            throw new ForbiddenException('Requiere permisos de administrador');
+        }
         return this.newsService.fetchAndStoreNews();
     }
 
