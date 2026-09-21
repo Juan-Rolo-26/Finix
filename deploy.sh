@@ -188,7 +188,17 @@ configure_nginx() {
     if [[ "$nginx_mode" == 'systemd' ]]; then
         sudo systemctl reload nginx
     else
-        sudo nginx -s reload
+        local -a nginx_masters
+        mapfile -t nginx_masters < <(sudo ps -eo pid=,args= | awk '$0 ~ /nginx: master process/ {print $1}')
+        if (( ${#nginx_masters[@]} == 0 )); then
+            die 'Nginx aparece fuera de systemd, pero no se encontró ningún master.'
+        fi
+        if (( ${#nginx_masters[@]} > 1 )); then
+            printf 'Masters encontrados: %s\n' "${nginx_masters[*]}" >&2
+            die 'Se encontraron múltiples masters de Nginx; revisión manual requerida.'
+        fi
+        log "Nginx fuera de systemd. Master PID: ${nginx_masters[0]}"
+        sudo kill -HUP "${nginx_masters[0]}"
     fi
 }
 
