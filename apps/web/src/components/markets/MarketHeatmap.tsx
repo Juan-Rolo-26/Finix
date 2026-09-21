@@ -104,11 +104,11 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
     const [sortBy, setSortBy] = useState<SortOption>('marketCap');
     const [showInfoModal, setShowInfoModal] = useState(false);
 
-    const fetchData = async () => {
+    const fetchData = async (forceRefresh = false) => {
         setLoading(true);
         setError(null);
         try {
-            const res = await apiFetch(`/market/heatmap/sp500?refresh=true&_t=${Date.now()}`);
+            const res = await apiFetch(`/market/heatmap/sp500?refresh=${forceRefresh ? 'true' : 'false'}&_t=${Date.now()}`);
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`);
             }
@@ -121,14 +121,17 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
             }
         } catch (err: any) {
             console.error('Error fetching S&P 500 technical data:', err);
-            setError(err.message || 'No se pudo cargar el análisis técnico');
+            // An external market provider must never take down the whole market view.
+            setItems([]);
+            setSummary(null);
+            setError('Los datos técnicos están temporalmente en actualización.');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchData();
+        fetchData(false);
     }, []);
 
     // Unique sectors list
@@ -220,7 +223,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                         </Button>
                         <Button
                             variant="outline"
-                            onClick={fetchData}
+                            onClick={() => fetchData(true)}
                             disabled={loading}
                             className="rounded-xl border-border/70 gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold hover:border-emerald-500/50"
                         >
@@ -605,13 +608,13 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                             </p>
                         </div>
                     ) : error ? (
-                        <Card className="rounded-2xl border-rose-500/30 bg-white dark:bg-card p-8 text-center shadow-xs">
+                        <Card className="rounded-2xl border-amber-500/30 bg-white dark:bg-card p-8 text-center shadow-xs">
                             <div className="flex flex-col items-center gap-3">
-                                <AlertCircle className="w-8 h-8 text-rose-500" />
-                                <h3 className="text-lg font-bold text-foreground">Error al cargar datos técnicos</h3>
+                                <AlertCircle className="w-8 h-8 text-amber-500" />
+                                <h3 className="text-lg font-bold text-foreground">Datos técnicos en actualización</h3>
                                 <p className="text-sm text-muted-foreground">{error}</p>
-                                <Button onClick={fetchData} className="mt-2 rounded-xl h-10 px-5 text-xs font-bold">
-                                    Reintentar
+                                <Button onClick={() => fetchData(true)} className="mt-2 rounded-xl h-10 px-5 text-xs font-bold">
+                                    Actualizar datos
                                 </Button>
                             </div>
                         </Card>
