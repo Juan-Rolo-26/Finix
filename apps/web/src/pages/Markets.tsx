@@ -18,6 +18,7 @@ import {
     Flame,
     Building2,
     Sparkles,
+    Clock,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,6 +30,7 @@ import { cn } from '@/lib/utils';
 import TradingViewChart from '@/components/TradingViewChart';
 import TradingViewSymbolInfo from '@/components/TradingViewSymbolInfo';
 import MarketDashboard, { type MarketDashboardData } from '@/components/markets/MarketDashboard';
+import PreMarketSection from '@/components/markets/PreMarketSection';
 import MarketHeatmap from '@/components/markets/MarketHeatmap';
 import ValueCreationHeatmap from '@/components/markets/ValueCreationHeatmap';
 import OpportunityScreener from '@/components/markets/OpportunityScreener';
@@ -286,10 +288,10 @@ export default function Markets() {
 
             <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-4 md:px-6 lg:px-8">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="grid h-auto w-full max-w-5xl mx-auto mb-4 grid-cols-2 sm:grid-cols-5 rounded-[24px] border border-border/40 bg-secondary/30 p-1.5 backdrop-blur-sm">
+                    <TabsList className="grid h-auto w-full max-w-6xl mx-auto mb-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 rounded-[24px] border border-border/40 bg-secondary/30 p-1.5 backdrop-blur-sm gap-1">
                         <TabsTrigger
                             value="overview"
-                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                            className="justify-center gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                         >
                             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
                                 <Activity className="h-3.5 w-3.5" />
@@ -297,8 +299,18 @@ export default function Markets() {
                             <span className="font-semibold text-sm">{t.markets.tabs.overview}</span>
                         </TabsTrigger>
                         <TabsTrigger
+                            value="premarket"
+                            className="justify-center gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-amber-500 shrink-0 shadow-2xs">
+                                <Clock className="h-3.5 w-3.5" />
+                            </span>
+                            <span className="font-semibold text-sm">Pre-Market</span>
+                            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                        </TabsTrigger>
+                        <TabsTrigger
                             value="heatmap"
-                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                            className="justify-center gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                         >
                             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
                                 <Flame className="h-3.5 w-3.5 fill-emerald-500/20 text-emerald-600 dark:text-emerald-400" />
@@ -340,6 +352,15 @@ export default function Markets() {
                             loading={isDashboardLoading}
                             onSelectSymbol={handleOpenMarketSymbol}
                             onRefresh={() => fetchDashboardRef.current?.(true)}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="premarket" className="space-y-4">
+                        <PreMarketSection
+                            onSelectSymbol={(sym) => {
+                                handleOpenMarketSymbol(sym);
+                                setActiveTab('chart');
+                            }}
                         />
                     </TabsContent>
 

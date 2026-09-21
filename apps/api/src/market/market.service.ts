@@ -140,6 +140,8 @@ export class MarketService {
     private readonly tickersTtlMs = 60 * 1000; // 1 minute
     private sp500TechnicalHeatmapCache: { data: any; fetchedAt: number } | null = null;
     private readonly sp500TechnicalHeatmapTtlMs = 3 * 60 * 1000; // 3 minutes
+    private premarketCache: { data: any; fetchedAt: number } | null = null;
+    private readonly premarketTtlMs = 30 * 1000; // 30 seconds
     private readonly finvizDefaultBaseScript = '/assets/dist-legacy/map_base_sec.v1.6b264ef1.js';
 
     constructor(private prisma: PrismaService) { }
@@ -521,6 +523,237 @@ export class MarketService {
             },
         ],
     } satisfies Record<string, MarketDashboardAssetDefinition[]>;
+
+    private readonly premarketCatalog = {
+        indices: [
+            {
+                id: 'sp500-fut',
+                symbol: 'AMEX:SPY',
+                label: 'S&P 500 (SPY)',
+                description: 'Principal índice de referencia de Wall Street',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'nasdaq-fut',
+                symbol: 'NASDAQ:QQQ',
+                label: 'Nasdaq 100 (QQQ)',
+                description: 'Futuros y proxy de alta tecnología y crecimiento',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'dow-fut',
+                symbol: 'AMEX:DIA',
+                label: 'Dow Jones (DIA)',
+                description: 'Las 30 corporaciones industriales líderes',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'russell-fut',
+                symbol: 'AMEX:IWM',
+                label: 'Russell 2000 (IWM)',
+                description: 'Small caps y empresas de mediana capitalización',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'vix-ind',
+                symbol: 'TVC:VIX',
+                label: 'Índice VIX',
+                description: 'Termómetro de volatilidad y riesgo en opciones',
+                format: 'number' as DashboardValueFormat,
+            },
+            {
+                id: 'dxy-ind',
+                symbol: 'TVC:DXY',
+                label: 'Dólar Index (DXY)',
+                description: 'Fortaleza del dólar frente a monedas globales',
+                format: 'number' as DashboardValueFormat,
+            },
+            {
+                id: 'us10y-ind',
+                symbol: 'TVC:US10Y',
+                label: 'Bono 10Y EE. UU.',
+                description: 'Rendimiento de los bonos del Tesoro americano',
+                format: 'percent' as DashboardValueFormat,
+            },
+        ],
+        commodities: [
+            {
+                id: 'gold-spot',
+                symbol: 'OANDA:XAUUSD',
+                label: 'Oro (Gold Spot)',
+                description: 'Activo refugio por excelencia ante incertidumbre',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'wti-oil',
+                symbol: 'NYMEX:CL1!',
+                label: 'Petróleo WTI',
+                description: 'Referencia de crudo ligero estadounidense',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'brent-oil',
+                symbol: 'TVC:UKOIL',
+                label: 'Petróleo Brent',
+                description: 'Referencia internacional de hidrocarburos',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'silver-spot',
+                symbol: 'COMEX:SI1!',
+                label: 'Plata (Silver)',
+                description: 'Metal con fuerte demanda industrial y monetaria',
+                format: 'number' as DashboardValueFormat,
+            },
+            {
+                id: 'natgas-fut',
+                symbol: 'NYMEX:NG1!',
+                label: 'Gas Natural',
+                description: 'Insumo térmico y de generación eléctrica mundial',
+                format: 'number' as DashboardValueFormat,
+            },
+            {
+                id: 'copper-fut',
+                symbol: 'COMEX:HG1!',
+                label: 'Cobre',
+                description: 'Termómetro de la actividad industrial y manufactura',
+                format: 'number' as DashboardValueFormat,
+            },
+        ],
+        magnificent7: [
+            {
+                id: 'nvda-mag',
+                symbol: 'NASDAQ:NVDA',
+                label: 'NVIDIA',
+                description: 'Hardware y procesadores para centros de datos e IA',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'aapl-mag',
+                symbol: 'NASDAQ:AAPL',
+                label: 'Apple',
+                description: 'Dispositivos premium, ecosistema iOS y servicios',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'msft-mag',
+                symbol: 'NASDAQ:MSFT',
+                label: 'Microsoft',
+                description: 'Nube Azure, software corporativo e infraestructura IA',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'amzn-mag',
+                symbol: 'NASDAQ:AMZN',
+                label: 'Amazon',
+                description: 'Comercio electrónico mundial y AWS Cloud',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'googl-mag',
+                symbol: 'NASDAQ:GOOGL',
+                label: 'Alphabet (Google)',
+                description: 'Buscador, YouTube, Google Cloud y Gemini',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'meta-mag',
+                symbol: 'NASDAQ:META',
+                label: 'Meta Platforms',
+                description: 'Redes sociales, mensajería y monetización publicitaria',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'tsla-mag',
+                symbol: 'NASDAQ:TSLA',
+                label: 'Tesla',
+                description: 'Vehículos eléctricos, almacenamiento energético y robótica',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+        ],
+        argentina: [
+            {
+                id: 'ypf-arg',
+                symbol: 'NYSE:YPF',
+                label: 'YPF (ADR)',
+                description: 'Líder petrolero nacional y motor de Vaca Muerta',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'meli-arg',
+                symbol: 'NASDAQ:MELI',
+                label: 'MercadoLibre',
+                description: 'Gigante regional de e-commerce y pagos digitales',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'ggal-arg',
+                symbol: 'NASDAQ:GGAL',
+                label: 'Galicia (ADR)',
+                description: 'Mayor grupo bancario y financiero privado de Argentina',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'vist-arg',
+                symbol: 'NYSE:VIST',
+                label: 'Vista Energy',
+                description: 'Productor independiente líder en shale oil',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'pam-arg',
+                symbol: 'NYSE:PAM',
+                label: 'Pampa Energía (ADR)',
+                description: 'Líder integrado en electricidad, gas y petróleo',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'bma-arg',
+                symbol: 'NYSE:BMA',
+                label: 'Banco Macro (ADR)',
+                description: 'Banca comercial con amplia presencia federal',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+        ],
+        crypto: [
+            {
+                id: 'btc-pm',
+                symbol: 'CRYPTO:BTCUSD',
+                label: 'Bitcoin',
+                description: 'Indicador 24/7 de liquidez y apetito por riesgo',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+            {
+                id: 'eth-pm',
+                symbol: 'CRYPTO:ETHUSD',
+                label: 'Ethereum',
+                description: 'Infraestructura descentralizada y contratos inteligentes',
+                format: 'currency' as DashboardValueFormat,
+                currency: 'USD' as const,
+            },
+        ],
+    };
 
     // Expanded catalog with more assets
     private symbolCatalog = [
@@ -912,6 +1145,134 @@ export class MarketService {
             leaders,
             community,
         };
+    }
+
+    private getPremarketSessionInfo() {
+        const now = new Date();
+        const nyDateStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+        const nyDate = new Date(nyDateStr);
+        const day = nyDate.getDay();
+        const hour = nyDate.getHours();
+        const minute = nyDate.getMinutes();
+        const totalMinutes = hour * 60 + minute;
+
+        const isWeekend = day === 0 || day === 6;
+        let status: 'pre-market' | 'regular' | 'post-market' | 'closed' = 'closed';
+        let label = 'Mercado Cerrado';
+
+        if (!isWeekend) {
+            if (totalMinutes >= 4 * 60 && totalMinutes < 9 * 60 + 30) {
+                status = 'pre-market';
+                label = 'Pre-Market Abierto';
+            } else if (totalMinutes >= 9 * 60 + 30 && totalMinutes < 16 * 60) {
+                status = 'regular';
+                label = 'Mercado Regular Abierto';
+            } else if (totalMinutes >= 16 * 60 && totalMinutes < 20 * 60) {
+                status = 'post-market';
+                label = 'After-Hours (Post-Mercado)';
+            } else {
+                status = 'closed';
+                label = 'Sesión Cerrada';
+            }
+        } else {
+            status = 'closed';
+            label = 'Fin de Semana (Cerrado)';
+        }
+
+        const nextBellNy = new Date(nyDate);
+        if (isWeekend || totalMinutes >= 9 * 60 + 30) {
+            let addDays = 1;
+            if (day === 5 && totalMinutes >= 9 * 60 + 30) addDays = 3;
+            else if (day === 6) addDays = 2;
+            else if (day === 0) addDays = 1;
+            nextBellNy.setDate(nextBellNy.getDate() + addDays);
+        }
+        nextBellNy.setHours(9, 30, 0, 0);
+
+        const diffSeconds = Math.max(0, Math.round((nextBellNy.getTime() - nyDate.getTime()) / 1000));
+
+        return {
+            status,
+            label,
+            nextBell: nextBellNy.toISOString(),
+            secondsToOpen: diffSeconds,
+        };
+    }
+
+    async getPremarket() {
+        if (this.premarketCache && Date.now() - this.premarketCache.fetchedAt < this.premarketTtlMs) {
+            return this.premarketCache.data;
+        }
+
+        const session = this.getPremarketSessionInfo();
+        const allDefinitions = [
+            ...this.premarketCatalog.indices,
+            ...this.premarketCatalog.commodities,
+            ...this.premarketCatalog.magnificent7,
+            ...this.premarketCatalog.argentina,
+            ...this.premarketCatalog.crypto,
+        ];
+
+        const quotes = await this.getQuotes(allDefinitions.map(d => d.symbol));
+        const quotesByInput = new Map(quotes.map(q => [this.normalizeQuoteInputSymbol(q.inputSymbol), q]));
+
+        const mapCatalog = (items: MarketDashboardAssetDefinition[]) =>
+            items.map(d => this.buildDashboardAsset(d, quotesByInput.get(this.normalizeQuoteInputSymbol(d.symbol))));
+
+        const indices = mapCatalog(this.premarketCatalog.indices);
+        const commodities = mapCatalog(this.premarketCatalog.commodities);
+        const magnificent7 = mapCatalog(this.premarketCatalog.magnificent7);
+        const argentina = mapCatalog(this.premarketCatalog.argentina);
+        const crypto = mapCatalog(this.premarketCatalog.crypto);
+
+        const leadingChanges = [
+            ...indices.slice(0, 2).map(i => i.change),
+            ...magnificent7.map(m => m.change),
+        ].filter((c): c is number => c !== null);
+
+        let sentiment: 'bullish' | 'neutral' | 'cautious' | 'bearish' = 'neutral';
+        let sentimentScore = 50;
+        let sentimentSummary = 'Pre-mercado plano sin tendencia predominante.';
+
+        if (leadingChanges.length > 0) {
+            const avgChange = leadingChanges.reduce((a, b) => a + b, 0) / leadingChanges.length;
+
+            if (avgChange >= 0.35) {
+                sentiment = 'bullish';
+                sentimentScore = Math.min(95, 65 + Math.round(avgChange * 15));
+                sentimentSummary = 'Fuerte sesgo comprador en futuros de Wall Street y Big Tech.';
+            } else if (avgChange > 0.05) {
+                sentiment = 'bullish';
+                sentimentScore = Math.min(75, 55 + Math.round(avgChange * 20));
+                sentimentSummary = 'Futuros en terreno positivo con optimismo moderado.';
+            } else if (avgChange <= -0.35) {
+                sentiment = 'bearish';
+                sentimentScore = Math.max(10, 35 + Math.round(avgChange * 15));
+                sentimentSummary = 'Presión vendedora y toma de ganancias en pre-apertura.';
+            } else if (avgChange < -0.05) {
+                sentiment = 'cautious';
+                sentimentScore = Math.max(25, 45 + Math.round(avgChange * 20));
+                sentimentSummary = 'Cautela en los mercados globales con leves bajas previas a la campana.';
+            }
+        }
+
+        const payload = {
+            updatedAt: new Date().toISOString(),
+            session: {
+                ...session,
+                sentiment,
+                sentimentScore,
+                sentimentSummary,
+            },
+            indices,
+            commodities,
+            magnificent7,
+            argentina,
+            crypto,
+        };
+
+        this.premarketCache = { data: payload, fetchedAt: Date.now() };
+        return payload;
     }
 
     async getTickers() {

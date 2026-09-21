@@ -40,6 +40,11 @@ export class MarketController {
         return this.marketService.getDashboard();
     }
 
+    @Get('premarket')
+    getPremarket() {
+        return this.marketService.getPremarket();
+    }
+
     @Get('search')
     search(@Query() q: any) {
         const query = q.query || q.q || q.text || q.search || '';
