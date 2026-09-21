@@ -141,7 +141,8 @@ export class MarketService {
     private sp500TechnicalHeatmapCache: { data: any; fetchedAt: number } | null = null;
     private readonly sp500TechnicalHeatmapTtlMs = 3 * 60 * 1000; // 3 minutes
     private premarketCache: { data: any; fetchedAt: number } | null = null;
-    private readonly premarketTtlMs = 30 * 1000; // 30 seconds
+    private premarketFrozenSession: { dateKey: string; data: any } | null = null;
+    private readonly premarketTtlMs = 60 * 1000; // 60 seconds – matches frontend refresh interval
     private readonly finvizDefaultBaseScript = '/assets/dist-legacy/map_base_sec.v1.6b264ef1.js';
 
     constructor(private prisma: PrismaService) { }
@@ -1190,21 +1191,39 @@ export class MarketService {
         nextBellNy.setHours(9, 30, 0, 0);
 
         const diffSeconds = Math.max(0, Math.round((nextBellNy.getTime() - nyDate.getTime()) / 1000));
+        const dateKey = `${nyDate.getFullYear()}-${String(nyDate.getMonth() + 1).padStart(2, '0')}-${String(nyDate.getDate()).padStart(2, '0')}`;
 
         return {
             status,
             label,
+            dateKey,
             nextBell: nextBellNy.toISOString(),
             secondsToOpen: diffSeconds,
         };
     }
 
     async getPremarket() {
+        const session = this.getPremarketSessionInfo();
+
+        // Si ya pasó el horario de pre-market y tenemos los datos congelados del día, los conservamos intactos
+        if (session.status !== 'pre-market' && this.premarketFrozenSession && this.premarketFrozenSession.dateKey === session.dateKey) {
+            return {
+                ...this.premarketFrozenSession.data,
+                updatedAt: new Date().toISOString(),
+                isFrozenPremarket: true,
+                session: {
+                    ...session,
+                    sentiment: this.premarketFrozenSession.data.session.sentiment,
+                    sentimentScore: this.premarketFrozenSession.data.session.sentimentScore,
+                    sentimentSummary: this.premarketFrozenSession.data.session.sentimentSummary,
+                },
+            };
+        }
+
         if (this.premarketCache && Date.now() - this.premarketCache.fetchedAt < this.premarketTtlMs) {
             return this.premarketCache.data;
         }
 
-        const session = this.getPremarketSessionInfo();
         const allDefinitions = [
             ...this.premarketCatalog.indices,
             ...this.premarketCatalog.commodities,
@@ -1256,14 +1275,33 @@ export class MarketService {
             }
         }
 
+        // Top 5 más alcistas y Top 5 más bajistas
+        const allRankable = [
+            ...indices,
+            ...commodities,
+            ...magnificent7,
+            ...argentina,
+        ].filter((item) => item.change !== null && Number.isFinite(item.change));
+
+        const topGainers = [...allRankable]
+            .sort((a, b) => (b.change ?? 0) - (a.change ?? 0))
+            .slice(0, 5);
+
+        const topLosers = [...allRankable]
+            .sort((a, b) => (a.change ?? 0) - (b.change ?? 0))
+            .slice(0, 5);
+
         const payload = {
             updatedAt: new Date().toISOString(),
+            isFrozenPremarket: session.status !== 'pre-market',
             session: {
                 ...session,
                 sentiment,
                 sentimentScore,
                 sentimentSummary,
             },
+            topGainers,
+            topLosers,
             indices,
             commodities,
             magnificent7,
@@ -1272,6 +1310,12 @@ export class MarketService {
         };
 
         this.premarketCache = { data: payload, fetchedAt: Date.now() };
+
+        // Guardamos la sesión capturada para preservarla si abre la rueda regular
+        if (session.status === 'pre-market' || !this.premarketFrozenSession || this.premarketFrozenSession.dateKey !== session.dateKey) {
+            this.premarketFrozenSession = { dateKey: session.dateKey, data: payload };
+        }
+
         return payload;
     }
 
