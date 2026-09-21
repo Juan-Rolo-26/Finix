@@ -20,6 +20,14 @@ export class MercadoPagoService {
         return Boolean(this.accessToken && !this.accessToken.includes('...') && this.accessToken.length > 10);
     }
 
+    public getProPrice(): number {
+        return Number(process.env.MP_PRO_PRICE_ARS) || 8500;
+    }
+
+    public getCreatorPrice(): number {
+        return Number(process.env.MP_CREATOR_PRICE_ARS) || 29900;
+    }
+
     async createPreference(userId: string, planType: 'pro' | 'creator') {
         if (!this.isConfigured()) {
             throw new BadRequestException(

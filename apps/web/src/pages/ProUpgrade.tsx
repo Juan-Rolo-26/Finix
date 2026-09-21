@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Check, Sparkles, Zap, Shield, Target, Loader2, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +18,18 @@ export default function ProUpgrade() {
     const navigate = useNavigate();
     const user = useAuthStore(s => s.user);
     const [loading, setLoading] = useState(false);
+    const [proPrice, setProPrice] = useState(8500);
+
+    useEffect(() => {
+        apiFetch('/mercadopago/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.proPriceArs) {
+                    setProPrice(data.proPriceArs);
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     const handleUpgrade = async () => {
         if (!user) {
@@ -135,8 +147,8 @@ export default function ProUpgrade() {
                             </div>
 
                             <div className="flex items-baseline gap-2 mb-8">
-                                <span className="text-5xl font-extrabold tracking-tighter">$5</span>
-                                <span className="text-muted-foreground font-medium">/ mes</span>
+                                <span className="text-5xl font-extrabold tracking-tighter">${proPrice.toLocaleString('es-AR')}</span>
+                                <span className="text-muted-foreground font-medium">ARS / mes</span>
                             </div>
 
                             <button 

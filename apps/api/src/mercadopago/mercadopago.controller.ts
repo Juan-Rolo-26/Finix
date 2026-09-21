@@ -45,6 +45,8 @@ export class MercadoPagoController {
     getConfig() {
         return {
             configured: this.mpService.isConfigured(),
+            proPriceArs: this.mpService.getProPrice(),
+            creatorPriceArs: this.mpService.getCreatorPrice(),
         };
     }
 }

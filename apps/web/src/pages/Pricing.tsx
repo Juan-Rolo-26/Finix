@@ -55,6 +55,22 @@ export default function Pricing() {
             setLoadingPlan(null);
         }
     };
+    const [prices, setPrices] = useState({ pro: 8500, creator: 29900 });
+
+    useEffect(() => {
+        apiFetch('/mercadopago/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.proPriceArs || data.creatorPriceArs) {
+                    setPrices({
+                        pro: data.proPriceArs || 8500,
+                        creator: data.creatorPriceArs || 29900,
+                    });
+                }
+            })
+            .catch(() => {});
+    }, []);
+
     const plans = [
         {
             name: 'Free',
@@ -78,8 +94,8 @@ export default function Pricing() {
         },
         {
             name: 'PRO',
-            price: '$5.00',
-            period: '/mes',
+            price: `$${prices.pro.toLocaleString('es-AR')}`,
+            period: ' ARS/mes',
             description: 'Para inversores que quieren maximizar sus retornos.',
             features: [
                 'Todo lo del plan Free',
@@ -100,8 +116,8 @@ export default function Pricing() {
         },
         {
             name: 'Creador',
-            price: '$24.99',
-            period: '/mes',
+            price: `$${prices.creator.toLocaleString('es-AR')}`,
+            period: ' ARS/mes',
             description: 'Para líderes de opinión y analistas profesionales.',
             features: [
                 'Todo lo del plan PRO',
