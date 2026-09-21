@@ -49,8 +49,19 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                 apiFetch(`/market/news?symbol=${encodeURIComponent(ticker)}`),
                 apiFetch(`/market/candles?symbol=${encodeURIComponent(symbol)}&interval=1d&range=6mo`),
             ]);
-            if (!response.ok) throw new Error('No se pudieron obtener los fundamentales');
-            setData(await response.json());
+            if (response.ok) {
+                setData(await response.json());
+            } else {
+                setData({
+                    instrument: { name: ticker, exchange },
+                    metrics: {},
+                    derived: {},
+                    statements: {},
+                    quality: { coverage: 0, warnings: ['El proveedor fundamental está temporalmente no disponible.'] },
+                    source: { providersTried: [], errors: [{ message: `HTTP ${response.status}` }] },
+                });
+                setError('Los fundamentales están temporalmente en actualización. El gráfico y los datos de mercado siguen disponibles.');
+            }
             if (newsResponse.ok) {
                 const newsData = await newsResponse.json();
                 setNews(Array.isArray(newsData) ? newsData.slice(0, 5) : []);
@@ -71,7 +82,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
 
     if (loading) return <Card className="rounded-[28px] border-border/60 bg-card/60"><CardContent className="flex min-h-40 items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin text-emerald-500" /> Cargando información fundamental…</CardContent></Card>;
 
-    if (error || !data) return <Card className="rounded-[28px] border-border/60 bg-card/60"><CardContent className="flex flex-col items-center gap-3 py-10 text-center"><p className="text-sm text-muted-foreground">{error || 'No hay datos fundamentales disponibles para este activo.'}</p><Button variant="outline" onClick={() => void load(true)}><RefreshCw className="mr-2 h-4 w-4" /> Reintentar</Button></CardContent></Card>;
+    if (!data) return <Card className="rounded-[28px] border-border/60 bg-card/60"><CardContent className="flex flex-col items-center gap-3 py-10 text-center"><p className="text-sm text-muted-foreground">Cargando información fundamental…</p><Button variant="outline" onClick={() => void load(true)}><RefreshCw className="mr-2 h-4 w-4" /> Actualizar</Button></CardContent></Card>;
 
     const metrics = data.metrics || {};
     const latestIncome = data.statements?.incomeStatement?.[0] || {};
@@ -85,6 +96,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
     const chartPoints = closes.map((value, index) => `${(index / Math.max(1, closes.length - 1)) * 100},${90 - ((value - minClose) / Math.max(0.0001, maxClose - minClose)) * 78}`).join(' ');
 
     return <section className="space-y-5">
+        {error && <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">{error} <button type="button" onClick={() => void load(true)} className="ml-2 font-semibold underline">Actualizar</button></div>}
         <Card className="rounded-[28px] border-border/60 bg-card/60 shadow-sm backdrop-blur-xl">
             <CardHeader className="flex flex-row items-start justify-between gap-4 border-b border-border/40 pb-4">
                 <div className="flex items-center gap-3"><SymbolLogo symbol={symbol} size={42} /><div><CardTitle className="text-xl">Información completa del activo</CardTitle><p className="mt-1 text-xs text-muted-foreground">{data.instrument?.name || ticker} · {ticker} · {data.instrument?.exchange || exchange}</p></div></div>
