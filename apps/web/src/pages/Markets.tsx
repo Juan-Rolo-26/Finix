@@ -300,13 +300,12 @@ export default function Markets() {
                         </TabsTrigger>
                         <TabsTrigger
                             value="premarket"
-                            className="justify-center gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                         >
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-amber-500 shrink-0 shadow-2xs">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
                                 <Clock className="h-3.5 w-3.5" />
                             </span>
                             <span className="font-semibold text-sm">Pre-Market</span>
-                            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
                         </TabsTrigger>
                         <TabsTrigger
                             value="heatmap"
