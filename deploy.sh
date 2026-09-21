@@ -188,17 +188,32 @@ configure_nginx() {
     if [[ "$nginx_mode" == 'systemd' ]]; then
         sudo systemctl reload nginx
     else
-        local -a nginx_masters
-        mapfile -t nginx_masters < <(sudo ps -eo pid=,args= | awk '$0 ~ /nginx: master process/ {print $1}')
-        if (( ${#nginx_masters[@]} == 0 )); then
-            die 'Nginx aparece fuera de systemd, pero no se encontró ningún master.'
+        local -a nginx_masters=() live_masters=()
+        local sample pid cmdline
+        for sample in 1 2 3; do
+            mapfile -t nginx_masters < <(sudo ps -eo pid=,args= | awk '$0 ~ /nginx: master process/ {print $1}')
+            live_masters=()
+            for pid in "${nginx_masters[@]}"; do
+                [[ "$pid" =~ ^[0-9]+$ ]] || continue
+                sudo kill -0 "$pid" 2>/dev/null || continue
+                cmdline="$(sudo tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+                [[ "$cmdline" == *'nginx: master process'* ]] || continue
+                live_masters+=("$pid")
+            done
+            if (( ${#live_masters[@]} == 1 )); then
+                break
+            fi
+            sleep 1
+        done
+        if (( ${#live_masters[@]} == 0 )); then
+            die 'Nginx aparece fuera de systemd, pero no se encontró ningún master vivo.'
         fi
-        if (( ${#nginx_masters[@]} > 1 )); then
-            printf 'Masters encontrados: %s\n' "${nginx_masters[*]}" >&2
-            die 'Se encontraron múltiples masters de Nginx; revisión manual requerida.'
+        if (( ${#live_masters[@]} > 1 )); then
+            printf 'Masters vivos encontrados: %s\n' "${live_masters[*]}" >&2
+            die 'Se encontraron múltiples masters vivos de Nginx; revisión manual requerida.'
         fi
-        log "Nginx fuera de systemd. Master PID: ${nginx_masters[0]}"
-        sudo kill -HUP "${nginx_masters[0]}"
+        log "Nginx fuera de systemd. Master PID: ${live_masters[0]}"
+        sudo kill -HUP "${live_masters[0]}"
     fi
 }
 
