@@ -172,14 +172,24 @@ deploy_api() {
 
 configure_nginx() {
     NGINX_BACKUP="$TMP_DIR/finixarg.com.conf.previous"
+    local nginx_mode='systemd'
     if ! sudo systemctl is-active --quiet nginx; then
-        die 'Nginx no está activo. Ejecutá: sudo systemctl enable --now nginx'
+        if sudo pgrep -x nginx >/dev/null 2>&1; then
+            nginx_mode='existing-process'
+            warn 'Nginx está activo fuera de systemd; se conservará la instancia multi-sitio y se hará reload seguro.'
+        else
+            die 'Nginx no está activo y no existe un proceso Nginx reutilizable.'
+        fi
     fi
     if sudo test -f /etc/nginx/sites-available/finixarg.com.conf; then sudo cp /etc/nginx/sites-available/finixarg.com.conf "$NGINX_BACKUP"; fi
     sudo install -m 0644 deploy/nginx/finixarg.com.conf /etc/nginx/sites-available/finixarg.com.conf
     sudo ln -sfn /etc/nginx/sites-available/finixarg.com.conf /etc/nginx/sites-enabled/finixarg.com.conf
     sudo nginx -t
-    sudo systemctl reload nginx
+    if [[ "$nginx_mode" == 'systemd' ]]; then
+        sudo systemctl reload nginx
+    else
+        sudo nginx -s reload
+    fi
 }
 
 health_api() {
@@ -218,7 +228,7 @@ main() {
         "$(node --version 2>/dev/null || echo missing)" "$(npm --version 2>/dev/null || echo missing)" "$(git --version 2>/dev/null || echo missing)" "$(pm2 --version 2>/dev/null || echo missing)" "$(nginx -v 2>&1 | head -n1 || echo missing)" "$SCRIPT_DIR" "$(git branch --show-current)" "$(git rev-parse --short HEAD)" "$(id -un)" "$(date -Is)" "$LOG_FILE"
     log "PM2 user: $(id -un); PM2 home: ${PM2_HOME:-$HOME/.pm2}"
 
-    stage 'Preflight checks' '01/15'; for cmd in node npm git pm2 nginx curl flock sudo; do require_command "$cmd"; done; validate_runtime; check_resources; check_sudo
+    stage 'Preflight checks' '01/15'; for cmd in node npm git pm2 nginx curl flock sudo pgrep; do require_command "$cmd"; done; validate_runtime; check_resources; check_sudo
     if [[ "$DRY_RUN" -eq 1 ]]; then validate_environment; check_git; ok 'Dry run: no se modificó producción'; return; fi
     stage 'Git' '02/15'; check_git
     stage 'Dependencies' '03/15'; install_dependencies
