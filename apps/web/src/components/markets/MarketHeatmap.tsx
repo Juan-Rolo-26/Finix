@@ -33,6 +33,8 @@ export interface HeatmapItem {
     marketCap: number;
     volume: number;
     rsi: number;
+    adx: number;
+    stoch: number;
     rsiState: string;
     macd: number;
     signal: number;
@@ -67,7 +69,7 @@ interface MarketHeatmapProps {
     onSelectSymbol?: (symbol: string) => void;
 }
 
-export type HeatmapMode = 'general' | 'macd' | 'rsi';
+export type HeatmapMode = 'general' | 'macd' | 'rsi' | 'adx' | 'stoch';
 type FilterSignal = 'ALL' | 'BULLISH' | 'BEARISH' | 'NEUTRAL';
 type SortOption = 'marketCap' | 'scoreDesc' | 'scoreAsc' | 'rsiDesc' | 'rsiAsc' | 'change1WDesc' | 'change1WAsc';
 type ViewDisplay = 'cards' | 'tiles';
@@ -208,7 +210,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                         </h1>
 
                         <p className="text-sm sm:text-base text-muted-foreground leading-relaxed font-normal">
-                            Monitoreo visual del mercado en tiempo real. Analiza el mapa de calor del mercado general por sectores o explora las tarjetas técnicas de momentum para <strong className="text-foreground font-semibold">MACD Semanal</strong> y <strong className="text-foreground font-semibold">RSI Semanal</strong>.
+                            Monitoreo visual del mercado en tiempo real. Analiza el mapa de calor por sectores o explora MACD, RSI, ADX y Estocástico semanal sobre las acciones del S&amp;P 500.
                         </p>
                     </div>
 
@@ -273,7 +275,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                         </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
                         {/* 1. Mapa de Calor Mercado General */}
                         <button
                             type="button"
@@ -365,6 +367,15 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                     Sobreventa (&lt;45) y Sobrecompra (&gt;55)
                                 </div>
                             </div>
+                        </button>
+
+                        <button type="button" onClick={() => setActiveMode('adx')} className={cn('flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border transition-all text-left cursor-pointer bg-white dark:bg-card', activeMode === 'adx' ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs' : 'border-border/70 hover:border-emerald-500/40')}>
+                            <span className={cn('w-5 h-5 rounded-md flex items-center justify-center border font-bold text-xs shrink-0', activeMode === 'adx' ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-border/80 bg-muted/40 text-transparent')}>✓</span>
+                            <div className="min-w-0"><div className={cn('font-bold text-sm leading-snug', activeMode === 'adx' ? 'text-foreground' : 'text-muted-foreground')}>ADX Semanal</div><div className="text-[11px] text-muted-foreground mt-0.5 truncate">Fuerza de tendencia</div></div>
+                        </button>
+                        <button type="button" onClick={() => setActiveMode('stoch')} className={cn('flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border transition-all text-left cursor-pointer bg-white dark:bg-card', activeMode === 'stoch' ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs' : 'border-border/70 hover:border-emerald-500/40')}>
+                            <span className={cn('w-5 h-5 rounded-md flex items-center justify-center border font-bold text-xs shrink-0', activeMode === 'stoch' ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-border/80 bg-muted/40 text-transparent')}>✓</span>
+                            <div className="min-w-0"><div className={cn('font-bold text-sm leading-snug', activeMode === 'stoch' ? 'text-foreground' : 'text-muted-foreground')}>Estocástico Semanal</div><div className="text-[11px] text-muted-foreground mt-0.5 truncate">Sobrecompra y sobreventa</div></div>
                         </button>
                     </div>
                 </div>
@@ -624,16 +635,12 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                             {filteredItems.map((item) => {
                                 // El mosaico representa la señal del indicador que se
                                 // está viendo: histograma para MACD y zonas 45/55 para RSI.
-                                const isBullish = activeMode === 'macd'
-                                    ? item.hist > 0
-                                    : item.rsi <= 45;
-                                const isBearish = activeMode === 'macd'
-                                    ? item.hist < 0
-                                    : item.rsi >= 55;
+                                const isBullish = activeMode === 'macd' ? item.hist > 0 : activeMode === 'adx' ? item.adx >= 25 : activeMode === 'stoch' ? item.stoch <= 20 : item.rsi <= 45;
+                                const isBearish = activeMode === 'macd' ? item.hist < 0 : activeMode === 'adx' ? item.adx < 20 : activeMode === 'stoch' ? item.stoch >= 80 : item.rsi >= 55;
                                 const technicalLabel = isBullish
-                                    ? activeMode === 'macd' ? 'MACD ALCISTA' : 'RSI ALCISTA'
+                                    ? activeMode === 'macd' ? 'MACD ALCISTA' : activeMode === 'adx' ? 'TENDENCIA FUERTE' : activeMode === 'stoch' ? 'SOBREVENTA' : 'RSI ALCISTA'
                                     : isBearish
-                                        ? activeMode === 'macd' ? 'MACD BAJISTA' : 'RSI BAJISTA'
+                                        ? activeMode === 'macd' ? 'MACD BAJISTA' : activeMode === 'adx' ? 'TENDENCIA DÉBIL' : activeMode === 'stoch' ? 'SOBRECOMPRA' : 'RSI BAJISTA'
                                         : 'NEUTRAL';
 
                                 return (
@@ -706,6 +713,10 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                         /* DETAILED CARDS GRID */
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {filteredItems.map((item) => {
+                                const indicatorValue = activeMode === 'adx' ? item.adx : activeMode === 'stoch' ? item.stoch : item.rsi;
+                                const indicatorLabel = activeMode === 'adx' ? 'ADX (fuerza semanal)' : activeMode === 'stoch' ? 'Estocástico (semanal)' : 'RSI (14 Semanal)';
+                                const indicatorBullish = activeMode === 'adx' ? item.adx >= 25 : activeMode === 'stoch' ? item.stoch <= 20 : item.rsi <= 45;
+                                const indicatorBearish = activeMode === 'adx' ? item.adx < 20 : activeMode === 'stoch' ? item.stoch >= 80 : item.rsi >= 55;
                                 const isBullish = item.signalType === 'STRONG_BUY' || item.signalType === 'BUY';
                                 const isBearish = item.signalType === 'STRONG_SELL' || item.signalType === 'SELL';
 
@@ -815,18 +826,18 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                             ) : (
                                                 <>
                                                     <div className="flex items-center justify-between text-xs font-semibold">
-                                                        <span className="text-muted-foreground">RSI (14 Semanal)</span>
+                                                        <span className="text-muted-foreground">{indicatorLabel}</span>
                                                         <span
                                                             className={cn(
                                                                 'font-mono font-bold',
-                                                                item.rsi <= 45
+                                                                indicatorBullish
                                                                     ? 'text-emerald-600'
-                                                                    : item.rsi >= 55
+                                                                    : indicatorBearish
                                                                     ? 'text-rose-600'
                                                                     : 'text-foreground'
                                                             )}
                                                         >
-                                                            {item.rsi} / 100
+                                                            {indicatorValue} / 100
                                                         </span>
                                                     </div>
                                                     {/* Gauge Bar */}
@@ -836,13 +847,13 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                                         <div
                                                             className={cn(
                                                                 'h-full rounded-full transition-all duration-300',
-                                                                item.rsi <= 45
+                                                                indicatorBullish
                                                                     ? 'bg-emerald-500'
-                                                                    : item.rsi >= 55
+                                                                    : indicatorBearish
                                                                     ? 'bg-rose-500'
                                                                     : 'bg-zinc-400'
                                                             )}
-                                                            style={{ width: `${Math.min(Math.max(item.rsi, 0), 100)}%` }}
+                                                            style={{ width: `${Math.min(Math.max(indicatorValue, 0), 100)}%` }}
                                                         />
                                                     </div>
                                                     <div className="pt-0.5 flex items-center justify-between">

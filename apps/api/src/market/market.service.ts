@@ -984,6 +984,8 @@ export class MarketService {
                         "change|1W",
                         "market_cap_basic",
                         "RSI|1W",
+                        "ADX|1W",
+                        "Stoch.K|1W",
                         "MACD.macd|1W",
                         "MACD.signal|1W",
                         "MACD.hist|1W",
@@ -1027,6 +1029,8 @@ export class MarketService {
                     change1W,
                     marketCap,
                     rawRsi,
+                    rawAdx,
+                    rawStoch,
                     rawMacd,
                     rawSignal,
                     rawHist,
@@ -1034,6 +1038,8 @@ export class MarketService {
                 ] = item.d;
 
                 const rsi = typeof rawRsi === 'number' && Number.isFinite(rawRsi) ? Number(rawRsi.toFixed(1)) : 50;
+                const adx = typeof rawAdx === 'number' && Number.isFinite(rawAdx) ? Number(rawAdx.toFixed(1)) : 20;
+                const stoch = typeof rawStoch === 'number' && Number.isFinite(rawStoch) ? Number(rawStoch.toFixed(1)) : 50;
                 const macd = typeof rawMacd === 'number' && Number.isFinite(rawMacd) ? Number(rawMacd.toFixed(2)) : 0;
                 const signal = typeof rawSignal === 'number' && Number.isFinite(rawSignal) ? Number(rawSignal.toFixed(2)) : 0;
                 const hist = typeof rawHist === 'number' && Number.isFinite(rawHist) ? Number(rawHist.toFixed(2)) : Number((macd - signal).toFixed(2));
@@ -1128,6 +1134,8 @@ export class MarketService {
                     marketCap: typeof marketCap === 'number' ? marketCap : 0,
                     volume: typeof volume === 'number' ? volume : 0,
                     rsi,
+                    adx,
+                    stoch,
                     rsiState,
                     macd,
                     signal,
