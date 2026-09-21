@@ -172,11 +172,13 @@ deploy_api() {
 
 configure_nginx() {
     NGINX_BACKUP="$TMP_DIR/finixarg.com.conf.previous"
+    if ! sudo systemctl is-active --quiet nginx; then
+        die 'Nginx no está activo. Ejecutá: sudo systemctl enable --now nginx'
+    fi
     if sudo test -f /etc/nginx/sites-available/finixarg.com.conf; then sudo cp /etc/nginx/sites-available/finixarg.com.conf "$NGINX_BACKUP"; fi
     sudo install -m 0644 deploy/nginx/finixarg.com.conf /etc/nginx/sites-available/finixarg.com.conf
     sudo ln -sfn /etc/nginx/sites-available/finixarg.com.conf /etc/nginx/sites-enabled/finixarg.com.conf
     sudo nginx -t
-    sudo systemctl is-active --quiet nginx || die 'Nginx no está activo.'
     sudo systemctl reload nginx
 }
 
