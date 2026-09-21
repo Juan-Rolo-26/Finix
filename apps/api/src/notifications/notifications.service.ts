@@ -67,7 +67,7 @@ export class NotificationsService {
             const prefs = JSON.parse(user.notificationPrefs);
             // Default mappings based on preferences object keys
             // e.g. prefs: { social: true, communities: false }
-            const key = category.toLowerCase();
+            const key = ({ COMMUNITY: 'communities', MARKET: 'markets', SUBSCRIPTION: 'subscriptions' } as Record<string, string>)[category] || category.toLowerCase();
             if (prefs[key] !== undefined) return prefs[key] === true;
         } catch {
             return true;

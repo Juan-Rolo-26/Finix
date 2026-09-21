@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
+import PushSettings from '@/components/PushSettings';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -172,15 +173,6 @@ export default function Settings() {
     const [bannerUploadError, setBannerUploadError] = useState('');
 
     const [notificationPrefs, setNotificationPrefs] = useState({ email: true, push: true });
-    const enableDeviceNotifications = async (enabled: boolean) => {
-        if (!enabled) { setNotificationPrefs((p) => ({ ...p, push: false })); return; }
-        if (!('Notification' in window)) { setNotificationPrefs((p) => ({ ...p, push: false })); return; }
-        const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-        if (permission === 'granted') {
-            setNotificationPrefs((p) => ({ ...p, push: true }));
-            new Notification('Finix activado', { body: 'Recibirás avisos de mensajes, likes y comentarios en este dispositivo.' });
-        }
-    };
     const [isSavingInvestmentEmails, setIsSavingInvestmentEmails] = useState(false);
 
 
@@ -1062,17 +1054,7 @@ export default function Settings() {
                             description="Configurá cómo y cuándo querés que Finix se contacte con vos."
                         />
                         <CardContent className="space-y-4">
-                            <ToggleRow
-                                label="Notificaciones Push"
-                                description="Recibe alertas en la web o app sobre interacciones y mensajes."
-                                checked={notificationPrefs.push}
-                                onChange={(v) => {
-                                    void enableDeviceNotifications(v);
-                                    // Save instantly like prefs or rely on save profile?
-                                    // The existing saveProfile uses notificationPrefs so we make the user save or auto-save?
-                                    // Well, let's keep it simple.
-                                }}
-                            />
+                            <PushSettings />
                             <ToggleRow
                                 label="Notificaciones por Email"
                                 description="Recibe resúmenes semanales, actualizaciones de seguridad y noticias importantes."

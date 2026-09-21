@@ -31,7 +31,7 @@ const isAuthEndpoint = (path: string) => authEndpoints.some((route) => path.incl
 
 const buildInit = (init?: RequestInit): RequestInit => {
     const headers = new Headers(init?.headers || {});
-    if (init?.body && !headers.has('Content-Type')) {
+    if (init?.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json');
     }
 

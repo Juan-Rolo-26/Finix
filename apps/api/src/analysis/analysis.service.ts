@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { queuePublishedAnalysis } from '../admin/email-content';
 import {
     KNOWN_PROFILES,
     generateDynamicSectorIntelligence,
@@ -768,7 +769,8 @@ export class AnalysisService {
 
             const sanitized = this.sanitizeAnalysisData(dto);
 
-            const created = await this.prisma.assetAnalysis.create({
+            const created = await this.prisma.$transaction(async tx => {
+            const analysis = await tx.assetAnalysis.create({
                 data: {
                     ...sanitized,
                     slug,
@@ -776,6 +778,9 @@ export class AnalysisService {
                     ticker,
                     status: dto.status || 'PUBLISHED',
                 },
+            });
+            await queuePublishedAnalysis(tx, analysis, userId);
+            return analysis;
             });
 
             await this.logAudit(created.id, userId, 'CREATE', 'all', null, 'Created analysis');
@@ -810,9 +815,13 @@ export class AnalysisService {
                 }
             }
 
-            const updated = await this.prisma.assetAnalysis.update({
+            const updated = await this.prisma.$transaction(async tx => {
+            const analysis = await tx.assetAnalysis.update({
                 where: { id },
                 data: sanitized,
+            });
+            await queuePublishedAnalysis(tx, analysis, userId);
+            return analysis;
             });
 
             await this.logAudit(id, userId, 'UPDATE', 'fields', null, 'Updated analysis data');
@@ -831,9 +840,13 @@ export class AnalysisService {
         const existing = await this.prisma.assetAnalysis.findUnique({ where: { id } });
         if (!existing) throw new NotFoundException('Análisis no encontrado');
 
-        const updated = await this.prisma.assetAnalysis.update({
+        const updated = await this.prisma.$transaction(async tx => {
+        const analysis = await tx.assetAnalysis.update({
             where: { id },
             data: { status },
+        });
+        await queuePublishedAnalysis(tx, analysis, userId);
+        return analysis;
         });
 
         await this.logAudit(id, userId, 'STATUS_CHANGE', 'status', (existing as any).status, status);

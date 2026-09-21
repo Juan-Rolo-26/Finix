@@ -11,7 +11,11 @@ import {
     Post,
     UseGuards,
     Req,
+    UseInterceptors,
+    UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { AdminGuard } from './admin.guard';
 import { PrismaService } from '../prisma.service';
@@ -66,8 +70,25 @@ export class AdminController {
     @RequireAdminPermissions(AdminPermission.EMAIL_VIEW)
     async getEmailTemplates() { return this.emailMarketingService.templates(); }
 
-    @Post('email-marketing/campaigns')
+    @Post('email-marketing/preview')
     @RequireAdminPermissions(AdminPermission.EMAIL_CREATE)
+    previewEmail(@Body() body: unknown) { return this.emailMarketingService.preview(body); }
+
+    @Post('email-marketing/test')
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    @RequireAdminPermissions(AdminPermission.EMAIL_SEND)
+    testEmail(@Body() body: any) { return this.emailMarketingService.test(body.campaign, body.email); }
+
+    @Post('email-marketing/media')
+    @Throttle({ default: { limit: 15, ttl: 60000 } })
+    @RequireAdminPermissions(AdminPermission.EMAIL_CREATE)
+    @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024, files: 1 } }))
+    uploadEmailImage(@Req() req: AdminRequest, @UploadedFile() file: { buffer: Buffer }) {
+        return this.emailMarketingService.upload(req.user!.id, file?.buffer);
+    }
+
+    @Post('email-marketing/campaigns')
+    @RequireAdminPermissions(AdminPermission.EMAIL_CREATE, AdminPermission.EMAIL_SEND)
     async createEmailMarketingCampaign(@Req() req: AdminRequest, @Body() body: any) {
         const result = await this.emailMarketingService.createCampaign(req.user!.id, body);
         await this.adminAuditService.logFromRequest(req, { action: 'CREATE_EMAIL_CAMPAIGN', targetId: result.id, metadata: { audience: result.audience, recipientCount: result.recipientCount, status: result.status } });

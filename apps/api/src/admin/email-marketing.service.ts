@@ -1,93 +1,141 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Interval } from '@nestjs/schedule';
+import { createHmac, timingSafeEqual, randomUUID } from 'crypto';
+import { mkdir, writeFile } from 'fs/promises';
+import { join } from 'path';
+import sharp = require('sharp');
+import { z } from 'zod';
 import { PrismaService } from '../prisma.service';
 import { MailService } from '../mail/mail.service';
+import { escapeEmail, renderCampaign } from './email-content';
 
-type CampaignInput = {
-    subject: string;
-    title: string;
-    message: string;
-    previewText?: string;
-    imageUrl?: string;
-    ctaLabel?: string;
-    ctaUrl?: string;
-    audience?: 'PRO' | 'ALL';
-    scheduledAt?: string;
-    sendTestTo?: string;
-};
+const url = z.string().max(2048).url().refine(v => new URL(v).protocol === 'https:' || (process.env.NODE_ENV !== 'production' && new URL(v).protocol === 'http:')).or(z.literal('')).optional();
+const schema = z.object({ subject: z.string().trim().min(1).max(160), title: z.string().trim().min(1).max(160), message: z.string().trim().min(1).max(10000), imageUrl: url, chartUrl: url, ctaUrl: url, ctaLabel: z.string().max(80).optional(), audience: z.enum(['PRO', 'ALL']).default('PRO'), analysisId: z.string().uuid().or(z.literal('')).optional(), scheduledAt: z.string().datetime().optional(), previewText: z.string().max(250).optional() });
 
 @Injectable()
 export class EmailMarketingService {
+    private busy = false;
+    private readonly logger = new Logger(EmailMarketingService.name);
     constructor(private readonly prisma: PrismaService, private readonly mail: MailService) {}
-
-    private recipientWhere(audience: string = 'PRO') {
-        const base = { status: 'ACTIVE', emailVerified: true, investmentEmailNotifications: true };
+    private recipientWhere(audience = 'PRO') {
+        const base = { status: 'ACTIVE', emailVerified: true, investmentEmailNotifications: true, OR: [{ emailPreferences: { is: null } }, { emailPreferences: { is: { marketing: true, analysis: true } } }] };
         return audience === 'ALL' ? base : { ...base, plan: 'PRO', subscriptionStatus: 'ACTIVE' };
     }
-
-    private safeUrl(value?: string) {
-        if (!value) return null;
-        try {
-            const url = new URL(value);
-            if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
-            return url.toString();
-        } catch { throw new BadRequestException('Las URLs deben usar http o https'); }
-    }
-
     async dashboard() {
-        const [campaigns, queued, sent, delivered, opened, clicked, bounced, recipientCount] = await Promise.all([
-            this.prisma.proEmailCampaign.findMany({ orderBy: { createdAt: 'desc' }, take: 12, select: { id: true, subject: true, status: true, audience: true, recipientCount: true, sentCount: true, failedCount: true, createdAt: true, scheduledAt: true } }),
-            this.prisma.emailCampaignRecipient.count({ where: { status: 'QUEUED' } }),
-            this.prisma.emailEvent.count({ where: { type: 'SENT' } }),
-            this.prisma.emailEvent.count({ where: { type: 'DELIVERED' } }),
-            this.prisma.emailEvent.count({ where: { type: 'OPENED' } }),
-            this.prisma.emailEvent.count({ where: { type: 'CLICKED' } }),
-            this.prisma.emailEvent.count({ where: { type: 'BOUNCED' } }),
-            this.prisma.user.count({ where: this.recipientWhere('PRO') }),
+        const [campaigns, recipientCount, sent, failed] = await Promise.all([
+            this.prisma.proEmailCampaign.findMany({ take: 20, orderBy: { createdAt: 'desc' } }),
+            this.prisma.user.count({ where: this.recipientWhere() }),
+            this.prisma.emailCampaignRecipient.count({ where: { status: 'SENT' } }),
+            this.prisma.emailCampaignRecipient.count({ where: { status: 'FAILED' } }),
         ]);
-        return { metrics: { queued, sent, delivered, opened, clicked, bounced, recipientCount, ctr: delivered ? Number(((clicked / delivered) * 100).toFixed(2)) : 0 }, campaigns };
+        return { metrics: { recipientCount, sent, failed }, campaigns, sendEnabled: process.env.EMAIL_SEND_ENABLED === 'true' };
     }
-
-    async templates() {
-        const existing = await this.prisma.emailTemplate.findMany({ orderBy: { updatedAt: 'desc' } });
-        if (existing.length) return existing;
-        return this.prisma.emailTemplate.createMany({ data: [
-            { name: 'Alerta de mercado', type: 'ALERT', subject: 'Alerta Finix: {{ticker}}', contentHtml: '<h1>{{title}}</h1><p>{{message}}</p><a href="{{cta_url}}">Ver en Finix</a>', contentText: '{{title}}\n\n{{message}}' },
-            { name: 'Finix Daily', type: 'NEWSLETTER', subject: 'Finix Daily: lo importante de hoy', contentHtml: '<h1>Finix Daily</h1><p>{{message}}</p>', contentText: '{{message}}' },
-            { name: 'Bienvenida Pro', type: 'TRANSACTIONAL', subject: 'Bienvenido a Finix Pro, {{user.name}}', contentHtml: '<h1>Bienvenido a Finix Pro</h1><p>Tu acceso ya está activo.</p>', contentText: 'Bienvenido a Finix Pro' },
-        ] }).then(() => this.prisma.emailTemplate.findMany({ orderBy: { updatedAt: 'desc' } }));
+    async templates() { return this.prisma.emailTemplate.findMany({ orderBy: { updatedAt: 'desc' } }); }
+    async prepare(raw: unknown) {
+        const parsed = schema.safeParse(raw);
+        if (!parsed.success) throw new BadRequestException('Revisa asunto, contenido, fechas y URLs.');
+        const input = parsed.data;
+        const analysis = input.analysisId ? await this.prisma.assetAnalysis.findFirst({ where: { id: input.analysisId, status: 'PUBLISHED', isActive: true } }) : null;
+        if (input.analysisId && !analysis) throw new BadRequestException('El analisis no esta publicado.');
+        return { input, html: renderCampaign({ ...input, title: input.title!, message: input.message! }, analysis) };
     }
-
-    async createCampaign(adminId: string, input: CampaignInput) {
-        if (!input.subject?.trim() || !input.title?.trim() || !input.message?.trim()) throw new BadRequestException('Asunto, título y mensaje son obligatorios');
-        const audience = input.audience || 'PRO';
-        const recipients = await this.prisma.user.findMany({ where: this.recipientWhere(audience), select: { id: true, email: true, username: true }, orderBy: { id: 'asc' } });
-        if (!recipients.length) throw new BadRequestException('No hay destinatarios elegibles para esta audiencia');
-        const campaign = await this.prisma.proEmailCampaign.create({ data: { subject: input.subject.trim(), title: input.title.trim(), message: input.message.trim(), previewText: input.previewText?.trim() || null, imageUrl: this.safeUrl(input.imageUrl) as string | null, ctaLabel: input.ctaLabel?.trim() || 'Ver en Finix', ctaUrl: this.safeUrl(input.ctaUrl) as string | null, audience, status: input.scheduledAt ? 'SCHEDULED' : 'SENDING', scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null, recipientCount: recipients.length, createdById: adminId } });
-        await this.prisma.emailCampaignRecipient.createMany({ data: recipients.map((user) => ({ campaignId: campaign.id, userId: user.id, email: user.email })) });
-        if (input.sendTestTo) await this.mail.sendProInvestmentEmail(input.sendTestTo, { username: 'Vista previa', subject: campaign.subject, title: campaign.title, message: campaign.message, imageUrl: campaign.imageUrl, ctaLabel: campaign.ctaLabel || undefined, ctaUrl: campaign.ctaUrl || undefined });
-        if (input.scheduledAt) return campaign;
-        await this.processBatch(campaign.id);
-        return this.prisma.proEmailCampaign.findUniqueOrThrow({ where: { id: campaign.id } });
+    async preview(raw: unknown) {
+        const { html } = await this.prepare(raw);
+        return { html: html.replace('{{unsubscribe_url}}', escapeEmail((process.env.FRONTEND_URL || 'https://finixarg.com') + '/settings')) };
     }
-
-    async processBatch(campaignId: string, batchSize = 25) {
-        const campaign = await this.prisma.proEmailCampaign.findUnique({ where: { id: campaignId } });
-        if (!campaign) throw new BadRequestException('Campaña no encontrada');
-        const rows = await this.prisma.emailCampaignRecipient.findMany({ where: { campaignId, status: 'QUEUED' }, take: batchSize, orderBy: { queuedAt: 'asc' }, include: { user: { select: { username: true } } } });
-        let sent = 0; let failed = 0;
+    async test(raw: unknown, address: unknown) {
+        if (process.env.EMAIL_SEND_ENABLED !== 'true') throw new BadRequestException('Envio deshabilitado en este entorno.');
+        const email = z.string().email().safeParse(address);
+        if (!email.success) throw new BadRequestException('Email de prueba invalido.');
+        const { input } = await this.prepare(raw);
+        const { html } = await this.preview(raw);
+        await this.mail.sendEmail({ to: email.data, subject: '[PRUEBA] ' + input.subject, text: input.message, html });
+        return { sent: true };
+    }
+    async createCampaign(adminId: string, raw: unknown) {
+        const { input, html } = await this.prepare(raw);
+        if (input.scheduledAt && new Date(input.scheduledAt).getTime() <= Date.now()) throw new BadRequestException('La fecha debe ser futura.');
+        const recipientCount = await this.prisma.user.count({ where: this.recipientWhere(input.audience) });
+        if (!recipientCount) throw new BadRequestException('No hay destinatarios con consentimiento.');
+        return this.prisma.proEmailCampaign.create({ data: { subject: input.subject, title: input.title, message: input.message, imageUrl: input.imageUrl || null, ctaUrl: input.ctaUrl || null, ctaLabel: input.ctaLabel, contentHtml: html, previewText: input.previewText, audience: input.audience, createdById: adminId, status: input.scheduledAt ? 'SCHEDULED' : 'SENDING', scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null, recipientCount } });
+    }
+    async upload(adminId: string, buffer: Buffer) {
+        if (!buffer?.length || buffer.length > 5 * 1024 * 1024) throw new BadRequestException('Imagen requerida; maximo 5 MB.');
+        let output: Buffer;
+        try {
+            const image = sharp(buffer, { limitInputPixels: 20000000 });
+            const metadata = await image.metadata();
+            if (!['png', 'jpeg', 'webp'].includes(metadata.format)) throw new Error('Unsupported image');
+            output = await image.rotate().resize({ width: 1280, withoutEnlargement: true }).png().toBuffer();
+        }
+        catch { throw new BadRequestException('Imagen invalida.'); }
+        const name = randomUUID() + '.png';
+        const directory = join(__dirname, '..', '..', 'uploads', 'email');
+        await mkdir(directory, { recursive: true });
+        await writeFile(join(directory, name), output, { mode: 0o644, flag: 'wx' });
+        const mediaUrl = (process.env.API_URL || process.env.FRONTEND_URL || 'https://finixarg.com') + '/uploads/email/' + name;
+        return this.prisma.emailMedia.create({ data: { url: mediaUrl, mimeType: 'image/png', size: output.length, uploadedById: adminId } });
+    }
+    private signature(userId: string) { return createHmac('sha256', process.env.JWT_SECRET!).update('email-unsubscribe:' + userId).digest('hex'); }
+    async unsubscribe(userId: string, signature: string) {
+        if (!z.string().uuid().safeParse(userId).success || !/^[a-f0-9]{64}$/.test(signature || '') || !timingSafeEqual(Buffer.from(signature), Buffer.from(this.signature(userId)))) throw new BadRequestException('Enlace invalido.');
+        await this.prisma.user.updateMany({ where: { id: userId }, data: { investmentEmailNotifications: false } });
+        return 'Suscripcion a comunicaciones de inversion cancelada.';
+    }
+    @Interval(5000)
+    async tick() {
+        if (this.busy || process.env.EMAIL_SEND_ENABLED !== 'true') return;
+        this.busy = true;
+        try {
+            const campaigns = await this.prisma.proEmailCampaign.findMany({ where: { status: { in: ['SENDING', 'SCHEDULED'] }, OR: [{ scheduledAt: null }, { scheduledAt: { lte: new Date() } }] }, take: 5, orderBy: { createdAt: 'asc' } });
+            for (const campaign of campaigns) await this.processBatch(campaign.id);
+        } catch { this.logger.error('Fallo de cola email; se reintentara.'); }
+        finally { this.busy = false; }
+    }
+    async processBatch(id: string) {
+        if (process.env.EMAIL_SEND_ENABLED !== 'true') return { paused: true };
+        const campaign = await this.prisma.proEmailCampaign.findUnique({ where: { id } });
+        if (!campaign || !['SENDING', 'SCHEDULED'].includes(campaign.status) || (campaign.scheduledAt && campaign.scheduledAt > new Date())) return { skipped: true };
+        if (!campaign.audienceReady) {
+            const users = await this.prisma.user.findMany({ where: { ...this.recipientWhere(campaign.audience), ...(campaign.audienceCursor ? { id: { gt: campaign.audienceCursor } } : {}) }, select: { id: true, email: true }, orderBy: { id: 'asc' }, take: 500 });
+            await this.prisma.$transaction(async tx => {
+                const claim = await tx.proEmailCampaign.updateMany({ where: { id, audienceCursor: campaign.audienceCursor, audienceReady: false }, data: { audienceCursor: users[users.length - 1]?.id || campaign.audienceCursor, audienceReady: users.length < 500, status: 'SENDING' } });
+                if (claim.count) await tx.emailCampaignRecipient.createMany({ data: users.map(u => ({ campaignId: id, userId: u.id, email: u.email })), skipDuplicates: true });
+            });
+            return { preparing: true };
+        }
+        const now = new Date();
+        const eligible = { campaignId: id, nextAttemptAt: { lte: now }, OR: [{ status: 'QUEUED' }, { status: 'PROCESSING', lockedUntil: { lt: now } }] };
+        const rows = await this.prisma.emailCampaignRecipient.findMany({ where: eligible, take: 5, orderBy: { queuedAt: 'asc' } });
         for (const row of rows) {
+            // Resend retains idempotency keys for 24h. Never retry an uncertain delivery outside that window.
+            if (row.firstAttemptAt && Date.now() - row.firstAttemptAt.getTime() > 23 * 3600000) {
+                await this.prisma.emailCampaignRecipient.updateMany({ where: { id: row.id, ...eligible }, data: { status: 'FAILED', error: 'Requiere conciliacion con el proveedor antes de reenviar' } });
+                continue;
+            }
+            const claim = await this.prisma.emailCampaignRecipient.updateMany({ where: { id: row.id, ...eligible }, data: { status: 'PROCESSING', firstAttemptAt: row.firstAttemptAt || now, lockedUntil: new Date(Date.now() + 120000), attempts: { increment: 1 } } });
+            if (!claim.count) continue;
+            const user = await this.prisma.user.findFirst({ where: { id: row.userId, email: row.email, ...this.recipientWhere(campaign.audience) }, select: { id: true } });
+            if (!user) { await this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: 'SKIPPED' } }); continue; }
             try {
-                const result = await this.mail.sendProInvestmentEmail(row.email, { username: row.user.username, subject: campaign.subject, title: campaign.title, message: campaign.message, imageUrl: campaign.imageUrl, ctaLabel: campaign.ctaLabel || undefined, ctaUrl: campaign.ctaUrl || undefined });
-                await this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: 'SENT', providerId: result?.id, sentAt: new Date() } });
-                await this.prisma.emailEvent.create({ data: { type: 'SENT', providerId: result?.id, campaignId, recipientId: row.id, userId: row.userId } });
-                sent++;
-            } catch (error) {
-                await this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: 'FAILED', error: error instanceof Error ? error.message.slice(0, 500) : 'send failed' } });
-                failed++;
+                const unsubscribe = (process.env.API_URL || process.env.FRONTEND_URL || 'https://finixarg.com') + '/api/email-preferences/unsubscribe?user=' + row.userId + '&token=' + this.signature(row.userId);
+                const html = (campaign.contentHtml || renderCampaign(campaign)).replace('{{unsubscribe_url}}', escapeEmail(unsubscribe));
+                const result = await this.mail.sendEmail({ to: row.email, subject: campaign.subject, html, text: campaign.message + '\n' + (campaign.ctaUrl || '') + '\nCancelar suscripcion: ' + unsubscribe, idempotencyKey: 'campaign/' + row.id });
+                await this.prisma.$transaction([
+                    this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: 'SENT', sentAt: new Date(), providerId: result.id, lockedUntil: null } }),
+                    this.prisma.emailEvent.create({ data: { type: 'SENT', campaignId: id, recipientId: row.id, userId: row.userId, providerId: result.id } }),
+                ]);
+            } catch {
+                await this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: row.attempts >= 4 ? 'FAILED' : 'QUEUED', error: 'No se pudo confirmar el envio', lockedUntil: null, nextAttemptAt: new Date(Date.now() + 60000 * 2 ** row.attempts) } });
             }
         }
-        const remaining = await this.prisma.emailCampaignRecipient.count({ where: { campaignId, status: 'QUEUED' } });
-        await this.prisma.proEmailCampaign.update({ where: { id: campaignId }, data: { sentCount: { increment: sent }, failedCount: { increment: failed }, status: remaining ? 'SENDING' : (failed ? 'FAILED' : 'SENT'), sentAt: remaining ? null : new Date() } });
-        return { sent, failed, remaining };
+        const [remaining, sentCount, failedCount, recipientCount] = await Promise.all([
+            this.prisma.emailCampaignRecipient.count({ where: { campaignId: id, status: { in: ['QUEUED', 'PROCESSING'] } } }),
+            this.prisma.emailCampaignRecipient.count({ where: { campaignId: id, status: 'SENT' } }),
+            this.prisma.emailCampaignRecipient.count({ where: { campaignId: id, status: 'FAILED' } }),
+            this.prisma.emailCampaignRecipient.count({ where: { campaignId: id } }),
+        ]);
+        await this.prisma.proEmailCampaign.update({ where: { id }, data: { sentCount, failedCount, recipientCount, status: remaining ? 'SENDING' : failedCount ? 'FAILED' : 'SENT', sentAt: remaining ? null : new Date() } });
+        return { remaining, sentCount, failedCount };
     }
 }

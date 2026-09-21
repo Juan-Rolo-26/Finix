@@ -9,6 +9,7 @@ datasource db {
 }
 
 model User {
+  pushSubscriptions PushSubscription[]
   id           String    @id @default(uuid())
   email        String    @unique
   username     String    @unique
@@ -1091,6 +1092,10 @@ model AdminAuditLog {
 }
 
 model ProEmailCampaign {
+  sourceKey String? @unique
+  audienceCursor String?
+  audienceReady Boolean @default(false)
+  @@index([status, scheduledAt])
   id             String   @id @default(uuid())
   subject        String
   title          String
@@ -1139,6 +1144,11 @@ model EmailTemplate {
 }
 
 model EmailCampaignRecipient {
+  attempts Int @default(0)
+  firstAttemptAt DateTime?
+  nextAttemptAt DateTime @default(now())
+  lockedUntil DateTime?
+  @@index([status, nextAttemptAt])
   id         String   @id @default(uuid())
   campaignId String
   userId     String
@@ -1403,7 +1413,24 @@ model FinancialVerificationAuditLog {
   @@index([adminId])
 }
 
+model PushSubscription {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint String @unique
+  p256dh String
+  auth String
+  cursorAt DateTime @default(now())
+  cursorId String @default("")
+  failures Int @default(0)
+  nextAttemptAt DateTime @default(now())
+  lease String?
+  @@index([nextAttemptAt, failures])
+  @@index([userId])
+}
+
 model AssetAnalysis {
+  emailAnnounced Boolean @default(false)
   id                      String    @id @default(uuid())
   symbol                  String    // e.g. "NASDAQ:AAPL" or "AAPL"
   isActive                Boolean   @default(true) // Si está activo, será el que se muestre como destacado

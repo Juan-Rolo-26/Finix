@@ -93,12 +93,14 @@ export class MailService {
         text: string;
         html: string;
         replyTo?: string;
+        idempotencyKey?: string;
     }) {
         const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${this.getResendApiKey()}`,
                 'Content-Type': 'application/json',
+                ...(params.idempotencyKey ? { 'Idempotency-Key': params.idempotencyKey } : {}),
             },
             body: JSON.stringify({
                 from: this.getEmailFrom(),
@@ -108,6 +110,7 @@ export class MailService {
                 html: params.html,
                 reply_to: params.replyTo,
             }),
+            signal: AbortSignal.timeout(15000),
         });
 
         const body = await response.json().catch(() => ({} as { message?: string; id?: string }));

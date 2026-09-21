@@ -2164,7 +2164,7 @@ export class MarketService {
 
         if (isCrypto) {
             try {
-                const pair = cleaned.endsWith('USDT') ? cleaned : `${cleaned}USDT`;
+                const pair = cleaned.endsWith('USDT') ? cleaned : `${cleaned.replace(/USD$/, '')}USDT`;
                 const binanceInterval = interval.toLowerCase().includes('h') ? '1h' : (interval.toLowerCase().includes('w') ? '1w' : '1d');
                 const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair}&interval=${binanceInterval}&limit=350`, {
                     signal: AbortSignal.timeout(5000),
@@ -2234,21 +2234,9 @@ export class MarketService {
             }
         }
 
-        // Si fallaron ambas APIs públicas externas, generar serie sintética realista para evitar blanks
+        // Never present generated prices as real market data.
         if (candles.length === 0) {
-            let basePrice = 150;
-            const now = Math.floor(Date.now() / 1000);
-            const daySec = 86400;
-            for (let i = 180; i >= 0; i--) {
-                const t = now - (i * daySec);
-                const delta = (Math.sin(i / 10) * 2) + ((Math.random() - 0.48) * 3);
-                const open = basePrice;
-                const close = Number((open + delta).toFixed(2));
-                const high = Number((Math.max(open, close) + Math.random() * 2).toFixed(2));
-                const low = Number((Math.min(open, close) - Math.random() * 2).toFixed(2));
-                basePrice = close;
-                candles.push({ time: t, open, high, low, close, volume: Math.floor(Math.random() * 1000000) });
-            }
+            return { symbol: cleaned, interval, candles: [] };
         }
 
         // Ordenar cronológicamente
