@@ -28,7 +28,26 @@ PG_DUMP="${PG_DUMP:-$(command -v pg_dump || true)}"
 STAMP="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
 OUT="$BACKUP_DIR/backup-$STAMP.sql.gz"
 echo "[$(date -Is)] Creando backup PostgreSQL: $OUT"
-"$PG_DUMP" --dbname="$BACKUP_DATABASE_URL" --no-owner --no-privileges --format=plain | gzip -9 > "$OUT"
-test -s "$OUT"
+if ! "$PG_DUMP" \
+    --dbname="$BACKUP_DATABASE_URL" \
+    --schema=public \
+    --no-owner \
+    --no-privileges \
+    --format=plain \
+    | gzip -9 > "$OUT"; then
+    rm -f -- "$OUT"
+    echo 'ERROR: Falló el backup PostgreSQL.' >&2
+    exit 1
+fi
+if [[ ! -s "$OUT" ]]; then
+    rm -f -- "$OUT"
+    echo 'ERROR: El backup generado está vacío.' >&2
+    exit 1
+fi
+if ! gzip -t "$OUT"; then
+    rm -f -- "$OUT"
+    echo 'ERROR: El backup generado está corrupto.' >&2
+    exit 1
+fi
 find "$BACKUP_DIR" -type f -name 'backup-*.sql.gz' -mtime "+$RETENTION_DAYS" -delete
 echo "Backup OK: $OUT"
