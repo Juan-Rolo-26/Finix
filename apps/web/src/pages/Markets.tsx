@@ -440,22 +440,43 @@ export default function Markets() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                        {CHART_INTERVALS.map((interval) => (
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            {CHART_INTERVALS.map((interval) => (
+                                                <button
+                                                    key={interval.value}
+                                                    type="button"
+                                                    onClick={() => setChartInterval(interval.value)}
+                                                    className={cn(
+                                                        'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all',
+                                                        chartInterval === interval.value
+                                                            ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
+                                                            : 'border-border/60 bg-background/50 text-muted-foreground hover:border-emerald-500/50 hover:text-foreground'
+                                                    )}
+                                                >
+                                                    {interval.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="hidden sm:flex items-center gap-1.5 pl-2 border-l border-border/60">
+                                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                RSI (14)
+                                            </span>
+                                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 border border-blue-500/30 px-2 py-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                                MACD (12, 26, 9)
+                                            </span>
                                             <button
-                                                key={interval.value}
                                                 type="button"
-                                                onClick={() => setChartInterval(interval.value)}
-                                                className={cn(
-                                                    'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all',
-                                                    chartInterval === interval.value
-                                                        ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
-                                                        : 'border-border/60 bg-background/50 text-muted-foreground hover:border-emerald-500/50 hover:text-foreground'
-                                                )}
+                                                onClick={() => {
+                                                    document.getElementById('fundamental-panel')?.scrollIntoView({ behavior: 'smooth' });
+                                                }}
+                                                className="inline-flex items-center gap-1 rounded-md border border-border/70 hover:border-emerald-500/50 bg-secondary/50 px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
                                             >
-                                                {interval.label}
+                                                Ver Fundamentales ↓
                                             </button>
-                                        ))}
+                                        </div>
                                     </div>
                                 </div>
                             </CardContent>
@@ -473,7 +494,9 @@ export default function Markets() {
                         )}
 
                         {selectedAsset && (
-                            <AssetFundamentalPanel symbol={selectedAsset.symbol} />
+                            <div id="fundamental-panel" className="scroll-mt-6">
+                                <AssetFundamentalPanel symbol={selectedAsset.symbol} />
+                            </div>
                         )}
                     </TabsContent>
 

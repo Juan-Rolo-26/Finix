@@ -86,6 +86,10 @@ function TradingViewChart({
                     hide_volume: false,
                     disabled_features: ['use_localstorage_for_settings'],
                     enabled_features: ['study_templates'],
+                    studies: [
+                        'RSI@tv-basicstudies',
+                        'MACD@tv-basicstudies'
+                    ],
                     support_host: 'https://www.tradingview.com'
                 });
                 if (onWidgetReady) {
