@@ -31,7 +31,7 @@ export default function AdminLayout() {
         { name: 'Estadísticas', path: '/statistics', icon: BarChart },
         { name: 'Usuarios', path: '/users', icon: Users },
         { name: 'Usuarios PRO', path: '/pro-users', icon: Star },
-        { name: 'Emails PRO', path: '/pro-emails', icon: Mail },
+        { name: 'Email & Alertas', path: '/email-alertas', icon: Mail },
         { name: 'Comunidades', path: '/communities', icon: Globe },
         { name: 'Publicaciones', path: '/posts', icon: FileText },
         { name: 'Noticias', path: '/news', icon: Newspaper },

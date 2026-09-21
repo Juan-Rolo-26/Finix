@@ -11,6 +11,10 @@ export enum AdminPermission {
     REPORTS_RESOLVE = 'reports:resolve',
     LOGS_READ = 'logs:read',
     EMAIL_BROADCAST = 'email:broadcast',
+    EMAIL_VIEW = 'email:view',
+    EMAIL_CREATE = 'email:create',
+    EMAIL_SEND = 'email:send',
+    EMAIL_ANALYTICS = 'email:analytics',
 }
 
 const ADMIN_PERMISSIONS: AdminPermission[] = [
@@ -25,6 +29,10 @@ const ADMIN_PERMISSIONS: AdminPermission[] = [
     AdminPermission.REPORTS_RESOLVE,
     AdminPermission.LOGS_READ,
     AdminPermission.EMAIL_BROADCAST,
+    AdminPermission.EMAIL_VIEW,
+    AdminPermission.EMAIL_CREATE,
+    AdminPermission.EMAIL_SEND,
+    AdminPermission.EMAIL_ANALYTICS,
 ];
 
 const SUPER_ADMIN_EXTRA: AdminPermission[] = [

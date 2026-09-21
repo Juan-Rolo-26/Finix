@@ -33,6 +33,7 @@ import { NewsService } from '../news/news.service';
 import { AnalysisService } from '../analysis/analysis.service';
 import { ProEmailCampaignService } from './pro-email-campaign.service';
 import { ValueCreationService } from '../market/value-creation.service';
+import { EmailMarketingService } from './email-marketing.service';
 
 type AdminRequest = Request & {
     user?: {
@@ -54,7 +55,28 @@ export class AdminController {
         private readonly analysisService: AnalysisService,
         private readonly proEmailCampaignService: ProEmailCampaignService,
         private readonly valueCreationService: ValueCreationService,
+        private readonly emailMarketingService: EmailMarketingService,
     ) { }
+
+    @Get('email-marketing/dashboard')
+    @RequireAdminPermissions(AdminPermission.EMAIL_VIEW)
+    async getEmailMarketingDashboard() { return this.emailMarketingService.dashboard(); }
+
+    @Get('email-marketing/templates')
+    @RequireAdminPermissions(AdminPermission.EMAIL_VIEW)
+    async getEmailTemplates() { return this.emailMarketingService.templates(); }
+
+    @Post('email-marketing/campaigns')
+    @RequireAdminPermissions(AdminPermission.EMAIL_CREATE)
+    async createEmailMarketingCampaign(@Req() req: AdminRequest, @Body() body: any) {
+        const result = await this.emailMarketingService.createCampaign(req.user!.id, body);
+        await this.adminAuditService.logFromRequest(req, { action: 'CREATE_EMAIL_CAMPAIGN', targetId: result.id, metadata: { audience: result.audience, recipientCount: result.recipientCount, status: result.status } });
+        return result;
+    }
+
+    @Post('email-marketing/campaigns/:id/process')
+    @RequireAdminPermissions(AdminPermission.EMAIL_SEND)
+    async processEmailMarketingCampaign(@Param('id') id: string) { return this.emailMarketingService.processBatch(id); }
 
     @Get('kpis')
     @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)

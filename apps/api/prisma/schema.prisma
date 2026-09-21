@@ -148,6 +148,11 @@ model User {
   // Admin relations
   adminLogs      AdminAuditLog[] @relation("AdminActor")
   proEmailCampaigns ProEmailCampaign[] @relation("ProEmailCampaignCreator")
+  emailRecipients  EmailCampaignRecipient[]
+  emailEvents      EmailEvent[]
+  emailPreferences EmailPreference?
+  emailSegments    EmailSegment[] @relation("EmailSegmentCreator")
+  emailMedia       EmailMedia[]
   adminSessions  AdminSession[]
   reportsCreated Report[]        @relation("Reporter")
 
@@ -1099,9 +1104,117 @@ model ProEmailCampaign {
   createdById    String
   createdBy      User     @relation("ProEmailCampaignCreator", fields: [createdById], references: [id])
   createdAt      DateTime @default(now())
+  status         String   @default("SENT") // DRAFT | SCHEDULED | SENDING | SENT | FAILED | CANCELLED
+  previewText    String?
+  contentHtml    String?
+  contentText    String?
+  audience       String   @default("PRO")
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  templateId     String?
+  template       EmailTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  recipients     EmailCampaignRecipient[]
+  events         EmailEvent[]
 
   @@index([createdAt])
   @@index([createdById, createdAt])
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  type        String   @default("MARKETING")
+  subject     String
+  previewText String?
+  contentHtml String
+  contentText String?
+  variables   String?
+  isSystem    Boolean  @default(false)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  campaigns   ProEmailCampaign[]
+
+  @@index([type, updatedAt])
+}
+
+model EmailCampaignRecipient {
+  id         String   @id @default(uuid())
+  campaignId String
+  userId     String
+  email      String
+  status     String   @default("QUEUED") // QUEUED | SENT | DELIVERED | FAILED | BOUNCED
+  providerId String?
+  error      String?
+  queuedAt   DateTime @default(now())
+  sentAt     DateTime?
+  deliveredAt DateTime?
+  updatedAt  DateTime @updatedAt
+  campaign   ProEmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events     EmailEvent[]
+
+  @@unique([campaignId, userId])
+  @@index([campaignId, status])
+  @@index([userId, updatedAt])
+}
+
+model EmailEvent {
+  id          String   @id @default(uuid())
+  type        String   // SENT | DELIVERED | OPENED | CLICKED | BOUNCED | COMPLAINED | UNSUBSCRIBED
+  providerId  String?
+  campaignId  String?
+  recipientId String?
+  userId      String?
+  linkUrl     String?
+  metadata    String?
+  createdAt   DateTime @default(now())
+  campaign    ProEmailCampaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  recipient   EmailCampaignRecipient? @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  user        User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([type, providerId, recipientId, linkUrl])
+  @@index([campaignId, type, createdAt])
+  @@index([userId, createdAt])
+}
+
+model EmailPreference {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  marketing   Boolean  @default(true)
+  alerts      Boolean  @default(true)
+  analysis    Boolean  @default(true)
+  calendar    Boolean  @default(true)
+  earnings    Boolean  @default(true)
+  daily       Boolean  @default(true)
+  weekly      Boolean  @default(true)
+  community   Boolean  @default(true)
+  product     Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailSegment {
+  id          String   @id @default(uuid())
+  name        String
+  definition  String
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   User @relation("EmailSegmentCreator", fields: [createdById], references: [id])
+  @@index([createdById, updatedAt])
+}
+
+model EmailMedia {
+  id        String   @id @default(uuid())
+  url       String
+  altText   String?
+  mimeType  String?
+  size      Int?
+  uploadedById String
+  createdAt DateTime @default(now())
+  uploadedBy User @relation(fields: [uploadedById], references: [id])
+  @@index([createdAt])
 }
 
 model Notification {

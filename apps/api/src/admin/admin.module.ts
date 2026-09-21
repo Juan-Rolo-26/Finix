@@ -8,6 +8,7 @@ import { AdminPermissionsGuard } from './permissions.guard';
 import { AdminAuditService } from './admin-audit.service';
 import { AdminManagementService } from './admin-management.service';
 import { ProEmailCampaignService } from './pro-email-campaign.service';
+import { EmailMarketingService } from './email-marketing.service';
 
 import { MailModule } from '../mail/mail.module';
 import { NewsModule } from '../news/news.module';
@@ -25,7 +26,7 @@ import { MarketModule } from '../market/market.module';
         MarketModule,
     ],
     controllers: [AdminController, AdminAuthController],
-    providers: [AdminGuard, AdminPermissionsGuard, AdminAuditService, AdminAuthService, AdminManagementService, ProEmailCampaignService],
+    providers: [AdminGuard, AdminPermissionsGuard, AdminAuditService, AdminAuthService, AdminManagementService, ProEmailCampaignService, EmailMarketingService],
     exports: [AdminGuard, JwtModule],
 })
 export class AdminModule { }

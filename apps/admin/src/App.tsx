@@ -16,6 +16,7 @@ import AnalysisManagement from './pages/AnalysisManagement';
 import MarketRankingsManagement from './pages/MarketRankingsManagement';
 import CalendarManagement from './pages/CalendarManagement';
 import ProEmailCampaigns from './pages/ProEmailCampaigns';
+import EmailMarketing from './pages/EmailMarketing';
 import { adminFetch } from './lib/api';
 
 const RequireAdminAuth = ({ children }: { children: JSX.Element }) => {
@@ -69,6 +70,7 @@ export default function App() {
                 <Route path="/users" element={<UsersList />} />
                 <Route path="/pro-users" element={<ProUsersManagement />} />
                 <Route path="/pro-emails" element={<ProEmailCampaigns />} />
+                <Route path="/email-alertas" element={<EmailMarketing />} />
                 <Route path="/communities" element={<CommunitiesManagement />} />
                 <Route path="/posts" element={<PostsList />} />
                 <Route path="/news" element={<NewsManagement />} />
