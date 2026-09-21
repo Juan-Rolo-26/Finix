@@ -68,7 +68,14 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
             }
             if (candlesResponse.ok) {
                 const candleData = await candlesResponse.json();
-                setCandles(Array.isArray(candleData) ? candleData.filter((item: any) => Number.isFinite(Number(item.close))).slice(-90) : []);
+                const rawCandles = Array.isArray(candleData)
+                    ? candleData
+                    : Array.isArray(candleData?.candles)
+                        ? candleData.candles
+                        : Array.isArray(candleData?.data)
+                            ? candleData.data
+                            : [];
+                setCandles(rawCandles.filter((item: any) => Number.isFinite(Number(item.close))).slice(-180));
             }
         } catch (err: any) {
             setError(err?.message || 'No se pudo cargar la información del activo');
