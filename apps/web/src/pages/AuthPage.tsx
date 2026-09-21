@@ -54,8 +54,6 @@ export default function AuthPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
-    const [loginCodeStep, setLoginCodeStep] = useState(false);
-    const [loginCode, setLoginCode] = useState('');
     const [forgotCodeStep, setForgotCodeStep] = useState(false);
     const [forgotCode, setForgotCode] = useState('');
     const [forgotNewPassword, setForgotNewPassword] = useState('');
@@ -101,8 +99,6 @@ export default function AuthPage() {
         setView(nextView);
         setIsLoading(false);
         clearMessages();
-        setLoginCodeStep(false);
-        setLoginCode('');
         setForgotCodeStep(false);
         setForgotCode('');
         setForgotNewPassword('');
@@ -150,19 +146,47 @@ export default function AuthPage() {
 
     const handleLogin = async () => {
         const normalizedEmail = email.trim().toLowerCase();
-        const response = await apiFetch(loginCodeStep ? '/auth/login/verify-code' : '/auth/login/request-code', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(loginCodeStep ? { email: normalizedEmail, code: loginCode } : { email: normalizedEmail, password }),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data?.message || 'No se pudo iniciar sesión.');
-        if (!loginCodeStep) {
-            setLoginCodeStep(true);
-            setInfoMessage('Te enviamos un código de acceso a tu correo.');
-            return;
+
+        // 1. Intentar login directo con la API de Finix
+        try {
+            const response = await apiFetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail, password }),
+            });
+            const data = await response.json().catch(() => ({}));
+
+            if (response.ok && data?.token && data?.user) {
+                useAuthStore.getState().login(data.token, data.user);
+                return;
+            }
+
+            // Si la API devolvió error de credenciales, intentar fallback con Supabase si existe cuenta legacy
+            if (response.status === 401 || response.status === 400) {
+                const { data: supaData, error: supaError } = await supabase.auth.signInWithPassword({
+                    email: normalizedEmail,
+                    password,
+                });
+                if (!supaError && supaData?.session && supaData?.user) {
+                    useAuthStore.getState().login(supaData.session.access_token, supaData.user as any);
+                    return;
+                }
+                throw new Error(data?.message || 'El correo o la contraseña no son correctos.');
+            }
+
+            throw new Error(data?.message || 'No se pudo iniciar sesión.');
+        } catch (err: any) {
+            // Si hubo error de red o timeout con la API, intentar Supabase
+            const { data: supaData, error: supaError } = await supabase.auth.signInWithPassword({
+                email: normalizedEmail,
+                password,
+            });
+            if (!supaError && supaData?.session && supaData?.user) {
+                useAuthStore.getState().login(supaData.session.access_token, supaData.user as any);
+                return;
+            }
+            throw new Error(err?.message || 'El correo o la contraseña no son correctos.');
         }
-        if (!data.token || !data.user) throw new Error('No se pudo completar el inicio de sesión.');
-        useAuthStore.getState().login(data.token, data.user);
     };
 
     const handleRegister = async () => {
@@ -268,10 +292,6 @@ export default function AuthPage() {
         }
         if (view !== 'forgot' && password.length < 6) {
             setAuthError('La contraseña debe tener al menos 6 caracteres.');
-            return;
-        }
-        if (view === 'login' && loginCodeStep && loginCode.length !== 6) {
-            setAuthError('Ingresá el código de 6 dígitos que recibiste por correo.');
             return;
         }
         if (view === 'forgot' && forgotCodeStep) {
@@ -497,7 +517,7 @@ export default function AuthPage() {
                                     </div>
                                 )}
 
-                                {view !== 'forgot' && (!loginCodeStep || view !== 'login') ? (
+                                {view !== 'forgot' ? (
                                     <div className="relative">
                                         <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                                         <Input
@@ -516,10 +536,6 @@ export default function AuthPage() {
                                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                         </button>
                                     </div>
-                                ) : null}
-
-                                {view === 'login' && loginCodeStep ? (
-                                    <Input inputMode="numeric" placeholder="Código de 6 dígitos" className="h-11 text-center text-lg tracking-[0.35em]" value={loginCode} onChange={(e) => setLoginCode(e.target.value.replace(/\D/g, '').slice(0, 6))} required />
                                 ) : null}
 
                                 {view === 'forgot' && forgotCodeStep ? (
@@ -608,7 +624,7 @@ export default function AuthPage() {
                                     ) : (
                                         <div className="flex items-center justify-center gap-2" style={{ color: '#ffffff' }}>
                                             <span className="font-bold text-sm">
-                                                {view === 'login' && (loginCodeStep ? 'Confirmar código' : t.auth.loginBtn)}
+                                                {view === 'login' && t.auth.loginBtn}
                                                 {view === 'register' && t.auth.createAccountBtn}
                                                 {view === 'forgot' && (forgotCodeStep ? 'Guardar nueva contraseña' : 'Enviar código')}
                                             </span>
