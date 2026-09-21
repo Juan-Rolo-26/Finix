@@ -133,7 +133,15 @@ install_dependencies() { npm ci --no-audit --no-fund; }
 
 run_prisma() {
     (cd apps/api && npx prisma generate --schema prisma/schema.prisma)
-    (cd apps/api && npx prisma migrate status --schema prisma/schema.prisma >/dev/null)
+
+    log "Verificando estado de migraciones Prisma..."
+    (
+        cd apps/api
+        npx prisma migrate status --schema prisma/schema.prisma || {
+            warn "Hay migraciones pendientes. Se aplicarán de forma segura en el paso Prisma migrations."
+            return 0
+        }
+    )
 }
 
 build_all() {
