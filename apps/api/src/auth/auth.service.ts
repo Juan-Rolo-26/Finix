@@ -22,18 +22,11 @@ export class AuthService implements OnModuleInit {
 
     isJuanUser(u?: any): boolean {
         if (!u) return false;
-        const usr = String(u.username || '').toLowerCase();
-        const eml = String(u.email || '').toLowerCase();
-        const cleanUsr = usr.replace(/[^a-z0-9]/g, '');
-        const cleanEml = eml.replace(/[^a-z0-9]/g, '');
-        return cleanUsr.includes('juan2608') ||
-               cleanUsr.includes('juan26') ||
-               usr.includes('juan26-08') ||
-               usr.includes('juan2608') ||
-               cleanEml.includes('juan2608') ||
-               cleanEml.includes('juan26') ||
-               eml.includes('juan26-08') ||
-               eml.includes('juan2608');
+        const username = String(u.username || '').trim().toLowerCase();
+        const email = String(u.email || '').trim().toLowerCase();
+        const configuredUsernames = (process.env.ADMIN_OWNER_USERNAMES || 'juan26-08,juan2608').split(',').map((value) => value.trim().toLowerCase()).filter(Boolean);
+        const configuredEmails = (process.env.ADMIN_OWNER_EMAILS || process.env.ADMIN_OWNER_EMAIL || '').split(',').map((value) => value.trim().toLowerCase()).filter(Boolean);
+        return configuredUsernames.includes(username) || configuredEmails.includes(email);
     }
 
     async onModuleInit() {
@@ -41,8 +34,6 @@ export class AuthService implements OnModuleInit {
             const res = await this.prisma.user.updateMany({
                 where: {
                     OR: [
-                        { username: { contains: 'juan26', mode: 'insensitive' } },
-                        { email: { contains: 'juan26', mode: 'insensitive' } },
                         { username: { equals: 'juan26-08', mode: 'insensitive' } },
                         { username: { equals: 'juan2608', mode: 'insensitive' } },
                         { username: { equals: 'JUAN26-08', mode: 'insensitive' } },
@@ -244,6 +235,10 @@ export class AuthService implements OnModuleInit {
                     password: passwordHash,
                     emailVerified: false,
                     isVerified: false,
+                    accountType: 'BASIC',
+                    plan: 'FREE',
+                    role: 'USER',
+                    subscriptionStatus: 'INACTIVE',
                     emailVerificationCode: codeHash,
                     emailVerificationExpires: codeExpiresAt,
                     loginVerificationCode: null,
@@ -259,8 +254,10 @@ export class AuthService implements OnModuleInit {
                     password: passwordHash,
                     emailVerified: false,
                     isVerified: false,
+                    accountType: 'BASIC',
                     plan: 'FREE',
                     role: 'USER',
+                    subscriptionStatus: 'INACTIVE',
                     emailVerificationCode: codeHash,
                     emailVerificationExpires: codeExpiresAt,
                 },
