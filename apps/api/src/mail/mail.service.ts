@@ -201,7 +201,7 @@ export class MailService {
     }
 
     async sendPasswordResetCode(email: string, code: string) {
-        const resetUrl = this.buildAppLink('/reset-password', { email });
+        const resetUrl = this.buildAppLink('/reset-password', { email, code });
         return this.sendCodeEmail({
             email,
             code,

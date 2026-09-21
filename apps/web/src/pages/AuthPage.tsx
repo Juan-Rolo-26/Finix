@@ -56,6 +56,11 @@ export default function AuthPage() {
     const [username, setUsername] = useState('');
     const [loginCodeStep, setLoginCodeStep] = useState(false);
     const [loginCode, setLoginCode] = useState('');
+    const [forgotCodeStep, setForgotCodeStep] = useState(false);
+    const [forgotCode, setForgotCode] = useState('');
+    const [forgotNewPassword, setForgotNewPassword] = useState('');
+    const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+    const [showForgotConfirmPassword, setShowForgotConfirmPassword] = useState(false);
 
     const { } = useAuthStore();
     const navigate = useNavigate();
@@ -98,6 +103,10 @@ export default function AuthPage() {
         clearMessages();
         setLoginCodeStep(false);
         setLoginCode('');
+        setForgotCodeStep(false);
+        setForgotCode('');
+        setForgotNewPassword('');
+        setForgotConfirmPassword('');
 
         if (nextView !== 'register') {
             setUsername('');
@@ -179,15 +188,76 @@ export default function AuthPage() {
         }
     };
 
+    const handleResendForgotCode = async () => {
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!normalizedEmail) {
+            setAuthError('Ingresá tu correo electrónico.');
+            return;
+        }
+        setIsLoading(true);
+        clearMessages();
+        try {
+            const response = await apiFetch('/auth/forgot/request-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data?.message || 'No se pudo reenviar el código.');
+            setSuccessMessage('Te reenviamos un nuevo código a tu correo.');
+        } catch (err: any) {
+            setAuthError(err.message || 'Error al reenviar el código.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleForgotPassword = async () => {
         const normalizedEmail = email.trim().toLowerCase();
-        const response = await apiFetch('/auth/forgot/request-code', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: normalizedEmail }),
+        if (!normalizedEmail) {
+            setAuthError('Ingresá tu correo electrónico.');
+            return;
+        }
+
+        if (!forgotCodeStep) {
+            const response = await apiFetch('/auth/forgot/request-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data?.message || 'No se pudo enviar el código.');
+            setForgotCodeStep(true);
+            setInfoMessage('Te enviamos un código de 6 dígitos a tu correo. Ingresalo abajo junto a tu nueva contraseña.');
+            return;
+        }
+
+        const cleanCode = forgotCode.trim().replace(/\D/g, '');
+        if (cleanCode.length !== 6) {
+            throw new Error('Ingresá el código de 6 dígitos que recibiste.');
+        }
+        if (forgotNewPassword.length < 8) {
+            throw new Error('La nueva contraseña debe tener al menos 8 caracteres.');
+        }
+        if (forgotNewPassword !== forgotConfirmPassword) {
+            throw new Error('Las contraseñas no coinciden.');
+        }
+
+        const response = await apiFetch('/auth/forgot/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: normalizedEmail,
+                code: cleanCode,
+                newPassword: forgotNewPassword,
+            }),
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data?.message || 'No se pudo enviar el código.');
-        navigate(`/reset-password?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
+        if (!response.ok) throw new Error(data?.message || 'El código es inválido o expiró.');
+
+        switchView('login');
+        setPassword('');
+        setSuccessMessage(data.message || 'Tu contraseña fue actualizada con éxito. Ya podés iniciar sesión.');
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -203,6 +273,21 @@ export default function AuthPage() {
         if (view === 'login' && loginCodeStep && loginCode.length !== 6) {
             setAuthError('Ingresá el código de 6 dígitos que recibiste por correo.');
             return;
+        }
+        if (view === 'forgot' && forgotCodeStep) {
+            const cleanCode = forgotCode.trim().replace(/\D/g, '');
+            if (cleanCode.length !== 6) {
+                setAuthError('Ingresá el código de 6 dígitos.');
+                return;
+            }
+            if (forgotNewPassword.length < 8) {
+                setAuthError('La nueva contraseña debe tener al menos 8 caracteres.');
+                return;
+            }
+            if (forgotNewPassword !== forgotConfirmPassword) {
+                setAuthError('Las contraseñas no coinciden.');
+                return;
+            }
         }
 
         setIsLoading(true);
@@ -233,13 +318,13 @@ export default function AuthPage() {
         ? t.auth.loginTitle
         : view === 'register'
             ? t.auth.registerTitle
-            : t.auth.forgotTitle;
+            : (forgotCodeStep ? 'Nueva contraseña' : t.auth.forgotTitle);
 
     const description = view === 'login'
         ? 'Ingresá con tu correo y contraseña para entrar a Finix.'
         : view === 'register'
             ? 'Creá tu cuenta y te mandamos un codigo de verificacion por correo.'
-            : 'Te enviaremos un codigo para restablecer tu contrasena.';
+            : (forgotCodeStep ? 'Ingresá el código de 6 dígitos que te enviamos y creá tu nueva contraseña.' : 'Te enviaremos un código para restablecer tu contraseña.');
 
     return (
         <LazyMotion features={domAnimation}>
@@ -387,17 +472,30 @@ export default function AuthPage() {
                                     </div>
                                 ) : null}
 
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                                    <Input
-                                        type="email"
-                                        placeholder={t.auth.email}
-                                        className="pl-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                    />
-                                </div>
+                                {view === 'forgot' && forgotCodeStep ? (
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground bg-secondary/40 px-3.5 py-2.5 rounded-xl border border-input/40">
+                                        <span>Código enviado a: <strong className="text-foreground">{email}</strong></span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setForgotCodeStep(false)}
+                                            className="text-primary hover:underline font-medium"
+                                        >
+                                            Cambiar
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                                        <Input
+                                            type="email"
+                                            placeholder={t.auth.email}
+                                            className="pl-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                )}
 
                                 {view !== 'forgot' && (!loginCodeStep || view !== 'login') ? (
                                     <div className="relative">
@@ -424,6 +522,62 @@ export default function AuthPage() {
                                     <Input inputMode="numeric" placeholder="Código de 6 dígitos" className="h-11 text-center text-lg tracking-[0.35em]" value={loginCode} onChange={(e) => setLoginCode(e.target.value.replace(/\D/g, '').slice(0, 6))} required />
                                 ) : null}
 
+                                {view === 'forgot' && forgotCodeStep ? (
+                                    <>
+                                        <div>
+                                            <Input
+                                                inputMode="numeric"
+                                                placeholder="Código de 6 dígitos"
+                                                className="h-11 text-center text-lg tracking-[0.35em] font-mono font-bold bg-secondary/50 border-input/50 focus:border-primary/50"
+                                                value={forgotCode}
+                                                onChange={(e) => setForgotCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                                required
+                                                maxLength={6}
+                                            />
+                                        </div>
+
+                                        <div className="relative">
+                                            <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                                            <Input
+                                                type={showPassword ? 'text' : 'password'}
+                                                placeholder="Nueva contraseña (mínimo 8 caracteres)"
+                                                className="pl-10 pr-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
+                                                value={forgotNewPassword}
+                                                onChange={(e) => setForgotNewPassword(e.target.value)}
+                                                required
+                                                minLength={8}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword((current) => !current)}
+                                                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground focus:outline-none"
+                                            >
+                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
+
+                                        <div className="relative">
+                                            <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                                            <Input
+                                                type={showForgotConfirmPassword ? 'text' : 'password'}
+                                                placeholder="Confirmar nueva contraseña"
+                                                className="pl-10 pr-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
+                                                value={forgotConfirmPassword}
+                                                onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                                                required
+                                                minLength={8}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowForgotConfirmPassword((current) => !current)}
+                                                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground focus:outline-none"
+                                            >
+                                                {showForgotConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : null}
+
                                 {view === 'login' ? (
                                     <div className="flex justify-end">
                                         <button
@@ -445,19 +599,43 @@ export default function AuthPage() {
                                     {isLoading ? (
                                         <div className="flex items-center justify-center gap-2" style={{ color: '#ffffff' }}>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            <span className="font-semibold text-sm">Ingresando...</span>
+                                            <span className="font-semibold text-sm">
+                                                {view === 'forgot'
+                                                    ? (forgotCodeStep ? 'Guardando...' : 'Enviando...')
+                                                    : 'Ingresando...'}
+                                            </span>
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-center gap-2" style={{ color: '#ffffff' }}>
                                             <span className="font-bold text-sm">
                                                 {view === 'login' && (loginCodeStep ? 'Confirmar código' : t.auth.loginBtn)}
                                                 {view === 'register' && t.auth.createAccountBtn}
-                                                {view === 'forgot' && t.auth.sendLinkBtn}
+                                                {view === 'forgot' && (forgotCodeStep ? 'Guardar nueva contraseña' : 'Enviar código')}
                                             </span>
                                             <ArrowRight className="w-4 h-4 stroke-[2.2]" style={{ color: '#ffffff' }} />
                                         </div>
                                     )}
                                 </button>
+
+                                {view === 'forgot' && forgotCodeStep ? (
+                                    <div className="flex justify-between items-center text-xs pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={handleResendForgotCode}
+                                            disabled={isLoading}
+                                            className="text-muted-foreground hover:text-foreground underline transition-colors disabled:opacity-50"
+                                        >
+                                            Reenviar código
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => switchView('login')}
+                                            className="text-primary hover:underline font-medium"
+                                        >
+                                            Volver a iniciar sesión
+                                        </button>
+                                    </div>
+                                ) : null}
 
                                 {authError ? (
                                     <p className="text-sm text-destructive font-medium text-center">{authError}</p>
