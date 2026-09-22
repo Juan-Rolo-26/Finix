@@ -99,6 +99,24 @@ export class AdminController {
     @RequireAdminPermissions(AdminPermission.EMAIL_SEND)
     async processEmailMarketingCampaign(@Param('id') id: string) { return this.emailMarketingService.processBatch(id); }
 
+    @Get('email-marketing/campaigns/:id')
+    @RequireAdminPermissions(AdminPermission.EMAIL_VIEW)
+    async getEmailCampaignDetail(@Param('id') id: string) {
+        return this.emailMarketingService.getCampaignDetail(id);
+    }
+
+    @Post('email-marketing/campaigns/:id/retry')
+    @RequireAdminPermissions(AdminPermission.EMAIL_SEND)
+    async retryEmailCampaign(@Param('id') id: string) {
+        return this.emailMarketingService.retryFailedRecipients(id);
+    }
+
+    @Get('email-marketing/analysis-details/:id')
+    @RequireAdminPermissions(AdminPermission.EMAIL_VIEW)
+    async getAnalysisDetailsForEmail(@Param('id') id: string) {
+        return this.emailMarketingService.getAnalysisDetailsForEmail(id);
+    }
+
     @Get('kpis')
     @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
     async getKPIs() {

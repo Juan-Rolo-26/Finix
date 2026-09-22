@@ -1,36 +1,275 @@
-import { motion } from 'framer-motion';
-import { Lock, ChevronRight, Crown, Check, TrendingUp, Zap } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Lock,
+    ChevronRight,
+    Crown,
+    Check,
+    TrendingUp,
+    Zap,
+    Briefcase,
+    LineChart,
+    Layers,
+    Newspaper,
+    Calendar,
+    ChevronDown,
+    ChevronUp,
+    Sparkles,
+    Bell,
+} from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, isJuanUser, isProUser } from '@/stores/authStore';
+
+export type ProSectionType = 'market' | 'portfolio' | 'analysis' | 'news' | 'calendar' | 'alerts' | 'general';
+
+interface SectionInfo {
+    badge: string;
+    icon: any;
+    defaultTitle: string;
+    defaultDesc: string;
+    features: Array<{ title: string; desc: string }>;
+}
+
+const SECTION_DATA: Record<ProSectionType, SectionInfo> = {
+    market: {
+        badge: 'MERCADOS EN TIEMPO REAL & PRE-MARKET',
+        icon: LineChart,
+        defaultTitle: 'Mercado Financiero Institucional PRO',
+        defaultDesc: 'Monitoreo de Wall Street y CEDEARs en tiempo real. Pre-Market con cotizaciones congeladas post-apertura, mapa de calor del S&P 500 y lentes técnicas semanales.',
+        features: [
+            {
+                title: 'Pre-Market & Cotizaciones en Vivo',
+                desc: 'Precios en tiempo real durante la rueda y cotización congelada de cierre de premarket a las 10:30 hs para comparar con precisión.',
+            },
+            {
+                title: 'Mapa de Calor Institucional S&P 500',
+                desc: 'Treemap interactivo por capitalización bursátil y los 11 sectores GICS con rotación sectorial y variaciones porcentuales.',
+            },
+            {
+                title: 'Lentes Técnicas Semanales Multimétricas',
+                desc: 'Filtros confluentes con MACD (impulso), RSI semanal 45/55 (reversión), ADX (fuerza tendencial) y Estocástico rápido.',
+            },
+            {
+                title: 'Screener de Top Gainers, Losers & Volumen',
+                desc: 'Ranking institucional de activos más activos, mayores subas y bajas intradiarias para detectar oportunidades al instante.',
+            },
+        ],
+    },
+    portfolio: {
+        badge: 'GESTIÓN PATRIMONIAL AVANZADA',
+        icon: Briefcase,
+        defaultTitle: 'Gestión Multi-Portafolio Cuantitativa PRO',
+        defaultDesc: 'Seguimiento patrimonial profesional con métricas cuantitativas, análisis de riesgo ponderado y comparativa gráfica contra el S&P 500 ($SPY).',
+        features: [
+            {
+                title: 'Creación de Múltiples Portafolios Ilimitados',
+                desc: 'Organizá tus inversiones por estrategia: Dividendos, Crecimiento, Renta Fija, Cripto o Carteras de Valor.',
+            },
+            {
+                title: 'Métricas Institucionales TWR y XIRR',
+                desc: 'Tasa Ponderada en el Tiempo (TWR), Tasa Interna de Retorno (XIRR), Alpha acumulado, Beta y Ratio Sharpe en tiempo real.',
+            },
+            {
+                title: 'Benchmark Gráfico Interactivo vs S&P 500 ($SPY)',
+                desc: 'Comparación visual de sobre-rendimiento para medir si tu estrategia de inversión supera al mercado general.',
+            },
+            {
+                title: 'Desglose de Riesgo & Proyección de Dividendos',
+                desc: 'Distribución porcentual por sector, ponderación de activos y calendario predictivo de cobro de dividendos.',
+            },
+        ],
+    },
+    analysis: {
+        badge: 'RESEARCH & VALUACIÓN FUNDAMENTAL',
+        icon: Layers,
+        defaultTitle: 'Modelos de Valuación Cuantitativa & DCF PRO',
+        defaultDesc: 'Modelos matemáticos de valuación intrínseca, cálculo de Fair Value por DCF, mapa ROIC vs WACC y balances auditados de 10 años.',
+        features: [
+            {
+                title: 'Modelo de Flujos de Fondos Descontados (DCF)',
+                desc: 'Estimación automática de Valor Intrínseco (Fair Value) con supuestos proyectados a 5 años y cálculo de margen de seguridad.',
+            },
+            {
+                title: 'Mapa de Creación de Valor (ROIC vs WACC)',
+                desc: 'Matriz visual de retorno sobre capital invertido vs costo de capital con calculadora interactiva de WACC.',
+            },
+            {
+                title: 'Scores de Salud Financiera Piotroski F-Score y Altman Z',
+                desc: 'Puntuación matemática de solvencia (0-9), calidad contable y probabilidad de quiebra corporativa.',
+            },
+            {
+                title: 'Balances de 10 Años y Múltiplos Comparables',
+                desc: 'Histórico completo de Estado de Resultados, Balance y FCF con múltiplos EV/EBITDA, P/E, P/FCF y PEG.',
+            },
+        ],
+    },
+    news: {
+        badge: 'FEED & SENTIMIENTO EN TIEMPO REAL',
+        icon: Newspaper,
+        defaultTitle: 'Inteligencia de Noticias Financieras con IA PRO',
+        defaultDesc: 'Cobertura continua de Wall Street, Reserva Federal y macroeconomía con análisis algorítmico de sentimiento e impacto en activos.',
+        features: [
+            {
+                title: 'Feed en Vivo sin Límites de Lectura',
+                desc: 'Cobertura ininterrumpida de Wall Street, balances trimestrales, decisiones de tasas y contexto argentino.',
+            },
+            {
+                title: 'Análisis Algorítmico de Sentimiento por IA',
+                desc: 'Clasificación de noticias (Alcista / Neutral / Bajista) con puntaje de impacto proyectado en la cotización.',
+            },
+            {
+                title: 'Detección Directa de Tickers Impactados',
+                desc: 'Vinculación inteligente de noticias a acciones ($NVDA, $AAPL, $TSLA, etc.) para operar con ventaja inmediata.',
+            },
+            {
+                title: 'Alertas Tempranas de Catalizadores',
+                desc: 'Notificaciones sobre reportes de balances, minutas de la Fed y catalizadores que mueven el mercado.',
+            },
+        ],
+    },
+    calendar: {
+        badge: 'CALENDARIO MACRO, EARNINGS & DIVIDENDOS',
+        icon: Calendar,
+        defaultTitle: 'Calendario Económico Institucional PRO',
+        defaultDesc: 'Eventos económicos de alto impacto de TradingView, reportes trimestrales de ganancias (Earnings Season) y dividendos oficiales.',
+        features: [
+            {
+                title: 'Calendario Macroeconómico de Alto Impacto',
+                desc: 'Decisiones de tasas de la Fed (FOMC), datos de inflación (IPC/CPI), empleo (NFP) y actividad económica global.',
+            },
+            {
+                title: 'Temporada de Balances (Earnings) con % Sorpresa',
+                desc: 'Fechas de reportes corporativos con consenso de analistas, ingresos y EPS proyectado vs real con sorpresa.',
+            },
+            {
+                title: 'Calendario Oficial de Dividendos S&P 500 y CEDEARs',
+                desc: 'Fechas ex-dividend, fechas de pago, montos en efectivo y rendimiento por dividendo (Dividend Yield) anual.',
+            },
+            {
+                title: 'Cuentas Regresivas & Nivel de Impacto',
+                desc: 'Temporizadores en tiempo real hasta la apertura de cada evento para proteger tus posiciones de la volatilidad.',
+            },
+        ],
+    },
+    alerts: {
+        badge: 'ALERTAS & ENVÍOS AUTOMÁTICOS',
+        icon: Bell,
+        defaultTitle: 'Sistema de Alertas Financieras PRO',
+        defaultDesc: 'Monitoreo activo 24/7 en segundo plano con disparadores personalizados de precio, volumen y cruces técnicos vía Email y Telegram.',
+        features: [
+            {
+                title: 'Monitoreo en Servidor 24/7 sin Mantener la App Abierta',
+                desc: 'Tus alertas se ejecutan continuamente en la nube detectando movimientos de mercado en tiempo real.',
+            },
+            {
+                title: 'Disparadores por Precio, Variación y Volumen Inusual',
+                desc: 'Configurá condiciones exactas (precio mayor/menor, quiebre de soporte/resistencia o saltos porcentuales).',
+            },
+            {
+                title: 'Notificaciones Multicanal Instantáneas',
+                desc: 'Recibí el aviso de inmediato con plantilla HTML responsive en tu Email y mensaje directo en tu Telegram.',
+            },
+            {
+                title: 'Auditoría y Tasa de Entrega en Vivo',
+                desc: 'Historial completo de alertas disparadas, estado de despacho y contexto técnico del activo en el momento.',
+            },
+        ],
+    },
+    general: {
+        badge: 'FINIX PRO · ACCESO TOTAL',
+        icon: Sparkles,
+        defaultTitle: 'Funcionalidad Exclusiva PRO',
+        defaultDesc: 'Accedé a herramientas financieras avanzadas, análisis institucional, cotizaciones en tiempo real y alertas automáticas.',
+        features: [
+            {
+                title: 'Mercados en Vivo & Pre-Market',
+                desc: 'Cotizaciones en tiempo real sin delay, precios congelados post-apertura y mapa de calor S&P 500.',
+            },
+            {
+                title: 'Modelos de Valuación Fundamental DCF & ROIC/WACC',
+                desc: 'Cálculo automático de Valor Intrínseco (Fair Value), múltiplos de mercado y puntuación Piotroski F-Score.',
+            },
+            {
+                title: 'Gestión Multi-Portafolio Cuantitativa',
+                desc: 'Métricas TWR, XIRR, Alpha y Ratio Sharpe con comparativa gráfica contra el S&P 500 ($SPY).',
+            },
+            {
+                title: 'Calendario Económico, Dividendos y Alertas 24/7',
+                desc: 'Eventos de alto impacto de la Reserva Federal, Earnings corporativos, fechas ex-dividend y alertas multicanal.',
+            },
+        ],
+    },
+};
+
+const ALL_SECTIONS_OVERVIEW = [
+    { name: 'Mercados', icon: LineChart, desc: 'Cotizaciones en vivo, Pre-Market congelado a las 10:30 hs, heatmap S&P 500 y lentes técnicas semanales.' },
+    { name: 'Portafolios', icon: Briefcase, desc: 'Multi-carteras ilimitadas, métricas TWR, XIRR, Sharpe Ratio y benchmark vs SPY.' },
+    { name: 'Análisis', icon: Layers, desc: 'Modelo DCF de Fair Value intrínseco, matriz ROIC vs WACC y balances de 10 años.' },
+    { name: 'Noticias', icon: Newspaper, desc: 'Feed financiero en vivo, análisis de sentimiento con IA y alertas por ticker.' },
+    { name: 'Calendario', icon: Calendar, desc: 'Datos oficiales TradingView, reportes de Earnings con sorpresa y dividendos S&P 500.' },
+    { name: 'Alertas', icon: Bell, desc: 'Disparadores 24/7 por precio y volumen con avisos automáticos por Email y Telegram.' },
+];
 
 export interface ProGateProps {
+    section?: ProSectionType;
     title?: string;
     description?: string;
     badgeText?: string;
     buttonText?: string;
+    features?: Array<{ title: string; desc: string }>;
     onUpgrade?: () => void;
     className?: string;
     children?: React.ReactNode;
 }
 
 export function ProGate({
-    title = 'Sección exclusiva PRO',
-    description = 'Accedé a herramientas financieras avanzadas, análisis institucional, cotizaciones en tiempo real y alertas automáticas.',
-    badgeText = 'PRO',
+    section,
+    title,
+    description,
+    badgeText,
     buttonText = 'Activar Finix PRO',
+    features: customFeatures,
     onUpgrade,
     className = '',
     children,
 }: ProGateProps) {
     const navigate = useNavigate();
-    const user = useAuthStore(s => s.user);
+    const location = useLocation();
+    const user = useAuthStore((s) => s.user);
+    const [showAllSections, setShowAllSections] = useState(false);
+
+    const isJuan = isJuanUser(user);
+    const isPro = isJuan || isProUser(user);
+
+    // Juan26-08 (and active PRO / Admin users) are permanently exempt and never blocked
+    if (isPro) {
+        return children ? <>{children}</> : null;
+    }
+
+    // Auto-detect section if not explicitly passed
+    const pathname = (location.pathname || '').toLowerCase();
+    const resolvedSection: ProSectionType = section || (
+        pathname.includes('/market') || pathname.includes('/mercado') ? 'market' :
+        pathname.includes('/portfolio') || pathname.includes('/portafolio') ? 'portfolio' :
+        pathname.includes('/analysis') || pathname.includes('/analisis') ? 'analysis' :
+        pathname.includes('/news') || pathname.includes('/noticias') ? 'news' :
+        pathname.includes('/calendar') || pathname.includes('/calendario') ? 'calendar' :
+        pathname.includes('/alert') || pathname.includes('/alerta') || pathname.includes('/email') ? 'alerts' :
+        'general'
+    );
+
+    const sectionMeta = SECTION_DATA[resolvedSection] || SECTION_DATA.general;
+    const displayBadge = badgeText || sectionMeta.badge;
+    const displayTitle = title || sectionMeta.defaultTitle;
+    const displayDesc = description || sectionMeta.defaultDesc;
+    const displayFeatures = customFeatures || sectionMeta.features;
 
     const handleUpgrade = onUpgrade || (() => {
         if (!user) {
-            navigate(`/auth?redirect=${encodeURIComponent('/pro')}&plan=PRO`);
+            navigate(`/auth?redirect=${encodeURIComponent('/pricing')}&plan=PRO`);
         } else {
-            navigate('/pro');
+            navigate('/pricing');
         }
     });
 
@@ -193,49 +432,92 @@ export function ProGate({
                 initial={{ opacity: 0, y: 20, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.4, ease: 'easeOut' }}
-                className="relative z-20 w-full max-w-xl mx-auto rounded-[2.5rem] bg-card/90 dark:bg-zinc-950/85 backdrop-blur-2xl border border-primary/35 shadow-[0_0_60px_-15px_rgba(16,185,129,0.25)] p-6 sm:p-9 text-center my-auto"
+                className="relative z-20 w-full max-w-xl mx-auto rounded-[2.5rem] bg-card/95 dark:bg-zinc-950/90 backdrop-blur-2xl border border-primary/35 shadow-[0_0_60px_-15px_rgba(16,185,129,0.25)] p-6 sm:p-8 text-center my-auto"
             >
                 {/* Header Badge */}
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30 mb-5 shadow-sm">
                     <Crown className="w-3.5 h-3.5 text-primary" />
-                    <span>{badgeText} · ACCESO EXCLUSIVO</span>
+                    <span>{displayBadge}</span>
                 </div>
 
                 {/* Lock Icon with Pulsating Ring */}
-                <div className="relative mb-5 flex justify-center">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-primary/20 via-emerald-500/10 to-transparent border border-primary/30 flex items-center justify-center shadow-lg shadow-primary/20">
+                <div className="relative mb-4 flex justify-center">
+                    <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-gradient-to-br from-primary/20 via-emerald-500/10 to-transparent border border-primary/30 flex items-center justify-center shadow-lg shadow-primary/20">
                         <Lock className="w-8 h-8 sm:w-9 sm:h-9 text-primary" />
                     </div>
                 </div>
 
                 {/* Title */}
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-extrabold text-foreground tracking-tight mb-3">
-                    {title}
+                <h2 className="text-2xl sm:text-3xl font-heading font-extrabold text-foreground tracking-tight mb-2.5">
+                    {displayTitle}
                 </h2>
 
                 {/* Description */}
-                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed mb-6 max-w-md mx-auto">
-                    {description}
+                <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mb-5 max-w-md mx-auto">
+                    {displayDesc}
                 </p>
 
-                {/* Key Benefits List */}
-                <div className="bg-secondary/40 border border-border/40 rounded-2xl p-4 sm:p-5 mb-6 text-left space-y-2.5">
-                    <div className="flex items-start gap-2.5 text-xs sm:text-sm text-foreground/90 font-medium">
-                        <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                        <span><strong>Cotizaciones y métricas en tiempo real</strong> sin demoras ni restricciones de uso.</span>
+                {/* Section-Specific Key Benefits List */}
+                <div className="bg-secondary/40 border border-border/60 rounded-2xl p-4 sm:p-5 mb-5 text-left space-y-3">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between pb-1 border-b border-border/50">
+                        <span>Herramientas activas en esta sección:</span>
+                        <span className="text-emerald-500 font-extrabold">FINIX PRO</span>
                     </div>
-                    <div className="flex items-start gap-2.5 text-xs sm:text-sm text-foreground/90 font-medium">
-                        <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                        <span><strong>Modelos de valuación fundamental</strong> con cálculo automático de Fair Value y múltiplos.</span>
+
+                    {displayFeatures.map((item, i) => (
+                        <div key={i} className="flex items-start gap-2.5 text-xs text-foreground/90 leading-snug">
+                            <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 mt-0.5">
+                                <Check className="w-3 h-3 stroke-[2.5]" />
+                            </div>
+                            <div>
+                                <strong className="text-foreground font-bold">{item.title}: </strong>
+                                <span className="text-muted-foreground">{item.desc}</span>
+                            </div>
+                        </div>
+                    ))}
+
+                    <div className="flex items-start gap-2.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold pt-2 border-t border-border/40">
+                        <Zap className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span><strong>Cobro recurrente mensual automático</strong> a precio fijo protegido. Cancelás cuando quieras en 1 clic.</span>
                     </div>
-                    <div className="flex items-start gap-2.5 text-xs sm:text-sm text-foreground/90 font-medium">
-                        <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                        <span><strong>Alertas y resúmenes diarios por email (Gmail)</strong> para anticipar movimientos del mercado.</span>
-                    </div>
-                    <div className="flex items-start gap-2.5 text-xs sm:text-sm text-emerald-400 font-semibold pt-1 border-t border-border/30">
-                        <Zap className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                        <span><strong>Cobro recurrente mensual automático</strong> al mismo precio fijo. Cancelás cuando quieras con 1 click.</span>
-                    </div>
+                </div>
+
+                {/* Toggle All 5 PRO Sections Preview */}
+                <div className="mb-5">
+                    <button
+                        type="button"
+                        onClick={() => setShowAllSections(!showAllSections)}
+                        className="text-xs font-bold text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                        <span>{showAllSections ? 'Ocultar resumen general' : '¿Qué incluye Finix PRO en toda la plataforma?'}</span>
+                        {showAllSections ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+
+                    <AnimatePresence>
+                        {showAllSections && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="mt-3 pt-3 border-t border-border/50 grid grid-cols-1 sm:grid-cols-2 gap-2 text-left"
+                            >
+                                {ALL_SECTIONS_OVERVIEW.map((s) => {
+                                    const SecIcon = s.icon;
+                                    return (
+                                        <div key={s.name} className="p-2.5 rounded-xl bg-secondary/30 border border-border/50 space-y-0.5">
+                                            <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                                                <SecIcon className="w-3.5 h-3.5 text-emerald-500" />
+                                                <span>{s.name}</span>
+                                            </div>
+                                            <p className="text-[11px] text-muted-foreground leading-tight">
+                                                {s.desc}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {/* CTA Action Button */}
@@ -248,7 +530,7 @@ export function ProGate({
                         <ChevronRight className="w-5 h-5 ml-1" />
                     </Button>
 
-                    <p className="text-[11px] sm:text-xs text-muted-foreground/80 leading-tight">
+                    <p className="text-[11px] text-muted-foreground/80 leading-tight">
                         🔒 Facturación mensual automática sin permanencia mínima. Podés dar de baja tu plan en cualquier momento desde tu Configuración.
                     </p>
                 </div>
@@ -258,3 +540,4 @@ export function ProGate({
 }
 
 export default ProGate;
+

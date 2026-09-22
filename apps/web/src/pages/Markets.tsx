@@ -264,10 +264,9 @@ export default function Markets() {
         return (
             <div className="min-h-[calc(100vh-60px)] flex flex-col flex-1 bg-background">
                 <ProGate
-                    title="Funcionalidad Exclusiva PRO"
-                    description="La sección de Mercados es exclusiva para usuarios con Finix PRO. Mejorá tu plan para acceder a cotizaciones en tiempo real y análisis técnico avanzado."
-                    buttonText="Activar PRO"
-                    onUpgrade={() => navigate('/pro')}
+                    section="market"
+                    buttonText="Activar Finix PRO"
+                    onUpgrade={() => navigate('/pricing')}
                 />
             </div>
         );

@@ -30,7 +30,7 @@ import {
     Repeat,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore, isJuanUser } from '../stores/authStore';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { NOTIFICATION_HISTORY_DAYS, type NotificationItem, groupNotificationsByDay } from '../lib/notifications';
@@ -834,8 +834,8 @@ export function Sidebar() {
                                     {user?.username || (user as any)?.email?.split('@')[0] || 'Usuario'}
                                 </p>
                                 <p className="text-[9.5px] uppercase tracking-[0.14em] font-bold leading-tight mt-0.5"
-                                    style={{ color: (user?.role === 'ADMIN' || user?.plan === 'PRO' || (user as any)?.isPro) ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.6)' }}>
-                                    {user?.role === 'ADMIN' ? 'ADMIN · PRO' : ((user?.plan === 'PRO' || (user as any)?.isPro) ? 'PRO' : 'Inversor')}
+                                    style={{ color: (user?.role === 'ADMIN' || user?.plan === 'PRO' || (user as any)?.isPro || isJuanUser(user)) ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.6)' }}>
+                                    {isJuanUser(user) ? 'ADMIN · PRO' : (user?.role === 'ADMIN' ? 'ADMIN · PRO' : ((user?.plan === 'PRO' || (user as any)?.isPro) ? 'PRO' : 'Inversor'))}
                                 </p>
                             </div>
                         )}

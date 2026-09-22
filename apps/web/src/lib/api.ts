@@ -71,6 +71,15 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
     const withAuth = (requestInit?: RequestInit) => {
         const enhancedInit = { ...requestInit, credentials: 'include' as RequestCredentials };
         const headers = new Headers(enhancedInit.headers || {});
+
+        // Never force JSON headers on multipart requests. The browser must set
+        // Content-Type itself so it can include the FormData boundary; without
+        // it Multer receives an empty body and reports "No content provided".
+        if (enhancedInit.body instanceof FormData) {
+            headers.delete('Content-Type');
+            headers.delete('Content-Length');
+        }
+
         if (authToken && !headers.has('Authorization')) {
             headers.set('Authorization', `Bearer ${authToken}`);
         }

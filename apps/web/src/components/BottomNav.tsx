@@ -19,6 +19,7 @@ import {
     TrendingUp,
     Briefcase,
     AreaChart,
+    Calendar,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
@@ -71,10 +72,11 @@ export function BottomNav() {
         location.pathname === p ||
         (p !== '/dashboard' && location.pathname.startsWith(`${p}/`));
 
-    const moreActive = ['/market', '/portfolio', '/news', '/analysis', '/learn', '/profile', '/settings', '/notifications'].some(p => isActive(p));
+    const moreActive = ['/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', '/learn', '/profile', '/settings', '/notifications'].some(p => isActive(p));
 
     const moreLinks = [
         { label: 'Mercado',   path: '/market',   icon: TrendingUp  },
+        { label: 'Calendario', path: '/calendario', icon: Calendar },
         { label: 'Portafolio',path: '/portfolio', icon: Briefcase   },
         { label: 'Noticias',  path: '/news',     icon: Newspaper   },
         { label: 'Análisis',  path: '/analysis', icon: AreaChart   },
@@ -95,7 +97,8 @@ export function BottomNav() {
                     background: 'hsl(var(--sidebar-bg))',
                     borderTop: '1px solid hsl(var(--sidebar-border))',
                     paddingBottom: 'env(safe-area-inset-bottom)',
-                    height: '60px',
+                    height: 'calc(60px + env(safe-area-inset-bottom))',
+                    boxSizing: 'border-box',
                 }}
             >
                 <div className="flex items-center justify-around h-full px-1">

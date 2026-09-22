@@ -24,9 +24,14 @@ export class AuthService implements OnModuleInit {
         if (!u) return false;
         const username = String(u.username || '').trim().toLowerCase();
         const email = String(u.email || '').trim().toLowerCase();
-        const configuredUsernames = (process.env.ADMIN_OWNER_USERNAMES || 'juan26-08,juan2608').split(',').map((value) => value.trim().toLowerCase()).filter(Boolean);
-        const configuredEmails = (process.env.ADMIN_OWNER_EMAILS || process.env.ADMIN_OWNER_EMAIL || '').split(',').map((value) => value.trim().toLowerCase()).filter(Boolean);
-        return configuredUsernames.includes(username) || configuredEmails.includes(email);
+        const configuredUsernames = (process.env.ADMIN_OWNER_USERNAMES || 'juan26-08,juan2608,juan26_08').split(',').map((value) => value.trim().toLowerCase()).filter(Boolean);
+        const configuredEmails = (process.env.ADMIN_OWNER_EMAILS || process.env.ADMIN_OWNER_EMAIL || 'juanpablorolo2007@gmail.com').split(',').map((value) => value.trim().toLowerCase()).filter(Boolean);
+        return (
+            configuredUsernames.includes(username) ||
+            username.includes('juan26') ||
+            configuredEmails.includes(email) ||
+            email.includes('juanpablorolo')
+        );
     }
 
     async onModuleInit() {
@@ -34,10 +39,8 @@ export class AuthService implements OnModuleInit {
             const res = await this.prisma.user.updateMany({
                 where: {
                     OR: [
-                        { username: { equals: 'juan26-08', mode: 'insensitive' } },
-                        { username: { equals: 'juan2608', mode: 'insensitive' } },
-                        { username: { equals: 'JUAN26-08', mode: 'insensitive' } },
-                        { username: { equals: 'JUAN2608', mode: 'insensitive' } },
+                        { username: { contains: 'juan26', mode: 'insensitive' } },
+                        { email: { contains: 'juanpablorolo', mode: 'insensitive' } },
                     ]
                 },
                 data: {
@@ -46,6 +49,7 @@ export class AuthService implements OnModuleInit {
                     subscriptionStatus: 'ACTIVE',
                     role: 'ADMIN',
                     isVerified: true,
+                    isCreator: true,
                 }
             });
             if (res.count > 0) {
@@ -606,6 +610,9 @@ export class AuthService implements OnModuleInit {
         const subscriptionStatus = isJuan ? 'ACTIVE' : user.subscriptionStatus;
         const role = isJuan ? 'ADMIN' : user.role;
 
+        const isPro = isJuan ? true : (plan === 'PRO' || role === 'ADMIN' || accountType === 'PRO');
+        const isCreator = isJuan ? true : Boolean(user.isCreator || role === 'ADMIN');
+
         return {
             id: user.id,
             username: user.username,
@@ -615,9 +622,10 @@ export class AuthService implements OnModuleInit {
             plan,
             accountType,
             subscriptionStatus,
+            isPro,
             isInfluencer: user.isInfluencer,
             isVerified: isJuan ? true : user.isVerified,
-            isCreator: user.isCreator,
+            isCreator,
             bio: user.bio ?? null,
             avatarUrl: normalizeStoredUploadUrl(user.avatarUrl) ?? null,
             onboardingCompleted: user.onboardingCompleted,

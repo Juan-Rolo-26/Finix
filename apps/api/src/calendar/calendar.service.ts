@@ -265,7 +265,11 @@ export class CalendarService {
             const tvEarnings = await this.providerService.fetchTradingViewSP500Earnings({ from: mondayStr, to: sundayStr });
             const existingKeys = new Set(dbEarnings.map(e => `${e.ticker}|${e.date}`));
             for (const event of tvEarnings) {
-                if (!existingKeys.has(`${event.ticker}|${event.date}`)) dbEarnings.push(event as any);
+                const key = `${event.ticker}|${event.date}`;
+                if (!existingKeys.has(key)) {
+                    dbEarnings.push(event as any);
+                    existingKeys.add(key);
+                }
             }
             dbEarnings.sort((a, b) => a.date.localeCompare(b.date) || b.earningsImpactScore - a.earningsImpactScore);
         }
@@ -294,11 +298,35 @@ export class CalendarService {
             const tvDivs = await this.providerService.fetchTradingViewSP500Dividends({ from: mondayStr, to: sundayStr });
             const existingKeys = new Set(dbDividends.map(d => `${d.ticker}|${d.paymentDate || d.exDate}`));
             for (const event of tvDivs) {
-                if (!existingKeys.has(`${event.ticker}|${event.paymentDate || event.exDate}`)) dbDividends.push(event as any);
+                const key = `${event.ticker}|${event.paymentDate || event.exDate}`;
+                if (!existingKeys.has(key)) {
+                    dbDividends.push(event as any);
+                    existingKeys.add(key);
+                }
             }
             dbDividends.sort((a, b) => (a.paymentDate || a.exDate).localeCompare(b.paymentDate || b.exDate));
         }
 
+
+        // Deduplicate stored records too, preserving the first (persisted) event.
+        const uniqueEvents = <T,>(events: T[], key: (event: T) => string): T[] =>
+            Array.from(events.reduce((map, event) => {
+                const id = key(event);
+                if (!map.has(id)) map.set(id, event);
+                return map;
+            }, new Map<string, T>()).values());
+        const tickerKey = (ticker: string) => ticker.trim().toUpperCase().replace(/\./g, '-');
+        dbEarnings = uniqueEvents(dbEarnings, (e: { ticker: string; date: string }) => `${tickerKey(e.ticker)}|${e.date}`);
+        const dividendDisplayDate = (d: any) =>
+            d.paymentDate && (isAll || (d.paymentDate >= mondayStr && d.paymentDate <= sundayStr))
+                ? d.paymentDate : d.exDate;
+        // One company per selected week, even when sources disagree on dates.
+        // Keep the earliest visible event; retain separate payments in history.
+        dbDividends.sort((a, b) =>
+            (dividendDisplayDate(a) || '').localeCompare(dividendDisplayDate(b) || ''));
+        dbDividends = uniqueEvents(dbDividends, d => isAll
+            ? `${tickerKey(d.ticker)}|${d.exDate || d.paymentDate}`
+            : tickerKey(d.ticker));
 
         const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         const shortNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
@@ -396,7 +424,7 @@ export class CalendarService {
 
                 const rawEco = dbEconomic.filter(e => e.date === dateStr);
                 const rawEarn = dbEarnings.filter(e => e.date === dateStr);
-                const rawDiv = dbDividends.filter(d => (d.paymentDate === dateStr) || (!d.paymentDate && d.exDate === dateStr));
+                const rawDiv = dbDividends.filter(d => dividendDisplayDate(d) === dateStr);
 
                 days.push({
                     date: dateStr,
@@ -417,7 +445,7 @@ export class CalendarService {
 
                 const rawEco = dbEconomic.filter(e => e.date === dateStr);
                 const rawEarn = dbEarnings.filter(e => e.date === dateStr);
-                const rawDiv = dbDividends.filter(d => (d.paymentDate === dateStr) || (!d.paymentDate && d.exDate === dateStr));
+                const rawDiv = dbDividends.filter(d => dividendDisplayDate(d) === dateStr);
 
                 // Omitir sábado y domingo si no tienen eventos
                 if ((i === 5 || i === 6) && rawEco.length === 0 && rawEarn.length === 0 && rawDiv.length === 0) {

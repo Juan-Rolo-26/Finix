@@ -434,19 +434,6 @@ const PortfolioPage = () => {
   const navigate = useNavigate();
   const isPro = (user as any)?.plan === 'PRO' || (user as any)?.accountType === 'PRO' || (user as any)?.role === 'ADMIN' || (user as any)?.isPro || (user as any)?.subscriptionTier === 'pro' || isJuanUser(user);
 
-  if (!isPro) {
-      return (
-          <div className="min-h-[calc(100vh-60px)] flex flex-col flex-1 bg-background">
-              <ProGate
-                  title="Funcionalidad Exclusiva PRO"
-                  description="La sección de Portafolios es exclusiva para usuarios con Finix PRO. Mejorá tu plan para acceder a herramientas avanzadas y gestión patrimonial en tiempo real."
-                  buttonText="Activar PRO"
-                  onUpgrade={() => navigate('/pro')}
-              />
-          </div>
-      );
-  }
-
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
   const [metrics, setMetrics] = useState<PortfolioMetrics | null>(null);
@@ -480,6 +467,10 @@ const PortfolioPage = () => {
 
   // ── Data loading ────────────────────────────────────────────────────────────
   const loadPortfolios = useCallback(async (preferredId?: string) => {
+    if (!isPro) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await apiFetch("/portfolios");
@@ -509,6 +500,7 @@ const PortfolioPage = () => {
   }, []);
 
   const loadRates = useCallback(async () => {
+    if (!isPro) return;
     try {
       const r = await apiFetch("/market/dolar/rates");
       if (r.ok) {
@@ -527,6 +519,10 @@ const PortfolioPage = () => {
   }, []);
 
   useEffect(() => {
+    if (!isPro) {
+      setLoading(false);
+      return;
+    }
     void loadPortfolios();
     void loadRates();
 
@@ -537,7 +533,7 @@ const PortfolioPage = () => {
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [loadPortfolios, loadRates]);
+  }, [isPro, loadPortfolios, loadRates]);
 
   useEffect(() => {
     if (selectedPortfolio?.id) {
@@ -773,6 +769,18 @@ const PortfolioPage = () => {
   const mask = (v: string) => hideValues ? "••••••" : v;
 
   // ── Render ───────────────────────────────────────────────────────────────────
+  if (!isPro) {
+      return (
+          <div className="min-h-[calc(100vh-60px)] flex flex-col flex-1 bg-background">
+              <ProGate
+                  section="portfolio"
+                  buttonText="Activar Finix PRO"
+                  onUpgrade={() => navigate('/pricing')}
+              />
+          </div>
+      );
+  }
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><PortfolioSkeleton /></div>;
 
   return (

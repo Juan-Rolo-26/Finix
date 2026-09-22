@@ -318,30 +318,38 @@ export default function Settings() {
     const saveProfile = async () => {
         setIsSavingProfile(true);
         try {
+            const payload: any = {
+                username: profileForm.username,
+                bio: profileForm.bio,
+                bioLong: profileForm.bioLong,
+                avatarUrl: profileForm.avatarUrl,
+                bannerUrl: profileForm.bannerUrl,
+                title: profileForm.title,
+                company: profileForm.company,
+                location: profileForm.location,
+                website: profileForm.website,
+                linkedinUrl: profileForm.linkedinUrl,
+                twitterUrl: profileForm.twitterUrl,
+                youtubeUrl: profileForm.youtubeUrl,
+                instagramUrl: profileForm.instagramUrl,
+                notificationPrefs,
+            };
+            if (profileForm.yearsExperience !== undefined && profileForm.yearsExperience !== null && (profileForm.yearsExperience as any) !== '') {
+                const num = Number(profileForm.yearsExperience);
+                if (!isNaN(num)) {
+                    payload.yearsExperience = num;
+                }
+            }
+
             const res = await apiFetch('/users/me', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: profileForm.username,
-                    bio: profileForm.bio,
-                    bioLong: profileForm.bioLong,
-                    avatarUrl: profileForm.avatarUrl,
-                    bannerUrl: profileForm.bannerUrl,
-                    title: profileForm.title,
-                    company: profileForm.company,
-                    location: profileForm.location,
-                    website: profileForm.website,
-                    linkedinUrl: profileForm.linkedinUrl,
-                    twitterUrl: profileForm.twitterUrl,
-                    youtubeUrl: profileForm.youtubeUrl,
-                    instagramUrl: profileForm.instagramUrl,
-                    yearsExperience: profileForm.yearsExperience,
-                    notificationPrefs,
-                }),
+                body: JSON.stringify(payload),
             });
             if (!res.ok) {
                 const d = await res.json().catch(() => ({}));
-                throw new Error(d?.message || `HTTP ${res.status}`);
+                const errMsg = Array.isArray(d?.message) ? d.message.join(', ') : (d?.message || `HTTP ${res.status}`);
+                throw new Error(errMsg);
             }
             const updated = await res.json();
             setSettings(updated);

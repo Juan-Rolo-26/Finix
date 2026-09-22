@@ -127,7 +127,75 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
 
                 <div className="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
                     <Card className="border-border/50 bg-background/40"><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><TrendingUp className="h-4 w-4 text-emerald-500" /> Evolución de precio · 6 meses</CardTitle></CardHeader><CardContent>{candles.length > 1 ? <><div className="h-40 rounded-xl bg-gradient-to-b from-emerald-500/10 to-transparent p-2"><svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full"><polyline points={chartPoints} fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" className="text-emerald-500" /></svg></div><div className="mt-2 flex justify-between text-[10px] text-muted-foreground"><span>Mín. {money(minClose)}</span><span>Máx. {money(maxClose)}</span><span>Último {money(closes[closes.length - 1])}</span></div></> : <p className="py-12 text-center text-xs text-muted-foreground">No hay histórico disponible.</p>}</CardContent></Card>
-                    <Card className="border-border/50 bg-background/40"><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><Newspaper className="h-4 w-4 text-emerald-500" /> Noticias relacionadas</CardTitle></CardHeader><CardContent className="space-y-3">{news.length ? news.map((item: any, index) => <a key={item.id || index} href={item.url || item.link || '#'} target="_blank" rel="noreferrer" className="block border-b border-border/40 pb-2 last:border-0"><p className="line-clamp-2 text-xs font-semibold text-foreground hover:text-emerald-500">{item.title || item.headline}</p><p className="mt-1 text-[10px] text-muted-foreground">{item.sourceName || item.source?.name || 'Fuente externa'}{item.publishedAt ? ` · ${new Date(item.publishedAt).toLocaleDateString('es-AR')}` : ''}</p></a>) : <p className="py-8 text-center text-xs text-muted-foreground">No hay noticias recientes para este activo.</p>}</CardContent></Card>
+                    <Card className="border-border/50 bg-background/40">
+                        <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
+                            <CardTitle className="flex items-center gap-2 text-sm">
+                                <Newspaper className="h-4 w-4 text-emerald-500" />
+                                <span>Noticias relacionadas · {ticker}</span>
+                            </CardTitle>
+                            <a
+                                href={alphaSpreadUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                            >
+                                <span>AlphaSpread</span>
+                                <ExternalLink className="h-2.5 w-2.5" />
+                            </a>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {news.length ? (
+                                <>
+                                    {news.map((item: any, index) => (
+                                        <a
+                                            key={item.id || index}
+                                            href={item.url || item.link || alphaSpreadUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="block border-b border-border/40 pb-2.5 last:border-0 group transition-colors"
+                                        >
+                                            <p className="line-clamp-2 text-xs font-semibold text-foreground group-hover:text-emerald-500 transition-colors">
+                                                {item.title || item.headline}
+                                            </p>
+                                            <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
+                                                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                                    {item.sourceName || item.source?.name || 'AlphaSpread / Mercado'}
+                                                </span>
+                                                <span>
+                                                    {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('es-AR') : 'Reciente'}
+                                                </span>
+                                            </div>
+                                        </a>
+                                    ))}
+                                    <div className="pt-1 border-t border-border/40">
+                                        <a
+                                            href={alphaSpreadUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-[11px] font-bold text-muted-foreground hover:text-foreground bg-secondary/30 hover:bg-secondary/60 border border-border/50 transition-all text-center"
+                                        >
+                                            <span>Ver análisis de valoración y noticias de {ticker} en AlphaSpread</span>
+                                            <ExternalLink className="h-3 w-3 text-emerald-500" />
+                                        </a>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="py-8 text-center space-y-2">
+                                    <p className="text-xs text-muted-foreground">
+                                        No hay noticias recientes para este activo.
+                                    </p>
+                                    <a
+                                        href={alphaSpreadUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1 text-xs font-bold text-emerald-500 hover:underline"
+                                    >
+                                        Ver noticias y DCF en AlphaSpread <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 pt-4 text-xs text-muted-foreground"><span>Fuente fundamental: {source}</span><div className="flex gap-2"><a href={`https://www.tradingview.com/symbols/${ticker}/`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-xl border border-border/60 px-3 py-2 font-semibold hover:border-emerald-500/50 hover:text-emerald-500">TradingView <ExternalLink className="h-3 w-3" /></a><a href={alphaSpreadUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-xl border border-border/60 px-3 py-2 font-semibold hover:border-emerald-500/50 hover:text-emerald-500">AlphaSpread <ExternalLink className="h-3 w-3" /></a></div></div>

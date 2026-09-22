@@ -7,7 +7,7 @@ import {
     AlertTriangle, ArrowUpRight, ArrowDownRight, Search, 
     Sparkles, Loader2, ArrowLeft, BarChart3,
     Building2, Scale, PieChart, Layers, Camera, HelpCircle,
-    Info, ChevronUp
+    Info, ChevronUp, RefreshCw
 } from 'lucide-react';
 import { 
     ResponsiveContainer, LineChart as RCLineChart, Line, 
@@ -122,10 +122,10 @@ function ProPaywallGate({ analysis }: { analysis: any }) {
 
                 <div className="pt-2">
                     <Button 
-                        onClick={() => navigate('/settings/plan')} 
+                        onClick={() => navigate('/pricing')} 
                         className="h-12 px-8 rounded-full font-bold text-sm shadow-xl shadow-primary/25 bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-primary-foreground transition-all duration-300 transform hover:scale-105"
                     >
-                        Desbloquear con Finix Pro ($5/mes)
+                        Desbloquear con Finix PRO
                     </Button>
                 </div>
             </motion.div>
@@ -957,18 +957,31 @@ export default function Analysis() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
 
+    const isPro = Boolean(
+        (user as any)?.plan === 'PRO' ||
+        (user as any)?.accountType === 'PRO' ||
+        (user as any)?.role === 'ADMIN' ||
+        (user as any)?.isPro ||
+        (user as any)?.subscriptionTier === 'pro' ||
+        isJuanUser(user)
+    );
+
     useEffect(() => {
+        if (!isPro) {
+            setLoading(false);
+            return;
+        }
         if (slug) {
             fetchDetail(slug);
         } else {
             fetchCatalog();
         }
-    }, [slug, user]);
+    }, [slug, user, isPro]);
 
     const fetchCatalog = async () => {
         try {
             setLoading(true);
-            const res = await apiFetch('/analysis');
+            const res = await apiFetch(`/analysis?_t=${Date.now()}`);
             if (res.ok) {
                 const data = await res.json();
                 setCatalog(data || []);
@@ -983,7 +996,7 @@ export default function Analysis() {
     const fetchDetail = async (targetSlug: string) => {
         try {
             setLoading(true);
-            const res = await apiFetch(`/analysis/${targetSlug}`);
+            const res = await apiFetch(`/analysis/${targetSlug}?_t=${Date.now()}`);
             if (res.ok) {
                 const json = await res.json();
                 setAnalysisData(json.data);
@@ -998,15 +1011,6 @@ export default function Analysis() {
         }
     };
 
-    const isPro = Boolean(
-        (user as any)?.plan === 'PRO' ||
-        (user as any)?.accountType === 'PRO' ||
-        (user as any)?.role === 'ADMIN' ||
-        (user as any)?.isPro ||
-        (user as any)?.subscriptionTier === 'pro' ||
-        isJuanUser(user)
-    );
-
     if (loading) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center min-h-[70vh]">
@@ -1020,10 +1024,9 @@ export default function Analysis() {
         return (
             <div className="min-h-[calc(100vh-60px)] flex flex-col flex-1 bg-background">
                 <ProGate
-                    title="Sección exclusiva PRO"
-                    description="Accedé a nuestros análisis de activos financieros, modelos de valuación institucional (DCF), comparativa de múltiplos y research fundamental completo."
-                    buttonText="Activar PRO"
-                    onUpgrade={() => navigate('/pro')}
+                    section="analysis"
+                    buttonText="Activar Finix PRO"
+                    onUpgrade={() => navigate('/pricing')}
                 />
             </div>
         );
@@ -1052,15 +1055,25 @@ export default function Analysis() {
                         </p>
                     </div>
 
-                    <div className="relative max-w-md w-full">
-                        <Search className="w-6 h-6 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <input
-                            type="text"
-                            placeholder="Buscar ticker o empresa..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-13 pr-5 py-3.5 rounded-2xl bg-card border border-border/60 text-base sm:text-lg font-medium focus:outline-none focus:border-primary shadow-sm"
-                        />
+                    <div className="flex items-center gap-2 max-w-md w-full">
+                        <div className="relative flex-1">
+                            <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                type="text"
+                                placeholder="Buscar ticker o empresa..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-card border border-border/60 text-sm sm:text-base font-medium focus:outline-none focus:border-primary shadow-xs"
+                            />
+                        </div>
+                        <button
+                            onClick={() => slug ? fetchDetail(slug) : fetchCatalog()}
+                            disabled={loading}
+                            className="p-3.5 rounded-2xl border border-border/60 bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0 shadow-xs"
+                            title="Actualizar análisis"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        </button>
                     </div>
                 </div>
 

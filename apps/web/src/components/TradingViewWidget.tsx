@@ -1,57 +1,95 @@
-import { useEffect } from 'react';
-
-declare global {
-    interface Window {
-        TradingView: any;
-    }
-}
+import { memo } from 'react';
+import TradingViewChart from './TradingViewChart';
+import { usePreferencesStore } from '../stores/preferencesStore';
 
 interface TradingViewWidgetProps {
     symbol?: string;
     theme?: 'light' | 'dark';
     autosize?: boolean;
-    height?: number;
+    height?: number | string;
+    interval?: string;
+    hideSideToolbar?: boolean;
 }
 
-export default function TradingViewWidget({
-    symbol = "NASDAQ:AAPL",
-    theme = "dark",
-    height = 540,
+/**
+ * Normaliza tickers para que TradingView los cargue con su exchange canónico
+ */
+function resolveSymbol(rawSymbol?: string): string {
+    if (!rawSymbol) return 'NASDAQ:AAPL';
+    const clean = rawSymbol.trim().toUpperCase().replace('$', '');
+
+    if (clean.includes(':')) return clean;
+
+    const cryptoMap: Record<string, string> = {
+        BTC: 'BINANCE:BTCUSDT',
+        BTCUSDT: 'BINANCE:BTCUSDT',
+        ETH: 'BINANCE:ETHUSDT',
+        ETHUSDT: 'BINANCE:ETHUSDT',
+        SOL: 'BINANCE:SOLUSDT',
+        SOLUSDT: 'BINANCE:SOLUSDT',
+        BNB: 'BINANCE:BNBUSDT',
+        XRP: 'BINANCE:XRPUSDT',
+        ADA: 'BINANCE:ADAUSDT',
+        DOGE: 'BINANCE:DOGEUSDT',
+    };
+    if (cryptoMap[clean]) return cryptoMap[clean];
+
+    const etfMap: Record<string, string> = {
+        SPY: 'AMEX:SPY',
+        QQQ: 'NASDAQ:QQQ',
+        DIA: 'AMEX:DIA',
+        IWM: 'AMEX:IWM',
+        VOO: 'AMEX:VOO',
+        IVV: 'AMEX:IVV',
+        VTI: 'AMEX:VTI',
+    };
+    if (etfMap[clean]) return etfMap[clean];
+
+    const argMap: Record<string, string> = {
+        GGAL: 'NASDAQ:GGAL',
+        YPF: 'NYSE:YPF',
+        YPFD: 'BCBA:YPFD',
+        BMA: 'NYSE:BMA',
+        PAMP: 'NYSE:PAM',
+        ALUA: 'BCBA:ALUA',
+        TXAR: 'BCBA:TXAR',
+        MELI: 'NASDAQ:MELI',
+    };
+    if (argMap[clean]) return argMap[clean];
+
+    const nyse = new Set(['KO', 'DIS', 'JNJ', 'JPM', 'V', 'MA', 'WMT', 'PG', 'HD', 'CVX', 'XOM', 'BAC', 'NKE', 'MCD', 'IBM']);
+    if (nyse.has(clean)) return `NYSE:${clean}`;
+
+    return `NASDAQ:${clean}`;
+}
+
+export function TradingViewWidget({
+    symbol = 'NASDAQ:AAPL',
+    theme,
+    height = 500,
+    interval = 'D',
+    hideSideToolbar = false,
 }: TradingViewWidgetProps) {
-    const containerId = `tradingview_${Math.random().toString(36).substring(7)}`;
+    const { theme: storeTheme } = usePreferencesStore();
 
-    useEffect(() => {
-        const script = document.createElement('script');
-        script.src = 'https://s3.tradingview.com/tv.js';
-        script.async = true;
-        script.onload = () => {
-            if (window.TradingView) {
-                new window.TradingView.widget({
-                    autosize: false,
-                    width: '100%',
-                    height: height,
-                    symbol: symbol,
-                    interval: "D",
-                    timezone: "America/Argentina/Buenos_Aires",
-                    theme: theme,
-                    style: "1",
-                    locale: "es",
-                    enable_publishing: false,
-                    allow_symbol_change: true,
-                    container_id: containerId
-                });
-            }
-        };
-        document.body.appendChild(script);
+    const activeTheme: 'light' | 'dark' = theme || (
+        storeTheme === 'system'
+            ? (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : (storeTheme === 'light' ? 'light' : 'dark')
+    );
 
-        return () => {
-            // Cleanup if needed
-        };
-    }, [symbol, height, theme]);
+    const canonicalSymbol = resolveSymbol(symbol);
 
     return (
-        <div className='tradingview-widget-container w-full shrink-0' style={{ height: `${height}px`, minHeight: `${height}px`, width: "100%" }}>
-            <div id={containerId} style={{ height: `${height}px`, minHeight: `${height}px`, width: "100%" }} />
-        </div>
+        <TradingViewChart
+            symbol={canonicalSymbol}
+            height={height}
+            interval={interval}
+            theme={activeTheme}
+            hideSideToolbar={hideSideToolbar}
+            allowSymbolChange={true}
+        />
     );
 }
+
+export default memo(TradingViewWidget);

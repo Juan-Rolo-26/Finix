@@ -8,16 +8,23 @@ import {
     LayoutGrid,
     Grid3X3,
     ArrowUpRight,
-    Info,
-    CheckCircle2,
     AlertCircle,
     Minus,
+    BookOpen,
+    Layers,
+    Sliders,
+    Zap,
+    Clock,
+    ChevronDown,
+    ChevronUp,
+    BarChart3,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SymbolLogo } from '@/components/SymbolLogo';
 import MarketGeneralHeatmap from './MarketGeneralHeatmap';
+import HeatmapTechnicalGuideModal from './HeatmapTechnicalGuideModal';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -104,7 +111,8 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
     const [selectedSignal, setSelectedSignal] = useState<FilterSignal>('ALL');
     const [selectedSector, setSelectedSector] = useState<string>('ALL');
     const [sortBy, setSortBy] = useState<SortOption>('marketCap');
-    const [showInfoModal, setShowInfoModal] = useState(false);
+    const [showGuideModal, setShowGuideModal] = useState(false);
+    const [showQuickPlaybook, setShowQuickPlaybook] = useState(true);
 
     const fetchData = async (forceRefresh = false) => {
         setLoading(true);
@@ -186,48 +194,73 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
 
     return (
         <div className="space-y-6">
+            {/* Guide Technical Modal */}
+            <HeatmapTechnicalGuideModal
+                open={showGuideModal}
+                onOpenChange={setShowGuideModal}
+            />
+
             {/* Main Header Card */}
-            <div className="rounded-3xl border border-border/60 bg-white dark:bg-card p-6 sm:p-8 shadow-xs">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-white dark:bg-card p-6 sm:p-8 shadow-xs">
+                {/* Background subtle radial glow */}
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-emerald-500/[0.07] dark:bg-emerald-500/[0.12] rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 left-1/4 -mb-10 w-64 h-64 bg-blue-500/[0.04] dark:bg-blue-500/[0.08] rounded-full blur-3xl pointer-events-none" />
+
+                <div className="relative flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                     <div className="space-y-3 max-w-3xl">
                         <div className="flex flex-wrap items-center gap-2.5">
-                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-card border border-black/30 dark:border-white/35 text-foreground text-xs font-bold shadow-2xs">
-                                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400">
-                                    <Flame className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs font-bold shadow-2xs">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                 </span>
+                                <Flame className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                 MAPA DE CALOR INSTITUCIONAL
                             </span>
-                            <Badge variant="outline" className="text-xs font-semibold border-border/70 text-muted-foreground rounded-full px-3 py-0.5">
+                            <Badge variant="outline" className="text-xs font-semibold border-border/70 text-muted-foreground rounded-full px-3 py-1 gap-1.5 bg-secondary/30">
+                                <Clock className="w-3 h-3 text-muted-foreground" />
                                 Temporalidad: 1 Semana (1W)
                             </Badge>
-                            <Badge variant="outline" className="text-xs font-semibold border-border/70 text-muted-foreground rounded-full px-3 py-0.5">
-                                Universo: Top 250 Acciones S&P 500
+                            <Badge variant="outline" className="text-xs font-semibold border-border/70 text-muted-foreground rounded-full px-3 py-1 gap-1.5 bg-secondary/30">
+                                <Layers className="w-3 h-3 text-muted-foreground" />
+                                Universo: Top 250 Acciones S&amp;P 500
                             </Badge>
                         </div>
 
                         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-foreground">
-                            Mapa de Calor S&P 500
+                            Mapa de Calor S&amp;P 500
                         </h1>
 
                         <p className="text-sm sm:text-base text-muted-foreground leading-relaxed font-normal">
-                            Monitoreo visual del mercado en tiempo real. Analiza el mapa de calor por sectores o explora MACD, RSI, ADX y Estocástico semanal sobre las acciones del S&amp;P 500.
+                            Monitoreo visual del mercado en tiempo real. Analiza el mapa de calor por sectores o explora MACD, RSI, ADX y Estocástico semanal sobre las mayores 250 empresas de Wall Street.
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="relative flex flex-wrap items-center gap-2.5 shrink-0">
                         <Button
                             variant="outline"
-                            onClick={() => setShowInfoModal(!showInfoModal)}
-                            className="rounded-xl border-border/70 gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold hover:border-emerald-500/50"
+                            onClick={() => setShowGuideModal(true)}
+                            className="rounded-xl border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 gap-2 h-10 px-4 text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer group"
                         >
-                            <Info className="w-4 h-4 text-emerald-600" />
+                            <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
                             Guía Técnica
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-800 dark:text-emerald-200">
+                                Pro
+                            </span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowQuickPlaybook(!showQuickPlaybook)}
+                            className="rounded-xl border-border/70 hover:border-emerald-500/50 gap-1.5 h-10 px-3.5 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
+                        >
+                            {showQuickPlaybook ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            {showQuickPlaybook ? 'Ocultar Criterios' : 'Ver Criterios'}
                         </Button>
                         <Button
                             variant="outline"
                             onClick={() => fetchData(true)}
                             disabled={loading}
-                            className="rounded-xl border-border/70 gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold hover:border-emerald-500/50"
+                            className="rounded-xl border-border/70 hover:border-emerald-500/50 gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
                         >
                             <RefreshCw className={cn('w-4 h-4 text-emerald-600', loading && 'animate-spin')} />
                             Actualizar Datos
@@ -235,42 +268,119 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                     </div>
                 </div>
 
-                {/* Technical Info Box */}
-                {showInfoModal && (
-                    <div className="mt-6 pt-6 border-t border-border/60 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm animate-in fade-in-50 duration-200">
-                        <div className="bg-white dark:bg-card border border-border/70 rounded-2xl p-5 space-y-2 shadow-2xs">
-                            <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
-                                <CheckCircle2 className="w-4 h-4" />
-                                Criterios de Compra y Acumulación
+                {/* Technical Strategy Playbook Cards */}
+                {showQuickPlaybook && (
+                    <div className="mt-6 pt-6 border-t border-border/60 space-y-3 animate-in fade-in-50 duration-200">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Criterios de Compra y Acumulación */}
+                            <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/[0.07] via-emerald-500/[0.02] to-transparent p-5 space-y-3.5 shadow-2xs">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2.5 text-emerald-700 dark:text-emerald-400 font-bold text-sm sm:text-base">
+                                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                                            <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                        Criterios de Compra y Acumulación
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                                        Sesgo Alcista
+                                    </span>
+                                </div>
+
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-card border border-border/60">
+                                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-mono font-bold text-[11px] shrink-0">
+                                            RSI &lt; 45
+                                        </span>
+                                        <span className="text-muted-foreground leading-relaxed">
+                                            <strong className="text-foreground">Sobreventa Técnica:</strong> Zona de soporte y acumulación institucional con margen de revalorización semanal.
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-card border border-border/60">
+                                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-mono font-bold text-[11px] shrink-0">
+                                            MACD &gt; 0
+                                        </span>
+                                        <span className="text-muted-foreground leading-relaxed">
+                                            <strong className="text-foreground">Impulso Comprador:</strong> Cruce alcista semanal confirmado por encima de la línea de señal.
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-card border border-border/60">
+                                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-mono font-bold text-[11px] shrink-0">
+                                            Retorno +
+                                        </span>
+                                        <span className="text-muted-foreground leading-relaxed">
+                                            <strong className="text-foreground">Flujo de Capital:</strong> Entrada neta de volumen y tracción positiva de precios en la semana.
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground leading-relaxed">
-                                <li><strong>RSI Semanal &lt; 45:</strong> Zona de sobreventa y acumulación técnica.</li>
-                                <li><strong>MACD Semanal Histograma &gt; 0:</strong> Cruce alcista confirmado sobre línea de señal.</li>
-                                <li><strong>Rendimiento Positivo:</strong> Impulso de volumen y capital institucional.</li>
-                            </ul>
+
+                            {/* Criterios de Venta y Sobrecompra */}
+                            <div className="rounded-2xl border border-rose-500/30 bg-gradient-to-br from-rose-500/[0.07] via-rose-500/[0.02] to-transparent p-5 space-y-3.5 shadow-2xs">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2.5 text-rose-700 dark:text-rose-400 font-bold text-sm sm:text-base">
+                                        <div className="w-7 h-7 rounded-lg bg-rose-500/20 flex items-center justify-center">
+                                            <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                                        </div>
+                                        Criterios de Venta y Sobrecompra
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-400">
+                                        Riesgo / Toma
+                                    </span>
+                                </div>
+
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-card border border-border/60">
+                                        <span className="px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-700 dark:text-rose-400 font-mono font-bold text-[11px] shrink-0">
+                                            RSI &gt; 55
+                                        </span>
+                                        <span className="text-muted-foreground leading-relaxed">
+                                            <strong className="text-foreground">Sobrecompra Extendida:</strong> Oscilador en zona de recalentamiento con potencial agotamiento de compras.
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-card border border-border/60">
+                                        <span className="px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-700 dark:text-rose-400 font-mono font-bold text-[11px] shrink-0">
+                                            MACD &lt; 0
+                                        </span>
+                                        <span className="text-muted-foreground leading-relaxed">
+                                            <strong className="text-foreground">Cruce Bajista:</strong> Histograma negativo o desaceleración bajista por debajo de señal.
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-card border border-border/60">
+                                        <span className="px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-700 dark:text-rose-400 font-mono font-bold text-[11px] shrink-0">
+                                            Retorno -
+                                        </span>
+                                        <span className="text-muted-foreground leading-relaxed">
+                                            <strong className="text-foreground">Presión Distribuidora:</strong> Salida de capital, tomas de ganancias y velas de rechazo semanal.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="bg-white dark:bg-card border border-border/70 rounded-2xl p-5 space-y-2 shadow-2xs">
-                            <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">
-                                <AlertCircle className="w-4 h-4" />
-                                Criterios de Venta y Sobrecompra
-                            </div>
-                            <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground leading-relaxed">
-                                <li><strong>RSI Semanal &gt; 55:</strong> Zona de sobrecompra con posible agotamiento.</li>
-                                <li><strong>MACD Semanal Histograma &lt; 0:</strong> Cruce bajista confirmado por debajo de señal.</li>
-                                <li><strong>Rendimiento Negativo:</strong> Presión distribuidora en el período.</li>
-                            </ul>
+                        {/* Direct link to open complete modal guide */}
+                        <div className="flex items-center justify-between p-3.5 rounded-xl bg-secondary/40 border border-border/60 text-xs">
+                            <span className="text-muted-foreground font-medium">
+                                ¿Quieres profundizar en cómo combinar estos osciladores y el sistema cuantitativo de Score?
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setShowGuideModal(true)}
+                                className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline inline-flex items-center gap-1 cursor-pointer shrink-0 ml-2"
+                            >
+                                Ver Guía Técnica Completa
+                                <ArrowUpRight className="w-3.5 h-3.5" />
+                            </button>
                         </div>
                     </div>
                 )}
 
-                {/* MODE SELECTOR (COMPACT CHECKLIST TABS) */}
+                {/* MODE SELECTOR (ULTRA-AESTHETIC LENSES) */}
                 <div className="mt-6 pt-6 border-t border-border/60 space-y-3">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                             Seleccionar Tipo de Visualización:
                         </span>
-                        <span className="text-xs font-semibold text-emerald-600 hidden sm:inline-block">
+                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hidden sm:inline-block">
                             Cambia de perspectiva técnica con un clic
                         </span>
                     </div>
@@ -281,28 +391,33 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                             type="button"
                             onClick={() => setActiveMode('general')}
                             className={cn(
-                                'flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border transition-all text-left cursor-pointer bg-white dark:bg-card',
+                                'group relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left cursor-pointer bg-white dark:bg-card hover:-translate-y-0.5',
                                 activeMode === 'general'
-                                    ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                                    ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-sm'
                                     : 'border-border/70 hover:border-emerald-500/40 text-muted-foreground'
                             )}
                         >
-                            <span
+                            <div
                                 className={cn(
-                                    'w-5 h-5 rounded-md flex items-center justify-center border font-bold text-xs shrink-0',
+                                    'w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-xs shrink-0 transition-colors',
                                     activeMode === 'general'
-                                        ? 'border-emerald-500 bg-emerald-500 text-white'
-                                        : 'border-border/80 bg-muted/40 text-transparent'
+                                        ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                                        : 'border-border/70 bg-secondary/50 text-muted-foreground group-hover:text-foreground'
                                 )}
                             >
-                                ✓
-                            </span>
-                            <div className="min-w-0">
-                                <div className={cn('font-bold text-sm leading-snug', activeMode === 'general' ? 'text-foreground' : 'text-muted-foreground')}>
-                                    Mapa de Calor Mercado General
+                                <Layers className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between">
+                                    <span className={cn('font-bold text-sm leading-snug', activeMode === 'general' ? 'text-foreground font-black' : 'text-foreground/80')}>
+                                        Mercado General
+                                    </span>
+                                    {activeMode === 'general' && (
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    )}
                                 </div>
                                 <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                                    S&P 500 por sectores y capitalización
+                                    S&amp;P 500 por Sectores y Cap
                                 </div>
                             </div>
                         </button>
@@ -312,28 +427,33 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                             type="button"
                             onClick={() => setActiveMode('macd')}
                             className={cn(
-                                'flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border transition-all text-left cursor-pointer bg-white dark:bg-card',
+                                'group relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left cursor-pointer bg-white dark:bg-card hover:-translate-y-0.5',
                                 activeMode === 'macd'
-                                    ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                                    ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-sm'
                                     : 'border-border/70 hover:border-emerald-500/40 text-muted-foreground'
                             )}
                         >
-                            <span
+                            <div
                                 className={cn(
-                                    'w-5 h-5 rounded-md flex items-center justify-center border font-bold text-xs shrink-0',
+                                    'w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-xs shrink-0 transition-colors',
                                     activeMode === 'macd'
-                                        ? 'border-emerald-500 bg-emerald-500 text-white'
-                                        : 'border-border/80 bg-muted/40 text-transparent'
+                                        ? 'border-violet-500/40 bg-violet-500/20 text-violet-700 dark:text-violet-300'
+                                        : 'border-border/70 bg-secondary/50 text-muted-foreground group-hover:text-foreground'
                                 )}
                             >
-                                ✓
-                            </span>
-                            <div className="min-w-0">
-                                <div className={cn('font-bold text-sm leading-snug', activeMode === 'macd' ? 'text-foreground' : 'text-muted-foreground')}>
-                                    MACD Semanal (Momento)
+                                <TrendingUp className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between">
+                                    <span className={cn('font-bold text-sm leading-snug', activeMode === 'macd' ? 'text-foreground font-black' : 'text-foreground/80')}>
+                                        MACD (Momento)
+                                    </span>
+                                    {activeMode === 'macd' && (
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    )}
                                 </div>
                                 <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                                    Histograma y aceleración direccional
+                                    Histograma y aceleración
                                 </div>
                             </div>
                         </button>
@@ -343,126 +463,231 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                             type="button"
                             onClick={() => setActiveMode('rsi')}
                             className={cn(
-                                'flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border transition-all text-left cursor-pointer bg-white dark:bg-card',
+                                'group relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left cursor-pointer bg-white dark:bg-card hover:-translate-y-0.5',
                                 activeMode === 'rsi'
-                                    ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                                    ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-sm'
                                     : 'border-border/70 hover:border-emerald-500/40 text-muted-foreground'
                             )}
                         >
-                            <span
+                            <div
                                 className={cn(
-                                    'w-5 h-5 rounded-md flex items-center justify-center border font-bold text-xs shrink-0',
+                                    'w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-xs shrink-0 transition-colors',
                                     activeMode === 'rsi'
-                                        ? 'border-emerald-500 bg-emerald-500 text-white'
-                                        : 'border-border/80 bg-muted/40 text-transparent'
+                                        ? 'border-amber-500/40 bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                                        : 'border-border/70 bg-secondary/50 text-muted-foreground group-hover:text-foreground'
                                 )}
                             >
-                                ✓
-                            </span>
-                            <div className="min-w-0">
-                                <div className={cn('font-bold text-sm leading-snug', activeMode === 'rsi' ? 'text-foreground' : 'text-muted-foreground')}>
-                                    RSI Semanal (Oscilador)
+                                <BarChart3 className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between">
+                                    <span className={cn('font-bold text-sm leading-snug', activeMode === 'rsi' ? 'text-foreground font-black' : 'text-foreground/80')}>
+                                        RSI (Oscilador)
+                                    </span>
+                                    {activeMode === 'rsi' && (
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    )}
                                 </div>
                                 <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                                    Sobreventa (&lt;45) y Sobrecompra (&gt;55)
+                                    Sobreventa &lt;45 / Sobrecompra &gt;55
                                 </div>
                             </div>
                         </button>
 
-                        <button type="button" onClick={() => setActiveMode('adx')} className={cn('flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border transition-all text-left cursor-pointer bg-white dark:bg-card', activeMode === 'adx' ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs' : 'border-border/70 hover:border-emerald-500/40')}>
-                            <span className={cn('w-5 h-5 rounded-md flex items-center justify-center border font-bold text-xs shrink-0', activeMode === 'adx' ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-border/80 bg-muted/40 text-transparent')}>✓</span>
-                            <div className="min-w-0"><div className={cn('font-bold text-sm leading-snug', activeMode === 'adx' ? 'text-foreground' : 'text-muted-foreground')}>ADX Semanal</div><div className="text-[11px] text-muted-foreground mt-0.5 truncate">Fuerza de tendencia</div></div>
+                        {/* 4. ADX Semanal */}
+                        <button
+                            type="button"
+                            onClick={() => setActiveMode('adx')}
+                            className={cn(
+                                'group relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left cursor-pointer bg-white dark:bg-card hover:-translate-y-0.5',
+                                activeMode === 'adx'
+                                    ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-sm'
+                                    : 'border-border/70 hover:border-emerald-500/40 text-muted-foreground'
+                            )}
+                        >
+                            <div
+                                className={cn(
+                                    'w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-xs shrink-0 transition-colors',
+                                    activeMode === 'adx'
+                                        ? 'border-blue-500/40 bg-blue-500/20 text-blue-700 dark:text-blue-300'
+                                        : 'border-border/70 bg-secondary/50 text-muted-foreground group-hover:text-foreground'
+                                )}
+                            >
+                                <Zap className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between">
+                                    <span className={cn('font-bold text-sm leading-snug', activeMode === 'adx' ? 'text-foreground font-black' : 'text-foreground/80')}>
+                                        ADX Semanal
+                                    </span>
+                                    {activeMode === 'adx' && (
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    )}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                    Fuerza de tendencia (≥25)
+                                </div>
+                            </div>
                         </button>
-                        <button type="button" onClick={() => setActiveMode('stoch')} className={cn('flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border transition-all text-left cursor-pointer bg-white dark:bg-card', activeMode === 'stoch' ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs' : 'border-border/70 hover:border-emerald-500/40')}>
-                            <span className={cn('w-5 h-5 rounded-md flex items-center justify-center border font-bold text-xs shrink-0', activeMode === 'stoch' ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-border/80 bg-muted/40 text-transparent')}>✓</span>
-                            <div className="min-w-0"><div className={cn('font-bold text-sm leading-snug', activeMode === 'stoch' ? 'text-foreground' : 'text-muted-foreground')}>Estocástico Semanal</div><div className="text-[11px] text-muted-foreground mt-0.5 truncate">Sobrecompra y sobreventa</div></div>
+
+                        {/* 5. Estocástico Semanal */}
+                        <button
+                            type="button"
+                            onClick={() => setActiveMode('stoch')}
+                            className={cn(
+                                'group relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left cursor-pointer bg-white dark:bg-card hover:-translate-y-0.5',
+                                activeMode === 'stoch'
+                                    ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-sm'
+                                    : 'border-border/70 hover:border-emerald-500/40 text-muted-foreground'
+                            )}
+                        >
+                            <div
+                                className={cn(
+                                    'w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-xs shrink-0 transition-colors',
+                                    activeMode === 'stoch'
+                                        ? 'border-rose-500/40 bg-rose-500/20 text-rose-700 dark:text-rose-300'
+                                        : 'border-border/70 bg-secondary/50 text-muted-foreground group-hover:text-foreground'
+                                )}
+                            >
+                                <Sliders className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between">
+                                    <span className={cn('font-bold text-sm leading-snug', activeMode === 'stoch' ? 'text-foreground font-black' : 'text-foreground/80')}>
+                                        Estocástico
+                                    </span>
+                                    {activeMode === 'stoch' && (
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    )}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                    Timing y giro rápido (20/80)
+                                </div>
+                            </div>
                         </button>
                     </div>
                 </div>
 
-                {/* Macro Summary Strip (Clean White Background) */}
+                {/* Macro Summary Strip & Proportion Continuum */}
                 {summary && (
-                    <div className="mt-6 pt-6 border-t border-border/60 grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-                        {/* Sentimiento */}
-                        <div className="flex flex-col gap-1.5 p-4 rounded-2xl border border-border/60 bg-white dark:bg-card shadow-2xs">
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                Sentimiento General
-                            </span>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span
-                                    className={cn(
-                                        'w-2.5 h-2.5 rounded-full',
-                                        summary.sentiment.includes('ALCISTA')
-                                            ? 'bg-emerald-500'
-                                            : summary.sentiment.includes('BAJISTA')
-                                            ? 'bg-rose-500'
-                                            : 'bg-zinc-400'
-                                    )}
+                    <div className="mt-6 pt-6 border-t border-border/60 space-y-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                            {/* Sentimiento */}
+                            <div className="flex flex-col justify-between p-4 rounded-2xl border border-border/70 bg-secondary/20 dark:bg-card shadow-2xs">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                    Sentimiento General
+                                </span>
+                                <div className="flex items-center gap-2 my-2">
+                                    <span
+                                        className={cn(
+                                            'w-3 h-3 rounded-full shrink-0 shadow-xs',
+                                            summary.sentiment.includes('ALCISTA')
+                                                ? 'bg-emerald-500 shadow-emerald-500/50'
+                                                : summary.sentiment.includes('BAJISTA')
+                                                ? 'bg-rose-500 shadow-rose-500/50'
+                                                : 'bg-zinc-400'
+                                        )}
+                                    />
+                                    <span className="font-black text-lg sm:text-xl text-foreground tracking-tight">
+                                        {summary.sentiment}
+                                    </span>
+                                </div>
+                                <span className="text-[11px] text-muted-foreground font-medium">
+                                    {summary.totalCount} acciones analizadas
+                                </span>
+                            </div>
+
+                            {/* Compras */}
+                            <div className="flex flex-col justify-between p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.03] dark:bg-card shadow-2xs">
+                                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center justify-between">
+                                    Compras &amp; Acumulación
+                                    <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                                </span>
+                                <div className="flex items-baseline gap-2 my-2">
+                                    <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                                        {summary.bullishCount}
+                                    </span>
+                                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                                        {summary.bullishPct}%
+                                    </span>
+                                </div>
+                                <span className="text-[11px] text-muted-foreground font-medium">
+                                    {summary.strongBuyCount} en Fuerte Compra
+                                </span>
+                            </div>
+
+                            {/* Ventas */}
+                            <div className="flex flex-col justify-between p-4 rounded-2xl border border-rose-500/30 bg-rose-500/[0.03] dark:bg-card shadow-2xs">
+                                <span className="text-xs font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider flex items-center justify-between">
+                                    Ventas &amp; Sobrecompra
+                                    <TrendingDown className="w-3.5 h-3.5 text-rose-600" />
+                                </span>
+                                <div className="flex items-baseline gap-2 my-2">
+                                    <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
+                                        {summary.bearishCount}
+                                    </span>
+                                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-700 dark:text-rose-300">
+                                        {summary.bearishPct}%
+                                    </span>
+                                </div>
+                                <span className="text-[11px] text-muted-foreground font-medium">
+                                    {summary.strongSellCount} en Fuerte Venta
+                                </span>
+                            </div>
+
+                            {/* Neutrales */}
+                            <div className="flex flex-col justify-between p-4 rounded-2xl border border-border/70 bg-secondary/20 dark:bg-card shadow-2xs">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                                    En Consolidación
+                                    <Minus className="w-3.5 h-3.5 text-muted-foreground" />
+                                </span>
+                                <div className="flex items-baseline gap-2 my-2">
+                                    <span className="text-2xl sm:text-3xl font-black text-foreground">
+                                        {summary.neutralCount}
+                                    </span>
+                                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-secondary text-muted-foreground">
+                                        {summary.neutralPct}%
+                                    </span>
+                                </div>
+                                <span className="text-[11px] text-muted-foreground font-medium">
+                                    Sin sesgo direccional claro
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Visual Market Proportion Bar */}
+                        <div className="p-3.5 rounded-2xl bg-secondary/30 border border-border/60 space-y-2">
+                            <div className="flex items-center justify-between text-xs font-semibold">
+                                <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                    Alcistas ({summary.bullishPct}%)
+                                </span>
+                                <span className="text-muted-foreground flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-zinc-400" />
+                                    Neutrales ({summary.neutralPct}%)
+                                </span>
+                                <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                                    Bajistas ({summary.bearishPct}%)
+                                </span>
+                            </div>
+                            <div className="w-full h-2.5 rounded-full bg-secondary overflow-hidden flex shadow-inner">
+                                <div
+                                    style={{ width: `${summary.bullishPct}%` }}
+                                    className="bg-emerald-500 transition-all duration-500"
+                                    title={`Alcistas: ${summary.bullishPct}%`}
                                 />
-                                <span className="font-black text-lg text-foreground tracking-tight">
-                                    {summary.sentiment}
-                                </span>
+                                <div
+                                    style={{ width: `${summary.neutralPct}%` }}
+                                    className="bg-zinc-300 dark:bg-zinc-700 transition-all duration-500"
+                                    title={`Neutrales: ${summary.neutralPct}%`}
+                                />
+                                <div
+                                    style={{ width: `${summary.bearishPct}%` }}
+                                    className="bg-rose-500 transition-all duration-500"
+                                    title={`Bajistas: ${summary.bearishPct}%`}
+                                />
                             </div>
-                            <span className="text-xs text-muted-foreground">
-                                {summary.totalCount} empresas analizadas
-                            </span>
-                        </div>
-
-                        {/* Compras */}
-                        <div className="flex flex-col gap-1.5 p-4 rounded-2xl border border-border/60 bg-white dark:bg-card shadow-2xs">
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-                                Compra
-                                <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-                            </span>
-                            <div className="flex items-baseline gap-2 mt-0.5">
-                                <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                                    {summary.bullishCount}
-                                </span>
-                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                                    {summary.bullishPct}%
-                                </span>
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                                {summary.strongBuyCount} Fuerte Compra
-                            </span>
-                        </div>
-
-                        {/* Ventas */}
-                        <div className="flex flex-col gap-1.5 p-4 rounded-2xl border border-border/60 bg-white dark:bg-card shadow-2xs">
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-                                Venta
-                                <TrendingDown className="w-3.5 h-3.5 text-rose-600" />
-                            </span>
-                            <div className="flex items-baseline gap-2 mt-0.5">
-                                <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
-                                    {summary.bearishCount}
-                                </span>
-                                <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
-                                    {summary.bearishPct}%
-                                </span>
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                                {summary.strongSellCount} Fuerte Venta
-                            </span>
-                        </div>
-
-                        {/* Neutrales */}
-                        <div className="flex flex-col gap-1.5 p-4 rounded-2xl border border-border/60 bg-white dark:bg-card shadow-2xs">
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-                                Neutrales
-                                <Minus className="w-3.5 h-3.5 text-muted-foreground" />
-                            </span>
-                            <div className="flex items-baseline gap-2 mt-0.5">
-                                <span className="text-2xl sm:text-3xl font-black text-foreground">
-                                    {summary.neutralCount}
-                                </span>
-                                <span className="text-xs font-bold text-muted-foreground">
-                                    {summary.neutralPct}%
-                                </span>
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                                Sin sesgo direccional claro
-                            </span>
                         </div>
                     </div>
                 )}
@@ -471,7 +696,13 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
             {/* CONTENT AREA: GENERAL MARKET HEATMAP */}
             {activeMode === 'general' ? (
                 <div className="space-y-4">
-                    <MarketGeneralHeatmap onSelectSymbol={onSelectSymbol} />
+                    <MarketGeneralHeatmap
+                        items={items}
+                        summary={summary}
+                        loading={loading}
+                        onRefresh={() => fetchData(true)}
+                        onSelectSymbol={onSelectSymbol}
+                    />
                 </div>
             ) : (
                 /* TECHNICAL CARDS (MACD & RSI) */

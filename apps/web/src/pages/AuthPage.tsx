@@ -55,6 +55,8 @@ export default function AuthPage() {
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
     const [forgotCodeStep, setForgotCodeStep] = useState(false);
+    const [loginCodeStep, setLoginCodeStep] = useState(false);
+    const [loginCode, setLoginCode] = useState('');
     const [forgotCode, setForgotCode] = useState('');
     const [forgotNewPassword, setForgotNewPassword] = useState('');
     const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
@@ -100,6 +102,8 @@ export default function AuthPage() {
         setIsLoading(false);
         clearMessages();
         setForgotCodeStep(false);
+        setLoginCodeStep(false);
+        setLoginCode('');
         setForgotCode('');
         setForgotNewPassword('');
         setForgotConfirmPassword('');
@@ -146,47 +150,29 @@ export default function AuthPage() {
 
     const handleLogin = async () => {
         const normalizedEmail = email.trim().toLowerCase();
-
-        // 1. Intentar login directo con la API de Finix
-        try {
-            const response = await apiFetch('/auth/login', {
+        if (!loginCodeStep) {
+            const response = await apiFetch('/auth/login/request-code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: normalizedEmail, password }),
             });
             const data = await response.json().catch(() => ({}));
-
-            if (response.ok && data?.token && data?.user) {
-                useAuthStore.getState().login(data.token, data.user);
-                return;
-            }
-
-            // Si la API devolvió error de credenciales, intentar fallback con Supabase si existe cuenta legacy
-            if (response.status === 401 || response.status === 400) {
-                const { data: supaData, error: supaError } = await supabase.auth.signInWithPassword({
-                    email: normalizedEmail,
-                    password,
-                });
-                if (!supaError && supaData?.session && supaData?.user) {
-                    useAuthStore.getState().login(supaData.session.access_token, supaData.user as any);
-                    return;
-                }
-                throw new Error(data?.message || 'El correo o la contraseña no son correctos.');
-            }
-
-            throw new Error(data?.message || 'No se pudo iniciar sesión.');
-        } catch (err: any) {
-            // Si hubo error de red o timeout con la API, intentar Supabase
-            const { data: supaData, error: supaError } = await supabase.auth.signInWithPassword({
-                email: normalizedEmail,
-                password,
-            });
-            if (!supaError && supaData?.session && supaData?.user) {
-                useAuthStore.getState().login(supaData.session.access_token, supaData.user as any);
-                return;
-            }
-            throw new Error(err?.message || 'El correo o la contraseña no son correctos.');
+            if (!response.ok) throw new Error(data?.message || 'No se pudo iniciar sesión.');
+            setLoginCodeStep(true);
+            setSuccessMessage('Te enviamos un código de verificación a tu correo.');
+            return;
         }
+
+        const response = await apiFetch('/auth/login/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: normalizedEmail, code: loginCode }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data?.token || !data?.user) {
+            throw new Error(data?.message || 'El código de verificación es incorrecto o venció.');
+        }
+        useAuthStore.getState().login(data.token, data.user);
     };
 
     const handleRegister = async () => {
@@ -290,8 +276,12 @@ export default function AuthPage() {
             setAuthError('El nombre de usuario debe tener al menos 3 caracteres.');
             return;
         }
-        if (view !== 'forgot' && password.length < 6) {
+        if (view === 'login' && !loginCodeStep && password.length < 6) {
             setAuthError('La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+        if (view === 'login' && loginCodeStep && loginCode.length !== 6) {
+            setAuthError('Ingresá el código de 6 dígitos.');
             return;
         }
         if (view === 'forgot' && forgotCodeStep) {
@@ -341,7 +331,7 @@ export default function AuthPage() {
             : (forgotCodeStep ? 'Nueva contraseña' : t.auth.forgotTitle);
 
     const description = view === 'login'
-        ? 'Ingresá con tu correo y contraseña para entrar a Finix.'
+        ? (loginCodeStep ? 'Ingresá el código de verificación que enviamos a tu correo.' : 'Ingresá con tu correo y contraseña para entrar a Finix.')
         : view === 'register'
             ? 'Creá tu cuenta y te mandamos un codigo de verificacion por correo.'
             : (forgotCodeStep ? 'Ingresá el código de 6 dígitos que te enviamos y creá tu nueva contraseña.' : 'Te enviaremos un código para restablecer tu contraseña.');
@@ -492,7 +482,12 @@ export default function AuthPage() {
                                     </div>
                                 ) : null}
 
-                                {view === 'forgot' && forgotCodeStep ? (
+                                {view === 'login' && loginCodeStep ? (
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground bg-secondary/40 px-3.5 py-2.5 rounded-xl border border-input/40">
+                                        <span>Código enviado a: <strong className="text-foreground">{email}</strong></span>
+                                        <button type="button" onClick={() => { setLoginCodeStep(false); setLoginCode(''); }} className="text-primary hover:underline font-medium">Cambiar</button>
+                                    </div>
+                                ) : view === 'forgot' && forgotCodeStep ? (
                                     <div className="flex items-center justify-between text-xs text-muted-foreground bg-secondary/40 px-3.5 py-2.5 rounded-xl border border-input/40">
                                         <span>Código enviado a: <strong className="text-foreground">{email}</strong></span>
                                         <button
@@ -517,7 +512,18 @@ export default function AuthPage() {
                                     </div>
                                 )}
 
-                                {view !== 'forgot' ? (
+                                {view === 'login' && loginCodeStep ? (
+                                    <Input
+                                        inputMode="numeric"
+                                        placeholder="Código de 6 dígitos"
+                                        className="h-11 text-center text-lg tracking-[0.35em] font-mono font-bold bg-secondary/50 border-input/50 focus:border-primary/50"
+                                        value={loginCode}
+                                        onChange={(e) => setLoginCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        required
+                                        maxLength={6}
+                                        autoFocus
+                                    />
+                                ) : view !== 'forgot' ? (
                                     <div className="relative">
                                         <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                                         <Input

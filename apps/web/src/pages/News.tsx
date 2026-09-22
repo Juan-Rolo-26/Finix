@@ -171,10 +171,9 @@ export default function NewsPage() {
         return (
             <div className="min-h-[calc(100vh-60px)] flex flex-col flex-1 bg-background">
                 <ProGate
-                    title="Sección exclusiva PRO"
-                    description="Accedé a nuestro análisis de noticias financieras curado, organizado por categorías y actualizado en tiempo real por nuestro equipo editorial."
-                    buttonText="Activar PRO"
-                    onUpgrade={() => navigate('/pro')}
+                    section="news"
+                    buttonText="Activar Finix PRO"
+                    onUpgrade={() => navigate('/pricing')}
                 />
             </div>
         );

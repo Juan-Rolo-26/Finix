@@ -17,6 +17,7 @@ import {
     TrendingDown,
     TrendingUp,
     XCircle,
+    RefreshCw,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useAuthStore, isJuanUser } from '@/stores/authStore';
@@ -138,6 +139,36 @@ function formatDateLabel(dateStr: string): string {
     return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: 'short' }).format(dt);
 }
 
+// Helper: returns true if the given YYYY-MM-DD string is strictly before today (local)
+function isDayBeforeToday(dateStr: string): boolean {
+    if (!dateStr) return false;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayDate = new Date(y, m - 1, d);
+    return dayDate < today;
+}
+
+// Helper: returns true if a calendar event's timestamp is already in the past
+function isEventExpired(evt: { date: string; time?: string; timestampUtc?: string }): boolean {
+    try {
+        let dt: Date;
+        if (evt.timestampUtc) {
+            dt = new Date(evt.timestampUtc);
+        } else if (evt.time) {
+            // Parse as local-ish (use UTC noon as a safe default if no tz info)
+            dt = new Date(`${evt.date}T${evt.time}:00Z`);
+        } else {
+            // No time info — treat end of day (23:59 UTC) as expiry
+            dt = new Date(`${evt.date}T23:59:00Z`);
+        }
+        if (isNaN(dt.getTime())) return false;
+        return dt < new Date();
+    } catch {
+        return false;
+    }
+}
+
 export default function CalendarPage() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
@@ -211,17 +242,17 @@ export default function CalendarPage() {
     };
 
     useEffect(() => {
+        if (!isPro) return;
         loadCalendar();
-    }, [activeSection, activeCategory, weekOffset]);
+    }, [isPro, activeSection, activeCategory, weekOffset]);
 
     if (!isPro) {
         return (
             <div className="min-h-[calc(100vh-60px)] flex flex-col flex-1 bg-background">
                 <ProGate
-                    title="Sección exclusiva PRO"
-                    description="Accedé al calendario completo con eventos macroeconómicos, balances corporativos y dividendos del S&P 500 en tiempo real con datos oficiales de TradingView."
-                    buttonText="Activar PRO"
-                    onUpgrade={() => navigate('/pro')}
+                    section="calendar"
+                    buttonText="Activar Finix PRO"
+                    onUpgrade={() => navigate('/pricing')}
                 />
             </div>
         );
@@ -379,6 +410,14 @@ export default function CalendarPage() {
                             >
                                 <ChevronRight className="w-4 h-4" />
                             </button>
+                            <button
+                                onClick={() => loadCalendar()}
+                                disabled={isLoading}
+                                className="p-1 rounded-lg hover:bg-background/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer border-l border-border/60 pl-2 ml-0.5"
+                                title="Actualizar datos"
+                            >
+                                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                            </button>
                         </div>
                     </div>
 
@@ -405,14 +444,14 @@ export default function CalendarPage() {
                         <button
                             onClick={() => setActiveSection('BALANCES')}
                             className={`flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl font-heading font-extrabold text-sm sm:text-base transition-all ${activeSection === 'BALANCES'
-                                ? 'bg-card text-foreground shadow-md shadow-amber-500/10 border border-amber-500/40'
+                                ? 'bg-card text-foreground shadow-md shadow-primary/10 border border-primary/40'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
                                 }`}
                         >
-                            <BarChart3 className={`w-4 h-4 sm:w-5 sm:h-5 ${activeSection === 'BALANCES' ? 'text-amber-500' : 'text-muted-foreground'}`} />
+                            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                             <span>Balances S&P 500</span>
                             {calendarData && (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-black bg-amber-500/15 text-amber-500 border border-amber-500/25">
+                                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-black bg-primary/15 text-primary border border-primary/25">
                                     {totalEarnings}
                                 </span>
                             )}
@@ -426,7 +465,7 @@ export default function CalendarPage() {
                                 : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
                                 }`}
                         >
-                            <Coins className={`w-4 h-4 sm:w-5 sm:h-5 ${activeSection === 'DIVIDENDOS' ? 'text-emerald-400' : 'text-muted-foreground'}`} />
+                            <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                             <span>Dividendos S&P 500</span>
                             {calendarData && (
                                 <span className="px-2 py-0.5 rounded-full text-xs font-mono font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
@@ -483,9 +522,23 @@ export default function CalendarPage() {
                     </div>
                 ) : (
                     calendarData.days.map((day) => {
-                        const dayEconomic = activeSection === 'GENERAL'
+                        // On the current week (weekOffset === 0), skip days fully in the past
+                        if (weekOffset === 0 && isDayBeforeToday(day.date)) return null;
+
+                        // Determine if this is today
+                        const [dy, dm, dd] = day.date.split('-').map(Number);
+                        const now = new Date();
+                        const isToday = dy === now.getFullYear() && dm - 1 === now.getMonth() && dd === now.getDate();
+
+                        let dayEconomic = activeSection === 'GENERAL'
                             ? day.economicEvents.filter(e => filterEventByCategory(e))
                             : [];
+
+                        // On today, filter out economic events whose exact timestamp has already passed
+                        if (weekOffset === 0 && isToday && activeSection === 'GENERAL') {
+                            dayEconomic = dayEconomic.filter(e => !isEventExpired(e));
+                        }
+
                         const dayEarnings = activeSection === 'BALANCES'
                             ? day.earningsEvents
                             : [];

@@ -38,6 +38,7 @@ const Pricing = lazy(() => import('./pages/Pricing'));
 const AnalysisPage = lazy(() => import('./pages/Analysis'));
 const TopGainersPage = lazy(() => import('./pages/TopGainersPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const CreatorPage = lazy(() => import('./pages/CreatorPage'));
 
 // ─── Theme Applier ────────────────────────────────────────────────────────────
 
@@ -200,6 +201,8 @@ export default function App() {
 
                     {/* Info & Legal Routes */}
                     <Route path="/pro" element={<Pricing />} />
+                    <Route path="/creator" element={<CreatorPage />} />
+                    <Route path="/creador" element={<CreatorPage />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/help" element={<Help />} />
                     <Route path="/legal/privacy" element={<Privacy />} />

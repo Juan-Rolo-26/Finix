@@ -36,7 +36,7 @@ import CommentsPanel from './CommentsPanel';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import ReportModal from '@/components/ReportModal';
 import DeletePostModal from '@/components/DeletePostModal';
-import PostChartViewer from './PostChartViewer';
+import TradingViewWidget from '@/components/TradingViewWidget';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -132,6 +132,9 @@ function MediaCarousel({ media }: { media: Post['media'] }) {
                     alt="Post media"
                     className="w-full max-h-[360px] object-contain"
                     loading="lazy"
+                    onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                    }}
                 />
             )}
 
@@ -197,7 +200,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     const [repostComment, setRepostComment] = useState('');
     const [showReportModal, setShowReportModal] = useState(false);
     const [commentsCount, setCommentsCount] = useState(post.commentsCount);
-    const [showLiveChart, setShowLiveChart] = useState(false);
+    const [showLiveChart, setShowLiveChart] = useState(true);
 
     const isOwner = currentUserId === post.author.id;
     const canEdit = isOwner && !post.contentEditedAt &&
@@ -459,14 +462,10 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             {/* Auto TradingView Chart if ticker is mentioned and no media provided (for text posts only) */}
             {post.type !== 'chart' && !post.media?.length && !post.mediaUrl && !tradingViewUrl && post.tickers && String(post.tickers).trim() && (
                 <div className="px-4 pb-3">
-                    <div className="rounded-xl overflow-hidden border border-border/50 h-[300px] sm:h-[360px] w-full bg-black/10">
-                        <iframe
-                            src={`https://s.tradingview.com/widgetembed/?symbol=${(Array.isArray(post.tickers) ? post.tickers[0] : String(post.tickers).split(',')[0]).trim().replace('$', '')}&interval=D&theme=dark&style=1&timezone=America%2FArgentina%2FBuenos_Aires&hide_top_toolbar=1&hide_legend=1&saveimage=0&locale=es`}
-                            width="100%"
-                            height="100%"
-                            frameBorder="0"
-                            allowTransparency={true}
-                            scrolling="no"
+                    <div className="rounded-xl overflow-hidden border border-border/50 h-[320px] sm:h-[380px] w-full bg-card/20">
+                        <TradingViewWidget
+                            symbol={(Array.isArray(post.tickers) ? post.tickers[0] : String(post.tickers).split(',')[0]).trim().replace('$', '')}
+                            height={380}
                         />
                     </div>
                 </div>
@@ -562,13 +561,9 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                             {hasCapturedMedia && !showLiveChart ? (
                                 <MediaCarousel media={regularMedia} />
                             ) : (
-                                <PostChartViewer
-                                    versionId={post.chartAnalysisVersionId || post.chartAnalysisVersion?.id}
-                                    chartState={post.chartAnalysisVersion?.chartState}
-                                    symbol={chartSymbol}
-                                    authorUsername={post.author?.username}
-                                height={360}
-                                />
+                                <div className="h-[360px] sm:h-[420px] min-h-[360px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
+                                    <TradingViewWidget symbol={chartSymbol} height={420} />
+                                </div>
                             )}
                         </div>
                     );
@@ -586,7 +581,15 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                         {/* Legacy single media */}
                         {!post.media?.length && post.mediaUrl && (
                             <div className="px-4 pb-3">
-                                <img src={resolveMediaUrl(post.mediaUrl)} alt="Post" className="w-full rounded-xl max-h-[360px] object-contain" loading="lazy" />
+                                <img
+                                    src={resolveMediaUrl(post.mediaUrl)}
+                                    alt="Post"
+                                    className="w-full rounded-xl max-h-[360px] object-contain"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                        (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+                                    }}
+                                />
                             </div>
                         )}
                     </>

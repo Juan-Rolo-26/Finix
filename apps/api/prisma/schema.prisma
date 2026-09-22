@@ -176,6 +176,9 @@ model User {
   // Technical Chart Analyses
   chartAnalyses ChartAnalysis[] @relation("UserChartAnalyses")
 
+  // Market Alerts
+  alerts MarketAlert[]
+
   @@index([username])
   @@index([createdAt])
 }
@@ -391,14 +394,48 @@ model Portfolio {
 }
 
 model Asset {
-  id       String @id @default(uuid())
-  ticker   String @unique
-  name     String
-  type     String // STOCK, CRYPTO, ETF, BOND
-  currency String @default("USD")
+  id                String   @id @default(uuid())
+  ticker            String   @unique
+  name              String
+  type              String   // STOCK, CRYPTO, ETF, BOND, CEDEAR, INDEX
+  currency          String   @default("USD")
+  symbol            String?  // e.g. "NASDAQ:AAPL", "BINANCE:BTCUSDT"
+  exchange          String?  // e.g. "NASDAQ", "NYSE", "BYMA", "BINANCE"
+  country           String?  // e.g. "US", "AR"
+  logo              String?
+  tradingViewSymbol String?  // canonical TradingView chart symbol
+  providerSymbol    String?
+  active            Boolean  @default(true)
 
   holdings     Holding[]
   transactions Transaction[]
+  alerts       MarketAlert[]
+}
+
+model MarketAlert {
+  id                  String    @id @default(uuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assetId             String?
+  asset               Asset?    @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  ticker              String
+  name                String
+  alertType           String    @default("PRICE_TARGET") // PRICE_TARGET, PERCENT_CHANGE, 52W_HIGH, 52W_LOW
+  targetValue         Float
+  condition           String    // GREATER_THAN, LESS_THAN, CHANGE_PCT_UP, CHANGE_PCT_DOWN
+  status              String    @default("ACTIVE") // ACTIVE, TRIGGERED, DISABLED, CANCELLED
+  notificationChannel String    @default("EMAIL") // EMAIL, PUSH, ALL
+  destinationEmail    String?
+  triggerPrice        Float?
+  lastCheckedAt       DateTime?
+  triggeredAt         DateTime?
+  activatedAt         DateTime? @default(now())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([ticker, status])
+  @@index([status, lastCheckedAt])
 }
 
 model Holding {

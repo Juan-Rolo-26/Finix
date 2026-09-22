@@ -1,4 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { mkdir, readFile, writeFile, rename } from 'fs/promises';
+import { join } from 'path';
 import { PrismaService } from '../prisma.service';
 import { CEDEAR_REGISTRY, getCedearDefinition, CedearDefinition } from './cedear.data';
 
@@ -28,6 +31,8 @@ export interface MarketQuote {
     symbol: string;
     price: number | null;
     change: number | null;
+    premarketPrice?: number | null;
+    premarketChange?: number | null;
     updatedAt: string;
     unavailable: boolean;
 }
@@ -35,6 +40,8 @@ export interface MarketQuote {
 interface ScannerQuote {
     price: number;
     change: number | null;
+    premarketPrice?: number | null;
+    premarketChange?: number | null;
 }
 
 interface FinvizTickerNode {
@@ -527,6 +534,11 @@ export class MarketService {
 
     private readonly premarketCatalog = {
         indices: [
+            ...[
+                ['AMEX:EWJ', 'Japón · EWJ'], ['AMEX:EWZ', 'Brasil · EWZ'],
+                ['AMEX:FXI', 'China · FXI'], ['AMEX:FEZ', 'Eurozona · FEZ'],
+                ['AMEX:EWU', 'Reino Unido · EWU'], ['AMEX:EEM', 'Emergentes · EEM'],
+            ].map(([symbol, label]) => ({ id: symbol, symbol, label, description: 'ETF regional (USD)', format: 'currency' as DashboardValueFormat, currency: 'USD' as const })),
             {
                 id: 'sp500-fut',
                 symbol: 'AMEX:SPY',
@@ -582,6 +594,8 @@ export class MarketService {
             },
         ],
         commodities: [
+            ...[['AMEX:SOYB', 'Soja · SOYB'], ['AMEX:WEAT', 'Trigo · WEAT'], ['AMEX:CORN', 'Maíz · CORN']]
+                .map(([symbol, label]) => ({ id: symbol, symbol, label, description: 'ETF de materia prima (USD)', format: 'currency' as DashboardValueFormat, currency: 'USD' as const })),
             {
                 id: 'gold-spot',
                 symbol: 'OANDA:XAUUSD',
@@ -1202,17 +1216,48 @@ export class MarketService {
         };
     }
 
-    async getPremarket() {
-        const session = this.getPremarketSessionInfo();
+    @Cron('0 20 10 * * *', { timeZone: 'America/Argentina/Buenos_Aires' })
+    async refreshDailyPremarket() {
+        const data = await this.getPremarket(true);
+        const assets = [...data.indices, ...data.commodities, ...data.magnificent7, ...data.argentina, ...data.crypto];
+        if (!assets.some(asset => asset.price != null)) throw new Error('No quotes available for daily premarket');
+        await mkdir(this.premarketSnapshotDirectory, { recursive: true });
+        const file = join(this.premarketSnapshotDirectory, 'premarket.json');
+        await writeFile(`${file}.tmp`, JSON.stringify(data), 'utf8');
+        await rename(`${file}.tmp`, file);
+        this.dailyPremarket = data;
+    }
 
-        // Si ya pasó el horario de pre-market y tenemos los datos congelados del día, los conservamos intactos
-        if (session.status !== 'pre-market' && this.premarketFrozenSession && this.premarketFrozenSession.dateKey === session.dateKey) {
+    private dailyPremarket: any = null;
+    private readonly premarketSnapshotDirectory = process.env.MARKET_SNAPSHOT_DIR || join(process.cwd(), '.cache', 'market');
+    private snapshotLoaded = false;
+
+    async getPremarket(forceRefresh = false) {
+        const session = this.getPremarketSessionInfo();
+        const isPremarketPassed = session.status !== 'pre-market';
+
+        if (!this.snapshotLoaded) {
+            this.snapshotLoaded = true;
+            try {
+                const saved = JSON.parse(await readFile(join(this.premarketSnapshotDirectory, 'premarket.json'), 'utf8'));
+                if (saved.updatedAt && Array.isArray(saved.indices) && Array.isArray(saved.crypto)) {
+                    this.dailyPremarket = saved;
+                    if (!this.premarketFrozenSession) {
+                        this.premarketFrozenSession = { dateKey: session.dateKey, data: saved };
+                    }
+                }
+            } catch { /* First run has no saved edition. */ }
+        }
+
+        // Si ya pasó el horario de pre-market y tenemos datos congelados válidos para la fecha actual, los conservamos intactos
+        if (!forceRefresh && isPremarketPassed && this.premarketFrozenSession && this.premarketFrozenSession.dateKey === session.dateKey) {
             return {
                 ...this.premarketFrozenSession.data,
-                updatedAt: new Date().toISOString(),
+                updatedAt: this.premarketFrozenSession.data.updatedAt,
                 isFrozenPremarket: true,
                 session: {
                     ...session,
+                    label: 'Pre-Market Finalizado (10:30 hs)',
                     sentiment: this.premarketFrozenSession.data.session.sentiment,
                     sentimentScore: this.premarketFrozenSession.data.session.sentimentScore,
                     sentimentSummary: this.premarketFrozenSession.data.session.sentimentSummary,
@@ -1220,7 +1265,7 @@ export class MarketService {
             };
         }
 
-        if (this.premarketCache && Date.now() - this.premarketCache.fetchedAt < this.premarketTtlMs) {
+        if (!forceRefresh && this.premarketCache && Date.now() - this.premarketCache.fetchedAt < this.premarketTtlMs) {
             return this.premarketCache.data;
         }
 
@@ -1235,14 +1280,38 @@ export class MarketService {
         const quotes = await this.getQuotes(allDefinitions.map(d => d.symbol));
         const quotesByInput = new Map(quotes.map(q => [this.normalizeQuoteInputSymbol(q.inputSymbol), q]));
 
-        const mapCatalog = (items: MarketDashboardAssetDefinition[]) =>
-            items.map(d => this.buildDashboardAsset(d, quotesByInput.get(this.normalizeQuoteInputSymbol(d.symbol))));
+        const mapPremarketAsset = (d: MarketDashboardAssetDefinition) => {
+            const quote = quotesByInput.get(this.normalizeQuoteInputSymbol(d.symbol));
+            const hasPremarket = quote?.premarketPrice != null && Number.isFinite(quote.premarketPrice);
 
-        const indices = mapCatalog(this.premarketCatalog.indices);
-        const commodities = mapCatalog(this.premarketCatalog.commodities);
-        const magnificent7 = mapCatalog(this.premarketCatalog.magnificent7);
-        const argentina = mapCatalog(this.premarketCatalog.argentina);
-        const crypto = mapCatalog(this.premarketCatalog.crypto);
+            // Si el mercado regular abrió o si hay cotización de premarket, se fija la cotización de premarket
+            const effectivePrice = (isPremarketPassed && hasPremarket)
+                ? quote!.premarketPrice!
+                : (hasPremarket ? quote!.premarketPrice! : (quote?.price ?? null));
+
+            const effectiveChange = (isPremarketPassed && hasPremarket)
+                ? (quote?.premarketChange ?? null)
+                : (hasPremarket ? (quote?.premarketChange ?? null) : (quote?.change ?? null));
+
+            return {
+                ...d,
+                price: effectivePrice,
+                change: effectiveChange,
+                premarketPrice: quote?.premarketPrice ?? null,
+                premarketChange: quote?.premarketChange ?? null,
+                regularPrice: quote?.price ?? null,
+                regularChange: quote?.change ?? null,
+                isPremarketQuote: hasPremarket,
+                updatedAt: quote?.updatedAt || new Date().toISOString(),
+                unavailable: effectivePrice === null,
+            };
+        };
+
+        const indices = this.premarketCatalog.indices.map(mapPremarketAsset);
+        const commodities = this.premarketCatalog.commodities.map(mapPremarketAsset);
+        const magnificent7 = this.premarketCatalog.magnificent7.map(mapPremarketAsset);
+        const argentina = this.premarketCatalog.argentina.map(mapPremarketAsset);
+        const crypto = this.premarketCatalog.crypto.map(mapPremarketAsset);
 
         const leadingChanges = [
             ...indices.slice(0, 2).map(i => i.change),
@@ -1293,9 +1362,13 @@ export class MarketService {
 
         const payload = {
             updatedAt: new Date().toISOString(),
-            isFrozenPremarket: session.status !== 'pre-market',
+            scheduledSnapshot: forceRefresh,
+            refreshTime: '10:20',
+            refreshTimezone: 'America/Argentina/Buenos_Aires',
+            isFrozenPremarket: isPremarketPassed,
             session: {
                 ...session,
+                label: isPremarketPassed ? 'Pre-Market Finalizado (10:30 hs)' : session.label,
                 sentiment,
                 sentimentScore,
                 sentimentSummary,
@@ -1312,8 +1385,15 @@ export class MarketService {
         this.premarketCache = { data: payload, fetchedAt: Date.now() };
 
         // Guardamos la sesión capturada para preservarla si abre la rueda regular
-        if (session.status === 'pre-market' || !this.premarketFrozenSession || this.premarketFrozenSession.dateKey !== session.dateKey) {
+        if (session.status === 'pre-market' || isPremarketPassed || !this.premarketFrozenSession) {
             this.premarketFrozenSession = { dateKey: session.dateKey, data: payload };
+            this.dailyPremarket = payload;
+            try {
+                mkdir(this.premarketSnapshotDirectory, { recursive: true }).then(() => {
+                    const file = join(this.premarketSnapshotDirectory, 'premarket.json');
+                    writeFile(file, JSON.stringify(payload), 'utf8').catch(() => {});
+                }).catch(() => {});
+            } catch { /* best effort */ }
         }
 
         return payload;
@@ -1805,7 +1885,7 @@ export class MarketService {
                         tickers: dedupedTickers,
                         query: { types: [] },
                     },
-                    columns: ['close', 'change', 'change_abs', 'volume', 'Recommend.All'],
+                    columns: ['close', 'change', 'change_abs', 'volume', 'Recommend.All', 'premarket_close', 'premarket_change'],
                 }),
                 signal: controller.signal,
             });
@@ -1826,9 +1906,16 @@ export class MarketService {
 
                 const price = typeof values[0] === 'number' && Number.isFinite(values[0]) ? values[0] : null;
                 const change = typeof values[1] === 'number' && Number.isFinite(values[1]) ? values[1] : null;
-                if (price === null) return;
+                const premarketPrice = typeof values[5] === 'number' && Number.isFinite(values[5]) ? values[5] : null;
+                const premarketChange = typeof values[6] === 'number' && Number.isFinite(values[6]) ? values[6] : null;
+                if (price === null && premarketPrice === null) return;
 
-                quoteMap.set(symbol, { price, change });
+                quoteMap.set(symbol, {
+                    price: price ?? premarketPrice ?? 0,
+                    change,
+                    premarketPrice,
+                    premarketChange,
+                });
             });
         } catch (error) {
             console.error('[MarketService] Scanner quote fetch failed:', error);
@@ -1870,6 +1957,8 @@ export class MarketService {
                 symbol: matchedSymbol,
                 price: match?.price ?? null,
                 change: match?.change ?? null,
+                premarketPrice: match?.premarketPrice ?? null,
+                premarketChange: match?.premarketChange ?? null,
                 updatedAt,
                 unavailable: !match,
             };
@@ -2482,7 +2571,131 @@ export class MarketService {
         ];
     }
 
-    async getNews(_symbol?: string) {
+    private symbolNewsCache = new Map<string, { data: any[]; fetchedAt: number }>();
+
+    async getSymbolSpecificNews(rawSymbol: string): Promise<any[]> {
+        const cleaned = (rawSymbol || '')
+            .toUpperCase()
+            .replace(/^(NASDAQ|NYSE|AMEX|BCBA|BYMA|BINANCE|CRYPTO|INDEX):/, '')
+            .replace(/\.BA$/, '')
+            .trim();
+
+        if (!cleaned) return [];
+
+        const cached = this.symbolNewsCache.get(cleaned);
+        if (cached && Date.now() - cached.fetchedAt < 5 * 60 * 1000) {
+            return cached.data;
+        }
+
+        const items: any[] = [];
+        const alphaSpreadUrl = `https://www.alphaspread.com/security/nasdaq/${cleaned.toLowerCase()}`;
+
+        // 1. Fetch from Yahoo Finance Search News (Ticker-specific financial news)
+        try {
+            const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(cleaned)}&quotesCount=1&newsCount=8`;
+            const res = await fetch(url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    'Accept': 'application/json',
+                },
+                signal: AbortSignal.timeout(4500),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data.news)) {
+                    for (const n of data.news) {
+                        if (!n.title) continue;
+                        items.push({
+                            id: n.uuid || `yh-${Math.random()}`,
+                            title: n.title,
+                            sourceName: n.publisher || 'Yahoo Finance',
+                            url: n.link || alphaSpreadUrl,
+                            publishedAt: n.providerPublishTime ? new Date(n.providerPublishTime * 1000).toISOString() : new Date().toISOString(),
+                            summary: n.summary || '',
+                            alphaSpreadUrl,
+                        });
+                    }
+                }
+            }
+        } catch (err: any) {
+            console.warn(`[MarketService] Yahoo news search failed for ${cleaned}:`, err?.message);
+        }
+
+        // 2. Fetch from Google News RSS for ticker if fewer than 4 items
+        if (items.length < 4) {
+            try {
+                const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(cleaned + ' stock')}&hl=en-US&gl=US&ceid=US:en`;
+                const res = await fetch(rssUrl, {
+                    headers: { 'User-Agent': 'Mozilla/5.0' },
+                    signal: AbortSignal.timeout(4000),
+                });
+                if (res.ok) {
+                    const xml = await res.text();
+                    const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
+                    for (const itemXml of itemMatches.slice(0, 6)) {
+                        const titleMatch = itemXml.match(/<title>([\s\S]*?)<\/title>/);
+                        const linkMatch = itemXml.match(/<link>([\s\S]*?)<\/link>/);
+                        const pubDateMatch = itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+                        const sourceMatch = itemXml.match(/<source[^>]*>([\s\S]*?)<\/source>/);
+
+                        if (titleMatch && linkMatch) {
+                            const rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim();
+                            const link = linkMatch[1].trim();
+                            const pubDate = pubDateMatch ? new Date(pubDateMatch[1]).toISOString() : new Date().toISOString();
+                            const sourceName = sourceMatch ? sourceMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : 'Mercado Financiero';
+
+                            if (!items.some(existing => existing.title === rawTitle)) {
+                                items.push({
+                                    id: `gn-${Buffer.from(rawTitle).toString('base64').slice(0, 16)}`,
+                                    title: rawTitle,
+                                    sourceName,
+                                    url: link,
+                                    publishedAt: pubDate,
+                                    alphaSpreadUrl,
+                                });
+                            }
+                        }
+                    }
+                }
+            } catch (err: any) {
+                console.warn(`[MarketService] Google RSS news failed for ${cleaned}:`, err?.message);
+            }
+        }
+
+        // 3. Fallback: AlphaSpread Valuation and Intelligence summaries for this exact ticker
+        if (items.length === 0) {
+            items.push(
+                {
+                    id: `as-${cleaned}-1`,
+                    title: `Análisis de Valoración Intrínseca y Descuento DCF de ${cleaned}`,
+                    sourceName: 'AlphaSpread Valuation',
+                    url: `https://www.alphaspread.com/security/nasdaq/${cleaned.toLowerCase()}/discount-rate`,
+                    publishedAt: new Date().toISOString(),
+                    summary: `Revisá el modelo de valuación intrínseco, múltiplos de mercado y proyecciones de flujo de caja para ${cleaned}.`,
+                    alphaSpreadUrl,
+                },
+                {
+                    id: `as-${cleaned}-2`,
+                    title: `Métricas de Rentabilidad, ROIC y Estructura de Capital de ${cleaned}`,
+                    sourceName: 'AlphaSpread Fundamentals',
+                    url: alphaSpreadUrl,
+                    publishedAt: new Date(Date.now() - 86400000).toISOString(),
+                    summary: `Comparativa fundamental frente a competidores directos de la industria según el modelo AlphaSpread.`,
+                    alphaSpreadUrl,
+                }
+            );
+        }
+
+        const sorted = items.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+        this.symbolNewsCache.set(cleaned, { data: sorted, fetchedAt: Date.now() });
+        return sorted;
+    }
+
+    async getNews(symbol?: string) {
+        if (symbol && symbol.trim()) {
+            return this.getSymbolSpecificNews(symbol.trim());
+        }
+
         if (this.marketNewsCache && (Date.now() - this.marketNewsCache.fetchedAt) < this.marketNewsTtlMs) {
             return this.marketNewsCache.data;
         }

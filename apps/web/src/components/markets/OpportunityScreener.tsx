@@ -73,14 +73,142 @@ export default function OpportunityScreener({ onOpenAnalysis }: { onOpenAnalysis
         {loading ? <div className="flex min-h-[360px] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-violet-500" /></div> : <>
             {data?.stale && <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-200">Mostrando la última lectura válida mientras se recupera la fuente de mercado.</div>}
             <p className="px-1 text-xs text-muted-foreground"><b className="text-foreground">{data?.summary?.matchingCount ?? 0}</b> empresas coinciden con los filtros. {scoreLabel}</p>
-            <div className="overflow-hidden rounded-[24px] border border-border/60 bg-card shadow-sm"><div className="hidden overflow-x-auto lg:block"><table className="w-full min-w-[1160px] text-left text-xs"><thead className="border-b border-border/60 bg-muted/35 text-[10px] font-black uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-3">Empresa</th><th className="px-3 py-3">Precio</th><th className="px-3 py-3">Valor razonable</th><th className="px-3 py-3">Potencial alcista</th><th className="px-3 py-3">P/E</th><th className="px-3 py-3">ROIC</th><th className="px-3 py-3">Rend. FCF</th><th className="px-3 py-3">Puntuación</th><th className="px-3 py-3">Cobertura</th></tr></thead><tbody>{items.map((item) => <OpportunityRow key={item.ticker} item={item} onOpen={onOpenAnalysis} />)}</tbody></table></div><div className="grid gap-3 p-3 lg:hidden">{items.map((item) => <OpportunityCard key={item.ticker} item={item} onOpen={onOpenAnalysis} />)}</div>{!items.length && <div className="p-16 text-center text-sm text-muted-foreground">No hay empresas con los criterios seleccionados. Probá flexibilizar un filtro.</div>}</div>
+            <div className="overflow-hidden rounded-[24px] border border-border/60 bg-card shadow-sm">
+                <div className="hidden overflow-x-auto lg:block">
+                    <table className="w-full min-w-[1160px] text-left text-xs">
+                        <thead className="border-b border-border/60 bg-muted/35 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                            <tr>
+                                <th className="px-4 py-3">Empresa</th>
+                                <th className="px-3 py-3">Precio</th>
+                                <th className="px-3 py-3">Valor razonable</th>
+                                <th className="px-3 py-3">Potencial alcista</th>
+                                <th className="px-3 py-3">P/E</th>
+                                <th className="px-3 py-3">ROIC</th>
+                                <th className="px-3 py-3">{category === 'DIVIDEND' ? 'Dividendo (Yield)' : 'Rend. FCF'}</th>
+                                <th className="px-3 py-3">Puntuación</th>
+                                <th className="px-3 py-3">Cobertura</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {items.map((item) => (
+                                <OpportunityRow key={item.ticker} item={item} category={category} onOpen={onOpenAnalysis} />
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="grid gap-3 p-3 lg:hidden">
+                    {items.map((item) => (
+                        <OpportunityCard key={item.ticker} item={item} category={category} onOpen={onOpenAnalysis} />
+                    ))}
+                </div>
+                {!items.length && (
+                    <div className="p-16 text-center text-sm text-muted-foreground">
+                        No hay empresas con los criterios seleccionados. Probá flexibilizar un filtro.
+                    </div>
+                )}
+            </div>
         </>}
-        <Card className="rounded-[22px] border-border/60 bg-card/70 p-4 text-xs text-muted-foreground"><div className="flex gap-3"><HelpCircle className="h-5 w-5 shrink-0 text-violet-500" /><div><b className="text-foreground">Transparencia del score</b><p className="mt-1 leading-relaxed">Valuación 30%, calidad financiera 25%, crecimiento 20%, rentabilidad 15% y balance 10%. Las métricas no provistas se señalan como sin cobertura y no se inventan; la cobertura indica qué parte del score pudo calcularse.</p></div></div></Card>
+        <Card className="rounded-[22px] border-border/60 bg-card/70 p-4 text-xs text-muted-foreground">
+            <div className="flex gap-3">
+                <HelpCircle className="h-5 w-5 shrink-0 text-violet-500" />
+                <div>
+                    <b className="text-foreground">Transparencia del score</b>
+                    <p className="mt-1 leading-relaxed">
+                        Valuación 30%, calidad financiera 25%, crecimiento 20%, rentabilidad 15% y balance 10%. Las métricas no provistas se señalan como sin cobertura y no se inventan; la cobertura indica qué parte del score pudo calcularse.
+                    </p>
+                </div>
+            </div>
+        </Card>
     </div>;
 }
 
-function Stat({ icon: Icon, label, value, tone }: any) { return <div className={cn('rounded-2xl border p-3.5', tone === 'emerald' ? 'border-emerald-500/25 bg-emerald-500/10' : tone === 'violet' ? 'border-violet-500/25 bg-violet-500/10' : tone === 'amber' ? 'border-amber-500/25 bg-amber-500/10' : 'border-border/60 bg-background/60')}><div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"><Icon className="h-3.5 w-3.5" />{label}</div><p className="mt-1 text-2xl font-black text-foreground">{value}</p></div>; }
-function Field({ label, value, onChange, displayBillions }: any) { return <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-muted-foreground">{label}</span><input type="number" value={displayBillions && value ? Number(value) / 1e9 : value} onChange={(event) => onChange(event.target.value)} className="h-9 w-full rounded-lg border border-border/60 bg-background px-2 text-xs outline-none focus:border-violet-500" /></label>; }
-function OpportunityRow({ item, onOpen }: { item: Opportunity; onOpen: (ticker: string) => void }) { return <tr onClick={() => onOpen(item.ticker)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-violet-500/5"><td className="px-4 py-3"><div className="flex items-center gap-2"><SymbolLogo symbol={item.symbol} size={28} /><div><b className="text-sm text-foreground">{item.ticker}</b><p className="max-w-[175px] truncate text-[10px] text-muted-foreground">{item.name}</p></div></div></td><td className="px-3 py-3 font-bold text-foreground">{money(item.price)}<p className={cn('text-[10px]', (item.change || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{format(item.change, true)}</p></td><td className="px-3 py-3 font-bold text-foreground">{money(item.fairValue)}<p className="text-[10px] text-muted-foreground">{item.fairValueModel ? 'DCF FCF' : 'Sin cobertura'}</p></td><td className={cn('px-3 py-3 font-black', (item.upside || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{format(item.upside, true)}</td><td className="px-3 py-3 font-bold text-foreground">{item.pe?.toFixed(1) ?? '—'}</td><td className="px-3 py-3 font-bold text-foreground">{format(item.roic)}</td><td className="px-3 py-3 font-bold text-foreground">{format(item.fcfYield)}</td><td className="px-3 py-3"><span className="rounded-lg bg-violet-500/15 px-2 py-1 font-black text-violet-700 dark:text-violet-300">{item.opportunityScore?.toFixed(0) ?? '—'}</span></td><td className="px-3 py-3 text-muted-foreground">{item.scoreCoverage}%</td></tr>; }
-function OpportunityCard({ item, onOpen }: { item: Opportunity; onOpen: (ticker: string) => void }) { return <button onClick={() => onOpen(item.ticker)} className="rounded-2xl border border-border/60 bg-background/50 p-4 text-left"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><SymbolLogo symbol={item.symbol} size={30} /><div><b className="text-foreground">{item.ticker}</b><p className="max-w-[190px] truncate text-[10px] text-muted-foreground">{item.name}</p></div></div><span className="rounded-lg bg-violet-500/15 px-2 py-1 text-sm font-black text-violet-700 dark:text-violet-300">{item.opportunityScore?.toFixed(0) ?? '—'}</span></div><div className="mt-4 grid grid-cols-3 gap-2 text-xs"><Metric label="Precio" value={money(item.price)} /><Metric label="Valor razonable" value={money(item.fairValue)} /><Metric label="Potencial alcista" value={format(item.upside, true)} positive={(item.upside || 0) >= 0} /><Metric label="P/E" value={item.pe?.toFixed(1) ?? '—'} /><Metric label="ROIC" value={format(item.roic)} /><Metric label="Rend. FCF" value={format(item.fcfYield)} /></div></button>; }
+function Stat({ icon: Icon, label, value, tone }: any) {
+    return (
+        <div className={cn('rounded-2xl border p-3.5', tone === 'emerald' ? 'border-emerald-500/25 bg-emerald-500/10' : tone === 'violet' ? 'border-violet-500/25 bg-violet-500/10' : tone === 'amber' ? 'border-amber-500/25 bg-amber-500/10' : 'border-border/60 bg-background/60')}>
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+            </div>
+            <p className="mt-1 text-2xl font-black text-foreground">{value}</p>
+        </div>
+    );
+}
+
+function Field({ label, value, onChange, displayBillions }: any) {
+    return (
+        <label className="block">
+            <span className="mb-1 block text-[10px] font-bold uppercase text-muted-foreground">{label}</span>
+            <input type="number" value={displayBillions && value ? Number(value) / 1e9 : value} onChange={(event) => onChange(event.target.value)} className="h-9 w-full rounded-lg border border-border/60 bg-background px-2 text-xs outline-none focus:border-violet-500" />
+        </label>
+    );
+}
+
+function OpportunityRow({ item, category, onOpen }: { item: Opportunity; category: Category; onOpen: (ticker: string) => void }) {
+    return (
+        <tr onClick={() => onOpen(item.ticker)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-violet-500/5">
+            <td className="px-4 py-3">
+                <div className="flex items-center gap-2">
+                    <SymbolLogo symbol={item.symbol} size={28} />
+                    <div>
+                        <b className="text-sm text-foreground">{item.ticker}</b>
+                        <p className="max-w-[175px] truncate text-[10px] text-muted-foreground">{item.name}</p>
+                    </div>
+                </div>
+            </td>
+            <td className="px-3 py-3 font-bold text-foreground">
+                {money(item.price)}
+                <p className={cn('text-[10px]', (item.change || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{format(item.change, true)}</p>
+            </td>
+            <td className="px-3 py-3 font-bold text-foreground">
+                {money(item.fairValue)}
+                <p className="text-[10px] text-muted-foreground">{item.fairValueModel ? 'DCF FCF' : 'Sin cobertura'}</p>
+            </td>
+            <td className={cn('px-3 py-3 font-black', (item.upside || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{format(item.upside, true)}</td>
+            <td className="px-3 py-3 font-bold text-foreground">{item.pe?.toFixed(1) ?? '—'}</td>
+            <td className="px-3 py-3 font-bold text-foreground">{format(item.roic)}</td>
+            <td className="px-3 py-3 font-bold text-foreground">
+                {category === 'DIVIDEND' ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 font-extrabold text-xs">
+                        {item.dividendYield !== null && item.dividendYield !== undefined ? `${item.dividendYield.toFixed(2)}%` : '—'}
+                    </span>
+                ) : (
+                    format(item.fcfYield)
+                )}
+            </td>
+            <td className="px-3 py-3">
+                <span className="rounded-lg bg-violet-500/15 px-2 py-1 font-black text-violet-700 dark:text-violet-300">{item.opportunityScore?.toFixed(0) ?? '—'}</span>
+            </td>
+            <td className="px-3 py-3 text-muted-foreground">{item.scoreCoverage}%</td>
+        </tr>
+    );
+}
+
+function OpportunityCard({ item, category, onOpen }: { item: Opportunity; category: Category; onOpen: (ticker: string) => void }) {
+    return (
+        <button onClick={() => onOpen(item.ticker)} className="rounded-2xl border border-border/60 bg-background/50 p-4 text-left">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <SymbolLogo symbol={item.symbol} size={30} />
+                    <div>
+                        <b className="text-foreground">{item.ticker}</b>
+                        <p className="max-w-[190px] truncate text-[10px] text-muted-foreground">{item.name}</p>
+                    </div>
+                </div>
+                <span className="rounded-lg bg-violet-500/15 px-2 py-1 text-sm font-black text-violet-700 dark:text-violet-300">{item.opportunityScore?.toFixed(0) ?? '—'}</span>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                <Metric label="Precio" value={money(item.price)} />
+                <Metric label="Valor razonable" value={money(item.fairValue)} />
+                <Metric label="Potencial alcista" value={format(item.upside, true)} positive={(item.upside || 0) >= 0} />
+                <Metric label="P/E" value={item.pe?.toFixed(1) ?? '—'} />
+                <Metric label="ROIC" value={format(item.roic)} />
+                <Metric
+                    label={category === 'DIVIDEND' ? 'Dividendo' : 'Rend. FCF'}
+                    value={category === 'DIVIDEND' ? (item.dividendYield ? `${item.dividendYield.toFixed(2)}%` : '—') : format(item.fcfYield)}
+                    positive={category === 'DIVIDEND' ? Boolean(item.dividendYield && item.dividendYield > 0) : undefined}
+                />
+            </div>
+        </button>
+    );
+}
 function Metric({ label, value, positive }: any) { return <div><p className="text-[9px] font-bold uppercase text-muted-foreground">{label}</p><p className={cn('mt-0.5 font-black', positive === undefined ? 'text-foreground' : positive ? 'text-emerald-500' : 'text-rose-500')}>{value}</p></div>; }

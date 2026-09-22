@@ -29,7 +29,7 @@ export interface OpportunityQuery {
 
 interface OpportunityPayload { updatedAt: string; stale: boolean; items: OpportunityItem[]; }
 
-const CACHE_KEY = 'market:opportunities:sp500:v1';
+const CACHE_KEY = 'market:opportunities:sp500:v2';
 const FRESH_FOR_MS = 15 * 60 * 1000;
 const STALE_FOR_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -107,11 +107,11 @@ export class OpportunityScreenerService implements OnModuleInit {
         const result = new Map<string, any>();
         const columns = [
             'name', 'description', 'sector', 'industry', 'country', 'close', 'change', 'volume', 'market_cap_basic', 'beta_1_year',
-            'price_earnings_ttm', 'price_sales_current', 'price_book_fq', 'price_free_cash_flow_ttm', 'enterprise_value_to_ebitda_ttm', 'dividend_yield_recent',
+            'price_earnings_ttm', 'price_sales_current', 'price_book_fq', 'price_free_cash_flow_ttm', 'enterprise_value_to_ebitda_ttm', 'dividends_yield',
             'earnings_per_share_diluted_ttm', 'total_revenue_ttm', 'operating_margin_ttm', 'net_margin_ttm', 'free_cash_flow_ttm',
             'return_on_equity_fq', 'return_on_assets_fq', 'return_on_invested_capital_fq', 'total_debt_fq', 'net_debt_fq', 'current_ratio_fq', 'quick_ratio_fq',
             'total_assets_fq', 'total_liabilities_fq', 'total_shares_outstanding_fundamental', 'RSI', 'SMA50', 'SMA200', 'Recommend.All',
-            'dividend_yield_ttm',
+            'dps_common_stock_prim_issue_fy', 'dividend_amount_recent',
         ];
         for (let index = 0; index < tickers.length; index += 80) {
             const batch = tickers.slice(index, index + 80);
@@ -169,8 +169,17 @@ export class OpportunityScreenerService implements OnModuleInit {
         const currentRatio = number(26), quickRatio = number(27), debt = number(24), equity = number(29) !== null && number(28) !== null ? (number(28) as number) - (number(29) as number) : null;
         const debtToEquity = debt !== null && equity && equity > 0 ? Number((debt / equity).toFixed(2)) : null;
         const operatingMargin = pct(18), netMargin = pct(19), roe = pct(21), roa = pct(22), roic = pct(23);
-        const recentDividend = number(15);
-        const dividendYield = pct(recentDividend !== null && recentDividend > 0 ? recentDividend : number(36));
+        const rawDivYield = number(15);
+        const dps = number(35);
+        const divAmount = number(36);
+        let dividendYield: number | null = null;
+        if (rawDivYield !== null && rawDivYield > 0) {
+            dividendYield = Number(rawDivYield.toFixed(2));
+        } else if (dps !== null && dps > 0 && price && price > 0) {
+            dividendYield = Number(((dps / price) * 100).toFixed(2));
+        } else if (divAmount !== null && divAmount > 0 && price && price > 0) {
+            dividendYield = Number(((divAmount * 4 / price) * 100).toFixed(2));
+        }
         const advanced = Array.isArray(optionalRow?.d) ? optionalRow.d : [];
         const advancedNumber = (index: number) => typeof advanced[index] === 'number' && Number.isFinite(advanced[index]) ? advanced[index] : null;
         const revenueGrowth = this.percent(advancedNumber(1));

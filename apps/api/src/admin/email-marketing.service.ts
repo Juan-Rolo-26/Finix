@@ -22,14 +22,55 @@ export class EmailMarketingService {
         return audience === 'ALL' ? base : { ...base, plan: 'PRO', subscriptionStatus: 'ACTIVE' };
     }
     async dashboard() {
-        const [campaigns, recipientCount, sent, failed] = await Promise.all([
-            this.prisma.proEmailCampaign.findMany({ take: 20, orderBy: { createdAt: 'desc' } }),
+        const [campaigns, recipientCount, sent, failed, activeAlerts] = await Promise.all([
+            this.prisma.proEmailCampaign.findMany({ take: 30, orderBy: { createdAt: 'desc' } }),
             this.prisma.user.count({ where: this.recipientWhere() }),
             this.prisma.emailCampaignRecipient.count({ where: { status: 'SENT' } }),
             this.prisma.emailCampaignRecipient.count({ where: { status: 'FAILED' } }),
+            (this.prisma as any).marketAlert?.count({ where: { status: 'ACTIVE' } }) ?? 0,
         ]);
-        return { metrics: { recipientCount, sent, failed }, campaigns, sendEnabled: process.env.EMAIL_SEND_ENABLED === 'true' };
+        return {
+            metrics: { recipientCount, sent, failed, activeAlerts },
+            campaigns,
+            sendEnabled: process.env.EMAIL_SEND_ENABLED === 'true',
+        };
     }
+
+    async getCampaignDetail(id: string) {
+        const campaign = await this.prisma.proEmailCampaign.findUnique({
+            where: { id },
+            include: {
+                recipients: {
+                    take: 50,
+                    orderBy: { updatedAt: 'desc' },
+                    include: { user: { select: { username: true, email: true } } },
+                },
+                createdBy: { select: { username: true, email: true } },
+            },
+        });
+        return campaign;
+    }
+
+    async retryFailedRecipients(id: string) {
+        const result = await this.prisma.emailCampaignRecipient.updateMany({
+            where: { campaignId: id, status: 'FAILED' },
+            data: { status: 'QUEUED', error: null, attempts: 0, nextAttemptAt: new Date() },
+        });
+        if (result.count > 0) {
+            await this.prisma.proEmailCampaign.update({
+                where: { id },
+                data: { status: 'SENDING' },
+            });
+        }
+        return { retried: result.count };
+    }
+
+    async getAnalysisDetailsForEmail(id: string) {
+        return this.prisma.assetAnalysis.findUnique({
+            where: { id },
+        });
+    }
+
     async templates() { return this.prisma.emailTemplate.findMany({ orderBy: { updatedAt: 'desc' } }); }
     async prepare(raw: unknown) {
         const parsed = schema.safeParse(raw);

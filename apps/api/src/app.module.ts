@@ -31,6 +31,7 @@ import { MarketRankingModule } from './market-ranking/market-ranking.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { ChartAnalysisModule } from './chart-analysis/chart-analysis.module';
 import { MercadoPagoModule } from './mercadopago/mercadopago.module';
+import { AlertsModule } from './alerts/alerts.module';
 
 @Module({
     imports: [
@@ -81,6 +82,7 @@ import { MercadoPagoModule } from './mercadopago/mercadopago.module';
         CalendarModule,
         ChartAnalysisModule,
         MercadoPagoModule,
+        AlertsModule,
     ],
     controllers: [],
     providers: [

@@ -11,6 +11,7 @@ import {
 import { MarketImpactScoringService } from './market-impact-scoring.service';
 import { EarningsImpactScoringService } from './earnings-impact-scoring.service';
 import { TV_SYMBOL_SLUGS } from '../../market-ranking/services/tv-slugs.const';
+import { MarketDataProviderService } from '../../market-ranking/services/market-data-provider.service';
 
 @Injectable()
 export class CalendarProviderService implements ICalendarProvider, IEarningsProvider {
@@ -22,7 +23,27 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
     constructor(
         private readonly marketScoring: MarketImpactScoringService,
         private readonly earningsScoring: EarningsImpactScoringService,
+        private readonly constituentsProvider: MarketDataProviderService,
     ) { }
+
+    private constituentsCache: { tickers: Set<string>; fetchedAt: number } | null = null;
+
+    private async getConstituentTickers(): Promise<string[]> {
+        if (!this.constituentsCache || Date.now() - this.constituentsCache.fetchedAt > 86400000) {
+            try {
+                const companies = await this.constituentsProvider.getSP500Constituents();
+                if (companies.length < 450) throw new Error('Incomplete constituent list');
+                this.constituentsCache = {
+                    tickers: new Set(companies.map(c => c.ticker.toUpperCase().replace(/\./g, '-'))),
+                    fetchedAt: Date.now(),
+                };
+            } catch (error) {
+                if (!this.constituentsCache) throw error;
+                this.logger.warn('Using last available S&P 500 constituent list');
+            }
+        }
+        return [...this.constituentsCache.tickers];
+    }
 
     /**
      * Valida si un ticker pertenece exclusivamente al universo S&P 500.
@@ -30,7 +51,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
     isSP500Constituent(ticker: string): boolean {
         if (!ticker) return false;
         const clean = ticker.toUpperCase().replace(/\./g, '-').trim();
-        return Boolean(TV_SYMBOL_SLUGS[clean]);
+        return this.constituentsCache?.tickers.has(clean) ?? Boolean(TV_SYMBOL_SLUGS[clean]);
     }
 
     /**
@@ -354,7 +375,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
             allEarnings = this.tvEarningsCache.data;
         } else {
             try {
-                const tickers = Object.keys(TV_SYMBOL_SLUGS);
+                const tickers = await this.getConstituentTickers();
                 const batchSize = 80;
                 const fetchedList: EarningsEventItem[] = [];
 
@@ -499,7 +520,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
             allDividends = this.tvDividendsCache.data;
         } else {
             try {
-                const tickers = Object.keys(TV_SYMBOL_SLUGS);
+                const tickers = await this.getConstituentTickers();
                 const batchSize = 80;
                 const fetchedList: DividendEventItem[] = [];
 
@@ -541,7 +562,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
 
                                 const companyName = row.d[1] || ticker;
                                 const yieldVal = row.d[3] != null ? Number(row.d[3]) : undefined;
-                                const amount = row.d[4] != null ? Number(row.d[4]) : (row.d[2] != null ? Number(row.d[2]) : undefined);
+                                const amount = row.d[4] != null ? Number(row.d[4]) : undefined;
                                 const exTimestamp = row.d[5]; // epoch seconds
                                 const payTimestamp = row.d[6]; // epoch seconds
                                 const marketCap = row.d[7] != null ? Number(row.d[7]) : undefined;
@@ -550,7 +571,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                                 const exDate = exTimestamp ? new Date(exTimestamp * 1000).toISOString().substring(0, 10) : undefined;
                                 const paymentDate = payTimestamp ? new Date(payTimestamp * 1000).toISOString().substring(0, 10) : undefined;
 
-                                if (!exDate && !paymentDate && amount == null) continue;
+                                if (!exDate && !paymentDate) continue;
 
                                 const logoUrl = logoid
                                     ? `https://s3-symbol-logo.tradingview.com/${logoid}--big.svg`
@@ -561,11 +582,10 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                                     ticker,
                                     companyName,
                                     logoUrl,
-                                    exDate: exDate || paymentDate || new Date().toISOString().substring(0, 10),
+                                    exDate: exDate || paymentDate,
                                     paymentDate,
                                     amount: amount != null ? Number(amount.toFixed(4)) : undefined,
                                     yield: yieldVal != null ? Number(yieldVal.toFixed(2)) : undefined,
-                                    frequency: 'Trimestral',
                                     marketCap,
                                     source: 'TradingView Official Scanner',
                                     sourceType: 'AUTOMATIC',

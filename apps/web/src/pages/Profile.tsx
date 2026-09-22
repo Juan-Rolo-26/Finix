@@ -1138,14 +1138,42 @@ export default function Profile() {
     const handleSaveProfile = async () => {
         setIsSavingProfile(true);
         try {
+            // Whitelist only editable fields to prevent sending read-only / metadata fields (id, _count, createdAt, etc.)
+            const allowedFields = [
+                'username', 'title', 'bio', 'bioLong', 'avatarUrl', 'bannerUrl',
+                'company', 'location', 'website', 'linkedinUrl', 'twitterUrl',
+                'youtubeUrl', 'instagramUrl', 'specializations', 'certifications',
+                'yearsExperience', 'isProfilePublic', 'showPortfolio', 'showStats',
+                'acceptingFollowers', 'showExactReturns', 'returnsVisibilityMode'
+            ];
+            const payload: Record<string, any> = {};
+            for (const key of allowedFields) {
+                if ((editForm as any)[key] !== undefined) {
+                    payload[key] = (editForm as any)[key];
+                }
+            }
+            if (payload.yearsExperience !== undefined) {
+                if (payload.yearsExperience === '' || payload.yearsExperience === null) {
+                    delete payload.yearsExperience;
+                } else {
+                    const num = Number(payload.yearsExperience);
+                    if (!isNaN(num)) {
+                        payload.yearsExperience = num;
+                    } else {
+                        delete payload.yearsExperience;
+                    }
+                }
+            }
+
             const res = await apiFetch('/users/me', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(editForm),
+                body: JSON.stringify(payload),
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                throw new Error(data?.message || 'Error al guardar el perfil');
+                const errMsg = Array.isArray(data?.message) ? data.message.join(', ') : (data?.message || 'Error al guardar el perfil');
+                throw new Error(errMsg);
             }
             const updated = await res.json();
             setProfile(updated);

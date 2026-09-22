@@ -867,7 +867,7 @@ export default function Comunidades() {
                         </button>
                     ) : (
                         <Link
-                            to="/settings/plan"
+                            to="/creator"
                             className="flex items-center gap-2 rounded-xl px-3.5 sm:px-4 py-2 text-xs sm:text-[12px] font-semibold transition-all border shrink-0 hover:bg-muted"
                             style={{ borderColor: 'hsl(var(--primary)/0.4)', color: 'hsl(var(--primary))' }}
                         >
@@ -922,7 +922,7 @@ export default function Comunidades() {
             </div>
 
             {/* ── Content ── */}
-            <div className="flex-1 px-4 sm:px-6 py-4 space-y-5 sm:space-y-6">
+            <div className="flex-1 px-4 sm:px-6 py-4 pb-24 sm:pb-6 space-y-5 sm:space-y-6">
                 {/* Sort bar */}
                 <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
                     <p className="text-[11px] font-semibold" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -963,7 +963,7 @@ export default function Comunidades() {
                         ))}
                     </div>
                 ) : communities.length === 0 ? (
-                    <div className="flex flex-col items-center py-20 gap-3"
+                    <div className="flex flex-col items-center py-16 sm:py-20 gap-3"
                         style={{ color: 'hsl(var(--muted-foreground))' }}>
                         <Users className="w-12 h-12 opacity-30" />
                         <p className="font-semibold">No hay comunidades</p>

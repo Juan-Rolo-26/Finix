@@ -101,6 +101,29 @@ export class UpdateProfileDto {
     @IsOptional()
     @IsBoolean()
     acceptingFollowers?: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    showExactReturns?: boolean;
+
+    @IsOptional()
+    @IsString()
+    returnsVisibilityMode?: string;
+
+    @IsOptional()
+    @IsString()
+    theme?: string;
+
+    @IsOptional()
+    @IsString()
+    language?: string;
+
+    @IsOptional()
+    @IsString()
+    currency?: string;
+
+    @IsOptional()
+    notificationPrefs?: any;
 }
 
 export class ChangePasswordDto {

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
     BarChart2, Plus, Loader2, Trash2, Edit, Eye, Sparkles, 
     Smartphone, Tablet, Monitor, X, DollarSign, Target, 
     Briefcase, Activity, Users, ShieldAlert, ExternalLink, CheckCircle2,
-    LineChart, Zap, Building2, Scale, PieChart, Layers
+    LineChart, Zap, Building2, Scale, PieChart, Layers, Mail
 } from 'lucide-react';
 import { adminFetch } from '../lib/api';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/tabs';
@@ -753,6 +754,7 @@ function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: ()
 }
 
 export default function AnalysisManagement() {
+    const navigate = useNavigate();
     const [analyses, setAnalyses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -1284,6 +1286,15 @@ export default function AnalysisManagement() {
                                                     >
                                                         <ExternalLink className="w-4 h-4" />
                                                     </a>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        onClick={() => navigate(`/email-alertas?analysisId=${item.id}&ticker=${item.ticker || item.symbol}`)} 
+                                                        title="Enviar análisis por Email a usuarios PRO"
+                                                        className="text-amber-400 hover:text-amber-300 hover:bg-amber-400/10"
+                                                    >
+                                                        <Mail className="w-4 h-4" />
+                                                    </Button>
                                                     <Button variant="ghost" size="icon" onClick={() => setPreviewItem(item)} title="Vista Previa">
                                                         <Eye className="w-4 h-4 text-emerald-400" />
                                                     </Button>
@@ -1349,6 +1360,18 @@ export default function AnalysisManagement() {
                             <Button variant="outline" onClick={() => setPreviewItem(formData)} className="border-border/60">
                                 <Eye className="w-4 h-4 mr-1.5 text-emerald-400" /> Vista Previa
                             </Button>
+                            
+                            {formData.id && (
+                                <Button 
+                                    variant="outline" 
+                                    type="button"
+                                    onClick={() => navigate(`/email-alertas?analysisId=${formData.id}&ticker=${formData.ticker || formData.symbol}`)}
+                                    className="border-primary/40 text-primary hover:bg-primary/10 font-medium"
+                                    title="Enviar este análisis por Email a usuarios PRO"
+                                >
+                                    <Mail className="w-4 h-4 mr-1.5" /> Enviar por Email
+                                </Button>
+                            )}
                             
                             <Button 
                                 variant="outline" 

@@ -18,8 +18,12 @@ export function validateProfileImage(file: File) {
 export async function uploadProfileImage(kind: ProfileMediaKind, file: File) {
     validateProfileImage(file);
 
+    if (!file || file.size === 0) {
+        throw new Error('La imagen seleccionada está vacía. Elegí otra imagen e intentá nuevamente.');
+    }
+
     const formData = new FormData();
-    formData.append(kind, file);
+    formData.append(kind, file, file.name || `${kind}.jpg`);
 
     const response = await apiFetch(`/me/${kind}`, {
         method: 'POST',

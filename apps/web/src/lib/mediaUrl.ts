@@ -9,6 +9,10 @@ function rewriteUploadsPath(pathname: string): string {
     return pathname;
 }
 
+function isUploadPath(pathname: string): boolean {
+    return pathname.startsWith('/uploads/') || pathname.startsWith('/api/uploads/');
+}
+
 export function resolveMediaUrl(value?: string | null) {
     if (typeof value !== 'string') return '';
 
@@ -24,7 +28,7 @@ export function resolveMediaUrl(value?: string | null) {
     if (/^https?:\/\//i.test(trimmed)) {
         try {
             const parsed = new URL(trimmed);
-            if (LOCAL_UPLOAD_HOSTS.has(parsed.hostname.toLowerCase()) && parsed.pathname.startsWith('/uploads/')) {
+            if (LOCAL_UPLOAD_HOSTS.has(parsed.hostname.toLowerCase()) && isUploadPath(parsed.pathname)) {
                 return rewriteUploadsPath(parsed.pathname) + parsed.search + parsed.hash;
             }
         } catch {

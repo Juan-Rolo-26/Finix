@@ -611,11 +611,24 @@ export class UserService {
             }
         }
 
-        const booleanFields = ['isProfilePublic', 'showPortfolio', 'showStats', 'acceptingFollowers'];
+        const booleanFields = ['isProfilePublic', 'showPortfolio', 'showStats', 'acceptingFollowers', 'showExactReturns'];
         for (const field of booleanFields) {
             if (updateData[field] !== undefined) {
                 filteredData[field] = Boolean(updateData[field]);
             }
+        }
+
+        if (updateData.returnsVisibilityMode !== undefined) {
+            const rawMode = String(updateData.returnsVisibilityMode).toLowerCase().trim();
+            if (['exact', 'range'].includes(rawMode)) {
+                filteredData.returnsVisibilityMode = rawMode;
+            }
+        }
+
+        if (updateData.notificationPrefs !== undefined) {
+            filteredData.notificationPrefs = typeof updateData.notificationPrefs === 'string'
+                ? updateData.notificationPrefs
+                : JSON.stringify(updateData.notificationPrefs);
         }
 
         if (updateData.theme !== undefined) {

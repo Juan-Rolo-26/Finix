@@ -280,14 +280,9 @@ function FeedItem({ post }: { post: Post }) {
         : typeof post.tickers === 'string'
             ? post.tickers.split(',')[0]?.replace('$', '').trim()
             : null;
-    // Use post.assetSymbol if available (from CreateChart), else use the extracted ticker 
-    // Let TradingView automatically resolve the prefix if it's just a raw ticker.
     const rawTicker = post.assetSymbol || primaryTicker;
-    const tvSymbol = !mediaUrl && rawTicker
-        ? rawTicker === 'BTC' ? 'BINANCE:BTCUSDT'
-            : rawTicker === 'ETH' ? 'BINANCE:ETHUSDT'
-                : rawTicker
-        : null;
+    const tvSymbol = rawTicker ? rawTicker.trim().toUpperCase() : null;
+    const isChartPost = post.type === 'chart';
 
     return (
         <article
@@ -419,18 +414,34 @@ function FeedItem({ post }: { post: Post }) {
                     <TickerChips tickers={post.tickers} />
                     <PostContent text={post.content} />
 
-                    {/* Media */}
-                    {mediaUrl && (
-                        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid hsl(var(--border) / 0.25)' }}>
-                            <img src={resolveMediaUrl(mediaUrl)} alt="Post attachment" className="w-full h-auto max-h-[400px] object-cover" />
+                    {/* Media / Chart Display */}
+                    {isChartPost && tvSymbol ? (
+                        <div className="space-y-2.5">
+                            <div className="h-[460px] sm:h-[500px] min-h-[460px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
+                                <TradingViewWidget symbol={tvSymbol} height={500} />
+                            </div>
                         </div>
-                    )}
+                    ) : (
+                        <>
+                            {mediaUrl && (
+                                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid hsl(var(--border) / 0.25)' }}>
+                                    <img
+                                        src={resolveMediaUrl(mediaUrl)}
+                                        alt="Post attachment"
+                                        className="w-full h-auto max-h-[400px] object-cover"
+                                        onError={(e) => {
+                                            (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+                                        }}
+                                    />
+                                </div>
+                            )}
 
-                    {/* TradingView chart */}
-                    {!mediaUrl && tvSymbol && (
-                        <div className="h-[500px] sm:h-[540px] min-h-[500px] sm:min-h-[540px] w-full shrink-0 rounded-xl overflow-hidden bg-black/20" style={{ border: '1px solid hsl(var(--border) / 0.3)' }}>
-                            <TradingViewWidget symbol={tvSymbol} height={540} />
-                        </div>
+                            {!mediaUrl && tvSymbol && (
+                                <div className="h-[460px] sm:h-[500px] min-h-[460px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
+                                    <TradingViewWidget symbol={tvSymbol} height={500} />
+                                </div>
+                            )}
+                        </>
                     )}
 
                     {/* Quoted post */}
