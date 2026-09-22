@@ -289,19 +289,19 @@ export default function CommunityCreate() {
     };
 
     return (
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-5 sm:space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => currentStep === 0 ? navigate('/comunidades') : setCurrentStep(s => s - 1)}
-                        className="p-2 rounded-xl border hover:bg-muted transition-colors"
+                        className="p-2 rounded-xl border hover:bg-muted transition-colors shrink-0"
                         style={{ borderColor: 'hsl(var(--border))' }}
                     >
                         <ArrowLeft className="w-4 h-4" />
                     </button>
                     <div>
-                        <h1 className="text-xl font-bold">Crear Comunidad</h1>
+                        <h1 className="text-lg sm:text-xl font-bold">Crear Comunidad</h1>
                         <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
                             Paso {currentStep + 1} de {STEPS.length}: {STEPS[currentStep]}
                         </p>
@@ -309,7 +309,7 @@ export default function CommunityCreate() {
                 </div>
 
                 {/* Progress Indicators */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5 self-end sm:self-auto">
                     {STEPS.map((_, idx) => (
                         <div
                             key={idx}
@@ -329,7 +329,7 @@ export default function CommunityCreate() {
             )}
 
             {/* Step content */}
-            <div className="p-6 rounded-2xl border bg-card" style={{ borderColor: 'hsl(var(--border))' }}>
+            <div className="p-4 sm:p-6 rounded-2xl border bg-card" style={{ borderColor: 'hsl(var(--border))' }}>
                 <AnimatePresence mode="wait">
                     {/* PASO 1: IDENTIDAD & MISIÓN */}
                     {currentStep === 0 && (
@@ -366,13 +366,14 @@ export default function CommunityCreate() {
                                 <div>
                                     <label className="text-xs font-semibold block mb-1">Handle / Slug personalizado</label>
                                     <div className="flex items-center rounded-xl border bg-background px-3" style={{ borderColor: 'hsl(var(--border))' }}>
-                                        <span className="text-xs text-muted-foreground mr-1">finixarg.com/comunidades/</span>
+                                        <span className="text-xs text-muted-foreground mr-1 shrink-0 hidden xs:inline sm:inline">finixarg.com/comunidades/</span>
+                                        <span className="text-xs text-muted-foreground mr-1 shrink-0 xs:hidden sm:hidden">/</span>
                                         <input
                                             type="text"
                                             placeholder="inversores-cedears"
                                             value={form.slug}
                                             onChange={e => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '-') })}
-                                            className="w-full py-2.5 text-xs bg-transparent outline-none"
+                                            className="w-full py-2.5 text-xs bg-transparent outline-none min-w-0"
                                         />
                                     </div>
                                 </div>
@@ -678,7 +679,7 @@ export default function CommunityCreate() {
                                 Elige si deseas ofrecer acceso 100% gratuito o cobrar una cuota mensual por tus análisis.
                             </p>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <button
                                     type="button"
                                     onClick={() => setForm({
@@ -686,7 +687,7 @@ export default function CommunityCreate() {
                                         monetization: 'free',
                                         privacyType: form.privacyType === 'EXCLUSIVE' ? 'PUBLIC' : form.privacyType,
                                     })}
-                                    className={`p-4 rounded-2xl border text-left transition-all ${form.monetization === 'free' ? 'border-primary bg-primary/5 text-primary' : 'border-border'}`}
+                                    className={`p-4 rounded-2xl border text-left transition-all ${form.monetization === 'free' ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:bg-muted/30'}`}
                                 >
                                     <p className="text-xs font-bold">Comunidad Gratuita</p>
                                     <p className="text-[11px] text-muted-foreground mt-0.5">Acceso abierto sin cobro de cuotas.</p>
@@ -699,7 +700,7 @@ export default function CommunityCreate() {
                                         monetization: 'paid',
                                         privacyType: 'EXCLUSIVE',
                                     })}
-                                    className={`p-4 rounded-2xl border text-left transition-all ${form.monetization === 'paid' ? 'border-primary bg-primary/5 text-primary' : 'border-border'}`}
+                                    className={`p-4 rounded-2xl border text-left transition-all ${form.monetization === 'paid' ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:bg-muted/30'}`}
                                 >
                                     <p className="text-xs font-bold">Comunidad con Membresía Paga</p>
                                     <p className="text-[11px] text-muted-foreground mt-0.5">Cobra cuotas mensuales a tus miembros.</p>
@@ -825,14 +826,14 @@ export default function CommunityCreate() {
                             exit={{ opacity: 0, x: -20 }}
                             className="space-y-4"
                         >
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
                                     <h2 className="text-base font-bold">Pasarela de Pagos & Dónde Recibirás tu Dinero</h2>
                                     <p className="text-xs text-muted-foreground">
                                         Configura la cuenta bancaria o pasarela donde se transferirán los ingresos de tus miembros.
                                     </p>
                                 </div>
-                                <div className="px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-[11px] font-black flex items-center gap-1.5">
+                                <div className="px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-[11px] font-black flex items-center gap-1.5 self-start sm:self-auto">
                                     <Percent className="w-3.5 h-3.5" />
                                     <span>Comisión Finix: 4%</span>
                                 </div>
@@ -1176,25 +1177,35 @@ export default function CommunityCreate() {
                                 </div>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
                                 <button
                                     type="button"
-                                    disabled={loading}
-                                    onClick={() => handleSubmit('DRAFT')}
-                                    className="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold rounded-xl border hover:bg-muted transition-colors disabled:opacity-40"
+                                    onClick={() => setCurrentStep(s => s - 1)}
+                                    className="w-full sm:w-auto px-4 py-2 text-xs font-semibold rounded-xl border hover:bg-muted transition-colors order-3 sm:order-1"
+                                    style={{ borderColor: 'hsl(var(--border))' }}
                                 >
-                                    Guardar como Borrador
+                                    Anterior
                                 </button>
-                                <button
-                                    type="button"
-                                    disabled={loading}
-                                    onClick={() => handleSubmit('PUBLISHED')}
-                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold rounded-xl btn-primary-glow"
-                                    style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}
-                                >
-                                    {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>Publicar Comunidad</span>
-                                </button>
+                                <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto order-1 sm:order-2">
+                                    <button
+                                        type="button"
+                                        disabled={loading}
+                                        onClick={() => handleSubmit('DRAFT')}
+                                        className="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold rounded-xl border hover:bg-muted transition-colors disabled:opacity-40"
+                                    >
+                                        Guardar como Borrador
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={loading}
+                                        onClick={() => handleSubmit('PUBLISHED')}
+                                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold rounded-xl btn-primary-glow"
+                                        style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}
+                                    >
+                                        {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                        <span>Publicar Comunidad</span>
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     )}

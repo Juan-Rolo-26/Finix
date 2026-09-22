@@ -459,7 +459,7 @@ export default function CommunityAdmin() {
             {/* Layout: Sidebar Tabs + Content */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {/* Navigation Sidebar */}
-                <div className="space-y-1">
+                <div className="flex md:flex-col gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-hide md:space-y-1">
                     {navItems.map(item => {
                         const Icon = item.icon;
                         const active = activeTab === item.key;
@@ -467,11 +467,11 @@ export default function CommunityAdmin() {
                             <button
                                 key={item.key}
                                 onClick={() => setActiveTab(item.key as any)}
-                                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left"
+                                className="shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all text-left"
                                 style={{
-                                    background: active ? 'hsl(var(--primary)/0.1)' : 'transparent',
+                                    background: active ? 'hsl(var(--primary)/0.12)' : 'hsl(var(--muted)/0.4)',
                                     color: active ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
-                                    border: active ? '1px solid hsl(var(--primary)/0.2)' : '1px solid transparent',
+                                    border: active ? '1px solid hsl(var(--primary)/0.3)' : '1px solid hsl(var(--border)/0.5)',
                                 }}
                             >
                                 <Icon className="w-4 h-4 shrink-0" />
@@ -489,7 +489,7 @@ export default function CommunityAdmin() {
                             {loadingAnalytics && (
                                 <div className="flex justify-center py-2"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
                             )}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                                 <div className="p-4 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                                     <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                         <span>Miembros Totales</span>
@@ -819,13 +819,13 @@ export default function CommunityAdmin() {
                                         Administra permisos, roles de moderación y acceso a la comunidad.
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
                                     <input
                                         type="text"
                                         placeholder="Buscar por username..."
                                         value={memberSearch}
                                         onChange={e => setMemberSearch(e.target.value)}
-                                        className="px-3 py-1.5 text-xs rounded-xl border bg-background"
+                                        className="flex-1 sm:w-48 px-3 py-1.5 text-xs rounded-xl border bg-background"
                                         style={{ borderColor: 'hsl(var(--border))' }}
                                     />
                                     <select
@@ -847,37 +847,37 @@ export default function CommunityAdmin() {
                                     return (
                                         <div
                                             key={m.id}
-                                            className="flex items-center justify-between p-3.5 rounded-2xl border"
+                                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl border gap-3"
                                             style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center font-bold text-xs">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-muted flex items-center justify-center font-bold text-xs">
                                                     {m.user?.avatarUrl ? (
                                                         <img src={resolveMediaUrl(m.user.avatarUrl)} alt="" className="w-full h-full object-cover" />
                                                     ) : (
                                                         m.user?.username?.[0]?.toUpperCase()
                                                     )}
                                                 </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-semibold text-xs">@{m.user?.username}</span>
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="font-semibold text-xs truncate">@{m.user?.username}</span>
                                                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isOwner ? 'bg-primary/10 text-primary' : m.role === 'MODERATOR' ? 'bg-indigo-500/10 text-indigo-500' : 'bg-muted text-muted-foreground'}`}>
-                                                            {isOwner ? 'OWNER' : m.role}
+                                                             {isOwner ? 'OWNER' : m.role}
                                                         </span>
                                                         {m.plan && (
-                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium">
+                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium truncate max-w-[120px]">
                                                                 Plan: {m.plan.name}
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                                    <span className="text-[10px] block" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                                         Miembro desde {new Date(m.joinedAt).toLocaleDateString('es-AR')}
                                                     </span>
                                                 </div>
                                             </div>
 
                                             {!isOwner && (
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0" style={{ borderColor: 'hsl(var(--border))' }}>
                                                     {m.role === 'MODERATOR' ? (
                                                         <button
                                                             onClick={() => handleRoleChange(m.userId, 'MEMBER')}
@@ -918,14 +918,14 @@ export default function CommunityAdmin() {
                             {loadingReports && (
                                 <div className="flex justify-center py-2"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
                             )}
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
                                     <h2 className="text-base font-bold">Cola de Moderación</h2>
                                     <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                         Revisa reportes enviados por miembros de la comunidad sobre spam, acoso o contenido inapropiado.
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-1 bg-muted p-1 rounded-xl">
+                                <div className="flex items-center gap-1 bg-muted p-1 rounded-xl self-start sm:self-auto">
                                     <button
                                         onClick={() => setReportStatus('PENDING')}
                                         className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${reportStatus === 'PENDING' ? 'bg-background shadow text-foreground' : 'text-muted-foreground'}`}
@@ -1312,8 +1312,8 @@ export default function CommunityAdmin() {
                             {/* HISTORIAL DE TRANSACCIONES */}
                             <div className="space-y-2">
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Historial de Transacciones</h3>
-                                <div className="rounded-2xl border overflow-hidden" style={{ borderColor: 'hsl(var(--border))' }}>
-                                    <table className="w-full text-xs text-left">
+                                <div className="rounded-2xl border overflow-x-auto" style={{ borderColor: 'hsl(var(--border))' }}>
+                                    <table className="w-full text-xs text-left min-w-[500px]">
                                         <thead className="bg-muted/50 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
                                             <tr>
                                                 <th className="p-3">Fecha</th>

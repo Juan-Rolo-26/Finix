@@ -7,10 +7,12 @@ import { apiFetch } from '@/lib/api';
 
 const FEATURES = [
     'Análisis fundamentales detallados de más de 5,000 acciones.',
+    'Alertas exclusivas por Gmail en tiempo real y reportes prioritarios.',
     'Métricas técnicas en tiempo real e indicadores avanzados.',
     'Estimaciones de "Fair Value" y detección de premiums o descuentos.',
     'Desglose profundo de balances financieros y flujo de caja (Cash Flow).',
     'Badge de Inversor PRO en tu perfil para mayor reputación.',
+    'Cobro mensual automático al mismo precio fijo garantizado.',
     'Cero anuncios y soporte prioritario 24/7.'
 ];
 
@@ -146,10 +148,13 @@ export default function ProUpgrade() {
                                 </div>
                             </div>
 
-                            <div className="flex items-baseline gap-2 mb-8">
+                            <div className="flex items-baseline gap-2 mb-1">
                                 <span className="text-5xl font-extrabold tracking-tighter">${proPrice.toLocaleString('es-AR')}</span>
                                 <span className="text-muted-foreground font-medium">ARS / mes</span>
                             </div>
+                            <p className="text-xs text-emerald-400 font-semibold mb-6 flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5" /> Cobro mensual automático al mismo precio fijo protegido.
+                            </p>
 
                             <button 
                                 onClick={handleUpgrade}
@@ -179,8 +184,8 @@ export default function ProUpgrade() {
                                     </>
                                 )}
                             </button>
-                            <p className="text-center text-xs text-muted-foreground mt-4 mb-8">
-                                Pago seguro procesado por <strong className="text-foreground">Mercado Pago</strong>. Cancela cuando quieras.
+                            <p className="text-center text-xs text-muted-foreground mt-4 mb-6 leading-relaxed">
+                                Cobro recurrente mensual automático al mismo precio. Cancelación disponible con 1 clic desde <strong className="text-foreground">Configuración &gt; Suscripción</strong>.
                             </p>
 
                             <div className="space-y-4 pt-6 border-t border-border/40">

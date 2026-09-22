@@ -378,34 +378,36 @@ function CreatePost({ communityId, plans, onCreated }: {
                 )}
             </AnimatePresence>
 
-            <div className="flex items-center gap-2 pt-1">
-                <input type="file" ref={fileRef} className="hidden" accept="image/*,video/*" onChange={handleImageSelect} />
-                <button title="Adjuntar multimedia" onClick={() => fileRef.current?.click()} className="p-1.5 rounded-lg hover:bg-muted transition-colors mr-1">
-                    <ImageIcon className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
-                </button>
-                {/* Visibility selector */}
-                <select
-                    className="rounded-lg px-2 py-1.5 text-[11px] font-semibold outline-none"
-                    style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}
-                    value={visibility}
-                    onChange={e => setVisibility(e.target.value)}>
-                    <option value="PUBLIC">🌎 Público</option>
-                    <option value="MEMBERS">👥 Miembros</option>
-                    {plans.filter(p => Number(p.price) > 0).map(p => (
-                        <option key={p.id} value="PREMIUM_TIER">🔒 {p.name}</option>
-                    ))}
-                </select>
-                {visibility === 'PREMIUM_TIER' && plans.filter(p => p.tierLevel > 0).length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                    <input type="file" ref={fileRef} className="hidden" accept="image/*,video/*" onChange={handleImageSelect} />
+                    <button title="Adjuntar multimedia" onClick={() => fileRef.current?.click()} className="p-1.5 rounded-lg hover:bg-muted transition-colors mr-1">
+                        <ImageIcon className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                    </button>
+                    {/* Visibility selector */}
                     <select
                         className="rounded-lg px-2 py-1.5 text-[11px] font-semibold outline-none"
                         style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}
-                        value={tierLevel}
-                        onChange={e => setTierLevel(Number(e.target.value))}>
-                        {plans.filter(p => p.tierLevel > 0).map(p => (
-                            <option key={p.id} value={p.tierLevel}>{p.name}</option>
+                        value={visibility}
+                        onChange={e => setVisibility(e.target.value)}>
+                        <option value="PUBLIC">🌎 Público</option>
+                        <option value="MEMBERS">👥 Miembros</option>
+                        {plans.filter(p => Number(p.price) > 0).map(p => (
+                            <option key={p.id} value="PREMIUM_TIER">🔒 {p.name}</option>
                         ))}
                     </select>
-                )}
+                    {visibility === 'PREMIUM_TIER' && plans.filter(p => p.tierLevel > 0).length > 0 && (
+                        <select
+                            className="rounded-lg px-2 py-1.5 text-[11px] font-semibold outline-none"
+                            style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}
+                            value={tierLevel}
+                            onChange={e => setTierLevel(Number(e.target.value))}>
+                            {plans.filter(p => p.tierLevel > 0).map(p => (
+                                <option key={p.id} value={p.tierLevel}>{p.name}</option>
+                            ))}
+                        </select>
+                    )}
+                </div>
                 <button
                     disabled={(!content.trim() && !image) || loading}
                     onClick={handleSubmit}
@@ -561,7 +563,7 @@ function SubscribeModal({ community, onClose, onJoined, onSelectPaidPlan }: {
                             </ul>
                             <button
                                 disabled={loading}
-                                className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all relative shadow-sm hover:brightness-105"
+                                className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-xs sm:text-sm font-semibold transition-all relative shadow-sm hover:brightness-105"
                                 style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', opacity: loading ? 0.7 : 1 }}
                                 onClick={() => {
                                     if (onSelectPaidPlan) {
@@ -570,8 +572,8 @@ function SubscribeModal({ community, onClose, onJoined, onSelectPaidPlan }: {
                                         handleJoinPaid(plan.id);
                                     }
                                 }}>
-                                <CreditCard className="w-4 h-4" />
-                                <span>Pagar con Tarjeta (Visa / Mastercard) — ${Number(plan.price).toFixed(2)}/{plan.interval === 'monthly' ? 'mes' : 'año'}</span>
+                                <CreditCard className="w-4 h-4 shrink-0" />
+                                <span className="truncate">Pagar con Tarjeta — ${Number(plan.price).toFixed(2)}/{plan.interval === 'monthly' ? 'mes' : 'año'}</span>
                             </button>
                             <button
                                 type="button"
@@ -728,7 +730,7 @@ export default function CommunityDetail(props?: {
     }
 
     return (
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0 w-full pb-10">
             {/* ── Banner + Header ── */}
             <div className="flex-shrink-0 relative">
                 {/* Banner */}
@@ -750,22 +752,22 @@ export default function CommunityDetail(props?: {
                     {/* Back button */}
                     <button
                         onClick={handleBack}
-                        className="absolute top-4 left-4 flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
+                        className="absolute top-3.5 left-3.5 sm:top-4 sm:left-4 z-10 flex items-center gap-1.5 rounded-xl px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
                         style={{ background: 'rgba(15, 23, 42, 0.75)', color: '#ffffff', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)' }}>
                         <ArrowLeft className="w-4 h-4" /> Comunidades
                     </button>
                 </div>
 
                 {/* Community info */}
-                <div className="px-4 sm:px-6 -mt-10 relative">
-                    <div className="flex items-end justify-between gap-3">
+                <div className="px-4 sm:px-6 -mt-8 sm:-mt-12 relative">
+                    <div className="flex flex-wrap sm:flex-nowrap items-end justify-between gap-3">
                         {/* Avatar */}
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 relative border-4 border-background"
+                        <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 relative border-4 border-background"
                             style={{ background: 'linear-gradient(135deg, #064e3b 0%, #022c22 100%)' }}>
                             {community.imageUrl ? (
                                 <img src={resolveMediaUrl(community.imageUrl)} alt="" className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-3xl font-black shadow-inner"
+                                <div className="w-full h-full flex items-center justify-center text-2xl sm:text-3xl font-black shadow-inner"
                                     style={{
                                         background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                                         color: '#ffffff',
@@ -779,18 +781,19 @@ export default function CommunityDetail(props?: {
                             {canManage ? (
                                 <button
                                     onClick={() => navigate(`/comunidades/${community.slug || community.id}/admin`)}
-                                    className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold transition-colors hover:bg-muted"
+                                    className="flex items-center gap-1.5 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition-colors hover:bg-muted"
                                     style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}>
-                                    <Settings className="w-4 h-4" /> Administrar
+                                    <Settings className="w-4 h-4" />
+                                    <span>Administrar</span>
                                 </button>
                             ) : isMember ? (
-                                <div className="flex items-center gap-2">
-                                    <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full border border-emerald-500/30"
+                                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap">
+                                    <span className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border border-emerald-500/30"
                                         style={{ background: 'hsl(var(--primary)/0.1)', color: 'hsl(var(--primary))' }}>
                                         <Check className="w-3.5 h-3.5" /> Miembro Activo
                                     </span>
                                     <button onClick={handleLeave}
-                                        className="text-xs font-medium px-3 py-2 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                        className="text-[11px] sm:text-xs font-medium px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
                                         style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>
                                         Salir
                                     </button>
@@ -798,18 +801,18 @@ export default function CommunityDetail(props?: {
                             ) : (
                                 <button
                                     onClick={() => setShowSubscribe(true)}
-                                    className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 active:scale-[0.98] transition-all"
+                                    className="flex items-center gap-2 rounded-xl px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 active:scale-[0.98] transition-all"
                                     style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: '#ffffff' }}>
                                     <Plus className="w-4 h-4" />
-                                    Unirme a la comunidad
+                                    <span>Unirme<span className="hidden xs:inline sm:inline"> a la comunidad</span></span>
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    <div className="mt-2">
-                        <h1 className="font-black text-lg leading-tight">{community.name}</h1>
-                        <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="mt-2.5">
+                        <h1 className="font-black text-lg sm:text-xl leading-tight break-words">{community.name}</h1>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                             <Avatar className="h-4 w-4">
                                 <AvatarImage src={community.creator.avatarUrl} />
                                 <AvatarFallback className="text-[8px]">{community.creator.username[0]}</AvatarFallback>
@@ -821,7 +824,7 @@ export default function CommunityDetail(props?: {
                                 <BadgeCheck className="w-3 h-3" style={{ color: 'hsl(var(--primary))' }} />
                             )}
                         </div>
-                        <p className="text-[12px] mt-2 leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                        <p className="text-xs sm:text-[13px] mt-2 leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
                             {community.description}
                         </p>
                         <div className="flex items-center gap-3 mt-2">
@@ -837,8 +840,8 @@ export default function CommunityDetail(props?: {
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex gap-0 overflow-x-auto scrollbar-hide px-4 sm:px-6 mt-4"
+                {/* Tabs — sticky on scroll */}
+                <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md flex gap-0 overflow-x-auto scrollbar-hide px-3 sm:px-6 mt-3 sm:mt-4"
                     style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                     {TABS.map(tab => {
                         const Icon = tab.icon;
@@ -847,7 +850,7 @@ export default function CommunityDetail(props?: {
                             <button
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key)}
-                                className="flex items-center gap-1.5 px-3 py-2.5 text-[12px] font-semibold whitespace-nowrap relative shrink-0 transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold whitespace-nowrap relative shrink-0 transition-colors"
                                 style={{ color: active ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}>
                                 <Icon className="w-3.5 h-3.5" /> {tab.label}
                                 {active && (
@@ -864,7 +867,7 @@ export default function CommunityDetail(props?: {
             </div>
 
             {/* ── Tab Content ── */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+            <div className="flex-1 px-4 sm:px-6 py-4">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
@@ -981,7 +984,7 @@ export default function CommunityDetail(props?: {
                                 </div>
 
                                 {/* ── Right Sidebar Column (Sticky Community Info & Widgets) ── */}
-                                <div className="hidden lg:flex flex-col gap-4 lg:col-span-4 sticky top-4">
+                                <div className="hidden lg:flex flex-col gap-4 lg:col-span-4 sticky top-14">
                                     {/* 1. Card: Sobre la Comunidad */}
                                     <div className="rounded-2xl p-5 border border-border/50 bg-card/70 backdrop-blur-xs space-y-4 shadow-xs">
                                         <div className="flex items-center justify-between">
@@ -1253,16 +1256,16 @@ export default function CommunityDetail(props?: {
                                 </div>
 
                                 {/* Stats */}
-                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+                                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                                     {[
                                         { label: 'Miembros', value: community._count.members.toLocaleString() },
                                         { label: 'Posts', value: community._count.posts.toLocaleString() },
                                         { label: 'Recursos', value: community._count.resources.toLocaleString() },
                                     ].map(s => (
-                                        <div key={s.label} className="flex flex-col items-center py-3 rounded-xl"
+                                        <div key={s.label} className="flex flex-col items-center py-2.5 sm:py-3 rounded-xl px-1"
                                             style={{ background: 'hsl(var(--muted))' }}>
-                                            <p className="font-black text-lg">{s.value}</p>
-                                            <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.label}</p>
+                                            <p className="font-black text-base sm:text-lg">{s.value}</p>
+                                            <p className="text-[10px] sm:text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.label}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -1273,7 +1276,7 @@ export default function CommunityDetail(props?: {
                                         <p className="text-[11px] font-bold uppercase tracking-widest"
                                             style={{ color: 'hsl(var(--muted-foreground))' }}>Planes</p>
                                         {community.plans.map(plan => (
-                                            <div key={plan.id} className="rounded-xl p-3 flex items-center justify-between"
+                                            <div key={plan.id} className="rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                                                 style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
                                                 <div>
                                                     <p className="font-semibold text-sm">{plan.name}</p>

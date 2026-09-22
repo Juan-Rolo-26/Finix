@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, BadgeCheck, CheckCircle2, XCircle, AlertCircle, Clock } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 
 interface VerificationRequest {
@@ -29,7 +29,7 @@ export default function FinancialVerificationTab() {
         documentNumber: '',
         professionalCategory: 'Asesor Financiero',
         registrationNumber: '',
-        registrationEntity: '',
+        registrationEntity: 'CNV',
         professionalCountry: 'Argentina',
         experienceYears: '',
         specialization: '',
@@ -40,13 +40,20 @@ export default function FinancialVerificationTab() {
         professionalDescription: '',
     });
 
-    const [files, setFiles] = useState({
-        front: null as File | null,
-        back: null as File | null,
-        professional: null as File | null,
+    const [files, setFiles] = useState<{
+        front: File | null;
+        back: File | null;
+        professional: File | null;
+    }>({
+        front: null,
+        back: null,
+        professional: null,
     });
 
-    const [consent, setConsent] = useState({ trueDocs: false, revoke: false });
+    const [consent, setConsent] = useState({
+        trueDocs: false,
+        revoke: false,
+    });
 
     useEffect(() => {
         if (user) {
@@ -56,17 +63,15 @@ export default function FinancialVerificationTab() {
 
     const fetchRequest = async () => {
         try {
-            const { data, error } = await supabase
-                .from('FinancialAdvisorVerification')
-                .select('id, status, fullName, rejectionReason')
-                .eq('userId', user!.id)
-                .single();
-
-            if (error && error.code !== 'PGRST116') {
-                console.error('Error fetching verification:', error);
-            }
-            if (data) {
-                setRequest(data as VerificationRequest);
+            setLoading(true);
+            const res = await apiFetch('/me/verification');
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.id) {
+                    setRequest(data as VerificationRequest);
+                } else {
+                    setRequest(null);
+                }
             }
         } catch (e) {
             console.error('Failed to fetch verification status', e);
@@ -75,12 +80,26 @@ export default function FinancialVerificationTab() {
         }
     };
 
-    const uploadFile = async (file: File, folder: string): Promise<string> => {
-        const fileName = `${crypto.randomUUID()}-${file.name}`;
-        const path = `${user!.id}/${folder}/${fileName}`;
-        const { data, error } = await supabase.storage.from('financial-verifications').upload(path, file);
-        if (error) throw new Error(`Error subiendo archivo: ${error.message}`);
-        return data.path;
+    const uploadFile = async (file: File): Promise<string> => {
+        const formData = new FormData();
+        formData.append('files', file);
+        const res = await apiFetch('/posts/upload-media', {
+            method: 'POST',
+            body: formData,
+        });
+        if (!res.ok) {
+            let msg = 'Error subiendo archivo';
+            try {
+                const err = await res.json();
+                msg = err.message || msg;
+            } catch { }
+            throw new Error(msg);
+        }
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0 && data[0].url) {
+            return data[0].url;
+        }
+        throw new Error('Respuesta inválida del servidor');
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -96,12 +115,11 @@ export default function FinancialVerificationTab() {
 
         setIsSubmitting(true);
         try {
-            const frontPath = await uploadFile(files.front, 'identity');
-            const backPath = await uploadFile(files.back, 'identity');
-            const profPath = await uploadFile(files.professional, 'professional');
+            const frontPath = await uploadFile(files.front);
+            const backPath = await uploadFile(files.back);
+            const profPath = await uploadFile(files.professional);
 
             const payload = {
-                userId: user!.id,
                 fullName: form.fullName,
                 documentType: form.documentType,
                 documentCountry: form.documentCountry,
@@ -120,15 +138,21 @@ export default function FinancialVerificationTab() {
                 website: form.website || null,
                 linkedin: form.linkedin || null,
                 professionalDescription: form.professionalDescription || null,
-                status: 'pending'
             };
 
-            if (request) {
-                const { error } = await supabase.from('FinancialAdvisorVerification').update(payload).eq('id', request.id);
-                if (error) throw error;
-            } else {
-                const { error } = await supabase.from('FinancialAdvisorVerification').insert(payload);
-                if (error) throw error;
+            const res = await apiFetch('/me/verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                let msg = 'Ocurrió un error al enviar la solicitud';
+                try {
+                    const err = await res.json();
+                    msg = err.message || msg;
+                } catch { }
+                throw new Error(msg);
             }
 
             alert('Solicitud enviada correctamente. El equipo revisará tu documentación.');

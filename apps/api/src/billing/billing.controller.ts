@@ -19,8 +19,8 @@ export class BillingController {
     }
 
     @Post('subscription/cancel')
-    cancelSubscription(@Req() req: any) {
-        return this.billingService.cancelProSubscription(req.user.id);
+    cancelSubscription(@Req() req: any, @Body() body?: { planType?: 'PRO' | 'CREATOR' }) {
+        return this.billingService.cancelProSubscription(req.user.id, body?.planType);
     }
 
     @Get('creator/summary')

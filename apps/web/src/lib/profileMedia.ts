@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -18,24 +18,28 @@ export function validateProfileImage(file: File) {
 export async function uploadProfileImage(kind: ProfileMediaKind, file: File) {
     validateProfileImage(file);
 
-    // Generate unique name for the image
-    const ext = file.name.split('.').pop();
-    const fileName = `${kind}_${crypto.randomUUID()}.${ext}`;
-    const path = `profiles/${fileName}`;
+    const formData = new FormData();
+    formData.append(kind, file);
 
-    const { error } = await supabase.storage
-        .from('public-media')
-        .upload(path, file, { upsert: true });
+    const response = await apiFetch(`/me/${kind}`, {
+        method: 'POST',
+        body: formData,
+    });
 
-    if (error) {
-        throw new Error(`Error subiendo la imagen: ${error.message}`);
+    if (!response.ok) {
+        let errorMsg = `Error subiendo el ${kind === 'avatar' ? 'avatar' : 'banner'}`;
+        try {
+            const errData = await response.json();
+            errorMsg = errData.message || errorMsg;
+        } catch {
+            // ignore
+        }
+        throw new Error(errorMsg);
     }
 
-    const { data: publicUrlData } = supabase.storage.from('public-media').getPublicUrl(path);
-
-    if (kind === 'avatar') {
-        return { avatarUrl: publicUrlData.publicUrl };
-    }
-    return { bannerUrl: publicUrlData.publicUrl };
+    const data = await response.json();
+    return {
+        avatarUrl: data.avatarUrl,
+        bannerUrl: data.bannerUrl,
+    };
 }
-

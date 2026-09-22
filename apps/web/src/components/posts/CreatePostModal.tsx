@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
-import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { Post } from '@/pages/Explore';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import {
     X, BarChart2, PenSquare,
-    Upload, Loader2, Trash2, Search, ChevronDown, Camera, Check
+    Upload, Loader2, Trash2, Search, ChevronDown, Camera, Check,
+    Move, PenTool, Maximize2, ArrowLeft
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -63,15 +63,29 @@ const INTERVALS = [
 import TradingViewChart from '@/components/TradingViewChart';
 import { createChartAnalysis } from '@/lib/chart/finix-chart-api';
 
-// ─── Upload helper ────────────────────────────────────────────────────────────
-
 async function uploadFile(file: File): Promise<string> {
-    const ext = file.name.split('.').pop();
-    const fileName = `post_${crypto.randomUUID()}.${ext}`;
-    const path = `posts/${fileName}`;
-    const { error } = await supabase.storage.from('public-media').upload(path, file);
-    if (error) throw new Error(error.message);
-    return supabase.storage.from('public-media').getPublicUrl(path).data.publicUrl;
+    const formData = new FormData();
+    formData.append('files', file);
+
+    const res = await apiFetch('/posts/upload-media', {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!res.ok) {
+        let msg = 'Error al subir el archivo';
+        try {
+            const err = await res.json();
+            msg = err.message || msg;
+        } catch { }
+        throw new Error(msg);
+    }
+
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0 && data[0].url) {
+        return data[0].url;
+    }
+    throw new Error('Respuesta inválida del servidor');
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -96,6 +110,10 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
     const [isPublishing, setIsPublishing] = useState(false);
     const [error, setError] = useState('');
     const [isDragging, setIsDragging] = useState(false);
+    const [isScrollMode, setIsScrollMode] = useState(true);
+    const [isFullscreenChart, setIsFullscreenChart] = useState(false);
+    const [activeStudies, setActiveStudies] = useState<string[]>([]);
+    const [isCapturing, setIsCapturing] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const tvWidgetRef = useRef<any>(null);
@@ -189,6 +207,51 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
         if (sym) { setAssetSymbol(sym); }
     };
 
+    const toggleStudy = (studyName: string) => {
+        setActiveStudies(prev =>
+            prev.includes(studyName) ? prev.filter(s => s !== studyName) : [...prev, studyName]
+        );
+    };
+
+    const captureCurrentChart = async (): Promise<string | null> => {
+        if (tvWidgetRef.current && typeof tvWidgetRef.current.imageCanvas === 'function') {
+            try {
+                const canvasPromise = tvWidgetRef.current.imageCanvas();
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500));
+                const canvas: any = await Promise.race([canvasPromise, timeoutPromise]);
+                if (canvas && typeof canvas.toDataURL === 'function') {
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const resp = await fetch(dataUrl);
+                    const blob = await resp.blob();
+                    const file = new File([blob], `chart_${assetSymbol}_${Date.now()}.png`, { type: 'image/png' });
+                    const uploadedUrl = await uploadFile(file);
+                    return uploadedUrl || null;
+                }
+            } catch (canvasErr) {
+                console.debug('widget.imageCanvas() capture error:', canvasErr);
+            }
+        }
+        return null;
+    };
+
+    const handleManualCapture = async () => {
+        setIsCapturing(true);
+        try {
+            const url = await captureCurrentChart();
+            if (url) {
+                setMediaFiles([{
+                    file: new File([], `chart_${assetSymbol}.png`),
+                    preview: url,
+                    url: url,
+                    mediaType: 'image',
+                    uploading: false,
+                }]);
+            }
+        } finally {
+            setIsCapturing(false);
+        }
+    };
+
     // ── Publish ───────────────────────────────────────────────────────────────
 
     const handlePublish = async () => {
@@ -229,24 +292,11 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                     if (m.url) finalMediaUrls.push({ url: m.url, mediaType: m.mediaType });
                 }
 
-                // 1. Captura 100% autónoma directa desde el widget de TradingView mediante widget.imageCanvas()
-                if (finalMediaUrls.length === 0 && tvWidgetRef.current && typeof tvWidgetRef.current.imageCanvas === 'function') {
-                    try {
-                        const canvasPromise = tvWidgetRef.current.imageCanvas();
-                        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000));
-                        const canvas: any = await Promise.race([canvasPromise, timeoutPromise]);
-                        if (canvas && typeof canvas.toDataURL === 'function') {
-                            const dataUrl = canvas.toDataURL('image/png');
-                            const resp = await fetch(dataUrl);
-                            const blob = await resp.blob();
-                            const file = new File([blob], `chart_${assetSymbol}_${Date.now()}.png`, { type: 'image/png' });
-                            const uploadedUrl = await uploadFile(file);
-                            if (uploadedUrl) {
-                                finalMediaUrls.push({ url: uploadedUrl, mediaType: 'image' });
-                            }
-                        }
-                    } catch (canvasErr) {
-                        console.debug('widget.imageCanvas() direct capture fallback:', canvasErr);
+                // 1. Captura 100% autónoma directa desde el widget de TradingView si no hay captura manual previa
+                if (finalMediaUrls.length === 0) {
+                    const capturedUrl = await captureCurrentChart();
+                    if (capturedUrl) {
+                        finalMediaUrls.push({ url: capturedUrl, mediaType: 'image' });
                     }
                 }
 
@@ -403,9 +453,9 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                     <AnimatePresence mode="wait">
                         {type === 'chart' && (
                             <motion.div key="chart-panel" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.2 }} className="space-y-4">
-                                {/* Toolbar */}
+                                {/* Search and Intervals */}
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
                                         <div className="relative flex-1">
                                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                                             <input type="text" placeholder="Símbolo: AAPL, BTCUSDT..." value={symbolInput}
@@ -419,33 +469,162 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                     <div className="flex items-center gap-1 flex-wrap">
                                         {INTERVALS.map(({ v, label }) => (
                                             <button key={v} onClick={() => { setTvInterval(v); }}
-                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${tvInterval === v ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
+                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${tvInterval === v ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
                                             >{label}</button>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Popular symbols */}
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Rápido:</span>
-                                    {POPULAR_SYMBOLS.map((s) => {
-                                        const short = s.includes(':') ? s.split(':')[1].replace('USDT', '') : s;
-                                        return (
-                                            <button key={s} onClick={() => { setSymbolInput(s); setAssetSymbol(s); }}
-                                                className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-all ${assetSymbol === s ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground'}`}
-                                            >{short}</button>
-                                        );
-                                    })}
+                                {/* Popular symbols & Studies */}
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Rápido:</span>
+                                        {POPULAR_SYMBOLS.map((s) => {
+                                            const short = s.includes(':') ? s.split(':')[1].replace('USDT', '') : s;
+                                            return (
+                                                <button key={s} onClick={() => { setSymbolInput(s); setAssetSymbol(s); }}
+                                                    className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-all ${assetSymbol === s ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground'}`}
+                                                >{short}</button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleStudy('RSI@tv-basicstudies')}
+                                            className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-all ${
+                                                activeStudies.includes('RSI@tv-basicstudies')
+                                                    ? 'border-indigo-500/50 bg-indigo-500/15 text-indigo-400'
+                                                    : 'border-border/40 text-muted-foreground hover:bg-secondary'
+                                            }`}
+                                        >
+                                            {activeStudies.includes('RSI@tv-basicstudies') ? '✓ RSI' : '+ RSI'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleStudy('MACD@tv-basicstudies')}
+                                            className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-all ${
+                                                activeStudies.includes('MACD@tv-basicstudies')
+                                                    ? 'border-amber-500/50 bg-amber-500/15 text-amber-400'
+                                                    : 'border-border/40 text-muted-foreground hover:bg-secondary'
+                                            }`}
+                                        >
+                                            {activeStudies.includes('MACD@tv-basicstudies') ? '✓ MACD' : '+ MACD'}
+                                        </button>
+                                    </div>
                                 </div>
 
-                                {/* Official TradingView Advanced Chart */}
-                                <div className="w-full min-h-[540px]">
+                                {/* Touch & Scroll Control Bar */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2 rounded-xl bg-secondary/30 border border-border/40">
+                                    <div className="flex items-center gap-1 bg-background/80 p-0.5 rounded-lg border border-border/50 text-xs w-full sm:w-auto">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsScrollMode(true)}
+                                            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1 rounded-md font-semibold transition-all ${
+                                                isScrollMode
+                                                    ? 'bg-primary text-primary-foreground shadow-xs'
+                                                    : 'text-muted-foreground hover:text-foreground'
+                                            }`}
+                                            title="Modo desplazamiento: permite scrollear la publicación sin interferencia"
+                                        >
+                                            <Move className="w-3.5 h-3.5" />
+                                            <span>Modo Scroll</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsScrollMode(false)}
+                                            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1 rounded-md font-semibold transition-all ${
+                                                !isScrollMode
+                                                    ? 'bg-primary text-primary-foreground shadow-xs'
+                                                    : 'text-muted-foreground hover:text-foreground'
+                                            }`}
+                                            title="Modo trazado: interactúa directamente con el gráfico para colocar líneas"
+                                        >
+                                            <PenTool className="w-3.5 h-3.5" />
+                                            <span>Trazar Líneas</span>
+                                        </button>
+                                    </div>
+
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={isCapturing}
+                                            onClick={handleManualCapture}
+                                            className="h-8 text-xs gap-1.5 border-border/60 hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {isCapturing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                                            <span>Capturar</span>
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => {
+                                                setIsScrollMode(false);
+                                                setIsFullscreenChart(true);
+                                            }}
+                                            className="h-8 text-xs gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
+                                        >
+                                            <Maximize2 className="w-3.5 h-3.5" />
+                                            <span>Pantalla Completa</span>
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Official TradingView Advanced Chart with Scroll Shield */}
+                                <div className="relative w-full h-[380px] sm:h-[480px] md:h-[540px] rounded-2xl overflow-hidden border border-border/60">
                                     <TradingViewChart
                                         symbol={assetSymbol}
                                         interval={tvInterval}
-                                        height={540}
+                                        studies={activeStudies}
+                                        height="100%"
                                         onWidgetReady={(w) => { tvWidgetRef.current = w; }}
                                     />
+
+                                    {/* Scroll Shield when isScrollMode is true */}
+                                    {isScrollMode && (
+                                        <div
+                                            className="absolute inset-0 z-20 bg-background/25 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 text-center transition-all hover:bg-background/15"
+                                            onClick={() => setIsScrollMode(false)}
+                                        >
+                                            <div className="max-w-xs p-3.5 rounded-2xl bg-card/95 border border-border/70 shadow-xl space-y-2 pointer-events-auto">
+                                                <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-foreground">
+                                                    <Move className="w-4 h-4 text-primary" />
+                                                    <span>Modo Scroll Activo</span>
+                                                </div>
+                                                <p className="text-[11px] text-muted-foreground leading-snug">
+                                                    Podés deslizar la pantalla libremente. Tocá abajo para trazar líneas o dibujar.
+                                                </p>
+                                                <div className="flex items-center justify-center gap-2 pt-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setIsScrollMode(false);
+                                                        }}
+                                                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-xs"
+                                                    >
+                                                        Trazar Líneas
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setIsScrollMode(false);
+                                                            setIsFullscreenChart(true);
+                                                        }}
+                                                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary/80 text-foreground border border-border/60 transition-all"
+                                                    >
+                                                        <Maximize2 className="w-3.5 h-3.5" />
+                                                        <span>Expandir</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Banner autónomo de captura de líneas */}
@@ -591,6 +770,78 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                     </div>
                 </div>
             </motion.div>
+
+            {/* ── FULLSCREEN DRAWING STUDIO ── */}
+            {isFullscreenChart && (
+                <div className="fixed inset-0 z-[250] bg-background flex flex-col animate-in fade-in duration-200">
+                    {/* Fullscreen Header */}
+                    <div className="flex items-center justify-between px-3 sm:px-6 py-2.5 bg-card border-b border-border/60 shrink-0">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsFullscreenChart(false)}
+                                className="p-1.5 rounded-xl border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                title="Volver al post"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                            </button>
+                            <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-sm sm:text-base text-foreground">{assetSymbol}</span>
+                                <span className="text-[11px] px-2 py-0.5 rounded-md bg-primary/15 text-primary font-bold">{tvInterval}</span>
+                            </div>
+                            <div className="hidden sm:flex items-center gap-1 pl-2">
+                                {INTERVALS.slice(0, 7).map(({ v, label }) => (
+                                    <button
+                                        key={v}
+                                        type="button"
+                                        onClick={() => setTvInterval(v)}
+                                        className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${tvInterval === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={isCapturing}
+                                onClick={handleManualCapture}
+                                className="h-8 text-xs gap-1.5 border-border/60 hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                            >
+                                {isCapturing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                                <span className="hidden xs:inline">Capturar</span>
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={async () => {
+                                    await handleManualCapture();
+                                    setIsFullscreenChart(false);
+                                }}
+                                className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
+                            >
+                                <Check className="w-4 h-4" />
+                                <span>Listo / Guardar Líneas</span>
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Fullscreen Chart Body */}
+                    <div className="flex-1 w-full h-full relative overflow-hidden">
+                        <TradingViewChart
+                            symbol={assetSymbol}
+                            interval={tvInterval}
+                            studies={activeStudies}
+                            height="100%"
+                            onWidgetReady={(w) => { tvWidgetRef.current = w; }}
+                        />
+                    </div>
+                </div>
+            )}
         </motion.div>
     );
 }

@@ -33,9 +33,13 @@ import {
     BadgeCheck,
     Mail,
     Crown,
+    Zap,
+    CreditCard,
+    Sparkles,
+    Check,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AvatarUpload from '@/components/AvatarUpload';
 import LocationQuickSelect from '@/components/LocationQuickSelect';
 import FinancialVerificationTab from '@/components/settings/FinancialVerificationTab';
@@ -149,7 +153,8 @@ const SectionHeader = ({ icon, title, description }: { icon: React.ReactNode; ti
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Settings() {
-    const { user, updateUser } = useAuthStore();
+    const navigate = useNavigate();
+    const { user, updateUser, syncFromSession, logout } = useAuthStore();
     const { setTheme: setGlobalTheme, setLanguage: setGlobalLanguage, updatePreferences: setGlobalPreferences } = usePreferencesStore();
 
     const [isLoading, setIsLoading] = useState(true);
@@ -213,6 +218,26 @@ export default function Settings() {
     // ── Delete account ──
     const [deleteConfirm, setDeleteConfirm] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+    const handleDeleteAccount = async () => {
+        if (deleteConfirm !== 'ELIMINAR') return;
+        setIsDeletingAccount(true);
+        try {
+            const res = await apiFetch('/me/account', { method: 'DELETE' });
+            if (!res.ok) {
+                const err = await res.json().catch(() => null);
+                throw new Error(err?.message || 'Error al eliminar la cuenta');
+            }
+            showToast('Tu cuenta ha sido eliminada.');
+            logout();
+            navigate('/auth');
+        } catch (e: any) {
+            showToast(e.message || 'No se pudo eliminar la cuenta', 'error');
+        } finally {
+            setIsDeletingAccount(false);
+        }
+    };
 
     // ─── Load settings ────────────────────────────────────────────────────────
     useEffect(() => {
@@ -414,10 +439,79 @@ export default function Settings() {
         }, 700);
     };
 
+    const isProActive = Boolean(
+        (settings?.plan === 'PRO' && settings?.subscriptionStatus === 'ACTIVE') ||
+        user?.plan === 'PRO' ||
+        user?.role === 'ADMIN' ||
+        (user as any)?.isPro
+    );
+
+    const isCreatorActive = Boolean(
+        user?.isCreator ||
+        settings?.isCreator ||
+        user?.accountType === 'CREATOR' ||
+        user?.role === 'ADMIN'
+    );
+
+    // ─── Subscription management ─────────────────────────────────────────────
+    const [billingOverview, setBillingOverview] = useState<any>(null);
+    const [isCancelingSubscription, setIsCancelingSubscription] = useState(false);
+    const [cancelModalOpen, setCancelModalOpen] = useState(false);
+    const [planToCancel, setPlanToCancel] = useState<'PRO' | 'CREATOR'>('PRO');
+
+    const fetchBillingOverview = useCallback(async () => {
+        try {
+            const res = await apiFetch('/billing/overview');
+            if (res.ok) {
+                const data = await res.json();
+                setBillingOverview(data);
+            }
+        } catch {
+            // best effort
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchBillingOverview();
+    }, [fetchBillingOverview]);
+
+    const handleConfirmCancel = async () => {
+        setIsCancelingSubscription(true);
+        try {
+            const res = await apiFetch('/billing/subscription/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ planType: planToCancel }),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => null);
+                throw new Error(err?.message || 'Error al cancelar la suscripción');
+            }
+
+            const data = await res.json();
+
+            if (planToCancel === 'CREATOR') {
+                (updateUser as any)({ isCreator: false, accountType: 'BASIC' });
+                setSettings((p) => (p ? { ...p, isCreator: false, accountType: 'BASIC' } : p));
+            } else {
+                (updateUser as any)({ plan: 'FREE', subscriptionStatus: 'CANCELED' });
+                setSettings((p) => (p ? { ...p, plan: 'FREE', subscriptionStatus: 'CANCELED' } : p));
+            }
+
+            await syncFromSession?.();
+            await fetchBillingOverview();
+            setCancelModalOpen(false);
+            showToast(data.message || 'Suscripción dada de baja correctamente.');
+        } catch (error: any) {
+            showToast(error.message || 'No se pudo cancelar la suscripción', 'error');
+        } finally {
+            setIsCancelingSubscription(false);
+        }
+    };
+
     const updateInvestmentEmailNotifications = async (enabled: boolean) => {
-        if (!settings) return;
-        const isPro = settings.plan === 'PRO' && settings.subscriptionStatus === 'ACTIVE';
-        if (!isPro) {
+        if (!isProActive) {
             showToast('Las alertas por email de inversiones son exclusivas para Finix PRO', 'error');
             return;
         }
@@ -528,9 +622,10 @@ export default function Settings() {
 
             {/* Tabs */}
             <Tabs defaultValue="cuenta" className="space-y-6">
-                <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1.5 bg-card/40 border border-border/40 rounded-2xl sm:grid-cols-3 lg:grid-cols-6">
+                <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1.5 bg-card/40 border border-border/40 rounded-2xl sm:grid-cols-4 lg:grid-cols-7">
                     {[
                         { value: 'cuenta', label: 'Cuenta', icon: <User className="w-3.5 h-3.5" /> },
+                        { value: 'suscripcion', label: 'Suscripción', icon: <Crown className="w-3.5 h-3.5 text-amber-500" /> },
                         { value: 'privacidad', label: 'Privacidad', icon: <Shield className="w-3.5 h-3.5" /> },
                         { value: 'preferencias', label: 'Preferencias', icon: <Globe className="w-3.5 h-3.5" /> },
                         { value: 'notificaciones', label: 'Notificaciones', icon: <Bell className="w-3.5 h-3.5" /> },
@@ -841,15 +936,244 @@ export default function Settings() {
                                         </Button>
                                         <Button
                                             size="sm"
-                                            disabled={deleteConfirm !== 'ELIMINAR'}
-                                            className="bg-red-600 hover:bg-red-700 text-white"
-                                            onClick={() => showToast('Contactá a soporte para eliminar tu cuenta: finiixarg@gmail.com', 'error')}
+                                            disabled={deleteConfirm !== 'ELIMINAR' || isDeletingAccount}
+                                            className="bg-red-600 hover:bg-red-700 text-white gap-1.5"
+                                            onClick={handleDeleteAccount}
                                         >
-                                            Confirmar eliminación
+                                            {isDeletingAccount ? (
+                                                <>
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    Eliminando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    Confirmar eliminación
+                                                </>
+                                            )}
                                         </Button>
                                     </div>
                                 </div>
                             )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* ── SUSCRIPCIÓN ── */}
+                <TabsContent value="suscripcion" className="space-y-6">
+                    {/* Recurring Billing Notice Banner */}
+                    <div className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-5 backdrop-blur-sm">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="flex items-start gap-3.5">
+                                <div className="rounded-xl bg-amber-500/20 p-2.5 text-amber-400 shrink-0">
+                                    <Sparkles className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                        Facturación Automática & Precio Fijo Protegido
+                                        <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-400 bg-amber-500/10">
+                                            Garantía Finix
+                                        </Badge>
+                                    </h4>
+                                    <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
+                                        Tu suscripción se cobra de manera automática todos los meses al <strong>mismo precio pactado</strong>. Sin aumentos sorpresivos ni costos ocultos mientras mantengas tu suscripción activa. Podés darla de baja en cualquier momento con un solo clic desde esta sección.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Finix PRO Card */}
+                    <Card className="border-border/50 bg-card/30 backdrop-blur-sm">
+                        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 gap-2">
+                            <div className="flex items-center gap-2.5">
+                                <div className="rounded-lg bg-amber-500/15 p-2 text-amber-500">
+                                    <Crown className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        Finix PRO
+                                        {isProActive ? (
+                                            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">
+                                                Activo
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="outline" className="text-muted-foreground text-xs">
+                                                Plan Gratuito
+                                            </Badge>
+                                        )}
+                                    </CardTitle>
+                                    <CardDescription className="text-xs">
+                                        Acceso sin restricciones a herramientas financieras avanzadas y señales exclusivas.
+                                    </CardDescription>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-xl font-bold tracking-tight text-foreground">
+                                    ${billingOverview?.proPriceUsdMonthly || 19} USD
+                                </span>
+                                <span className="text-xs text-muted-foreground block">/ mes (precio fijo)</span>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-5">
+                            {/* Features list */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-4 rounded-xl border border-border/40 bg-card/20">
+                                {[
+                                    'Acceso ilimitado a todas las secciones y métricas PRO',
+                                    'Alertas en tiempo real por Gmail y notificaciones push',
+                                    'Análisis de ballenas y movimientos institucionales',
+                                    'Filtros técnicos avanzados y gráficos sin límites',
+                                    'Badge exclusivo Finix PRO en la comunidad',
+                                    'Cobro automático mensual al mismo precio garantizado',
+                                ].map((feature) => (
+                                    <div key={feature} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <div className="rounded-full bg-emerald-500/20 p-0.5 text-emerald-400 shrink-0">
+                                            <Check className="w-3 h-3" />
+                                        </div>
+                                        <span>{feature}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Billing details / Renewal */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/30 bg-muted/20 text-xs">
+                                <div className="space-y-0.5">
+                                    <span className="text-muted-foreground">Ciclo de facturación:</span>
+                                    <p className="font-medium text-foreground">
+                                        {isProActive
+                                            ? `Renovación automática cada mes (${billingOverview?.nextBillingDate ? `Próximo cobro: ${new Date(billingOverview.nextBillingDate).toLocaleDateString('es-AR')}` : 'Activa'})`
+                                            : 'Cobro mensual recurrente automático tras la suscripción'}
+                                    </p>
+                                </div>
+                                <div className="space-y-0.5 sm:text-right">
+                                    <span className="text-muted-foreground">Estado del plan:</span>
+                                    <p className="font-medium capitalize text-foreground">
+                                        {isProActive ? (settings?.subscriptionStatus || 'Activo') : 'Inactivo'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-border/30">
+                                {isProActive ? (
+                                    <>
+                                        <p className="text-xs text-muted-foreground">
+                                            Podés dar de baja tu membresía PRO en cualquier momento sin penalizaciones.
+                                        </p>
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => {
+                                                setPlanToCancel('PRO');
+                                                setCancelModalOpen(true);
+                                            }}
+                                            className="w-full sm:w-auto text-xs font-semibold gap-1.5"
+                                        >
+                                            Dar de baja Finix PRO
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-xs text-muted-foreground">
+                                            Subí a PRO para acceder a todas las secciones bloqueadas y alertas por Gmail.
+                                        </p>
+                                        <Link to="/pricing" className="w-full sm:w-auto">
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-bold gap-1.5 shadow-lg shadow-amber-500/20"
+                                            >
+                                                <Zap className="w-3.5 h-3.5" />
+                                                Mejorar a Finix PRO
+                                            </Button>
+                                        </Link>
+                                    </>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Plan Creador Card */}
+                    <Card className="border-border/50 bg-card/30 backdrop-blur-sm">
+                        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 gap-2">
+                            <div className="flex items-center gap-2.5">
+                                <div className="rounded-lg bg-blue-500/15 p-2 text-blue-400">
+                                    <Zap className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        Plan Creador de Contenido
+                                        {isCreatorActive ? (
+                                            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                                                Creador Activo
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="outline" className="text-muted-foreground text-xs">
+                                                Básico
+                                            </Badge>
+                                        )}
+                                    </CardTitle>
+                                    <CardDescription className="text-xs">
+                                        Monetizá análisis, administrá comunidades pagas y creá publicaciones destacadas.
+                                    </CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-4 rounded-xl border border-border/40 bg-card/20">
+                                {[
+                                    'Creación y monetización de comunidades exclusivas',
+                                    'Cobro de membresías a tus seguidores',
+                                    'Herramientas avanzadas de publicación y gráficos',
+                                    'Badge de Creador Verificado en tu perfil',
+                                ].map((feature) => (
+                                    <div key={feature} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <div className="rounded-full bg-blue-500/20 p-0.5 text-blue-400 shrink-0">
+                                            <Check className="w-3 h-3" />
+                                        </div>
+                                        <span>{feature}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-border/30">
+                                {isCreatorActive ? (
+                                    <>
+                                        <p className="text-xs text-muted-foreground">
+                                            Si das de baja tu plan Creador, tu cuenta volverá al modo básico y tus comunidades pasarán a modo solo lectura.
+                                        </p>
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => {
+                                                setPlanToCancel('CREATOR');
+                                                setCancelModalOpen(true);
+                                            }}
+                                            className="w-full sm:w-auto text-xs font-semibold gap-1.5"
+                                        >
+                                            Dar de baja Plan Creador
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-xs text-muted-foreground">
+                                            ¿Querés monetizar tus análisis y crear tu comunidad en Finix?
+                                        </p>
+                                        <Link to="/communities" className="w-full sm:w-auto">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full sm:w-auto text-xs font-medium"
+                                            >
+                                                Explorar Comunidades
+                                            </Button>
+                                        </Link>
+                                    </>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -1064,34 +1388,54 @@ export default function Settings() {
                                 }}
                             />
 
-                            <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-3">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-start gap-3">
-                                        <div className="mt-0.5 rounded-lg bg-primary/15 p-2 text-primary">
-                                            <Mail className="h-4 w-4" />
+                            {/* PRO Email / Gmail Notifications Banner Card */}
+                            <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-card/50 to-primary/5 p-5 space-y-4 backdrop-blur-sm">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-start gap-3.5">
+                                        <div className="mt-0.5 rounded-xl bg-amber-500/20 p-2.5 text-amber-500 shadow-sm shadow-amber-500/10">
+                                            <Mail className="h-5 w-5" />
                                         </div>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-medium text-sm">Emails de inversiones</p>
-                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-500">
-                                                    <Crown className="h-3 w-3" /> PRO
+                                        <div className="space-y-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="font-semibold text-sm text-foreground">
+                                                    Alertas y Reportes Premium a tu Gmail / Email
+                                                </p>
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-bold text-amber-500 border border-amber-500/30">
+                                                    <Crown className="h-3 w-3" /> EXCLUSIVO PRO
                                                 </span>
                                             </div>
-                                            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                                                Recibí análisis, novedades de mercado y comunicaciones exclusivas seleccionadas por Finix.
+                                            <p className="text-xs leading-relaxed text-muted-foreground max-w-xl">
+                                                Recibí análisis de mercado urgentes, señales técnicas de alta convicción, movimientos de ballenas y resúmenes ejecutivos directamente en tu casilla de Gmail seleccionadas por el equipo de Finix.
                                             </p>
                                         </div>
                                     </div>
                                     <Switch
                                         checked={settings?.investmentEmailNotifications ?? false}
                                         onCheckedChange={updateInvestmentEmailNotifications}
-                                        disabled={isSavingInvestmentEmails || !(settings?.plan === 'PRO' && settings?.subscriptionStatus === 'ACTIVE')}
+                                        disabled={isSavingInvestmentEmails || !isProActive}
                                     />
                                 </div>
-                                {!(settings?.plan === 'PRO' && settings?.subscriptionStatus === 'ACTIVE') && (
-                                    <div className="flex items-center justify-between gap-3 rounded-lg bg-background/70 px-3 py-2.5">
-                                        <span className="text-xs text-muted-foreground">Disponible con tu suscripción Finix PRO.</span>
-                                        <Link to="/pricing" className="text-xs font-semibold text-primary hover:underline">Ver Finix PRO</Link>
+
+                                {isProActive ? (
+                                    <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2.5 text-xs text-emerald-400">
+                                        <Check className="h-4 w-4 shrink-0" />
+                                        <span>Tu suscripción Finix PRO está activa. Tenés acceso total a las notificaciones y reportes directos en tu casilla.</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-500/25 bg-background/80 p-3.5">
+                                        <div className="space-y-0.5 text-xs text-muted-foreground">
+                                            <p className="font-medium text-amber-400 flex items-center gap-1.5">
+                                                <Sparkles className="h-3.5 w-3.5" /> Función bloqueada para cuentas gratuitas
+                                            </p>
+                                            <p>
+                                                Finix PRO se renueva de manera automática cada mes al mismo precio pactado ($19 USD/mes). Podés cancelarlo cuando quieras.
+                                            </p>
+                                        </div>
+                                        <Link to="/pricing" className="shrink-0 w-full sm:w-auto">
+                                            <Button size="sm" className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-bold text-xs gap-1.5 shadow-md shadow-amber-500/20">
+                                                <Zap className="h-3.5 w-3.5" /> Obtener Finix PRO
+                                            </Button>
+                                        </Link>
                                     </div>
                                 )}
                             </div>
@@ -1189,6 +1533,69 @@ export default function Settings() {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            {/* Modal de Cancelación de Suscripción */}
+            {cancelModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-md rounded-2xl border border-red-500/30 bg-card p-6 shadow-2xl space-y-5">
+                        <div className="flex items-start gap-3.5">
+                            <div className="rounded-xl bg-red-500/20 p-2.5 text-red-500 shrink-0">
+                                <AlertCircle className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-foreground">
+                                    {planToCancel === 'PRO' ? '¿Dar de baja Finix PRO?' : '¿Dar de baja Plan Creador?'}
+                                </h3>
+                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                    {planToCancel === 'PRO'
+                                        ? 'Perderás el acceso a todas las herramientas PRO exclusivas, métricas avanzadas y alertas por Gmail.'
+                                        : 'Tu cuenta volverá al modo básico y tus comunidades pasarán a modo solo lectura.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="rounded-xl border border-border/40 bg-muted/20 p-3.5 space-y-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2 text-foreground font-medium">
+                                <CreditCard className="w-4 h-4 text-primary" />
+                                <span>Detalles de facturación:</span>
+                            </div>
+                            <p>
+                                {planToCancel === 'PRO'
+                                    ? 'Se cancelará el cobro recurrente automático mensual de tu cuenta. No recibirás nuevos cargos.'
+                                    : 'Se dará de baja el cobro y rol de creador de tu cuenta.'}
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 pt-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setCancelModalOpen(false)}
+                                disabled={isCancelingSubscription}
+                                className="w-full sm:w-auto text-xs"
+                            >
+                                Conservar suscripción
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={handleConfirmCancel}
+                                disabled={isCancelingSubscription}
+                                className="w-full sm:w-auto text-xs font-semibold gap-1.5"
+                            >
+                                {isCancelingSubscription ? (
+                                    <>
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        Cancelando...
+                                    </>
+                                ) : (
+                                    'Confirmar Baja'
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

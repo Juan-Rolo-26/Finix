@@ -22,14 +22,16 @@ import { Response } from 'express';
 import { PostsService } from './posts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
-import { buildUploadPublicPath } from '../uploads/upload-url.util';
+import { buildUploadPublicPath, getUploadFolder } from '../uploads/upload-url.util';
 import { CreatePostDto, UpdatePostDto, AddCommentDto, ReportPostDto } from './dto/posts.dto';
 
 // ─── Multer config ────────────────────────────────────────────────────────────
 
 const ALLOWED_IMAGE = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_DOC = ['application/pdf'];
 const ALLOWED_VIDEO = ['video/mp4', 'video/webm', 'video/quicktime'];
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_DOC_BYTES = 15 * 1024 * 1024; // 15 MB
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100 MB
 
 function hasExpectedMediaSignature(path: string, mimeType: string) {
@@ -38,6 +40,7 @@ function hasExpectedMediaSignature(path: string, mimeType: string) {
     if (mimeType === 'image/png') return header.subarray(0, 8).toString('hex') === '89504e470d0a1a0a';
     if (mimeType === 'image/gif') return header.subarray(0, 6).toString('ascii') === 'GIF87a' || header.subarray(0, 6).toString('ascii') === 'GIF89a';
     if (mimeType === 'image/webp') return header.subarray(0, 4).toString('ascii') === 'RIFF' && header.subarray(8, 12).toString('ascii') === 'WEBP';
+    if (mimeType === 'application/pdf') return header.subarray(0, 4).toString('ascii') === '%PDF';
     if (mimeType === 'video/webm') return header.subarray(0, 4).toString('hex') === '1a45dfa3';
     if (mimeType === 'video/mp4' || mimeType === 'video/quicktime') return header.subarray(4, 8).toString('ascii') === 'ftyp';
     return false;
@@ -45,8 +48,7 @@ function hasExpectedMediaSignature(path: string, mimeType: string) {
 
 const postMediaStorage = diskStorage({
     destination: (_req, _file, cb) => {
-        const dir = join(__dirname, '..', '..', 'uploads', 'posts');
-        if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+        const dir = getUploadFolder('posts');
         cb(null, dir);
     },
     filename: (_req, file, cb) => {
@@ -158,12 +160,15 @@ export class PostsController {
             storage: postMediaStorage,
             limits: { fileSize: MAX_VIDEO_BYTES },
             fileFilter: (_req, file, cb) => {
-                const allowed = [...ALLOWED_IMAGE, ...ALLOWED_VIDEO];
+                const allowed = [...ALLOWED_IMAGE, ...ALLOWED_VIDEO, ...ALLOWED_DOC];
                 if (!allowed.includes(file.mimetype)) {
                     return cb(new BadRequestException(`Tipo no permitido: ${file.mimetype}`), false);
                 }
                 if (ALLOWED_VIDEO.includes(file.mimetype) && file.size > MAX_VIDEO_BYTES) {
                     return cb(new BadRequestException('Video demasiado grande (máx 100 MB)'), false);
+                }
+                if (ALLOWED_DOC.includes(file.mimetype) && file.size > MAX_DOC_BYTES) {
+                    return cb(new BadRequestException('Documento demasiado grande (máx 15 MB)'), false);
                 }
                 if (ALLOWED_IMAGE.includes(file.mimetype) && file.size > MAX_IMAGE_BYTES) {
                     return cb(new BadRequestException('Imagen demasiado grande (máx 10 MB)'), false);
@@ -184,7 +189,7 @@ export class PostsController {
 
         return files.map((file) => ({
             url: buildUploadPublicPath('posts', file.filename),
-            mediaType: ALLOWED_VIDEO.includes(file.mimetype) ? 'video' : 'image',
+            mediaType: ALLOWED_VIDEO.includes(file.mimetype) ? 'video' : ALLOWED_DOC.includes(file.mimetype) ? 'document' : 'image',
             originalName: file.originalname,
             size: file.size,
         }));

@@ -258,4 +258,83 @@ export class SettingsService {
         // TODO: implement token invalidation if needed
         return { success: true, message: 'Sesiones cerradas (JWT stateless - tokens expirarán naturalmente)' };
     }
+
+    // ─── FINANCIAL ADVISOR VERIFICATION ─────────────────────────────────────────
+    async getVerification(userId: string) {
+        return this.prisma.financialAdvisorVerification.findFirst({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    async submitVerification(userId: string, data: any) {
+        if (!data.fullName || !data.documentNumber || !data.registrationNumber) {
+            throw new BadRequestException('Faltan campos obligatorios para la verificación');
+        }
+
+        const existing = await this.prisma.financialAdvisorVerification.findFirst({
+            where: { userId, status: { in: ['pending', 'under_review'] } },
+        });
+
+        const payload = {
+            fullName: String(data.fullName).trim(),
+            documentType: String(data.documentType || 'DNI').trim(),
+            documentCountry: String(data.documentCountry || 'Argentina').trim(),
+            documentNumber: String(data.documentNumber).trim(),
+            professionalCategory: String(data.professionalCategory || 'Asesor Financiero').trim(),
+            registrationNumber: String(data.registrationNumber).trim(),
+            registrationEntity: String(data.registrationEntity || 'CNV').trim(),
+            professionalCountry: String(data.professionalCountry || 'Argentina').trim(),
+            identityDocumentFrontPath: String(data.identityDocumentFrontPath || '').trim(),
+            identityDocumentBackPath: String(data.identityDocumentBackPath || '').trim(),
+            professionalDocumentPath: String(data.professionalDocumentPath || '').trim(),
+            experienceYears: data.experienceYears ? Number(data.experienceYears) : null,
+            specialization: data.specialization ? String(data.specialization).trim() : null,
+            company: data.company ? String(data.company).trim() : null,
+            professionalPosition: data.professionalPosition ? String(data.professionalPosition).trim() : null,
+            website: data.website ? String(data.website).trim() : null,
+            linkedin: data.linkedin ? String(data.linkedin).trim() : null,
+            professionalDescription: data.professionalDescription ? String(data.professionalDescription).trim() : null,
+            status: 'pending',
+            submittedAt: new Date(),
+        };
+
+        if (existing) {
+            return this.prisma.financialAdvisorVerification.update({
+                where: { id: existing.id },
+                data: payload,
+            });
+        }
+
+        return this.prisma.financialAdvisorVerification.create({
+            data: {
+                ...payload,
+                userId,
+            },
+        });
+    }
+
+    // ─── DELETE / DEACTIVATE ACCOUNT ──────────────────────────────────────────
+    async deleteAccount(userId: string) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            throw new NotFoundException('Usuario no encontrado');
+        }
+
+        // Cancel any active subscriptions
+        await this.prisma.subscription.updateMany({
+            where: { userId },
+            data: { status: 'CANCELED' },
+        }).catch(() => {});
+
+        // Clean relations that might lack cascade
+        await this.prisma.$transaction(async (tx) => {
+            await tx.creatorApplication.deleteMany({ where: { userId } }).catch(() => {});
+            await tx.report.deleteMany({ where: { reporterId: userId } }).catch(() => {});
+            await tx.subscription.deleteMany({ where: { userId } }).catch(() => {});
+            await tx.user.delete({ where: { id: userId } });
+        });
+
+        return { success: true, message: 'Cuenta eliminada con éxito' };
+    }
 }

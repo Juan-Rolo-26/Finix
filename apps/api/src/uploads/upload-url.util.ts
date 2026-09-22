@@ -1,3 +1,33 @@
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
+
+export function getUploadsRootDir(): string {
+    if (process.env.UPLOADS_DIR) {
+        if (!existsSync(process.env.UPLOADS_DIR)) {
+            mkdirSync(process.env.UPLOADS_DIR, { recursive: true });
+        }
+        return process.env.UPLOADS_DIR;
+    }
+
+    const monorepoUploads = join(process.cwd(), 'apps', 'api', 'uploads');
+    if (existsSync(join(process.cwd(), 'apps', 'api'))) {
+        if (!existsSync(monorepoUploads)) mkdirSync(monorepoUploads, { recursive: true });
+        return monorepoUploads;
+    }
+
+    const cwdUploads = join(process.cwd(), 'uploads');
+    if (!existsSync(cwdUploads)) mkdirSync(cwdUploads, { recursive: true });
+    return cwdUploads;
+}
+
+export function getUploadFolder(folder: string): string {
+    const dir = join(getUploadsRootDir(), folder);
+    if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+    }
+    return dir;
+}
+
 export function buildUploadPublicPath(folder: string, filename: string) {
     return `/uploads/${folder}/${filename}`;
 }

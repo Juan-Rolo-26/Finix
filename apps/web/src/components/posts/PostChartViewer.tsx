@@ -100,12 +100,15 @@ export const PostChartViewer: React.FC<PostChartViewerProps> = ({
         }
     };
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const resolvedHeight = isMobile ? Math.min(height, 380) : height;
+
     return (
-        <div ref={containerRef} className="w-full shrink-0" style={{ minHeight: `${height}px` }}>
+        <div ref={containerRef} className="w-full shrink-0" style={{ minHeight: `${resolvedHeight}px` }}>
             {!isVisible ? (
                 // Placeholder before intersecting
                 <div
-                    style={{ height, minHeight: `${height}px` }}
+                    style={{ height: resolvedHeight, minHeight: `${resolvedHeight}px` }}
                     className="w-full rounded-2xl bg-card/40 border border-border/40 flex items-center justify-center animate-pulse"
                 >
                     <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
@@ -114,7 +117,7 @@ export const PostChartViewer: React.FC<PostChartViewerProps> = ({
                 </div>
             ) : isLoading ? (
                 <div
-                    style={{ height, minHeight: `${height}px` }}
+                    style={{ height: resolvedHeight, minHeight: `${resolvedHeight}px` }}
                     className="w-full rounded-2xl bg-card/40 border border-border/40 flex items-center justify-center"
                 >
                     <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
@@ -127,11 +130,11 @@ export const PostChartViewer: React.FC<PostChartViewerProps> = ({
                     <TradingViewChart
                         symbol={activeSymbol}
                         interval={activeTimeframe}
-                        height={height}
+                        height={resolvedHeight}
                     />
 
                     {/* Quick overlay buttons */}
-                    <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
                         {versionData?.analysisId && (
                             <button
                                 type="button"

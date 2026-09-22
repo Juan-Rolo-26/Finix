@@ -18,9 +18,10 @@ export function MobileTopBar() {
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
 
     const isMessages = location.pathname.startsWith('/messages');
+    const isComunidad = location.pathname.startsWith('/comunidad');
 
     useEffect(() => {
-        if (isMessages) return;
+        if (isMessages || isComunidad) return;
         const loadUnreadCount = async () => {
             try {
                 const res = await apiFetch('/notifications/unread-count');
@@ -35,8 +36,8 @@ export function MobileTopBar() {
         return () => clearInterval(iv);
     }, [isMessages]);
 
-    // Messages has its own full-screen header — render nothing
-    if (isMessages) return null;
+    // Messages & Comunidad have their own integrated headers — render nothing
+    if (isMessages || isComunidad) return null;
 
     return (
         <div

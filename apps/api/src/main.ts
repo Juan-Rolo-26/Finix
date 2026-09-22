@@ -89,12 +89,10 @@ async function bootstrap() {
     });
 
     // ── Static uploads (local filesystem fallback — use R2/S3 in production) ──
-    const { join } = require('path');
-    const { existsSync, mkdirSync } = require('fs');
     const express = require('express');
+    const { getUploadsRootDir } = require('./uploads/upload-url.util');
 
-    const uploadsDir = join(__dirname, '..', 'uploads');
-    if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+    const uploadsDir = getUploadsRootDir();
 
     // Serve at /uploads (direct) and /api/uploads (via nginx proxy)
     app.use('/uploads', express.static(uploadsDir));

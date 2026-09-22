@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { AccessControlService } from '../access/access-control.service';
 import { StripeService } from '../stripe/stripe.service';
@@ -94,8 +94,61 @@ export class BillingService {
         };
     }
 
-    async cancelProSubscription(userId: string) {
-        return this.stripeService.cancelSubscription(userId);
+    async cancelProSubscription(userId: string, planType?: 'PRO' | 'CREATOR') {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, plan: true, role: true, isCreator: true, accountType: true, subscriptionStatus: true },
+        });
+
+        if (!user) {
+            throw new NotFoundException('Usuario no encontrado');
+        }
+
+        // 1. Intentar cancelar en Stripe si existe suscripción
+        try {
+            await this.stripeService.cancelSubscription(userId);
+        } catch {
+            // Continuar con cancelación en base de datos
+        }
+
+        // 2. Marcar suscripciones de BD como canceladas
+        await this.prisma.subscription.updateMany({
+            where: {
+                userId,
+                status: { in: ['ACTIVE', 'PAST_DUE'] },
+            },
+            data: {
+                status: 'CANCELED',
+                cancelAtPeriodEnd: true,
+            },
+        });
+
+        // 3. Determinar si se cancela Creador o PRO
+        const isCancelingCreator = planType === 'CREATOR' || (!planType && user.isCreator && user.plan !== 'PRO');
+
+        const updateData: any = isCancelingCreator
+            ? { isCreator: false, accountType: 'BASIC' }
+            : { plan: 'FREE', subscriptionStatus: 'CANCELED' };
+
+        const updatedUser = await this.prisma.user.update({
+            where: { id: userId },
+            data: updateData,
+            select: {
+                id: true,
+                plan: true,
+                isCreator: true,
+                accountType: true,
+                subscriptionStatus: true,
+            },
+        });
+
+        return {
+            success: true,
+            message: isCancelingCreator
+                ? 'La membresía de Creador fue cancelada correctamente.'
+                : 'La suscripción Finix PRO fue dada de baja correctamente.',
+            user: updatedUser,
+        };
     }
 
     async getCreatorSummary(userId: string) {

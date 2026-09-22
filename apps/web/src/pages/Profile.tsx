@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { apiFetch } from '@/lib/api';
@@ -15,7 +15,8 @@ import {
     Edit, Check, X, Camera, Globe, Shield,
     BarChart3, Target, MessageSquare, UserPlus,
     Star, Search, Plus, Wallet, DollarSign,
-    ArrowUpRight, ArrowDownRight, Layers, Activity, Loader2, Lock, Flag
+    ArrowUpRight, ArrowDownRight, Layers, Activity, Loader2, Lock, Flag,
+    Share2, Settings as SettingsIcon, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import ReportModal from '@/components/ReportModal';
 import { Input } from '@/components/ui/input';
@@ -816,6 +817,15 @@ export default function Profile() {
     const [isSearching, setIsSearching] = useState(false);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [showReportModal, setShowReportModal] = useState(false);
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const toastTimer = useRef<ReturnType<typeof setTimeout>>();
+
+    const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ message, type });
+        clearTimeout(toastTimer.current);
+        toastTimer.current = setTimeout(() => setToast(null), 3500);
+    }, []);
 
     const isOwnProfile = !!(currentUser?.username === username || (!username && currentUser));
 
@@ -1044,6 +1054,7 @@ export default function Profile() {
         // Add preview asset
         const newAsset: PinnedAsset = { ticker, name, price: 0, change: 0, changePercent: 0 };
         setPinnedAssets(prev => [...prev, newAsset]);
+        showToast(`${ticker} agregado a tus activos destacados`);
 
         // Fetch real quote
         try {
@@ -1069,6 +1080,7 @@ export default function Profile() {
         setAllPinnedTickers(newTickers);
         setPinnedAssets(prev => prev.filter(a => a.ticker !== ticker));
         await savePinnedTickers(newTickers);
+        showToast(`${ticker} eliminado de tus destacados`);
     };
 
     const loadProfilePosts = async () => {
@@ -1124,14 +1136,50 @@ export default function Profile() {
 
     /* ── Save profile ────────────────────────────── */
     const handleSaveProfile = async () => {
+        setIsSavingProfile(true);
         try {
             const res = await apiFetch('/users/me', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editForm),
             });
-            if (res.ok) { const updated = await res.json(); setProfile(updated); setIsEditing(false); }
-        } catch { }
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data?.message || 'Error al guardar el perfil');
+            }
+            const updated = await res.json();
+            setProfile(updated);
+            setEditForm(updated);
+            setIsEditing(false);
+            updateUser({
+                username: updated.username,
+                bio: updated.bio,
+                avatarUrl: updated.avatarUrl,
+            });
+            showToast('Perfil actualizado correctamente');
+            if (updated.username && updated.username !== username) {
+                navigate(`/profile/${encodeURIComponent(updated.username)}`, { replace: true });
+            }
+        } catch (error: any) {
+            showToast(error.message || 'No se pudo actualizar el perfil', 'error');
+        } finally {
+            setIsSavingProfile(false);
+        }
+    };
+
+    const handleShareProfile = async () => {
+        try {
+            const targetUser = profile?.username || currentUser?.username || '';
+            const profileUrl = `${window.location.origin}/profile/${encodeURIComponent(targetUser)}`;
+            if (navigator.clipboard) {
+                await navigator.clipboard.writeText(profileUrl);
+                showToast('Enlace de perfil copiado al portapapeles');
+            } else {
+                showToast(profileUrl);
+            }
+        } catch {
+            showToast('No se pudo copiar el enlace', 'error');
+        }
     };
 
     const handleUploadImage = async (type: 'avatar' | 'banner') => {
@@ -1156,9 +1204,15 @@ export default function Profile() {
 
                     if (type === 'avatar') {
                         updateUser({ avatarUrl: nextUrl });
+                        showToast('Foto de perfil actualizada correctamente');
+                    } else {
+                        (updateUser as (patch: any) => void)({ bannerUrl: nextUrl });
+                        showToast('Banner actualizado correctamente');
                     }
                 } catch (error: any) {
-                    setImageUploadError(error?.message || `No se pudo subir el ${type === 'avatar' ? 'avatar' : 'banner'}`);
+                    const msg = error?.message || `No se pudo subir el ${type === 'avatar' ? 'avatar' : 'banner'}`;
+                    setImageUploadError(msg);
+                    showToast(msg, 'error');
                 } finally {
                     setUploadingImage(null);
                 }
@@ -1205,7 +1259,30 @@ export default function Profile() {
     ];
 
     return (
-        <div className="flex-1 w-full pb-20 bg-background text-foreground">
+        <div className="flex-1 w-full pb-20 bg-background text-foreground relative">
+            {/* Toast feedback */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -16, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -16, scale: 0.95 }}
+                        className={`fixed top-4 right-4 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl border shadow-2xl text-xs font-semibold backdrop-blur-md ${
+                            toast.type === 'error'
+                                ? 'bg-red-500/15 border-red-500/30 text-red-300'
+                                : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                        }`}
+                    >
+                        {toast.type === 'error' ? (
+                            <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                        ) : (
+                            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                        )}
+                        <span>{toast.message}</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* ── BANNER ─────────────────────────────────────────── */}
             <div className="relative">
                 <div
@@ -1229,15 +1306,16 @@ export default function Profile() {
                         }}
                     />
 
-                    {isOwnProfile && isEditing && (
+                    {isOwnProfile && (
                         <button
                             onClick={() => handleUploadImage('banner')}
                             disabled={uploadingImage === 'banner'}
-                            className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium"
-                            style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', backdropFilter: 'blur(8px)' }}
+                            className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                            style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', backdropFilter: 'blur(10px)' }}
+                            title="Cambiar imagen de banner"
                         >
-                            {uploadingImage === 'banner' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                            {uploadingImage === 'banner' ? 'Subiendo...' : 'Cambiar banner'}
+                            {uploadingImage === 'banner' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" /> : <Camera className="w-3.5 h-3.5 text-emerald-400" />}
+                            <span>{uploadingImage === 'banner' ? 'Subiendo...' : 'Cambiar banner'}</span>
                         </button>
                     )}
                 </div>
@@ -1261,12 +1339,13 @@ export default function Profile() {
                                 (profile.username && profile.username.length > 0) ? profile.username[0].toUpperCase() : 'U'
                             )}
                         </div>
-                        {isOwnProfile && isEditing && (
+                        {isOwnProfile && (
                             <button
                                 onClick={() => handleUploadImage('avatar')}
                                 disabled={uploadingImage === 'avatar'}
-                                className="absolute bottom-1 right-1 w-8 h-8 rounded-full flex items-center justify-center"
-                                style={{ background: PRIMARY, color: '#000' }}
+                                className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer z-20"
+                                style={{ background: PRIMARY, color: '#000', border: '2px solid hsl(var(--background))' }}
+                                title="Cambiar foto de perfil"
                             >
                                 {uploadingImage === 'avatar' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                             </button>
@@ -1274,21 +1353,26 @@ export default function Profile() {
                         {/* Verified badge */}
                         {profile.isVerified && (
                             <div
-                                className="absolute bottom-1 right-1 w-7 h-7 rounded-full flex items-center justify-center"
+                                className={`absolute ${isOwnProfile ? 'top-0 right-0' : 'bottom-1 right-1'} w-7 h-7 rounded-full flex items-center justify-center z-10 shadow-md`}
                                 style={{ background: PRIMARY, border: '2px solid hsl(var(--background))' }}
+                                title="Usuario verificado"
                             >
-                                <Check className="w-3.5 h-3.5 text-black" />
+                                <Check className="w-3.5 h-3.5 text-black stroke-[3]" />
                             </div>
                         )}
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex items-center gap-2 pb-2">
+                    <div className="flex flex-wrap items-center gap-2 pb-2">
                         {isOwnProfile ? (
                             isEditing ? (
                                 <>
                                     <button
-                                        onClick={() => setIsEditing(false)}
+                                        onClick={() => {
+                                            setIsEditing(false);
+                                            setEditForm(profile || {});
+                                        }}
+                                        disabled={isSavingProfile}
                                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border"
                                         style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
                                     >
@@ -1296,26 +1380,47 @@ export default function Profile() {
                                     </button>
                                     <button
                                         onClick={handleSaveProfile}
-                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold"
+                                        disabled={isSavingProfile}
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer disabled:opacity-75"
                                         style={{ background: PRIMARY, color: '#000' }}
                                     >
-                                        <Check className="w-3.5 h-3.5" /> Guardar
+                                        {isSavingProfile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                        <span>{isSavingProfile ? 'Guardando...' : 'Guardar'}</span>
                                     </button>
                                 </>
                             ) : (
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all"
-                                    style={{ borderColor: PRIMARY_BRD, color: PRIMARY, background: PRIMARY_DIM }}
-                                >
-                                    <Edit className="w-3.5 h-3.5" /> Editar perfil
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:scale-105 active:scale-95"
+                                        style={{ borderColor: PRIMARY_BRD, color: PRIMARY, background: PRIMARY_DIM }}
+                                    >
+                                        <Edit className="w-3.5 h-3.5" /> Editar perfil
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('/settings')}
+                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-secondary/80"
+                                        style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
+                                        title="Ir a Configuración"
+                                    >
+                                        <SettingsIcon className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Configuración</span>
+                                    </button>
+                                    <button
+                                        onClick={handleShareProfile}
+                                        className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all hover:bg-secondary/80"
+                                        style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
+                                        title="Compartir perfil"
+                                    >
+                                        <Share2 className="w-3.5 h-3.5" />
+                                    </button>
+                                </>
                             )
                         ) : (
                             <>
                                 <button
                                     onClick={() => navigate(`/messages?user=${profile.id}`)}
-                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all"
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-secondary/80"
                                     style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
                                 >
                                     <MessageSquare className="w-3.5 h-3.5" /> Mensaje
@@ -1323,7 +1428,7 @@ export default function Profile() {
                                 <button
                                     onClick={handleToggleFollow}
                                     disabled={isFollowSubmitting}
-                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
                                     style={{
                                         background: isFollowing ? 'hsl(var(--secondary))' : PRIMARY,
                                         color: isFollowing ? 'hsl(var(--muted-foreground))' : '#000',
@@ -1338,8 +1443,16 @@ export default function Profile() {
                                             : <><UserPlus className="w-3.5 h-3.5" /> Seguir</>}
                                 </button>
                                 <button
+                                    onClick={handleShareProfile}
+                                    className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all hover:bg-secondary/80"
+                                    style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
+                                    title="Compartir perfil"
+                                >
+                                    <Share2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
                                     onClick={() => setShowReportModal(true)}
-                                    className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all"
+                                    className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all hover:bg-secondary/80"
                                     style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
                                     title="Reportar usuario"
                                 >
@@ -1362,7 +1475,7 @@ export default function Profile() {
 
                 {/* ── PROFILE INFO ──────────────────────────────── */}
                 <div className="px-6 mt-4">
-                    {imageUploadError && isEditing ? (
+                    {imageUploadError ? (
                         <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
                             {imageUploadError}
                         </div>
@@ -1712,7 +1825,27 @@ export default function Profile() {
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="py-16"></div>
+                                        <div className="rounded-2xl py-12 px-6 text-center border border-border/40 bg-card/20 space-y-3">
+                                            <MessageSquare className="w-10 h-10 mx-auto opacity-30 text-primary" />
+                                            <h4 className="text-base font-bold text-foreground">
+                                                {isOwnProfile ? 'Todavía no publicaste nada' : 'Sin publicaciones todavía'}
+                                            </h4>
+                                            <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                                                {isOwnProfile
+                                                    ? 'Compartí tus análisis técnicos, reflexiones de mercado o ideas de trading con la comunidad.'
+                                                    : `@${profile.username} aún no ha compartido ninguna publicación.`}
+                                            </p>
+                                            {isOwnProfile && (
+                                                <button
+                                                    onClick={() => navigate('/dashboard')}
+                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer mt-2"
+                                                    style={{ background: PRIMARY, color: '#000' }}
+                                                >
+                                                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                                                    Ir al Feed para Publicar
+                                                </button>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </motion.div>

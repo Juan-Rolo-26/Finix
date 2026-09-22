@@ -318,7 +318,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
             style={{ background: 'hsl(0 0% 0% / 0.7)', backdropFilter: 'blur(8px)' }}
             onClick={onClose}
         >
@@ -326,12 +326,12 @@ function CreateCommunityModal({ onClose, onCreate }: {
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
+                className="w-full max-w-lg rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
                 style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4"
+                <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4"
                     style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                     <div>
                         <h2 className="font-bold text-base">Crear comunidad</h2>
@@ -345,7 +345,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                 </div>
 
                 {/* Progress */}
-                <div className="flex gap-1 px-6 py-3">
+                <div className="flex gap-1 px-4 sm:px-6 py-2.5 sm:py-3">
                     {CREATION_STEPS.map((_, i) => (
                         <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300"
                             style={{ background: i <= step ? 'hsl(var(--primary))' : 'hsl(var(--muted))' }} />
@@ -353,7 +353,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                 </div>
 
                 {/* Step content */}
-                <div className="px-6 pb-2 max-h-[60vh] overflow-y-auto">
+                <div className="px-4 sm:px-6 pb-2 max-h-[65vh] overflow-y-auto">
                     <AnimatePresence mode="wait">
                         <motion.div key={step}
                             initial={{ opacity: 0, x: 20 }}
@@ -412,7 +412,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                         <p className="text-[10px] mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                             Podés seleccionar una o más categorías.
                                         </p>
-                                        <div className="grid grid-cols-3 gap-1.5">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                                             {CATEGORIES.filter(c => c.key !== 'all').map(cat => {
                                                 const Icon = cat.icon;
                                                 const active = form.categories.includes(cat.key);
@@ -438,7 +438,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                             })}
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                         <div>
                                             <label className="text-xs font-semibold mb-2 block"
                                                 style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -715,11 +715,11 @@ function CreateCommunityModal({ onClose, onCreate }: {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between px-6 py-4"
+                <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4"
                     style={{ borderTop: '1px solid hsl(var(--border))' }}>
                     <button
                         onClick={() => step === 0 ? onClose() : setStep(s => s - 1)}
-                        className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl transition-colors hover:bg-muted"
+                        className="flex items-center gap-1.5 text-xs sm:text-sm font-medium px-3 py-2 rounded-xl transition-colors hover:bg-muted"
                         style={{ color: 'hsl(var(--muted-foreground))' }}
                     >
                         <ArrowLeft className="w-4 h-4" />
@@ -728,7 +728,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                     <button
                         disabled={!canNext[step] || loading}
                         onClick={() => step < CREATION_STEPS.length - 1 ? setStep(s => s + 1) : handleSubmit()}
-                        className="flex items-center gap-1.5 text-sm font-semibold px-5 py-2 rounded-xl transition-all disabled:opacity-40"
+                        className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 rounded-xl transition-all disabled:opacity-40"
                         style={{
                             background: 'hsl(var(--primary))',
                             color: 'hsl(var(--primary-foreground))',
@@ -840,14 +840,14 @@ export default function Comunidades() {
     }
 
     return (
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0 w-full">
             {/* ── Header ── */}
-            <div className="flex-shrink-0 px-4 sm:px-6 pt-5 pb-0"
+            <div className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-0"
                 style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                <div className="flex items-start justify-between mb-4">
-                    <div>
-                        <h1 className="text-xl font-black tracking-tight">Comunidades</h1>
-                        <p className="text-[12px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-3 mb-3 sm:mb-4">
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight">Comunidades</h1>
+                        <p className="text-xs sm:text-[13px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                             Aprendé, compartí y conectate con inversores que piensan como vos.
                         </p>
                     </div>
@@ -855,20 +855,20 @@ export default function Comunidades() {
                     {isCreator ? (
                         <button
                             onClick={() => navigate('/comunidades/crear')}
-                            className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all btn-primary-glow shrink-0"
+                            className="flex items-center gap-2 rounded-xl px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-[13px] font-semibold transition-all btn-primary-glow shrink-0"
                             style={{
                                 background: 'hsl(var(--primary))',
                                 color: 'hsl(var(--primary-foreground))',
                             }}
                         >
                             <Plus className="w-4 h-4" />
-                            <span className="hidden sm:inline">Crear comunidad</span>
-                            <span className="sm:hidden">Crear</span>
+                            <span className="hidden xs:inline sm:inline">Crear comunidad</span>
+                            <span className="xs:hidden sm:hidden">Crear</span>
                         </button>
                     ) : (
                         <Link
                             to="/settings/plan"
-                            className="flex items-center gap-2 rounded-xl px-4 py-2 text-[12px] font-semibold transition-all border shrink-0 hover:bg-muted"
+                            className="flex items-center gap-2 rounded-xl px-3.5 sm:px-4 py-2 text-xs sm:text-[12px] font-semibold transition-all border shrink-0 hover:bg-muted"
                             style={{ borderColor: 'hsl(var(--primary)/0.4)', color: 'hsl(var(--primary))' }}
                         >
                             <Crown className="w-4 h-4" />
@@ -922,13 +922,13 @@ export default function Comunidades() {
             </div>
 
             {/* ── Content ── */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-6">
+            <div className="flex-1 px-4 sm:px-6 py-4 space-y-5 sm:space-y-6">
                 {/* Sort bar */}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
                     <p className="text-[11px] font-semibold" style={{ color: 'hsl(var(--muted-foreground))' }}>
                         {loading ? 'Cargando...' : `${communities.length} comunidades`}
                     </p>
-                    <div className="ml-auto flex items-center gap-1">
+                    <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-0.5 max-w-full">
                         {[
                             { key: 'popular', label: 'Populares' },
                             { key: 'new', label: 'Nuevas' },
@@ -937,7 +937,7 @@ export default function Comunidades() {
                         ].map(s => (
                             <button key={s.key}
                                 onClick={() => setSortBy(s.key)}
-                                className="text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                                className="text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all shrink-0"
                                 style={{
                                     background: sortBy === s.key ? 'hsl(var(--primary)/0.12)' : 'transparent',
                                     color: sortBy === s.key ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',

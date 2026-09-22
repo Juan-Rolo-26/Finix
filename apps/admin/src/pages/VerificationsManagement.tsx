@@ -10,15 +10,18 @@ export default function VerificationsManagement() {
 
     const getDocumentUrl = (path: string) => {
         if (!path) return '';
-        if (path.startsWith('http')) return path;
-        // In case VITE_SUPABASE_URL is defined in admin, otherwise fallback to Finix production or web path.
-        // I will just return the path directly for now if it's a full URL, or a constructed one.
-        // Actually, the web app uploaded it. Let's just assume `import.meta.env.VITE_SUPABASE_URL` exists or use the raw path.
+        if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) return path;
+        if (path.startsWith('/uploads/') || path.startsWith('uploads/')) {
+            const clean = path.startsWith('/') ? path : `/${path}`;
+            return `/api${clean}`;
+        }
+        if (path.startsWith('/api/uploads/')) {
+            return path;
+        }
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         if (supabaseUrl) {
             return `${supabaseUrl}/storage/v1/object/public/financial-verifications/${path}`;
         }
-        // Fallback if VITE_SUPABASE_URL is not in admin .env
         return `https://pfyzdohllcxhztmldqou.supabase.co/storage/v1/object/public/financial-verifications/${path}`;
     };
 

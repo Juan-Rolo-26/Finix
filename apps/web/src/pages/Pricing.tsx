@@ -101,8 +101,11 @@ export default function Pricing() {
                 'Todo lo del plan Free',
                 'Portafolios múltiples avanzados',
                 'Cotizaciones en tiempo real (Mercados)',
+                'Alertas y señales exclusivas por Gmail',
                 'Noticias financieras sin límites',
                 'Filtros y análisis técnico avanzado',
+                'Cobro mensual automático al mismo precio fijo',
+                'Cancelación en 1 clic desde Configuración > Suscripción',
                 'Soporte prioritario',
             ],
             missingFeatures: [
@@ -126,6 +129,8 @@ export default function Pricing() {
                 'Monetización de contenido y análisis',
                 'Insignia de Creador Verificado',
                 'Métricas detalladas de audiencia',
+                'Cobro mensual automático al mismo precio fijo',
+                'Cancelación en 1 clic desde Configuración > Suscripción',
             ],
             missingFeatures: [],
             buttonText: 'Empezar como Creador',
@@ -226,11 +231,16 @@ export default function Pricing() {
                                     <p className="text-sm text-muted-foreground min-h-[40px]">{plan.description}</p>
                                 </div>
 
-                                <div className="mb-8">
+                                <div className="mb-6">
                                     <div className="flex items-end gap-1">
                                         <span className="text-4xl font-extrabold">{plan.price}</span>
                                         {plan.period && <span className="text-muted-foreground font-medium mb-1">{plan.period}</span>}
                                     </div>
+                                    {plan.name !== 'Free' && (
+                                        <p className="text-[11px] font-semibold text-emerald-400 mt-1 flex items-center gap-1">
+                                            <Sparkles className="w-3 h-3 shrink-0" /> Cobro mensual automático a precio fijo
+                                        </p>
+                                    )}
                                 </div>
 
                                 <button 
@@ -299,6 +309,30 @@ export default function Pricing() {
                             </motion.div>
                         );
                     })}
+                </div>
+
+                {/* Transparency and Recurring Billing Banner */}
+                <div className="max-w-4xl mx-auto mt-12 w-full p-6 rounded-3xl border border-border/50 bg-card/40 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-primary">
+                            <Shield className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1">
+                            <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
+                                Cobro mensual recurrente automático con precio protegido
+                            </h4>
+                            <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
+                                Tu cuota mensual se cobra automáticamente cada mes conservando el mismo precio convenido sin aumentos sorpresivos. Podés dar de baja tu plan PRO o Creador en cualquier momento con un solo clic desde <strong>Configuración &gt; Suscripción</strong>.
+                            </p>
+                        </div>
+                    </div>
+                    {user && (
+                        <Link to="/settings" className="shrink-0 w-full md:w-auto">
+                            <button className="w-full md:w-auto px-4 py-2.5 rounded-xl border border-border hover:bg-muted text-xs font-semibold transition-colors">
+                                Gestionar en Configuración
+                            </button>
+                        </Link>
+                    )}
                 </div>
             </div>
         </div>

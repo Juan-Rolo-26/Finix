@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
-import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '../stores/authStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -75,13 +74,24 @@ export default function CreatePostWidget({
         try {
             let mediaUrls: any[] = [];
             if (image) {
-                const ext = image.name.split('.').pop();
-                const fileName = `post_${crypto.randomUUID()}.${ext}`;
-                const path = `posts/${fileName}`;
-                const { error } = await supabase.storage.from('public-media').upload(path, image);
-                if (error) throw new Error(error.message);
-                const publicUrl = supabase.storage.from('public-media').getPublicUrl(path).data.publicUrl;
-                mediaUrls = [{ url: publicUrl, mediaType: 'image' }];
+                const formData = new FormData();
+                formData.append('files', image);
+                const uploadRes = await apiFetch('/posts/upload-media', {
+                    method: 'POST',
+                    body: formData,
+                });
+                if (!uploadRes.ok) {
+                    let msg = 'Error al subir la imagen';
+                    try {
+                        const err = await uploadRes.json();
+                        msg = err.message || msg;
+                    } catch { }
+                    throw new Error(msg);
+                }
+                const uploadData = await uploadRes.json();
+                if (Array.isArray(uploadData) && uploadData.length > 0 && uploadData[0].url) {
+                    mediaUrls = [{ url: uploadData[0].url, mediaType: uploadData[0].mediaType || 'image' }];
+                }
             }
 
             const tickers = Array.from(new Set((content.match(/\$[A-Za-z][A-Za-z0-9]{0,9}/g) ?? []).map(t => t.toUpperCase())));

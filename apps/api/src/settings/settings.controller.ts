@@ -3,6 +3,7 @@ import {
     Get,
     Patch,
     Post,
+    Delete,
     Body,
     UseGuards,
     Request,
@@ -12,11 +13,10 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { extname } from 'path';
 import { SettingsService } from './settings.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { buildUploadPublicPath } from '../uploads/upload-url.util';
+import { buildUploadPublicPath, getUploadFolder } from '../uploads/upload-url.util';
 
 // ─── Multer config ────────────────────────────────────────────────────────────
 
@@ -25,8 +25,7 @@ const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 const avatarStorage = diskStorage({
     destination: (_req, _file, cb) => {
-        const dir = join(__dirname, '..', '..', 'uploads', 'avatars');
-        if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+        const dir = getUploadFolder('avatars');
         cb(null, dir);
     },
     filename: (_req, file, cb) => {
@@ -37,8 +36,7 @@ const avatarStorage = diskStorage({
 
 const bannerStorage = diskStorage({
     destination: (_req, _file, cb) => {
-        const dir = join(__dirname, '..', '..', 'uploads', 'banners');
-        if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+        const dir = getUploadFolder('banners');
         cb(null, dir);
     },
     filename: (_req, file, cb) => {
@@ -77,6 +75,23 @@ export class SettingsController {
     @Post('logout-all')
     logoutAll(@Request() req) {
         return this.settingsService.logoutAllSessions(req.user.id);
+    }
+
+    @Delete('account')
+    deleteAccount(@Request() req) {
+        return this.settingsService.deleteAccount(req.user.id);
+    }
+
+    // ─── Financial Verification ───────────────────────────────────────────────
+
+    @Get('verification')
+    getVerification(@Request() req) {
+        return this.settingsService.getVerification(req.user.id);
+    }
+
+    @Post('verification')
+    submitVerification(@Request() req, @Body() body: any) {
+        return this.settingsService.submitVerification(req.user.id, body);
     }
 
     // ─── Avatar upload ────────────────────────────────────────────────────────

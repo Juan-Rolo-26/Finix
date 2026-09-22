@@ -27,6 +27,7 @@ export const UserSchema = z.object({
     isVerified: z.boolean().default(false),
     bio: z.string().optional(),
     avatarUrl: z.string().optional(),
+    bannerUrl: z.string().optional(),
     onboardingCompleted: z.boolean().default(false),
     onboardingStep: z.number().default(0),
     createdAt: z.coerce.date(),
