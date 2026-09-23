@@ -41,8 +41,8 @@ export const ACTIVE_COMMUNITY_STATUSES = new Set(['ACTIVE']);
 
 export const normalizePlan = (plan: string | null | undefined): PlanType => {
     const normalized = String(plan || '').trim().toLowerCase();
-    if (normalized === 'pro_creator') return 'pro_creator';
-    if (normalized === 'pro_investor') return 'pro_investor';
+    if (['pro_creator', 'creator'].includes(normalized)) return 'pro_creator';
+    if (['pro_investor', 'pro'].includes(normalized)) return 'pro_investor';
     return 'free';
 };
 

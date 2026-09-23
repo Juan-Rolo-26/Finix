@@ -277,13 +277,30 @@ export function ProGate({
         <div className={`relative w-full flex-1 flex flex-col items-center justify-center min-h-[calc(100vh-60px)] px-4 sm:px-6 py-10 overflow-hidden bg-background ${className}`}>
             
             {/* ── TEASER DE FONDO: INTERFAZ FINANCIERA CON DATOS OCULTOS / DIFUMINADOS ── */}
-            <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none filter blur-[3.5px] opacity-35 dark:opacity-25 scale-[0.99] transition-all">
+            <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none filter blur-[2px] opacity-55 dark:opacity-45 scale-[0.99] transition-all">
                 {children ? (
-                    <div className="w-full h-full p-6 opacity-30">
+                    <div className="w-full h-full p-6">
                         {children}
                     </div>
                 ) : (
                     <div className="w-full max-w-7xl mx-auto h-full p-4 sm:p-8 flex flex-col gap-6">
+                        <section className="rounded-2xl border border-primary/25 bg-card/80 p-4 sm:p-5 shadow-sm">
+                            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                                <sectionMeta.icon className="h-4 w-4" />
+                                <span>{displayBadge}</span>
+                            </div>
+                            <h3 className="mt-2 text-lg font-bold text-foreground">{displayTitle}</h3>
+                            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">{displayDesc}</p>
+                            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                                {displayFeatures.map((feature) => (
+                                    <div key={feature.title} className="rounded-xl border border-border/60 bg-background/80 p-3">
+                                        <p className="text-xs font-semibold text-foreground">{feature.title}</p>
+                                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{feature.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
                         {/* Mock Header & Filter Bar */}
                         <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-border/40">
                             <div className="flex items-center gap-3">
@@ -540,4 +557,3 @@ export function ProGate({
 }
 
 export default ProGate;
-

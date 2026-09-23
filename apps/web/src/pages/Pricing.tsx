@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore, isJuanUser, isProUser as checkIsPro } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
+import { SubscriptionRenewalChoice } from '@/components/SubscriptionRenewalChoice';
 
 /* ─── Simple sparkline SVG ──────────────────────────────────────── */
 function Sparkline({ data, color, height = 48 }: { data: number[]; color: string; height?: number }) {
@@ -403,7 +404,7 @@ const PRO_SECTIONS = [
         description: 'Liderá tu propia comunidad de inversores y cobrá suscripciones mensuales en ARS.',
         features: [
             'Fundá comunidades públicas y salas privadas VIP accesibles solo por suscripción paga',
-            'Cobros mensuales automáticos integrados con Mercado Pago a precio fijo protegido',
+            'Opción de renovación automática mensual por Mercado Pago',
             'Insignia dorada oficial de Creador Verificado para mayor reputación y confianza',
             'Publicación de tesis fundamentadas citando datos de balances y gráficos de Finix en vivo',
             'Compartí la evolución de tu portafolio auditado en tiempo real sin capturas truchas',
@@ -418,6 +419,7 @@ export default function Pricing() {
     const syncFromSession = useAuthStore(s => s.syncFromSession);
     const [searchParams] = useSearchParams();
     const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+    const [renewalPlan, setRenewalPlan] = useState<'PRO' | 'Creador' | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<string | null>(searchParams.get('status'));
 
     useEffect(() => {
@@ -433,10 +435,20 @@ export default function Pricing() {
             return;
         }
         if (!user) { navigate(`/auth?redirect=${encodeURIComponent('/pricing')}&plan=${planType}`); return; }
+        setRenewalPlan(planType);
+    };
+
+    const confirmCheckout = async (autoRenew: boolean) => {
+        if (!renewalPlan) return;
+        const planType = renewalPlan;
         setLoadingPlan(planType);
         const endpoint = planType === 'PRO' ? '/mercadopago/checkout/pro' : '/mercadopago/checkout/creator';
         try {
-            const res = await apiFetch(endpoint, { method: 'POST' });
+            const res = await apiFetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ autoRenew }),
+            });
             if (!res.ok) { const data = await res.json(); throw new Error(data.message || 'Error al conectar con Mercado Pago'); }
             const data = await res.json();
             const checkoutUrl = data.init_point || data.sandbox_init_point || data.url;
@@ -444,6 +456,7 @@ export default function Pricing() {
         } catch (error: any) {
             alert(error.message || 'Ocurrió un error inesperado al conectar con Mercado Pago.');
             setLoadingPlan(null);
+            setRenewalPlan(null);
         }
     };
 
@@ -480,7 +493,7 @@ export default function Pricing() {
                 'Noticias financieras en vivo con análisis algorítmico de sentimiento e impacto por ticker',
                 'Calendario oficial TradingView con fechas ex-dividend y sorpresas de earnings',
                 'Alertas de Mercado 24/7 por precio y volumen institucional vía Email y Telegram',
-                'Cobro mensual automático protegido en ARS (Cancelás en 1 clic)',
+                'Opción de cobro recurrente mensual en ARS (cancelable desde Configuración)',
                 'Soporte prioritario 24/7'
             ],
             missingFeatures: ['Creación de comunidades propias monetizadas'],
@@ -617,7 +630,7 @@ export default function Pricing() {
                                     </div>
                                     {plan.name !== 'Free' && (
                                         <p className="text-[11px] font-semibold text-emerald-400 mt-1 flex items-center gap-1">
-                                            <Sparkles className="w-3 h-3 shrink-0" /> Precio fijo — sin aumentos sorpresivos
+                                            <Sparkles className="w-3 h-3 shrink-0" /> Precio mensual informado antes del checkout
                                         </p>
                                     )}
                                 </div>
@@ -842,9 +855,9 @@ export default function Pricing() {
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-primary"><Shield className="w-6 h-6" /></div>
                         <div className="space-y-1">
-                            <h4 className="font-bold text-sm text-foreground">Cobro mensual recurrente automático con precio protegido</h4>
+                            <h4 className="font-bold text-sm text-foreground">Elegís si querés renovar automáticamente</h4>
                             <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
-                                Tu cuota mensual se cobra automáticamente cada mes conservando el mismo precio convenido sin aumentos sorpresivos. Podés dar de baja tu plan PRO o Creador en cualquier momento con un solo clic desde <strong>Configuración &gt; Suscripción</strong>.
+                                Antes de pagar podés elegir entre un mes sin renovación o el cobro automático mensual. Si activás la renovación, podés cancelarla desde <strong>Configuración &gt; Suscripción</strong>.
                             </p>
                         </div>
                     </div>
@@ -855,6 +868,14 @@ export default function Pricing() {
                     )}
                 </div>
             </div>
+            <SubscriptionRenewalChoice
+                open={renewalPlan !== null}
+                planName={renewalPlan === 'Creador' ? 'Creador' : 'Finix PRO'}
+                monthlyPrice={(renewalPlan === 'Creador' ? prices.creator : prices.pro).toLocaleString('es-AR')}
+                busy={loadingPlan !== null}
+                onClose={() => setRenewalPlan(null)}
+                onConfirm={(autoRenew) => { void confirmCheckout(autoRenew); }}
+            />
         </div>
     );
 }

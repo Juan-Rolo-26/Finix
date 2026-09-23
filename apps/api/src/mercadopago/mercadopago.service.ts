@@ -28,7 +28,22 @@ export class MercadoPagoService {
         return Number(process.env.MP_CREATOR_PRICE_ARS) || 29900;
     }
 
-    async createPreference(userId: string, planType: 'pro' | 'creator') {
+    async cancelPreapproval(preapprovalId: string) {
+        if (!this.isConfigured()) throw new BadRequestException('Mercado Pago no está configurado.');
+        const response = await fetch(`https://api.mercadopago.com/preapproval/${encodeURIComponent(preapprovalId)}`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'cancelled' }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            this.logger.error('Error canceling Mercado Pago subscription:', data);
+            throw new BadRequestException(data.message || 'Mercado Pago no pudo cancelar la renovación.');
+        }
+        return data;
+    }
+
+    async createPreference(userId: string, planType: 'pro' | 'creator', autoRenew = false) {
         if (!this.isConfigured()) {
             throw new BadRequestException(
                 'Mercado Pago aún no está configurado. Por favor ingresá tu MP_ACCESS_TOKEN en el archivo .env del servidor.',
@@ -45,13 +60,69 @@ export class MercadoPagoService {
         }
 
         const isPro = planType === 'pro';
-        const title = isPro ? 'Finix PRO - Membresía Mensual' : 'Finix Creador - Membresía Mensual';
-        const defaultPrice = isPro ? 6500 : 29900;
-        const price = isPro
-            ? Number(process.env.MP_PRO_PRICE_ARS) || defaultPrice
-            : Number(process.env.MP_CREATOR_PRICE_ARS) || defaultPrice;
+        const plan = isPro ? 'PRO' : 'CREATOR';
+        const existingPlan = await this.prisma.subscription.findFirst({
+            where: {
+                userId,
+                planType: { in: isPro ? ['PRO', 'pro_investor'] : ['CREATOR', 'pro_creator'] },
+                status: { in: ['ACTIVE', 'PENDING', 'PAST_DUE'] },
+                OR: [{ endDate: null }, { endDate: { gt: new Date() } }],
+            },
+        });
+        if (existingPlan) {
+            throw new BadRequestException(`Ya tenés un plan ${plan} activo o pendiente. Gestionálo desde Configuración.`);
+        }
 
-        const externalReference = `${user.id}:${isPro ? 'PRO' : 'CREATOR'}:${Date.now()}`;
+        const title = isPro ? 'Finix PRO - Membresía Mensual' : 'Finix Creador - Membresía Mensual';
+        const price = isPro ? this.getProPrice() : this.getCreatorPrice();
+
+        const externalReference = `${autoRenew ? 'FINIX_RECURRING' : 'FINIX_ONE_TIME'}:${user.id}:${plan}:${Date.now()}`;
+
+        if (autoRenew) {
+            const localSubscription = await this.prisma.subscription.create({
+                data: { userId: user.id, planType: plan, status: 'PENDING', mercadoPagoExternalReference: externalReference },
+            });
+            try {
+                const response = await fetch('https://api.mercadopago.com/preapproval', {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${this.accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        reason: `Finix ${plan} - renovación mensual`,
+                        external_reference: externalReference,
+                        payer_email: user.email,
+                        auto_recurring: {
+                            frequency: 1,
+                            frequency_type: 'months',
+                            transaction_amount: price,
+                            currency_id: 'ARS',
+                        },
+                        back_url: `${this.frontendUrl}/pricing?status=pending`,
+                        status: 'pending',
+                    }),
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    this.logger.error('Error creating Mercado Pago subscription:', data);
+                    await this.prisma.subscription.update({ where: { id: localSubscription.id }, data: { status: 'CANCELED' } });
+                    throw new BadRequestException(data.message || 'Mercado Pago no pudo iniciar la renovación automática.');
+                }
+
+                await this.prisma.subscription.update({
+                    where: { id: localSubscription.id },
+                    data: { mercadoPagoPreapprovalId: String(data.id) },
+                });
+                return { id: data.id, init_point: data.init_point, autoRenew: true };
+            } catch (error: any) {
+                await this.prisma.subscription.updateMany({
+                    where: { id: localSubscription.id, status: 'PENDING', mercadoPagoPreapprovalId: null },
+                    data: { status: 'CANCELED' },
+                }).catch(() => undefined);
+                throw error;
+            }
+        }
 
         const preferencePayload = {
             items: [
@@ -81,7 +152,8 @@ export class MercadoPagoService {
             statement_descriptor: 'FINIX PRO',
             metadata: {
                 user_id: user.id,
-                plan: isPro ? 'PRO' : 'CREATOR',
+                plan,
+                billing: 'ONE_TIME',
             },
         };
 
@@ -149,8 +221,47 @@ export class MercadoPagoService {
         if ((topic === 'payment' || topic === 'merchant_order') && paymentId) {
             await this.processPayment(String(paymentId));
         }
+        if (topic === 'subscription_preapproval' && paymentId) {
+            await this.processPreapproval(String(paymentId));
+        }
 
         return { received: true };
+    }
+
+    private async processPreapproval(preapprovalId: string) {
+        if (!this.isConfigured()) return;
+        const response = await fetch(`https://api.mercadopago.com/preapproval/${encodeURIComponent(preapprovalId)}`, {
+            headers: { Authorization: `Bearer ${this.accessToken}` },
+        });
+        if (!response.ok) {
+            this.logger.warn(`Could not fetch Mercado Pago subscription ${preapprovalId}`);
+            return;
+        }
+        const preapproval = await response.json();
+        const local = await this.prisma.subscription.findUnique({ where: { mercadoPagoPreapprovalId: preapprovalId } })
+            || (preapproval.external_reference
+                ? await this.prisma.subscription.findFirst({ where: { mercadoPagoExternalReference: preapproval.external_reference } })
+                : null);
+        if (!local) return;
+        if (!local.mercadoPagoPreapprovalId) {
+            await this.prisma.subscription.update({ where: { id: local.id }, data: { mercadoPagoPreapprovalId: preapprovalId } });
+        }
+
+        if (preapproval.status === 'authorized') {
+            // Payment webhooks, not authorization alone, grant paid access.
+            if (local.status !== 'ACTIVE' || !local.endDate || local.endDate <= new Date()) {
+                await this.prisma.subscription.update({ where: { id: local.id }, data: { status: 'PENDING' } });
+            }
+            return;
+        }
+        if (preapproval.status === 'cancelled' || preapproval.status === 'paused') {
+            const stillPaid = Boolean(local.endDate && local.endDate > new Date());
+            await this.prisma.subscription.update({
+                where: { id: local.id },
+                data: { status: stillPaid ? 'ACTIVE' : 'CANCELED', cancelAtPeriodEnd: true },
+            });
+            if (!stillPaid) await this.refreshUserEntitlements(local.userId);
+        }
     }
 
     async processPayment(paymentId: string) {
@@ -177,11 +288,27 @@ export class MercadoPagoService {
                     await this.activateCommunityPayment(payment, extRef);
                     return;
                 }
-                const [userId, plan] = extRef.split(':');
+                const preapprovalId = payment.preapproval_id ? String(payment.preapproval_id) : null;
+                const localSubscription = preapprovalId
+                    ? await this.prisma.subscription.findUnique({ where: { mercadoPagoPreapprovalId: preapprovalId } })
+                    : extRef.startsWith('FINIX_RECURRING:')
+                        ? await this.prisma.subscription.findFirst({ where: { mercadoPagoExternalReference: extRef } })
+                        : null;
+                let userId = localSubscription?.userId;
+                let targetPlan = localSubscription ? this.normalizePlanType(localSubscription.planType) : null;
+                if (!userId && extRef.startsWith('FINIX_ONE_TIME:')) {
+                    const [, referenceUserId, referencePlan] = extRef.split(':');
+                    userId = referenceUserId;
+                    targetPlan = referencePlan === 'CREATOR' ? 'CREATOR' : 'PRO';
+                }
+                if (!userId && /^[^:]+:(PRO|CREATOR):\d+$/.test(extRef)) {
+                    const [referenceUserId, referencePlan] = extRef.split(':');
+                    userId = referenceUserId;
+                    targetPlan = referencePlan as 'PRO' | 'CREATOR';
+                }
 
-                if (userId) {
-                    const targetPlan = plan === 'CREATOR' ? 'CREATOR' : 'PRO';
-                    await this.activateUserPlan(userId, targetPlan);
+                if (userId && targetPlan) {
+                    await this.activateUserPlan(userId, targetPlan, String(payment.id), preapprovalId || undefined);
                     this.logger.log(`User ${userId} upgraded to ${targetPlan} via payment ${paymentId}`);
                 }
             }
@@ -205,7 +332,54 @@ export class MercadoPagoService {
         });
     }
 
-    async activateUserPlan(userId: string, plan: 'PRO' | 'CREATOR') {
+    private normalizePlanType(value: string): 'PRO' | 'CREATOR' | null {
+        const type = value.toUpperCase();
+        if (type === 'PRO' || type === 'PRO_INVESTOR') return 'PRO';
+        if (type === 'CREATOR' || type === 'PRO_CREATOR') return 'CREATOR';
+        return null;
+    }
+
+    private addOneMonth(from: Date) {
+        const result = new Date(from);
+        const day = result.getUTCDate();
+        result.setUTCDate(1);
+        result.setUTCMonth(result.getUTCMonth() + 1);
+        const lastDay = new Date(Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)).getUTCDate();
+        result.setUTCDate(Math.min(day, lastDay));
+        return result;
+    }
+
+    private async refreshUserEntitlements(userId: string) {
+        const now = new Date();
+        const activeSubscriptions = await this.prisma.subscription.findMany({
+            where: { userId, status: 'ACTIVE', endDate: { gt: now } },
+            select: { planType: true },
+        });
+        const activePlans = new Set(activeSubscriptions.map((s) => this.normalizePlanType(s.planType)).filter(Boolean));
+        const plan = activePlans.has('CREATOR') ? 'CREATOR' : activePlans.has('PRO') ? 'PRO' : 'FREE';
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                plan,
+                subscriptionStatus: plan === 'FREE' ? 'EXPIRED' : 'ACTIVE',
+                accountType: plan === 'CREATOR' ? 'CREATOR' : plan === 'PRO' ? 'PRO' : 'BASIC',
+                isCreator: plan === 'CREATOR',
+            },
+        });
+    }
+
+    async activateUserPlan(userId: string, plan: 'PRO' | 'CREATOR', paymentId: string, preapprovalId?: string) {
+        const existingPayment = await this.prisma.subscription.findUnique({
+            where: { mercadoPagoPaymentId: paymentId },
+        });
+        if (existingPayment) return;
+
+        const subscription = preapprovalId
+            ? await this.prisma.subscription.findUnique({ where: { mercadoPagoPreapprovalId: preapprovalId } })
+            : null;
+        const periodStart = subscription?.endDate && subscription.endDate > new Date() ? subscription.endDate : new Date();
+        const endDate = this.addOneMonth(periodStart);
+
         const updateData: any = {
             plan,
             subscriptionStatus: 'ACTIVE',
@@ -220,6 +394,24 @@ export class MercadoPagoService {
             data: updateData,
             select: { username: true, email: true },
         });
+
+        if (subscription) {
+            await this.prisma.subscription.update({
+                where: { id: subscription.id },
+                data: { status: 'ACTIVE', startDate: subscription.startDate || new Date(), endDate, mercadoPagoPaymentId: paymentId },
+            });
+        } else {
+            await this.prisma.subscription.create({
+                data: {
+                    userId,
+                    planType: plan,
+                    status: 'ACTIVE',
+                    startDate: new Date(),
+                    endDate,
+                    mercadoPagoPaymentId: paymentId,
+                },
+            });
+        }
 
         // Notify admin about paid upgrade
         this.mailService.sendAdminAlert({

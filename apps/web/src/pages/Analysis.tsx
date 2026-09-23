@@ -13,7 +13,7 @@ import {
     ResponsiveContainer, LineChart as RCLineChart, Line, 
     XAxis, YAxis, Tooltip as RCTooltip, CartesianGrid 
 } from 'recharts';
-import { useAuthStore, isJuanUser } from '@/stores/authStore';
+import { useAuthStore, isProUser } from '@/stores/authStore';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -957,14 +957,7 @@ export default function Analysis() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
 
-    const isPro = Boolean(
-        (user as any)?.plan === 'PRO' ||
-        (user as any)?.accountType === 'PRO' ||
-        (user as any)?.role === 'ADMIN' ||
-        (user as any)?.isPro ||
-        (user as any)?.subscriptionTier === 'pro' ||
-        isJuanUser(user)
-    );
+    const isPro = isProUser(user);
 
     useEffect(() => {
         if (!isPro) {
@@ -1906,10 +1899,10 @@ export default function Analysis() {
                                         </div>
 
                                         {/* Gráfico Interactivo Único con Persistencia de Dibujos */}
-                            <div className="rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-card w-full min-h-[420px] sm:min-h-[600px] lg:min-h-[760px]">
+                            <div className="rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-card w-full min-h-[460px] sm:min-h-[680px] lg:min-h-[840px]">
                                             <TradingViewChart 
                                                 symbol={fullSymbol} 
-                                                height={760} 
+                                                height={840}
                                                 chartStorageId={chartStorageId}
                                                 loadLastChart={true}
                                             />

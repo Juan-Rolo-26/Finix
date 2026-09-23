@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuthStore, isJuanUser } from "@/stores/authStore";
+import { useAuthStore, isProUser } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
 import { ProGate } from "@/components/ProGate";
 import {
@@ -432,7 +432,7 @@ const PortfolioPage = () => {
   const t = useTranslation();
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const isPro = (user as any)?.plan === 'PRO' || (user as any)?.accountType === 'PRO' || (user as any)?.role === 'ADMIN' || (user as any)?.isPro || (user as any)?.subscriptionTier === 'pro' || isJuanUser(user);
+  const isPro = isProUser(user);
 
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);

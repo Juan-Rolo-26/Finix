@@ -894,8 +894,11 @@ model Subscription {
   user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   stripeSubscriptionId String?   @unique
   stripeCustomerId     String?
+  mercadoPagoPreapprovalId String? @unique
+  mercadoPagoExternalReference String?
+  mercadoPagoPaymentId String?   @unique
   status               String    @default("INACTIVE") // INACTIVE | ACTIVE | CANCELED | PAST_DUE | EXPIRED
-  planType             String    @default("PRO") // FREE | PRO
+  planType             String    @default("PRO") // PRO | CREATOR (Stripe legacy values are also supported)
   startDate            DateTime  @default(now())
   endDate              DateTime?
   cancelAtPeriodEnd    Boolean   @default(false)

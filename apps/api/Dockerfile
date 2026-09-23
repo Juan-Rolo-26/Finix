@@ -49,6 +49,7 @@ COPY --from=builder --chown=nestjs:nodejs /app/node_modules/@prisma ./node_modul
 RUN mkdir -p uploads && chown nestjs:nodejs uploads
 
 USER nestjs
+ENV UPLOADS_DIR=/app/uploads
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \

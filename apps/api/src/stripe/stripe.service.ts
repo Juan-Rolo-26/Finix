@@ -124,12 +124,13 @@ export class StripeService {
         };
     }
 
-    async cancelSubscription(userId: string) {
+    async cancelSubscription(userId: string, subscriptionId?: string) {
         this.ensureStripeConfigured();
 
         const activeSubscription = await this.prisma.subscription.findFirst({
             where: {
                 userId,
+                ...(subscriptionId ? { id: subscriptionId } : {}),
                 planType: { in: ['pro_investor', 'pro_creator'] },
                 status: { in: ['ACTIVE', 'PAST_DUE'] },
             },

@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Check, Sparkles, Zap, Shield, Target, Loader2, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, isProUser } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
+import { SubscriptionRenewalChoice } from '@/components/SubscriptionRenewalChoice';
 
 const FEATURES = [
     'Análisis fundamentales detallados de más de 5,000 acciones.',
@@ -12,14 +13,16 @@ const FEATURES = [
     'Estimaciones de "Fair Value" y detección de premiums o descuentos.',
     'Desglose profundo de balances financieros y flujo de caja (Cash Flow).',
     'Badge de Inversor PRO en tu perfil para mayor reputación.',
-    'Cobro mensual automático al mismo precio fijo garantizado.',
+    'Elegís entre renovar automáticamente cada mes o pagar un mes por vez.',
     'Cero anuncios y soporte prioritario 24/7.'
 ];
 
 export default function ProUpgrade() {
     const navigate = useNavigate();
     const user = useAuthStore(s => s.user);
+    const hasPro = isProUser(user);
     const [loading, setLoading] = useState(false);
+    const [renewalChoiceOpen, setRenewalChoiceOpen] = useState(false);
     const [proPrice, setProPrice] = useState(8500);
 
     useEffect(() => {
@@ -38,9 +41,17 @@ export default function ProUpgrade() {
             navigate(`/auth?redirect=${encodeURIComponent('/pro')}&plan=PRO`);
             return;
         }
+        setRenewalChoiceOpen(true);
+    };
+
+    const confirmCheckout = async (autoRenew: boolean) => {
         setLoading(true);
         try {
-            const res = await apiFetch('/mercadopago/checkout/pro', { method: 'POST' });
+            const res = await apiFetch('/mercadopago/checkout/pro', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ autoRenew }),
+            });
             if (!res.ok) {
                 const data = await res.json();
                 throw new Error(data.message || 'Error al conectar con Mercado Pago');
@@ -54,6 +65,8 @@ export default function ProUpgrade() {
             }
         } catch (error: any) {
             alert(error.message || 'Ocurrió un error inesperado.');
+            setRenewalChoiceOpen(false);
+        } finally {
             setLoading(false);
         }
     };
@@ -153,14 +166,14 @@ export default function ProUpgrade() {
                                 <span className="text-muted-foreground font-medium">ARS / mes</span>
                             </div>
                             <p className="text-xs text-emerald-400 font-semibold mb-6 flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5" /> Cobro mensual automático al mismo precio fijo protegido.
+                                <Sparkles className="w-3.5 h-3.5" /> Elegís si querés renovación automática antes de pagar.
                             </p>
 
                             <button 
                                 onClick={handleUpgrade}
-                                disabled={loading || user?.plan === 'PRO'}
+                                disabled={loading || hasPro}
                                 className={`w-full py-4 px-6 rounded-2xl font-extrabold text-base sm:text-lg flex items-center justify-center gap-3 transition-all duration-200 ${
-                                    user?.plan === 'PRO' 
+                                    hasPro
                                         ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                                         : 'bg-gradient-to-r from-emerald-600 via-primary to-emerald-500 hover:from-emerald-500 hover:to-primary text-white shadow-xl shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.01] active:scale-[0.99] border border-emerald-400/30 cursor-pointer'
                                 }`}
@@ -175,7 +188,7 @@ export default function ProUpgrade() {
                                         <span>Iniciar sesión para mejorar a PRO</span>
                                         <ArrowRight className="w-5 h-5" />
                                     </>
-                                ) : user?.plan === 'PRO' ? (
+                                ) : hasPro ? (
                                     'Ya eres PRO'
                                 ) : (
                                     <>
@@ -185,7 +198,7 @@ export default function ProUpgrade() {
                                 )}
                             </button>
                             <p className="text-center text-xs text-muted-foreground mt-4 mb-6 leading-relaxed">
-                                Cobro recurrente mensual automático al mismo precio. Cancelación disponible con 1 clic desde <strong className="text-foreground">Configuración &gt; Suscripción</strong>.
+                                Antes del pago elegís entre una única cuota mensual o renovación automática. La renovación se cancela desde <strong className="text-foreground">Configuración &gt; Planes PRO y Creador</strong>.
                             </p>
 
                             <div className="space-y-4 pt-6 border-t border-border/40">
@@ -204,6 +217,14 @@ export default function ProUpgrade() {
 
                 </div>
             </main>
+            <SubscriptionRenewalChoice
+                open={renewalChoiceOpen}
+                planName="Finix PRO"
+                monthlyPrice={proPrice.toLocaleString('es-AR')}
+                busy={loading}
+                onClose={() => setRenewalChoiceOpen(false)}
+                onConfirm={(autoRenew) => { void confirmCheckout(autoRenew); }}
+            />
         </div>
     );
 }

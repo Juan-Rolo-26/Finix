@@ -32,7 +32,7 @@ export function AllocationChart({ data, className }: AllocationChartProps) {
             <CardContent>
                 {hasData ? (
                     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_220px] xl:items-center">
-                        <div className="h-[300px] w-full">
+                        <div className="h-[350px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie

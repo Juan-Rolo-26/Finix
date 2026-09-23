@@ -1353,7 +1353,7 @@ export default function Profile() {
                     {/* Avatar */}
                     <div className="relative z-10">
                         <div
-                            className="w-28 h-28 rounded-full border-4 overflow-hidden flex items-center justify-center text-3xl font-black"
+                            className="relative w-28 h-28 rounded-full border-4 overflow-hidden flex items-center justify-center text-3xl font-black"
                             style={{
                                 borderColor: 'hsl(var(--background))',
                                 background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 25%) 100%)',
@@ -1361,10 +1361,14 @@ export default function Profile() {
                                 boxShadow: `0 0 32px hsl(158 100% 45% / 0.35)`,
                             }}
                         >
-                            {profile.avatarUrl ? (
-                                <img src={resolveMediaUrl(profile.avatarUrl)} alt={profile.username || 'Usuario'} className="w-full h-full object-cover" />
-                            ) : (
-                                (profile.username && profile.username.length > 0) ? profile.username[0].toUpperCase() : 'U'
+                            {(profile.username && profile.username.length > 0) ? profile.username[0].toUpperCase() : 'U'}
+                            {profile.avatarUrl && (
+                                <img
+                                    src={resolveMediaUrl(profile.avatarUrl)}
+                                    alt={profile.username || 'Usuario'}
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                                />
                             )}
                         </div>
                         {isOwnProfile && (
@@ -1396,6 +1400,7 @@ export default function Profile() {
                             isEditing ? (
                                 <>
                                     <button
+                                        type="button"
                                         onClick={() => {
                                             setIsEditing(false);
                                             setEditForm(profile || {});
@@ -1407,6 +1412,7 @@ export default function Profile() {
                                         <X className="w-3.5 h-3.5" /> Cancelar
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={handleSaveProfile}
                                         disabled={isSavingProfile}
                                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer disabled:opacity-75"

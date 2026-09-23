@@ -19,7 +19,7 @@ import {
 import { apiFetch } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { AssetLogoImg } from '@/components/TopGainersCard';
-import { useAuthStore, isCreatorUser, isJuanUser } from '@/stores/authStore';
+import { useAuthStore, isProUser } from '@/stores/authStore';
 
 interface RankingItem {
     rank: number;
@@ -40,15 +40,7 @@ type SortField = 'change' | 'volume' | 'price';
 export default function TopGainersPage() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
-    const hasPaidRankingAccess = Boolean(
-        (user as any)?.plan === 'PRO' ||
-        (user as any)?.accountType === 'PRO' ||
-        (user as any)?.role === 'ADMIN' ||
-        (user as any)?.isPro ||
-        (user as any)?.subscriptionTier === 'pro' ||
-        isCreatorUser(user) ||
-        isJuanUser(user)
-    );
+    const hasPaidRankingAccess = isProUser(user);
 
     const [searchParams, setSearchParams] = useSearchParams();
     const currentTab = searchParams.get('tab') === 'losers' ? 'TOP_LOSERS' : 'TOP_GAINERS';

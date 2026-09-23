@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuthStore, isJuanUser } from '@/stores/authStore';
+import { useAuthStore, isProUser } from '@/stores/authStore';
 import { ProGate } from '@/components/ProGate';
 import {
     Activity,
@@ -111,7 +111,7 @@ export default function Markets() {
     const t = useTranslation();
     const { user } = useAuthStore();
     const navigate = useNavigate();
-    const isPro = (user as any)?.plan === 'PRO' || (user as any)?.accountType === 'PRO' || (user as any)?.role === 'ADMIN' || (user as any)?.isPro || (user as any)?.subscriptionTier === 'pro' || isJuanUser(user);
+    const isPro = isProUser(user);
 
     const { theme } = usePreferencesStore();
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);

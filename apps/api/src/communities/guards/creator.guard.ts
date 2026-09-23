@@ -38,13 +38,10 @@ export class CreatorGuard implements CanActivate {
 
         const isCreator = (
             user.isCreator ||
-            user.role === 'CREATOR' ||
             user.accountType === 'CREATOR' ||
             user.plan === 'CREATOR' ||
             user.plan === 'PRO_CREATOR'
         ) && (
-            user.isCreator ||
-            user.role === 'CREATOR' ||
             ACTIVE_SUBSCRIPTION_STATUSES.has(user.subscriptionStatus)
         );
 

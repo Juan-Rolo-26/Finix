@@ -808,16 +808,21 @@ export function Sidebar() {
                         {/* Avatar */}
                         <div className="relative flex-shrink-0">
                             <div
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold overflow-hidden"
+                                className="relative w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold overflow-hidden"
                                 style={{
                                     background: user?.avatarUrl ? undefined : `linear-gradient(135deg, ${PRIMARY} 0%, hsl(var(--primary) / 0.65) 100%)`,
                                     color: 'hsl(var(--primary-foreground))',
                                 }}
                             >
-                                {user?.avatarUrl
-                                    ? <img src={resolveMediaUrl(user.avatarUrl)} alt={user.username || 'Avatar'} className="w-full h-full object-cover" />
-                                    : (user?.username?.[0]?.toUpperCase() || (user as any)?.email?.[0]?.toUpperCase() || 'U')
-                                }
+                                <span>{user?.username?.[0]?.toUpperCase() || (user as any)?.email?.[0]?.toUpperCase() || 'U'}</span>
+                                {user?.avatarUrl && (
+                                    <img
+                                        src={resolveMediaUrl(user.avatarUrl)}
+                                        alt={user.username || 'Avatar'}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                        onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                                    />
+                                )}
                             </div>
                             <span
                                 className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
@@ -895,4 +900,3 @@ export function Sidebar() {
         </motion.aside>
     );
 }
-

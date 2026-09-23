@@ -19,14 +19,14 @@ export class MercadoPagoController {
 
     @UseGuards(JwtAuthGuard)
     @Post('checkout/pro')
-    createProCheckout(@Req() req: any) {
-        return this.mpService.createPreference(req.user.id, 'pro');
+    createProCheckout(@Req() req: any, @Body() body?: { autoRenew?: boolean }) {
+        return this.mpService.createPreference(req.user.id, 'pro', body?.autoRenew === true);
     }
 
     @UseGuards(JwtAuthGuard)
     @Post('checkout/creator')
-    createCreatorCheckout(@Req() req: any) {
-        return this.mpService.createPreference(req.user.id, 'creator');
+    createCreatorCheckout(@Req() req: any, @Body() body?: { autoRenew?: boolean }) {
+        return this.mpService.createPreference(req.user.id, 'creator', body?.autoRenew === true);
     }
 
     @Post('webhook')

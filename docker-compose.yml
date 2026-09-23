@@ -57,6 +57,7 @@ services:
       - apps/api/.env
     environment:
       NODE_ENV: development
+      UPLOADS_DIR: /app/uploads
       DATABASE_URL: postgresql://finix:finix_dev_password@db:5432/finix_dev
       DIRECT_URL: postgresql://finix:finix_dev_password@db:5432/finix_dev
       REDIS_URL: redis://:finix_redis_dev@redis:6379

@@ -43,7 +43,7 @@ export class AccessControlService {
             return user;
         }
 
-        const isPro = user.plan === 'PRO' && ACTIVE_SUBSCRIPTION_STATUSES.has(user.subscriptionStatus);
+        const isPro = ['PRO', 'CREATOR', 'PRO_CREATOR'].includes(user.plan) && ACTIVE_SUBSCRIPTION_STATUSES.has(user.subscriptionStatus);
         if (!isPro) {
             throw new ForbiddenException('Esta funcionalidad requiere un plan PRO activo.');
         }
@@ -72,7 +72,7 @@ export class AccessControlService {
             return true;
         }
 
-        const hasActivePro = user.plan === 'PRO' && ACTIVE_SUBSCRIPTION_STATUSES.has(user.subscriptionStatus);
+        const hasActivePro = ['PRO', 'CREATOR', 'PRO_CREATOR'].includes(user.plan) && ACTIVE_SUBSCRIPTION_STATUSES.has(user.subscriptionStatus);
         if (hasActivePro) {
             return true;
         }
@@ -156,13 +156,10 @@ export class AccessControlService {
 
         const isCreatorPlan = (
             user.isCreator ||
-            user.role === 'CREATOR' ||
             user.accountType === 'CREATOR' ||
             user.plan === 'CREATOR' ||
             user.plan === 'PRO_CREATOR'
         ) && (
-            user.isCreator ||
-            user.role === 'CREATOR' ||
             ACTIVE_SUBSCRIPTION_STATUSES.has(user.subscriptionStatus)
         );
 
@@ -202,4 +199,3 @@ export class AccessControlService {
         return user;
     }
 }
-

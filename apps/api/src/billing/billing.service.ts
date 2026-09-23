@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma.service';
 import { AccessControlService } from '../access/access-control.service';
 import { StripeService } from '../stripe/stripe.service';
+import { MercadoPagoService } from '../mercadopago/mercadopago.service';
+import { Interval } from '@nestjs/schedule';
 
 const DEFAULT_COMMISSION_RATE = 0.10;
 
@@ -11,6 +13,7 @@ export class BillingService {
         private readonly prisma: PrismaService,
         private readonly accessControlService: AccessControlService,
         private readonly stripeService: StripeService,
+        private readonly mercadoPagoService: MercadoPagoService,
     ) { }
 
     async getPaymentOverview(userId: string) {
@@ -24,8 +27,8 @@ export class BillingService {
                     createdAt: true,
                 },
             }),
-            this.prisma.subscription.findFirst({
-                where: { userId, planType: 'PRO' },
+            this.prisma.subscription.findMany({
+                where: { userId },
                 orderBy: { createdAt: 'desc' },
             }),
             this.prisma.creatorBalance.findUnique({
@@ -47,12 +50,33 @@ export class BillingService {
             this.getCreatorSummary(userId).catch(() => null),
         ]);
 
+        const latestByPlan: Record<'PRO' | 'CREATOR', any> = { PRO: null, CREATOR: null };
+        for (const item of subscription) {
+            const planType = this.normalizePlanType(item.planType);
+            if (planType && !latestByPlan[planType]) latestByPlan[planType] = item;
+        }
+        const subscriptionSummary = (item: any) => item ? ({
+            id: item.id,
+            planType: this.normalizePlanType(item.planType),
+            status: item.status,
+            startDate: item.startDate,
+            endDate: item.endDate,
+            cancelAtPeriodEnd: item.cancelAtPeriodEnd,
+            autoRenew: Boolean(item.mercadoPagoPreapprovalId || item.stripeSubscriptionId) && !item.cancelAtPeriodEnd,
+            provider: item.mercadoPagoPreapprovalId ? 'Mercado Pago' : item.stripeSubscriptionId ? 'Stripe' : 'Pago único',
+        }) : null;
+
         return {
             currentPlan: user.plan,
             subscriptionStatus: user.subscriptionStatus,
-            nextBillingDate: subscription?.endDate || null,
-            cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd || false,
-            proPriceUsdMonthly: 15,
+            nextBillingDate: latestByPlan.PRO?.endDate || null,
+            cancelAtPeriodEnd: latestByPlan.PRO?.cancelAtPeriodEnd || false,
+            subscriptions: {
+                PRO: subscriptionSummary(latestByPlan.PRO),
+                CREATOR: subscriptionSummary(latestByPlan.CREATOR),
+            },
+            proPriceArs: this.mercadoPagoService.getProPrice(),
+            creatorPriceArs: this.mercadoPagoService.getCreatorPrice(),
             commissionRate,
             invoices,
             creator: creatorSummary ? {
@@ -95,6 +119,9 @@ export class BillingService {
     }
 
     async cancelProSubscription(userId: string, planType?: 'PRO' | 'CREATOR') {
+        if (planType && planType !== 'PRO' && planType !== 'CREATOR') {
+            throw new BadRequestException('El plan solicitado no es válido.');
+        }
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             select: { id: true, plan: true, role: true, isCreator: true, accountType: true, subscriptionStatus: true },
@@ -104,51 +131,89 @@ export class BillingService {
             throw new NotFoundException('Usuario no encontrado');
         }
 
-        // 1. Intentar cancelar en Stripe si existe suscripción
-        try {
-            await this.stripeService.cancelSubscription(userId);
-        } catch {
-            // Continuar con cancelación en base de datos
+        const targetPlan = planType || (user.isCreator && user.plan !== 'PRO' ? 'CREATOR' : 'PRO');
+        const planNames = targetPlan === 'CREATOR' ? ['CREATOR', 'pro_creator'] : ['PRO', 'pro_investor'];
+        const subscription = await this.prisma.subscription.findFirst({
+            where: { userId, planType: { in: planNames }, status: { in: ['ACTIVE', 'PAST_DUE', 'PENDING'] } },
+            orderBy: { createdAt: 'desc' },
+        });
+        if (!subscription) {
+            throw new BadRequestException(`No se encontró una suscripción de ${targetPlan === 'CREATOR' ? 'Creador' : 'PRO'} para cancelar.`);
         }
 
-        // 2. Marcar suscripciones de BD como canceladas
-        await this.prisma.subscription.updateMany({
-            where: {
-                userId,
-                status: { in: ['ACTIVE', 'PAST_DUE'] },
-            },
-            data: {
-                status: 'CANCELED',
-                cancelAtPeriodEnd: true,
-            },
-        });
+        if (subscription?.mercadoPagoPreapprovalId) {
+            await this.mercadoPagoService.cancelPreapproval(subscription.mercadoPagoPreapprovalId);
+        } else if (subscription?.stripeSubscriptionId) {
+            await this.stripeService.cancelSubscription(userId, subscription.stripeSubscriptionId);
+        }
 
-        // 3. Determinar si se cancela Creador o PRO
-        const isCancelingCreator = planType === 'CREATOR' || (!planType && user.isCreator && user.plan !== 'PRO');
+        const now = new Date();
+        const retainsAccess = Boolean(subscription?.endDate && subscription.endDate > now);
+        if (subscription) {
+            await this.prisma.subscription.update({
+                where: { id: subscription.id },
+                data: {
+                    status: retainsAccess ? 'ACTIVE' : 'CANCELED',
+                    cancelAtPeriodEnd: retainsAccess,
+                },
+            });
+        }
 
-        const updateData: any = isCancelingCreator
-            ? { isCreator: false, accountType: 'BASIC' }
-            : { plan: 'FREE', subscriptionStatus: 'CANCELED' };
-
-        const updatedUser = await this.prisma.user.update({
+        if (!retainsAccess) await this.refreshUserEntitlements(userId);
+        const updatedUser = await this.prisma.user.findUnique({
             where: { id: userId },
-            data: updateData,
-            select: {
-                id: true,
-                plan: true,
-                isCreator: true,
-                accountType: true,
-                subscriptionStatus: true,
-            },
+            select: { id: true, plan: true, isCreator: true, accountType: true, subscriptionStatus: true },
         });
 
         return {
             success: true,
-            message: isCancelingCreator
-                ? 'La membresía de Creador fue cancelada correctamente.'
-                : 'La suscripción Finix PRO fue dada de baja correctamente.',
+            message: retainsAccess
+                ? `La renovación de ${targetPlan === 'CREATOR' ? 'Creador' : 'PRO'} fue cancelada. Conservás el acceso hasta ${subscription!.endDate!.toLocaleDateString('es-AR')}.`
+                : `El plan ${targetPlan === 'CREATOR' ? 'Creador' : 'PRO'} fue cancelado.`,
             user: updatedUser,
         };
+    }
+
+    private normalizePlanType(value: string): 'PRO' | 'CREATOR' | null {
+        const normalized = value.toUpperCase();
+        if (normalized === 'PRO' || normalized === 'PRO_INVESTOR') return 'PRO';
+        if (normalized === 'CREATOR' || normalized === 'PRO_CREATOR') return 'CREATOR';
+        return null;
+    }
+
+    private async refreshUserEntitlements(userId: string) {
+        const active = await this.prisma.subscription.findMany({
+            where: { userId, status: 'ACTIVE', endDate: { gt: new Date() } },
+            select: { planType: true },
+        });
+        const types = new Set(active.map((item) => this.normalizePlanType(item.planType)));
+        const plan = types.has('CREATOR') ? 'CREATOR' : types.has('PRO') ? 'PRO' : 'FREE';
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                plan,
+                subscriptionStatus: plan === 'FREE' ? 'EXPIRED' : 'ACTIVE',
+                accountType: plan === 'CREATOR' ? 'CREATOR' : plan === 'PRO' ? 'PRO' : 'BASIC',
+                isCreator: plan === 'CREATOR',
+            },
+        });
+    }
+
+    @Interval(60_000)
+    async expireEndedPlans() {
+        const now = new Date();
+        const expired = await this.prisma.subscription.findMany({
+            where: { status: 'ACTIVE', endDate: { lte: now } },
+            select: { id: true, userId: true },
+        });
+        if (!expired.length) return;
+        await this.prisma.subscription.updateMany({
+            where: { id: { in: expired.map(({ id }) => id) } },
+            data: { status: 'EXPIRED' },
+        });
+        for (const userId of new Set(expired.map(({ userId }) => userId))) {
+            await this.refreshUserEntitlements(userId);
+        }
     }
 
     async getCreatorSummary(userId: string) {

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore, isCreatorUser } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
+import { SubscriptionRenewalChoice } from '@/components/SubscriptionRenewalChoice';
 
 export default function CreatorPage() {
     const navigate = useNavigate();
@@ -29,6 +30,7 @@ export default function CreatorPage() {
     const isCreator = isCreatorUser(user);
 
     const [loadingCheckout, setLoadingCheckout] = useState(false);
+    const [renewalChoiceOpen, setRenewalChoiceOpen] = useState(false);
     const [creatorPrice, setCreatorPrice] = useState(29900);
 
     // Earnings Calculator State
@@ -60,9 +62,17 @@ export default function CreatorPage() {
             return;
         }
 
+        setRenewalChoiceOpen(true);
+    };
+
+    const confirmCreatorCheckout = async (autoRenew: boolean) => {
         setLoadingCheckout(true);
         try {
-            const res = await apiFetch('/mercadopago/checkout/creator', { method: 'POST' });
+            const res = await apiFetch('/mercadopago/checkout/creator', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ autoRenew }),
+            });
             if (!res.ok) {
                 const data = await res.json();
                 throw new Error(data.message || 'Error al conectar con Mercado Pago');
@@ -76,6 +86,8 @@ export default function CreatorPage() {
             }
         } catch (error: any) {
             alert(error.message || 'Ocurrió un error al procesar la solicitud.');
+            setRenewalChoiceOpen(false);
+        } finally {
             setLoadingCheckout(false);
         }
     };
@@ -278,7 +290,7 @@ export default function CreatorPage() {
                                 <Coins className="w-4 h-4" />
                                 <span className="text-xs font-bold uppercase tracking-wider">Cobros en ARS</span>
                             </div>
-                            <p className="text-xs text-muted-foreground">Suscripciones automáticas a precio protegido.</p>
+                            <p className="text-xs text-muted-foreground">Elegís si querés renovar automáticamente antes de pagar.</p>
                         </div>
 
                         <div className="p-3.5 rounded-2xl bg-card/40 border border-border/50 backdrop-blur-sm text-left">
@@ -630,7 +642,7 @@ export default function CreatorPage() {
                                 </span>
                                 <span className="text-sm font-semibold text-muted-foreground">ARS / mes</span>
                                 <span className="ml-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                                    Precio fijo protegido
+                                    Precio mensual
                                 </span>
                             </div>
 
@@ -697,7 +709,7 @@ export default function CreatorPage() {
 
                             <p className="text-[11px] text-muted-foreground mt-3 flex items-center gap-1.5">
                                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                Procesado de forma 100% segura mediante Mercado Pago. Cobro mensual automático a precio fijo.
+                                Antes de pagar elegís si querés un mes sin renovación o el cobro automático mensual.
                             </p>
                         </div>
                     </div>
@@ -768,6 +780,14 @@ export default function CreatorPage() {
                     </div>
                 </div>
             </footer>
+            <SubscriptionRenewalChoice
+                open={renewalChoiceOpen}
+                planName="Creador"
+                monthlyPrice={creatorPrice.toLocaleString('es-AR')}
+                busy={loadingCheckout}
+                onClose={() => setRenewalChoiceOpen(false)}
+                onConfirm={(autoRenew) => { void confirmCreatorCheckout(autoRenew); }}
+            />
         </div>
     );
 }

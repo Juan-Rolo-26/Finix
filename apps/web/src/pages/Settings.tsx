@@ -448,16 +448,16 @@ export default function Settings() {
     };
 
     const isProActive = Boolean(
-        (settings?.plan === 'PRO' && settings?.subscriptionStatus === 'ACTIVE') ||
-        user?.plan === 'PRO' ||
+        ((settings?.plan === 'PRO' || settings?.plan === 'CREATOR') && settings?.subscriptionStatus === 'ACTIVE') ||
+        ((['PRO', 'CREATOR'].includes(String((user as any)?.plan || '')) && user?.subscriptionStatus === 'ACTIVE')) ||
         user?.role === 'ADMIN' ||
         (user as any)?.isPro
     );
 
     const isCreatorActive = Boolean(
-        user?.isCreator ||
-        settings?.isCreator ||
-        user?.accountType === 'CREATOR' ||
+        (user?.isCreator && user?.subscriptionStatus === 'ACTIVE') ||
+        (settings?.isCreator && settings?.subscriptionStatus === 'ACTIVE') ||
+        ((user?.accountType === 'CREATOR' || settings?.accountType === 'CREATOR') && (user?.subscriptionStatus === 'ACTIVE' || settings?.subscriptionStatus === 'ACTIVE')) ||
         user?.role === 'ADMIN'
     );
 
@@ -466,6 +466,8 @@ export default function Settings() {
     const [isCancelingSubscription, setIsCancelingSubscription] = useState(false);
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [planToCancel, setPlanToCancel] = useState<'PRO' | 'CREATOR'>('PRO');
+    const proBilling = billingOverview?.subscriptions?.PRO;
+    const creatorBilling = billingOverview?.subscriptions?.CREATOR;
 
     const fetchBillingOverview = useCallback(async () => {
         try {
@@ -499,12 +501,9 @@ export default function Settings() {
 
             const data = await res.json();
 
-            if (planToCancel === 'CREATOR') {
-                (updateUser as any)({ isCreator: false, accountType: 'BASIC' });
-                setSettings((p) => (p ? { ...p, isCreator: false, accountType: 'BASIC' } : p));
-            } else {
-                (updateUser as any)({ plan: 'FREE', subscriptionStatus: 'CANCELED' });
-                setSettings((p) => (p ? { ...p, plan: 'FREE', subscriptionStatus: 'CANCELED' } : p));
+            if (data.user) {
+                (updateUser as any)(data.user);
+                setSettings((p) => (p ? { ...p, ...data.user } : p));
             }
 
             await syncFromSession?.();
@@ -633,7 +632,7 @@ export default function Settings() {
                 <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1.5 bg-card/40 border border-border/40 rounded-2xl sm:grid-cols-4 lg:grid-cols-7">
                     {[
                         { value: 'cuenta', label: 'Cuenta', icon: <User className="w-3.5 h-3.5" /> },
-                        { value: 'suscripcion', label: 'Suscripción', icon: <Crown className="w-3.5 h-3.5 text-amber-500" /> },
+                        { value: 'suscripcion', label: 'Planes PRO y Creador', icon: <Crown className="w-3.5 h-3.5 text-amber-500" /> },
                         { value: 'privacidad', label: 'Privacidad', icon: <Shield className="w-3.5 h-3.5" /> },
                         { value: 'preferencias', label: 'Preferencias', icon: <Globe className="w-3.5 h-3.5" /> },
                         { value: 'notificaciones', label: 'Notificaciones', icon: <Bell className="w-3.5 h-3.5" /> },
@@ -978,13 +977,13 @@ export default function Settings() {
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                                        Facturación Automática & Precio Fijo Protegido
+                                        Administrá tus renovaciones
                                         <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-400 bg-amber-500/10">
                                             Garantía Finix
                                         </Badge>
                                     </h4>
                                     <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-                                        Tu suscripción se cobra de manera automática todos los meses al <strong>mismo precio pactado</strong>. Sin aumentos sorpresivos ni costos ocultos mientras mantengas tu suscripción activa. Podés darla de baja en cualquier momento con un solo clic desde esta sección.
+                                        La renovación automática depende de la opción que elegiste al contratar. Desde acá podés consultar la fecha del próximo cobro o vencimiento y detener los cobros futuros.
                                     </p>
                                 </div>
                             </div>
@@ -1005,6 +1004,8 @@ export default function Settings() {
                                             <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">
                                                 Activo
                                             </Badge>
+                                        ) : proBilling?.status === 'PENDING' ? (
+                                            <Badge variant="outline" className="text-amber-400 border-amber-500/40 text-xs">Pago pendiente</Badge>
                                         ) : (
                                             <Badge variant="outline" className="text-muted-foreground text-xs">
                                                 Plan Gratuito
@@ -1018,9 +1019,9 @@ export default function Settings() {
                             </div>
                             <div className="text-right">
                                 <span className="text-xl font-bold tracking-tight text-foreground">
-                                    ${billingOverview?.proPriceUsdMonthly || 19} USD
+                                    ${Number(billingOverview?.proPriceArs || 8500).toLocaleString('es-AR')} ARS
                                 </span>
-                                <span className="text-xs text-muted-foreground block">/ mes (precio fijo)</span>
+                                <span className="text-xs text-muted-foreground block">/ mes contratado</span>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-5">
@@ -1032,7 +1033,7 @@ export default function Settings() {
                                     'Análisis de ballenas y movimientos institucionales',
                                     'Filtros técnicos avanzados y gráficos sin límites',
                                     'Badge exclusivo Finix PRO en la comunidad',
-                                    'Cobro automático mensual al mismo precio garantizado',
+                                    'Elección entre renovación automática o pago mensual único',
                                 ].map((feature) => (
                                     <div key={feature} className="flex items-center gap-2 text-xs text-muted-foreground">
                                         <div className="rounded-full bg-emerald-500/20 p-0.5 text-emerald-400 shrink-0">
@@ -1048,38 +1049,50 @@ export default function Settings() {
                                 <div className="space-y-0.5">
                                     <span className="text-muted-foreground">Ciclo de facturación:</span>
                                     <p className="font-medium text-foreground">
-                                        {isProActive
-                                            ? `Renovación automática cada mes (${billingOverview?.nextBillingDate ? `Próximo cobro: ${new Date(billingOverview.nextBillingDate).toLocaleDateString('es-AR')}` : 'Activa'})`
-                                            : 'Cobro mensual recurrente automático tras la suscripción'}
+                                        {proBilling?.status === 'PENDING'
+                                            ? 'Esperando que completes la autorización de pago en Mercado Pago.'
+                                            : isProActive && !proBilling
+                                                ? 'Acceso activo sin una suscripción facturable asociada.'
+                                                : isProActive
+                                            ? proBilling?.cancelAtPeriodEnd
+                                                ? `Renovación cancelada. Mantenés acceso hasta ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'el fin del período pago'}.`
+                                                : proBilling?.autoRenew
+                                                    ? `Renovación automática mensual. Próximo cobro: ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'según Mercado Pago'}.`
+                                                    : `Sin renovación automática. Acceso hasta ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'el fin del período pago'}.`
+                                            : 'No hay un plan PRO activo.'}
                                     </p>
                                 </div>
                                 <div className="space-y-0.5 sm:text-right">
                                     <span className="text-muted-foreground">Estado del plan:</span>
                                     <p className="font-medium capitalize text-foreground">
-                                        {isProActive ? (settings?.subscriptionStatus || 'Activo') : 'Inactivo'}
+                                        {proBilling?.status === 'PENDING' ? 'Pendiente' : isProActive ? (proBilling?.status || settings?.subscriptionStatus || 'Activo') : 'Inactivo'}
                                     </p>
                                 </div>
                             </div>
 
                             {/* Actions */}
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-border/30">
-                                {isProActive ? (
+                                        {proBilling?.status === 'PENDING' ? (
+                                            <>
+                                                <p className="text-xs text-muted-foreground">La autorización de pago todavía está pendiente.</p>
+                                                <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('PRO'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-xs font-semibold">Cancelar solicitud</Button>
+                                            </>
+                                        ) : isProActive ? (
                                     <>
-                                        <p className="text-xs text-muted-foreground">
-                                            Podés dar de baja tu membresía PRO en cualquier momento sin penalizaciones.
-                                        </p>
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => {
-                                                setPlanToCancel('PRO');
-                                                setCancelModalOpen(true);
-                                            }}
-                                            className="w-full sm:w-auto text-xs font-semibold gap-1.5"
-                                        >
-                                            Dar de baja Finix PRO
-                                        </Button>
+                                        {!proBilling && isProActive ? (
+                                            <p className="text-xs text-muted-foreground">No hay una renovación PRO separada registrada para cancelar. Si tenés Creador, sus herramientas PRO se gestionan desde esa tarjeta.</p>
+                                        ) : proBilling?.cancelAtPeriodEnd ? (
+                                            <p className="text-xs text-muted-foreground">La renovación ya está cancelada. Podés volver a contratar PRO cuando termine el período vigente.</p>
+                                        ) : !proBilling?.autoRenew ? (
+                                            <p className="text-xs text-muted-foreground">Este pago no se renueva automáticamente. El acceso termina en la fecha indicada y no habrá otro cobro.</p>
+                                        ) : (
+                                            <>
+                                                <p className="text-xs text-muted-foreground">Al cancelar se detienen los próximos cobros; conservás el acceso hasta el fin del período ya pagado.</p>
+                                                <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('PRO'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-xs font-semibold gap-1.5">
+                                                    Cancelar renovación PRO
+                                                </Button>
+                                            </>
+                                        )}
                                     </>
                                 ) : (
                                     <>
@@ -1112,7 +1125,9 @@ export default function Settings() {
                                 <div>
                                     <CardTitle className="text-base flex items-center gap-2">
                                         Plan Creador de Contenido
-                                        {isCreatorActive ? (
+                                        {creatorBilling?.status === 'PENDING' ? (
+                                            <Badge variant="outline" className="text-amber-400 border-amber-500/40 text-xs">Pago pendiente</Badge>
+                                        ) : isCreatorActive ? (
                                             <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
                                                 Creador Activo
                                             </Badge>
@@ -1126,6 +1141,10 @@ export default function Settings() {
                                         Monetizá análisis, administrá comunidades pagas y creá publicaciones destacadas.
                                     </CardDescription>
                                 </div>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-xl font-bold tracking-tight text-foreground">${Number(billingOverview?.creatorPriceArs || 29900).toLocaleString('es-AR')} ARS</span>
+                                <span className="block text-xs text-muted-foreground">/ mes contratado</span>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -1145,38 +1164,57 @@ export default function Settings() {
                                 ))}
                             </div>
 
+                            <div className="rounded-xl border border-border/30 bg-muted/20 p-3.5 text-xs">
+                                <span className="text-muted-foreground">Facturación:</span>
+                                <p className="mt-0.5 font-medium text-foreground">
+                                    {isCreatorActive && !creatorBilling
+                                        ? 'Acceso Creador activo sin una suscripción facturable asociada.'
+                                        : isCreatorActive
+                                        ? creatorBilling?.cancelAtPeriodEnd
+                                            ? `Renovación cancelada. Acceso hasta ${creatorBilling?.endDate ? new Date(creatorBilling.endDate).toLocaleDateString('es-AR') : 'el fin del período pago'}.`
+                                            : creatorBilling?.autoRenew
+                                                ? `Renovación automática mensual. Próximo cobro: ${creatorBilling?.endDate ? new Date(creatorBilling.endDate).toLocaleDateString('es-AR') : 'según Mercado Pago'}.`
+                                                : `Sin renovación automática. Acceso hasta ${creatorBilling?.endDate ? new Date(creatorBilling.endDate).toLocaleDateString('es-AR') : 'el fin del período pago'}.`
+                                        : 'No hay un plan Creador activo.'}
+                                </p>
+                            </div>
+
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-border/30">
-                                {isCreatorActive ? (
+                                {creatorBilling?.status === 'PENDING' ? (
                                     <>
-                                        <p className="text-xs text-muted-foreground">
-                                            Si das de baja tu plan Creador, tu cuenta volverá al modo básico y tus comunidades pasarán a modo solo lectura.
-                                        </p>
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => {
-                                                setPlanToCancel('CREATOR');
-                                                setCancelModalOpen(true);
-                                            }}
-                                            className="w-full sm:w-auto text-xs font-semibold gap-1.5"
-                                        >
-                                            Dar de baja Plan Creador
-                                        </Button>
+                                        <p className="text-xs text-muted-foreground">La autorización de pago todavía está pendiente.</p>
+                                        <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-xs font-semibold">Cancelar solicitud</Button>
+                                    </>
+                                ) : isCreatorActive ? (
+                                    <>
+                                        {!creatorBilling ? (
+                                            <p className="text-xs text-muted-foreground">No hay una renovación Creador registrada para cancelar desde acá.</p>
+                                        ) : creatorBilling?.cancelAtPeriodEnd ? (
+                                            <p className="text-xs text-muted-foreground">La renovación ya está cancelada. Podés volver a contratar Creador cuando termine el período vigente.</p>
+                                        ) : !creatorBilling?.autoRenew ? (
+                                            <p className="text-xs text-muted-foreground">Este pago no se renueva automáticamente. El acceso Creador termina en la fecha indicada y no habrá otro cobro.</p>
+                                        ) : (
+                                            <>
+                                                <p className="text-xs text-muted-foreground">Al cancelar se detienen los próximos cobros; conservás las herramientas hasta el fin del período pago. Las funciones de creador terminan entonces.</p>
+                                                <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-xs font-semibold gap-1.5">
+                                                    Cancelar renovación Creador
+                                                </Button>
+                                            </>
+                                        )}
                                     </>
                                 ) : (
                                     <>
                                         <p className="text-xs text-muted-foreground">
                                             ¿Querés monetizar tus análisis y crear tu comunidad en Finix?
                                         </p>
-                                        <Link to="/communities" className="w-full sm:w-auto">
+                                        <Link to="/creator" className="w-full sm:w-auto">
                                             <Button
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
                                                 className="w-full sm:w-auto text-xs font-medium"
                                             >
-                                                Explorar Comunidades
+                                                Contratar Plan Creador
                                             </Button>
                                         </Link>
                                     </>
@@ -1556,8 +1594,8 @@ export default function Settings() {
                                 </h3>
                                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                                     {planToCancel === 'PRO'
-                                        ? 'Perderás el acceso a todas las herramientas PRO exclusivas, métricas avanzadas y alertas por Gmail.'
-                                        : 'Tu cuenta volverá al modo básico y tus comunidades pasarán a modo solo lectura.'}
+                                    ? 'Se detendrán los próximos cobros. Conservás el acceso PRO hasta el final del período que ya pagaste.'
+                                    : 'Se detendrán los próximos cobros. Conservás el acceso Creador hasta el final del período pago; después, las herramientas de creador dejarán de estar disponibles.'}
                                 </p>
                             </div>
                         </div>
@@ -1569,8 +1607,8 @@ export default function Settings() {
                             </div>
                             <p>
                                 {planToCancel === 'PRO'
-                                    ? 'Se cancelará el cobro recurrente automático mensual de tu cuenta. No recibirás nuevos cargos.'
-                                    : 'Se dará de baja el cobro y rol de creador de tu cuenta.'}
+                                    ? 'No habrá nuevos cargos. El acceso continúa hasta la fecha de vencimiento que ves en esta pantalla.'
+                                    : 'No habrá nuevos cargos. El acceso Creador continúa hasta la fecha de vencimiento que ves en esta pantalla.'}
                             </p>
                         </div>
 
@@ -1597,7 +1635,7 @@ export default function Settings() {
                                         Cancelando...
                                     </>
                                 ) : (
-                                    'Confirmar Baja'
+                                    'Cancelar renovación'
                                 )}
                             </Button>
                         </div>

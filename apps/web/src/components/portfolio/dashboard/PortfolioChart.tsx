@@ -180,7 +180,7 @@ export function PortfolioChart({
 
             {/* Chart */}
             {safeActiveData.length > 0 ? (
-                <div className="h-[330px] w-full px-3 pb-5 pt-3 sm:h-[350px] sm:px-4 sm:pb-6">
+                <div className="h-[380px] w-full px-3 pb-5 pt-3 sm:h-[410px] sm:px-4 sm:pb-6">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={safeActiveData} margin={{ top: 18, right: 16, bottom: 4, left: 0 }}>
                             <defs>

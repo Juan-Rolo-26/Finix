@@ -331,7 +331,7 @@ export function BenchmarkComparisonChart({
                 </div>
             </div>
 
-            <div className="h-[320px] w-full px-3 pb-6 pt-2 sm:h-[350px] sm:px-5">
+            <div className="h-[370px] w-full px-3 pb-6 pt-2 sm:h-[400px] sm:px-5">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={activeData} margin={{ top: 16, right: 16, bottom: 4, left: 0 }}>
                         <defs>

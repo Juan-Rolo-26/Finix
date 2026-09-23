@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Req, Query, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Req, Query, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { AlertsService, CreateAlertDto, UpdateAlertDto } from './alerts.service';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
 import { PrismaService } from '../prisma.service';
@@ -12,17 +12,14 @@ export class AlertsController {
     ) { }
 
     private async resolveUserId(req: any): Promise<string> {
-        const id = req.user?.id || req.user?.sub || req.headers?.['x-user-id'];
+        // Alertas siempre pertenecen al usuario autenticado. Nunca atribuir
+        // solicitudes anónimas al admin ni confiar en un ID enviado por header.
+        const id = req.user?.id || req.user?.sub;
         if (id) {
             const userExists = await (this.prisma as any).user.findUnique({ where: { id: String(id) } });
             if (userExists) return String(id);
         }
-        const defaultUser = await (this.prisma as any).user.findFirst({
-            where: { OR: [{ username: { equals: 'Juan26_08', mode: 'insensitive' } }, { role: 'ADMIN' }] },
-        });
-        if (defaultUser) return defaultUser.id;
-        const firstUser = await (this.prisma as any).user.findFirst();
-        return firstUser?.id || '68661e5a-0ebb-4add-b409-d9f08365332e';
+        throw new UnauthorizedException('Iniciá sesión para administrar tus alertas.');
     }
 
     @Get()

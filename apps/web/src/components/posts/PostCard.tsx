@@ -130,11 +130,8 @@ function MediaCarousel({ media }: { media: Post['media'] }) {
                 <img
                     src={resolveMediaUrl(current.url)}
                     alt="Post media"
-                    className="w-full max-h-[360px] object-contain"
+                    className="w-full max-h-[460px] object-contain"
                     loading="lazy"
-                    onError={(e) => {
-                        (e.currentTarget as HTMLElement).style.display = 'none';
-                    }}
                 />
             )}
 
@@ -462,10 +459,10 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             {/* Auto TradingView Chart if ticker is mentioned and no media provided (for text posts only) */}
             {post.type !== 'chart' && !post.media?.length && !post.mediaUrl && !tradingViewUrl && post.tickers && String(post.tickers).trim() && (
                 <div className="px-4 pb-3">
-                    <div className="rounded-xl overflow-hidden border border-border/50 h-[320px] sm:h-[380px] w-full bg-card/20">
+                    <div className="rounded-xl overflow-hidden border border-border/50 h-[380px] sm:h-[450px] w-full bg-card/20">
                         <TradingViewWidget
                             symbol={(Array.isArray(post.tickers) ? post.tickers[0] : String(post.tickers).split(',')[0]).trim().replace('$', '')}
-                            height={380}
+                            height={450}
                         />
                     </div>
                 </div>
@@ -511,7 +508,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                 <div className="px-4 pb-3">
                     {tradingViewUrl.includes('/x/') ? (
                         <div className="relative rounded-xl overflow-hidden border border-border/50 bg-black/20 group">
-                            <img src={tradingViewUrl} alt="TradingView Chart" className="w-full h-auto object-contain max-h-[360px]" loading="lazy" />
+                            <img src={tradingViewUrl} alt="TradingView Chart" className="w-full h-auto object-contain max-h-[460px]" loading="lazy" />
                             <a href={tradingViewUrl} target="_blank" rel="noreferrer" className="absolute bottom-3 right-3 flex flex-row items-center gap-2 p-2 rounded-lg bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm shadow-xl">
                                 <span className="text-xs font-semibold">TradingView</span>
                                 <ExternalLink className="w-4 h-4" />
@@ -561,8 +558,8 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                             {hasCapturedMedia && !showLiveChart ? (
                                 <MediaCarousel media={regularMedia} />
                             ) : (
-                                <div className="h-[360px] sm:h-[420px] min-h-[360px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
-                                    <TradingViewWidget symbol={chartSymbol} height={420} />
+                                <div className="h-[420px] sm:h-[490px] min-h-[420px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
+                                    <TradingViewWidget symbol={chartSymbol} height={490} />
                                 </div>
                             )}
                         </div>
@@ -584,7 +581,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                                 <img
                                     src={resolveMediaUrl(post.mediaUrl)}
                                     alt="Post"
-                                    className="w-full rounded-xl max-h-[360px] object-contain"
+                                    className="w-full rounded-xl max-h-[460px] object-contain"
                                     loading="lazy"
                                     onError={(e) => {
                                         (e.currentTarget.parentElement as HTMLElement).style.display = 'none';

@@ -20,7 +20,7 @@ import {
     RefreshCw,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import { useAuthStore, isJuanUser } from '@/stores/authStore';
+import { useAuthStore, isProUser } from '@/stores/authStore';
 import { ProGate } from '@/components/ProGate';
 import { AssetLogoImg } from '@/components/TopGainersCard';
 
@@ -172,14 +172,7 @@ function isEventExpired(evt: { date: string; time?: string; timestampUtc?: strin
 export default function CalendarPage() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
-    const isPro = Boolean(
-        (user as any)?.plan === 'PRO' ||
-        (user as any)?.accountType === 'PRO' ||
-        (user as any)?.role === 'ADMIN' ||
-        (user as any)?.isPro ||
-        (user as any)?.subscriptionTier === 'pro' ||
-        isJuanUser(user)
-    );
+    const isPro = isProUser(user);
 
     // 3 Subdivisiones Principales solicitadas: General, Balances, Dividendos
     const [activeSection, setActiveSection] = useState<CalendarSection>('GENERAL');
