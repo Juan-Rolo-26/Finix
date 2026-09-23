@@ -114,30 +114,30 @@ export function PortfolioChart({
                 <div className="flex flex-col gap-6">
                     <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
                         {/* Valor total */}
-                        <div className={metricCardClass}>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Valor total</p>
-                            <p className="mt-3 text-[30px] font-extrabold leading-none tracking-[-0.04em] tabular-nums sm:text-[32px]">
+                        <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground text-center">Valor total</p>
+                            <p className="mt-3 text-[30px] font-extrabold leading-none tracking-[-0.04em] tabular-nums sm:text-[32px] text-center">
                                 {formatCurrency(summary.currentValue, currency)}
                             </p>
                         </div>
                         {/* Capital invertido */}
-                        <div className={metricCardClass}>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Capital invertido</p>
-                            <p className="mt-3 text-[30px] font-extrabold leading-none tracking-[-0.04em] tabular-nums text-foreground/80 sm:text-[32px]">
+                        <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground text-center">Capital invertido</p>
+                            <p className="mt-3 text-[30px] font-extrabold leading-none tracking-[-0.04em] tabular-nums text-foreground/80 sm:text-[32px] text-center">
                                 {formatCurrency(costBasis, currency)}
                             </p>
                         </div>
                         {/* Cambio */}
-                        <div className={cn(metricCardClass, 'flex flex-col justify-between gap-3')}>
-                            <div>
-                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Cambio ({selectedRange})</p>
-                                <p className={cn('mt-3 text-[30px] font-extrabold leading-none tracking-[-0.04em] tabular-nums sm:text-[32px]', isPositive ? 'text-emerald-500' : 'text-red-500')}>
+                        <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center gap-3')}>
+                            <div className="flex flex-col items-center text-center">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground text-center">Cambio ({selectedRange})</p>
+                                <p className={cn('mt-3 text-[30px] font-extrabold leading-none tracking-[-0.04em] tabular-nums sm:text-[32px] text-center', isPositive ? 'text-emerald-500' : 'text-red-500')}>
                                     {isPositive ? '+' : ''}{formatCompactCurrency(summary.absoluteChange, currency)}
                                 </p>
                             </div>
                             <span
                                 className={cn(
-                                    'inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-bold',
+                                    'inline-flex w-fit items-center justify-center mx-auto rounded-full px-2.5 py-1 text-[11px] font-bold',
                                     isPositive
                                         ? 'bg-emerald-500/15 text-emerald-500'
                                         : 'bg-red-500/15 text-red-500',
@@ -149,7 +149,7 @@ export function PortfolioChart({
                     </div>
 
                     {/* Time range buttons */}
-                    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/50 bg-background/55 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-sm w-fit">
+                    <div className="flex flex-wrap items-center justify-center mx-auto gap-2 rounded-2xl border border-border/50 bg-background/55 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-sm w-fit">
                         {TIME_RANGES.map((range) => (
                             <button
                                 key={range}
@@ -169,11 +169,11 @@ export function PortfolioChart({
                 </div>
             </div>
 
-            <div className="px-6 pt-5 sm:px-7">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/60">
+            <div className="px-6 pt-5 sm:px-7 flex flex-col items-center text-center">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/60 text-center">
                     Evolución
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground/70">
+                <p className="mt-1 text-sm text-muted-foreground/70 text-center max-w-md mx-auto">
                     Evolución del valor total del portafolio en moneda nominal
                 </p>
             </div>

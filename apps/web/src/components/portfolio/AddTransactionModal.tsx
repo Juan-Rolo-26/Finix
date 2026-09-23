@@ -150,11 +150,16 @@ const buildQuoteRequestCandidates = (symbol: string) => {
 };
 
 const KNOWN_CEDEARS = new Set([
-    'AAPL', 'NVDA', 'MELI', 'MSFT', 'AMZN', 'GOOGL', 'TSLA', 'META',
-    'SPY', 'QQQ', 'DIA', 'IWM', 'EEM', 'XLE', 'XLF', 'KO', 'MCD',
-    'BBD', 'VALE', 'PBR', 'V', 'WMT', 'DIS', 'JNJ', 'JPM', 'BA',
-    'BABA', 'PLTR', 'AMD', 'INTC', 'NFLX', 'PYPL', 'COIN', 'NKE',
-    'PFE', 'XOM', 'CVX', 'DESP', 'GLOB', 'BIOX', 'VIST', 'TS',
+    'AAPL', 'NVDA', 'MELI', 'MSFT', 'AMZN', 'GOOGL', 'GOOG', 'TSLA', 'META',
+    'SPY', 'QQQ', 'DIA', 'IWM', 'EEM', 'XLE', 'XLF', 'ARKK', 'IBIT',
+    'AMD', 'INTC', 'TSM', 'AVGO', 'QCOM', 'MU', 'ARM',
+    'KO', 'PEP', 'MCD', 'SBUX', 'WMT', 'COST', 'PG', 'NKE', 'HD', 'MDLZ',
+    'NFLX', 'DIS', 'SPOT', 'UBER', 'ABNB', 'BKNG', 'CRM', 'ORCL', 'ADBE', 'CSCO', 'IBM', 'PLTR', 'SNOW', 'SHOP', 'BABA',
+    'V', 'MA', 'PYPL', 'COIN', 'MSTR', 'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'BLK', 'BBD',
+    'XOM', 'CVX', 'PBR', 'VIST', 'TS', 'VALE', 'GOLD', 'NEM', 'FCX', 'SLB', 'BP',
+    'JNJ', 'PFE', 'LLY', 'UNH', 'ABT', 'MRK', 'BMY',
+    'BA', 'CAT', 'GE', 'DE', 'LMT',
+    'DESP', 'GLOB', 'BIOX', 'CAAP', 'BITF', 'HUT', 'HIVE',
 ]);
 
 const isCedearSymbol = (symbol?: string) => {
@@ -255,13 +260,28 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
         }
         resetState(initialSymbol || '');
 
-        if (mode === 'SELL' && initialSymbol) {
-            const assetToSell = portfolioAssets.find(a => a.ticker === initialSymbol);
-            if (assetToSell) {
+        if (initialSymbol) {
+            const cleanInit = initialSymbol.replace(/^(BCBA|BYMA):/i, '').toUpperCase();
+            const assetToSelect = portfolioAssets.find(
+                a => a.ticker === initialSymbol || a.ticker.replace(/^(BCBA|BYMA):/i, '').toUpperCase() === cleanInit
+            );
+            if (assetToSelect) {
+                const isCed = Boolean((assetToSelect as any).isCedear) || 
+                    assetToSelect.tipoActivo?.toLowerCase() === 'cedear' || 
+                    isCedearSymbol(assetToSelect.ticker) || 
+                    KNOWN_CEDEARS.has(cleanInit);
                 void handleSelectAsset({
-                    symbol: assetToSell.ticker,
-                    name: assetToSell.ticker,
-                    type: assetToSell.tipoActivo,
+                    symbol: assetToSelect.ticker,
+                    name: assetToSelect.ticker,
+                    type: isCed ? 'cedear' : assetToSelect.tipoActivo,
+                    exchange: '',
+                    matchScore: 100
+                });
+            } else {
+                void handleSelectAsset({
+                    symbol: initialSymbol,
+                    name: initialSymbol,
+                    type: isCedearSymbol(initialSymbol) || KNOWN_CEDEARS.has(cleanInit) ? 'cedear' : 'stock',
                     exchange: '',
                     matchScore: 100
                 });
@@ -509,15 +529,15 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] gap-0 p-0 overflow-hidden">
-                <DialogHeader className="p-6 pb-2">
+            <DialogContent className="sm:max-w-[620px] max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden shadow-2xl">
+                <DialogHeader className="p-6 pb-3 border-b border-border/40 shrink-0">
                     <DialogTitle>{step === 'search' ? 'Buscar Activo' : `Nueva Transacción: ${selectedAsset?.symbol}`}</DialogTitle>
                     <DialogDescription>
                         {step === 'search' ? 'Busca por ticker o nombre en TradingView (ej. AAPL, BTC)...' : 'Ingresa los detalles de la operación.'}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="p-6 pt-2">
+                <div className="p-6 pt-4 overflow-y-auto flex-1 min-h-0">
                     {step === 'search' ? (
                         mode === 'SELL' ? (
                             <div className="space-y-4">

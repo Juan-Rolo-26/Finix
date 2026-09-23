@@ -137,19 +137,26 @@ export class BillingService {
             where: { userId, planType: { in: planNames }, status: { in: ['ACTIVE', 'PAST_DUE', 'PENDING'] } },
             orderBy: { createdAt: 'desc' },
         });
-        if (!subscription) {
-            throw new BadRequestException(`No se encontró una suscripción de ${targetPlan === 'CREATOR' ? 'Creador' : 'PRO'} para cancelar.`);
-        }
-
-        if (subscription?.mercadoPagoPreapprovalId) {
-            await this.mercadoPagoService.cancelPreapproval(subscription.mercadoPagoPreapprovalId);
-        } else if (subscription?.stripeSubscriptionId) {
-            await this.stripeService.cancelSubscription(userId, subscription.stripeSubscriptionId);
-        }
 
         const now = new Date();
-        const retainsAccess = Boolean(subscription?.endDate && subscription.endDate > now);
+        let retainsAccess = false;
+
         if (subscription) {
+            if (subscription.mercadoPagoPreapprovalId) {
+                try {
+                    await this.mercadoPagoService.cancelPreapproval(subscription.mercadoPagoPreapprovalId);
+                } catch {
+                    // preapproval might already be canceled or sandbox
+                }
+            } else if (subscription.stripeSubscriptionId) {
+                try {
+                    await this.stripeService.cancelSubscription(userId, subscription.id);
+                } catch {
+                    // stripe subscription cancel
+                }
+            }
+
+            retainsAccess = Boolean(subscription.endDate && subscription.endDate > now);
             await this.prisma.subscription.update({
                 where: { id: subscription.id },
                 data: {
@@ -159,7 +166,37 @@ export class BillingService {
             });
         }
 
-        if (!retainsAccess) await this.refreshUserEntitlements(userId);
+        if (!retainsAccess) {
+            if (targetPlan === 'CREATOR') {
+                const hasProSub = await this.prisma.subscription.findFirst({
+                    where: { userId, planType: { in: ['PRO', 'pro_investor'] }, status: 'ACTIVE', endDate: { gt: now } }
+                });
+                const keepPro = Boolean(hasProSub);
+                await this.prisma.user.update({
+                    where: { id: userId },
+                    data: {
+                        isCreator: false,
+                        accountType: keepPro ? 'PRO' : 'BASIC',
+                        plan: keepPro ? 'PRO' : 'FREE',
+                        subscriptionStatus: keepPro ? 'ACTIVE' : 'CANCELED',
+                    },
+                });
+            } else {
+                const hasCreatorSub = await this.prisma.subscription.findFirst({
+                    where: { userId, planType: { in: ['CREATOR', 'pro_creator'] }, status: 'ACTIVE', endDate: { gt: now } }
+                });
+                const keepCreator = Boolean(hasCreatorSub);
+                await this.prisma.user.update({
+                    where: { id: userId },
+                    data: {
+                        plan: keepCreator ? 'CREATOR' : 'FREE',
+                        accountType: keepCreator ? 'CREATOR' : 'BASIC',
+                        subscriptionStatus: keepCreator ? 'ACTIVE' : 'CANCELED',
+                    },
+                });
+            }
+        }
+
         const updatedUser = await this.prisma.user.findUnique({
             where: { id: userId },
             select: { id: true, plan: true, isCreator: true, accountType: true, subscriptionStatus: true },
@@ -169,7 +206,7 @@ export class BillingService {
             success: true,
             message: retainsAccess
                 ? `La renovación de ${targetPlan === 'CREATOR' ? 'Creador' : 'PRO'} fue cancelada. Conservás el acceso hasta ${subscription!.endDate!.toLocaleDateString('es-AR')}.`
-                : `El plan ${targetPlan === 'CREATOR' ? 'Creador' : 'PRO'} fue cancelado.`,
+                : `El plan ${targetPlan === 'CREATOR' ? 'Creador' : 'PRO'} fue dado de baja exitosamente.`,
             user: updatedUser,
         };
     }

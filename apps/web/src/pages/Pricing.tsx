@@ -281,13 +281,13 @@ function StatCard({ stat, delay }: { stat: typeof STATS[0]; delay: number }) {
                 </div>
             </div>
 
-            <div className="mb-4">
-                <div className="text-3xl sm:text-4xl font-black tracking-tight flex items-baseline gap-0.5" style={{ color: stat.color }}>
+            <div className="mb-4 flex flex-col items-center text-center">
+                <div className="text-3xl sm:text-4xl font-black tracking-tight flex items-baseline justify-center gap-0.5 text-center" style={{ color: stat.color }}>
                     {stat.prefix}
                     <AnimatedCounter value={stat.value} isDecimal={stat.isDecimal} />
                     {stat.suffix}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1 font-medium">{stat.sub}</div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium text-center">{stat.sub}</div>
             </div>
 
             <div className="mt-auto pt-2 border-t" style={{ borderColor: 'hsl(var(--border)/0.5)' }}>
@@ -616,20 +616,20 @@ export default function Pricing() {
                                         </span>
                                     </div>
                                 )}
-                                <div className="mb-6">
-                                    <div className="flex items-center gap-2 mb-2">
+                                <div className="mb-6 flex flex-col items-center text-center">
+                                    <div className="flex items-center justify-center gap-2 mb-2">
                                         {Icon && <Icon className="w-5 h-5 text-primary" />}
-                                        <h3 className="text-xl font-bold">{plan.name}</h3>
+                                        <h3 className="text-xl font-bold text-center">{plan.name}</h3>
                                     </div>
-                                    <p className="text-sm text-muted-foreground min-h-[40px]">{plan.description}</p>
+                                    <p className="text-sm text-muted-foreground min-h-[40px] text-center">{plan.description}</p>
                                 </div>
-                                <div className="mb-6">
-                                    <div className="flex items-end gap-1">
+                                <div className="mb-6 flex flex-col items-center text-center">
+                                    <div className="flex items-end justify-center gap-1">
                                         <span className="text-4xl font-extrabold">{plan.price}</span>
                                         {(plan as any).period && <span className="text-muted-foreground font-medium mb-1">{(plan as any).period}</span>}
                                     </div>
                                     {plan.name !== 'Free' && (
-                                        <p className="text-[11px] font-semibold text-emerald-400 mt-1 flex items-center gap-1">
+                                        <p className="text-[11px] font-semibold text-emerald-400 mt-1 flex items-center justify-center gap-1 text-center">
                                             <Sparkles className="w-3 h-3 shrink-0" /> Precio mensual informado antes del checkout
                                         </p>
                                     )}
@@ -744,9 +744,9 @@ export default function Pricing() {
                     {/* Comparison table */}
                     <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.6 }}
                         className="rounded-3xl overflow-hidden mb-14" style={{ border: '1px solid hsl(var(--border))' }}>
-                        <div className="p-6 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
-                            <h3 className="font-bold text-lg">Comparativa de métricas clave</h3>
-                            <p className="text-xs text-muted-foreground mt-0.5">Free vs. PRO — basado en comportamiento promedio de la plataforma</p>
+                        <div className="p-6 border-b flex flex-col items-center text-center" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
+                            <h3 className="font-bold text-lg text-center">Comparativa de métricas clave</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5 text-center">Free vs. PRO — basado en comportamiento promedio de la plataforma</p>
                         </div>
                         <div className="overflow-x-auto" style={{ background: 'hsl(var(--card)/0.5)' }}>
                             <table className="w-full text-sm">
@@ -825,8 +825,8 @@ export default function Pricing() {
                                             <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border ${sec.bg}`}><Icon className={`w-5 h-5 ${sec.color}`} /></div>
                                             <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-muted border border-border/60 text-muted-foreground">{sec.badge}</span>
                                         </div>
-                                        <h3 className="text-lg font-bold text-foreground mb-1">{sec.title}</h3>
-                                        <p className="text-xs text-muted-foreground leading-relaxed mb-4">{sec.description}</p>
+                                        <h3 className="text-lg font-bold text-foreground mb-1 text-center">{sec.title}</h3>
+                                        <p className="text-xs text-muted-foreground leading-relaxed mb-4 text-center">{sec.description}</p>
                                         <div className="space-y-2.5 pt-2 border-t border-border/40">
                                             {sec.features.map((feat, fi) => (
                                                 <div key={fi} className="flex items-start gap-2.5 text-xs text-foreground/90">

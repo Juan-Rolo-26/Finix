@@ -673,7 +673,7 @@ export default function CalendarPage() {
                                                 ? 'Después del cierre'
                                                 : earn.reportTiming === 'BMO'
                                                     ? 'Antes de la apertura'
-                                                    : 'Durante la rueda';
+                                                    : earn.reportTiming === 'DMH' ? 'Durante la rueda' : 'Horario no informado';
                                             const hasReportedResult = earn.actualEps != null || earn.actualRevenue != null;
                                             const epsWon = earn.epsSurprise != null && earn.epsSurprise >= 0;
                                             const revenueWon = earn.revenueSurprise != null && earn.revenueSurprise >= 0;
@@ -806,7 +806,7 @@ export default function CalendarPage() {
                                                 {/* Ex-Date — most important field like TradingView */}
                                                 <div className="text-center flex-shrink-0 hidden sm:block">
                                                     <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-0.5">Ex-Date</div>
-                                                    <div className="text-sm font-black text-foreground font-mono">{formatDateLabel(div.exDate)}</div>
+                                                    <div className="text-sm font-black text-foreground font-mono">{div.exDate ? formatDateLabel(div.exDate) : 'Sin anunciar'}</div>
                                                 </div>
 
                                                 {/* Payment Date */}

@@ -48,6 +48,9 @@ export function isProUser(user: any): boolean {
         } catch { }
     }
     if (!candidate) return false;
+    if (candidate.plan === 'FREE' || candidate.isPro === false || candidate.subscriptionStatus === 'CANCELED') {
+        return false;
+    }
     if (isJuanUser(candidate)) return true;
 
     const role = String(candidate.role || '').toUpperCase();
@@ -67,6 +70,7 @@ export function isProUser(user: any): boolean {
 
 export function isCreatorUser(user: any): boolean {
     if (!user) return false;
+    if (user.isCreator === false) return false;
     if (isJuanUser(user)) return true;
     const role = String(user.role || '').toUpperCase();
     const plan = String(user.plan || '').toUpperCase();
@@ -85,14 +89,16 @@ export function isCreatorUser(user: any): boolean {
 function enhanceUser(user: any): any {
     if (!user) return null;
     if (isJuanUser(user)) {
+        const isFree = user.plan === 'FREE' || user.isPro === false;
+        const isNotCreator = user.isCreator === false;
         return {
             ...user,
-            role: 'ADMIN',
-            plan: 'PRO',
-            accountType: 'PRO',
-            subscriptionStatus: 'ACTIVE',
-            isPro: true,
-            isCreator: true,
+            role: user.role || 'ADMIN',
+            plan: isFree ? 'FREE' : (user.plan || 'PRO'),
+            accountType: isFree ? (isNotCreator ? 'BASIC' : 'CREATOR') : (user.accountType || 'PRO'),
+            subscriptionStatus: isFree && isNotCreator ? (user.subscriptionStatus || 'CANCELED') : (user.subscriptionStatus || 'ACTIVE'),
+            isPro: !isFree,
+            isCreator: !isNotCreator,
             isVerified: true,
         };
     }

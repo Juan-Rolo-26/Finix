@@ -173,11 +173,11 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
                                 Horario de Corte Oficial
                             </p>
                             <p className="text-lg font-black text-foreground">
-                                10:20 - 10:30 <span className="text-xs font-semibold text-primary">ART</span>
+                                10:30 <span className="text-xs font-semibold text-primary">hs ART</span>
                             </p>
                             <p className="text-[11px] text-muted-foreground">
                                 {data?.updatedAt
-                                    ? `Último registro: ${new Date(data.updatedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs`
+                                    ? `${isFrozen ? 'Corte oficial:' : 'Última actualización:'} ${new Date(data.updatedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs`
                                     : 'Sincronizado con Wall Street'}
                             </p>
                         </div>
@@ -456,6 +456,11 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
                                             </p>
                                             <p className="text-xs font-semibold tabular-nums text-muted-foreground">
                                                 ${a.regularPrice.toFixed(2)}
+                                                {a.regularChange != null && (
+                                                    <span className={`ml-1 text-[10px] font-bold ${a.regularChange >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        ({a.regularChange >= 0 ? '+' : ''}{a.regularChange.toFixed(2)}%)
+                                                    </span>
+                                                )}
                                             </p>
                                         </div>
                                     )}

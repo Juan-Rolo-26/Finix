@@ -37,6 +37,7 @@ import {
     CreditCard,
     Sparkles,
     Check,
+    Camera,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -447,14 +448,17 @@ export default function Settings() {
         }, 700);
     };
 
-    const isProActive = Boolean(
+    const isExplicitlyFree = user?.plan === 'FREE' || settings?.plan === 'FREE' || (user as any)?.isPro === false;
+    const isExplicitlyNoCreator = user?.isCreator === false || settings?.isCreator === false;
+
+    const isProActive = !isExplicitlyFree && Boolean(
         ((settings?.plan === 'PRO' || settings?.plan === 'CREATOR') && settings?.subscriptionStatus === 'ACTIVE') ||
         ((['PRO', 'CREATOR'].includes(String((user as any)?.plan || '')) && user?.subscriptionStatus === 'ACTIVE')) ||
         user?.role === 'ADMIN' ||
         (user as any)?.isPro
     );
 
-    const isCreatorActive = Boolean(
+    const isCreatorActive = !isExplicitlyNoCreator && Boolean(
         (user?.isCreator && user?.subscriptionStatus === 'ACTIVE') ||
         (settings?.isCreator && settings?.subscriptionStatus === 'ACTIVE') ||
         ((user?.accountType === 'CREATOR' || settings?.accountType === 'CREATOR') && (user?.subscriptionStatus === 'ACTIVE' || settings?.subscriptionStatus === 'ACTIVE')) ||
@@ -504,12 +508,20 @@ export default function Settings() {
             if (data.user) {
                 (updateUser as any)(data.user);
                 setSettings((p) => (p ? { ...p, ...data.user } : p));
+            } else {
+                if (planToCancel === 'PRO') {
+                    (updateUser as any)({ plan: 'FREE', isPro: false, subscriptionStatus: 'CANCELED' });
+                    setSettings((p) => (p ? { ...p, plan: 'FREE', subscriptionStatus: 'CANCELED' } : p));
+                } else {
+                    (updateUser as any)({ isCreator: false, accountType: 'BASIC' });
+                    setSettings((p) => (p ? { ...p, isCreator: false, accountType: 'BASIC' } : p));
+                }
             }
 
             await syncFromSession?.();
             await fetchBillingOverview();
             setCancelModalOpen(false);
-            showToast(data.message || 'Suscripción dada de baja correctamente.');
+            showToast(data.message || `El plan ${planToCancel === 'PRO' ? 'Finix PRO' : 'Plan Creador'} fue dado de baja correctamente.`, 'success');
         } catch (error: any) {
             showToast(error.message || 'No se pudo cancelar la suscripción', 'error');
         } finally {
@@ -602,22 +614,22 @@ export default function Settings() {
     return (
         <div className="p-4 md:p-6 lg:p-8 w-full space-y-6 pb-16">
             {/* Header */}
-            <div className="rounded-2xl border border-primary/20 bg-card/40 backdrop-blur-sm p-6">
-                <div className="flex items-start justify-between gap-4">
+            <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-7 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-heading font-bold tracking-tight">Configuración</h1>
-                        <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+                        <h1 className="text-3xl sm:text-4xl font-heading font-black tracking-tight text-foreground">Configuración</h1>
+                        <p className="mt-1.5 text-sm sm:text-base text-muted-foreground leading-relaxed font-normal">
                             Gestioná tu cuenta, privacidad, preferencias de la app y seguridad.
                         </p>
                         {accountAge && (
-                            <p className="mt-1 text-xs text-muted-foreground/60">
+                            <p className="mt-1 text-xs sm:text-sm text-muted-foreground/75 font-medium">
                                 Cuenta creada el {accountAge}
                             </p>
                         )}
                     </div>
-                    <div className="flex flex-wrap gap-2 shrink-0">
-                        {settings?.isVerified && <Badge className="bg-emerald-500/15 text-emerald-300 text-xs">✓ Verificado</Badge>}
-                        {settings?.isCreator && <Badge className="bg-primary/15 text-primary text-xs">Creador</Badge>}
+                    <div className="flex flex-wrap gap-2.5 shrink-0">
+                        {settings?.isVerified && <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold px-3 py-1">✓ Verificado</Badge>}
+                        {settings?.isCreator && <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs font-bold px-3 py-1">Creador</Badge>}
                     </div>
                 </div>
             </div>
@@ -629,20 +641,20 @@ export default function Settings() {
 
             {/* Tabs */}
             <Tabs defaultValue="cuenta" className="space-y-6">
-                <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1.5 bg-card/40 border border-border/40 rounded-2xl sm:grid-cols-4 lg:grid-cols-7">
+                <TabsList className="grid h-auto w-full grid-cols-2 gap-1.5 p-2 bg-secondary/40 border border-border/60 rounded-2xl sm:grid-cols-4 lg:grid-cols-7">
                     {[
-                        { value: 'cuenta', label: 'Cuenta', icon: <User className="w-3.5 h-3.5" /> },
-                        { value: 'suscripcion', label: 'Planes PRO y Creador', icon: <Crown className="w-3.5 h-3.5 text-amber-500" /> },
-                        { value: 'privacidad', label: 'Privacidad', icon: <Shield className="w-3.5 h-3.5" /> },
-                        { value: 'preferencias', label: 'Preferencias', icon: <Globe className="w-3.5 h-3.5" /> },
-                        { value: 'notificaciones', label: 'Notificaciones', icon: <Bell className="w-3.5 h-3.5" /> },
-                        { value: 'seguridad', label: 'Seguridad', icon: <Lock className="w-3.5 h-3.5" /> },
-                        { value: 'verificacion', label: 'Verificación', icon: <BadgeCheck className="w-3.5 h-3.5" /> },
+                        { value: 'cuenta', label: 'Cuenta', icon: <User className="w-4 h-4" /> },
+                        { value: 'suscripcion', label: 'Planes PRO y Creador', icon: <Crown className="w-4 h-4 text-amber-500" /> },
+                        { value: 'privacidad', label: 'Privacidad', icon: <Shield className="w-4 h-4" /> },
+                        { value: 'preferencias', label: 'Preferencias', icon: <Globe className="w-4 h-4" /> },
+                        { value: 'notificaciones', label: 'Notificaciones', icon: <Bell className="w-4 h-4" /> },
+                        { value: 'seguridad', label: 'Seguridad', icon: <Lock className="w-4 h-4" /> },
+                        { value: 'verificacion', label: 'Verificación', icon: <BadgeCheck className="w-4 h-4" /> },
                     ].map(({ value, label, icon }) => (
                         <TabsTrigger
                             key={value}
                             value={value}
-                            className="flex items-center gap-1.5 py-2.5 rounded-xl text-xs font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all"
+                            className="flex items-center justify-center gap-2 py-3 px-3 rounded-xl text-xs sm:text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-secondary/70 transition-all text-muted-foreground"
                         >
                             {icon}
                             <span className="hidden sm:inline">{label}</span>
@@ -663,20 +675,55 @@ export default function Settings() {
                             description="Editá tu información pública y datos de perfil."
                         />
                         <CardContent className="space-y-5">
-                            {/* Avatar preview */}
-                            {settings?.avatarUrl && (
-                                <div className="flex items-center gap-4 p-4 rounded-xl border border-border/40 bg-card/20">
-                                    <img
-                                        src={resolveMediaUrl(settings.avatarUrl)}
-                                        alt="Avatar"
-                                        className="w-16 h-16 rounded-full object-cover border-2 border-primary/30"
-                                    />
+                            {/* Avatar preview and quick change */}
+                            <div className="flex items-center justify-between p-4 rounded-2xl border border-border/40 bg-card/20 flex-wrap gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-primary/40 flex items-center justify-center text-xl font-bold bg-secondary/50 shrink-0">
+                                        {(profileForm.avatarUrl || settings?.avatarUrl) ? (
+                                            <img
+                                                src={resolveMediaUrl(profileForm.avatarUrl || settings?.avatarUrl || '')}
+                                                alt="Avatar"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                            />
+                                        ) : (
+                                            <span>{(profileForm.username || settings?.username || 'U')[0].toUpperCase()}</span>
+                                        )}
+                                    </div>
                                     <div>
-                                        <p className="font-semibold">{settings.username}</p>
-                                        <p className="text-sm text-muted-foreground">{settings.email}</p>
+                                        <p className="font-bold text-foreground text-sm">{profileForm.username || settings?.username || 'Usuario'}</p>
+                                        <p className="text-xs text-muted-foreground">{settings?.email || profileForm.email}</p>
                                     </div>
                                 </div>
-                            )}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const input = document.createElement('input');
+                                        input.type = 'file';
+                                        input.accept = 'image/*';
+                                        input.onchange = async (e) => {
+                                            const file = (e.target as HTMLInputElement).files?.[0];
+                                            if (file) {
+                                                try {
+                                                    const res = await uploadProfileImage('avatar', file);
+                                                    if (res.avatarUrl) {
+                                                        setProfileForm((p) => ({ ...p, avatarUrl: res.avatarUrl }));
+                                                        updateUser({ avatarUrl: res.avatarUrl });
+                                                        showToast('Foto de perfil actualizada correctamente');
+                                                    }
+                                                } catch (err: any) {
+                                                    showToast(err.message || 'Error al subir imagen', 'error');
+                                                }
+                                            }
+                                        };
+                                        input.click();
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-all cursor-pointer shadow-xs active:scale-95"
+                                >
+                                    <Camera className="w-3.5 h-3.5" />
+                                    <span>Cambiar foto de perfil</span>
+                                </button>
+                            </div>
 
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
@@ -969,21 +1016,23 @@ export default function Settings() {
                 {/* ── SUSCRIPCIÓN ── */}
                 <TabsContent value="suscripcion" className="space-y-6">
                     {/* Recurring Billing Notice Banner */}
-                    <div className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-5 backdrop-blur-sm">
+                    <div className="relative overflow-hidden rounded-3xl border border-amber-500/35 bg-gradient-to-br from-amber-500/15 via-amber-500/8 to-card p-5 sm:p-6 shadow-xs backdrop-blur-sm">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <div className="flex items-start gap-3.5">
-                                <div className="rounded-xl bg-amber-500/20 p-2.5 text-amber-400 shrink-0">
-                                    <Sparkles className="w-5 h-5" />
+                            <div className="flex items-start gap-4">
+                                <div className="rounded-2xl bg-amber-500/20 p-3 text-amber-600 dark:text-amber-400 shrink-0 shadow-xs border border-amber-500/30">
+                                    <Sparkles className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                                        Administrá tus renovaciones
-                                        <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-400 bg-amber-500/10">
+                                    <div className="flex items-center gap-2.5 flex-wrap">
+                                        <h4 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
+                                            Administrá tus renovaciones
+                                        </h4>
+                                        <Badge variant="outline" className="text-xs font-bold px-2.5 py-0.5 rounded-full border-amber-500/40 text-amber-800 dark:text-amber-300 bg-amber-500/15">
                                             Garantía Finix
                                         </Badge>
-                                    </h4>
-                                    <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-                                        La renovación automática depende de la opción que elegiste al contratar. Desde acá podés consultar la fecha del próximo cobro o vencimiento y detener los cobros futuros.
+                                    </div>
+                                    <p className="text-sm text-foreground/80 dark:text-muted-foreground mt-1.5 max-w-3xl leading-relaxed font-normal">
+                                        La renovación automática depende de la opción que elegiste al contratar. Desde acá podés consultar la fecha del próximo cobro o vencimiento y detener los cobros futuros en cualquier momento.
                                     </p>
                                 </div>
                             </div>
@@ -991,121 +1040,154 @@ export default function Settings() {
                     </div>
 
                     {/* Finix PRO Card */}
-                    <Card className="border-border/50 bg-card/30 backdrop-blur-sm">
-                        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 gap-2">
-                            <div className="flex items-center gap-2.5">
-                                <div className="rounded-lg bg-amber-500/15 p-2 text-amber-500">
-                                    <Crown className="w-5 h-5" />
+                    <Card className="rounded-3xl border-2 border-amber-500/30 bg-card/90 dark:bg-card/40 backdrop-blur-md shadow-sm hover:shadow-md transition-all overflow-hidden">
+                        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 gap-4 p-6 sm:p-7 border-b border-border/50 bg-gradient-to-r from-amber-500/5 via-transparent to-transparent">
+                            <div className="flex items-center gap-3.5">
+                                <div className="rounded-2xl bg-gradient-to-br from-amber-500/25 to-yellow-500/10 p-3 text-amber-500 border border-amber-500/30 shrink-0 shadow-xs">
+                                    <Crown className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <CardTitle className="text-base flex items-center gap-2">
-                                        Finix PRO
+                                    <div className="flex items-center gap-2.5 flex-wrap">
+                                        <CardTitle className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+                                            Finix PRO
+                                        </CardTitle>
                                         {isProActive ? (
-                                            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">
+                                            <Badge className="bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
+                                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                                                 Activo
                                             </Badge>
                                         ) : proBilling?.status === 'PENDING' ? (
-                                            <Badge variant="outline" className="text-amber-400 border-amber-500/40 text-xs">Pago pendiente</Badge>
+                                            <Badge variant="outline" className="text-amber-700 dark:text-amber-300 border-amber-500/40 text-xs font-bold px-3 py-1 rounded-full bg-amber-500/10">
+                                                Pago pendiente
+                                            </Badge>
                                         ) : (
-                                            <Badge variant="outline" className="text-muted-foreground text-xs">
+                                            <Badge variant="outline" className="text-muted-foreground text-xs font-semibold px-3 py-1 rounded-full">
                                                 Plan Gratuito
                                             </Badge>
                                         )}
-                                    </CardTitle>
-                                    <CardDescription className="text-xs">
+                                    </div>
+                                    <CardDescription className="text-sm text-muted-foreground mt-1 font-medium">
                                         Acceso sin restricciones a herramientas financieras avanzadas y señales exclusivas.
                                     </CardDescription>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <span className="text-xl font-bold tracking-tight text-foreground">
-                                    ${Number(billingOverview?.proPriceArs || 8500).toLocaleString('es-AR')} ARS
+                            <div className="sm:text-right shrink-0">
+                                <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground tabular-nums">
+                                    ${Number(billingOverview?.proPriceArs || 8500).toLocaleString('es-AR')}
+                                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400 ml-1.5">ARS</span>
                                 </span>
-                                <span className="text-xs text-muted-foreground block">/ mes contratado</span>
+                                <span className="text-xs sm:text-sm font-semibold text-muted-foreground block mt-0.5">/ mes contratado</span>
                             </div>
                         </CardHeader>
-                        <CardContent className="space-y-5">
+                        <CardContent className="space-y-6 p-6 sm:p-7">
                             {/* Features list */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-4 rounded-xl border border-border/40 bg-card/20">
-                                {[
-                                    'Acceso ilimitado a todas las secciones y métricas PRO',
-                                    'Alertas en tiempo real por Gmail y notificaciones push',
-                                    'Análisis de ballenas y movimientos institucionales',
-                                    'Filtros técnicos avanzados y gráficos sin límites',
-                                    'Badge exclusivo Finix PRO en la comunidad',
-                                    'Elección entre renovación automática o pago mensual único',
-                                ].map((feature) => (
-                                    <div key={feature} className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <div className="rounded-full bg-emerald-500/20 p-0.5 text-emerald-400 shrink-0">
-                                            <Check className="w-3 h-3" />
+                            <div>
+                                <h5 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                                    Beneficios incluidos en tu membresía
+                                </h5>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 p-5 rounded-2xl border border-border/60 bg-secondary/30 dark:bg-card/50">
+                                    {[
+                                        'Acceso ilimitado a todas las secciones y métricas PRO',
+                                        'Alertas en tiempo real por Gmail y notificaciones push',
+                                        'Análisis de ballenas y movimientos institucionales',
+                                        'Filtros técnicos avanzados y gráficos sin límites',
+                                        'Badge exclusivo Finix PRO en la comunidad',
+                                        'Elección entre renovación automática o pago mensual único',
+                                    ].map((feature) => (
+                                        <div key={feature} className="flex items-center gap-3">
+                                            <div className="rounded-full bg-emerald-500/15 p-1 text-emerald-600 dark:text-emerald-400 shrink-0 border border-emerald-500/25">
+                                                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                            </div>
+                                            <span className="text-sm sm:text-base font-semibold text-foreground/90 leading-snug">
+                                                {feature}
+                                            </span>
                                         </div>
-                                        <span>{feature}</span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
 
                             {/* Billing details / Renewal */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/30 bg-muted/20 text-xs">
-                                <div className="space-y-0.5">
-                                    <span className="text-muted-foreground">Ciclo de facturación:</span>
-                                    <p className="font-medium text-foreground">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 p-5 rounded-2xl border border-border/70 bg-secondary/40 dark:bg-card/60">
+                                <div className="space-y-1">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                        Ciclo de facturación
+                                    </span>
+                                    <p className="text-sm sm:text-base font-bold text-foreground leading-relaxed">
                                         {proBilling?.status === 'PENDING'
                                             ? 'Esperando que completes la autorización de pago en Mercado Pago.'
                                             : isProActive && !proBilling
                                                 ? 'Acceso activo sin una suscripción facturable asociada.'
                                                 : isProActive
                                             ? proBilling?.cancelAtPeriodEnd
-                                                ? `Renovación cancelada. Mantenés acceso hasta ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'el fin del período pago'}.`
+                                                ? `Renovación cancelada. Mantenés acceso hasta el ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'fin del período pago'}.`
                                                 : proBilling?.autoRenew
                                                     ? `Renovación automática mensual. Próximo cobro: ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'según Mercado Pago'}.`
-                                                    : `Sin renovación automática. Acceso hasta ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'el fin del período pago'}.`
-                                            : 'No hay un plan PRO activo.'}
+                                                    : `Sin renovación automática. Acceso hasta el ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'fin del período pago'}.`
+                                            : 'No hay un plan PRO activo actualmente.'}
                                     </p>
                                 </div>
-                                <div className="space-y-0.5 sm:text-right">
-                                    <span className="text-muted-foreground">Estado del plan:</span>
-                                    <p className="font-medium capitalize text-foreground">
+                                <div className="space-y-1 md:text-right shrink-0">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                                        Estado del plan
+                                    </span>
+                                    <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold uppercase tracking-wide bg-background border border-border/80 shadow-2xs text-foreground">
                                         {proBilling?.status === 'PENDING' ? 'Pendiente' : isProActive ? (proBilling?.status || settings?.subscriptionStatus || 'Activo') : 'Inactivo'}
-                                    </p>
+                                    </span>
                                 </div>
                             </div>
 
                             {/* Actions */}
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-border/30">
-                                        {proBilling?.status === 'PENDING' ? (
-                                            <>
-                                                <p className="text-xs text-muted-foreground">La autorización de pago todavía está pendiente.</p>
-                                                <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('PRO'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-xs font-semibold">Cancelar solicitud</Button>
-                                            </>
-                                        ) : isProActive ? (
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-border/40">
+                                {proBilling?.status === 'PENDING' ? (
                                     <>
-                                        {!proBilling && isProActive ? (
-                                            <p className="text-xs text-muted-foreground">No hay una renovación PRO separada registrada para cancelar. Si tenés Creador, sus herramientas PRO se gestionan desde esa tarjeta.</p>
-                                        ) : proBilling?.cancelAtPeriodEnd ? (
-                                            <p className="text-xs text-muted-foreground">La renovación ya está cancelada. Podés volver a contratar PRO cuando termine el período vigente.</p>
-                                        ) : !proBilling?.autoRenew ? (
-                                            <p className="text-xs text-muted-foreground">Este pago no se renueva automáticamente. El acceso termina en la fecha indicada y no habrá otro cobro.</p>
+                                        <p className="text-sm text-muted-foreground font-medium">La autorización de pago todavía está pendiente.</p>
+                                        <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('PRO'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl shadow-xs">Cancelar solicitud</Button>
+                                    </>
+                                ) : isProActive ? (
+                                    <>
+                                        {proBilling?.cancelAtPeriodEnd ? (
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4">
+                                                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                                                    La baja del plan ya fue solicitada. Conservás acceso hasta el {proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'fin del período'}.
+                                                </p>
+                                                <Link to="/pricing" className="w-full sm:w-auto">
+                                                    <Button variant="outline" size="sm" className="w-full sm:w-auto font-bold text-sm rounded-xl border-amber-500/40 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10">
+                                                        Reactivar plan PRO
+                                                    </Button>
+                                                </Link>
+                                            </div>
                                         ) : (
-                                            <>
-                                                <p className="text-xs text-muted-foreground">Al cancelar se detienen los próximos cobros; conservás el acceso hasta el fin del período ya pagado.</p>
-                                                <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('PRO'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-xs font-semibold gap-1.5">
-                                                    Cancelar renovación PRO
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4">
+                                                <p className="text-sm text-muted-foreground font-medium max-w-xl">
+                                                    {proBilling?.autoRenew
+                                                        ? 'Renovación automática mensual activa. Podés dar de baja el plan en cualquier momento.'
+                                                        : 'Acceso PRO activo en tu cuenta. Podés dar de baja tu plan cuando quieras.'}
+                                                </p>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => { setPlanToCancel('PRO'); setCancelModalOpen(true); }}
+                                                    className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:border-red-500/60 shadow-xs gap-2 shrink-0 transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                    Dar de baja Finix PRO
                                                 </Button>
-                                            </>
+                                            </div>
                                         )}
                                     </>
                                 ) : (
                                     <>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-sm text-muted-foreground font-medium">
                                             Subí a PRO para acceder a todas las secciones bloqueadas y alertas por Gmail.
                                         </p>
                                         <Link to="/pricing" className="w-full sm:w-auto">
                                             <Button
                                                 type="button"
                                                 size="sm"
-                                                className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-bold gap-1.5 shadow-lg shadow-amber-500/20"
+                                                className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-extrabold text-sm py-2.5 px-6 rounded-xl gap-2 shadow-lg shadow-amber-500/20"
                                             >
-                                                <Zap className="w-3.5 h-3.5" />
+                                                <Zap className="w-4 h-4 fill-black" />
                                                 Mejorar a Finix PRO
                                             </Button>
                                         </Link>
@@ -1116,95 +1198,138 @@ export default function Settings() {
                     </Card>
 
                     {/* Plan Creador Card */}
-                    <Card className="border-border/50 bg-card/30 backdrop-blur-sm">
-                        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 gap-2">
-                            <div className="flex items-center gap-2.5">
-                                <div className="rounded-lg bg-blue-500/15 p-2 text-blue-400">
-                                    <Zap className="w-5 h-5" />
+                    <Card className="rounded-3xl border-2 border-blue-500/30 bg-card/90 dark:bg-card/40 backdrop-blur-md shadow-sm hover:shadow-md transition-all overflow-hidden">
+                        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 gap-4 p-6 sm:p-7 border-b border-border/50 bg-gradient-to-r from-blue-500/5 via-transparent to-transparent">
+                            <div className="flex items-center gap-3.5">
+                                <div className="rounded-2xl bg-gradient-to-br from-blue-500/25 to-indigo-500/10 p-3 text-blue-500 border border-blue-500/30 shrink-0 shadow-xs">
+                                    <Zap className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <CardTitle className="text-base flex items-center gap-2">
-                                        Plan Creador de Contenido
+                                    <div className="flex items-center gap-2.5 flex-wrap">
+                                        <CardTitle className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+                                            Plan Creador de Contenido
+                                        </CardTitle>
                                         {creatorBilling?.status === 'PENDING' ? (
-                                            <Badge variant="outline" className="text-amber-400 border-amber-500/40 text-xs">Pago pendiente</Badge>
+                                            <Badge variant="outline" className="text-amber-700 dark:text-amber-300 border-amber-500/40 text-xs font-bold px-3 py-1 rounded-full bg-amber-500/10">
+                                                Pago pendiente
+                                            </Badge>
                                         ) : isCreatorActive ? (
-                                            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                                            <Badge className="bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-500/30 text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
+                                                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                                                 Creador Activo
                                             </Badge>
                                         ) : (
-                                            <Badge variant="outline" className="text-muted-foreground text-xs">
+                                            <Badge variant="outline" className="text-muted-foreground text-xs font-semibold px-3 py-1 rounded-full">
                                                 Básico
                                             </Badge>
                                         )}
-                                    </CardTitle>
-                                    <CardDescription className="text-xs">
+                                    </div>
+                                    <CardDescription className="text-sm text-muted-foreground mt-1 font-medium">
                                         Monetizá análisis, administrá comunidades pagas y creá publicaciones destacadas.
                                     </CardDescription>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <span className="text-xl font-bold tracking-tight text-foreground">${Number(billingOverview?.creatorPriceArs || 29900).toLocaleString('es-AR')} ARS</span>
-                                <span className="block text-xs text-muted-foreground">/ mes contratado</span>
+                            <div className="sm:text-right shrink-0">
+                                <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground tabular-nums">
+                                    ${Number(billingOverview?.creatorPriceArs || 29900).toLocaleString('es-AR')}
+                                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400 ml-1.5">ARS</span>
+                                </span>
+                                <span className="block text-xs sm:text-sm font-semibold text-muted-foreground mt-0.5">/ mes contratado</span>
                             </div>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-4 rounded-xl border border-border/40 bg-card/20">
-                                {[
-                                    'Creación y monetización de comunidades exclusivas',
-                                    'Cobro de membresías a tus seguidores',
-                                    'Herramientas avanzadas de publicación y gráficos',
-                                    'Badge de Creador Verificado en tu perfil',
-                                ].map((feature) => (
-                                    <div key={feature} className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <div className="rounded-full bg-blue-500/20 p-0.5 text-blue-400 shrink-0">
-                                            <Check className="w-3 h-3" />
+                        <CardContent className="space-y-6 p-6 sm:p-7">
+                            <div>
+                                <h5 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                                    Herramientas incluidas para Creadores
+                                </h5>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 p-5 rounded-2xl border border-border/60 bg-secondary/30 dark:bg-card/50">
+                                    {[
+                                        'Creación y monetización de comunidades exclusivas',
+                                        'Cobro de membresías a tus seguidores',
+                                        'Herramientas avanzadas de publicación y gráficos',
+                                        'Badge de Creador Verificado en tu perfil',
+                                    ].map((feature) => (
+                                        <div key={feature} className="flex items-center gap-3">
+                                            <div className="rounded-full bg-blue-500/15 p-1 text-blue-600 dark:text-blue-400 shrink-0 border border-blue-500/25">
+                                                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                            </div>
+                                            <span className="text-sm sm:text-base font-semibold text-foreground/90 leading-snug">
+                                                {feature}
+                                            </span>
                                         </div>
-                                        <span>{feature}</span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
 
-                            <div className="rounded-xl border border-border/30 bg-muted/20 p-3.5 text-xs">
-                                <span className="text-muted-foreground">Facturación:</span>
-                                <p className="mt-0.5 font-medium text-foreground">
-                                    {isCreatorActive && !creatorBilling
-                                        ? 'Acceso Creador activo sin una suscripción facturable asociada.'
-                                        : isCreatorActive
-                                        ? creatorBilling?.cancelAtPeriodEnd
-                                            ? `Renovación cancelada. Acceso hasta ${creatorBilling?.endDate ? new Date(creatorBilling.endDate).toLocaleDateString('es-AR') : 'el fin del período pago'}.`
-                                            : creatorBilling?.autoRenew
-                                                ? `Renovación automática mensual. Próximo cobro: ${creatorBilling?.endDate ? new Date(creatorBilling.endDate).toLocaleDateString('es-AR') : 'según Mercado Pago'}.`
-                                                : `Sin renovación automática. Acceso hasta ${creatorBilling?.endDate ? new Date(creatorBilling.endDate).toLocaleDateString('es-AR') : 'el fin del período pago'}.`
-                                        : 'No hay un plan Creador activo.'}
-                                </p>
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 p-5 rounded-2xl border border-border/70 bg-secondary/40 dark:bg-card/60">
+                                <div className="space-y-1">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                        Facturación del Creador
+                                    </span>
+                                    <p className="text-sm sm:text-base font-bold text-foreground leading-relaxed">
+                                        {isCreatorActive && !creatorBilling
+                                            ? 'Acceso Creador activo sin una suscripción facturable asociada.'
+                                            : isCreatorActive
+                                            ? creatorBilling?.cancelAtPeriodEnd
+                                                ? `Renovación cancelada. Acceso hasta el ${creatorBilling?.endDate ? new Date(creatorBilling.endDate).toLocaleDateString('es-AR') : 'fin del período pago'}.`
+                                                : creatorBilling?.autoRenew
+                                                    ? `Renovación automática mensual. Próximo cobro: ${creatorBilling?.endDate ? new Date(creatorBilling.endDate).toLocaleDateString('es-AR') : 'según Mercado Pago'}.`
+                                                    : `Sin renovación automática. Acceso hasta el ${creatorBilling?.endDate ? new Date(creatorBilling.endDate).toLocaleDateString('es-AR') : 'fin del período pago'}.`
+                                            : 'No hay un plan Creador activo actualmente.'}
+                                    </p>
+                                </div>
+                                <div className="space-y-1 md:text-right shrink-0">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                                        Estado
+                                    </span>
+                                    <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold uppercase tracking-wide bg-background border border-border/80 shadow-2xs text-foreground">
+                                        {isCreatorActive ? 'Activo' : 'Inactivo'}
+                                    </span>
+                                </div>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-border/30">
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-border/40">
                                 {creatorBilling?.status === 'PENDING' ? (
                                     <>
-                                        <p className="text-xs text-muted-foreground">La autorización de pago todavía está pendiente.</p>
-                                        <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-xs font-semibold">Cancelar solicitud</Button>
+                                        <p className="text-sm text-muted-foreground font-medium">La autorización de pago todavía está pendiente.</p>
+                                        <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl shadow-xs">Cancelar solicitud</Button>
                                     </>
                                 ) : isCreatorActive ? (
                                     <>
-                                        {!creatorBilling ? (
-                                            <p className="text-xs text-muted-foreground">No hay una renovación Creador registrada para cancelar desde acá.</p>
-                                        ) : creatorBilling?.cancelAtPeriodEnd ? (
-                                            <p className="text-xs text-muted-foreground">La renovación ya está cancelada. Podés volver a contratar Creador cuando termine el período vigente.</p>
-                                        ) : !creatorBilling?.autoRenew ? (
-                                            <p className="text-xs text-muted-foreground">Este pago no se renueva automáticamente. El acceso Creador termina en la fecha indicada y no habrá otro cobro.</p>
+                                        {creatorBilling?.cancelAtPeriodEnd ? (
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4">
+                                                <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
+                                                    La baja del plan ya fue solicitada. Conservás tus herramientas hasta el {creatorBilling?.endDate ? new Date(creatorBilling.endDate).toLocaleDateString('es-AR') : 'fin del período'}.
+                                                </p>
+                                                <Link to="/creator" className="w-full sm:w-auto">
+                                                    <Button variant="outline" size="sm" className="w-full sm:w-auto font-bold text-sm rounded-xl border-blue-500/40 text-blue-700 dark:text-blue-300 hover:bg-blue-500/10">
+                                                        Reactivar Plan Creador
+                                                    </Button>
+                                                </Link>
+                                            </div>
                                         ) : (
-                                            <>
-                                                <p className="text-xs text-muted-foreground">Al cancelar se detienen los próximos cobros; conservás las herramientas hasta el fin del período pago. Las funciones de creador terminan entonces.</p>
-                                                <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-xs font-semibold gap-1.5">
-                                                    Cancelar renovación Creador
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4">
+                                                <p className="text-sm text-muted-foreground font-medium max-w-xl">
+                                                    {creatorBilling?.autoRenew
+                                                        ? 'Renovación automática mensual activa. Podés dar de baja el plan en cualquier momento.'
+                                                        : 'Acceso Creador activo en tu cuenta. Podés dar de baja tu plan cuando quieras.'}
+                                                </p>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }}
+                                                    className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:border-red-500/60 shadow-xs gap-2 shrink-0 transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                    Dar de baja Plan Creador
                                                 </Button>
-                                            </>
+                                            </div>
                                         )}
                                     </>
                                 ) : (
                                     <>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-sm text-muted-foreground font-medium">
                                             ¿Querés monetizar tus análisis y crear tu comunidad en Finix?
                                         </p>
                                         <Link to="/creator" className="w-full sm:w-auto">
@@ -1212,7 +1337,7 @@ export default function Settings() {
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                className="w-full sm:w-auto text-xs font-medium"
+                                                className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl border-blue-500/40 text-blue-600 hover:bg-blue-500/10"
                                             >
                                                 Contratar Plan Creador
                                             </Button>
@@ -1345,7 +1470,6 @@ export default function Settings() {
                                         <SelectContent>
                                             <SelectItem value="USD">💵 USD – Dólar</SelectItem>
                                             <SelectItem value="ARS">🇦🇷 ARS – Peso AR</SelectItem>
-                                            <SelectItem value="EUR">💶 EUR – Euro</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -1582,60 +1706,73 @@ export default function Settings() {
 
             {/* Modal de Cancelación de Suscripción */}
             {cancelModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="relative w-full max-w-md rounded-2xl border border-red-500/30 bg-card p-6 shadow-2xl space-y-5">
-                        <div className="flex items-start gap-3.5">
-                            <div className="rounded-xl bg-red-500/20 p-2.5 text-red-500 shrink-0">
-                                <AlertCircle className="w-5 h-5" />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-lg rounded-3xl border border-red-500/30 bg-card p-6 sm:p-7 shadow-2xl space-y-6">
+                        <div className="flex items-start gap-4">
+                            <div className="rounded-2xl bg-red-500/15 p-3.5 text-red-600 dark:text-red-400 shrink-0 border border-red-500/30 shadow-xs">
+                                <AlertCircle className="w-7 h-7" />
                             </div>
                             <div>
-                                <h3 className="text-base font-bold text-foreground">
+                                <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
                                     {planToCancel === 'PRO' ? '¿Dar de baja Finix PRO?' : '¿Dar de baja Plan Creador?'}
                                 </h3>
-                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed font-normal">
                                     {planToCancel === 'PRO'
-                                    ? 'Se detendrán los próximos cobros. Conservás el acceso PRO hasta el final del período que ya pagaste.'
-                                    : 'Se detendrán los próximos cobros. Conservás el acceso Creador hasta el final del período pago; después, las herramientas de creador dejarán de estar disponibles.'}
+                                        ? 'Al confirmar, se cancelarán las renovaciones automáticas y los cobros futuros de tu suscripción.'
+                                        : 'Al confirmar, se detendrán los cobros futuros y se cerrarán las herramientas de monetización para creadores.'}
                                 </p>
                             </div>
                         </div>
 
-                        <div className="rounded-xl border border-border/40 bg-muted/20 p-3.5 space-y-2 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-2 text-foreground font-medium">
+                        <div className="rounded-2xl border border-border/70 bg-secondary/35 p-4 sm:p-5 space-y-3 text-sm">
+                            <div className="flex items-center gap-2 text-foreground font-bold text-sm sm:text-base">
                                 <CreditCard className="w-4 h-4 text-primary" />
-                                <span>Detalles de facturación:</span>
+                                <span>Información sobre la baja:</span>
                             </div>
-                            <p>
-                                {planToCancel === 'PRO'
-                                    ? 'No habrá nuevos cargos. El acceso continúa hasta la fecha de vencimiento que ves en esta pantalla.'
-                                    : 'No habrá nuevos cargos. El acceso Creador continúa hasta la fecha de vencimiento que ves en esta pantalla.'}
-                            </p>
+                            <ul className="text-xs sm:text-sm text-foreground/80 dark:text-muted-foreground space-y-2 list-disc pl-5 font-medium leading-relaxed">
+                                {planToCancel === 'PRO' ? (
+                                    <>
+                                        <li>No se generará ningún cobro adicional en tu medio de pago.</li>
+                                        <li>Conservás las funciones hasta el final del ciclo si ya estaba pagado.</li>
+                                        <li>Podés reactivar o cambiar de plan cuando quieras sin perder tus publicaciones.</li>
+                                    </>
+                                ) : (
+                                    <>
+                                        <li>No se generará ningún cobro adicional en tu medio de pago.</li>
+                                        <li>Dejarás de monetizar comunidades pagas y gestionar suscripciones de miembros.</li>
+                                        <li>Podés volver a activar tu perfil de Creador cuando lo desees.</li>
+                                    </>
+                                )}
+                            </ul>
                         </div>
 
-                        <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 pt-2">
+                        <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-2">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => setCancelModalOpen(false)}
                                 disabled={isCancelingSubscription}
-                                className="w-full sm:w-auto text-xs"
+                                className="w-full sm:w-auto text-sm font-semibold rounded-xl py-2.5 px-5"
                             >
-                                Conservar suscripción
+                                Conservar mi plan
                             </Button>
                             <Button
                                 type="button"
                                 variant="destructive"
                                 onClick={handleConfirmCancel}
                                 disabled={isCancelingSubscription}
-                                className="w-full sm:w-auto text-xs font-semibold gap-1.5"
+                                className="w-full sm:w-auto text-sm font-black rounded-xl py-2.5 px-6 gap-2 bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/20"
                             >
                                 {isCancelingSubscription ? (
                                     <>
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        Cancelando...
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Dando de baja...
                                     </>
                                 ) : (
-                                    'Cancelar renovación'
+                                    <>
+                                        <Trash2 className="w-4 h-4" />
+                                        Confirmar baja del plan
+                                    </>
                                 )}
                             </Button>
                         </div>

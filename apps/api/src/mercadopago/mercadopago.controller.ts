@@ -9,6 +9,7 @@ import {
     UseGuards,
     HttpCode,
     HttpStatus,
+    Headers,
 } from '@nestjs/common';
 import { MercadoPagoService } from './mercadopago.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -31,8 +32,8 @@ export class MercadoPagoController {
 
     @Post('webhook')
     @HttpCode(HttpStatus.OK)
-    handleWebhook(@Body() body: any, @Query() query: any) {
-        return this.mpService.handleWebhook(body, query);
+    handleWebhook(@Body() body: any, @Query() query: any, @Headers('x-signature') signature?: string, @Headers('x-request-id') requestId?: string) {
+        return this.mpService.handleWebhook(body, query, signature, requestId);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -45,8 +46,15 @@ export class MercadoPagoController {
     getConfig() {
         return {
             configured: this.mpService.isConfigured(),
+            communityCurrency: 'ARS',
             proPriceArs: this.mpService.getProPrice(),
             creatorPriceArs: this.mpService.getCreatorPrice(),
         };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('subscription-status')
+    recurringStatus(@Query('reference') reference: string, @Req() req: any) {
+        return this.mpService.getRecurringStatus(reference, req.user.id);
     }
 }

@@ -9,7 +9,10 @@ import { usePreferencesStore } from '../stores/preferencesStore';
 export default function DashboardLayout() {
     const location = useLocation();
     const isMessages = location.pathname.startsWith('/messages');
-    const isComunidad = location.pathname.startsWith('/comunidad');
+    // Communities has its own desktop/mobile header treatment.
+    // Match the actual plural route so the global mobile top bar does not
+    // overlay the page content on /comunidades.
+    const isComunidad = location.pathname.startsWith('/comunidades');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const collapsed = usePreferencesStore(s => s.sidebarCollapsed);
 

@@ -41,8 +41,8 @@ export class MarketController {
     }
 
     @Get('premarket')
-    getPremarket() {
-        return this.marketService.getPremarket();
+    getPremarket(@Query('force') force?: string) {
+        return this.marketService.getPremarket(force === 'true');
     }
 
     @Get('search')

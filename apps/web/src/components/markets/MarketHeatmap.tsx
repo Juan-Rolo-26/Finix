@@ -215,7 +215,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                 </span>
                                 <Flame className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                MAPA DE CALOR INSTITUCIONAL
+                                MAPA DE CALOR TÉCNICO
                             </span>
                             <Badge variant="outline" className="text-xs font-semibold border-border/70 text-muted-foreground rounded-full px-3 py-1 gap-1.5 bg-secondary/30">
                                 <Clock className="w-3 h-3 text-muted-foreground" />
@@ -223,12 +223,12 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                             </Badge>
                             <Badge variant="outline" className="text-xs font-semibold border-border/70 text-muted-foreground rounded-full px-3 py-1 gap-1.5 bg-secondary/30">
                                 <Layers className="w-3 h-3 text-muted-foreground" />
-                                Universo: Top 250 Acciones S&amp;P 500
+                                Universo: Top 250 Acciones S&P 500
                             </Badge>
                         </div>
 
                         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-foreground">
-                            Mapa de Calor S&amp;P 500
+                            Mapa de Calor S&P 500
                         </h1>
 
                         <p className="text-sm sm:text-base text-muted-foreground leading-relaxed font-normal">
@@ -279,7 +279,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                         <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center">
                                             <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                         </div>
-                                        Criterios de Compra y Acumulación
+                                        Criterios de Entrada / Acumulación
                                     </div>
                                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
                                         Sesgo Alcista
@@ -292,7 +292,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                             RSI &lt; 45
                                         </span>
                                         <span className="text-muted-foreground leading-relaxed">
-                                            <strong className="text-foreground">Sobreventa Técnica:</strong> Zona de soporte y acumulación institucional con margen de revalorización semanal.
+                                            <strong className="text-foreground">Soporte y Descuento:</strong> El precio descansó o corrigió sin quebrar estructura; margen favorable de recuperación.
                                         </span>
                                     </div>
                                     <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-card border border-border/60">
@@ -300,7 +300,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                             MACD &gt; 0
                                         </span>
                                         <span className="text-muted-foreground leading-relaxed">
-                                            <strong className="text-foreground">Impulso Comprador:</strong> Cruce alcista semanal confirmado por encima de la línea de señal.
+                                            <strong className="text-foreground">Impulso a Favor:</strong> Cruce alcista o histograma en expansión que acompaña la entrada compradora.
                                         </span>
                                     </div>
                                     <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-card border border-border/60">
@@ -308,7 +308,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                             Retorno +
                                         </span>
                                         <span className="text-muted-foreground leading-relaxed">
-                                            <strong className="text-foreground">Flujo de Capital:</strong> Entrada neta de volumen y tracción positiva de precios en la semana.
+                                            <strong className="text-foreground">Demanda Activa:</strong> Variación semanal positiva respaldando el interés de los compradores.
                                         </span>
                                     </div>
                                 </div>
@@ -321,10 +321,10 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                         <div className="w-7 h-7 rounded-lg bg-rose-500/20 flex items-center justify-center">
                                             <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                                         </div>
-                                        Criterios de Venta y Sobrecompra
+                                        Criterios de Cautela y Toma de Ganancias
                                     </div>
                                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-400">
-                                        Riesgo / Toma
+                                        Sesgo Bajista / Toma
                                     </span>
                                 </div>
 
@@ -334,7 +334,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                             RSI &gt; 55
                                         </span>
                                         <span className="text-muted-foreground leading-relaxed">
-                                            <strong className="text-foreground">Sobrecompra Extendida:</strong> Oscilador en zona de recalentamiento con potencial agotamiento de compras.
+                                            <strong className="text-foreground">Precio Extendido:</strong> Rally maduro en zona alta; el riesgo de entrar acá supera el beneficio esperado.
                                         </span>
                                     </div>
                                     <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-card border border-border/60">
@@ -342,7 +342,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                             MACD &lt; 0
                                         </span>
                                         <span className="text-muted-foreground leading-relaxed">
-                                            <strong className="text-foreground">Cruce Bajista:</strong> Histograma negativo o desaceleración bajista por debajo de señal.
+                                            <strong className="text-foreground">Pérdida de Impulso:</strong> Cruce bajista o histograma contrayéndose; alerta de freno o corrección.
                                         </span>
                                     </div>
                                     <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-card border border-border/60">
@@ -350,7 +350,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                             Retorno -
                                         </span>
                                         <span className="text-muted-foreground leading-relaxed">
-                                            <strong className="text-foreground">Presión Distribuidora:</strong> Salida de capital, tomas de ganancias y velas de rechazo semanal.
+                                            <strong className="text-foreground">Presión Vendedora:</strong> Cierres en negativo y rechazo en techos de la semana.
                                         </span>
                                     </div>
                                 </div>
@@ -360,7 +360,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                         {/* Direct link to open complete modal guide */}
                         <div className="flex items-center justify-between p-3.5 rounded-xl bg-secondary/40 border border-border/60 text-xs">
                             <span className="text-muted-foreground font-medium">
-                                ¿Quieres profundizar en cómo combinar estos osciladores y el sistema cuantitativo de Score?
+                                ¿Querés ver los criterios detallados de cada oscilador y el cálculo del Score?
                             </span>
                             <button
                                 type="button"
@@ -948,20 +948,20 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                 const indicatorLabel = activeMode === 'adx' ? 'ADX (fuerza semanal)' : activeMode === 'stoch' ? 'Estocástico (semanal)' : 'RSI (14 Semanal)';
                                 const indicatorBullish = activeMode === 'adx' ? item.adx >= 25 : activeMode === 'stoch' ? item.stoch <= 20 : item.rsi <= 45;
                                 const indicatorBearish = activeMode === 'adx' ? item.adx < 20 : activeMode === 'stoch' ? item.stoch >= 80 : item.rsi >= 55;
-                                const isBullish = item.signalType === 'STRONG_BUY' || item.signalType === 'BUY';
-                                const isBearish = item.signalType === 'STRONG_SELL' || item.signalType === 'SELL';
+                                const isBullish = activeMode === 'macd' ? item.hist > 0 : indicatorBullish;
+                                const isBearish = activeMode === 'macd' ? item.hist < 0 : indicatorBearish;
 
                                 return (
                                     <div
                                         key={item.symbol}
                                         onClick={() => onSelectSymbol?.(item.symbol)}
                                         className={cn(
-                                            'group relative flex flex-col justify-between p-5 rounded-2xl border transition-all cursor-pointer bg-white dark:bg-card shadow-2xs hover:shadow-md hover:-translate-y-0.5',
+                                            'group relative flex flex-col justify-between p-5 rounded-2xl border transition-all cursor-pointer shadow-2xs hover:shadow-md hover:-translate-y-0.5 overflow-hidden',
                                             isBullish
-                                                ? 'border-emerald-500/40 hover:border-emerald-500'
+                                                ? 'border-emerald-500/70 bg-gradient-to-br from-emerald-400/35 via-emerald-500/18 to-emerald-500/5 dark:from-emerald-500/40 dark:via-emerald-500/20 dark:to-card shadow-emerald-500/15 hover:border-emerald-500 hover:shadow-emerald-500/25'
                                                 : isBearish
-                                                ? 'border-rose-500/40 hover:border-rose-500'
-                                                : 'border-border/70 hover:border-emerald-500/50'
+                                                ? 'border-rose-500/70 bg-gradient-to-br from-rose-400/35 via-rose-500/18 to-rose-500/5 dark:from-rose-500/40 dark:via-rose-500/20 dark:to-card shadow-rose-500/15 hover:border-rose-500 hover:shadow-rose-500/25'
+                                                : 'border-border/70 bg-white dark:bg-card hover:border-emerald-500/50'
                                         )}
                                     >
                                         {/* Header */}
@@ -983,14 +983,28 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                                 </div>
                                             </div>
 
-                                            <div className="w-8 h-8 rounded-xl border border-border/60 flex items-center justify-center group-hover:border-emerald-500/50 group-hover:bg-emerald-500/5 transition-colors shrink-0">
-                                                <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-emerald-600 transition-colors" />
+                                            <div className={cn(
+                                                "w-8 h-8 rounded-xl border flex items-center justify-center transition-colors shrink-0",
+                                                isBullish
+                                                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 group-hover:bg-emerald-500/20"
+                                                    : isBearish
+                                                    ? "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300 group-hover:bg-rose-500/20"
+                                                    : "border-border/60 bg-secondary/40 text-muted-foreground group-hover:border-emerald-500/50 group-hover:text-emerald-600"
+                                            )}>
+                                                <ArrowUpRight className="w-3.5 h-3.5 transition-colors" />
                                             </div>
                                         </div>
 
                                         {/* Sector Tag */}
                                         <div className="mt-2.5">
-                                            <span className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-foreground truncate max-w-full">
+                                            <span className={cn(
+                                                "inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md truncate max-w-full border",
+                                                isBullish
+                                                    ? "bg-white/70 dark:bg-card/70 border-emerald-500/20 text-emerald-950 dark:text-emerald-200"
+                                                    : isBearish
+                                                    ? "bg-white/70 dark:bg-card/70 border-rose-500/20 text-rose-950 dark:text-rose-200"
+                                                    : "bg-secondary text-muted-foreground border-transparent"
+                                            )}>
                                                 {item.sector}
                                             </span>
                                         </div>
@@ -1004,8 +1018,8 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                                 className={cn(
                                                     'flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md',
                                                     item.change1W >= 0
-                                                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-                                                        : 'text-rose-600 dark:text-rose-400 bg-rose-500/10'
+                                                        ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/15'
+                                                        : 'text-rose-700 dark:text-rose-300 bg-rose-500/15'
                                                 )}
                                             >
                                                 {item.change1W >= 0 ? (
@@ -1019,7 +1033,10 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                         </div>
 
                                         {/* Technical Indicator Details */}
-                                        <div className="mt-4 pt-3 border-t border-border/60 space-y-2">
+                                        <div className={cn(
+                                            "mt-4 pt-3 border-t space-y-2",
+                                            isBullish ? "border-emerald-500/30" : isBearish ? "border-rose-500/30" : "border-border/60"
+                                        )}>
                                             {activeMode === 'macd' ? (
                                                 <>
                                                     <div className="flex items-center justify-between text-xs font-semibold">
@@ -1041,13 +1058,15 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                                     <div className="pt-0.5 flex items-center justify-between">
                                                         <span
                                                             className={cn(
-                                                                'text-[10px] font-bold uppercase px-2 py-0.5 rounded-md',
-                                                                item.hist >= 0
-                                                                    ? 'bg-emerald-500/10 text-emerald-600'
-                                                                    : 'bg-rose-500/10 text-rose-600'
+                                                                'text-[10px] font-bold uppercase px-2 py-0.5 rounded-md border',
+                                                                item.hist > 0
+                                                                    ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 border-emerald-500/30'
+                                                                    : item.hist < 0
+                                                                    ? 'bg-rose-500/20 text-rose-800 dark:text-rose-200 border-rose-500/30'
+                                                                    : 'bg-muted text-muted-foreground border-transparent'
                                                             )}
                                                         >
-                                                            {item.hist >= 0 ? 'Impulso Alcista' : 'Impulso Bajista'}
+                                                            {item.hist > 0 ? 'Impulso Alcista' : item.hist < 0 ? 'Impulso Bajista' : 'Neutral'}
                                                         </span>
                                                         <span className="text-[10px] text-muted-foreground font-semibold">
                                                             Score: {item.totalScore}
@@ -1090,19 +1109,20 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                                     <div className="pt-0.5 flex items-center justify-between">
                                                         <span
                                                             className={cn(
-                                                                'text-[10px] font-bold uppercase px-2 py-0.5 rounded-md',
-                                                                item.rsi <= 45
-                                                                    ? 'bg-emerald-500/10 text-emerald-600'
-                                                                    : item.rsi >= 55
-                                                                    ? 'bg-rose-500/10 text-rose-600'
-                                                                    : 'bg-muted text-muted-foreground'
+                                                                'text-[10px] font-bold uppercase px-2 py-0.5 rounded-md border',
+                                                                indicatorBullish
+                                                                    ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 border-emerald-500/30'
+                                                                    : indicatorBearish
+                                                                    ? 'bg-rose-500/20 text-rose-800 dark:text-rose-200 border-rose-500/30'
+                                                                    : 'bg-muted text-muted-foreground border-transparent'
                                                             )}
                                                         >
-                                                            {item.rsi <= 45
-                                                                ? 'Sobreventa / Acumulación'
-                                                                : item.rsi >= 55
-                                                                ? 'Sobrecompra / Riesgo'
-                                                                : 'Zona Neutral'}
+                                                            {activeMode === 'adx'
+                                                                ? (indicatorBullish ? 'Tendencia Fuerte' : indicatorBearish ? 'Tendencia Débil' : 'Tendencia Moderada')
+                                                                : activeMode === 'stoch'
+                                                                ? (indicatorBullish ? 'Sobreventa / Compra' : indicatorBearish ? 'Sobrecompra / Venta' : 'Zona Neutral')
+                                                                : (indicatorBullish ? 'Sobreventa / Acumulación' : indicatorBearish ? 'Sobrecompra / Riesgo' : 'Zona Neutral')
+                                                            }
                                                         </span>
                                                         <span className="text-[10px] text-muted-foreground font-semibold">
                                                             Score: {item.totalScore}

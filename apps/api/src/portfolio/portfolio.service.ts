@@ -149,12 +149,24 @@ export class PortfolioService {
             const rawTicker = this.normalizeTicker(holding?.asset?.ticker);
             if (!rawTicker) continue;
 
-            const isCedear = holding?.asset?.type === 'CEDEAR' || rawTicker.startsWith('BCBA:') || Boolean(getCedearDefinition(rawTicker));
+            const cleanTicker = rawTicker.replace(/^(BCBA|BYMA|NASDAQ|NYSE|AMEX):/i, '').toUpperCase().trim();
+            const cedearDef = getCedearDefinition(rawTicker) || getCedearDefinition(cleanTicker);
+            const isCedear = holding?.asset?.type === 'CEDEAR' || rawTicker.startsWith('BCBA:') || Boolean(cedearDef);
+
+            // Always request raw ticker
+            requestedSymbols.add(rawTicker);
+
             if (isCedear) {
-                const bcbaTicker = rawTicker.startsWith('BCBA:') ? rawTicker : `BCBA:${rawTicker}`;
-                requestedSymbols.add(bcbaTicker);
-            } else {
-                requestedSymbols.add(rawTicker);
+                // Request BYMA/BCBA local quote in ARS
+                requestedSymbols.add(`BCBA:${cedearDef?.ticker || cleanTicker}`);
+                
+                // Request US underlying quote in USD
+                if (cedearDef?.underlyingTicker) {
+                    requestedSymbols.add(cedearDef.underlyingTicker);
+                    if (cedearDef.underlyingExchange) {
+                        requestedSymbols.add(`${cedearDef.underlyingExchange}:${cedearDef.underlyingTicker}`);
+                    }
+                }
             }
         }
 
@@ -179,6 +191,15 @@ export class PortfolioService {
         }
 
         return quoteMap;
+    }
+
+    private async getLiveMarketContext(holdings: any[]) {
+        const [quoteMap, cclData] = await Promise.all([
+            this.getLiveQuoteMap(holdings),
+            this.marketService.getDolarCcl().catch(() => ({ venta: 1590, compra: 1580, fecha: new Date().toISOString() })),
+        ]);
+        const cclRate = cclData?.venta || cclData?.compra || 1590;
+        return { quoteMap, cclRate };
     }
 
     private toMonthKey(date: Date) {
@@ -682,15 +703,75 @@ export class PortfolioService {
         });
     }
 
-    private toLegacyAsset(holding: any, portfolioCreatedAt?: Date, quoteMap?: Map<string, MarketQuote>) {
+    private toLegacyAsset(
+        holding: any,
+        portfolioCreatedAt?: Date,
+        quoteMap?: Map<string, MarketQuote>,
+        cclRate = 1590
+    ) {
         const cantidad = Number(holding.quantity ?? 0);
         const ppc = Number(holding.averageCost ?? 0);
         const ticker = holding.asset?.ticker ?? 'N/A';
         const normTicker = this.normalizeTicker(ticker);
-        const quote = quoteMap?.get(normTicker) || quoteMap?.get(`BCBA:${normTicker}`) || quoteMap?.get(normTicker.replace('BCBA:', ''));
-        const precioActual = quote && typeof quote.price === 'number' ? quote.price : ppc;
+        const cleanTicker = ticker.replace(/^(BCBA|BYMA|NASDAQ|NYSE|AMEX):/i, '').toUpperCase().trim();
+        const cedearDef = getCedearDefinition(ticker) || getCedearDefinition(cleanTicker);
+        const isCedear = Boolean(cedearDef || holding.asset?.type === 'CEDEAR' || ticker.startsWith('BCBA:'));
+
+        // Resolve US / international quote
+        const usTicker = cedearDef?.underlyingTicker || cleanTicker;
+        const usQuote = quoteMap?.get(usTicker) ||
+                        quoteMap?.get(`NASDAQ:${usTicker}`) ||
+                        quoteMap?.get(`NYSE:${usTicker}`) ||
+                        quoteMap?.get(`AMEX:${usTicker}`);
+
+        // Resolve BCBA / BYMA CEDEAR quote in ARS
+        const bcbaKey = `BCBA:${cedearDef?.ticker || cleanTicker}`;
+        const bcbaQuote = quoteMap?.get(bcbaKey) || quoteMap?.get(cedearDef?.ticker || cleanTicker);
+
+        // Native quote for this specific holding
+        const nativeQuote = quoteMap?.get(normTicker) || quoteMap?.get(cleanTicker) || bcbaQuote || usQuote;
+        const precioActual = nativeQuote && typeof nativeQuote.price === 'number' ? nativeQuote.price : ppc;
         const value = cantidad * precioActual;
-        const cedearDef = getCedearDefinition(ticker);
+
+        // CEDEAR specific calculations (prices in ARS, ratios, equivalent shares)
+        let cedearPriceArs: number | null = null;
+        let cedearChangePct: number | null = null;
+        let cedearTheoreticalPriceArs: number | null = null;
+        let cedearImplicitCcl: number | null = null;
+        let cedearQuantity: number | null = null;
+        let cedearTotalValuationArs: number | null = null;
+
+        if (isCedear && cedearDef) {
+            const underlyingPriceUsd = usQuote && typeof usQuote.price === 'number' ? usQuote.price : null;
+            if (underlyingPriceUsd && underlyingPriceUsd > 0 && cedearDef.ratio > 0 && cclRate > 0) {
+                cedearTheoreticalPriceArs = Number(((underlyingPriceUsd * cclRate) / cedearDef.ratio).toFixed(2));
+            }
+
+            // Real market price on BYMA in ARS (from scanner) or fallback to theoretical
+            if (bcbaQuote && typeof bcbaQuote.price === 'number' && bcbaQuote.price > 0) {
+                cedearPriceArs = Number(bcbaQuote.price.toFixed(2));
+                cedearChangePct = typeof bcbaQuote.change === 'number' ? Number(bcbaQuote.change.toFixed(2)) : null;
+            } else if (cedearTheoreticalPriceArs) {
+                cedearPriceArs = cedearTheoreticalPriceArs;
+                cedearChangePct = usQuote && typeof usQuote.change === 'number' ? Number(usQuote.change.toFixed(2)) : null;
+            }
+
+            if (cedearPriceArs && underlyingPriceUsd && underlyingPriceUsd > 0 && cedearDef.ratio > 0) {
+                cedearImplicitCcl = Number(((cedearPriceArs * cedearDef.ratio) / underlyingPriceUsd).toFixed(2));
+            }
+
+            // Equivalent CEDEAR units
+            const isHoldingRecordedInCedears = holding.asset?.type === 'CEDEAR' || ticker.startsWith('BCBA:') || (holding.currency === 'ARS');
+            if (isHoldingRecordedInCedears) {
+                cedearQuantity = cantidad;
+            } else {
+                cedearQuantity = cedearDef.ratio ? Number((cantidad * cedearDef.ratio).toFixed(2)) : cantidad;
+            }
+
+            if (cedearPriceArs && cedearQuantity) {
+                cedearTotalValuationArs = Number((cedearQuantity * cedearPriceArs).toFixed(2));
+            }
+        }
 
         return {
             id: holding.assetId,
@@ -701,14 +782,25 @@ export class PortfolioService {
             montoInvertido: cantidad * ppc,
             precioActual,
             value,
-            precioTiempoReal: Boolean(quote && typeof quote.price === 'number'),
-            precioFuente: quote?.symbol || null,
-            precioActualizadoEn: quote?.updatedAt || null,
-            variacionDiaria: quote?.change ?? null,
-            isCedear: Boolean(cedearDef || holding.asset?.type === 'CEDEAR'),
+            precioTiempoReal: Boolean(nativeQuote && typeof nativeQuote.price === 'number'),
+            precioFuente: nativeQuote?.symbol || null,
+            precioActualizadoEn: nativeQuote?.updatedAt || null,
+            variacionDiaria: nativeQuote?.change ?? null,
+            isCedear,
             cedearRatio: cedearDef?.ratio ?? null,
+            cedearTicker: cedearDef?.ticker ?? (isCedear ? cleanTicker : null),
+            cedearName: cedearDef?.name ?? null,
+            cedearPriceArs,
+            cedearChangePct,
+            cedearTheoreticalPriceArs,
+            cedearImplicitCcl,
+            cedearQuantity,
+            cedearTotalValuationArs,
+            dolarCcl: cclRate,
             underlyingTicker: cedearDef?.underlyingTicker ?? null,
             underlyingExchange: cedearDef?.underlyingExchange ?? null,
+            underlyingPriceUsd: usQuote?.price ?? null,
+            underlyingChangePct: usQuote?.change ?? null,
             createdAt: (portfolioCreatedAt ?? new Date()).toISOString(),
         };
     }
@@ -726,8 +818,10 @@ export class PortfolioService {
         };
     }
 
-    private toLegacyPortfolio(portfolio: any, quoteMap?: Map<string, MarketQuote>) {
-        const assets = (portfolio.holdings ?? []).map((holding: any) => this.toLegacyAsset(holding, portfolio.createdAt, quoteMap));
+    private toLegacyPortfolio(portfolio: any, quoteMap?: Map<string, MarketQuote>, cclRate = 1590) {
+        const assets = (portfolio.holdings ?? []).map((holding: any) =>
+            this.toLegacyAsset(holding, portfolio.createdAt, quoteMap, cclRate)
+        );
         const movements = (portfolio.transactions ?? []).slice(0, 200).map((transaction: any) => this.toLegacyMovement(transaction));
         const cashState = this.buildEffectiveCashState(portfolio);
         const assetsValue = assets.reduce((total: number, asset: any) => total + Number(asset.value ?? 0), 0);
@@ -801,8 +895,8 @@ export class PortfolioService {
         });
 
         const holdings = portfolios.flatMap((portfolio) => portfolio.holdings ?? []);
-        const quoteMap = await this.getLiveQuoteMap(holdings);
-        return portfolios.map((portfolio) => this.toLegacyPortfolio(portfolio, quoteMap));
+        const { quoteMap, cclRate } = await this.getLiveMarketContext(holdings);
+        return portfolios.map((portfolio) => this.toLegacyPortfolio(portfolio, quoteMap, cclRate));
     }
 
     private async canExposePortfoliosPublicly(userId: string) {
@@ -861,8 +955,8 @@ export class PortfolioService {
     async getPublicPortfolios(userId: string) {
         const portfolios = await this.getVisiblePublicPortfolioRecords(userId, true);
         const holdings = portfolios.flatMap((portfolio) => portfolio.holdings ?? []);
-        const quoteMap = await this.getLiveQuoteMap(holdings);
-        return portfolios.map((portfolio) => this.toLegacyPortfolio(portfolio, quoteMap));
+        const { quoteMap, cclRate } = await this.getLiveMarketContext(holdings);
+        return portfolios.map((portfolio) => this.toLegacyPortfolio(portfolio, quoteMap, cclRate));
     }
 
     async getPortfolioById(portfolioId: string, userId: string) {
@@ -879,8 +973,8 @@ export class PortfolioService {
             throw new NotFoundException('Portafolio no encontrado');
         }
 
-        const quoteMap = await this.getLiveQuoteMap(portfolio.holdings ?? []);
-        return this.toLegacyPortfolio(portfolio, quoteMap);
+        const { quoteMap, cclRate } = await this.getLiveMarketContext(portfolio.holdings ?? []);
+        return this.toLegacyPortfolio(portfolio, quoteMap, cclRate);
     }
 
     private async getPublicPortfolioRecord(portfolioId: string, includeTransactions = false) {
@@ -1152,8 +1246,8 @@ export class PortfolioService {
             };
         }
 
-        const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
-        const legacyPortfolio = this.toLegacyPortfolio(portfolio, quoteMap);
+        const { quoteMap, cclRate } = await this.getLiveMarketContext(portfolio.holdings);
+        const legacyPortfolio = this.toLegacyPortfolio(portfolio, quoteMap, cclRate);
         const currentValue = legacyPortfolio.totalValue;
         const currentInvested = legacyPortfolio.assets.reduce((sum: number, a: any) => sum + a.montoInvertido, 0) + legacyPortfolio.cashBalance;
 
@@ -1290,8 +1384,8 @@ export class PortfolioService {
             include: { asset: true },
         });
 
-        const quoteMap = await this.getLiveQuoteMap(holdings);
-        return holdings.map((holding) => this.toLegacyAsset(holding, undefined, quoteMap));
+        const { quoteMap, cclRate } = await this.getLiveMarketContext(holdings);
+        return holdings.map((holding) => this.toLegacyAsset(holding, undefined, quoteMap, cclRate));
     }
 
     async deleteAsset(assetId: string, userId: string, portfolioId?: string) {

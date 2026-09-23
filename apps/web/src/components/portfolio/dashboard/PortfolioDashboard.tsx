@@ -348,7 +348,8 @@ export function PortfolioDashboard({
         const rangeReturn = firstPoint && lastPoint && firstPoint.portfolio > 0
             ? (absoluteChange / firstPoint.portfolio) * 100
             : 0;
-        const benchmarkSpread = lastComparison ? lastComparison.portfolio - lastComparison.sp500 : 0;
+        const isPortfolioEmpty = (metrics?.cantidadActivos ?? assets.length) === 0;
+        const benchmarkSpread = isPortfolioEmpty ? 0 : (lastComparison ? lastComparison.portfolio - lastComparison.sp500 : 0);
 
         return {
             currentValue: metrics?.valorActual ?? lastPoint?.portfolio ?? 0,
@@ -360,22 +361,23 @@ export function PortfolioDashboard({
             holdings: metrics?.cantidadActivos ?? assets.length,
             sleeves: resolvedData.allocation.length,
             topWinner: resolvedData.assetPerformance[0],
+            isPortfolioEmpty,
         };
-    }, [activeComparisonSeries, activePortfolioSeries, assets.length, metrics, resolvedData.allocation.length, resolvedData.assetPerformance]);
+    }, [activeComparisonSeries, activePortfolioSeries, assets, metrics, resolvedData.allocation.length, resolvedData.assetPerformance]);
 
     const summaryCards = [
         {
             label: 'Retorno total',
-            value: formatPercent(summary.totalReturn, 1, true),
-            sublabel: `${selectedRange} variación ${formatPercent(summary.rangeReturn, 1, true)}`,
+            value: summary.isPortfolioEmpty ? '0.0%' : formatPercent(summary.totalReturn, 1, true),
+            sublabel: summary.isPortfolioEmpty ? 'Sin movimientos aún' : `${selectedRange} variación ${formatPercent(summary.rangeReturn, 1, true)}`,
             positive: summary.totalReturn >= 0,
             icon: summary.totalReturn >= 0 ? ArrowUpRight : ArrowDownRight,
         },
         {
             label: 'Ventaja vs S&P 500',
-            value: formatPercent(summary.benchmarkSpread, 1, true),
-            sublabel: summary.benchmarkSpread >= 0 ? 'Superando al índice' : 'Por debajo del índice',
-            positive: summary.benchmarkSpread >= 0,
+            value: summary.isPortfolioEmpty ? '—' : formatPercent(summary.benchmarkSpread, 1, true),
+            sublabel: summary.isPortfolioEmpty ? 'Sin posiciones cargadas' : (summary.benchmarkSpread >= 0 ? 'Superando al índice' : 'Por debajo del índice'),
+            positive: summary.isPortfolioEmpty ? true : summary.benchmarkSpread >= 0,
             icon: Target,
         },
         {
@@ -397,23 +399,23 @@ export function PortfolioDashboard({
     return (
         <div className={cn('space-y-6 w-full', className)}>
             {/* ── ENCABEZADO DE SECCIÓN ── */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-                <div>
-                    <h3 className="text-xl sm:text-2xl font-black tracking-tight text-foreground flex items-center gap-2.5">
-                        <WalletCards className="w-5 h-5 text-primary" />
-                        <span>Métricas y Análisis de Rendimiento</span>
-                    </h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                        Evolución patrimonial y comparativa de mercado de {portfolioName}
-                    </p>
+            <div className="flex flex-col items-center text-center justify-center gap-2 pt-1">
+                <div className="flex items-center justify-center">
+                    <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-xs font-bold px-3 py-1">
+                        Vista en vivo
+                    </Badge>
                 </div>
-                <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-xs font-bold px-3 py-1">
-                    Vista en vivo
-                </Badge>
+                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-foreground flex items-center justify-center gap-2.5 text-center">
+                    <WalletCards className="w-5 h-5 text-primary" />
+                    <span>Métricas y Análisis de Rendimiento</span>
+                </h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 text-center max-w-xl mx-auto">
+                    Evolución patrimonial y comparativa de mercado de {portfolioName}
+                </p>
             </div>
 
             {historyNotice && (
-                <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-xs sm:text-sm text-blue-300 flex items-center gap-2.5 backdrop-blur-sm">
+                <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-xs sm:text-sm text-blue-300 flex items-center justify-center text-center gap-2.5 backdrop-blur-sm max-w-2xl mx-auto">
                     <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" />
                     <span>{historyNotice}</span>
                 </div>
@@ -424,27 +426,27 @@ export function PortfolioDashboard({
                 {summaryCards.map((item) => (
                     <div
                         key={item.label}
-                        className="rounded-2xl border border-border/70 bg-card/80 hover:bg-card/95 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 p-4 sm:p-5 backdrop-blur-md relative overflow-hidden group"
+                        className="rounded-2xl border border-border/70 bg-card/80 hover:bg-card/95 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 p-4 sm:p-5 backdrop-blur-md relative overflow-hidden group flex flex-col items-center text-center"
                     >
-                        <div className="flex items-center justify-between gap-3 mb-2">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground truncate">
+                        <div className="flex items-center justify-center gap-2 mb-2 w-full text-center">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground truncate text-center">
                                 {item.label}
                             </span>
                             <div className={cn(
-                                "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-transform group-hover:scale-110",
+                                "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border transition-transform group-hover:scale-110",
                                 item.positive 
                                     ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" 
                                     : "bg-rose-500/10 border-rose-500/20 text-rose-500"
                             )}>
-                                <item.icon className="h-4 w-4" />
+                                <item.icon className="h-3.5 w-3.5" />
                             </div>
                         </div>
 
-                        <div className={cn('text-2xl sm:text-3xl font-black tracking-tight font-mono', item.positive ? 'text-emerald-500' : 'text-rose-500')}>
+                        <div className={cn('text-2xl sm:text-3xl font-black tracking-tight font-mono text-center', item.positive ? 'text-emerald-500' : 'text-rose-500')}>
                             {item.value}
                         </div>
 
-                        <p className="mt-2 text-xs text-muted-foreground/80 font-medium truncate">
+                        <p className="mt-2 text-xs text-muted-foreground/80 font-medium truncate text-center">
                             {item.sublabel}
                         </p>
                     </div>

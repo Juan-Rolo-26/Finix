@@ -170,18 +170,20 @@ export function BenchmarkComparisonChart({
 
     const summary = useMemo(() => {
         const lastPoint = activeData[activeData.length - 1];
-        const pReturn = (lastPoint?.portfolio ?? 100) - 100;
+        const isPortfolioInactive = (portfolioReturn === 0) && (!activeData.length || activeData.every((pt) => pt.portfolio === 100));
+        const pReturn = isPortfolioInactive ? 0 : ((lastPoint?.portfolio ?? 100) - 100);
         const spReturn = (lastPoint?.sp500 ?? 100) - 100;
-        const spread = (lastPoint?.portfolio ?? 100) - (lastPoint?.sp500 ?? 100);
-        const leader = spread >= 0 ? 'Portafolio' : 'S&P 500';
+        const spread = isPortfolioInactive ? 0 : ((lastPoint?.portfolio ?? 100) - (lastPoint?.sp500 ?? 100));
+        const leader = isPortfolioInactive ? 'Sin posiciones' : (spread >= 0 ? 'Portafolio' : 'S&P 500');
 
         return {
             portfolioReturn: Number.isFinite(pReturn) ? pReturn : 0,
             sp500Return: Number.isFinite(spReturn) ? spReturn : (SP500_BENCHMARK_RETURNS[activeRange] ?? 0),
             spread: Number.isFinite(spread) ? spread : 0,
             leader,
+            isPortfolioInactive,
         };
-    }, [activeData, activeRange]);
+    }, [activeData, activeRange, portfolioReturn]);
 
     const chartDomain = useMemo<[number, number]>(() => {
         const values = activeData
@@ -207,15 +209,15 @@ export function BenchmarkComparisonChart({
     const metricCardClass = 'min-w-0 rounded-2xl border border-border/50 bg-background/70 px-4 py-3.5 shadow-xs backdrop-blur-md transition-all hover:border-border/80';
 
     return (
-        <div className={cn('rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-lg flex flex-col justify-between', className)}>
+        <div className={cn('rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-lg flex flex-col justify-between text-center', className)}>
             {/* Header */}
-            <div className="border-b border-border/40 px-6 py-6 sm:px-7 sm:py-7">
-                <div className="flex flex-col gap-6">
+            <div className="border-b border-border/40 px-6 py-6 sm:px-7 sm:py-7 text-center">
+                <div className="flex flex-col items-center justify-center gap-6 text-center">
                     {/* Top Row: Title, Subtitle, Badges & Range Selector */}
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="space-y-1.5">
-                            <div className="flex items-center gap-2">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center gap-4 text-center">
+                        <div className="space-y-1.5 flex flex-col items-center text-center">
+                            <div className="flex items-center justify-center gap-2">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground text-center">
                                     Benchmark Comparativo
                                 </p>
                                 <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
@@ -223,17 +225,17 @@ export function BenchmarkComparisonChart({
                                     Base 100
                                 </span>
                             </div>
-                            <h3 className="text-xl font-extrabold tracking-tight sm:text-2xl text-foreground">
-                                Portafolio vs S&amp;P 500
+                            <h3 className="text-xl font-extrabold tracking-tight sm:text-2xl text-foreground text-center">
+                                Portafolio vs S&P 500
                             </h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground/80 max-w-xl">
-                                Curvas de rendimiento relativo indexadas. Si el S&amp;P 500 (SPY) sube o baja en el mercado, se refleja en su curva en tiempo real.
+                            <p className="text-xs sm:text-sm text-muted-foreground/80 max-w-xl text-center mx-auto">
+                                Curvas de rendimiento relativo indexadas. Si el S&P 500 (SPY) sube o baja en el mercado, se refleja en su curva en tiempo real.
                             </p>
                         </div>
 
                         {/* Badges & Range Switcher */}
-                        <div className="flex flex-col sm:items-end gap-3 shrink-0">
-                            <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                            <div className="flex flex-wrap items-center justify-center gap-2">
                                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-foreground/90">
                                     <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_#10b981]" style={{ backgroundColor: PORTFOLIO_COLOR }} />
                                     Portafolio
@@ -243,7 +245,7 @@ export function BenchmarkComparisonChart({
                                 </span>
                                 <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-foreground/90">
                                     <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_#38bdf8]" style={{ backgroundColor: SP500_COLOR }} />
-                                    S&amp;P 500 (SPY)
+                                    S&P 500 (SPY)
                                     <span className={cn('font-bold tabular-nums', summary.sp500Return >= 0 ? 'text-sky-500' : 'text-rose-500')}>
                                         {formatPercent(summary.sp500Return, 1, true)}
                                     </span>
@@ -251,7 +253,7 @@ export function BenchmarkComparisonChart({
                             </div>
 
                             {/* Range switcher pills */}
-                            <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1">
+                            <div className="flex items-center justify-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1">
                                 {TIME_RANGES.map((range) => (
                                     <button
                                         key={range}
@@ -272,46 +274,48 @@ export function BenchmarkComparisonChart({
                     </div>
 
                     {/* KPI Stat Cards */}
-                    <div className="grid gap-3 sm:grid-cols-3">
-                        <div className={metricCardClass}>
-                            <div className="flex items-center justify-between text-muted-foreground">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Brecha (Alpha)</span>
-                                {isOutperforming ? (
+                    <div className="grid gap-3 sm:grid-cols-3 w-full">
+                        <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
+                            <div className="flex items-center justify-center gap-1.5 text-muted-foreground w-full">
+                                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-center">Brecha (Alpha)</span>
+                                {summary.isPortfolioInactive ? (
+                                    <Target className="w-4 h-4 text-muted-foreground/60" />
+                                ) : isOutperforming ? (
                                     <TrendingUp className="w-4 h-4 text-emerald-500" />
                                 ) : (
                                     <TrendingDown className="w-4 h-4 text-rose-500" />
                                 )}
                             </div>
-                            <p className={cn('mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums', isOutperforming ? 'text-emerald-500' : 'text-rose-500')}>
-                                {isOutperforming ? '+' : ''}{summary.spread.toFixed(1)} pts
+                            <p className={cn('mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums text-center', summary.isPortfolioInactive ? 'text-muted-foreground' : (isOutperforming ? 'text-emerald-500' : 'text-rose-500'))}>
+                                {summary.isPortfolioInactive ? '—' : `${isOutperforming ? '+' : ''}${summary.spread.toFixed(1)} pts`}
                             </p>
-                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium">
-                                {isOutperforming ? 'Superando al benchmark' : 'Por debajo del benchmark'}
+                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium text-center">
+                                {summary.isPortfolioInactive ? 'Esperando posiciones activas' : (isOutperforming ? 'Superando al benchmark' : 'Por debajo del benchmark')}
                             </p>
                         </div>
 
-                        <div className={metricCardClass}>
-                            <div className="flex items-center justify-between text-muted-foreground">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Líder del período</span>
-                                <Trophy className={cn('w-4 h-4', isOutperforming ? 'text-amber-400' : 'text-sky-400')} />
+                        <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
+                            <div className="flex items-center justify-center gap-1.5 text-muted-foreground w-full">
+                                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-center">Líder del período</span>
+                                <Trophy className={cn('w-4 h-4', summary.isPortfolioInactive ? 'text-muted-foreground/60' : (isOutperforming ? 'text-amber-400' : 'text-sky-400'))} />
                             </div>
-                            <p className="mt-2 text-xl sm:text-2xl font-extrabold leading-none tracking-tight text-foreground truncate">
+                            <p className="mt-2 text-xl sm:text-2xl font-extrabold leading-none tracking-tight text-foreground truncate text-center">
                                 {summary.leader}
                             </p>
-                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium">
-                                {isOutperforming ? `Ventaja de +${summary.spread.toFixed(1)} pts` : `Diferencia de ${Math.abs(summary.spread).toFixed(1)} pts`}
+                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium text-center">
+                                {summary.isPortfolioInactive ? 'Sin activos cargados' : (isOutperforming ? `Ventaja de +${summary.spread.toFixed(1)} pts` : `Diferencia de ${Math.abs(summary.spread).toFixed(1)} pts`)}
                             </p>
                         </div>
 
-                        <div className={metricCardClass}>
-                            <div className="flex items-center justify-between text-muted-foreground">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Base normalizada</span>
+                        <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
+                            <div className="flex items-center justify-center gap-1.5 text-muted-foreground w-full">
+                                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-center">Base normalizada</span>
                                 <HelpCircle className="w-4 h-4 text-muted-foreground/50" />
                             </div>
-                            <p className="mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums text-foreground/90">
+                            <p className="mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums text-foreground/90 text-center">
                                 100.0
                             </p>
-                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium">
+                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium text-center">
                                 Punto de partida comparativo
                             </p>
                         </div>
@@ -320,13 +324,13 @@ export function BenchmarkComparisonChart({
             </div>
 
             {/* Chart Container */}
-            <div className="px-6 pt-4 pb-2 sm:px-7">
-                <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70">
+            <div className="px-6 pt-4 pb-2 sm:px-7 text-center">
+                <div className="flex flex-col items-center justify-center text-center gap-1">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70 text-center">
                         Evolución Temporal ({activeRange})
                     </span>
-                    <span className="text-[11px] text-muted-foreground/60 hidden sm:inline">
-                        Línea sólida: Portafolio · Línea punteada: S&amp;P 500 (SPY)
+                    <span className="text-[11px] text-muted-foreground/60 text-center">
+                        Línea sólida: Portafolio · Línea punteada: S&P 500 (SPY)
                     </span>
                 </div>
             </div>

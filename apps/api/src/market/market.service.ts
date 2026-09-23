@@ -1162,16 +1162,30 @@ export class MarketService {
         };
     }
 
+    private regularPricesCache: { data: Map<string, { price: number; change: number | null }>; fetchedAt: number } | null = null;
+    private readonly regularPricesTtlMs = 60 * 1000;
+
     private getPremarketSessionInfo() {
         const now = new Date();
-        const nyDateStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
-        const nyDate = new Date(nyDateStr);
-        const day = nyDate.getDay();
-        const hour = nyDate.getHours();
-        const minute = nyDate.getMinutes();
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+            weekday: 'short',
+        });
+        const parts = Object.fromEntries(formatter.formatToParts(now).map((p) => [p.type, p.value]));
+        const hour = parseInt(parts.hour, 10);
+        const minute = parseInt(parts.minute, 10);
+        const second = parseInt(parts.second, 10);
         const totalMinutes = hour * 60 + minute;
+        const weekday = parts.weekday; // 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
+        const isWeekend = weekday === 'Sat' || weekday === 'Sun';
 
-        const isWeekend = day === 0 || day === 6;
         let status: 'pre-market' | 'regular' | 'post-market' | 'closed' = 'closed';
         let label = 'Mercado Cerrado';
 
@@ -1194,80 +1208,131 @@ export class MarketService {
             label = 'Fin de Semana (Cerrado)';
         }
 
-        const nextBellNy = new Date(nyDate);
-        if (isWeekend || totalMinutes >= 9 * 60 + 30) {
-            let addDays = 1;
-            if (day === 5 && totalMinutes >= 9 * 60 + 30) addDays = 3;
-            else if (day === 6) addDays = 2;
-            else if (day === 0) addDays = 1;
-            nextBellNy.setDate(nextBellNy.getDate() + addDays);
-        }
-        nextBellNy.setHours(9, 30, 0, 0);
+        const dateKey = `${parts.year}-${parts.month}-${parts.day}`;
 
-        const diffSeconds = Math.max(0, Math.round((nextBellNy.getTime() - nyDate.getTime()) / 1000));
-        const dateKey = `${nyDate.getFullYear()}-${String(nyDate.getMonth() + 1).padStart(2, '0')}-${String(nyDate.getDate()).padStart(2, '0')}`;
+        let secondsToOpen = 0;
+        if (status === 'pre-market') {
+            secondsToOpen = Math.max(0, (9 * 60 + 30 - totalMinutes) * 60 - second);
+        }
 
         return {
             status,
             label,
             dateKey,
-            nextBell: nextBellNy.toISOString(),
-            secondsToOpen: diffSeconds,
+            secondsToOpen,
+            isWeekend,
         };
     }
 
-    @Cron('0 20 10 * * *', { timeZone: 'America/Argentina/Buenos_Aires' })
+    // Pre-captura previa a la campana (09:29:50 NY / ~10:29:50 ART) de lunes a viernes
+    @Cron('50 29 9 * * 1-5', { timeZone: 'America/New_York' })
+    async preBellPremarketSnapshot() {
+        console.log('[MarketService] Capturing pre-bell premarket snapshot (09:29:50 NY)...');
+        await this.captureFinalPremarketSnapshot();
+    }
+
+    // Corte oficial al sonar la campana de Wall Street (09:30:00 NY / 10:30:00 ART) de lunes a viernes
+    @Cron('0 30 9 * * 1-5', { timeZone: 'America/New_York' })
     async refreshDailyPremarket() {
-        const data = await this.getPremarket(true);
-        const assets = [...data.indices, ...data.commodities, ...data.magnificent7, ...data.argentina, ...data.crypto];
-        if (!assets.some(asset => asset.price != null)) throw new Error('No quotes available for daily premarket');
-        await mkdir(this.premarketSnapshotDirectory, { recursive: true });
-        const file = join(this.premarketSnapshotDirectory, 'premarket.json');
-        await writeFile(`${file}.tmp`, JSON.stringify(data), 'utf8');
-        await rename(`${file}.tmp`, file);
-        this.dailyPremarket = data;
+        console.log('[MarketService] Freezing official daily premarket snapshot at market open (09:30 NY / 10:30 ART)...');
+        await this.captureFinalPremarketSnapshot();
+    }
+
+    // Respaldo de corte en zona horaria de Buenos Aires a las 10:30 hs ART
+    @Cron('0 30 10 * * 1-5', { timeZone: 'America/Argentina/Buenos_Aires' })
+    async backupPremarketFreezeArt() {
+        const session = this.getPremarketSessionInfo();
+        if (!this.premarketFrozenSession || this.premarketFrozenSession.dateKey !== session.dateKey) {
+            console.log('[MarketService] Running backup ART premarket freeze (10:30 ART)...');
+            await this.captureFinalPremarketSnapshot();
+        }
+    }
+
+    async captureFinalPremarketSnapshot() {
+        try {
+            const data = await this.buildPremarketPayload(true, true);
+            const assets = [
+                ...data.indices,
+                ...data.commodities,
+                ...data.magnificent7,
+                ...data.argentina,
+                ...data.crypto,
+            ];
+            if (!assets.some((asset) => asset.price != null)) {
+                console.warn('[MarketService] No quotes available for daily premarket snapshot');
+                return;
+            }
+
+            const session = this.getPremarketSessionInfo();
+            data.isFrozenPremarket = true;
+            data.scheduledSnapshot = true;
+            data.session.label = 'Pre-Market Finalizado (10:30 hs)';
+            this.premarketFrozenSession = { dateKey: session.dateKey, data };
+            this.dailyPremarket = data;
+
+            await mkdir(this.premarketSnapshotDirectory, { recursive: true });
+            const file = join(this.premarketSnapshotDirectory, 'premarket.json');
+            await writeFile(`${file}.tmp`, JSON.stringify(data), 'utf8');
+            await rename(`${file}.tmp`, file);
+            console.log(`[MarketService] Official premarket snapshot successfully frozen for date ${session.dateKey}`);
+        } catch (error) {
+            console.error('[MarketService] Failed to capture final premarket snapshot:', error);
+        }
     }
 
     private dailyPremarket: any = null;
     private readonly premarketSnapshotDirectory = process.env.MARKET_SNAPSHOT_DIR || join(process.cwd(), '.cache', 'market');
     private snapshotLoaded = false;
 
-    async getPremarket(forceRefresh = false) {
+    private async enrichFrozenSessionWithRegularPrices(frozenData: any): Promise<any> {
+        let regularQuotesMap: Map<string, { price: number; change: number | null }> | null = null;
+        if (this.regularPricesCache && Date.now() - this.regularPricesCache.fetchedAt < this.regularPricesTtlMs) {
+            regularQuotesMap = this.regularPricesCache.data;
+        } else {
+            const allSymbols = [
+                ...this.premarketCatalog.indices,
+                ...this.premarketCatalog.commodities,
+                ...this.premarketCatalog.magnificent7,
+                ...this.premarketCatalog.argentina,
+                ...this.premarketCatalog.crypto,
+            ].map((d) => d.symbol);
+
+            const quotes = await this.getQuotes(allSymbols);
+            regularQuotesMap = new Map(quotes.map((q) => [
+                this.normalizeQuoteInputSymbol(q.inputSymbol),
+                { price: q.price ?? 0, change: q.change },
+            ]));
+            this.regularPricesCache = { data: regularQuotesMap, fetchedAt: Date.now() };
+        }
+
+        const enrichList = (list: any[]) => {
+            if (!Array.isArray(list)) return [];
+            return list.map((item) => {
+                const live = regularQuotesMap?.get(this.normalizeQuoteInputSymbol(item.symbol));
+                if (!live || live.price === 0) return item;
+                return {
+                    ...item,
+                    regularPrice: live.price,
+                    regularChange: live.change,
+                };
+            });
+        };
+
+        return {
+            ...frozenData,
+            indices: enrichList(frozenData.indices),
+            commodities: enrichList(frozenData.commodities),
+            magnificent7: enrichList(frozenData.magnificent7),
+            argentina: enrichList(frozenData.argentina),
+            crypto: enrichList(frozenData.crypto),
+            topGainers: enrichList(frozenData.topGainers),
+            topLosers: enrichList(frozenData.topLosers),
+        };
+    }
+
+    private async buildPremarketPayload(forceRefresh = false, freezeForSession = false) {
         const session = this.getPremarketSessionInfo();
-        const isPremarketPassed = session.status !== 'pre-market';
-
-        if (!this.snapshotLoaded) {
-            this.snapshotLoaded = true;
-            try {
-                const saved = JSON.parse(await readFile(join(this.premarketSnapshotDirectory, 'premarket.json'), 'utf8'));
-                if (saved.updatedAt && Array.isArray(saved.indices) && Array.isArray(saved.crypto)) {
-                    this.dailyPremarket = saved;
-                    if (!this.premarketFrozenSession) {
-                        this.premarketFrozenSession = { dateKey: session.dateKey, data: saved };
-                    }
-                }
-            } catch { /* First run has no saved edition. */ }
-        }
-
-        // Si ya pasó el horario de pre-market y tenemos datos congelados válidos para la fecha actual, los conservamos intactos
-        if (!forceRefresh && isPremarketPassed && this.premarketFrozenSession && this.premarketFrozenSession.dateKey === session.dateKey) {
-            return {
-                ...this.premarketFrozenSession.data,
-                updatedAt: this.premarketFrozenSession.data.updatedAt,
-                isFrozenPremarket: true,
-                session: {
-                    ...session,
-                    label: 'Pre-Market Finalizado (10:30 hs)',
-                    sentiment: this.premarketFrozenSession.data.session.sentiment,
-                    sentimentScore: this.premarketFrozenSession.data.session.sentimentScore,
-                    sentimentSummary: this.premarketFrozenSession.data.session.sentimentSummary,
-                },
-            };
-        }
-
-        if (!forceRefresh && this.premarketCache && Date.now() - this.premarketCache.fetchedAt < this.premarketTtlMs) {
-            return this.premarketCache.data;
-        }
+        const isPremarketPassed = freezeForSession || session.status !== 'pre-market';
 
         const allDefinitions = [
             ...this.premarketCatalog.indices,
@@ -1277,8 +1342,8 @@ export class MarketService {
             ...this.premarketCatalog.crypto,
         ];
 
-        const quotes = await this.getQuotes(allDefinitions.map(d => d.symbol));
-        const quotesByInput = new Map(quotes.map(q => [this.normalizeQuoteInputSymbol(q.inputSymbol), q]));
+        const quotes = await this.getQuotes(allDefinitions.map((d) => d.symbol));
+        const quotesByInput = new Map(quotes.map((q) => [this.normalizeQuoteInputSymbol(q.inputSymbol), q]));
 
         const mapPremarketAsset = (d: MarketDashboardAssetDefinition) => {
             const quote = quotesByInput.get(this.normalizeQuoteInputSymbol(d.symbol));
@@ -1314,8 +1379,8 @@ export class MarketService {
         const crypto = this.premarketCatalog.crypto.map(mapPremarketAsset);
 
         const leadingChanges = [
-            ...indices.slice(0, 2).map(i => i.change),
-            ...magnificent7.map(m => m.change),
+            ...indices.slice(0, 2).map((i) => i.change),
+            ...magnificent7.map((m) => m.change),
         ].filter((c): c is number => c !== null);
 
         let sentiment: 'bullish' | 'neutral' | 'cautious' | 'bearish' = 'neutral';
@@ -1362,8 +1427,9 @@ export class MarketService {
 
         const payload = {
             updatedAt: new Date().toISOString(),
+            dateKey: session.dateKey,
             scheduledSnapshot: forceRefresh,
-            refreshTime: '10:20',
+            refreshTime: '10:30',
             refreshTimezone: 'America/Argentina/Buenos_Aires',
             isFrozenPremarket: isPremarketPassed,
             session: {
@@ -1382,19 +1448,92 @@ export class MarketService {
             crypto,
         };
 
-        this.premarketCache = { data: payload, fetchedAt: Date.now() };
+        return payload;
+    }
 
-        // Guardamos la sesión capturada para preservarla si abre la rueda regular
-        if (session.status === 'pre-market' || isPremarketPassed || !this.premarketFrozenSession) {
+    async getPremarket(forceRefresh = false) {
+        const session = this.getPremarketSessionInfo();
+        const isPremarketPassed = session.status !== 'pre-market';
+
+        // 1. Cargar snapshot persistido si aún no se leyó de disco
+        if (!this.snapshotLoaded) {
+            this.snapshotLoaded = true;
+            try {
+                const saved = JSON.parse(await readFile(join(this.premarketSnapshotDirectory, 'premarket.json'), 'utf8'));
+                const savedDateKey = saved?.dateKey || saved?.session?.dateKey;
+                if (savedDateKey && Array.isArray(saved.indices) && Array.isArray(saved.crypto)) {
+                    this.dailyPremarket = saved;
+                    // Solo inicializar la sesión congelada si el snapshot en disco corresponde al día de hoy
+                    if (savedDateKey === session.dateKey && !this.premarketFrozenSession) {
+                        this.premarketFrozenSession = { dateKey: session.dateKey, data: saved };
+                    }
+                }
+            } catch { /* Primer inicio sin snapshot previo */ }
+        }
+
+        // 2. Si ya pasó el horario de pre-market y tenemos datos congelados válidos para la fecha actual, los conservamos intactos
+        if (!forceRefresh && isPremarketPassed && this.premarketFrozenSession && this.premarketFrozenSession.dateKey === session.dateKey) {
+            const frozen = this.premarketFrozenSession.data;
+
+            // Si la rueda regular está activa, enriquecemos de fondo regularPrice y regularChange para comparativa en vivo
+            let enriched = frozen;
+            if (session.status === 'regular') {
+                try {
+                    enriched = await this.enrichFrozenSessionWithRegularPrices(frozen);
+                } catch {
+                    enriched = frozen;
+                }
+            }
+
+            return {
+                ...enriched,
+                updatedAt: frozen.updatedAt,
+                isFrozenPremarket: true,
+                session: {
+                    ...session,
+                    label: 'Pre-Market Finalizado (10:30 hs)',
+                    sentiment: frozen.session.sentiment,
+                    sentimentScore: frozen.session.sentimentScore,
+                    sentimentSummary: frozen.session.sentimentSummary,
+                },
+            };
+        }
+
+        // 3. Si la sesión está en pre-market y hay caché fresca en memoria, devolverla
+        if (!forceRefresh && !isPremarketPassed && this.premarketCache && Date.now() - this.premarketCache.fetchedAt < this.premarketTtlMs) {
+            return this.premarketCache.data;
+        }
+
+        // 4. Si ya pasó el horario de pre-market pero aún no se había congelado (ej: servidor reiniciado después de 10:30 hs),
+        // capturamos y congelamos de inmediato con las cotizaciones oficiales de pre-market de TradingView
+        if (isPremarketPassed) {
+            const payload = await this.buildPremarketPayload(forceRefresh, true);
+            payload.isFrozenPremarket = true;
+            payload.session.label = 'Pre-Market Finalizado (10:30 hs)';
             this.premarketFrozenSession = { dateKey: session.dateKey, data: payload };
             this.dailyPremarket = payload;
             try {
-                mkdir(this.premarketSnapshotDirectory, { recursive: true }).then(() => {
-                    const file = join(this.premarketSnapshotDirectory, 'premarket.json');
-                    writeFile(file, JSON.stringify(payload), 'utf8').catch(() => {});
-                }).catch(() => {});
+                await mkdir(this.premarketSnapshotDirectory, { recursive: true });
+                const file = join(this.premarketSnapshotDirectory, 'premarket.json');
+                await writeFile(file, JSON.stringify(payload), 'utf8');
             } catch { /* best effort */ }
+
+            return payload;
         }
+
+        // 5. Sesión en vivo de Pre-Market (< 10:30 hs ART)
+        const payload = await this.buildPremarketPayload(forceRefresh, false);
+        this.premarketCache = { data: payload, fetchedAt: Date.now() };
+
+        // Guardamos el último registro continuo para que sirva de base si se produce el corte de mercado
+        this.premarketFrozenSession = { dateKey: session.dateKey, data: payload };
+        this.dailyPremarket = payload;
+        try {
+            mkdir(this.premarketSnapshotDirectory, { recursive: true }).then(() => {
+                const file = join(this.premarketSnapshotDirectory, 'premarket.json');
+                writeFile(file, JSON.stringify(payload), 'utf8').catch(() => {});
+            }).catch(() => {});
+        } catch { /* best effort */ }
 
         return payload;
     }

@@ -18,7 +18,7 @@ const TOOLTIP_STYLE: React.CSSProperties = {
     boxShadow: '0 16px 40px hsl(var(--foreground) / 0.08), 0 2px 8px hsl(var(--foreground) / 0.04)',
     padding: '12px 16px',
     fontSize: '13px',
-    fontFamily: '"Satoshi", system-ui, sans-serif',
+    fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
     lineHeight: '1.5',
     minWidth: '160px',
 };

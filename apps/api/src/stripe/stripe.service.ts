@@ -90,8 +90,8 @@ export class StripeService {
                     userId: user.id,
                 },
             },
-            success_url: `${this.frontendUrl}/payments?checkout=success`,
-            cancel_url: `${this.frontendUrl}/payments?checkout=cancel`,
+            success_url: `${this.frontendUrl}/payment-result?provider=stripe&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${this.frontendUrl}/pro?status=failure`,
         });
 
         return {
@@ -116,12 +116,42 @@ export class StripeService {
 
         const session = await this.stripe.billingPortal.sessions.create({
             customer: user.stripeCustomerId,
-            return_url: `${this.frontendUrl}/payments`,
+            return_url: `${this.frontendUrl}/settings`,
         });
 
         return {
             url: session.url,
         };
+    }
+
+    isConfigured() {
+        return /^sk_(test|live)_/.test(this.stripeSecretKey) && !/placeholder|xxx|\.\.\./i.test(this.stripeSecretKey);
+    }
+
+    async checkoutStatus(userId: string, sessionId: string) {
+        this.ensureStripeConfigured();
+        const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+        if (session.metadata?.userId !== userId) throw new NotFoundException('Pago no encontrado.');
+        if (session.payment_status !== 'paid') return { status: session.status === 'expired' ? 'cancelled' : 'pending' };
+        const subscriptionId = this.asString(session.subscription);
+        if (!subscriptionId) return { status: 'pending' };
+        const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+        const invoiceId = this.asString(subscription.latest_invoice);
+        if (!invoiceId) return { status: 'pending' };
+        const invoice = await this.stripe.invoices.retrieve(invoiceId);
+        if (invoice.status !== 'paid') return { status: 'pending' };
+        await this.handleInvoicePaymentSucceeded(invoice);
+        return { status: 'approved', communityId: session.metadata?.communityId };
+    }
+
+    async cancelCommunitySubscription(userId: string, communityId: string) {
+        const member = await this.prisma.communityMember.findUnique({ where: { communityId_userId: { communityId, userId } } });
+        if (!member) throw new NotFoundException('Membresía no encontrada.');
+        if (member.stripeSubscriptionId) {
+            this.ensureStripeConfigured();
+            await this.stripe.subscriptions.update(member.stripeSubscriptionId, { cancel_at_period_end: true });
+        }
+        return member;
     }
 
     async cancelSubscription(userId: string, subscriptionId?: string) {
@@ -183,6 +213,8 @@ export class StripeService {
 
         if (!user) throw new NotFoundException('Usuario no encontrado');
         if (!community || !plan) throw new NotFoundException('Comunidad o plan no encontrado');
+        if (plan.communityId !== community.id) throw new BadRequestException('El plan no pertenece a esta comunidad.');
+        if (community.creatorId === userId) throw new BadRequestException('Ya sos el creador de esta comunidad.');
 
         if (Number(plan.price) <= 0) {
             throw new BadRequestException('El plan es gratuito, usa el endpoint de join.');
@@ -232,7 +264,7 @@ export class StripeService {
             payment_method_types: ['card'],
             line_items: [{
                 price_data: {
-                    currency: 'usd',
+                    currency: 'ars',
                     unit_amount: unitAmount,
                     recurring: { interval },
                     product_data: {
@@ -257,10 +289,11 @@ export class StripeService {
                     userId: user.id,
                     communityId: community.id,
                     creatorId: community.creatorId,
+                    planId: plan.id,
                 },
             },
-            success_url: `${this.frontendUrl}/comunidades?c=${community.id}&checkout=success`,
-            cancel_url: `${this.frontendUrl}/comunidades?c=${community.id}&checkout=cancel`,
+            success_url: `${this.frontendUrl}/payment-result?provider=stripe&community=${community.id}&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${this.frontendUrl}/comunidades/${community.id}?payment=failure`,
         });
 
         return {
@@ -449,6 +482,19 @@ export class StripeService {
         }
 
         const stripeSubscription = await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
+        // Stripe can send both invoice.paid and invoice.payment_succeeded for
+        // the same charge. Account for it exactly once, including concurrent deliveries.
+        await this.prisma.$transaction(async tx => {
+            await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `stripe:invoice:${invoice.id}`);
+            const key = `stripe:invoice:${invoice.id}`;
+            if (await tx.paymentLog.findUnique({ where: { stripeEventId: key } })) return;
+            const worker = new StripeService(tx as unknown as PrismaService, this.mailService);
+            await worker.applyInvoicePaymentSucceeded(invoice, stripeSubscription);
+            await tx.paymentLog.create({ data: { stripeEventId: key, type: 'STRIPE_INVOICE', status: 'PROCESSED' } });
+        }, { timeout: 20000 });
+    }
+
+    private async applyInvoicePaymentSucceeded(invoice: Stripe.Invoice, stripeSubscription: Stripe.Subscription) {
         const metadata = stripeSubscription.metadata || {};
         const type = metadata.type;
 
@@ -532,6 +578,7 @@ export class StripeService {
                 userId,
                 communityId,
                 creatorId,
+                planId: metadata.planId,
                 stripeSubscriptionId: stripeSubscription.id,
                 stripePaymentId,
                 amount,
@@ -609,6 +656,7 @@ export class StripeService {
         userId: string;
         communityId: string;
         creatorId: string;
+        planId?: string;
         stripeSubscriptionId: string | null;
         stripePaymentId: string;
         amount: number;
@@ -626,6 +674,7 @@ export class StripeService {
                 communityId: params.communityId,
                 userId: params.userId,
                 role: 'MEMBER',
+                planId: params.planId,
                 subscriptionStatus: 'ACTIVE',
                 paymentStatus: 'SUCCEEDED',
                 stripePaymentId: params.stripePaymentId,
@@ -634,6 +683,7 @@ export class StripeService {
             },
             update: {
                 subscriptionStatus: 'ACTIVE',
+                planId: params.planId,
                 paymentStatus: 'SUCCEEDED',
                 stripePaymentId: params.stripePaymentId,
                 stripeSubscriptionId: params.stripeSubscriptionId,
@@ -832,53 +882,26 @@ export class StripeService {
     }
 
     private async updateUserPlanFromSubscription(userId: string, planType: 'pro_investor' | 'pro_creator', status: string) {
-        const isActive = status === 'ACTIVE';
-
-        if (isActive) {
-            await this.prisma.user.update({
-                where: { id: userId },
-                data: {
-                    plan: planType,
-                    accountType: planType === 'pro_creator' ? 'creator' : 'investor',
-                    subscriptionStatus: status,
-                },
-            });
-            await this.logPlanChange(userId, planType, status);
-            return;
-        }
-
-        const latestActive = await this.prisma.subscription.findFirst({
+        const active = await this.prisma.subscription.findMany({
             where: {
                 userId,
                 status: 'ACTIVE',
-                planType: { in: ['pro_investor', 'pro_creator'] },
+                endDate: { gt: new Date() },
             },
-            orderBy: { updatedAt: 'desc' },
             select: { planType: true },
         });
-
-        if (latestActive?.planType) {
-            await this.prisma.user.update({
-                where: { id: userId },
-                data: {
-                    plan: latestActive.planType,
-                    accountType: latestActive.planType === 'pro_creator' ? 'creator' : 'investor',
-                    subscriptionStatus: 'ACTIVE',
-                },
-            });
-            await this.logPlanChange(userId, latestActive.planType, 'ACTIVE');
-            return;
-        }
-
+        const types = new Set(active.map(item => normalizePlan(item.planType)));
+        const plan = types.has('pro_creator') ? 'CREATOR' : types.has('pro_investor') ? 'PRO' : 'FREE';
         await this.prisma.user.update({
             where: { id: userId },
             data: {
-                plan: 'free',
-                accountType: 'basic',
-                subscriptionStatus: status,
+                plan,
+                accountType: plan === 'FREE' ? 'BASIC' : plan,
+                isCreator: plan === 'CREATOR',
+                subscriptionStatus: plan === 'FREE' ? 'EXPIRED' : 'ACTIVE',
             },
         });
-        await this.logPlanChange(userId, 'free', status);
+        await this.logPlanChange(userId, plan, status);
     }
 
     private async logPlanChange(userId: string, plan: string, status: string) {

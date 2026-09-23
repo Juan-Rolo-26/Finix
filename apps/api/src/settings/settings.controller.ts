@@ -8,10 +8,10 @@ import {
     UseGuards,
     Request,
     UseInterceptors,
-    UploadedFile,
+    UploadedFiles,
     BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { SettingsService } from './settings.service';
@@ -98,7 +98,7 @@ export class SettingsController {
 
     @Post('avatar')
     @UseInterceptors(
-        FileInterceptor('avatar', {
+        AnyFilesInterceptor({
             storage: avatarStorage,
             limits: { fileSize: MAX_SIZE_BYTES },
             fileFilter: (_req, file, cb) => {
@@ -111,8 +111,11 @@ export class SettingsController {
     )
     async uploadAvatar(
         @Request() req,
-        @UploadedFile() file: Express.Multer.File,
+        @UploadedFiles() files: Express.Multer.File[],
     ) {
+        // Accept the canonical `avatar` field and the generic `file` field
+        // used by some mobile/web upload clients.
+        const file = files?.find((candidate) => candidate.fieldname === 'avatar' || candidate.fieldname === 'file');
         if (!file) throw new BadRequestException('No se recibió ningún archivo');
 
         const avatarUrl = buildUploadPublicPath('avatars', file.filename);
@@ -125,7 +128,7 @@ export class SettingsController {
 
     @Post('banner')
     @UseInterceptors(
-        FileInterceptor('banner', {
+        AnyFilesInterceptor({
             storage: bannerStorage,
             limits: { fileSize: MAX_SIZE_BYTES },
             fileFilter: (_req, file, cb) => {
@@ -138,8 +141,9 @@ export class SettingsController {
     )
     async uploadBanner(
         @Request() req,
-        @UploadedFile() file: Express.Multer.File,
+        @UploadedFiles() files: Express.Multer.File[],
     ) {
+        const file = files?.find((candidate) => candidate.fieldname === 'banner' || candidate.fieldname === 'file');
         if (!file) throw new BadRequestException('No se recibió ningún archivo');
 
         const bannerUrl = buildUploadPublicPath('banners', file.filename);

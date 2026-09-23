@@ -394,28 +394,34 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                             columns: [
                                 'name',
                                 'description',
-                                'earnings_release_date',
-                                'earnings_release_time',
+                                'earnings_release_next_date',
+                                'earnings_release_next_time',
                                 'earnings_per_share_forecast_next_fq',
                                 'revenue_forecast_next_fq',
                                 'market_cap_basic',
-                                'logoid'
+                                'logoid',
+                                'earnings_release_date',
+                                'earnings_per_share_fq',
+                                'earnings_per_share_forecast_fq',
+                                'revenue_fq',
+                                'revenue_forecast_fq',
                             ],
                         }),
                         signal: AbortSignal.timeout(8000),
                     });
 
+                    if (!res.ok) throw new Error(`TradingView earnings: HTTP ${res.status}`);
                     if (res.ok) {
                         const json: any = await res.json();
                         if (Array.isArray(json?.data)) {
                             for (const row of json.data) {
-                                if (!row?.d || !row.d[2]) continue;
+                                if (!row?.d || (!row.d[2] && !row.d[8])) continue;
 
                                 const ticker = (row.d[0] || '').toUpperCase().trim();
                                 if (!ticker || !this.isSP500Constituent(ticker)) continue;
 
                                 const companyName = row.d[1] || ticker;
-                                const releaseTimestamp = row.d[2]; // segundos epoch
+                                const releaseTimestamp = row.d[2] || row.d[8]; // segundos epoch
                                 const eventDate = new Date(releaseTimestamp * 1000).toISOString().substring(0, 10);
                                 const timeType = row.d[3]; // -1: BMO, 1: AMC, 0: DMH
 
@@ -454,9 +460,9 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                                     logoUrl,
                                     date: eventDate,
                                     time,
-                                    timestampUtc: new Date(`${eventDate}T${time}:00Z`),
+                                    timestampUtc: new Date(releaseTimestamp * 1000),
                                     timezone: 'America/New_York',
-                                    dateStatus: 'CONFIRMED',
+                                    dateStatus: 'ESTIMATED',
                                     reportTiming,
                                     epsEstimate,
                                     revenueEstimate,
@@ -466,6 +472,28 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                                     sourceType: 'AUTOMATIC',
                                     isPublished: true,
                                 });
+                                const upcoming = fetchedList[fetchedList.length - 1];
+                                if (!row.d[2]) fetchedList.pop();
+                                if (row.d[8]) {
+                                    const actualEps = row.d[9] == null ? undefined : Number(row.d[9]);
+                                    const epsEstimate = row.d[10] == null ? undefined : Number(row.d[10]);
+                                    const actualRevenue = row.d[11] == null ? undefined : Number(row.d[11]);
+                                    const revenueEstimate = row.d[12] == null ? undefined : Number(row.d[12]);
+                                    const surprise = (actual?: number, estimate?: number) =>
+                                        actual != null && estimate != null && estimate !== 0
+                                            ? (actual - estimate) / Math.abs(estimate) * 100 : undefined;
+                                    fetchedList.push({
+                                        ...upcoming,
+                                        date: new Date(row.d[8] * 1000).toISOString().slice(0, 10),
+                                        timestampUtc: new Date(row.d[8] * 1000),
+                                        time: undefined,
+                                        reportTiming: undefined,
+                                        dateStatus: 'CONFIRMED',
+                                        actualEps, epsEstimate, actualRevenue, revenueEstimate,
+                                        epsSurprise: surprise(actualEps, epsEstimate),
+                                        revenueSurprise: surprise(actualRevenue, revenueEstimate),
+                                    });
+                                }
                             }
                         }
                     }
@@ -546,16 +574,27 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                                 'dividend_payment_date_recent',
                                 'market_cap_basic',
                                 'logoid',
+                                'dividend_amount_upcoming',
+                                'dividend_ex_date_upcoming',
+                                'dividend_payment_date_upcoming',
                             ],
                         }),
                         signal: AbortSignal.timeout(8000),
                     });
 
+                    if (!res.ok) throw new Error(`TradingView dividends: HTTP ${res.status}`);
                     if (res.ok) {
                         const json: any = await res.json();
                         if (Array.isArray(json?.data)) {
-                            for (const row of json.data) {
-                                if (!row?.d) continue;
+                            // Keep each distribution's amount paired with its dates.
+                            const distributions = json.data.filter(row => row?.d).flatMap(row => {
+                                const upcoming = [...row.d];
+                                upcoming[4] = row.d[9];
+                                upcoming[5] = row.d[10];
+                                upcoming[6] = row.d[11];
+                                return [row, { d: upcoming }];
+                            });
+                            for (const row of distributions) {
 
                                 const ticker = (row.d[0] || '').toUpperCase().trim();
                                 if (!ticker || !this.isSP500Constituent(ticker)) continue;
@@ -582,7 +621,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                                     ticker,
                                     companyName,
                                     logoUrl,
-                                    exDate: exDate || paymentDate,
+                                    exDate: exDate || '',
                                     paymentDate,
                                     amount: amount != null ? Number(amount.toFixed(4)) : undefined,
                                     yield: yieldVal != null ? Number(yieldVal.toFixed(2)) : undefined,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore, isJuanUser } from '../stores/authStore';
+import { cn } from '@/lib/utils';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { uploadProfileImage } from '@/lib/profileMedia';
@@ -827,7 +828,12 @@ export default function Profile() {
         toastTimer.current = setTimeout(() => setToast(null), 3500);
     }, []);
 
-    const isOwnProfile = !!(currentUser?.username === username || (!username && currentUser));
+    const isOwnProfile = !!(
+        (currentUser?.username && username && currentUser.username.toLowerCase() === username.toLowerCase()) ||
+        (!username && currentUser) ||
+        (currentUser?.id && profile?.id && currentUser.id === profile.id) ||
+        (isJuanUser(currentUser) && (!username || isJuanUser({ username })))
+    );
 
     useEffect(() => { loadProfile(); }, [username]);
     useEffect(() => {
@@ -1349,17 +1355,26 @@ export default function Profile() {
                 </div>
 
                 {/* Avatar + action buttons row */}
-                <div className="px-6 relative -mt-16 flex items-end justify-between">
+                <div className="px-6 relative -mt-16 flex items-end justify-between flex-wrap gap-4">
                     {/* Avatar */}
                     <div className="relative z-10">
                         <div
-                            className="relative w-28 h-28 rounded-full border-4 overflow-hidden flex items-center justify-center text-3xl font-black"
+                            className={cn(
+                                "relative w-28 h-28 rounded-full border-4 overflow-hidden flex items-center justify-center text-3xl font-black group",
+                                isOwnProfile && "cursor-pointer"
+                            )}
+                            onClick={() => {
+                                if (isOwnProfile && uploadingImage !== 'avatar') {
+                                    handleUploadImage('avatar');
+                                }
+                            }}
                             style={{
                                 borderColor: 'hsl(var(--background))',
                                 background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 25%) 100%)',
                                 color: '#060a07',
                                 boxShadow: `0 0 32px hsl(158 100% 45% / 0.35)`,
                             }}
+                            title={isOwnProfile ? "Clic para cambiar foto de perfil" : undefined}
                         >
                             {(profile.username && profile.username.length > 0) ? profile.username[0].toUpperCase() : 'U'}
                             {profile.avatarUrl && (
@@ -1370,16 +1385,32 @@ export default function Profile() {
                                     onError={(event) => { event.currentTarget.style.display = 'none'; }}
                                 />
                             )}
+                            {isOwnProfile && (
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 z-20 text-white text-[11px] font-bold">
+                                    {uploadingImage === 'avatar' ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Camera className="w-5 h-5" />
+                                            <span>Cambiar</span>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         {isOwnProfile && (
                             <button
-                                onClick={() => handleUploadImage('avatar')}
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleUploadImage('avatar');
+                                }}
                                 disabled={uploadingImage === 'avatar'}
-                                className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer z-20"
+                                className="absolute bottom-0 right-0 w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer z-30"
                                 style={{ background: PRIMARY, color: '#000', border: '2px solid hsl(var(--background))' }}
                                 title="Cambiar foto de perfil"
                             >
-                                {uploadingImage === 'avatar' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                                {uploadingImage === 'avatar' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                             </button>
                         )}
                         {/* Verified badge */}
@@ -1399,6 +1430,17 @@ export default function Profile() {
                         {isOwnProfile ? (
                             isEditing ? (
                                 <>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleUploadImage('avatar')}
+                                        disabled={uploadingImage === 'avatar'}
+                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold border transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+                                        style={{ borderColor: PRIMARY_BRD, color: PRIMARY, background: PRIMARY_DIM }}
+                                        title="Cambiar foto de perfil"
+                                    >
+                                        {uploadingImage === 'avatar' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                                        <span>{uploadingImage === 'avatar' ? 'Subiendo...' : 'Cambiar foto'}</span>
+                                    </button>
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -1425,9 +1467,24 @@ export default function Profile() {
                             ) : (
                                 <>
                                     <button
+                                        type="button"
+                                        onClick={() => handleUploadImage('avatar')}
+                                        disabled={uploadingImage === 'avatar'}
+                                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-md"
+                                        style={{ borderColor: PRIMARY_BRD, color: PRIMARY, background: PRIMARY_DIM }}
+                                        title="Cambiar foto de perfil"
+                                    >
+                                        {uploadingImage === 'avatar' ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Camera className="w-4 h-4" />
+                                        )}
+                                        <span>{uploadingImage === 'avatar' ? 'Subiendo...' : 'Cambiar foto de perfil'}</span>
+                                    </button>
+                                    <button
                                         onClick={() => setIsEditing(true)}
                                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:scale-105 active:scale-95"
-                                        style={{ borderColor: PRIMARY_BRD, color: PRIMARY, background: PRIMARY_DIM }}
+                                        style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--secondary)/0.6)' }}
                                     >
                                         <Edit className="w-3.5 h-3.5" /> Editar perfil
                                     </button>
@@ -1514,6 +1571,33 @@ export default function Profile() {
                             {imageUploadError}
                         </div>
                     ) : null}
+
+                    {isEditing && (
+                        <div className="mb-4 p-3.5 rounded-2xl border border-primary/20 bg-primary/5 flex items-center justify-between gap-3 flex-wrap">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/40 flex items-center justify-center shrink-0 bg-secondary/50 font-bold">
+                                    {profile.avatarUrl ? (
+                                        <img src={resolveMediaUrl(profile.avatarUrl)} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="font-bold text-sm text-primary">{(profile.username || 'U')[0].toUpperCase()}</span>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-foreground">Foto de perfil</p>
+                                    <p className="text-[11px] text-muted-foreground">Tu imagen pública visible para toda la comunidad</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => handleUploadImage('avatar')}
+                                disabled={uploadingImage === 'avatar'}
+                                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-all cursor-pointer shadow-2xs"
+                            >
+                                {uploadingImage === 'avatar' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                                <span>{uploadingImage === 'avatar' ? 'Subiendo...' : 'Cambiar foto de perfil'}</span>
+                            </button>
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-2 mb-1">
                         {isEditing ? (

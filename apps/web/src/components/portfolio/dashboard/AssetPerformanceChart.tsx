@@ -122,20 +122,20 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
 
     return (
         <Card className={cn('rounded-[22px] border border-border/50 bg-card/80 shadow-lg overflow-hidden flex flex-col justify-between', className)}>
-            <CardHeader className="px-6 py-6 sm:px-7 sm:py-7 border-b border-border/40">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <CardTitle className="text-xl font-bold tracking-tight flex items-center gap-2.5">
+            <CardHeader className="px-6 py-6 sm:px-7 sm:py-7 border-b border-border/40 text-center">
+                <div className="flex flex-col items-center justify-center gap-4 text-center">
+                    <div className="flex flex-col items-center text-center">
+                        <CardTitle className="text-xl font-bold tracking-tight flex items-center justify-center gap-2.5 text-center">
                             <BarChart3 className="w-5 h-5 text-primary" />
                             Rendimiento por Activo
                         </CardTitle>
-                        <CardDescription className="text-sm text-muted-foreground/80 mt-1">
+                        <CardDescription className="text-sm text-muted-foreground/80 mt-1 text-center max-w-md mx-auto">
                             Comparativa visual de retorno, aporte al capital y peso de cada posición
                         </CardDescription>
                     </div>
 
                     {/* Selector de modo de vista */}
-                    <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/50 border border-border/40 self-start sm:self-auto">
+                    <div className="flex items-center justify-center gap-1 p-1 rounded-xl bg-secondary/50 border border-border/40">
                         <button
                             onClick={() => setViewMode('PERFORMANCE')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
@@ -174,7 +174,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
 
                 {/* Pills resumen si hay datos */}
                 {summary && (
-                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap pt-3 text-xs">
+                    <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap pt-3 text-xs">
                         {summary.topPerformer && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
                                 <TrendingUp className="w-3.5 h-3.5" />
@@ -198,8 +198,16 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
 
             <CardContent className="pt-6">
                 {safeData.length === 0 ? (
-                    <div className="flex h-[360px] items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/40 px-6 text-center text-sm text-muted-foreground">
-                        Este gráfico se completará cuando tu portafolio contenga posiciones con datos de cotización.
+                    <div className="flex h-[360px] flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-secondary/15 px-6 text-center space-y-3">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                            <BarChart3 className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1">
+                            <h4 className="text-sm font-bold text-foreground">Sin posiciones para comparar</h4>
+                            <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+                                Agregá transacciones a tu portafolio para visualizar el retorno, el aporte al capital y el peso relativo de cada activo.
+                            </p>
+                        </div>
                     </div>
                 ) : viewMode === 'PERFORMANCE' ? (
                     <div className="h-[360px] w-full">

@@ -16,6 +16,23 @@ import { EarningsImpactScoringService } from './services/earnings-impact-scoring
 @Injectable()
 export class CalendarService {
     private readonly logger = new Logger(CalendarService.name);
+    private earningsRefresh: Promise<unknown> | null = null;
+    private dividendsRefresh: Promise<unknown> | null = null;
+
+    private async refreshCorporateEvents(category?: string) {
+        const pending: Promise<unknown>[] = [];
+        if (!category || category === 'ALL' || category === 'EARNINGS') {
+            this.earningsRefresh ??= this.providerService.fetchTradingViewSP500Earnings({ forceRefresh: true })
+                .finally(() => { this.earningsRefresh = null; });
+            pending.push(this.earningsRefresh);
+        }
+        if (!category || category === 'ALL' || category === 'DIVIDEND') {
+            this.dividendsRefresh ??= this.providerService.fetchTradingViewSP500Dividends({ forceRefresh: true })
+                .finally(() => { this.dividendsRefresh = null; });
+            pending.push(this.dividendsRefresh);
+        }
+        await Promise.all(pending);
+    }
 
     constructor(
         private readonly prisma: PrismaService,
@@ -232,6 +249,10 @@ export class CalendarService {
             sundayStr = sunday.toISOString().substring(0, 10);
         }
 
+        // Fetch current provider data without waiting for the scheduled DB sync.
+        // Concurrent page loads share the same in-flight provider request.
+        await this.refreshCorporateEvents(params.category);
+
         // Fetch economic and earnings
         const economicWhere: any = {
             isPublished: true,
@@ -261,14 +282,17 @@ export class CalendarService {
             }),
         ]);
 
-        if (!isAll && params.category !== 'US' && params.category !== 'AR' && params.category !== 'DIVIDEND') {
+        if (params.category !== 'US' && params.category !== 'AR' && params.category !== 'DIVIDEND') {
             const tvEarnings = await this.providerService.fetchTradingViewSP500Earnings({ from: mondayStr, to: sundayStr });
-            const existingKeys = new Set(dbEarnings.map(e => `${e.ticker}|${e.date}`));
+            const existingByKey = new Map<string, number>(dbEarnings.map((e, index) => [`${e.ticker}|${e.date}`, index]));
             for (const event of tvEarnings) {
                 const key = `${event.ticker}|${event.date}`;
-                if (!existingKeys.has(key)) {
+                const index = existingByKey.get(key);
+                if (index === undefined) {
+                    existingByKey.set(key, dbEarnings.length);
                     dbEarnings.push(event as any);
-                    existingKeys.add(key);
+                } else if (dbEarnings[index].sourceType !== 'MANUAL') {
+                    dbEarnings[index] = { ...dbEarnings[index], ...event } as any;
                 }
             }
             dbEarnings.sort((a, b) => a.date.localeCompare(b.date) || b.earningsImpactScore - a.earningsImpactScore);
@@ -296,12 +320,15 @@ export class CalendarService {
             }
 
             const tvDivs = await this.providerService.fetchTradingViewSP500Dividends({ from: mondayStr, to: sundayStr });
-            const existingKeys = new Set(dbDividends.map(d => `${d.ticker}|${d.paymentDate || d.exDate}`));
+            const existingByKey = new Map(dbDividends.map((d, index) => [`${d.ticker}|${d.exDate || d.paymentDate}`, index]));
             for (const event of tvDivs) {
-                const key = `${event.ticker}|${event.paymentDate || event.exDate}`;
-                if (!existingKeys.has(key)) {
+                const key = `${event.ticker}|${event.exDate || event.paymentDate}`;
+                const index = existingByKey.get(key);
+                if (index === undefined) {
+                    existingByKey.set(key, dbDividends.length);
                     dbDividends.push(event as any);
-                    existingKeys.add(key);
+                } else if (dbDividends[index].sourceType !== 'MANUAL') {
+                    dbDividends[index] = { ...dbDividends[index], ...event };
                 }
             }
             dbDividends.sort((a, b) => (a.paymentDate || a.exDate).localeCompare(b.paymentDate || b.exDate));
@@ -775,13 +802,17 @@ export class CalendarService {
                     const data = {
                         companyName: item.companyName,
                         logoUrl: item.logoUrl,
-                        time: item.time,
+                        time: item.time ?? null,
                         timestampUtc: item.timestampUtc,
                         timezone: item.timezone || 'America/New_York',
-                        dateStatus: 'CONFIRMED',
-                        reportTiming: item.reportTiming,
+                        dateStatus: item.dateStatus,
+                        reportTiming: item.reportTiming ?? null,
                         epsEstimate: item.epsEstimate,
                         revenueEstimate: item.revenueEstimate,
+                        actualEps: item.actualEps,
+                        actualRevenue: item.actualRevenue,
+                        epsSurprise: item.epsSurprise,
+                        revenueSurprise: item.revenueSurprise,
                         marketCap: item.marketCap,
                         earningsImpactScore: item.earningsImpactScore,
                         source: 'TradingView Official Scanner',
@@ -905,6 +936,7 @@ export class CalendarService {
                                 'revenue_surprise_percent_fq',
                                 'change',
                                 'close',
+                                'earnings_release_date',
                             ],
                         }),
                         signal: AbortSignal.timeout(10000),
@@ -921,6 +953,9 @@ export class CalendarService {
                         if (!symbolTicker) continue;
                         const event = eventsByTicker.get(symbolTicker);
                         if (!event) continue;
+                        // Never attach the previous quarter's numbers to an
+                        // upcoming report just because its scheduled date passed.
+                        if (!row.d[8] || new Date(row.d[8] * 1000).toISOString().slice(0, 10) !== event.date) continue;
 
                         const actualEps = row.d[1] != null ? Number(row.d[1]) : null;
                         const forecastEps = row.d[2] != null ? Number(row.d[2]) : null;
@@ -1027,10 +1062,6 @@ export class CalendarService {
 
             if (list.length > 0) {
                 try {
-                    await (this.prisma as any).marketDividendEvent.deleteMany({
-                        where: { sourceType: 'AUTOMATIC' }
-                    });
-
                     const dataToInsert = list.map(item => ({
                         ticker: item.ticker,
                         companyName: item.companyName,
@@ -1048,10 +1079,18 @@ export class CalendarService {
                         isPublished: true,
                     }));
 
-                    const batchResult = await (this.prisma as any).marketDividendEvent.createMany({
-                        data: dataToInsert,
-                    });
-                    upserted = batchResult.count;
+                    for (const data of dataToInsert) {
+                        const repo = (this.prisma as any).marketDividendEvent;
+                        const existing = await repo.findFirst({
+                            where: { ticker: data.ticker, exDate: data.exDate, ...(data.exDate ? {} : { paymentDate: data.paymentDate }), sourceType: 'AUTOMATIC' },
+                        });
+                        if (existing) {
+                            await repo.update({ where: { id: existing.id }, data });
+                        } else {
+                            await repo.create({ data });
+                        }
+                        upserted++;
+                    }
                 } catch (dbErr: any) {
                     this.logger.warn(`Could not persist dividends directly to database: ${dbErr.message}. Utilizing cached provider data.`);
                     upserted = list.length;

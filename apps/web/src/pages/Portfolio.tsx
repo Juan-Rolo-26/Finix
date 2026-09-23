@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore, isProUser } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +29,7 @@ import {
   Trophy,
   PieChart,
   Wallet,
+  Target,
   X,
   Check,
 } from "lucide-react";
@@ -98,8 +99,19 @@ interface Asset {
   value?: number;
   isCedear?: boolean;
   cedearRatio?: number | null;
+  cedearTicker?: string | null;
+  cedearName?: string | null;
+  cedearPriceArs?: number | null;
+  cedearChangePct?: number | null;
+  cedearTheoreticalPriceArs?: number | null;
+  cedearImplicitCcl?: number | null;
+  cedearQuantity?: number | null;
+  cedearTotalValuationArs?: number | null;
+  dolarCcl?: number | null;
   underlyingTicker?: string | null;
   underlyingExchange?: string | null;
+  underlyingPriceUsd?: number | null;
+  underlyingChangePct?: number | null;
   variacionDiaria?: number | null;
 }
 
@@ -209,17 +221,17 @@ function StatCard({
 }) {
   const isPos = positive ?? (delta !== undefined ? delta >= 0 : true);
   return (
-    <div className="flex-1 min-w-0 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md px-3 py-3 sm:px-4 sm:py-3.5 shadow-xs transition-all hover:border-border/80">
-      <div className="flex items-center justify-between gap-2 mb-1.5">
-        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
-        {Icon && <Icon className="w-4 h-4 text-muted-foreground/60" />}
+    <div className="flex-1 min-w-0 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md px-3 py-3 sm:px-4 sm:py-3.5 shadow-xs transition-all hover:border-border/80 flex flex-col items-center text-center">
+      <div className="flex items-center justify-center gap-1.5 mb-1.5 w-full text-center">
+        {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />}
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground text-center">{label}</span>
       </div>
-      <div className="flex items-baseline gap-2 flex-wrap">
-        <p className="text-xl sm:text-2xl font-black tracking-tight tabular-nums text-foreground">
+      <div className="flex items-center justify-center gap-2 flex-wrap text-center">
+        <p className="text-xl sm:text-2xl font-black tracking-tight tabular-nums text-foreground text-center">
           {hideValues ? "••••••" : fmtCompact(value, currency)}
         </p>
         {delta !== undefined && (
-          <span className={cn("text-xs font-bold flex items-center gap-0.5", isPos ? "text-emerald-500" : "text-red-500")}>
+          <span className={cn("text-xs font-bold flex items-center justify-center gap-0.5", isPos ? "text-emerald-500" : "text-red-500")}>
             {isPos ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
             {fmtPct(delta)}
           </span>
@@ -267,20 +279,22 @@ function AssetRow({
   const weight = totalPortfolioValue > 0 ? (currentValue / totalPortfolioValue) * 100 : 0;
   const isUp = pct >= 0;
   const symbol = normalizeTickerSymbol(asset.ticker);
+  const cedearChange = asset.cedearChangePct;
+  const dailyChange = asset.variacionDiaria;
 
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group flex flex-col md:grid md:grid-cols-[1fr_80px_100px_110px_90px] items-start md:items-center gap-3 rounded-2xl border border-border/40 hover:border-border/80 bg-card/40 hover:bg-card/90 px-4 py-3.5 transition-all shadow-2xs hover:shadow-xs"
+      className="group flex flex-col md:grid md:grid-cols-[1.15fr_70px_95px_130px_115px_85px] items-start md:items-center gap-3 rounded-2xl border border-border/40 hover:border-border/80 bg-card/40 hover:bg-card/90 px-4 py-3.5 transition-all shadow-2xs hover:shadow-xs"
     >
       {/* 1: Logo + Exchange + Name */}
       <div className="w-full md:w-auto min-w-0 flex items-center justify-between md:justify-start">
         <AssetRowInfo
           symbol={symbol}
           subtext={`${asset.cantidad.toFixed(4)} unid. · PPC ${fmtCurrency(asset.ppc, currency)}${
-            asset.cedearRatio ? ` · Ratio ${asset.cedearRatio}:1 (${asset.underlyingTicker || ''})` : ''
+            asset.cedearRatio ? ` · Ratio ${asset.cedearRatio}:1` : ''
           }`}
           size="md"
           showLivePrice={false}
@@ -295,6 +309,16 @@ function AssetRow({
             {isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
             {fmtPct(pct)}
           </span>
+          {asset.isCedear && asset.cedearPriceArs ? (
+            <span className="text-[10px] font-semibold text-sky-400/90 mt-0.5 tabular-nums">
+              CEDEAR: ${asset.cedearPriceArs.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+              {typeof cedearChange === 'number' && (
+                <span className={cedearChange >= 0 ? " text-emerald-400 ml-1" : " text-red-400 ml-1"}>
+                  ({cedearChange >= 0 ? "+" : ""}{cedearChange.toFixed(1)}%)
+                </span>
+              )}
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -312,10 +336,49 @@ function AssetRow({
       {/* 3: Price */}
       <div className="hidden md:block text-right w-full">
         <p className="text-[13px] font-semibold tabular-nums text-foreground">{fmtCurrency(price, currency)}</p>
-        <p className="text-[10px] text-muted-foreground font-medium">cotización</p>
+        {typeof dailyChange === 'number' ? (
+          <p className={cn("text-[10px] font-semibold tabular-nums flex items-center justify-end gap-0.5", dailyChange >= 0 ? "text-emerald-500" : "text-red-500")}>
+            {dailyChange >= 0 ? "+" : ""}{dailyChange.toFixed(2)}%
+          </p>
+        ) : (
+          <p className="text-[10px] text-muted-foreground font-medium">cotización</p>
+        )}
       </div>
 
-      {/* 4: Value & PnL */}
+      {/* 4: Precio CEDEAR (ARS) */}
+      <div className="hidden md:block text-right w-full">
+        {asset.isCedear && asset.cedearPriceArs ? (
+          <div className="flex flex-col items-end">
+            <div className="flex items-center justify-end gap-1">
+              <span className="text-[13px] font-bold tabular-nums text-foreground">
+                ${asset.cedearPriceArs.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+              </span>
+              <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 leading-none">
+                ARS
+              </span>
+            </div>
+            <div className="flex items-center justify-end gap-1.5 mt-0.5">
+              {typeof cedearChange === 'number' && (
+                <span className={cn("text-[10px] font-semibold tabular-nums", cedearChange >= 0 ? "text-emerald-500" : "text-red-500")}>
+                  {cedearChange >= 0 ? "+" : ""}{cedearChange.toFixed(2)}%
+                </span>
+              )}
+              {Boolean(asset.cedearRatio) && (
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  · {asset.cedearRatio}:1
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-end justify-center">
+            <span className="text-xs text-muted-foreground/40 font-mono">—</span>
+            <span className="text-[10px] text-muted-foreground/40">Sin CEDEAR</span>
+          </div>
+        )}
+      </div>
+
+      {/* 5: Value & PnL */}
       <div className="hidden md:block text-right w-full">
         <p className="text-[14px] font-bold tabular-nums text-foreground">
           {hideValues ? "••••••" : fmtCompact(currentValue, currency)}
@@ -324,9 +387,14 @@ function AssetRow({
           {isUp ? <ArrowUpRight className="inline w-3 h-3" /> : <ArrowDownRight className="inline w-3 h-3" />}
           {fmtPct(pct)}
         </p>
+        {asset.cedearTotalValuationArs && !hideValues ? (
+          <p className="text-[10px] text-muted-foreground font-medium tabular-nums mt-0.5" title={`Valuación en pesos argentinos (${asset.cedearQuantity ? `${asset.cedearQuantity.toFixed(2)} CEDEARs` : ''})`}>
+            ≈ ${asset.cedearTotalValuationArs.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+          </p>
+        ) : null}
       </div>
 
-      {/* 5: Quick actions (Mobile & Desktop) */}
+      {/* 6: Quick actions (Mobile & Desktop) */}
       <div className="w-full md:w-auto flex items-center justify-end gap-1.5 pt-2 md:pt-0 border-t md:border-t-0 border-border/30 shrink-0">
         <button
           onClick={onBuy}
@@ -414,6 +482,130 @@ function EmptyPortfolio({ onAdd, isFirstCreation }: { onAdd: () => void, isFirst
   );
 }
 
+function EmptyPortfolioAssets({
+  portfolioName,
+  onAdd,
+  onQuickAdd,
+}: {
+  portfolioName: string;
+  onAdd: () => void;
+  onQuickAdd: (symbol: string) => void;
+}) {
+  const quickAssets = [
+    { ticker: "SPY", name: "S&P 500 ETF", badge: "Índice" },
+    { ticker: "NVDA", name: "Nvidia", badge: "Tech / IA" },
+    { ticker: "AAPL", name: "Apple", badge: "Tech" },
+    { ticker: "KO", name: "Coca-Cola", badge: "Consumo" },
+    { ticker: "MELI", name: "MercadoLibre", badge: "Líder Latam" },
+    { ticker: "BTC", name: "Bitcoin", badge: "Cripto" },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden rounded-3xl border border-border/70 bg-gradient-to-br from-card via-card/90 to-card/60 p-6 sm:p-8 shadow-xl"
+    >
+      {/* Background ambient glow */}
+      <div
+        className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full opacity-20 blur-3xl"
+        style={{ background: "radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)" }}
+      />
+
+      <div className="relative z-10 max-w-3xl mx-auto space-y-6 flex flex-col items-center text-center">
+        <div className="flex flex-wrap items-center justify-center gap-2.5">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+            PORTAFOLIO CREADO · LISTO PARA OPERAR
+          </span>
+          <Badge variant="outline" className="text-xs font-semibold border-border/70 text-muted-foreground rounded-full px-3 py-1">
+            {portfolioName}
+          </Badge>
+        </div>
+
+        <div className="space-y-2 text-center max-w-2xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground text-center">
+            Comenzá a armar tu portafolio
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed text-center">
+            Tu cartera todavía no registra posiciones. Una vez que agregues tu primera compra de CEDEARs (en pesos ARS), acciones, ETFs o cripto, acá se activarán automáticamente los gráficos de evolución histórica, el rendimiento ponderado y la comparativa contra el S&P 500.
+          </p>
+        </div>
+
+        {/* Primary CTA */}
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+          <Button
+            onClick={onAdd}
+            className="h-11 px-6 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all gap-2 cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            Agregar Primera Transacción
+          </Button>
+        </div>
+
+        {/* Quick Suggestions */}
+        <div className="pt-2 border-t border-border/50 space-y-2.5 w-full flex flex-col items-center text-center">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">
+            O sumá directamente un activo popular con un clic:
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {quickAssets.map((qa) => (
+              <button
+                key={qa.ticker}
+                type="button"
+                onClick={() => onQuickAdd(qa.ticker)}
+                className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/70 bg-secondary/40 hover:bg-emerald-500/10 hover:border-emerald-500/40 transition-all text-xs font-semibold cursor-pointer"
+              >
+                <span className="font-mono font-bold text-foreground group-hover:text-emerald-500">
+                  {qa.ticker}
+                </span>
+                <span className="text-muted-foreground text-[11px] hidden sm:inline">
+                  {qa.name}
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground group-hover:bg-emerald-500/20 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-medium">
+                  {qa.badge}
+                </span>
+                <Plus className="w-3 h-3 text-muted-foreground group-hover:text-emerald-500 transition-transform group-hover:rotate-90" />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Feature Preview Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 w-full">
+          <div className="rounded-2xl border border-border/60 bg-secondary/20 p-3.5 space-y-1.5 flex flex-col items-center text-center">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <p className="text-xs font-bold text-foreground text-center">Evolución & PnL</p>
+            <p className="text-[11px] text-muted-foreground leading-snug text-center">
+              Medí ganancias y pérdidas en USD y ARS con cotizaciones en vivo y Dólar CCL.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border/60 bg-secondary/20 p-3.5 space-y-1.5 flex flex-col items-center text-center">
+            <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center mx-auto">
+              <Target className="w-4 h-4" />
+            </div>
+            <p className="text-xs font-bold text-foreground text-center">Benchmark S&P 500</p>
+            <p className="text-[11px] text-muted-foreground leading-snug text-center">
+              Compará tu curva indexada contra el SPY para medir si estás batiendo al mercado.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border/60 bg-secondary/20 p-3.5 space-y-1.5 flex flex-col items-center text-center">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+              <PieChart className="w-4 h-4" />
+            </div>
+            <p className="text-xs font-bold text-foreground text-center">Diversificación</p>
+            <p className="text-[11px] text-muted-foreground leading-snug text-center">
+              Analizá la distribución y peso de tu cartera por clase de activo y sector.
+            </p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function PortfolioSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
@@ -439,6 +631,8 @@ const PortfolioPage = () => {
   const [metrics, setMetrics] = useState<PortfolioMetrics | null>(null);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const isInitialLoadRef = useRef(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // UI state
@@ -466,12 +660,16 @@ const PortfolioPage = () => {
   const [portfolioForm, setPortfolioForm] = useState(getInitialPortfolioForm);
 
   // ── Data loading ────────────────────────────────────────────────────────────
-  const loadPortfolios = useCallback(async (preferredId?: string) => {
+  const loadPortfolios = useCallback(async (preferredId?: string, silent = false) => {
     if (!isPro) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (isInitialLoadRef.current && !silent) {
+      setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
     try {
       const res = await apiFetch("/portfolios");
       if (!res.ok) {
@@ -495,9 +693,11 @@ const PortfolioPage = () => {
       setSelectedPortfolio(null);
       setErrorMessage(e?.message || "No se pudieron cargar los portafolios");
     } finally {
+      isInitialLoadRef.current = false;
       setLoading(false);
+      setIsRefreshing(false);
     }
-  }, []);
+  }, [isPro]);
 
   const loadRates = useCallback(async () => {
     if (!isPro) return;
@@ -516,7 +716,7 @@ const PortfolioPage = () => {
     } catch {
       // noop
     }
-  }, []);
+  }, [isPro]);
 
   useEffect(() => {
     if (!isPro) {
@@ -525,14 +725,7 @@ const PortfolioPage = () => {
     }
     void loadPortfolios();
     void loadRates();
-
-    const handleFocus = () => {
-      void loadPortfolios();
-      void loadRates();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    // No auto-reloads on focus or intervals: only loads when user opens/refreshes the page or triggers manual refresh.
   }, [isPro, loadPortfolios, loadRates]);
 
   useEffect(() => {
@@ -799,217 +992,230 @@ const PortfolioPage = () => {
           <div className="pointer-events-none absolute inset-0 opacity-40"
             style={{ background: "radial-gradient(ellipse 60% 50% at 20% 30%, hsl(var(--primary) / 0.18), transparent), radial-gradient(ellipse 40% 60% at 80% 70%, hsl(159 84% 42% / 0.12), transparent)" }} />
 
-          <div className="relative px-6 py-8 md:px-8">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-              {/* Left: title + value */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 flex-wrap">
-                  {selectedPortfolio && (
-                    <>
-                      <h1 className="text-lg font-bold text-muted-foreground">{selectedPortfolio.nombre}</h1>
-                      <PrivacyBadge mode={privacyMode} />
-                      {selectedPortfolio.esPrincipal && (
-                        <Badge variant="outline" className="border-primary/30 text-primary text-[10px]">Principal</Badge>
-                      )}
-                    </>
-                  )}
-                  {!selectedPortfolio && <h1 className="text-2xl font-bold">Mi Portfolio</h1>}
-                </div>
-
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground mb-2">Valor total</p>
-                  <div className="flex items-end gap-4 flex-wrap">
-                    <span className="text-4xl md:text-5xl font-extrabold tracking-tight tabular-nums">
-                      {mask(fmtCurrency(totalValue, currency))}
-                    </span>
-                    {displayPortfolio && (
-                      <div className={cn("flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-sm font-bold",
-                        pnl >= 0 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/15 text-rose-600 dark:text-rose-400")}>
-                        {pnl >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                        {mask(fmtCompact(pnl, currency))} ({fmtPct(pnlPct)})
-                      </div>
+          <div className="relative px-6 py-8 md:px-8 text-center flex flex-col items-center">
+            <div className="flex flex-col items-center justify-center gap-6 w-full max-w-4xl mx-auto text-center">
+              {/* Top: title + privacy badge */}
+              <div className="flex items-center justify-center gap-3 flex-wrap text-center">
+                {selectedPortfolio && (
+                  <>
+                    <h1 className="text-xl sm:text-2xl font-black text-foreground text-center">{selectedPortfolio.nombre}</h1>
+                    <PrivacyBadge mode={privacyMode} />
+                    {selectedPortfolio.esPrincipal && (
+                      <Badge variant="outline" className="border-primary/30 text-primary text-[10px]">Principal</Badge>
                     )}
-                  </div>
-                </div>
+                  </>
+                )}
+                {!selectedPortfolio && <h1 className="text-2xl font-black text-foreground text-center">Mi Portfolio</h1>}
+              </div>
 
+              {/* Total Value */}
+              <div className="flex flex-col items-center text-center">
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground mb-2 text-center">Valor total</p>
+                <div className="flex items-center justify-center gap-4 flex-wrap">
+                  <span className="text-4xl md:text-5xl font-extrabold tracking-tight tabular-nums text-foreground">
+                    {mask(fmtCurrency(totalValue, currency))}
+                  </span>
+                  {displayPortfolio && (
+                    <div className={cn("flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-sm font-bold",
+                      pnl >= 0 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/15 text-rose-600 dark:text-rose-400")}>
+                      {pnl >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                      {mask(fmtCompact(pnl, currency))} ({fmtPct(pnlPct)})
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions toolbar centered */}
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {/* Hide values */}
+                <button
+                  onClick={() => setHideValues(!hideValues)}
+                  className={cn(
+                    "h-9 px-3 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer",
+                    hideValues
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-border/60 bg-card/60 text-muted-foreground hover:text-foreground hover:border-border"
+                  )}
+                  title={hideValues ? "Mostrar saldos" : "Ocultar saldos"}
+                >
+                  {hideValues ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  <span className="hidden sm:inline">{hideValues ? "Oculto" : "Visible"}</span>
+                </button>
+
+                {/* Currency toggle */}
+                {(cclRate || mepRate) && displayPortfolio && (
+                  <button
+                    onClick={() => setViewCurrency(activeCurrency === "ARS" ? "USD" : "ARS")}
+                    className="h-9 rounded-xl border border-border/60 bg-card/60 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors flex items-center gap-2 cursor-pointer shadow-2xs"
+                    title={`CCL: $${cclRate ?? mepRate} · MEP: $${mepRate ?? 'N/A'}${rateUpdatedAt ? ` · Cotización al día` : ''}`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                    <span>{activeCurrency === "ARS" ? "USD" : "ARS"}</span>
+                    <RefreshCw className="w-3 h-3 opacity-70" />
+                  </button>
+                )}
+
+                {/* Privacy toggle */}
+                {selectedPortfolio && (
+                  <button
+                    onClick={() => updateVisibility(!selectedPortfolio.modoSocial)}
+                    disabled={isUpdatingVisibility}
+                    className="h-9 rounded-xl border border-border/60 bg-card/60 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors gap-1.5 flex items-center cursor-pointer shadow-2xs"
+                  >
+                    {selectedPortfolio.modoSocial ? <Globe className="w-3.5 h-3.5 text-emerald-400" /> : <Lock className="w-3.5 h-3.5 text-zinc-400" />}
+                    <span className="hidden sm:inline">{selectedPortfolio.modoSocial ? "Público" : "Privado"}</span>
+                  </button>
+                )}
+
+                {/* Share */}
+                <button
+                  onClick={handleShare}
+                  title="Compartir enlace al portfolio"
+                  className="h-9 px-3 rounded-xl border border-border/60 bg-card/60 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-colors cursor-pointer shadow-2xs"
+                >
+                  {copyFeedback ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
+                  <span className="hidden sm:inline">{copyFeedback ? "¡Copiado!" : "Compartir"}</span>
+                </button>
+
+                {/* Manual refresh */}
+                <button
+                  onClick={() => {
+                    void loadPortfolios(selectedPortfolio?.id, false);
+                    void loadRates();
+                    if (selectedPortfolio?.id) {
+                      void loadMetrics(selectedPortfolio.id);
+                      void loadMovements(selectedPortfolio.id);
+                    }
+                  }}
+                  disabled={isRefreshing}
+                  title="Actualizar datos del portafolio manualmente"
+                  className="h-9 px-3 rounded-xl border border-border/60 bg-card/60 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-colors cursor-pointer shadow-2xs"
+                >
+                  <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin text-emerald-400")} />
+                  <span className="hidden sm:inline">{isRefreshing ? "Actualizando..." : "Actualizar"}</span>
+                </button>
+
+                {/* Add asset CTA */}
                 {displayPortfolio && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
-                    <StatCard
-                      label="Total en Activos"
-                      value={assetsValue}
-                      positive={true}
-                      currency={currency}
-                      icon={BarChart3}
-                      hideValues={hideValues}
-                    />
-                    <StatCard
-                      label="Efectivo Disponible"
-                      value={cashBalance}
-                      positive={true}
-                      currency={currency}
-                      icon={Wallet}
-                      hideValues={hideValues}
-                    />
-                    <StatCard
-                      label="G/P Total"
-                      value={pnl}
-                      delta={pnlPct}
-                      positive={pnl >= 0}
-                      currency={currency}
-                      icon={pnl >= 0 ? TrendingUp : TrendingDown}
-                      hideValues={hideValues}
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 shadow-[0_2px_12px_rgba(16,185,129,0.35)] hover:shadow-[0_4px_18px_rgba(16,185,129,0.5)] border border-emerald-400/30 active:scale-[0.97] transition-all duration-200 cursor-pointer select-none"
+                    onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
+                  >
+                    <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-white group-hover:rotate-90 transition-transform duration-200">
+                      <Plus className="w-2.5 h-2.5 stroke-[3]" />
+                    </span>
+                    <span>Agregar transacción</span>
+                  </button>
+                )}
+
+                {/* Create portfolio */}
+                {portfolios.length === 0 && (
+                  <Dialog open={createPortfolioOpen} onOpenChange={setCreatePortfolioOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl border-primary/40 text-primary hover:bg-primary/10">
+                        <Plus className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Crear Portfolio</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[480px]">
+                      <DialogHeader>
+                        <DialogTitle>{t.portfolio.createTitle}</DialogTitle>
+                        <DialogDescription>{t.portfolio.createDesc}</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label>{t.portfolio.form.name} *</Label>
+                          <Input placeholder={t.portfolio.form.namePlaceholder} value={portfolioForm.nombre}
+                            onChange={(e) => setPortfolioForm({ ...portfolioForm, nombre: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t.portfolio.form.desc}</Label>
+                          <Textarea placeholder={t.portfolio.form.descPlaceholder} value={portfolioForm.descripcion}
+                            onChange={(e) => setPortfolioForm({ ...portfolioForm, descripcion: e.target.value })} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>{t.portfolio.form.baseCurrency}</Label>
+                            <Select value={portfolioForm.monedaBase} onValueChange={(v) => setPortfolioForm({ ...portfolioForm, monedaBase: v })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="USD">USD</SelectItem>
+                                <SelectItem value="ARS">ARS</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{t.portfolio.form.riskLevel}</Label>
+                            <Select value={portfolioForm.nivelRiesgo} onValueChange={(v) => setPortfolioForm({ ...portfolioForm, nivelRiesgo: v })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="bajo">Bajo</SelectItem>
+                                <SelectItem value="medio">Medio</SelectItem>
+                                <SelectItem value="alto">Alto</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between py-2">
+                          <div><Label>Modo social</Label><p className="text-xs text-muted-foreground">Visible para tus seguidores</p></div>
+                          <Switch checked={portfolioForm.modoSocial} onCheckedChange={(v) => setPortfolioForm({ ...portfolioForm, modoSocial: v })} />
+                        </div>
+                        <div className="flex items-center justify-between py-2">
+                          <div><Label>Portfolio principal</Label><p className="text-xs text-muted-foreground">Se muestra en tu perfil</p></div>
+                          <Switch checked={portfolioForm.esPrincipal} onCheckedChange={(v) => setPortfolioForm({ ...portfolioForm, esPrincipal: v })} />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setCreatePortfolioOpen(false)}>Cancelar</Button>
+                        <Button onClick={createPortfolio} disabled={!portfolioForm.nombre || isSubmitting}>
+                          {isSubmitting ? "Creando..." : "Crear portfolio"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+
+                {/* Delete */}
+                {selectedPortfolio && (
+                  <button onClick={() => deletePortfolio(selectedPortfolio.id)}
+                    className="w-9 h-9 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors"
+                    title="Eliminar Portfolio">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 )}
               </div>
 
-              {/* Right: actions toolbar */}
-              <div className="flex flex-col sm:items-end gap-3 shrink-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Hide values */}
-                  <button
-                    onClick={() => setHideValues(!hideValues)}
-                    className={cn(
-                      "h-9 px-3 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer",
-                      hideValues
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-border/60 bg-card/60 text-muted-foreground hover:text-foreground hover:border-border"
-                    )}
-                    title={hideValues ? "Mostrar saldos" : "Ocultar saldos"}
-                  >
-                    {hideValues ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    <span className="hidden sm:inline">{hideValues ? "Oculto" : "Visible"}</span>
-                  </button>
-
-                  {/* Currency toggle */}
-                  {(cclRate || mepRate) && displayPortfolio && (
-                    <button
-                      onClick={() => setViewCurrency(activeCurrency === "ARS" ? "USD" : "ARS")}
-                      className="h-9 rounded-xl border border-border/60 bg-card/60 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors flex items-center gap-2 cursor-pointer shadow-2xs"
-                      title={`CCL: $${cclRate ?? mepRate} · MEP: $${mepRate ?? 'N/A'}${rateUpdatedAt ? ` · Cotización al día` : ''}`}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                      <span>{activeCurrency === "ARS" ? "USD" : "ARS"}</span>
-                      <RefreshCw className="w-3 h-3 opacity-70" />
-                    </button>
-                  )}
-
-                  {/* Privacy toggle */}
-                  {selectedPortfolio && (
-                    <button
-                      onClick={() => updateVisibility(!selectedPortfolio.modoSocial)}
-                      disabled={isUpdatingVisibility}
-                      className="h-9 rounded-xl border border-border/60 bg-card/60 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors gap-1.5 flex items-center cursor-pointer shadow-2xs"
-                    >
-                      {selectedPortfolio.modoSocial ? <Globe className="w-3.5 h-3.5 text-emerald-400" /> : <Lock className="w-3.5 h-3.5 text-zinc-400" />}
-                      <span className="hidden sm:inline">{selectedPortfolio.modoSocial ? "Público" : "Privado"}</span>
-                    </button>
-                  )}
-
-                  {/* Share */}
-                  <button
-                    onClick={handleShare}
-                    title="Compartir enlace al portfolio"
-                    className="h-9 px-3 rounded-xl border border-border/60 bg-card/60 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-colors cursor-pointer shadow-2xs"
-                  >
-                    {copyFeedback ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
-                    <span className="hidden sm:inline">{copyFeedback ? "¡Copiado!" : "Compartir"}</span>
-                  </button>
+              {/* StatCards grid centered */}
+              {displayPortfolio && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 w-full max-w-3xl mx-auto">
+                  <StatCard
+                    label="Total en Activos"
+                    value={assetsValue}
+                    positive={true}
+                    currency={currency}
+                    icon={BarChart3}
+                    hideValues={hideValues}
+                  />
+                  <StatCard
+                    label="Efectivo Disponible"
+                    value={cashBalance}
+                    positive={true}
+                    currency={currency}
+                    icon={Wallet}
+                    hideValues={hideValues}
+                  />
+                  <StatCard
+                    label="G/P Total"
+                    value={pnl}
+                    delta={pnlPct}
+                    positive={pnl >= 0}
+                    currency={currency}
+                    icon={pnl >= 0 ? TrendingUp : TrendingDown}
+                    hideValues={hideValues}
+                  />
                 </div>
-
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Add asset CTA */}
-                  {displayPortfolio && (
-                    <button
-                      type="button"
-                      className="group inline-flex items-center gap-2 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 shadow-[0_2px_12px_rgba(16,185,129,0.35)] hover:shadow-[0_4px_18px_rgba(16,185,129,0.5)] border border-emerald-400/30 active:scale-[0.97] transition-all duration-200 cursor-pointer select-none"
-                      onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
-                    >
-                      <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-white group-hover:rotate-90 transition-transform duration-200">
-                        <Plus className="w-2.5 h-2.5 stroke-[3]" />
-                      </span>
-                      <span>Agregar transacción</span>
-                    </button>
-                  )}
-
-                  {/* Create portfolio */}
-                  {portfolios.length === 0 && (
-                    <Dialog open={createPortfolioOpen} onOpenChange={setCreatePortfolioOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl border-primary/40 text-primary hover:bg-primary/10">
-                          <Plus className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Crear Portfolio</span>
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[480px]">
-                        <DialogHeader>
-                          <DialogTitle>{t.portfolio.createTitle}</DialogTitle>
-                          <DialogDescription>{t.portfolio.createDesc}</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label>{t.portfolio.form.name} *</Label>
-                            <Input placeholder={t.portfolio.form.namePlaceholder} value={portfolioForm.nombre}
-                              onChange={(e) => setPortfolioForm({ ...portfolioForm, nombre: e.target.value })} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>{t.portfolio.form.desc}</Label>
-                            <Textarea placeholder={t.portfolio.form.descPlaceholder} value={portfolioForm.descripcion}
-                              onChange={(e) => setPortfolioForm({ ...portfolioForm, descripcion: e.target.value })} />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>{t.portfolio.form.baseCurrency}</Label>
-                              <Select value={portfolioForm.monedaBase} onValueChange={(v) => setPortfolioForm({ ...portfolioForm, monedaBase: v })}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="USD">USD</SelectItem>
-                                  <SelectItem value="ARS">ARS</SelectItem>
-                                  <SelectItem value="EUR">EUR</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-2">
-                              <Label>{t.portfolio.form.riskLevel}</Label>
-                              <Select value={portfolioForm.nivelRiesgo} onValueChange={(v) => setPortfolioForm({ ...portfolioForm, nivelRiesgo: v })}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="bajo">Bajo</SelectItem>
-                                  <SelectItem value="medio">Medio</SelectItem>
-                                  <SelectItem value="alto">Alto</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between py-2">
-                            <div><Label>Modo social</Label><p className="text-xs text-muted-foreground">Visible para tus seguidores</p></div>
-                            <Switch checked={portfolioForm.modoSocial} onCheckedChange={(v) => setPortfolioForm({ ...portfolioForm, modoSocial: v })} />
-                          </div>
-                          <div className="flex items-center justify-between py-2">
-                            <div><Label>Portfolio principal</Label><p className="text-xs text-muted-foreground">Se muestra en tu perfil</p></div>
-                            <Switch checked={portfolioForm.esPrincipal} onCheckedChange={(v) => setPortfolioForm({ ...portfolioForm, esPrincipal: v })} />
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setCreatePortfolioOpen(false)}>Cancelar</Button>
-                          <Button onClick={createPortfolio} disabled={!portfolioForm.nombre || isSubmitting}>
-                            {isSubmitting ? "Creando..." : "Crear portfolio"}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-
-                  {/* Delete */}
-                  {selectedPortfolio && (
-                    <button onClick={() => deletePortfolio(selectedPortfolio.id)}
-                      className="w-9 h-9 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors"
-                      title="Eliminar Portfolio">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -1051,28 +1257,36 @@ const PortfolioPage = () => {
         {displayPortfolio && (
           <div className="space-y-6">
             {/* ── Dashboard charts (Performance + Allocation) */}
-            <ErrorBoundary fallbackTitle="Panel de rendimiento temporalmente inaccesible">
-              <PortfolioDashboard
-                portfolioId={displayPortfolio.id}
+            {displayPortfolio.assets.length > 0 ? (
+              <ErrorBoundary fallbackTitle="Panel de rendimiento temporalmente inaccesible">
+                <PortfolioDashboard
+                  portfolioId={displayPortfolio.id}
+                  portfolioName={displayPortfolio.nombre}
+                  currency={currency}
+                  metrics={displayMetrics}
+                  assets={displayPortfolio.assets}
+                  movements={movements}
+                />
+              </ErrorBoundary>
+            ) : (
+              <EmptyPortfolioAssets
                 portfolioName={displayPortfolio.nombre}
-                currency={currency}
-                metrics={displayMetrics}
-                assets={displayPortfolio.assets}
-                movements={movements}
+                onAdd={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
+                onQuickAdd={(symbol) => { setModalMode("BUY"); setModalInitialSymbol(symbol); setAddAssetOpen(true); }}
               />
-            </ErrorBoundary>
+            )}
 
             {/* ── HOLDINGS ─────────────────────────────────────────────────────── */}
             <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
-              <CardHeader className="pb-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <CardTitle className="text-lg font-bold">Mis activos</CardTitle>
+              <CardHeader className="pb-3 flex flex-col items-center text-center space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                  <div className="flex items-center justify-center sm:justify-start gap-3 w-full sm:w-auto">
+                    <CardTitle className="text-lg font-bold text-center">Mis activos</CardTitle>
                     <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5 rounded-full">
                       {displayPortfolio.assets.length} {displayPortfolio.assets.length === 1 ? 'posición' : 'posiciones'}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center justify-center gap-2 flex-wrap w-full sm:w-auto">
                     {/* Search */}
                     <div className="relative flex items-center">
                       <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -1121,7 +1335,7 @@ const PortfolioPage = () => {
 
                 {/* Asset Class Filter Pills */}
                 {displayPortfolio.assets.length > 0 && (
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-3 scrollbar-hide">
+                  <div className="flex items-center justify-center flex-wrap gap-1.5 pb-1 pt-3">
                     {ASSET_CLASS_FILTERS.filter(f => f.id === "all" || (assetClassCounts[f.id] ?? 0) > 0).map(f => {
                       const isSelected = assetClassFilter === f.id;
                       const count = assetClassCounts[f.id] ?? 0;
@@ -1149,15 +1363,21 @@ const PortfolioPage = () => {
 
               <CardContent className="pt-2">
                 {sortedAssets.length === 0 ? (
-                  <div className="py-12 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-muted/40 flex items-center justify-center mx-auto text-muted-foreground">
-                      <Search className="w-5 h-5" />
+                  <div className="py-12 text-center space-y-3.5">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-emerald-500">
+                      <Wallet className="w-6 h-6" />
                     </div>
-                    <p className="text-sm font-semibold text-foreground">No se encontraron activos</p>
-                    <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                      {assetSearch ? `No hay resultados para "${assetSearch}" con el filtro seleccionado.` : "No hay activos en esta categoría."}
-                    </p>
-                    {(assetSearch || assetClassFilter !== "all") && (
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-foreground">
+                        {assetSearch ? "No se encontraron activos" : "Tu cartera todavía no tiene posiciones"}
+                      </p>
+                      <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                        {assetSearch
+                          ? `No hay resultados para "${assetSearch}" con el filtro seleccionado.`
+                          : "Empezá registrando tu primera compra de acciones, CEDEARs en pesos o cripto para seguir su valor y cotizaciones en vivo."}
+                      </p>
+                    </div>
+                    {assetSearch ? (
                       <Button
                         size="sm"
                         variant="outline"
@@ -1166,15 +1386,24 @@ const PortfolioPage = () => {
                       >
                         Restablecer filtros
                       </Button>
+                    ) : (
+                      <Button
+                        onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
+                        className="gap-2 h-9 px-4 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white cursor-pointer shadow-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Comprar activo
+                      </Button>
                     )}
                   </div>
                 ) : (
                   <div className="space-y-1">
                     {/* Desktop Table Header */}
-                    <div className="hidden md:grid md:grid-cols-[1fr_80px_100px_110px_90px] items-center gap-3 px-4 py-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40 mb-1">
+                    <div className="hidden md:grid md:grid-cols-[1.15fr_70px_95px_130px_115px_85px] items-center gap-3 px-4 py-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40 mb-1">
                       <span>Activo</span>
                       <span className="text-right">Peso</span>
                       <span className="text-right">Cotización</span>
+                      <span className="text-right">Precio CEDEAR (ARS)</span>
                       <span className="text-right">Valor & PnL</span>
                       <span className="text-center">Operar</span>
                     </div>
@@ -1199,10 +1428,10 @@ const PortfolioPage = () => {
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
               {/* Activity */}
               <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <CardTitle className="text-base font-bold">Actividad</CardTitle>
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                <CardHeader className="pb-3 flex flex-col items-center text-center">
+                  <div className="flex items-center justify-between flex-wrap gap-2 w-full">
+                    <CardTitle className="text-base font-bold text-center">Actividad</CardTitle>
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
                       {["all", "compra", "venta"].map((f) => (
                         <button
                           key={f}
@@ -1304,8 +1533,8 @@ const PortfolioPage = () => {
                 {/* Insights */}
                 {displayPortfolio.assets.length > 0 && (
                   <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <CardHeader className="pb-3 flex flex-col items-center text-center">
+                      <CardTitle className="text-base font-bold flex items-center justify-center gap-2 text-center">
                         <Sparkles className="w-4 h-4 text-primary" /> Insights
                       </CardTitle>
                     </CardHeader>

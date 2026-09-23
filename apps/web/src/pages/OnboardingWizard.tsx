@@ -252,7 +252,6 @@ const StepPreferences = ({
                     <SelectContent>
                         <SelectItem value="USD">USD – Dólar</SelectItem>
                         <SelectItem value="ARS">ARS – Peso AR</SelectItem>
-                        <SelectItem value="EUR">EUR – Euro</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

@@ -29,6 +29,7 @@ const ProUpgrade = lazy(() => import('./pages/ProUpgrade'));
 const Explore = lazy(() => import('./pages/Explore'));
 const Messages = lazy(() => import('./pages/Messages'));
 const Comunidades = lazy(() => import('./pages/Comunidades'));
+const PaymentResult = lazy(() => import('./pages/PaymentResult'));
 const CommunityDetail = lazy(() => import('./pages/CommunityDetail'));
 const CommunityCreate = lazy(() => import('./pages/CommunityCreate'));
 const CommunityAdmin = lazy(() => import('./pages/CommunityAdmin'));
@@ -201,6 +202,7 @@ export default function App() {
 
                     {/* Info & Legal Routes */}
                     <Route path="/pro" element={<Pricing />} />
+                    <Route path="/payment-result" element={<PaymentResult />} />
                     <Route path="/creator" element={<CreatorPage />} />
                     <Route path="/creador" element={<CreatorPage />} />
                     <Route path="/about" element={<About />} />

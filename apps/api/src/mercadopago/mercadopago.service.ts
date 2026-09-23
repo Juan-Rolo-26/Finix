@@ -1,7 +1,8 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException, UnauthorizedException, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { MailService } from '../mail/mail.service';
 import { Prisma } from '@prisma/client';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 @Injectable()
 export class MercadoPagoService {
@@ -18,6 +19,28 @@ export class MercadoPagoService {
 
     public isConfigured(): boolean {
         return Boolean(this.accessToken && !this.accessToken.includes('...') && this.accessToken.length > 10);
+    }
+
+    private get notificationUrl() {
+        return `${this.apiUrl.replace(/\/api$/, '')}/api/mercadopago/webhook`;
+    }
+
+    private async providerGet(path: string) {
+        const response = await fetch(`https://api.mercadopago.com${path}`, {
+            headers: { Authorization: `Bearer ${this.accessToken}` }, signal: AbortSignal.timeout(15000),
+        });
+        if (!response.ok) throw new ServiceUnavailableException('No se pudo verificar el pago con Mercado Pago. Reintentá en unos momentos.');
+        return response.json();
+    }
+
+    private async recordPaymentOnce(paymentId: string, userId: string, apply: (worker: MercadoPagoService) => Promise<void>) {
+        await this.prisma.$transaction(async tx => {
+            await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `mp:user:${userId}`);
+            const key = `mp:payment:${paymentId}`;
+            if (await tx.paymentLog.findUnique({ where: { stripeEventId: key } })) return;
+            await apply(new MercadoPagoService(tx as unknown as PrismaService, this.mailService));
+            await tx.paymentLog.create({ data: { stripeEventId: key, userId, type: 'MP_PAYMENT', status: 'PROCESSED' } });
+        }, { timeout: 20000 });
     }
 
     public getProPrice(): number {
@@ -46,7 +69,7 @@ export class MercadoPagoService {
     async createPreference(userId: string, planType: 'pro' | 'creator', autoRenew = false) {
         if (!this.isConfigured()) {
             throw new BadRequestException(
-                'Mercado Pago aún no está configurado. Por favor ingresá tu MP_ACCESS_TOKEN en el archivo .env del servidor.',
+                'Los pagos con Mercado Pago no están disponibles en este momento.',
             );
         }
 
@@ -99,7 +122,8 @@ export class MercadoPagoService {
                             transaction_amount: price,
                             currency_id: 'ARS',
                         },
-                        back_url: `${this.frontendUrl}/pricing?status=pending`,
+                        back_url: `${this.frontendUrl}/payment-result?provider=mercadopago&reference=${encodeURIComponent(externalReference)}`,
+                        notification_url: this.notificationUrl,
                         status: 'pending',
                     }),
                 });
@@ -142,13 +166,13 @@ export class MercadoPagoService {
                 name: user.username,
             },
             back_urls: {
-                success: `${this.frontendUrl}/pro?status=approved`,
-                failure: `${this.frontendUrl}/pro?status=failure`,
-                pending: `${this.frontendUrl}/pro?status=pending`,
+                success: `${this.frontendUrl}/payment-result?provider=mercadopago`,
+                failure: `${this.frontendUrl}/payment-result?provider=mercadopago`,
+                pending: `${this.frontendUrl}/payment-result?provider=mercadopago`,
             },
             auto_return: 'approved',
             external_reference: externalReference,
-            notification_url: `${this.apiUrl}/api/mercadopago/webhook`,
+            notification_url: this.notificationUrl,
             statement_descriptor: 'FINIX PRO',
             metadata: {
                 user_id: user.id,
@@ -201,10 +225,9 @@ export class MercadoPagoService {
             items: [{ id: plan.id, title: `${community.name} - ${plan.name}`, quantity: 1, currency_id: 'ARS', unit_price: Number(plan.price) }],
             payer: { email: buyer.email, name: buyer.username },
             external_reference: reference,
-            marketplace_fee: Number(plan.price) * 0.05,
-            back_urls: { success: `${this.frontendUrl}/comunidades/${community.slug || community.id}?payment=approved`, failure: `${this.frontendUrl}/comunidades/${community.slug || community.id}?payment=failure`, pending: `${this.frontendUrl}/comunidades/${community.slug || community.id}?payment=pending` },
+            back_urls: { success: `${this.frontendUrl}/payment-result?provider=mercadopago&community=${community.id}`, failure: `${this.frontendUrl}/payment-result?provider=mercadopago&community=${community.id}`, pending: `${this.frontendUrl}/payment-result?provider=mercadopago&community=${community.id}` },
             auto_return: 'approved',
-            notification_url: `${this.apiUrl}/api/mercadopago/webhook`,
+            notification_url: this.notificationUrl,
         };
         const response = await fetch('https://api.mercadopago.com/checkout/preferences', { method: 'POST', headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (!response.ok) throw new BadRequestException('Mercado Pago no pudo crear el checkout de la comunidad.');
@@ -212,17 +235,32 @@ export class MercadoPagoService {
         return { id: data.id, init_point: data.init_point, sandbox_init_point: data.sandbox_init_point, commissionRate: 0.05 };
     }
 
-    async handleWebhook(body: any, query: any) {
+    async handleWebhook(body: any, query: any, signature?: string, requestId?: string) {
+        const secret = process.env.MP_WEBHOOK_SECRET;
+        if (!secret) throw new ServiceUnavailableException('Verificación de notificaciones no configurada.');
+        const parts = Object.fromEntries(String(signature || '').split(',').map(part => part.trim().split('=')));
+        const dataId = String(query?.['data.id'] || '').toLowerCase();
+        const manifest = `${dataId ? `id:${dataId};` : ''}${requestId ? `request-id:${requestId};` : ''}ts:${parts.ts};`;
+        const expected = createHmac('sha256', secret).update(manifest).digest();
+        const supplied = Buffer.from(parts.v1 || '', 'hex');
+        if (!parts.ts || supplied.length !== expected.length || !timingSafeEqual(expected, supplied)) {
+            throw new UnauthorizedException('Firma de Mercado Pago inválida.');
+        }
         const topic = query?.topic || query?.type || body?.type || body?.topic;
-        const paymentId = query?.id || query?.['data.id'] || body?.data?.id;
+        const paymentId = query?.['data.id'] || body?.data?.id;
+        if (body?.data?.id != null && dataId && String(body.data.id).toLowerCase() !== dataId) throw new UnauthorizedException('Notificación inválida.');
 
         this.logger.log(`Mercado Pago webhook received: topic=${topic}, paymentId=${paymentId}`);
 
-        if ((topic === 'payment' || topic === 'merchant_order') && paymentId) {
+        if (topic === 'payment' && paymentId) {
             await this.processPayment(String(paymentId));
         }
         if (topic === 'subscription_preapproval' && paymentId) {
             await this.processPreapproval(String(paymentId));
+        }
+        if (topic === 'subscription_authorized_payment' && paymentId) {
+            const invoice = await this.providerGet(`/authorized_payments/${encodeURIComponent(paymentId)}`);
+            if (invoice.payment?.id) await this.processPayment(String(invoice.payment.id), String(invoice.preapproval_id));
         }
 
         return { received: true };
@@ -264,7 +302,7 @@ export class MercadoPagoService {
         }
     }
 
-    async processPayment(paymentId: string) {
+    async processPayment(paymentId: string, knownPreapprovalId?: string) {
         if (!this.isConfigured()) return;
 
         try {
@@ -275,8 +313,7 @@ export class MercadoPagoService {
             });
 
             if (!res.ok) {
-                this.logger.warn(`Could not fetch payment ${paymentId} from Mercado Pago`);
-                return;
+                throw new ServiceUnavailableException('No se pudo verificar el pago.');
             }
 
             const payment = await res.json();
@@ -288,7 +325,7 @@ export class MercadoPagoService {
                     await this.activateCommunityPayment(payment, extRef);
                     return;
                 }
-                const preapprovalId = payment.preapproval_id ? String(payment.preapproval_id) : null;
+                const preapprovalId = payment.preapproval_id ? String(payment.preapproval_id) : knownPreapprovalId || null;
                 const localSubscription = preapprovalId
                     ? await this.prisma.subscription.findUnique({ where: { mercadoPagoPreapprovalId: preapprovalId } })
                     : extRef.startsWith('FINIX_RECURRING:')
@@ -299,7 +336,7 @@ export class MercadoPagoService {
                 if (!userId && extRef.startsWith('FINIX_ONE_TIME:')) {
                     const [, referenceUserId, referencePlan] = extRef.split(':');
                     userId = referenceUserId;
-                    targetPlan = referencePlan === 'CREATOR' ? 'CREATOR' : 'PRO';
+                    targetPlan = this.normalizePlanType(referencePlan);
                 }
                 if (!userId && /^[^:]+:(PRO|CREATOR):\d+$/.test(extRef)) {
                     const [referenceUserId, referencePlan] = extRef.split(':');
@@ -308,28 +345,46 @@ export class MercadoPagoService {
                 }
 
                 if (userId && targetPlan) {
-                    await this.activateUserPlan(userId, targetPlan, String(payment.id), preapprovalId || undefined);
+                    const expected = targetPlan === 'CREATOR' ? this.getCreatorPrice() : this.getProPrice();
+                    if (payment.currency_id !== 'ARS' || Number(payment.transaction_amount) !== expected) throw new BadRequestException('El monto o la moneda no corresponde al plan.');
+                    await this.activateUserPlan(userId, targetPlan, String(payment.id), preapprovalId || localSubscription?.mercadoPagoPreapprovalId || undefined);
                     this.logger.log(`User ${userId} upgraded to ${targetPlan} via payment ${paymentId}`);
                 }
             }
         } catch (err: any) {
             this.logger.error(`Error processing Mercado Pago payment ${paymentId}:`, err);
+            throw err;
         }
     }
 
     private async activateCommunityPayment(payment: any, reference: string) {
         const [, communityId, planId, userId] = reference.split(':');
+        await this.recordPaymentOnce(String(payment.id), userId, worker => worker.applyCommunityPayment(payment, communityId, planId, userId));
+    }
+
+    private async applyCommunityPayment(payment: any, communityId: string, planId: string, userId: string) {
         const community = await this.prisma.community.findUnique({ where: { id: communityId } });
         const plan = await this.prisma.communityPlan.findUnique({ where: { id: planId } });
-        if (!community || !plan) return;
-        const amount = Number(payment.transaction_amount || plan.price);
-        const commission = Number((amount * 0.05).toFixed(2));
-        const providerId = String(payment.id);
-        const periodDays = plan.interval === 'yearly' || plan.interval === 'year' ? 365 : 30;
-        await this.prisma.$transaction(async tx => {
-            await tx.communityPayment.upsert({ where: { stripePaymentId: providerId }, update: { status: 'SUCCEEDED' }, create: { communityId, userId, creatorId: community.creatorId, amount: new Prisma.Decimal(amount), commissionAmount: new Prisma.Decimal(commission), creatorAmount: new Prisma.Decimal(amount - commission), stripePaymentId: providerId, status: 'SUCCEEDED', billingType: plan.interval || 'monthly' } });
-            await tx.communityMember.upsert({ where: { communityId_userId: { communityId, userId } }, update: { planId, subscriptionStatus: 'ACTIVE', paymentStatus: 'SUCCEEDED', expiresAt: new Date(Date.now() + periodDays * 86400000) }, create: { communityId, userId, planId, subscriptionStatus: 'ACTIVE', paymentStatus: 'SUCCEEDED', expiresAt: new Date(Date.now() + periodDays * 86400000) } });
-        });
+        if (!community || !plan || plan.communityId !== communityId) throw new BadRequestException('Plan de comunidad inválido.');
+        const amount = Number(payment.transaction_amount);
+        if (payment.currency_id !== 'ARS' || amount !== Number(plan.price) || amount <= 0) throw new BadRequestException('Importe o moneda incorrectos.');
+        const setting = await this.prisma.platformSetting.findUnique({ where: { key: 'COMMUNITY_COMMISSION_RATE' } });
+        const rate = setting ? Number(setting.value) : 0.10;
+        if (!Number.isFinite(rate) || rate < 0 || rate > 1) throw new BadRequestException('Comisión inválida.');
+        const commission = Number((amount * rate).toFixed(2));
+        const creatorAmount = amount - commission;
+        // Legacy payments also count as processed; do not renew them on redelivery.
+        if (await this.prisma.communityPayment.findUnique({ where: { stripePaymentId: String(payment.id) } })) return;
+        const member = await this.prisma.communityMember.findUnique({ where: { communityId_userId: { communityId, userId } } });
+        const approvedAt = new Date(payment.date_approved || payment.date_created);
+        if (!Number.isFinite(approvedAt.getTime())) throw new BadRequestException('Fecha de pago inválida.');
+        let expiresAt = member?.expiresAt && member.expiresAt > approvedAt ? member.expiresAt : approvedAt;
+        for (let month = 0; month < (['year', 'yearly'].includes(plan.interval) ? 12 : 1); month++) expiresAt = this.addOneMonth(expiresAt);
+        const record = await this.prisma.communityPayment.create({ data: { communityId, userId, creatorId: community.creatorId, amount: new Prisma.Decimal(amount), commissionAmount: new Prisma.Decimal(commission), creatorAmount: new Prisma.Decimal(creatorAmount), stripePaymentId: `mp:${payment.id}`, status: 'SUCCEEDED', billingType: plan.interval || 'monthly' } });
+        const membershipData = { planId, subscriptionStatus: 'ACTIVE', paymentStatus: 'SUCCEEDED', expiresAt, stripePaymentId: `mp:${payment.id}` };
+        await this.prisma.communityMember.upsert({ where: { communityId_userId: { communityId, userId } }, update: membershipData, create: { communityId, userId, ...membershipData } });
+        await this.prisma.finixRevenue.create({ data: { type: 'COMMUNITY', paymentId: record.id, communityId, userId, creatorId: community.creatorId, totalAmount: amount, commissionAmount: commission, creatorAmount, status: 'PENDING' } });
+        await this.prisma.creatorBalance.upsert({ where: { creatorId: community.creatorId }, create: { creatorId: community.creatorId, pendingBalance: creatorAmount }, update: { pendingBalance: { increment: creatorAmount } } });
     }
 
     private normalizePlanType(value: string): 'PRO' | 'CREATOR' | null {
@@ -369,6 +424,10 @@ export class MercadoPagoService {
     }
 
     async activateUserPlan(userId: string, plan: 'PRO' | 'CREATOR', paymentId: string, preapprovalId?: string) {
+        await this.recordPaymentOnce(paymentId, userId, worker => worker.applyUserPlan(userId, plan, paymentId, preapprovalId));
+    }
+
+    private async applyUserPlan(userId: string, plan: 'PRO' | 'CREATOR', paymentId: string, preapprovalId?: string) {
         const existingPayment = await this.prisma.subscription.findUnique({
             where: { mercadoPagoPaymentId: paymentId },
         });
@@ -412,6 +471,9 @@ export class MercadoPagoService {
                 },
             });
         }
+
+        // Recompute across both providers so a PRO payment cannot downgrade Creator.
+        await this.refreshUserEntitlements(userId);
 
         // Notify admin about paid upgrade
         this.mailService.sendAdminAlert({
@@ -459,9 +521,15 @@ export class MercadoPagoService {
             if (!res.ok) return { status: 'unknown' };
             const payment = await res.json();
             const externalReference = String(payment.external_reference || '');
-            if (!externalReference.startsWith(`${userId}:`)) {
+            const parts = externalReference.split(':');
+            const referenceUserId = parts[0] === 'COMMUNITY' ? parts[3]
+                : ['FINIX_ONE_TIME', 'FINIX_RECURRING'].includes(parts[0]) ? parts[1] : parts[0];
+            if (referenceUserId !== userId) {
                 return { status: 'unknown' };
             }
+            // The browser return is not proof of payment. Verify with MP, then
+            // reconcile through the same idempotent path as the webhook.
+            if (payment.status === 'approved') await this.processPayment(String(payment.id));
             return {
                 id: payment.id,
                 status: payment.status,
@@ -472,5 +540,18 @@ export class MercadoPagoService {
         } catch {
             return { status: 'unknown' };
         }
+    }
+
+    async getRecurringStatus(reference: string, userId: string) {
+        const local = await this.prisma.subscription.findFirst({ where: { userId, mercadoPagoExternalReference: reference } });
+        if (!local?.mercadoPagoPreapprovalId) throw new NotFoundException('Suscripción no encontrada.');
+        const invoices = await this.providerGet(`/authorized_payments/search?preapproval_id=${encodeURIComponent(local.mercadoPagoPreapprovalId)}`);
+        for (const invoice of invoices.results || []) {
+            if (invoice.payment?.id && invoice.payment.status === 'approved') {
+                await this.processPayment(String(invoice.payment.id), local.mercadoPagoPreapprovalId);
+            }
+        }
+        const updated = await this.prisma.subscription.findUnique({ where: { id: local.id } });
+        return { status: updated?.status === 'ACTIVE' && updated.endDate && updated.endDate > new Date() ? 'approved' : updated?.status === 'CANCELED' ? 'cancelled' : 'pending' };
     }
 }

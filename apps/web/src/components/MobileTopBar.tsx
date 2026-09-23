@@ -18,7 +18,9 @@ export function MobileTopBar() {
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
 
     const isMessages = location.pathname.startsWith('/messages');
-    const isComunidad = location.pathname.startsWith('/comunidad');
+    // The communities routes are plural: /comunidades, /comunidades/:id, etc.
+    // Keep the global top bar hidden there because those screens own their header.
+    const isComunidad = location.pathname.startsWith('/comunidades');
 
     useEffect(() => {
         if (isMessages || isComunidad) return;

@@ -812,6 +812,8 @@ export class CommunitiesService {
             throw new ForbiddenException('El creador no puede abandonar su propia comunidad.');
         }
 
+        await this.stripeService.cancelCommunitySubscription(userId, communityId);
+
         await this.prisma.communityMember.updateMany({
             where: { communityId, userId },
             data: { subscriptionStatus: 'CANCELED' },
@@ -1057,9 +1059,7 @@ export class CommunitiesService {
     }
 
     async cancelSubscription(userId: string, communityId: string) {
-        const membership = await this.prisma.communityMember.findUnique({
-            where: { communityId_userId: { communityId, userId } },
-        });
+        const membership = await this.stripeService.cancelCommunitySubscription(userId, communityId);
 
         if (!membership) {
             throw new NotFoundException('Membresía no encontrada.');
@@ -1068,7 +1068,7 @@ export class CommunitiesService {
         await this.prisma.communityMember.update({
             where: { communityId_userId: { communityId, userId } },
             data: {
-                subscriptionStatus: 'CANCELED',
+                subscriptionStatus: membership.expiresAt && membership.expiresAt > new Date() ? 'ACTIVE' : 'CANCELED',
             },
         });
 

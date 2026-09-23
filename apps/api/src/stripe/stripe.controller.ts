@@ -8,6 +8,15 @@ import { CreateCommunityPaymentDto } from './dto/stripe.dto';
 export class StripeController {
     constructor(private readonly stripeService: StripeService) { }
 
+    @Get('config')
+    getConfig() { return { configured: this.stripeService.isConfigured(), communityCurrency: 'ARS' }; }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('checkout/:sessionId/status')
+    checkoutStatus(@Req() req: any, @Param('sessionId') sessionId: string) {
+        return this.stripeService.checkoutStatus(req.user.id, sessionId);
+    }
+
     @Post('webhook')
     @HttpCode(HttpStatus.OK)
     async handleWebhook(
@@ -47,4 +56,3 @@ export class StripeController {
         return this.stripeService.listInvoices(req.user.id);
     }
 }
-
