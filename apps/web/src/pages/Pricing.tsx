@@ -451,7 +451,8 @@ export default function Pricing() {
             });
             if (!res.ok) { const data = await res.json(); throw new Error(data.message || 'Error al conectar con Mercado Pago'); }
             const data = await res.json();
-            const checkoutUrl = data.init_point || data.sandbox_init_point || data.url;
+            // Never send production users to Mercado Pago's test checkout.
+            const checkoutUrl = data.init_point || (import.meta.env.DEV ? data.sandbox_init_point : undefined) || data.url;
             if (checkoutUrl) { window.location.href = checkoutUrl; } else { throw new Error('No se recibió la URL de checkout de Mercado Pago'); }
         } catch (error: any) {
             alert(error.message || 'Ocurrió un error inesperado al conectar con Mercado Pago.');

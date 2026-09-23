@@ -97,11 +97,13 @@ export function BottomNav() {
                     background: 'hsl(var(--sidebar-bg))',
                     borderTop: '1px solid hsl(var(--sidebar-border))',
                     paddingBottom: 'env(safe-area-inset-bottom)',
+                    paddingLeft: 'env(safe-area-inset-left)',
+                    paddingRight: 'env(safe-area-inset-right)',
                     height: 'calc(60px + env(safe-area-inset-bottom))',
                     boxSizing: 'border-box',
                 }}
             >
-                <div className="flex items-center justify-around h-full px-1">
+                <div className="flex items-center justify-around h-[60px] px-1">
                     {/* Left tabs */}
                     {LEFT_TABS.map(({ path, icon: Icon }) => {
                         const active = isActive(path);

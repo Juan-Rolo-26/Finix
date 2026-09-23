@@ -45,7 +45,10 @@ export class MercadoPagoController {
     @Get('config')
     getConfig() {
         return {
-            configured: this.mpService.isConfigured(),
+            configured: this.mpService.isCheckoutReady(),
+            credentialsConfigured: this.mpService.isConfigured(),
+            production: this.mpService.isProductionCredential(),
+            checkoutReady: this.mpService.isCheckoutReady(),
             communityCurrency: 'ARS',
             proPriceArs: this.mpService.getProPrice(),
             creatorPriceArs: this.mpService.getCreatorPrice(),

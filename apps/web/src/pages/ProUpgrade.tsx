@@ -57,7 +57,7 @@ export default function ProUpgrade() {
                 throw new Error(data.message || 'Error al conectar con Mercado Pago');
             }
             const data = await res.json();
-            const checkoutUrl = data.init_point || data.sandbox_init_point || data.url;
+            const checkoutUrl = data.init_point || (import.meta.env.DEV ? data.sandbox_init_point : undefined) || data.url;
             if (checkoutUrl) {
                 window.location.href = checkoutUrl;
             } else {

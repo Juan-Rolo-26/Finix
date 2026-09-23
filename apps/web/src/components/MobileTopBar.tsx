@@ -4,6 +4,7 @@ import { Bell, Sun, Moon, Plus } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
 import { apiFetch } from '../lib/api';
+import { resolveMediaUrl } from '../lib/mediaUrl';
 
 const PRIMARY = 'hsl(var(--primary))';
 
@@ -18,34 +19,35 @@ export function MobileTopBar() {
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
 
     const isMessages = location.pathname.startsWith('/messages');
-    // The communities routes are plural: /comunidades, /comunidades/:id, etc.
-    // Keep the global top bar hidden there because those screens own their header.
-    const isComunidad = location.pathname.startsWith('/comunidades');
-
     useEffect(() => {
-        if (isMessages || isComunidad) return;
+        if (isMessages) return;
+        let mounted = true;
         const loadUnreadCount = async () => {
             try {
                 const res = await apiFetch('/notifications/unread-count');
                 if (res.ok) {
                     const data = await res.json();
-                    setUnreadNotifs(data.count ?? 0);
+                    if (mounted) setUnreadNotifs(data.count ?? 0);
                 }
             } catch { }
         };
         loadUnreadCount();
         const iv = setInterval(loadUnreadCount, 30_000);
-        return () => clearInterval(iv);
+        return () => {
+            mounted = false;
+            clearInterval(iv);
+        };
     }, [isMessages]);
 
-    // Messages & Comunidad have their own integrated headers — render nothing
-    if (isMessages || isComunidad) return null;
+    // Messages has its own integrated header — render nothing there.
+    if (isMessages) return null;
 
     return (
         <div
             className="fixed top-0 left-0 right-0 z-50 lg:hidden flex items-center justify-between px-4"
             style={{
-                height: '52px',
+                height: 'calc(52px + env(safe-area-inset-top))',
+                paddingTop: 'env(safe-area-inset-top)',
                 background: 'hsl(var(--sidebar-bg))',
                 borderBottom: '1px solid hsl(var(--sidebar-border))',
             }}
@@ -121,7 +123,7 @@ export function MobileTopBar() {
                     onClick={() => navigate('/profile')}
                 >
                     {user?.avatarUrl
-                        ? <img src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/uploads/${user.avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+                        ? <img src={resolveMediaUrl(user.avatarUrl)} alt="Avatar" className="w-full h-full object-cover" />
                         : (user?.username?.[0]?.toUpperCase() || (user as any)?.email?.[0]?.toUpperCase() || 'U')
                     }
                 </button>

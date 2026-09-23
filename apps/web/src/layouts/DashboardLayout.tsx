@@ -9,10 +9,6 @@ import { usePreferencesStore } from '../stores/preferencesStore';
 export default function DashboardLayout() {
     const location = useLocation();
     const isMessages = location.pathname.startsWith('/messages');
-    // Communities has its own desktop/mobile header treatment.
-    // Match the actual plural route so the global mobile top bar does not
-    // overlay the page content on /comunidades.
-    const isComunidad = location.pathname.startsWith('/comunidades');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const collapsed = usePreferencesStore(s => s.sidebarCollapsed);
 
@@ -44,14 +40,13 @@ export default function DashboardLayout() {
 
             {/*
              * Main Content Area
-             * pt-[52px] = mobile topbar height
-             * pb-[60px] = mobile bottom nav height (updated to 60px)
+             * The mobile top and bottom bars are fixed, so the content gets
+             * their real heights (including iOS safe-area insets) reserved.
              * lg: sidebar is 276px expanded, 72px collapsed.
              *     We use a wide margin and let content scroll. The sidebar manages its own width.
              */}
             <div
-                className={`flex-1 min-w-0 transition-all duration-300 flex flex-col min-h-screen lg:pt-0 lg:pb-0 ${(isMessages || isComunidad) ? 'pt-0 pb-[60px]' : 'pt-[52px] pb-[60px]'
-                    }`}
+                className={`flex-1 min-w-0 transition-all duration-300 flex flex-col min-h-screen lg:pt-0 lg:pb-0 ${isMessages ? 'pt-0' : 'pt-[calc(52px+env(safe-area-inset-top))]'} pb-[calc(60px+env(safe-area-inset-bottom))]`}
                 style={{
                     marginLeft: 0,
                 }}

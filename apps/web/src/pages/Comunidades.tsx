@@ -682,14 +682,14 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                     <div className="rounded-xl overflow-hidden border" style={{ borderColor: 'hsl(var(--border))' }}>
                                         <div className="h-20 relative" style={{ background: 'hsl(var(--muted))' }}>
                                             {form.bannerUrl && (
-                                                <img src={form.bannerUrl} alt="" className="w-full h-full object-cover" />
+                                                <img src={resolveMediaUrl(form.bannerUrl)} alt="" className="w-full h-full object-cover" />
                                             )}
                                         </div>
                                         <div className="px-4 pb-4 -mt-5">
                                             <div className="w-10 h-10 rounded-xl border-2 overflow-hidden mb-2"
                                                 style={{ borderColor: 'hsl(var(--card))', background: 'hsl(var(--primary)/0.12)' }}>
                                                 {form.imageUrl
-                                                    ? <img src={form.imageUrl} alt="" className="w-full h-full object-cover" />
+                                                    ? <img src={resolveMediaUrl(form.imageUrl)} alt="" className="w-full h-full object-cover" />
                                                     : <span className="w-full h-full flex items-center justify-center text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>{form.name[0]}</span>
                                                 }
                                             </div>

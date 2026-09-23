@@ -31,6 +31,12 @@ export function resolveMediaUrl(value?: string | null) {
             if (LOCAL_UPLOAD_HOSTS.has(parsed.hostname.toLowerCase()) && isUploadPath(parsed.pathname)) {
                 return rewriteUploadsPath(parsed.pathname) + parsed.search + parsed.hash;
             }
+            // Old records may contain the public site's absolute upload URL.
+            // Normalize same-origin media too so it uses the API proxy and is
+            // not intercepted by the frontend's static-asset location.
+            if (typeof window !== 'undefined' && parsed.origin === window.location.origin && isUploadPath(parsed.pathname)) {
+                return rewriteUploadsPath(parsed.pathname) + parsed.search + parsed.hash;
+            }
         } catch {
             // fall through
         }

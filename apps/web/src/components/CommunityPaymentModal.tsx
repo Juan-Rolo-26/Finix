@@ -41,7 +41,7 @@ export default function CommunityPaymentModal({ isOpen, onClose, community, init
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'No se pudo iniciar el pago.');
             if (data.freeJoined) { onSuccess(); onClose(); return; }
-            const url = data.url || data.init_point || data.sandbox_init_point;
+            const url = data.url || data.init_point || (import.meta.env.DEV ? data.sandbox_init_point : undefined);
             if (!url) throw new Error('La pasarela no devolvió un enlace de pago.');
             window.location.assign(url);
         } catch (err: any) { setError(err.message || 'No se pudo iniciar el pago.'); }
