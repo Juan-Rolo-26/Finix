@@ -92,16 +92,23 @@ NODE
 
 validate_environment() {
     [[ -f apps/api/.env ]] || die 'No existe apps/api/.env en el VPS.'
+    [[ -f apps/web/.env ]] || die 'No existe apps/web/.env en el VPS. Debe contener las variables públicas de Supabase para compilar el frontend.'
     node - <<'NODE'
 const fs = require('fs');
 const dotenv = require('dotenv');
-const env = dotenv.parse(fs.readFileSync('apps/api/.env'));
+const apiEnv = dotenv.parse(fs.readFileSync('apps/api/.env'));
+const webEnv = dotenv.parse(fs.readFileSync('apps/web/.env'));
 const required = ['NODE_ENV', 'PORT', 'DATABASE_URL', 'DIRECT_URL', 'JWT_SECRET', 'FRONTEND_URL', 'ADMIN_URL'];
-const missing = required.filter((key) => !env[key] || env[key].startsWith('REPLACE_WITH_'));
+const missing = required.filter((key) => !apiEnv[key] || apiEnv[key].startsWith('REPLACE_WITH_'));
 if (missing.length) { console.error(`Faltan variables obligatorias: ${missing.join(', ')}`); process.exit(1); }
-if (env.NODE_ENV !== 'production') { console.error(`NODE_ENV debe ser production, recibido: ${env.NODE_ENV}`); process.exit(1); }
-if (env.JWT_SECRET.length < 32) { console.error('JWT_SECRET debe tener al menos 32 caracteres'); process.exit(1); }
+if (apiEnv.NODE_ENV !== 'production') { console.error(`NODE_ENV debe ser production, recibido: ${apiEnv.NODE_ENV}`); process.exit(1); }
+if (apiEnv.JWT_SECRET.length < 32) { console.error('JWT_SECRET debe tener al menos 32 caracteres'); process.exit(1); }
+const webRequired = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'];
+const webMissing = webRequired.filter((key) => !webEnv[key] || webEnv[key].includes('YOUR_PROJECT') || webEnv[key].includes('REPLACE_WITH'));
+if (webMissing.length) { console.error(`Faltan variables públicas del frontend: ${webMissing.join(', ')}`); process.exit(1); }
+if (!/^https:\/\//i.test(webEnv.VITE_SUPABASE_URL)) { console.error('VITE_SUPABASE_URL debe comenzar con https://'); process.exit(1); }
 for (const key of required) console.log(`${key}: OK`);
+for (const key of webRequired) console.log(`${key}: OK`);
 NODE
 }
 
