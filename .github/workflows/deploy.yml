@@ -1,10 +1,9 @@
 name: Deploy to VPS
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: # Permite disparar el deploy manualmente desde GitHub si se desea
+  # El deploy automático lo ejecuta el pipeline de CI después de pasar sus checks.
+  # Se conserva esta vía para despliegues manuales de emergencia.
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -22,13 +21,17 @@ jobs:
           script_stop: true
           command_timeout: 15m
           script: |
-            if [ -d "$HOME/Finix" ]; then
-              cd "$HOME/Finix"
-            elif [ -d "/root/Finix" ]; then
-              cd "/root/Finix"
-            elif [ -d "$HOME/finix" ]; then
-              cd "$HOME/finix"
-            elif [ -d "/var/www/finix" ]; then
-              cd "/var/www/finix"
+            set -e
+            FINIX_DIR=""
+            for candidate in "$HOME/Finix" "/root/Finix" "$HOME/finix" "/var/www/finix"; do
+              if [ -f "$candidate/deploy.sh" ]; then
+                FINIX_DIR="$candidate"
+                break
+              fi
+            done
+            if [ -z "$FINIX_DIR" ]; then
+              echo "No se encontró el repositorio Finix ni su deploy.sh" >&2
+              exit 1
             fi
+            cd "$FINIX_DIR"
             bash deploy.sh

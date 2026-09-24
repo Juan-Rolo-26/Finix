@@ -253,29 +253,31 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci
-      - name: Build web for production
-        working-directory: apps/web
-        run: npm run build
-        env:
-          VITE_API_URL: /api
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-      - name: Build API for production
-        working-directory: apps/api
-        run: npm run build
       - name: Deploy to Production VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.PROD_VPS_HOST }}
-          username: ${{ secrets.PROD_VPS_USER }}
-          key: ${{ secrets.PROD_VPS_SSH_KEY }}
-          script: /srv/finix/scripts/deploy.sh
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          command_timeout: 15m
+          script: |
+            set -e
+            FINIX_DIR=""
+            for candidate in "$HOME/Finix" "/root/Finix" "$HOME/finix" "/var/www/finix"; do
+              if [ -f "$candidate/deploy.sh" ]; then
+                FINIX_DIR="$candidate"
+                break
+              fi
+            done
+            if [ -z "$FINIX_DIR" ]; then
+              echo "No se encontró el repositorio Finix ni su deploy.sh" >&2
+              exit 1
+            fi
+            cd "$FINIX_DIR"
+            bash deploy.sh
       - name: Smoke test production
         run: |
           sleep 15

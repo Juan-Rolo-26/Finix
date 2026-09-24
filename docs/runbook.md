@@ -30,22 +30,14 @@ npm run dev                   # Inicia API (3010) + Web (5173)
 # El pipeline ejecuta: typecheck → lint → tests → build → deploy → smoke test
 
 # Deploy manual (emergencia):
-ssh finix-vps '/srv/finix/scripts/deploy.sh'
+ssh finix-vps 'cd ~/Finix && bash deploy.sh'
 ```
 
 ---
 
 ## ⏮️ Rollback
 
-```bash
-# Automático: el script de deploy ejecuta rollback si el health check falla.
-
-# Manual:
-ssh finix-vps '/srv/finix/scripts/rollback.sh'
-
-# Ver releases disponibles:
-ssh finix-vps 'ls -lt /srv/finix/releases/'
-```
+Si falla el health check, `deploy.sh` restaura los enlaces `current` de Web y Admin y repone la versión anterior de la API. Conserva las cinco releases más recientes de cada frontend en `/var/www/finix-web/releases` y `/var/www/finix-admin/releases`.
 
 ---
 

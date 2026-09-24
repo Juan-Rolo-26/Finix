@@ -237,11 +237,29 @@ health_api() {
 }
 
 health_external() {
-    local url status
+    local url local_index live_index status expected_js expected_css actual_js actual_css
     for url in https://finixarg.com https://admin.finixarg.com; do
-        status="$(curl -LfsS --max-time 15 -o /dev/null -w '%{http_code}' "$url" || true)"
+        if [[ "$url" == 'https://finixarg.com' ]]; then
+            local_index='apps/web/dist/index.html'
+            live_index="$TMP_DIR/web-index.live.html"
+        else
+            local_index='apps/admin/dist/index.html'
+            live_index="$TMP_DIR/admin-index.live.html"
+        fi
+
+        status="$(curl -LfsS --max-time 20 -o "$live_index" -w '%{http_code}' "$url/?deploy=$STAMP" || true)"
         [[ "$status" =~ ^2[0-9][0-9]$|^3[0-9][0-9]$ ]] || die "Health check externo falló: $url (HTTP ${status:-error})"
-        ok "$url (HTTP $status)"
+
+        expected_js="$(grep -oE 'src="/assets/index-[^"]+\.js"' "$local_index" | head -n1 || true)"
+        expected_css="$(grep -oE 'href="/assets/index-[^"]+\.css"' "$local_index" | head -n1 || true)"
+        actual_js="$(grep -oE 'src="/assets/index-[^"]+\.js"' "$live_index" | head -n1 || true)"
+        actual_css="$(grep -oE 'href="/assets/index-[^"]+\.css"' "$live_index" | head -n1 || true)"
+
+        [[ -n "$expected_js" && -n "$expected_css" ]] || die "No se pudieron leer los assets esperados de $local_index."
+        [[ "$actual_js" == "$expected_js" && "$actual_css" == "$expected_css" ]] || \
+            die "El dominio $url responde HTTP $status pero sigue sirviendo assets antiguos (esperado: $expected_js y $expected_css; recibido: ${actual_js:-sin JS} y ${actual_css:-sin CSS})."
+
+        ok "$url (HTTP $status, frontend actualizado: $expected_js)"
     done
 }
 

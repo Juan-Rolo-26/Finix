@@ -238,40 +238,42 @@ El panel cuenta con protección de doble factor (2FA) de grado bancario:
 
 ## 🔄 8. Despliegue Automático en Cada Commit / Push (CI/CD)
 
-Tenés 3 alternativas para que cada cambio que hagas se refleje automáticamente en el VPS:
+El deploy automático recomendado es el job `Deploy — Production` de `.github/workflows/ci.yml`. Se ejecuta al hacer push a `main`, después de que terminen correctamente las comprobaciones, pruebas y builds. `.github/workflows/deploy.yml` queda disponible solo para un deploy manual desde GitHub Actions.
 
-### Opción A: Con GitHub Actions (Recomendada y 100% Automática)
-El repositorio ya incluye el flujo configurado en `.github/workflows/deploy.yml`.
+Configurá estos secrets en **Settings > Secrets and variables > Actions**:
 
-1. En tu repositorio de GitHub, andá a: **Settings > Secrets and variables > Actions > New repository secret**.
-2. Agregá los siguientes secrets:
-   - `VPS_HOST`: La IP pública de tu VPS (ej. `195.201.x.x`).
-   - `VPS_USERNAME`: Tu usuario SSH del VPS (ej. `root` o tu usuario sudo).
-   - `VPS_PASSWORD`: La contraseña de tu usuario VPS (o podés usar `VPS_SSH_KEY` con tu clave privada).
-   - `VPS_PORT`: (Opcional, por defecto `22`).
+- `VPS_HOST`: IP o nombre del VPS.
+- `VPS_USERNAME`: usuario SSH con permiso para ejecutar el deploy.
+- `VPS_SSH_KEY`: clave privada SSH; alternativamente, `VPS_PASSWORD`.
+- `VPS_PORT`: opcional; por defecto `22`.
 
-¡Listo! Cada vez que hagas un commit y push a la rama `main`:
+Cada push aprobado a `main` ejecuta `bash deploy.sh` en el checkout Finix del VPS. El script construye Web, Admin y API, publica Web y Admin en releases y comprueba que los dos dominios entreguen los assets de la versión nueva.
+
+Para disparar un deploy manual desde GitHub, usá el workflow **Deploy to VPS** en la pestaña **Actions**. No configures a la vez un webhook de push que ejecute otro deploy.
+
+Para publicar cambios:
 ```bash
 git add .
 git commit -m "Mejoras en feed"
 git push origin main
 ```
-GitHub Actions se conectará por SSH a tu VPS, ejecutará `deploy.sh` y actualizará automáticamente la Web, el Admin y la API en vivo sin cortes de servicio.
 
 ---
 
-### Opción B: Script Local `npm run deploy`
-Desde tu computadora de desarrollo podés hacer commit y deploy en un solo paso:
+### Script local `npm run deploy`
+
+También podés hacer commit y push desde un solo comando:
 
 ```bash
 npm run deploy "Mi mensaje de commit"
 ```
-Este script hace el commit, lo sube a GitHub y desencadena la actualización inmediata en el servidor.
+Este script sube el cambio a GitHub; el deploy se inicia después de que pase el pipeline de CI.
 
 ---
 
-### Opción C: Servidor Webhook Autónomo en el VPS (`webhook-server.js`)
-Si no deseás usar GitHub Actions con SSH, podés levantar el webhook server que ya viene en el proyecto:
+### Webhook autónomo (alternativa)
+
+El servidor `webhook-server.js` también puede iniciar `deploy.sh` al recibir un push. Usalo solo si desactivás el deploy automático del job `Deploy — Production`; ambos mecanismos no deben desplegar en paralelo.
 
 1. En el VPS iniciás el servidor webhook con PM2:
    ```bash

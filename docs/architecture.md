@@ -35,7 +35,7 @@ Cloudflare (DNS + CDN + WAF)
 VPS (finixarg.com)
   │
   ├── Nginx (port 80/443)
-  │     ├── /                → /var/www/finix/dist (React SPA)
+  │     ├── /                → /var/www/finix-web/current (React SPA)
   │     ├── /api/*           → PM2: NestJS (port 3010)
   │     ├── /socket.io/*     → PM2: NestJS WebSockets
   │     └── /health          → PM2: Health probe
