@@ -35,7 +35,7 @@ export class CalendarController {
     @Get('week')
     async getWeekCalendar(
         @Query('weekStart') weekStart?: string,
-        @Query('category') category?: 'ALL' | 'US' | 'AR' | 'EARNINGS',
+        @Query('category') category?: 'ALL' | 'US' | 'AR' | 'EARNINGS' | 'DIVIDEND',
         @Query('importance') importance?: 'HIGH' | 'MEDIUM' | 'LOW',
         @Req() req?: any,
     ) {
@@ -80,7 +80,7 @@ export class CalendarController {
     }
 
     /**
-     * Consulta pública de dividendos de empresas S&P 500
+     * Consulta pública de dividendos del universo estadounidense de TradingView
      */
     @UseGuards(OptionalJwtAuthGuard)
     @Get('dividends')

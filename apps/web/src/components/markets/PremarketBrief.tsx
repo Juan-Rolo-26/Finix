@@ -131,9 +131,9 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
     }[sentiment];
 
     return (
-        <section className="mx-auto w-full min-w-0 max-w-7xl space-y-6 pb-12">
+        <section className="w-full min-w-0 max-w-none space-y-5 pb-12">
             {/* ─── Hero & Market Status Banner ─────────────────────────── */}
-            <header className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-7 shadow-sm">
+            <header className="rounded-[28px] border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-7 shadow-sm">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                     <div className="space-y-2">
                         <div className="flex items-center gap-2.5 flex-wrap">
@@ -153,13 +153,13 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
                         </div>
 
                         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
-                            Informe Oficial de Pre-Apertura
+                            Pre-Market
                         </h1>
 
                         <p className="max-w-2xl text-xs sm:text-sm text-muted-foreground leading-relaxed">
                             {isFrozen
-                                ? 'La rueda regular se encuentra activa. Se conserva la última cotización oficial del pre-market antes de la apertura (10:30 hs ART), garantizando la referencia exacta previa a la campana.'
-                                : 'Seguimiento en tiempo real de los futuros de Wall Street, ADRs argentinos, Big Tech y materias primas antes del toque de campana a las 10:30 hs ART.'}
+                                ? 'Últimos datos registrados antes de la apertura. El corte de referencia es a las 10:30 hs ART.'
+                                : 'Cotizaciones previas a la apertura de Wall Street, ADRs argentinos, índices y materias primas.'}
                         </p>
                     </div>
 
@@ -170,15 +170,15 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
                         </div>
                         <div>
                             <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                                Horario de Corte Oficial
+                                Corte de referencia
                             </p>
                             <p className="text-lg font-black text-foreground">
                                 10:30 <span className="text-xs font-semibold text-primary">hs ART</span>
                             </p>
                             <p className="text-[11px] text-muted-foreground">
                                 {data?.updatedAt
-                                    ? `${isFrozen ? 'Corte oficial:' : 'Última actualización:'} ${new Date(data.updatedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs`
-                                    : 'Sincronizado con Wall Street'}
+                                    ? `${isFrozen ? 'Corte:' : 'Actualizado:'} ${new Date(data.updatedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs`
+                                    : 'Sincronizando'}
                             </p>
                         </div>
                     </div>
@@ -249,10 +249,10 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
                     <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 sm:p-5">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <TrendingUp className="w-4 h-4" /> Mayores Subas en Pre-Market
+                                <TrendingUp className="w-4 h-4" /> Mayores subas
                             </h3>
                             <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                                Top 5
+                                5 activos
                             </span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
@@ -261,15 +261,15 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
                                     key={a.id}
                                     type="button"
                                     onClick={() => onSelectSymbol?.(a.symbol)}
-                                    className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-center p-2.5 rounded-xl bg-background/80 hover:bg-background border border-border/50 hover:border-emerald-500/40 transition-all text-left group shadow-2xs"
+                                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-background/80 hover:bg-background border border-border/50 hover:border-emerald-500/40 transition-colors text-left group shadow-2xs"
                                 >
-                                    <div className="flex items-center gap-2 mb-0 sm:mb-1.5 min-w-0">
+                                    <div className="flex items-center gap-2 min-w-0">
                                         <SymbolLogo symbol={a.symbol} size={22} className="shrink-0" />
                                         <span className="text-xs font-black truncate group-hover:text-emerald-500 transition-colors">
                                             {a.symbol.split(':').pop()}
                                         </span>
                                     </div>
-                                    <div className="text-right sm:text-left">
+                                    <div className="text-right shrink-0">
                                         <p className="text-xs font-bold tabular-nums text-foreground">{formatAssetPrice(a)}</p>
                                         <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">
                                             {formatChange(a.change)}
@@ -283,11 +283,11 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
                     {/* Top Losers */}
                     <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-4 sm:p-5">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-xs font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <TrendingDown className="w-4 h-4" /> Mayores Bajas en Pre-Market
+                                <h3 className="text-xs font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <TrendingDown className="w-4 h-4" /> Mayores bajas
                             </h3>
                             <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400">
-                                Top 5
+                                5 activos
                             </span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
@@ -296,15 +296,15 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
                                     key={a.id}
                                     type="button"
                                     onClick={() => onSelectSymbol?.(a.symbol)}
-                                    className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-center p-2.5 rounded-xl bg-background/80 hover:bg-background border border-border/50 hover:border-rose-500/40 transition-all text-left group shadow-2xs"
+                                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-background/80 hover:bg-background border border-border/50 hover:border-rose-500/40 transition-colors text-left group shadow-2xs"
                                 >
-                                    <div className="flex items-center gap-2 mb-0 sm:mb-1.5 min-w-0">
+                                    <div className="flex items-center gap-2 min-w-0">
                                         <SymbolLogo symbol={a.symbol} size={22} className="shrink-0" />
                                         <span className="text-xs font-black truncate group-hover:text-rose-500 transition-colors">
                                             {a.symbol.split(':').pop()}
                                         </span>
                                     </div>
-                                    <div className="text-right sm:text-left">
+                                    <div className="text-right shrink-0">
                                         <p className="text-xs font-bold tabular-nums text-foreground">{formatAssetPrice(a)}</p>
                                         <span className="text-[10px] font-extrabold text-rose-600 dark:text-rose-400">
                                             {formatChange(a.change)}
@@ -318,9 +318,9 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
             )}
 
             {/* ─── Controls: Search & Category Pills ───────────────────── */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+            <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/60 p-3">
                 {/* Category Pills */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                <div className="flex flex-wrap items-center gap-1.5">
                     {CATEGORIES.map((cat) => {
                         const Icon = cat.icon;
                         const isSelected = activeCategory === cat.key;
@@ -348,7 +348,7 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
                 </div>
 
                 {/* Search Input */}
-                <div className="relative min-w-[240px] sm:max-w-xs shrink-0">
+                <div className="relative w-full xl:max-w-xs shrink-0">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                         type="text"
@@ -384,88 +384,50 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
                 </div>
             )}
 
-            {/* ─── Perfectly Distributed Assets Grid (Zero Blank Spaces) ── */}
+            {/* ─── Compact assets grid ─────────────────────────────────── */}
             {filteredAssets.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                     {filteredAssets.map((a) => {
                         const isUp = a.change != null && a.change >= 0;
                         const isNull = a.change == null;
 
                         return (
-                            <div
+                            <button
                                 key={a.id}
+                                type="button"
                                 onClick={() => onSelectSymbol?.(a.symbol)}
-                                className="group relative flex flex-col justify-between p-4 rounded-2xl border border-border/60 bg-card hover:bg-card/90 hover:border-primary/40 hover:shadow-md transition-all duration-200 cursor-pointer"
+                                className="group flex w-full items-center gap-3 rounded-2xl border border-border/60 bg-card p-3.5 text-left transition-colors duration-200 hover:border-primary/40 hover:bg-card/90 hover:shadow-md"
                             >
-                                {/* Card Header */}
-                                <div>
-                                    <div className="flex items-start justify-between gap-2 mb-2.5">
-                                        <div className="flex items-center gap-2.5 min-w-0">
-                                            <SymbolLogo symbol={a.symbol} size={32} className="shrink-0 rounded-lg" />
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <span className="font-black text-sm text-foreground group-hover:text-primary transition-colors truncate">
-                                                        {a.symbol.split(':').pop() || a.symbol}
-                                                    </span>
-                                                    <span className="text-[9.5px] font-black px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20">
-                                                        PRE
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">
-                                                    {a.label}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* % Change Badge */}
-                                        <span
-                                            className={`text-xs font-black px-2 py-0.5 rounded-lg shrink-0 tabular-nums flex items-center gap-0.5 ${
-                                                isNull
-                                                    ? 'bg-muted text-muted-foreground'
-                                                    : isUp
-                                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                                            }`}
-                                        >
-                                            {isNull ? '—' : isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                                            {formatChange(a.change)}
+                                <SymbolLogo symbol={a.symbol} size={34} className="shrink-0 rounded-xl" />
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="font-black text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                                            {a.symbol.split(':').pop() || a.symbol}
+                                        </span>
+                                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-primary">
+                                            Pre
                                         </span>
                                     </div>
-
-                                    {/* Description */}
-                                    <p className="text-[11px] text-muted-foreground/80 line-clamp-1 mb-3">
-                                        {a.description}
+                                    <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">
+                                        {a.label}
                                     </p>
                                 </div>
-
-                                {/* Card Footer: Premarket Price & Reference */}
-                                <div className="pt-2.5 border-t border-border/40 flex items-baseline justify-between">
-                                    <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                            Cotización Pre-Market
-                                        </p>
-                                        <p className="text-base font-black tabular-nums text-foreground mt-0.5">
-                                            {formatAssetPrice(a)}
-                                        </p>
-                                    </div>
-
-                                    {a.regularPrice != null && a.regularPrice !== a.price && (
-                                        <div className="text-right">
-                                            <p className="text-[9.5px] font-medium text-muted-foreground/70">
-                                                Rueda regular
-                                            </p>
-                                            <p className="text-xs font-semibold tabular-nums text-muted-foreground">
-                                                ${a.regularPrice.toFixed(2)}
-                                                {a.regularChange != null && (
-                                                    <span className={`ml-1 text-[10px] font-bold ${a.regularChange >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                        ({a.regularChange >= 0 ? '+' : ''}{a.regularChange.toFixed(2)}%)
-                                                    </span>
-                                                )}
-                                            </p>
-                                        </div>
-                                    )}
+                                <div className="shrink-0 text-right">
+                                    <p className="text-sm font-black tabular-nums text-foreground">{formatAssetPrice(a)}</p>
+                                    <span
+                                        className={`mt-1 inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-black tabular-nums ${
+                                            isNull
+                                                ? 'bg-muted text-muted-foreground'
+                                                : isUp
+                                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                                        }`}
+                                    >
+                                        {isNull ? '—' : isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                                        {formatChange(a.change)}
+                                    </span>
                                 </div>
-                            </div>
+                            </button>
                         );
                     })}
                 </div>

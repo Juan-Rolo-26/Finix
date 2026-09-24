@@ -63,13 +63,13 @@ export class CalendarScheduler {
     }
 
     /**
-     * Sincronización periódica de balances S&P 500 durante días hábiles.
+     * Sincronización periódica de balances de acciones estadounidenses durante días hábiles.
      */
     @Cron('0 */6 * * 1-5', {
         timeZone: 'America/New_York',
     })
     async handlePeriodicEarningsSync() {
-        this.logger.log('[CalendarScheduler] Iniciando sincronización periódica de Balances S&P 500...');
+        this.logger.log('[CalendarScheduler] Iniciando sincronización periódica de Balances US...');
         try {
             await this.calendarService.syncTradingViewEarnings();
         } catch (error: any) {
@@ -78,13 +78,13 @@ export class CalendarScheduler {
     }
 
     /**
-     * Sincronización periódica de dividendos S&P 500 durante días hábiles.
+     * Sincronización periódica de dividendos de acciones estadounidenses durante días hábiles.
      */
     @Cron('30 */6 * * 1-5', {
         timeZone: 'America/New_York',
     })
     async handlePeriodicDividendsSync() {
-        this.logger.log('[CalendarScheduler] Iniciando sincronización periódica de Dividendos S&P 500...');
+        this.logger.log('[CalendarScheduler] Iniciando sincronización periódica de Dividendos US...');
         try {
             await this.calendarService.syncTradingViewDividends();
         } catch (error: any) {

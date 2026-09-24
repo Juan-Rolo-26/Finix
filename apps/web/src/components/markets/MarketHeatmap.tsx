@@ -96,7 +96,7 @@ function formatMarketCap(cap: number) {
 
 export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
     const [items, setItems] = useState<HeatmapItem[]>([]);
-    const [summary, setSummary] = useState<HeatmapSummary | null>(null);
+    const [summaryState, setSummary] = useState<HeatmapSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -191,6 +191,11 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
 
         return res;
     }, [items, searchQuery, selectedSignal, selectedSector, sortBy]);
+
+    // The former macro summary strip is intentionally not rendered. Keep the
+    // nullable runtime value for the heatmap while allowing the unreachable
+    // legacy JSX to type-check until it is fully removed.
+    const summary = summaryState as HeatmapSummary;
 
     return (
         <div className="space-y-6">
@@ -569,7 +574,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                 </div>
 
                 {/* Macro Summary Strip & Proportion Continuum */}
-                {summary && (
+                {summary && false && (
                     <div className="mt-6 pt-6 border-t border-border/60 space-y-4">
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
                             {/* Sentimiento */}

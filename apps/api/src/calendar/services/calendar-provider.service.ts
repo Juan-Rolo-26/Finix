@@ -55,6 +55,39 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
     }
 
     /**
+     * TradingView expone el universo completo de acciones estadounidenses a
+     * través del Scanner. Esto evita limitar el calendario a los componentes
+     * del S&P 500 y permite mostrar todas las empresas con eventos publicados.
+     */
+    private async fetchTradingViewAmericaScan(columns: string[]): Promise<any[]> {
+        const res = await fetch('https://scanner.tradingview.com/america/scan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            },
+            body: JSON.stringify({
+                filter: [{
+                    left: 'exchange',
+                    operation: 'in_range',
+                    right: ['NASDAQ', 'NYSE', 'AMEX'],
+                }],
+                options: { lang: 'en' },
+                markets: ['america'],
+                symbols: { query: { types: [] }, tickers: [] },
+                columns,
+                sort: { sortBy: 'market_cap_basic', sortOrder: 'desc' },
+                range: [0, 20000],
+            }),
+            signal: AbortSignal.timeout(30000),
+        });
+
+        if (!res.ok) throw new Error(`TradingView Scanner: HTTP ${res.status}`);
+        const json: any = await res.json();
+        return Array.isArray(json?.data) ? json.data : [];
+    }
+
+    /**
      * Obtiene eventos macroeconómicos desde proveedores autorizados y fuentes oficiales
      * (BLS, Federal Reserve FOMC, INDEC Argentina, BCRA, Investing.com).
      */
@@ -357,8 +390,8 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
     private tvEarningsCache: { data: EarningsEventItem[]; fetchedAt: number } | null = null;
 
     /**
-     * Consulta oficial a TradingView Scanner para obtener las empresas del S&P 500
-     * que presentan balances, con su fecha, horario BMO/AMC, EPS estimado, Revenue estimado, market cap y logo.
+     * Consulta oficial a TradingView Scanner para obtener balances de todo el
+     * universo de acciones de NASDAQ, NYSE y AMEX.
      */
     async fetchTradingViewSP500Earnings(options?: {
         targetDate?: string;
@@ -375,138 +408,122 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
             allEarnings = this.tvEarningsCache.data;
         } else {
             try {
-                const tickers = await this.getConstituentTickers();
-                const batchSize = 80;
-                const fetchedList: EarningsEventItem[] = [];
+                const rows = await this.fetchTradingViewAmericaScan([
+                    'name',
+                    'description',
+                    'earnings_release_next_date',
+                    'earnings_release_next_time',
+                    'earnings_per_share_forecast_next_fq',
+                    'revenue_forecast_next_fq',
+                    'market_cap_basic',
+                    'logoid',
+                    'earnings_release_date',
+                    'earnings_per_share_fq',
+                    'earnings_per_share_forecast_fq',
+                    'revenue_fq',
+                    'revenue_forecast_fq',
+                ]);
+                const fetchedByKey = new Map<string, EarningsEventItem>();
+                const addEvent = (event: EarningsEventItem) => {
+                    const key = `${event.ticker}|${event.date}`;
+                    const previous = fetchedByKey.get(key);
+                    if (!previous || event.dateStatus === 'CONFIRMED') {
+                        fetchedByKey.set(key, previous ? { ...previous, ...event } : event);
+                    }
+                };
 
-                for (let i = 0; i < tickers.length; i += batchSize) {
-                    const chunk = tickers.slice(i, i + batchSize);
-                    const symbols = chunk.flatMap(t => [`NASDAQ:${t}`, `NYSE:${t}`]);
+                for (const row of rows) {
+                    if (!row?.d || (!row.d[2] && !row.d[8])) continue;
 
-                    const res = await fetch('https://scanner.tradingview.com/america/scan', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                        },
-                        body: JSON.stringify({
-                            symbols: { tickers: symbols },
-                            columns: [
-                                'name',
-                                'description',
-                                'earnings_release_next_date',
-                                'earnings_release_next_time',
-                                'earnings_per_share_forecast_next_fq',
-                                'revenue_forecast_next_fq',
-                                'market_cap_basic',
-                                'logoid',
-                                'earnings_release_date',
-                                'earnings_per_share_fq',
-                                'earnings_per_share_forecast_fq',
-                                'revenue_fq',
-                                'revenue_forecast_fq',
-                            ],
-                        }),
-                        signal: AbortSignal.timeout(8000),
+                    const ticker = String(row.d[0] || row.s?.split(':').pop() || '').toUpperCase().trim();
+                    if (!ticker) continue;
+
+                    const companyName = row.d[1] || ticker;
+                    const releaseTimestamp = Number(row.d[2] || row.d[8]); // segundos epoch
+                    if (!Number.isFinite(releaseTimestamp)) continue;
+                    const eventDate = new Date(releaseTimestamp * 1000).toISOString().substring(0, 10);
+                    const timeType = row.d[3]; // -1: BMO, 1: AMC, 0: DMH
+
+                    let reportTiming: EarningsReportTiming = 'AMC';
+                    let time = '16:30';
+                    if (timeType === -1) {
+                        reportTiming = 'BMO';
+                        time = '08:30';
+                    } else if (timeType !== 1) {
+                        reportTiming = 'DMH';
+                        time = '12:00';
+                    }
+
+                    const epsEstimate = row.d[4] != null ? Number(row.d[4]) : undefined;
+                    const revenueEstimate = row.d[5] != null ? Number(row.d[5]) : undefined;
+                    const marketCap = row.d[6] != null ? Number(row.d[6]) : undefined;
+                    const logoid = row.d[7];
+                    const logoUrl = logoid
+                        ? `https://s3-symbol-logo.tradingview.com/${logoid}--big.svg`
+                        : this.earningsScoring.getTradingViewLogoUrl(ticker);
+                    const score = this.earningsScoring.calculateEarningsImpactScore({
+                        ticker,
+                        marketCap,
+                        isSP500: this.isSP500Constituent(ticker),
                     });
+                    const upcoming: EarningsEventItem = {
+                        eventType: 'EARNINGS',
+                        ticker,
+                        companyName,
+                        logoUrl,
+                        date: eventDate,
+                        time,
+                        timestampUtc: new Date(releaseTimestamp * 1000),
+                        timezone: 'America/New_York',
+                        dateStatus: 'ESTIMATED',
+                        reportTiming,
+                        epsEstimate,
+                        revenueEstimate,
+                        marketCap,
+                        earningsImpactScore: score,
+                        source: 'TradingView Official Scanner (NASDAQ/NYSE/AMEX)',
+                        sourceType: 'AUTOMATIC',
+                        isPublished: true,
+                    };
+                    if (row.d[2]) addEvent(upcoming);
 
-                    if (!res.ok) throw new Error(`TradingView earnings: HTTP ${res.status}`);
-                    if (res.ok) {
-                        const json: any = await res.json();
-                        if (Array.isArray(json?.data)) {
-                            for (const row of json.data) {
-                                if (!row?.d || (!row.d[2] && !row.d[8])) continue;
-
-                                const ticker = (row.d[0] || '').toUpperCase().trim();
-                                if (!ticker || !this.isSP500Constituent(ticker)) continue;
-
-                                const companyName = row.d[1] || ticker;
-                                const releaseTimestamp = row.d[2] || row.d[8]; // segundos epoch
-                                const eventDate = new Date(releaseTimestamp * 1000).toISOString().substring(0, 10);
-                                const timeType = row.d[3]; // -1: BMO, 1: AMC, 0: DMH
-
-                                let reportTiming: EarningsReportTiming = 'AMC';
-                                let time = '16:30';
-                                if (timeType === -1) {
-                                    reportTiming = 'BMO';
-                                    time = '08:30';
-                                } else if (timeType === 1) {
-                                    reportTiming = 'AMC';
-                                    time = '16:30';
-                                } else {
-                                    reportTiming = 'DMH';
-                                    time = '12:00';
-                                }
-
-                                const epsEstimate = row.d[4] != null ? Number(row.d[4]) : undefined;
-                                const revenueEstimate = row.d[5] != null ? Number(row.d[5]) : undefined;
-                                const marketCap = row.d[6] != null ? Number(row.d[6]) : undefined;
-                                const logoid = row.d[7];
-
-                                const logoUrl = logoid
-                                    ? `https://s3-symbol-logo.tradingview.com/${logoid}--big.svg`
-                                    : this.earningsScoring.getTradingViewLogoUrl(ticker);
-
-                                const score = this.earningsScoring.calculateEarningsImpactScore({
-                                    ticker,
-                                    marketCap,
-                                    isSP500: true,
-                                });
-
-                                fetchedList.push({
-                                    eventType: 'EARNINGS',
-                                    ticker,
-                                    companyName,
-                                    logoUrl,
-                                    date: eventDate,
-                                    time,
-                                    timestampUtc: new Date(releaseTimestamp * 1000),
-                                    timezone: 'America/New_York',
-                                    dateStatus: 'ESTIMATED',
-                                    reportTiming,
-                                    epsEstimate,
-                                    revenueEstimate,
-                                    marketCap,
-                                    earningsImpactScore: score,
-                                    source: 'TradingView Official Scanner',
-                                    sourceType: 'AUTOMATIC',
-                                    isPublished: true,
-                                });
-                                const upcoming = fetchedList[fetchedList.length - 1];
-                                if (!row.d[2]) fetchedList.pop();
-                                if (row.d[8]) {
-                                    const actualEps = row.d[9] == null ? undefined : Number(row.d[9]);
-                                    const epsEstimate = row.d[10] == null ? undefined : Number(row.d[10]);
-                                    const actualRevenue = row.d[11] == null ? undefined : Number(row.d[11]);
-                                    const revenueEstimate = row.d[12] == null ? undefined : Number(row.d[12]);
-                                    const surprise = (actual?: number, estimate?: number) =>
-                                        actual != null && estimate != null && estimate !== 0
-                                            ? (actual - estimate) / Math.abs(estimate) * 100 : undefined;
-                                    fetchedList.push({
-                                        ...upcoming,
-                                        date: new Date(row.d[8] * 1000).toISOString().slice(0, 10),
-                                        timestampUtc: new Date(row.d[8] * 1000),
-                                        time: undefined,
-                                        reportTiming: undefined,
-                                        dateStatus: 'CONFIRMED',
-                                        actualEps, epsEstimate, actualRevenue, revenueEstimate,
-                                        epsSurprise: surprise(actualEps, epsEstimate),
-                                        revenueSurprise: surprise(actualRevenue, revenueEstimate),
-                                    });
-                                }
-                            }
-                        }
+                    if (row.d[8]) {
+                        const actualTimestamp = Number(row.d[8]);
+                        if (!Number.isFinite(actualTimestamp)) continue;
+                        const actualEps = row.d[9] == null ? undefined : Number(row.d[9]);
+                        const reportedEpsEstimate = row.d[10] == null ? undefined : Number(row.d[10]);
+                        const actualRevenue = row.d[11] == null ? undefined : Number(row.d[11]);
+                        const reportedRevenueEstimate = row.d[12] == null ? undefined : Number(row.d[12]);
+                        const surprise = (actual?: number, estimate?: number) =>
+                            actual != null && estimate != null && estimate !== 0
+                                ? (actual - estimate) / Math.abs(estimate) * 100 : undefined;
+                        addEvent({
+                            ...upcoming,
+                            date: new Date(actualTimestamp * 1000).toISOString().slice(0, 10),
+                            timestampUtc: new Date(actualTimestamp * 1000),
+                            time: undefined,
+                            reportTiming: undefined,
+                            dateStatus: 'CONFIRMED',
+                            actualEps,
+                            epsEstimate: reportedEpsEstimate,
+                            actualRevenue,
+                            revenueEstimate: reportedRevenueEstimate,
+                            epsSurprise: surprise(actualEps, reportedEpsEstimate),
+                            revenueSurprise: surprise(actualRevenue, reportedRevenueEstimate),
+                        });
                     }
                 }
+
+                const fetchedList = Array.from(fetchedByKey.values());
 
                 if (fetchedList.length > 0) {
                     fetchedList.sort((a, b) => a.date.localeCompare(b.date) || b.earningsImpactScore - a.earningsImpactScore);
                     this.tvEarningsCache = { data: fetchedList, fetchedAt: now };
                     allEarnings = fetchedList;
-                    this.logger.log(`Successfully fetched ${fetchedList.length} S&P 500 earnings from TradingView Scanner.`);
+                    this.logger.log(`Successfully fetched ${fetchedList.length} US earnings from TradingView Scanner.`);
                 }
             } catch (err: any) {
-                this.logger.warn(`Failed to fetch TradingView S&P 500 earnings: ${err.message}`);
+                this.logger.warn(`Failed to fetch TradingView US earnings: ${err.message}`);
                 if (this.tvEarningsCache) {
                     allEarnings = this.tvEarningsCache.data;
                 }
@@ -531,8 +548,8 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
     private tvDividendsCache: { data: DividendEventItem[]; fetchedAt: number } | null = null;
 
     /**
-     * Consulta oficial a TradingView Scanner para obtener los dividendos de las empresas del S&P 500:
-     * Cuándo pagan (payment date), fecha de corte (ex-dividend date), cuánto pagan (monto en USD por acción), yield y logo.
+     * Consulta oficial a TradingView Scanner para obtener dividendos de todo
+     * el universo de acciones de NASDAQ, NYSE y AMEX.
      */
     async fetchTradingViewSP500Dividends(options?: {
         from?: string;
@@ -548,92 +565,70 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
             allDividends = this.tvDividendsCache.data;
         } else {
             try {
-                const tickers = await this.getConstituentTickers();
-                const batchSize = 80;
-                const fetchedList: DividendEventItem[] = [];
+                const rows = await this.fetchTradingViewAmericaScan([
+                    'name',
+                    'description',
+                    'dps_common_stock_primary_issue',
+                    'dividends_yield',
+                    'dividend_amount_recent',
+                    'dividend_ex_date_recent',
+                    'dividend_payment_date_recent',
+                    'market_cap_basic',
+                    'logoid',
+                    'dividend_amount_upcoming',
+                    'dividend_ex_date_upcoming',
+                    'dividend_payment_date_upcoming',
+                ]);
+                const fetchedByKey = new Map<string, DividendEventItem>();
+                // Keep each distribution's amount paired with its dates.
+                const distributions = rows.filter(row => row?.d).flatMap(row => {
+                    const upcoming = [...row.d];
+                    upcoming[4] = row.d[9];
+                    upcoming[5] = row.d[10];
+                    upcoming[6] = row.d[11];
+                    return [row, { d: upcoming, s: row.s }];
+                });
 
-                for (let i = 0; i < tickers.length; i += batchSize) {
-                    const chunk = tickers.slice(i, i + batchSize);
-                    const symbols = chunk.flatMap(t => [`NASDAQ:${t}`, `NYSE:${t}`]);
+                for (const row of distributions) {
+                    const ticker = String(row.d[0] || row.s?.split(':').pop() || '').toUpperCase().trim();
+                    if (!ticker) continue;
 
-                    const res = await fetch('https://scanner.tradingview.com/america/scan', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                        },
-                        body: JSON.stringify({
-                            symbols: { tickers: symbols },
-                            columns: [
-                                'name',
-                                'description',
-                                'dps_common_stock_primary_issue',
-                                'dividends_yield',
-                                'dividend_amount_recent',
-                                'dividend_ex_date_recent',
-                                'dividend_payment_date_recent',
-                                'market_cap_basic',
-                                'logoid',
-                                'dividend_amount_upcoming',
-                                'dividend_ex_date_upcoming',
-                                'dividend_payment_date_upcoming',
-                            ],
-                        }),
-                        signal: AbortSignal.timeout(8000),
-                    });
+                    const companyName = row.d[1] || ticker;
+                    const yieldVal = row.d[3] != null ? Number(row.d[3]) : undefined;
+                    const amount = row.d[4] != null ? Number(row.d[4]) : undefined;
+                    const exTimestamp = Number(row.d[5]); // epoch seconds
+                    const payTimestamp = Number(row.d[6]); // epoch seconds
+                    const marketCap = row.d[7] != null ? Number(row.d[7]) : undefined;
+                    const logoid = row.d[8];
 
-                    if (!res.ok) throw new Error(`TradingView dividends: HTTP ${res.status}`);
-                    if (res.ok) {
-                        const json: any = await res.json();
-                        if (Array.isArray(json?.data)) {
-                            // Keep each distribution's amount paired with its dates.
-                            const distributions = json.data.filter(row => row?.d).flatMap(row => {
-                                const upcoming = [...row.d];
-                                upcoming[4] = row.d[9];
-                                upcoming[5] = row.d[10];
-                                upcoming[6] = row.d[11];
-                                return [row, { d: upcoming }];
-                            });
-                            for (const row of distributions) {
+                    const exDate = Number.isFinite(exTimestamp) && exTimestamp > 0
+                        ? new Date(exTimestamp * 1000).toISOString().substring(0, 10) : undefined;
+                    const paymentDate = Number.isFinite(payTimestamp) && payTimestamp > 0
+                        ? new Date(payTimestamp * 1000).toISOString().substring(0, 10) : undefined;
+                    if (!exDate && !paymentDate) continue;
 
-                                const ticker = (row.d[0] || '').toUpperCase().trim();
-                                if (!ticker || !this.isSP500Constituent(ticker)) continue;
-
-                                const companyName = row.d[1] || ticker;
-                                const yieldVal = row.d[3] != null ? Number(row.d[3]) : undefined;
-                                const amount = row.d[4] != null ? Number(row.d[4]) : undefined;
-                                const exTimestamp = row.d[5]; // epoch seconds
-                                const payTimestamp = row.d[6]; // epoch seconds
-                                const marketCap = row.d[7] != null ? Number(row.d[7]) : undefined;
-                                const logoid = row.d[8];
-
-                                const exDate = exTimestamp ? new Date(exTimestamp * 1000).toISOString().substring(0, 10) : undefined;
-                                const paymentDate = payTimestamp ? new Date(payTimestamp * 1000).toISOString().substring(0, 10) : undefined;
-
-                                if (!exDate && !paymentDate) continue;
-
-                                const logoUrl = logoid
-                                    ? `https://s3-symbol-logo.tradingview.com/${logoid}--big.svg`
-                                    : this.earningsScoring.getTradingViewLogoUrl(ticker);
-
-                                fetchedList.push({
-                                    eventType: 'DIVIDEND',
-                                    ticker,
-                                    companyName,
-                                    logoUrl,
-                                    exDate: exDate || '',
-                                    paymentDate,
-                                    amount: amount != null ? Number(amount.toFixed(4)) : undefined,
-                                    yield: yieldVal != null ? Number(yieldVal.toFixed(2)) : undefined,
-                                    marketCap,
-                                    source: 'TradingView Official Scanner',
-                                    sourceType: 'AUTOMATIC',
-                                    isPublished: true,
-                                });
-                            }
-                        }
-                    }
+                    const logoUrl = logoid
+                        ? `https://s3-symbol-logo.tradingview.com/${logoid}--big.svg`
+                        : this.earningsScoring.getTradingViewLogoUrl(ticker);
+                    const event: DividendEventItem = {
+                        eventType: 'DIVIDEND',
+                        ticker,
+                        companyName,
+                        logoUrl,
+                        exDate: exDate || '',
+                        paymentDate,
+                        amount: amount != null && Number.isFinite(amount) ? Number(amount.toFixed(4)) : undefined,
+                        yield: yieldVal != null && Number.isFinite(yieldVal) ? Number(yieldVal.toFixed(2)) : undefined,
+                        marketCap,
+                        source: 'TradingView Official Scanner (NASDAQ/NYSE/AMEX)',
+                        sourceType: 'AUTOMATIC',
+                        isPublished: true,
+                    };
+                    const key = `${ticker}|${event.exDate}|${event.paymentDate}|${event.amount ?? ''}`;
+                    fetchedByKey.set(key, event);
                 }
+
+                const fetchedList = Array.from(fetchedByKey.values());
 
                 if (fetchedList.length > 0) {
                     fetchedList.sort((a, b) => {
@@ -643,10 +638,10 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                     });
                     this.tvDividendsCache = { data: fetchedList, fetchedAt: now };
                     allDividends = fetchedList;
-                    this.logger.log(`Successfully fetched ${fetchedList.length} S&P 500 dividends from TradingView Scanner.`);
+                    this.logger.log(`Successfully fetched ${fetchedList.length} US dividends from TradingView Scanner.`);
                 }
             } catch (err: any) {
-                this.logger.warn(`Failed to fetch TradingView S&P 500 dividends: ${err.message}`);
+                this.logger.warn(`Failed to fetch TradingView US dividends: ${err.message}`);
                 if (this.tvDividendsCache) {
                     allDividends = this.tvDividendsCache.data;
                 }
@@ -669,16 +664,17 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
     }
 
     /**
-     * Obtiene resultados corporativos (Earnings) de la semana EXCLUSIVAMENTE para empresas del S&P 500.
+     * Obtiene resultados corporativos (Earnings) de la semana para el
+     * universo estadounidense consultado en TradingView.
      */
     async getUpcomingEarnings(from: string, to: string): Promise<EarningsEventItem[]> {
-        // 1. Prioridad: Consulta oficial a TradingView Scanner para S&P 500
+        // 1. Prioridad: Consulta oficial a TradingView Scanner para EE. UU.
         const tvEarnings = await this.fetchTradingViewSP500Earnings({ from, to });
         if (tvEarnings.length > 0) {
             return tvEarnings;
         }
 
-        // 2. Incorporar el cronograma completo de empresas del S&P 500 para la semana como fallback
+        // 2. Fallback histórico si TradingView no responde.
         return this.getSP500WeeklyEarningsSchedule(from, to);
     }
 
@@ -978,8 +974,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
     }
 
     /**
-     * Cronograma completo de reportes de resultados trimestrales (Earnings)
-     * EXCLUSIVAMENTE para empresas del índice S&P 500 durante la semana.
+     * Fallback histórico de reportes de resultados trimestrales (Earnings).
      */
     private getSP500WeeklyEarningsSchedule(from: string, to: string): EarningsEventItem[] {
         const fromDate = new Date(from);

@@ -298,7 +298,7 @@ export class CalendarService {
             dbEarnings.sort((a, b) => a.date.localeCompare(b.date) || b.earningsImpactScore - a.earningsImpactScore);
         }
 
-        // Fetch S&P 500 Dividends from DB or TradingView Scanner
+        // Fetch dividends from DB or the complete TradingView US universe.
         let dbDividends: any[] = [];
         if (params.category !== 'US' && params.category !== 'AR' && params.category !== 'EARNINGS') {
             try {
@@ -320,9 +320,10 @@ export class CalendarService {
             }
 
             const tvDivs = await this.providerService.fetchTradingViewSP500Dividends({ from: mondayStr, to: sundayStr });
-            const existingByKey = new Map(dbDividends.map((d, index) => [`${d.ticker}|${d.exDate || d.paymentDate}`, index]));
+            const dividendKey = (d: any) => `${String(d.ticker).trim().toUpperCase().replace(/\./g, '-')}|${d.exDate || ''}|${d.paymentDate || ''}|${d.amount ?? ''}`;
+            const existingByKey = new Map(dbDividends.map((d, index) => [dividendKey(d), index]));
             for (const event of tvDivs) {
-                const key = `${event.ticker}|${event.exDate || event.paymentDate}`;
+                const key = dividendKey(event);
                 const index = existingByKey.get(key);
                 if (index === undefined) {
                     existingByKey.set(key, dbDividends.length);
@@ -347,13 +348,9 @@ export class CalendarService {
         const dividendDisplayDate = (d: any) =>
             d.paymentDate && (isAll || (d.paymentDate >= mondayStr && d.paymentDate <= sundayStr))
                 ? d.paymentDate : d.exDate;
-        // One company per selected week, even when sources disagree on dates.
-        // Keep the earliest visible event; retain separate payments in history.
         dbDividends.sort((a, b) =>
             (dividendDisplayDate(a) || '').localeCompare(dividendDisplayDate(b) || ''));
-        dbDividends = uniqueEvents(dbDividends, d => isAll
-            ? `${tickerKey(d.ticker)}|${d.exDate || d.paymentDate}`
-            : tickerKey(d.ticker));
+        dbDividends = uniqueEvents(dbDividends, d => `${tickerKey(d.ticker)}|${d.exDate || ''}|${d.paymentDate || ''}|${d.amount ?? ''}`);
 
         const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         const shortNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
@@ -415,7 +412,7 @@ export class CalendarService {
             isPublished: e.isPublished,
         }));
 
-        // Función mapeadora de dividendos S&P 500
+        // Función mapeadora de dividendos del universo estadounidense.
         const mapDivEvents = (rawDiv: any[]): DividendEventItem[] => rawDiv.map(d => ({
             id: d.id || `${d.ticker}-${d.paymentDate || d.exDate}`,
             eventType: 'DIVIDEND',
@@ -764,11 +761,11 @@ export class CalendarService {
     // --- Admin Endpoints Support ---
 
     /**
-     * Sincroniza en tiempo real los balances del universo S&P 500 desde TradingView Scanner.
+     * Sincroniza en tiempo real los balances del universo estadounidense desde TradingView Scanner.
      */
     async syncTradingViewEarnings(targetDate?: string) {
         const startTime = Date.now();
-        this.logger.log(`Starting TradingView S&P 500 earnings sync... ${targetDate ? `(Target Date: ${targetDate})` : ''}`);
+        this.logger.log(`Starting TradingView US earnings sync... ${targetDate ? `(Target Date: ${targetDate})` : ''}`);
 
         try {
             const list = await this.providerService.fetchTradingViewSP500Earnings({
@@ -841,7 +838,7 @@ export class CalendarService {
                 data: {
                     syncType: 'EARNINGS',
                     status: errors === 0 ? 'SUCCESS' : 'PARTIAL',
-                    providerUsed: 'TradingView Official Scanner (S&P 500)',
+                    providerUsed: 'TradingView Official Scanner (NASDAQ/NYSE/AMEX)',
                     eventsProcessed: created + updated,
                     eventsFound: list.length,
                     eventsCreated: created,
@@ -1043,12 +1040,12 @@ export class CalendarService {
     }
 
     /**
-     * Sincroniza en tiempo real los dividendos del universo S&P 500 desde TradingView Scanner.
+     * Sincroniza en tiempo real los dividendos del universo estadounidense desde TradingView Scanner.
      * Incluye fecha de pago (cuándo pagan), fecha ex-dividend, monto en USD (cuánto pagan), yield y logo.
      */
     async syncTradingViewDividends() {
         const startTime = Date.now();
-        this.logger.log(`Starting TradingView S&P 500 dividends sync...`);
+        this.logger.log(`Starting TradingView US dividends sync...`);
 
         try {
             await this.ensureDividendTable();
@@ -1102,7 +1099,7 @@ export class CalendarService {
                 data: {
                     syncType: 'DIVIDENDS',
                     status: errors === 0 ? 'SUCCESS' : 'PARTIAL',
-                    providerUsed: 'TradingView Official Scanner (S&P 500 Dividends)',
+                    providerUsed: 'TradingView Official Scanner (NASDAQ/NYSE/AMEX Dividends)',
                     eventsProcessed: upserted,
                     eventsFound: list.length,
                     eventsCreated: upserted,

@@ -364,7 +364,7 @@ export default function CalendarPage() {
                                 </h1>
                             </div>
                             <p className="text-sm sm:text-base text-muted-foreground flex items-center gap-2 flex-wrap font-medium">
-                                <span>Seguimiento en tiempo real de macroeconomía, balances y dividendos del S&P 500.</span>
+                                <span>Seguimiento en tiempo real de macroeconomía, balances y dividendos de acciones de EE. UU.</span>
                                 <span className="inline-flex items-center gap-1.5 font-mono text-xs sm:text-sm text-foreground bg-muted/80 px-2.5 py-1 rounded-lg border border-border/60 font-semibold">
                                     <Clock className="w-3.5 h-3.5 text-primary" /> Hora local: {userTimezoneShort}
                                 </span>
@@ -442,7 +442,7 @@ export default function CalendarPage() {
                                 }`}
                         >
                             <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                            <span>Balances S&P 500</span>
+                            <span>Balances EE. UU.</span>
                             {calendarData && (
                                 <span className="px-2 py-0.5 rounded-full text-xs font-mono font-black bg-primary/15 text-primary border border-primary/25">
                                     {totalEarnings}
@@ -459,7 +459,7 @@ export default function CalendarPage() {
                                 }`}
                         >
                             <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                            <span>Dividendos S&P 500</span>
+                            <span>Dividendos EE. UU.</span>
                             {calendarData && (
                                 <span className="px-2 py-0.5 rounded-full text-xs font-mono font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
                                     {totalDividends}
@@ -665,7 +665,7 @@ export default function CalendarPage() {
                                     </div>
                                 )}
 
-                                {/* 2. S&P 500 Earnings Events (Balances Section - Cuadrados 3 por fila) */}
+                                {/* 2. Earnings de acciones estadounidenses */}
                                 {activeSection === 'BALANCES' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                                         {dayEarnings.map((earn) => {
@@ -691,7 +691,7 @@ export default function CalendarPage() {
                                                     <div>
                                                         <div className="flex items-center justify-between gap-2 mb-3">
                                                             <span className="text-[11px] font-black tracking-wider uppercase text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
-                                                                📊 S&P 500
+                                                                📊 EE. UU.
                                                             </span>
                                                             <div className="flex items-center gap-1.5">
                                                                 <span className="text-xs font-semibold text-muted-foreground bg-secondary/80 px-2.5 py-1 rounded-lg border border-border/50">
@@ -775,7 +775,7 @@ export default function CalendarPage() {
                                     </div>
                                 )}
 
-                                {/* 3. S&P 500 Dividend Events — TradingView Style */}
+                                {/* 3. Dividendos de acciones estadounidenses — TradingView Style */}
                                 {activeSection === 'DIVIDENDOS' && (
                                     <div className="space-y-2">
                                         {dayDividends.map((div) => (
