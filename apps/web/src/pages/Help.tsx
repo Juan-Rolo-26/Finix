@@ -539,14 +539,22 @@ export default function Help() {
                             Nuestro equipo responde generalmente en menos de 24 horas hábiles. Describí tu consulta con el mayor detalle posible.
                         </p>
                     </div>
-                    <a
-                        href={`mailto:${CONTACT_EMAIL}?subject=Consulta%20sobre%20Finix`}
-                        className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm whitespace-nowrap hover:opacity-90 transition-all flex items-center gap-2 shadow-sm shrink-0"
-                        rel="noopener noreferrer"
-                    >
-                        <Mail className="w-4 h-4" />
-                        {CONTACT_EMAIL}
-                    </a>
+                    <div className="flex flex-col items-stretch gap-2 sm:items-end shrink-0">
+                        <Link
+                            to="/info/contact#contacto"
+                            className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
+                        >
+                            <Mail className="w-4 h-4" />
+                            Enviar consulta
+                        </Link>
+                        <a
+                            href={`mailto:${CONTACT_EMAIL}?subject=Consulta%20sobre%20Finix`}
+                            className="text-xs text-muted-foreground text-center sm:text-right hover:text-primary transition-colors"
+                            aria-label={`Enviar un correo a ${CONTACT_EMAIL}`}
+                        >
+                            También podés escribir a {CONTACT_EMAIL}
+                        </a>
+                    </div>
                 </div>
 
                 {/* ── Footer ── */}

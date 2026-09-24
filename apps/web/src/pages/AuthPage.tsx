@@ -148,7 +148,7 @@ export default function AuthPage() {
 
 
 
-    const handleLogin = async () => {
+    const handleLogin = async (): Promise<boolean> => {
         const normalizedEmail = email.trim().toLowerCase();
         if (!loginCodeStep) {
             const response = await apiFetch('/auth/login/request-code', {
@@ -160,7 +160,7 @@ export default function AuthPage() {
             if (!response.ok) throw new Error(data?.message || 'No se pudo iniciar sesión.');
             setLoginCodeStep(true);
             setSuccessMessage('Te enviamos un código de verificación a tu correo.');
-            return;
+            return false;
         }
 
         const response = await apiFetch('/auth/login/verify-code', {
@@ -173,6 +173,7 @@ export default function AuthPage() {
             throw new Error(data?.message || 'El código de verificación es incorrecto o venció.');
         }
         useAuthStore.getState().login(data.token, data.user);
+        return true;
     };
 
     const handleRegister = async () => {
@@ -305,9 +306,10 @@ export default function AuthPage() {
 
         try {
             if (view === 'login') {
-                await handleLogin();
-                setIsLoading(false);
-                navigate(redirectTarget);
+                const loggedIn = await handleLogin();
+                if (loggedIn) {
+                    navigate(redirectTarget);
+                }
                 return;
             }
 

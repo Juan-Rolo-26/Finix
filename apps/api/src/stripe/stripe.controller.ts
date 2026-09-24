@@ -34,8 +34,8 @@ export class StripeController {
 
     @UseGuards(JwtAuthGuard)
     @Post('subscriptions/pro/checkout')
-    createProSubscription(@Req() req: any) {
-        return this.stripeService.createSubscription(req.user.id, 'pro_investor');
+    createProSubscription() {
+        throw new BadRequestException('El plan Pro se cobra en pesos argentinos mediante Mercado Pago.');
     }
 
     @UseGuards(JwtAuthGuard)

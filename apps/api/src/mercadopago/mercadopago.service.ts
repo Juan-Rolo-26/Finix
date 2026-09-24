@@ -68,7 +68,7 @@ export class MercadoPagoService {
     }
 
     public getProPrice(): number {
-        return Number(process.env.MP_PRO_PRICE_ARS) || 8500;
+        return Number(process.env.MP_PRO_PRICE_ARS) || 6300;
     }
 
     public getCreatorPrice(): number {

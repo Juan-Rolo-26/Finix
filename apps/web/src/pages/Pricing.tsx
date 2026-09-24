@@ -419,7 +419,7 @@ export default function Pricing() {
     const syncFromSession = useAuthStore(s => s.syncFromSession);
     const [searchParams] = useSearchParams();
     const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-    const [renewalPlan, setRenewalPlan] = useState<'Creador' | null>(null);
+    const [renewalPlan, setRenewalPlan] = useState<'PRO' | 'Creador' | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<string | null>(searchParams.get('status'));
 
     useEffect(() => {
@@ -429,20 +429,6 @@ export default function Pricing() {
         else if (status === 'pending') setPaymentStatus('pending');
     }, [searchParams, syncFromSession]);
 
-    const startProCheckout = async () => {
-        setLoadingPlan('PRO');
-        try {
-            const res = await apiFetch('/stripe/subscriptions/pro/checkout', { method: 'POST' });
-            const data = await res.json().catch(() => null);
-            if (!res.ok) throw new Error(data?.message || 'No se pudo conectar con Stripe');
-            if (!data?.url) throw new Error('Stripe no devolvió la URL de checkout');
-            window.location.href = data.url;
-        } catch (error: any) {
-            alert(error.message || 'Ocurrió un error inesperado al conectar con Stripe.');
-            setLoadingPlan(null);
-        }
-    };
-
     const handleUpgrade = async (planType: 'PRO' | 'Creador') => {
         if (isJuan) {
             navigate(planType === 'Creador' ? '/comunidades' : '/mercado');
@@ -450,7 +436,7 @@ export default function Pricing() {
         }
         if (!user) { navigate(`/auth?redirect=${encodeURIComponent('/pricing')}&plan=${planType}`); return; }
         if (planType === 'PRO') {
-            void startProCheckout();
+            setRenewalPlan('PRO');
             return;
         }
         setRenewalPlan('Creador');
@@ -460,7 +446,7 @@ export default function Pricing() {
         if (!renewalPlan) return;
         const planType = renewalPlan;
         setLoadingPlan(planType);
-        const endpoint = '/mercadopago/checkout/creator';
+        const endpoint = planType === 'PRO' ? '/mercadopago/checkout/pro' : '/mercadopago/checkout/creator';
         try {
             const res = await apiFetch(endpoint, {
                 method: 'POST',
@@ -479,14 +465,11 @@ export default function Pricing() {
         }
     };
 
-    const [prices, setPrices] = useState({ proUsd: 4, creatorArs: 29900 });
+    const [prices, setPrices] = useState({ proArs: 6300, creatorArs: 29900 });
     useEffect(() => {
-        Promise.all([
-            apiFetch('/stripe/config').then(r => r.json()),
-            apiFetch('/mercadopago/config').then(r => r.json()),
-        ]).then(([stripe, mercadoPago]) => {
+        apiFetch('/mercadopago/config').then(r => r.json()).then((mercadoPago) => {
             setPrices({
-                proUsd: Number(stripe?.proPriceUsd) || 4,
+                proArs: Number(mercadoPago?.proPriceArs) || 6300,
                 creatorArs: Number(mercadoPago?.creatorPriceArs) || 29900,
             });
         }).catch(() => {});
@@ -505,8 +488,8 @@ export default function Pricing() {
             highlight: false,
         },
         {
-            name: 'PRO', price: isJuan ? '$0' : `$${prices.proUsd.toFixed(2)}`, period: isJuan ? ' (Vitalicio)' : ' USD/mes',
-            description: 'Para inversores que quieren maximizar retornos con la suite cuantitativa completa de Finix.',
+            name: 'PRO', price: isJuan ? '$0' : `$${prices.proArs.toLocaleString('es-AR')}`, period: isJuan ? ' (Vitalicio)' : ' ARS/mes',
+            description: 'Para invertir mejor con herramientas simples y útiles.',
             features: [
                 'Todo lo del plan Free',
                 'Mercados en Vivo & Pre-Market: Cotizaciones en tiempo real y precios congelados a las 10:30 hs',
@@ -518,7 +501,7 @@ export default function Pricing() {
                 'Noticias financieras en vivo con análisis algorítmico de sentimiento e impacto por ticker',
                 'Calendario oficial TradingView con fechas ex-dividend y sorpresas de earnings',
                 'Alertas de Mercado 24/7 por precio y volumen institucional vía Email y Telegram',
-                'Cobro mensual automático en USD mediante Stripe (cancelable desde Configuración)',
+                'Pago mensual en ARS mediante Mercado Pago, con renovación opcional',
                 'Soporte prioritario 24/7'
             ],
             missingFeatures: ['Creación de comunidades propias monetizadas'],
@@ -627,15 +610,15 @@ export default function Pricing() {
                         const Icon = (plan as any).icon;
                         return (
                             <motion.div key={plan.name} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.12, duration: 0.5 }}
-                                className={`relative rounded-3xl p-8 flex flex-col overflow-hidden ${plan.highlight ? 'scale-[1.04] z-10' : ''}`}
+                                className={`relative rounded-[2rem] p-6 sm:p-8 flex flex-col min-h-full transition-transform duration-300 hover:-translate-y-1 ${plan.highlight ? 'pt-12 scale-[1.02] z-10' : ''}`}
                                 style={plan.highlight
-                                    ? { background: 'hsl(var(--card))', border: '2px solid hsl(var(--primary))', boxShadow: '0 0 60px hsl(var(--primary)/0.25)' }
-                                    : { background: 'hsl(var(--card)/0.5)', border: '1px solid hsl(var(--border)/0.5)', backdropFilter: 'blur(8px)' }
+                                    ? { background: 'linear-gradient(180deg, hsl(var(--primary)/0.12), hsl(var(--card)) 30%)', border: '2px solid hsl(var(--primary))', boxShadow: '0 18px 60px hsl(var(--primary)/0.22)' }
+                                    : { background: 'linear-gradient(180deg, hsl(var(--card)/0.8), hsl(var(--card)/0.45))', border: '1px solid hsl(var(--border)/0.55)', backdropFilter: 'blur(10px)', boxShadow: '0 14px 40px hsl(var(--background)/0.12)' }
                                 }
                             >
                                 {plan.highlight && <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 0%, hsl(var(--primary)), transparent 70%)' }} />}
                                 {plan.highlight && (
-                                    <div className="absolute -top-4 inset-x-0 flex justify-center">
+                                    <div className="absolute top-4 inset-x-0 flex justify-center">
                                         <span className="bg-primary text-primary-foreground text-[11px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-lg" style={{ boxShadow: '0 4px 20px hsl(var(--primary)/0.4)' }}>
                                             <Shield className="w-3.5 h-3.5" /> Más popular
                                         </span>
@@ -693,25 +676,29 @@ export default function Pricing() {
                                         <><span>{plan.buttonText}</span><ArrowRight className="w-4 h-4" /></>
                                     )}
                                 </button>
-                                <div className="space-y-3.5 flex-1">
+                                <div className="mt-1 flex-1 border-t border-border/40 pt-5">
+                                    <p className="mb-4 text-center text-[11px] font-black uppercase tracking-[0.22em] text-muted-foreground">Incluye</p>
+                                    <div className="space-y-2.5">
                                     {plan.features.map(f => (
-                                        <div key={f} className="flex items-start gap-3">
-                                            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5"><Check className="w-3 h-3 text-primary" /></div>
+                                        <div key={f} className="flex items-start justify-center gap-2.5 rounded-xl px-2 py-2 text-center transition-colors hover:bg-primary/5">
+                                            <div className="w-5 h-5 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5"><Check className="w-3 h-3 text-primary" /></div>
                                             <span className="text-sm font-medium leading-snug">{f}</span>
                                         </div>
                                     ))}
                                     {plan.missingFeatures.map(f => (
-                                        <div key={f} className="flex items-start gap-3 opacity-45">
+                                        <div key={f} className="flex items-start justify-center gap-2.5 rounded-xl px-2 py-2 text-center opacity-40">
                                             <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5"><X className="w-3 h-3 text-muted-foreground" /></div>
                                             <span className="text-sm text-muted-foreground line-through">{f}</span>
                                         </div>
                                     ))}
+                                    </div>
                                 </div>
                             </motion.div>
                         );
                     })}
                 </div>
 
+                {false && <>
                 {/* ══════════ PRO PERFORMANCE STATS ══════════ */}
                 <div className="mt-28 max-w-6xl mx-auto w-full">
                     <div className="text-center mb-14">
@@ -873,6 +860,7 @@ export default function Pricing() {
                         })}
                     </div>
                 </div>
+                </>}
 
                 {/* Billing banner */}
                 <div className="max-w-4xl mx-auto mt-16 mb-2 w-full p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl"
@@ -882,7 +870,7 @@ export default function Pricing() {
                         <div className="space-y-1">
                             <h4 className="font-bold text-sm text-foreground">Facturación segura y transparente</h4>
                             <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
-                                El plan PRO se cobra automáticamente cada mes en USD mediante Stripe. El plan Creador permite elegir renovación mensual con Mercado Pago. Podés cancelar desde <strong>Configuración &gt; Suscripción</strong>.
+                                El plan PRO cuesta ${prices.proArs.toLocaleString('es-AR')} ARS por mes y se procesa con Mercado Pago. Podés pagar un mes o activar la renovación automática. Podés cancelar desde <strong>Configuración &gt; Suscripción</strong>.
                             </p>
                         </div>
                     </div>
@@ -896,7 +884,7 @@ export default function Pricing() {
             <SubscriptionRenewalChoice
                 open={renewalPlan !== null}
                 planName={renewalPlan === 'Creador' ? 'Creador' : 'Finix PRO'}
-                monthlyPrice={prices.creatorArs.toLocaleString('es-AR')}
+                monthlyPrice={(renewalPlan === 'PRO' ? prices.proArs : prices.creatorArs).toLocaleString('es-AR')}
                 busy={loadingPlan !== null}
                 onClose={() => setRenewalPlan(null)}
                 onConfirm={(autoRenew) => { void confirmCheckout(autoRenew); }}

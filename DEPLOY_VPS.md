@@ -100,7 +100,7 @@ CONTACT_EMAIL_TO=admin@finixarg.com
 # ── Pasarela de Pagos 1: Mercado Pago (Argentina - ARS) ───────────────────
 MP_ACCESS_TOKEN=APP_USR-tu_access_token_de_mercadopago
 MP_PUBLIC_KEY=APP_USR-tu_public_key_de_mercadopago
-MP_PRO_PRICE_ARS=6500
+MP_PRO_PRICE_ARS=6300
 MP_CREATOR_PRICE_ARS=29900
 
 # ── Pasarela de Pagos 2: Stripe (Internacional - USD) ──────────────────────
