@@ -10,12 +10,12 @@
  *  - Full cleanup on unmount
  */
 
-import React, { useEffect, useRef, useMemo, useCallback } from 'react';
-import { cn } from '@/lib/utils';
+import { useEffect, useRef, useMemo, useCallback } from 'react';
 import { ChartContainer } from '../shared/ChartContainer';
 import { getReturnColor, CHART_FONT, ECHARTS_BASE_THEME } from '../utils/chartTheme';
-import { formatPercentage, formatCurrency, formatCompactCurrency, truncateLabel } from '../utils/chartFormatters';
+import { formatPercentage, formatCurrency, truncateLabel } from '../utils/chartFormatters';
 import type { AssetPnLItem } from '../utils/chartDataAdapters';
+import type { ECharts } from 'echarts/core';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ export function PortfolioTreemap({
   className,
 }: PortfolioTreemapProps) {
   const chartRef = useRef<HTMLDivElement>(null);
-  const echartsInstanceRef = useRef<echarts.ECharts | null>(null);
+  const echartsInstanceRef = useRef<ECharts | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const chartData = useMemo(() => {
@@ -189,7 +189,7 @@ export function PortfolioTreemap({
       ],
     };
 
-    instance.setOption(option);
+    instance.setOption(option as any);
 
     // ResizeObserver
     const observer = new ResizeObserver(() => {

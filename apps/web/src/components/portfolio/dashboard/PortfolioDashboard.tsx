@@ -84,6 +84,7 @@ function getAssetReturn(asset: DashboardAsset) {
 function normalizeComparisonSeries(
     seriesByRange: Record<TimeRange, PortfolioValuePoint[]>,
     portfolioReturn = 0,
+    hasHoldings = true,
 ): Record<TimeRange, ComparisonDatum[]> {
     return TIME_RANGES.reduce((acc, range) => {
         const rangeData = seriesByRange[range] || [];
@@ -91,6 +92,7 @@ function normalizeComparisonSeries(
             range,
             portfolioReturn,
             apiSeries: rangeData,
+            hasHoldings,
         });
         return acc;
     }, {} as Record<TimeRange, ComparisonDatum[]>);
@@ -251,9 +253,12 @@ function resolveData({
     data?: Partial<PortfolioDashboardData>;
 }): PortfolioDashboardData {
     const safeAssets = assets ?? [];
+    const hasHoldings = (metrics?.cantidadActivos ?? safeAssets.length) > 0;
     const portfolioValueByRange = data?.portfolioValueByRange ?? buildPortfolioSeries(metrics, safeAssets);
     const returnPct = metrics?.variacionPorcentual ?? 0;
-    const comparisonByRange = data?.comparisonByRange ?? normalizeComparisonSeries(portfolioValueByRange, returnPct);
+    const comparisonByRange = hasHoldings
+        ? (data?.comparisonByRange ?? normalizeComparisonSeries(portfolioValueByRange, returnPct, true))
+        : normalizeComparisonSeries(portfolioValueByRange, 0, false);
     const allocation = data?.allocation ?? buildAllocationData(metrics, safeAssets);
     const assetPerformance = data?.assetPerformance ?? buildAssetPerformanceData(metrics, safeAssets);
     const sectors = data?.sectors ?? buildSectorData(safeAssets);
@@ -282,7 +287,12 @@ export function PortfolioDashboard({
     const [historyNotice, setHistoryNotice] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!portfolioId) return;
+        const hasHoldings = (metrics?.cantidadActivos ?? assets.length) > 0;
+        if (!portfolioId || !hasHoldings) {
+            setLiveHistory(createEmptySeriesByRange());
+            setHistoryNotice(null);
+            return;
+        }
         let isMounted = true;
         apiFetch(`/portfolios/${portfolioId}/history?range=${selectedRange}`)
             .then((r) => r.ok ? r.json() : null)
@@ -320,19 +330,21 @@ export function PortfolioDashboard({
         return () => {
             isMounted = false;
         };
-    }, [portfolioId, selectedRange]);
+    }, [assets.length, metrics?.cantidadActivos, portfolioId, selectedRange]);
 
     const resolvedData = useMemo(() => {
         const effectiveReturn = metrics?.variacionPorcentual ?? 0;
+        const hasHoldings = (metrics?.cantidadActivos ?? assets.length) > 0;
         const base = resolveData({ metrics, assets, movements, data });
         const historyForRange = liveHistory[selectedRange];
-        if (historyForRange && historyForRange.length > 0) {
+        if (hasHoldings && historyForRange && historyForRange.length > 0) {
             base.portfolioValueByRange[selectedRange] = historyForRange;
         }
         base.comparisonByRange[selectedRange] = buildBenchmarkComparisonSeries({
             range: selectedRange,
-            portfolioReturn: effectiveReturn,
-            apiSeries: historyForRange,
+            portfolioReturn: hasHoldings ? effectiveReturn : 0,
+            apiSeries: hasHoldings ? historyForRange : [],
+            hasHoldings,
         });
         return base;
     }, [metrics, assets, movements, data, liveHistory, selectedRange]);
@@ -475,6 +487,7 @@ export function PortfolioDashboard({
                         selectedRange={selectedRange}
                         onRangeChange={setSelectedRange}
                         portfolioReturn={summary.totalReturn}
+                        hasHoldings={!summary.isPortfolioEmpty}
                     />
                 </ErrorBoundary>
             </div>

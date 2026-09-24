@@ -42,7 +42,7 @@ interface AssetPnLChartProps {
 
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
 
-function AssetPnLTooltip({ active, payload, label, currency }: any) {
+function AssetPnLTooltip({ active, payload, currency }: any) {
   if (!active || !payload?.length) return null;
   const item = payload[0]?.payload as AssetPnLItem | undefined;
   if (!item) return null;

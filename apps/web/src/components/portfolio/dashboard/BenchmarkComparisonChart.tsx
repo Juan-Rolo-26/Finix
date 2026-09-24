@@ -20,6 +20,7 @@ interface BenchmarkComparisonChartProps {
     selectedRange: TimeRange;
     onRangeChange?: (range: TimeRange) => void;
     portfolioReturn?: number;
+    hasHoldings?: boolean;
     className?: string;
 }
 
@@ -136,6 +137,7 @@ export function BenchmarkComparisonChart({
     selectedRange,
     onRangeChange,
     portfolioReturn,
+    hasHoldings = true,
     className,
 }: BenchmarkComparisonChartProps) {
     const rawId = useId();
@@ -156,6 +158,14 @@ export function BenchmarkComparisonChart({
 
     // Ensure data is always a complete, multi-point series
     const activeData = useMemo<ComparisonDatum[]>(() => {
+        if (!hasHoldings) {
+            return buildBenchmarkComparisonSeries({
+                range: activeRange,
+                portfolioReturn: 0,
+                hasHoldings: false,
+            });
+        }
+
         const series = dataByRange[activeRange];
         if (Array.isArray(series) && series.length >= 3) {
             return series;
@@ -165,14 +175,15 @@ export function BenchmarkComparisonChart({
         return buildBenchmarkComparisonSeries({
             range: activeRange,
             portfolioReturn: typeof portfolioReturn === 'number' && Number.isFinite(portfolioReturn) ? portfolioReturn : 0,
+            hasHoldings: true,
         });
-    }, [dataByRange, activeRange, portfolioReturn]);
+    }, [dataByRange, activeRange, hasHoldings, portfolioReturn]);
 
     const summary = useMemo(() => {
         const lastPoint = activeData[activeData.length - 1];
-        const isPortfolioInactive = (portfolioReturn === 0) && (!activeData.length || activeData.every((pt) => pt.portfolio === 100));
+        const isPortfolioInactive = !hasHoldings || ((portfolioReturn === 0) && (!activeData.length || activeData.every((pt) => pt.portfolio === 100)));
         const pReturn = isPortfolioInactive ? 0 : ((lastPoint?.portfolio ?? 100) - 100);
-        const spReturn = (lastPoint?.sp500 ?? 100) - 100;
+        const spReturn = isPortfolioInactive ? 0 : ((lastPoint?.sp500 ?? 100) - 100);
         const spread = isPortfolioInactive ? 0 : ((lastPoint?.portfolio ?? 100) - (lastPoint?.sp500 ?? 100));
         const leader = isPortfolioInactive ? 'Sin posiciones' : (spread >= 0 ? 'Portafolio' : 'S&P 500');
 
@@ -183,7 +194,7 @@ export function BenchmarkComparisonChart({
             leader,
             isPortfolioInactive,
         };
-    }, [activeData, activeRange, portfolioReturn]);
+    }, [activeData, activeRange, hasHoldings, portfolioReturn]);
 
     const chartDomain = useMemo<[number, number]>(() => {
         const values = activeData
@@ -229,7 +240,9 @@ export function BenchmarkComparisonChart({
                                 Portafolio vs S&P 500
                             </h3>
                             <p className="text-xs sm:text-sm text-muted-foreground/80 max-w-xl text-center mx-auto">
-                                Curvas de rendimiento relativo indexadas. Si el S&P 500 (SPY) sube o baja en el mercado, se refleja en su curva en tiempo real.
+                                {summary.isPortfolioInactive
+                                    ? 'Agregá al menos un activo para activar la comparación contra el S&P 500 (SPY).'
+                                    : 'Curvas de rendimiento relativo indexadas. Si el S&P 500 (SPY) sube o baja en el mercado, se refleja en su curva en tiempo real.'}
                             </p>
                         </div>
 

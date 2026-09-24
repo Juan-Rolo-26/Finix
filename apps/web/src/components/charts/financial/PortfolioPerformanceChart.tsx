@@ -13,11 +13,23 @@
  *  - Client-side only rendering
  */
 
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { ChartContainer } from '../shared/ChartContainer';
 import { ChartSkeleton } from '../shared/ChartSkeleton';
 import { LIGHTWEIGHT_CHART_THEME, CHART_COLORS, TIME_RANGES, type TimeRange } from '../utils/chartTheme';
+import {
+  AreaSeries,
+  CrosshairMode,
+  createChart,
+  createSeriesMarkers,
+  LineStyle,
+  type IChartApi,
+  type ISeriesApi,
+  type ISeriesMarkersPluginApi,
+  type SeriesMarker,
+  type Time,
+} from 'lightweight-charts';
 import {
   formatCurrency,
   formatPercentage,
@@ -86,9 +98,9 @@ export function PortfolioPerformanceChart({
   className,
 }: PortfolioPerformanceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<ReturnType<typeof import('lightweight-charts').createChart> | null>(null);
-  const seriesRef = useRef<ReturnType<typeof import('lightweight-charts').IChartApi.prototype.addAreaSeries> | null>(null);
-  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
+  const markersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>('value');
   const [selectedRange, setSelectedRange] = useState<TimeRange>('1A');
@@ -144,111 +156,110 @@ export function PortfolioPerformanceChart({
   useEffect(() => {
     if (!isMounted || !chartContainerRef.current) return;
 
-    let chart: ReturnType<typeof import('lightweight-charts').createChart>;
+    let chart: IChartApi | null = null;
+    let crosshairHandler: Parameters<IChartApi['subscribeCrosshairMove']>[0] | null = null;
+    let resizeObserver: ResizeObserver | null = null;
+    const container = chartContainerRef.current;
+    if (!container) return;
 
-    (async () => {
-      const { createChart, CrosshairMode, LineStyle } = await import('lightweight-charts');
+    // Cleanup previous chart
+    if (chartRef.current) {
+      markersRef.current?.detach();
+      markersRef.current = null;
+      chartRef.current.remove();
+      chartRef.current = null;
+    }
 
-      if (!chartContainerRef.current) return;
+    const isPositive = summary?.isPositive ?? true;
+    const strokeColor = isPositive ? CHART_COLORS.positive : CHART_COLORS.negative;
 
-      // Cleanup previous chart
-      if (chartRef.current) {
-        chartRef.current.remove();
-        chartRef.current = null;
-      }
-
-      const isPositive = summary?.isPositive ?? true;
-      const strokeColor = isPositive ? CHART_COLORS.positive : CHART_COLORS.negative;
-
-      chart = createChart(chartContainerRef.current, {
-        ...LIGHTWEIGHT_CHART_THEME,
-        width: chartContainerRef.current.clientWidth,
-        height: chartContainerRef.current.clientHeight,
-        crosshair: {
-          ...LIGHTWEIGHT_CHART_THEME.crosshair,
-          mode: CrosshairMode.Magnet,
-          vertLine: {
-            ...LIGHTWEIGHT_CHART_THEME.crosshair.vertLine,
-            style: LineStyle.Dashed,
-          },
-          horzLine: {
-            ...LIGHTWEIGHT_CHART_THEME.crosshair.horzLine,
-            style: LineStyle.Dashed,
-          },
+    chart = createChart(container, {
+      ...LIGHTWEIGHT_CHART_THEME,
+      width: container.clientWidth,
+      height: container.clientHeight,
+      crosshair: {
+        ...LIGHTWEIGHT_CHART_THEME.crosshair,
+        mode: CrosshairMode.Magnet,
+        vertLine: {
+          ...LIGHTWEIGHT_CHART_THEME.crosshair.vertLine,
+          style: LineStyle.Dashed,
         },
-      });
-
-      chartRef.current = chart;
-
-      const areaSeries = chart.addAreaSeries({
-        lineColor: strokeColor,
-        topColor: `${strokeColor}44`,
-        bottomColor: `${strokeColor}05`,
-        lineWidth: 2.5,
-        priceFormat: {
-          type: viewMode === 'returnPct' ? 'percent' : 'price',
-          precision: viewMode === 'returnPct' ? 2 : 2,
-          minMove: 0.01,
+        horzLine: {
+          ...LIGHTWEIGHT_CHART_THEME.crosshair.horzLine,
+          style: LineStyle.Dashed,
         },
-        crosshairMarkerVisible: true,
-        crosshairMarkerRadius: 5,
-        crosshairMarkerBorderColor: strokeColor,
-        crosshairMarkerBackgroundColor: 'hsl(222 28% 7%)',
+      },
+    });
+
+    chartRef.current = chart;
+
+    const areaSeries = chart.addSeries(AreaSeries, {
+      lineColor: strokeColor,
+      topColor: `${strokeColor}44`,
+      bottomColor: `${strokeColor}05`,
+      lineWidth: 3,
+      priceFormat: {
+        type: viewMode === 'returnPct' ? 'percent' : 'price',
+        precision: viewMode === 'returnPct' ? 2 : 2,
+        minMove: 0.01,
+      },
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 5,
+      crosshairMarkerBorderColor: strokeColor,
+      crosshairMarkerBackgroundColor: 'hsl(222 28% 7%)',
+    });
+
+    seriesRef.current = areaSeries;
+    markersRef.current = createSeriesMarkers(areaSeries, markers as SeriesMarker<Time>[]);
+
+    if (lwcData.length > 0) {
+      areaSeries.setData(lwcData);
+    }
+    // Crosshair subscription
+    crosshairHandler = (param) => {
+      if (!param.point || !param.time || !param.seriesData.get(areaSeries)) {
+        setCrosshairData(null);
+        return;
+      }
+      const seriesValue = param.seriesData.get(areaSeries) as { value: number } | undefined;
+      if (!seriesValue) return;
+
+      const dateStr = String(param.time);
+      const matchingPoint = series.find((pt) => pt.date === dateStr);
+
+      setCrosshairData({
+        date: dateStr,
+        value: matchingPoint?.value ?? 0,
+        returnPct: matchingPoint?.returnPct ?? 0,
+        pnl: matchingPoint?.pnl ?? 0,
+        invested: matchingPoint?.invested ?? 0,
+        dailyReturn: matchingPoint?.dailyReturn,
       });
+    };
+    chart.subscribeCrosshairMove(crosshairHandler);
 
-      seriesRef.current = areaSeries;
+    chart.timeScale().fitContent();
 
-      if (lwcData.length > 0) {
-        areaSeries.setData(lwcData);
-      }
-      if (markers.length > 0) {
-        areaSeries.setMarkers(markers);
-      }
-
-      // Crosshair subscription
-      chart.subscribeCrosshairMove((param) => {
-        if (!param.point || !param.time || !param.seriesData.get(areaSeries)) {
-          setCrosshairData(null);
-          return;
-        }
-        const seriesValue = param.seriesData.get(areaSeries) as { value: number } | undefined;
-        if (!seriesValue) return;
-
-        const dateStr = String(param.time);
-        const matchingPoint = series.find((pt) => pt.date === dateStr);
-
-        setCrosshairData({
-          date: dateStr,
-          value: matchingPoint?.value ?? 0,
-          returnPct: matchingPoint?.returnPct ?? 0,
-          pnl: matchingPoint?.pnl ?? 0,
-          invested: matchingPoint?.invested ?? 0,
-          dailyReturn: matchingPoint?.dailyReturn,
+    // ResizeObserver
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        chart?.applyOptions({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
         });
-      });
-
-      chart.timeScale().fitContent();
-
-      // ResizeObserver
-      const observer = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          if (chartRef.current) {
-            chartRef.current.applyOptions({
-              width: entry.contentRect.width,
-              height: entry.contentRect.height,
-            });
-          }
-        }
-      });
-      observer.observe(chartContainerRef.current);
-      resizeObserverRef.current = observer;
-    })();
+      }
+    });
+    resizeObserver.observe(container);
 
     return () => {
-      resizeObserverRef.current?.disconnect();
-      resizeObserverRef.current = null;
-      if (chartRef.current) {
-        chartRef.current.remove();
+      resizeObserver?.disconnect();
+      markersRef.current?.detach();
+      markersRef.current = null;
+      if (chart && crosshairHandler) {
+        chart.unsubscribeCrosshairMove(crosshairHandler);
+      }
+      if (chart) {
+        chart.remove();
         chartRef.current = null;
         seriesRef.current = null;
       }
@@ -261,9 +272,7 @@ export function PortfolioPerformanceChart({
     if (!seriesRef.current || lwcData.length === 0) return;
     try {
       seriesRef.current.setData(lwcData);
-      if (markers.length > 0) {
-        seriesRef.current.setMarkers(markers);
-      }
+      markersRef.current?.setMarkers(markers as SeriesMarker<Time>[]);
       chartRef.current?.timeScale().fitContent();
     } catch {
       // chart may have been removed

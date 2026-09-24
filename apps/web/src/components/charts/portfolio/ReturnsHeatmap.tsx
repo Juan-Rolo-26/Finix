@@ -4,11 +4,12 @@
  * Shows all available years in a grid of months, colored by return %.
  */
 
-import React, { useEffect, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useMemo, useCallback } from 'react';
 import { ChartContainer } from '../shared/ChartContainer';
 import { CHART_FONT, ECHARTS_BASE_THEME } from '../utils/chartTheme';
 import { formatPercentage } from '../utils/chartFormatters';
 import { groupReturnsByYear, type MonthlyReturn } from '../utils/chartDataAdapters';
+import type { ECharts } from 'echarts/core';
 
 interface ReturnsHeatmapProps {
   data?: MonthlyReturn[] | null;
@@ -36,7 +37,7 @@ function returnToColor(value: number | null): string {
 
 export function ReturnsHeatmap({ data, loading, error, onRetry, className }: ReturnsHeatmapProps) {
   const chartRef = useRef<HTMLDivElement>(null);
-  const instanceRef = useRef<echarts.ECharts | null>(null);
+  const instanceRef = useRef<ECharts | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const byYear = useMemo(() => groupReturnsByYear(data ?? []), [data]);
@@ -57,6 +58,7 @@ export function ReturnsHeatmap({ data, loading, error, onRetry, className }: Ret
   }, [byYear, years]);
 
   const chartHeight = Math.max(160, years.length * 52 + 60);
+  const yData = useMemo(() => years.map(String), [years]);
 
   const initChart = useCallback(async () => {
     if (!chartRef.current || isEmpty) return;
@@ -74,8 +76,6 @@ export function ReturnsHeatmap({ data, loading, error, onRetry, className }: Ret
     instanceRef.current = instance;
 
     const xData = MONTH_LABELS;
-    const yData = years.map(String);
-
     const option = {
       ...ECHARTS_BASE_THEME,
       backgroundColor: 'transparent',
@@ -188,15 +188,12 @@ export function ReturnsHeatmap({ data, loading, error, onRetry, className }: Ret
       ],
     };
 
-    instance.setOption(option);
+    instance.setOption(option as any);
 
     const observer = new ResizeObserver(() => instanceRef.current?.resize());
     observer.observe(chartRef.current!);
     resizeObserverRef.current = observer;
   }, [heatmapData, yData, isEmpty]);
-
-  // yData reference fix
-  const yData = years.map(String);
 
   useEffect(() => {
     if (!isEmpty && !loading) initChart();

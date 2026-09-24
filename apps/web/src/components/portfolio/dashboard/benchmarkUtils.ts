@@ -65,10 +65,12 @@ export function buildBenchmarkComparisonSeries({
     range,
     portfolioReturn = 0,
     apiSeries = [],
+    hasHoldings = true,
 }: {
     range: TimeRange;
     portfolioReturn?: number;
     apiSeries?: Array<{ date: string; portfolio: number; invested?: number }>;
+    hasHoldings?: boolean;
 }): ComparisonDatum[] {
     const trajectory = SP500_TRAJECTORIES[range] || SP500_TRAJECTORIES['1M'];
     const pointCount = trajectory.length;
@@ -98,6 +100,16 @@ export function buildBenchmarkComparisonSeries({
             : new Date(startDate.getTime() + i * stepMs);
 
         const dateStr = formatDateLabel(ptDate, range);
+
+        // Until the first position exists there is no performance to compare.
+        if (!hasHoldings) {
+            result.push({
+                date: dateStr,
+                portfolio: 100.0,
+                sp500: 100.0,
+            });
+            continue;
+        }
 
         // SPY (S&P 500) Index on Base 100
         const spAccumReturn = trajectory[i] ?? 0;

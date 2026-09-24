@@ -7,11 +7,12 @@
  * Shows individual assets + portfolio aggregate
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { ChartContainer } from '../shared/ChartContainer';
 import { CHART_FONT, CHART_COLORS, ECHARTS_BASE_THEME } from '../utils/chartTheme';
 import { formatPercentage } from '../utils/chartFormatters';
 import type { RiskReturnItem } from '../utils/chartDataAdapters';
+import type { ECharts } from 'echarts/core';
 
 interface RiskReturnChartProps {
   data?: RiskReturnItem[] | null;
@@ -31,7 +32,7 @@ export function RiskReturnChart({
   className,
 }: RiskReturnChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
-  const instanceRef = useRef<echarts.ECharts | null>(null);
+  const instanceRef = useRef<ECharts | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const isEmpty = !loading && !error && (!data?.length);

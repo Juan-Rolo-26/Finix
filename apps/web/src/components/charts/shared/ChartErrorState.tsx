@@ -1,5 +1,4 @@
 /** ChartErrorState.tsx — Error state for Finix chart components */
-import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

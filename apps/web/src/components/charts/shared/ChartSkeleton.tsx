@@ -1,5 +1,4 @@
 /** ChartSkeleton.tsx — Animated loading skeleton for charts */
-import React from 'react';
 import { cn } from '@/lib/utils';
 
 interface ChartSkeletonProps {
