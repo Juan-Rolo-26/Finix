@@ -23,9 +23,6 @@ export default function AuthCallback() {
                 return;
             }
 
-            // Remove any old local token to force checking Supabase's current session
-            localStorage.removeItem('token');
-
             // Sync with NestJS backend
             const user = await syncFromSession();
 

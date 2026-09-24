@@ -56,7 +56,7 @@ const POST_INCLUDE = (userId?: string) => ({
             },
         },
     },
-    _count: { select: { likes: true, replies: true } },
+    _count: { select: { likes: true, replies: true, comments: true, reposts: true, quotes: true, saves: true } },
 });
 
 const COMMENT_INCLUDE = (userId?: string) => ({
@@ -361,7 +361,9 @@ export class PostsService {
         if (sort === 'following') {
             where.authorId = { in: followingIds };
         } else if (sort === 'finix_oficial') {
-            where.author = { username: 'finix_oficial' };
+            // Keep the legacy username visible while the official account uses
+            // the public handle @finixarg.
+            where.author = { username: { in: ['finixarg', 'finix_oficial'] } };
         }
         if (opts.type) {
             const t = opts.type.toLowerCase().trim();
@@ -482,10 +484,15 @@ export class PostsService {
 
     // ── DELETE ────────────────────────────────────────────────────────────────
 
-    async deletePost(postId: string, userId: string, isAdmin = false) {
-        const where = isAdmin ? { id: postId } : { id: postId, authorId: userId };
-        const post = await this.prisma.post.findFirst({ where });
-        if (!post) throw new NotFoundException('Post no encontrado o sin permisos');
+    async deletePost(postId: string, userId: string) {
+        const post = await this.prisma.post.findUnique({
+            where: { id: postId },
+            select: { id: true, authorId: true },
+        });
+        if (!post) throw new NotFoundException('Publicación no encontrada');
+        if (post.authorId !== userId) {
+            throw new ForbiddenException('No tienes permiso para eliminar esta publicación');
+        }
         await this.prisma.post.delete({ where: { id: postId } });
         this.clearFeedCache();
         return { success: true };

@@ -14,13 +14,17 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { PortfolioService } from './portfolio.service';
+import { PortfolioPerformanceService } from './portfolio-performance.service';
 import { CreatePortfolioDto, UpdatePortfolioDto, CreateAssetDto, UpdateAssetDto, CreateTransactionDto, CreateWatchlistDto, UpdateWatchlistDto } from './dto/portfolio.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { LimitFreePortfolioGuard } from '../access/limit-free-portfolio.guard';
 
 @Controller('portfolios')
 export class PortfolioController {
-    constructor(private portfolioService: PortfolioService) { }
+    constructor(
+        private portfolioService: PortfolioService,
+        private performanceService: PortfolioPerformanceService,
+    ) { }
 
     private resolveUserId(req: any) {
         return req.user.id;
@@ -217,4 +221,110 @@ export class PortfolioController {
             throw new BadRequestException(err?.message || 'Error al registrar la transacción');
         }
     }
+
+    // ==================== PORTFOLIO ANALYTICS (Charts) ====================
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':id/summary')
+    async getPortfolioSummary(
+        @Request() req,
+        @Param('id') id: string,
+        @Query('currency') currency?: string,
+    ) {
+        const userId = this.resolveUserId(req);
+        return this.performanceService.getSummary(id, userId, currency || 'USD');
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':id/performance')
+    async getPortfolioPerformance(
+        @Request() req,
+        @Param('id') id: string,
+        @Query('range') range?: string,
+        @Query('currency') currency?: string,
+    ) {
+        const userId = this.resolveUserId(req);
+        return this.performanceService.getPerformance(id, userId, range || '1M', currency || 'USD');
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':id/allocation')
+    async getPortfolioAllocation(
+        @Request() req,
+        @Param('id') id: string,
+        @Query('groupBy') groupBy?: string,
+        @Query('currency') currency?: string,
+    ) {
+        const userId = this.resolveUserId(req);
+        return this.performanceService.getAllocation(id, userId, groupBy || 'asset', currency || 'USD');
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':id/asset-pnl')
+    async getAssetPnL(
+        @Request() req,
+        @Param('id') id: string,
+        @Query('currency') currency?: string,
+    ) {
+        const userId = this.resolveUserId(req);
+        return this.performanceService.getAssetPnL(id, userId, currency || 'USD');
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':id/returns')
+    async getPortfolioReturns(
+        @Request() req,
+        @Param('id') id: string,
+    ) {
+        const userId = this.resolveUserId(req);
+        return this.performanceService.getReturns(id, userId);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':id/drawdown')
+    async getPortfolioDrawdown(
+        @Request() req,
+        @Param('id') id: string,
+        @Query('range') range?: string,
+    ) {
+        const userId = this.resolveUserId(req);
+        return this.performanceService.getDrawdown(id, userId, range || 'ALL');
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':id/dividends')
+    async getPortfolioDividends(
+        @Request() req,
+        @Param('id') id: string,
+        @Query('range') range?: string,
+        @Query('currency') currency?: string,
+    ) {
+        const userId = this.resolveUserId(req);
+        return this.performanceService.getDividends(id, userId, range || 'ALL', currency || 'USD');
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':id/risk')
+    async getPortfolioRisk(
+        @Request() req,
+        @Param('id') id: string,
+        @Query('currency') currency?: string,
+    ) {
+        const userId = this.resolveUserId(req);
+        return this.performanceService.getRisk(id, userId, currency || 'USD');
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':id/benchmarks')
+    async getPortfolioBenchmarks(
+        @Request() req,
+        @Param('id') id: string,
+        @Query('range') range?: string,
+        @Query('benchmarks') benchmarks?: string,
+    ) {
+        const userId = this.resolveUserId(req);
+        const benchmarkList = benchmarks ? benchmarks.split(',').map((b) => b.trim()) : ['sp500'];
+        return this.performanceService.getBenchmarks(id, userId, range || '1Y', benchmarkList);
+    }
 }
+

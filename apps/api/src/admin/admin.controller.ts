@@ -321,6 +321,7 @@ export class AdminController {
                 await tx.user.update({
                     where: { id: verification.userId },
                     data: {
+                        isVerified: true,
                         financialAdvisorVerified: true,
                     }
                 });
@@ -328,6 +329,7 @@ export class AdminController {
                 await tx.user.update({
                     where: { id: verification.userId },
                     data: {
+                        isVerified: false,
                         financialAdvisorVerified: false,
                     }
                 });

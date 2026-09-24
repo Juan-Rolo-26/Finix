@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
+import { setAccessToken } from './lib/api';
 import { usePreferencesStore } from './stores/preferencesStore';
 import { supabase } from './lib/supabase';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -81,8 +82,8 @@ function ThemeApplier() {
 // ─── Route Guards ─────────────────────────────────────────────────────────────
 
 function RequireOnboarding({ children }: { children: React.ReactNode }) {
-    const { token } = useAuthStore();
-    if (!token) return <Navigate to="/" replace />;
+    const { token, user } = useAuthStore();
+    if (!token && !user) return <Navigate to="/" replace />;
     // Guard removed: users who skipped onboarding can use the app and edit from profile
     return <>{children}</>;
 }
@@ -90,17 +91,17 @@ function RequireOnboarding({ children }: { children: React.ReactNode }) {
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-    const { token, syncFromSession } = useAuthStore();
+    const { token, user, syncFromSession } = useAuthStore();
 
     // Restore session on app load and keep token in sync
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'TOKEN_REFRESHED' && session) {
-                localStorage.setItem('token', session.access_token);
+                setAccessToken(session.access_token);
                 useAuthStore.setState({ token: session.access_token });
             }
             if (event === 'SIGNED_OUT') {
-                localStorage.removeItem('token');
+                setAccessToken(null);
                 localStorage.removeItem('user');
                 useAuthStore.setState({ token: null, user: null });
             }
@@ -133,7 +134,7 @@ export default function App() {
                     <Route
                         path="/"
                         element={
-                            !token
+                            !token && !user
                                 ? <AuthPage />
                                 : <Navigate to="/dashboard" replace />
                         }
@@ -154,7 +155,7 @@ export default function App() {
                     <Route
                         path="/onboarding"
                         element={
-                            !token
+                            !token && !user
                                 ? <Navigate to="/" replace />
                                 : <OnboardingWizard />
                         }

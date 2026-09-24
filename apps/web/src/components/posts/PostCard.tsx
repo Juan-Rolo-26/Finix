@@ -23,7 +23,6 @@ import {
     Pause,
     Volume2,
     VolumeX,
-    BadgeCheck,
     ExternalLink,
     Lightbulb,
     BookOpen,
@@ -37,6 +36,7 @@ import { resolveMediaUrl } from '@/lib/mediaUrl';
 import ReportModal from '@/components/ReportModal';
 import DeletePostModal from '@/components/DeletePostModal';
 import TradingViewWidget from '@/components/TradingViewWidget';
+import VerifiedBadge from '@/components/common/VerifiedBadge';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -245,7 +245,8 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
         const nextSaved = !saved;
         setSaved(nextSaved);
         try {
-            await apiFetch(`/posts/${post.id}/save`, { method: 'POST' });
+            const response = await apiFetch(`/posts/${post.id}/save`, { method: 'POST' });
+            if (!response.ok) throw new Error('No se pudo guardar la publicación');
             onUpdated({ ...post, savedByMe: nextSaved });
         } catch {
             setSaved(prev);
@@ -317,25 +318,30 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             {/* Header */}
             <div className="flex items-start justify-between p-4 pb-3">
                 <Link to={`/profile/${post.author?.username || ''}`} className="flex items-center gap-3 group">
-                    {post.author?.avatarUrl ? (
-                        <img
-                            src={resolveMediaUrl(post.author.avatarUrl)}
-                            alt={post.author.username || 'Avatar'}
-                            className="w-10 h-10 rounded-full object-cover border-2 border-border/50 group-hover:border-primary/50 transition-colors"
-                        />
-                    ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center text-black font-bold text-sm shrink-0">
-                            {(post.author?.username?.[0] || 'U').toUpperCase()}
-                        </div>
-                    )}
+                    <div className="flex-shrink-0">
+                        {post.author?.avatarUrl ? (
+                            <img
+                                src={resolveMediaUrl(post.author.avatarUrl)}
+                                alt={post.author.username || 'Avatar'}
+                                className="w-10 h-10 rounded-full object-cover border-2 border-border/50 group-hover:border-primary/50 transition-colors"
+                            />
+                        ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center text-black font-bold text-sm shrink-0">
+                                {(post.author?.username?.[0] || 'U').toUpperCase()}
+                            </div>
+                        )}
+                    </div>
                     <div>
                         <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-sm group-hover:text-primary transition-colors">
                                 {post.author?.username || 'Usuario'}
                             </span>
-                            {post.author?.isVerified && (
-                                <BadgeCheck className="w-4 h-4 text-primary" />
-                            )}
+                            <VerifiedBadge
+                                isVerified={post.author?.isVerified}
+                                isInfluencer={post.author?.isInfluencer}
+                                username={post.author?.username}
+                                size="sm"
+                            />
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span>{timeAgo(post.createdAt)}</span>

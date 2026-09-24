@@ -21,6 +21,7 @@ type JwtPayload = {
     iss?: string;
     email?: string;
     sub?: string;
+    sid?: string;
     user_metadata?: {
         username?: string;
     };
@@ -190,6 +191,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     async validate(payload: any) {
         if (payload.iss === 'finix-api') {
+            if (payload.sid) {
+                const session = await this.prisma.userSession.findUnique({
+                    where: { id: payload.sid },
+                    select: { userId: true, revokedAt: true, expiresAt: true },
+                });
+                if (!session || session.userId !== payload.sub || session.revokedAt || session.expiresAt < new Date()) {
+                    throw new UnauthorizedException('Sesión inválida o cerrada');
+                }
+            }
+
             const finixUser = await this.prisma.user.findUnique({
                 where: { id: payload.sub },
                 select: {

@@ -3,10 +3,11 @@ import { motion } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { Link } from 'react-router-dom';
-import { Heart, Trash2, Reply, ChevronDown, Loader2, BadgeCheck, Send, Flag } from 'lucide-react';
+import { Heart, Trash2, Reply, ChevronDown, Loader2, Send, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import ReportModal from '@/components/ReportModal';
+import VerifiedBadge from '@/components/common/VerifiedBadge';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -136,7 +137,7 @@ function CommentItem({
                             <Link to={`/profile/${comment.author.username}`} className="text-xs font-semibold hover:text-primary transition-colors">
                                 {comment.author.username}
                             </Link>
-                            {comment.author.isVerified && <BadgeCheck className="w-3 h-3 text-primary" />}
+                            <VerifiedBadge isVerified={comment.author.isVerified} username={comment.author.username} size="xs" />
                         </div>
                         <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{comment.content}</p>
                     </div>

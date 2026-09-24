@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, UnauthorizedException, OnModuleInit, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
-import { createHash, randomInt } from 'crypto';
+import { createHash, randomInt, randomUUID } from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma.service';
 import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
@@ -9,6 +9,12 @@ import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 const EMAIL_VERIFICATION_TTL_MINUTES = 15;
 const LOGIN_CODE_TTL_MINUTES = 10;
 const RESET_PASSWORD_TTL_MINUTES = 15;
+const DEFAULT_REFRESH_TTL_SECONDS = 60 * 60 * 24 * 365;
+
+interface SessionMeta {
+    ip?: string;
+    userAgent?: string;
+}
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -164,12 +170,13 @@ export class AuthService implements OnModuleInit {
         return storedHash === this.hashCode(code);
     }
 
-    private async issueFinixToken(user: any) {
+    private async issueFinixToken(user: any, sessionId: string) {
         return this.jwtService.signAsync(
             {
                 email: user.email,
                 username: user.username,
                 provider: 'finix',
+                sid: sessionId,
             },
             {
                 issuer: 'finix-api',
@@ -178,9 +185,48 @@ export class AuthService implements OnModuleInit {
         );
     }
 
-    private async buildAuthResponse(user: any) {
+    private get refreshTtlSeconds() {
+        const configured = Number(process.env.AUTH_REFRESH_TTL_SECONDS);
+        return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_REFRESH_TTL_SECONDS;
+    }
+
+    getRefreshTtlMs() {
+        return this.refreshTtlSeconds * 1000;
+    }
+
+    private async issueRefreshToken(userId: string, sessionId: string) {
+        return this.jwtService.signAsync(
+            {
+                sub: userId,
+                sid: sessionId,
+                type: 'finix_refresh',
+            },
+            { expiresIn: `${this.refreshTtlSeconds}s` },
+        );
+    }
+
+    private hashSessionToken(token: string) {
+        return createHash('sha256').update(token).digest('hex');
+    }
+
+    private async buildAuthResponse(user: any, meta: SessionMeta = {}) {
+        const sessionId = randomUUID();
+        const refreshToken = await this.issueRefreshToken(user.id, sessionId);
+
+        await this.prisma.userSession.create({
+            data: {
+                id: sessionId,
+                userId: user.id,
+                refreshTokenHash: this.hashSessionToken(refreshToken),
+                ipAddress: meta.ip,
+                userAgent: meta.userAgent,
+                expiresAt: new Date(Date.now() + this.getRefreshTtlMs()),
+            },
+        });
+
         return {
-            token: await this.issueFinixToken(user),
+            token: await this.issueFinixToken(user, sessionId),
+            refreshToken,
             user: this.formatUser(user),
         };
     }
@@ -305,7 +351,7 @@ export class AuthService implements OnModuleInit {
         });
     }
 
-    async verifyRegisterCode(email: string, code: string) {
+    async verifyRegisterCode(email: string, code: string, meta: SessionMeta = {}) {
         const normalizedEmail = this.normalizeEmail(email);
         const user = await this.prisma.user.findUnique({
             where: { email: normalizedEmail },
@@ -345,10 +391,10 @@ export class AuthService implements OnModuleInit {
             actionLabel: 'Ver en Panel Admin',
         });
 
-        return this.buildAuthResponse(updatedUser);
+        return this.buildAuthResponse(updatedUser, meta);
     }
 
-    async login(email: string, password: string) {
+    async login(email: string, password: string, meta: SessionMeta = {}) {
         const normalizedEmail = this.normalizeEmail(email);
         const user = await this.prisma.user.findUnique({
             where: { email: normalizedEmail },
@@ -379,7 +425,7 @@ export class AuthService implements OnModuleInit {
             },
         });
 
-        return this.buildAuthResponse(updatedUser);
+        return this.buildAuthResponse(updatedUser, meta);
     }
 
     async requestLoginCode(email: string, password: string) {
@@ -423,7 +469,7 @@ export class AuthService implements OnModuleInit {
         });
     }
 
-    async verifyLoginCode(email: string, code: string) {
+    async verifyLoginCode(email: string, code: string, meta: SessionMeta = {}) {
         const normalizedEmail = this.normalizeEmail(email);
         const user = await this.prisma.user.findUnique({
             where: { email: normalizedEmail },
@@ -442,7 +488,79 @@ export class AuthService implements OnModuleInit {
             },
         });
 
-        return this.buildAuthResponse(updatedUser);
+        return this.buildAuthResponse(updatedUser, meta);
+    }
+
+    async refreshSession(refreshToken: string | undefined, meta: SessionMeta = {}) {
+        if (!refreshToken) {
+            throw new UnauthorizedException('Sesión persistente no encontrada');
+        }
+
+        let payload: any;
+        try {
+            payload = await this.jwtService.verifyAsync(refreshToken);
+        } catch {
+            throw new UnauthorizedException('Sesión persistente expirada');
+        }
+
+        if (payload?.type !== 'finix_refresh' || !payload?.sid || !payload?.sub) {
+            throw new UnauthorizedException('Token de sesión inválido');
+        }
+
+        const session = await this.prisma.userSession.findUnique({ where: { id: payload.sid } });
+        if (!session || session.userId !== payload.sub || session.revokedAt || session.expiresAt < new Date()) {
+            throw new UnauthorizedException('Sesión persistente inválida o expirada');
+        }
+
+        if (session.refreshTokenHash !== this.hashSessionToken(refreshToken)) {
+            await this.prisma.userSession.update({
+                where: { id: session.id },
+                data: { revokedAt: new Date() },
+            });
+            throw new UnauthorizedException('Sesión persistente comprometida');
+        }
+
+        const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+        if (!user || user.status === 'BANNED' || user.status === 'SUSPENDED') {
+            throw new UnauthorizedException('Cuenta suspendida o baneada');
+        }
+
+        const nextRefreshToken = await this.issueRefreshToken(user.id, session.id);
+        await this.prisma.userSession.update({
+            where: { id: session.id },
+            data: {
+                refreshTokenHash: this.hashSessionToken(nextRefreshToken),
+                ipAddress: meta.ip,
+                userAgent: meta.userAgent,
+                // Sliding expiration keeps an active browser signed in while
+                // still allowing inactive sessions to expire eventually.
+                expiresAt: new Date(Date.now() + this.getRefreshTtlMs()),
+            },
+        });
+
+        return {
+            token: await this.issueFinixToken(user, session.id),
+            refreshToken: nextRefreshToken,
+            user: this.formatUser(user),
+        };
+    }
+
+    async logout(refreshToken?: string) {
+        if (!refreshToken) return { success: true };
+
+        try {
+            const payload = await this.jwtService.verifyAsync(refreshToken, { ignoreExpiration: true });
+            if (payload?.sid && payload?.sub) {
+                await this.prisma.userSession.updateMany({
+                    where: { id: payload.sid, userId: payload.sub, revokedAt: null },
+                    data: { revokedAt: new Date() },
+                });
+            }
+        } catch {
+            // Logout remains idempotent if the browser already has an expired token.
+        }
+
+        return { success: true };
     }
 
     async requestPasswordResetCode(email: string) {

@@ -7,7 +7,7 @@ import { resolveMediaUrl } from '@/lib/mediaUrl';
 import {
     Heart, MessageSquare, Repeat2, Share2,
     MoreHorizontal, ExternalLink, Flag, Trash2,
-    Bookmark, BadgeCheck, MessageCircle,
+    Bookmark, MessageCircle,
 } from 'lucide-react';
 import CreatePostWidget from './CreatePostWidget';
 import TradingViewWidget from './TradingViewWidget';
@@ -17,6 +17,7 @@ import DeletePostModal from './DeletePostModal';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
+import VerifiedBadge from '@/components/common/VerifiedBadge';
 
 /* ── Types ─────────────────────────────────────────────────────── */
 interface Comment {
@@ -28,7 +29,7 @@ interface Post {
     tickers?: string; mediaUrl?: string; assetSymbol?: string;
     type?: 'analysis' | 'opinion' | 'education' | 'news' | 'question' | 'chart';
     likes: unknown[]; comments: Comment[];
-    author: { id: string; username: string; role: string; isInfluencer: boolean; avatarUrl?: string };
+    author: { id: string; username: string; role: string; isInfluencer: boolean; isVerified?: boolean; isCreator?: boolean; avatarUrl?: string };
     media?: { url: string; mediaType: string }[];
     parent?: Post; quotedPost?: Post; replies?: Post[];
     likedByMe?: boolean; repostedByMe?: boolean; savedByMe?: boolean;
@@ -218,7 +219,11 @@ function FeedItem({ post }: { post: Post }) {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const isOwner = user?.id === post.author.id || post.author.id === 'current-user';
+    const isOwner = Boolean(
+        (user?.id && post.author?.id && user.id === post.author.id) ||
+        (!user?.id && post.author?.id === 'current-user')
+    );
+    const canDelete = isOwner;
     if (isRemoved) return null;
 
     const typeConfig = post.type ? POST_TYPE_CONFIG[post.type] : null;
@@ -255,7 +260,7 @@ function FeedItem({ post }: { post: Post }) {
     };
 
     const confirmDelete = async () => {
-        if (!isOwner) return;
+        if (!canDelete) return;
         setIsDeleting(true);
         try {
             const res = await apiFetch(`/posts/${post.id}`, { method: 'DELETE' });
@@ -313,7 +318,7 @@ function FeedItem({ post }: { post: Post }) {
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Avatar */}
-                        <div className="relative flex-shrink-0">
+                        <div className="flex-shrink-0">
                             <Avatar className="w-9 h-9 ring-2 ring-border/20">
                                 <AvatarImage src={resolveMediaUrl(post.author.avatarUrl)} />
                                 <AvatarFallback className="text-[12px] font-bold"
@@ -321,22 +326,23 @@ function FeedItem({ post }: { post: Post }) {
                                     {post.author.username[0].toUpperCase()}
                                 </AvatarFallback>
                             </Avatar>
-                            {post.author.isInfluencer && (
-                                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
-                                    style={{ background: 'hsl(38 88% 52%)' }}>
-                                    <BadgeCheck className="w-2.5 h-2.5 text-white" />
-                                </div>
-                            )}
                         </div>
 
                         {/* Name + meta */}
                         <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="text-[13.5px] font-semibold leading-tight group-hover/author:text-primary transition-colors">
                                     {post.author.username}
                                 </span>
+                                <VerifiedBadge
+                                    isVerified={post.author.isVerified}
+                                    isInfluencer={post.author.isInfluencer}
+                                    role={post.author.role}
+                                    username={post.author.username}
+                                    size="sm"
+                                />
                                 {typeConfig && (
-                                    <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold uppercase tracking-wider flex-shrink-0"
+                                    <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold uppercase tracking-wider flex-shrink-0 ml-0.5"
                                         style={{ background: typeConfig.bg, color: typeConfig.color }}>
                                         {typeConfig.label}
                                     </span>
@@ -389,7 +395,7 @@ function FeedItem({ post }: { post: Post }) {
                                                 {item.icon}{item.label}
                                             </button>
                                         ))}
-                                        {isOwner ? (
+                                        {canDelete ? (
                                             <button onClick={handleDeleteClick}
                                                 className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[12.5px] font-medium transition-colors hover:bg-red-500/10"
                                                 style={{ color: 'hsl(0 68% 55%)' }}>

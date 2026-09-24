@@ -155,6 +155,7 @@ model User {
   emailSegments    EmailSegment[] @relation("EmailSegmentCreator")
   emailMedia       EmailMedia[]
   adminSessions  AdminSession[]
+  userSessions   UserSession[]
   reportsCreated Report[]        @relation("Reporter")
 
   // Notifications
@@ -1086,6 +1087,22 @@ model AdminSession {
   userId           String
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId, expiresAt])
+  @@index([revokedAt])
+}
+
+model UserSession {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String    @unique
   userAgent        String?
   ipAddress        String?
   expiresAt        DateTime

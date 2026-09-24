@@ -94,7 +94,7 @@ function FeedTabs({ active, onChange }: { active: FeedTab; onChange: (t: FeedTab
                     <button
                         key={tab.key}
                         onClick={() => onChange(tab.key)}
-                        className={`relative items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[12px] sm:text-[13px] font-semibold transition-all select-none flex-1 justify-center whitespace-nowrap ${tab.key === 'finix_oficial' ? 'hidden sm:flex' : 'flex'}`}
+                        className="relative flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[12px] sm:text-[13px] font-semibold transition-colors select-none flex-1 justify-center whitespace-nowrap"
                         style={{
                             color: isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
                             background: isActive ? 'hsl(var(--card))' : 'transparent',
@@ -253,7 +253,7 @@ function HeadlinesCard({
                         <p className="text-[11px] text-muted-foreground/60 mt-0.5">El contenido se publica desde el panel editorial.</p>
                         <button
                             onClick={() => onNavigate('/news')}
-                            className="mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold bg-secondary/80 hover:bg-secondary text-foreground transition-all"
+                            className="mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold bg-secondary/80 hover:bg-secondary text-foreground transition-colors"
                         >
                             Ver sección Noticias
                         </button>

@@ -44,9 +44,6 @@ function applyThemeToDOM(theme: Theme) {
 
 function syncThemeToBackend(theme: Theme) {
     if (typeof window === 'undefined') return;
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     apiFetch('/users/me/preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

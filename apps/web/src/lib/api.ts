@@ -10,6 +10,13 @@ const defaultBases = Array.from(
 ) as string[];
 
 let activeBase = defaultBases[0];
+let runtimeAccessToken: string | null = null;
+
+export const setAccessToken = (token: string | null) => {
+    runtimeAccessToken = token;
+};
+
+export const getAccessToken = () => runtimeAccessToken;
 
 const buildUrl = (base: string, path: string) => {
     if (/^https?:\/\//i.test(path)) {
@@ -21,7 +28,7 @@ const buildUrl = (base: string, path: string) => {
 
 const clearAuthAndRedirect = () => {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem('token');
+    setAccessToken(null);
     localStorage.removeItem('user');
 
     if (window.location.pathname !== '/') {
@@ -30,24 +37,58 @@ const clearAuthAndRedirect = () => {
     }
 };
 
-const shouldAutoLogoutOnUnauthorized = (path: string, status: number) => {
-    if (status !== 401) return false;
-    if (typeof window === 'undefined') return false;
-    const token = localStorage.getItem('token');
-    if (!token) return false;
+const SESSION_AUTH_ENDPOINTS = [
+    '/auth/login',
+    '/auth/register',
+    '/auth/forgot',
+    '/auth/refresh',
+    '/auth/logout',
+];
 
-    // Evita invalidar la sesión durante el bootstrap de autenticación.
+const isSessionAuthEndpoint = (path: string) => {
     const normalizedPath = path.toLowerCase();
-    if (
-        normalizedPath.includes('/auth/login') ||
-        normalizedPath.includes('/auth/register') ||
-        normalizedPath.includes('/auth/forgot') ||
-        normalizedPath.includes('/auth/me') ||
-        normalizedPath.includes('/auth/sync-user')
-    ) {
-        return false;
+    return SESSION_AUTH_ENDPOINTS.some((endpoint) => normalizedPath.includes(endpoint));
+};
+
+const isAuthBootstrapEndpoint = (path: string) => {
+    const normalizedPath = path.toLowerCase();
+    return normalizedPath.includes('/auth/me') || normalizedPath.includes('/auth/sync-user');
+};
+
+const persistRefreshedSession = (data: any) => {
+    if (typeof window === 'undefined' || !data?.token) return false;
+    setAccessToken(data.token);
+    if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
     }
     return true;
+};
+
+let refreshPromise: Promise<boolean> | null = null;
+
+const tryRefreshSession = async (base: string) => {
+    if (refreshPromise) return refreshPromise;
+
+    refreshPromise = (async () => {
+        try {
+            const response = await fetch(buildUrl(base, '/auth/refresh'), {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                cache: 'no-store',
+            });
+            if (!response.ok) return false;
+            return persistRefreshedSession(await response.json().catch(() => null));
+        } catch {
+            return false;
+        }
+    })();
+
+    try {
+        return await refreshPromise;
+    } finally {
+        refreshPromise = null;
+    }
 };
 
 export const apiUrl = (path: string) => buildUrl(activeBase ?? '', path);
@@ -67,8 +108,7 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
         if (newsResponse) return newsResponse;
     }
 
-    const authToken = localStorage.getItem('token');
-    const withAuth = (requestInit?: RequestInit) => {
+    const withAuth = (requestInit?: RequestInit, token = getAccessToken()) => {
         const enhancedInit = { ...requestInit, credentials: 'include' as RequestCredentials };
         const headers = new Headers(enhancedInit.headers || {});
 
@@ -80,8 +120,8 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
             headers.delete('Content-Length');
         }
 
-        if (authToken && !headers.has('Authorization')) {
-            headers.set('Authorization', `Bearer ${authToken}`);
+        if (token && !headers.has('Authorization')) {
+            headers.set('Authorization', `Bearer ${token}`);
         }
         if (!headers.has('Cache-Control')) {
             headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -104,6 +144,8 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
 
     let lastError: unknown = null;
 
+    let didRefresh = false;
+
     for (const base of candidates) {
         let response: Response;
         try {
@@ -111,6 +153,19 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
         } catch (error) {
             lastError = error;
             continue;
+        }
+
+        if (response.status === 401 && !didRefresh && !isSessionAuthEndpoint(path)) {
+            didRefresh = await tryRefreshSession(base);
+            if (didRefresh) {
+                activeBase = base;
+                try {
+                    response = await fetch(buildUrl(base, path), withAuth(init, getAccessToken()));
+                } catch (error) {
+                    lastError = error;
+                    continue;
+                }
+            }
         }
 
         if (response.status !== 404) {
@@ -122,7 +177,7 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
             }
 
             activeBase = base;
-            if (shouldAutoLogoutOnUnauthorized(path, response.status)) {
+            if (response.status === 401 && !didRefresh && !isSessionAuthEndpoint(path) && !isAuthBootstrapEndpoint(path)) {
                 clearAuthAndRedirect();
             }
             return response;

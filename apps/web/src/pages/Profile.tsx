@@ -13,7 +13,7 @@ import type { Post } from '@/pages/Explore';
 import {
     User, MapPin, Briefcase, Calendar, Award, TrendingUp,
     Linkedin, Twitter, Youtube, Instagram,
-    Edit, Check, X, Camera, Globe, Shield,
+    Edit, Check, X, Camera, Globe, Bookmark,
     BarChart3, Target, MessageSquare, UserPlus,
     Star, Search, Plus, Wallet, DollarSign,
     ArrowUpRight, ArrowDownRight, Layers, Activity, Loader2, Lock, Flag,
@@ -22,6 +22,7 @@ import {
 import ReportModal from '@/components/ReportModal';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import VerifiedBadge from '@/components/common/VerifiedBadge';
 
 
 /* ─── Brand tokens ─────────────────────────────────────────── */
@@ -1610,9 +1611,7 @@ export default function Profile() {
                             <h1 className="text-2xl font-black text-foreground">{profile.username}</h1>
                         )}
                         {profile.isVerified && (
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: PRIMARY }}>
-                                <Check className="w-3 h-3 text-black" />
-                            </div>
+                            <VerifiedBadge isVerified={profile.isVerified} isInfluencer={profile.isInfluencer} username={profile.username} size="md" />
                         )}
                         {profile.isInfluencer && (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ background: 'hsl(47 100% 50% / 0.15)', color: '#fbbf24', border: '1px solid hsl(47 100% 50% / 0.25)' }}>
@@ -2001,7 +2000,7 @@ export default function Profile() {
                                     </div>
                                 ) : (
                                     <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                        <Shield className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                        <Bookmark className="w-12 h-12 mx-auto mb-3 opacity-20" />
                                         <p className="text-muted-foreground text-sm">No hay guardados</p>
                                     </div>
                                 )}

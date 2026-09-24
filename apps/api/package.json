@@ -9,7 +9,8 @@
         "dev": "nest start --watch",
         "start:prod": "node dist/main.js",
         "test": "jest",
-        "seed": "ts-node prisma/seed.ts"
+        "seed": "ts-node prisma/seed.ts",
+        "ensure:official": "ts-node scripts/ensure-official-account.ts"
     },
     "dependencies": {
         "@finix/shared": "*",

@@ -26,6 +26,8 @@
         "@supabase/supabase-js": "^2.98.0",
         "class-variance-authority": "^0.7.0",
         "clsx": "^2.1.0",
+        "echarts": "^6.1.0",
+        "echarts-for-react": "^3.0.6",
         "framer-motion": "^12.29.2",
         "html2canvas": "^1.4.1",
         "lightweight-charts": "^5.2.1",

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { User } from '@finix/shared';
 import { supabase } from '@/lib/supabase';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, getAccessToken, setAccessToken } from '@/lib/api';
 import { usePreferencesStore } from './preferencesStore';
 interface AuthState {
     token: string | null;
@@ -106,11 +106,7 @@ function enhanceUser(user: any): any {
 }
 
 function persistToken(token: string | null) {
-    if (token) {
-        localStorage.setItem('token', token);
-    } else {
-        localStorage.removeItem('token');
-    }
+    setAccessToken(token);
 }
 
 function persistUser(user: User | null) {
@@ -160,14 +156,13 @@ function buildFallbackUser(session: { access_token: string; user: { id: string; 
     } as import('@finix/shared').User;
 }
 
-const persistedToken = localStorage.getItem('token');
 const initialUser = enhanceUser(JSON.parse(localStorage.getItem('user') || 'null'));
 if (initialUser) {
     persistUser(initialUser);
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-    token: persistedToken,
+    token: null,
     user: initialUser,
 
     login: (token, user) => {
@@ -186,6 +181,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     },
 
     logout: async () => {
+        try {
+            await apiFetch('/auth/logout', { method: 'POST' });
+        } catch {
+            // The local session is still cleared if the API is temporarily unavailable.
+        }
         await supabase.auth.signOut();
         persistToken(null);
         persistUser(null);
@@ -193,33 +193,38 @@ export const useAuthStore = create<AuthState>((set) => ({
     },
 
     syncFromSession: async () => {
-        const existingToken = localStorage.getItem('token');
-        if (existingToken) {
-            persistToken(existingToken);
-            try {
-                const existingSessionRes = await apiFetch('/auth/me');
-                if (existingSessionRes.ok) {
-                    const user: User = await existingSessionRes.json();
-                    const enhanced = enhanceUser(user);
-                    persistUser(enhanced);
-                    set({ token: existingToken, user: enhanced });
-
-                    // Sync preferences globally
-                    const { language, theme, currency } = user as any;
-                    if (language || theme || currency) {
-                        usePreferencesStore.getState().updatePreferences({
-                            ...(language && { language }),
-                            ...(theme && { theme }),
-                            ...(currency && { currency }),
-                        });
-                        if (theme) usePreferencesStore.getState().setTheme(theme);
-                    }
-
-                    return user;
-                }
-            } catch {
-                // Fall through to Supabase session restoration.
+        const existingToken = getAccessToken();
+        try {
+            if (!existingToken) {
+                // A new browser profile may have the persistent cookie but no
+                // localStorage state yet. Exchange it for a fresh access token.
+                await apiFetch('/auth/refresh', { method: 'POST' });
             }
+
+            // This also restores a session from the persistent httpOnly cookie
+            // when the short-lived access token is missing or expired.
+            const existingSessionRes = await apiFetch('/auth/me');
+            if (existingSessionRes.ok) {
+                const user: User = await existingSessionRes.json();
+                const enhanced = enhanceUser(user);
+                persistUser(enhanced);
+                set({ token: getAccessToken() || existingToken, user: enhanced });
+
+                // Sync preferences globally
+                const { language, theme, currency } = user as any;
+                if (language || theme || currency) {
+                    usePreferencesStore.getState().updatePreferences({
+                        ...(language && { language }),
+                        ...(theme && { theme }),
+                        ...(currency && { currency }),
+                    });
+                    if (theme) usePreferencesStore.getState().setTheme(theme);
+                }
+
+                return user;
+            }
+        } catch {
+                // Fall through to Supabase session restoration.
         }
 
         const { data: { session } } = await supabase.auth.getSession();
