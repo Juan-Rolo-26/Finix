@@ -9,8 +9,8 @@ import {
     YAxis,
 } from 'recharts';
 import { cn } from '@/lib/utils';
-import { CHART_AXIS_TICK, formatCompactCurrency, formatCurrency, formatPercent } from './chartUtils';
-import { TIME_RANGES, type PortfolioValuePoint, type TimeRange } from './mockData';
+import { CHART_AXIS_TICK, formatChartDate, formatCompactCurrency, formatCurrency, formatPercent } from './chartUtils';
+import { TIME_RANGES, TIME_RANGE_LABELS, TIME_RANGE_SHORT_LABELS, type PortfolioValuePoint, type TimeRange } from './mockData';
 
 interface PortfolioChartProps {
     dataByRange: Record<TimeRange, PortfolioValuePoint[]>;
@@ -22,7 +22,7 @@ interface PortfolioChartProps {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CustomTooltip({ active, payload, label, currency }: any) {
+function CustomTooltip({ active, payload, label, currency, range }: any) {
     if (!active || !payload?.length) return null;
     const val: number = payload[0]?.value ?? 0;
     const isPositive = val >= 0;
@@ -38,7 +38,7 @@ function CustomTooltip({ active, payload, label, currency }: any) {
                 minWidth: '165px',
             }}
         >
-            <p style={{ color: 'rgba(148,163,184,0.9)', fontSize: '11px', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</p>
+            <p style={{ color: 'rgba(148,163,184,0.9)', fontSize: '11px', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{formatChartDate(String(label), range)}</p>
             <p style={{ color: isPositive ? '#34d399' : '#f87171', fontSize: '17px', fontWeight: 700, letterSpacing: '-0.5px' }}>
                 {formatCurrency(val, currency ?? 'USD')}
             </p>
@@ -104,15 +104,15 @@ export function PortfolioChart({
 
     const strokeColor = isPositive ? '#10b981' : '#f87171';
     const fillColor = isPositive ? '#10b981' : '#f87171';
-    const metricCardClass = 'min-w-0 rounded-2xl border border-border/50 bg-background/70 px-4 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.05)] backdrop-blur';
+    const metricCardClass = 'min-w-0 rounded-2xl border border-border/50 bg-background/70 px-3 py-3.5 sm:px-4 sm:py-4 shadow-[0_14px_36px_rgba(15,23,42,0.05)] backdrop-blur';
 
     return (
-        <div className={cn('rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-lg', className)}>
+        <div className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-lg', className)}>
             {/* Header */}
-            <div className="border-b border-border/40 px-6 py-6 sm:px-7 sm:py-7">
+            <div className="border-b border-border/40 px-4 py-5 sm:px-6 sm:py-6">
                 {/* Metrics */}
                 <div className="flex flex-col gap-6">
-                    <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-3">
                         {/* Valor total */}
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
                             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground text-center">Valor total</p>
@@ -130,7 +130,7 @@ export function PortfolioChart({
                         {/* Cambio */}
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center gap-3')}>
                             <div className="flex flex-col items-center text-center">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground text-center">Cambio ({selectedRange})</p>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground text-center">Cambio · {TIME_RANGE_LABELS[selectedRange]}</p>
                                 <p className={cn('mt-3 text-[30px] font-extrabold leading-none tracking-[-0.04em] tabular-nums sm:text-[32px] text-center', isPositive ? 'text-emerald-500' : 'text-red-500')}>
                                     {isPositive ? '+' : ''}{formatCompactCurrency(summary.absoluteChange, currency)}
                                 </p>
@@ -149,20 +149,21 @@ export function PortfolioChart({
                     </div>
 
                     {/* Time range buttons */}
-                    <div className="flex flex-wrap items-center justify-center mx-auto gap-2 rounded-2xl border border-border/50 bg-background/55 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-sm w-fit">
+                    <div className="flex max-w-full items-center justify-start gap-1 overflow-x-auto rounded-2xl border border-border/50 bg-background/55 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-sm sm:justify-center">
                         {TIME_RANGES.map((range) => (
                             <button
                                 key={range}
                                 type="button"
                                 onClick={() => onRangeChange(range)}
+                                title={TIME_RANGE_LABELS[range]}
                                 className={cn(
-                                    'min-w-[46px] rounded-xl px-3.5 py-2 text-[11px] font-bold tracking-wide transition-all duration-150',
+                                    'shrink-0 rounded-xl px-3 py-2 text-[11px] font-bold tracking-wide transition-all duration-150',
                                     selectedRange === range
                                         ? 'bg-foreground text-background shadow-[0_10px_24px_rgba(15,23,42,0.18)]'
                                         : 'bg-transparent text-muted-foreground hover:bg-muted/70 hover:text-foreground',
                                 )}
                             >
-                                {range}
+                                {TIME_RANGE_SHORT_LABELS[range]}
                             </button>
                         ))}
                     </div>
@@ -174,13 +175,13 @@ export function PortfolioChart({
                     Evolución
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground/70 text-center max-w-md mx-auto">
-                    Evolución del valor total del portafolio en moneda nominal
+                    Valor histórico medido desde el inicio del período seleccionado
                 </p>
             </div>
 
             {/* Chart */}
             {safeActiveData.length > 0 ? (
-                <div className="h-[380px] w-full px-3 pb-5 pt-3 sm:h-[410px] sm:px-4 sm:pb-6">
+                <div className="h-[290px] w-full px-1 pb-4 pt-3 sm:h-[350px] sm:px-3 sm:pb-5 lg:h-[390px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={safeActiveData} margin={{ top: 18, right: 16, bottom: 4, left: 0 }}>
                             <defs>
@@ -199,22 +200,23 @@ export function PortfolioChart({
                                 dataKey="date"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ ...CHART_AXIS_TICK, fontSize: 11 }}
+                                tick={{ ...CHART_AXIS_TICK, fontSize: 10 }}
                                 padding={{ left: 10, right: 10 }}
-                                minTickGap={24}
-                                tickMargin={14}
+                                minTickGap={30}
+                                tickMargin={10}
+                                tickFormatter={(value: string) => formatChartDate(value, selectedRange)}
                             />
                             <YAxis
                                 axisLine={false}
                                 tickLine={false}
                                 tick={{ ...CHART_AXIS_TICK, fontSize: 11 }}
-                                width={84}
-                                tickMargin={12}
+                                width={62}
+                                tickMargin={8}
                                 domain={chartDomain}
                                 tickFormatter={(v: number) => formatCompactCurrency(v, currency)}
                             />
                             <RechartsTooltip
-                                content={<CustomTooltip currency={currency} />}
+                                content={<CustomTooltip currency={currency} range={selectedRange} />}
                                 cursor={{ stroke: strokeColor, strokeWidth: 1.5, strokeDasharray: '4 4', opacity: 0.5 }}
                             />
                             <Area

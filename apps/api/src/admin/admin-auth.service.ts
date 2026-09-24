@@ -74,12 +74,45 @@ export class AdminAuthService {
         };
     }
 
+    /**
+     * A cookie Domain must contain only a hostname. In production it is easy
+     * to accidentally configure this as `https://finixarg.com` or include a
+     * path, which makes browsers silently reject the session cookie.
+     */
+    private getCookieDomain(): string | undefined {
+        const configured = (process.env.ADMIN_COOKIE_DOMAIN || process.env.COOKIE_DOMAIN || '').trim();
+        if (!configured) {
+            return undefined;
+        }
+
+        const domain = configured
+            .replace(/^https?:\/\//i, '')
+            .split('/')[0]
+            .split(':')[0]
+            .replace(/^\.+/, '')
+            .trim();
+
+        if (
+            !domain ||
+            domain === 'localhost' ||
+            !domain.includes('.') ||
+            !/^[a-z0-9.-]+$/i.test(domain)
+        ) {
+            return undefined;
+        }
+
+        return domain;
+    }
+
     buildAccessCookieOptions() {
-        const domain = process.env.ADMIN_COOKIE_DOMAIN || process.env.COOKIE_DOMAIN || undefined;
+        const domain = this.getCookieDomain();
         return {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: (domain ? 'lax' : 'strict') as 'lax' | 'strict',
+            // The admin uses a dedicated subdomain and talks to /api through
+            // Nginx. Lax is compatible with both same-origin and subdomain
+            // deployments while keeping the cookie protected from CSRF.
+            sameSite: 'lax' as const,
             ...(domain ? { domain } : {}),
             path: '/api',
             maxAge: this.accessTtlSeconds * 1000,
@@ -87,11 +120,11 @@ export class AdminAuthService {
     }
 
     buildRefreshCookieOptions() {
-        const domain = process.env.ADMIN_COOKIE_DOMAIN || process.env.COOKIE_DOMAIN || undefined;
+        const domain = this.getCookieDomain();
         return {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: (domain ? 'lax' : 'strict') as 'lax' | 'strict',
+            sameSite: 'lax' as const,
             ...(domain ? { domain } : {}),
             path: '/api',
             maxAge: this.refreshTtlSeconds * 1000,
@@ -99,11 +132,11 @@ export class AdminAuthService {
     }
 
     buildClearCookieOptions() {
-        const domain = process.env.ADMIN_COOKIE_DOMAIN || process.env.COOKIE_DOMAIN || undefined;
+        const domain = this.getCookieDomain();
         return {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: (domain ? 'lax' : 'strict') as 'lax' | 'strict',
+            sameSite: 'lax' as const,
             ...(domain ? { domain } : {}),
             path: '/api',
         };

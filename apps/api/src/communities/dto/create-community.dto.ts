@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsIn, Min, IsInt, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsIn, Min, IsInt, IsArray, ValidateNested, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CommunityPlanDto {
@@ -149,6 +149,7 @@ export class UpdateCommunityDto {
 
 export class CreateCommunityPostDto {
     @IsString()
+    @MaxLength(1000)
     content: string;
 
     @IsArray()
@@ -362,4 +363,3 @@ export class PayWithCardDto {
     @IsOptional()
     brand?: string;
 }
-

@@ -11,6 +11,7 @@ import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_POST_CONTENT_LENGTH = 1000;
 const BANNED_WORDS = ['spam', 'scam', 'estafa']; // extend as needed
 
 const AUTHOR_SELECT = {
@@ -204,6 +205,9 @@ export class PostsService {
         },
     ) {
         const content = sanitize(dto.content || '');
+        if (content.length > MAX_POST_CONTENT_LENGTH) {
+            throw new BadRequestException(`La publicación no puede superar los ${MAX_POST_CONTENT_LENGTH} caracteres`);
+        }
         if (!content && (!dto.mediaUrls || dto.mediaUrls.length === 0) && !dto.chartAnalysisId && !dto.chartAnalysisVersionId) {
             throw new BadRequestException('El post debe tener contenido, media o un análisis gráfico');
         }
@@ -473,6 +477,9 @@ export class PostsService {
         }
 
         const sanitized = sanitize(content);
+        if (sanitized.length > MAX_POST_CONTENT_LENGTH) {
+            throw new BadRequestException(`La publicación no puede superar los ${MAX_POST_CONTENT_LENGTH} caracteres`);
+        }
         moderateContent(sanitized);
 
         return this.prisma.post.update({

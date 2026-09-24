@@ -88,6 +88,64 @@ export class PortfolioPerformanceService {
         return map;
     }
 
+    private getMarketHistoryRange(range: string) {
+        switch (range) {
+            case '1D': return '5d';
+            case '1W': return '1mo';
+            case '1M': return '3mo';
+            case '3M': return '6mo';
+            case '6M':
+            case 'YTD': return '1y';
+            case '1Y': return '2y';
+            case 'ALL': return 'max';
+            default: return '1y';
+        }
+    }
+
+    private getMarketHistoryInterval(range: string) {
+        return range === '1D' ? '1h' : '1d';
+    }
+
+    private async getHistoricalPriceMaps(tickers: string[], range: string) {
+        const uniqueTickers = Array.from(new Set(tickers.map((ticker) => this.normalizeTicker(ticker)).filter(Boolean)));
+        const yahooRange = this.getMarketHistoryRange(range);
+        const interval = this.getMarketHistoryInterval(range);
+        const histories = await Promise.all(
+            uniqueTickers.map(async (ticker) => {
+                const response = await this.marketService.getCandles(ticker, interval, yahooRange).catch(() => ({ candles: [] }));
+                const candles = Array.isArray(response.candles)
+                    ? response.candles
+                        .map((c) => ({ time: Number(c.time), close: Number(c.close) }))
+                        .filter((c) => Number.isFinite(c.time) && Number.isFinite(c.close) && c.close > 0)
+                    : [];
+                return [ticker, candles] as const;
+            }),
+        );
+
+        return new Map(histories);
+    }
+
+    private getHistoricalPriceAtDate(
+        candles: Array<{ time: number; close: number }> | undefined,
+        cutoff: Date,
+    ) {
+        if (!candles?.length) return null;
+
+        const cutoffSeconds = cutoff.getTime() / 1000;
+        let latest: number | null = null;
+        let firstAfter: number | null = null;
+
+        for (const candle of candles) {
+            if (candle.time <= cutoffSeconds) {
+                latest = candle.close;
+            } else if (firstAfter == null) {
+                firstAfter = candle.close;
+            }
+        }
+
+        return latest ?? firstAfter;
+    }
+
     // ── Date range helpers ──────────────────────────────────────────────────────
 
     private resolveRange(range: string, firstTxDate: Date | null): { start: Date; daysBack: number } {
@@ -142,12 +200,17 @@ export class PortfolioPerformanceService {
     private computeValueFromHoldings(
         holdings: Map<string, { qty: number; wac: number; lastPrice: number }>,
         quoteMap: Map<string, any>,
+        historicalPriceMaps?: Map<string, Array<{ time: number; close: number }>>,
+        cutoff?: Date,
     ): number {
         let total = 0;
         for (const [ticker, h] of holdings.entries()) {
             if (h.qty <= 0) continue;
             const quote = quoteMap.get(ticker);
-            const price = (quote && typeof quote.price === 'number') ? quote.price : h.lastPrice;
+            const historicalPrice = cutoff
+                ? this.getHistoricalPriceAtDate(historicalPriceMaps?.get(ticker), cutoff)
+                : null;
+            const price = historicalPrice ?? ((quote && typeof quote.price === 'number') ? quote.price : h.lastPrice);
             total += h.qty * price;
         }
         return total;
@@ -283,10 +346,17 @@ export class PortfolioPerformanceService {
         }
 
         const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
-        const firstTxDate = new Date(txs[0].date);
+        const firstAssetTransaction = txs.find((tx) =>
+            Boolean(tx.asset?.ticker) && (tx.type === 'BUY' || tx.type === 'SELL'),
+        );
+        const firstTxDate = new Date((firstAssetTransaction ?? txs[0]).date);
         const now = new Date();
 
         const { start, daysBack } = this.resolveRange(range, firstTxDate);
+        const historicalPriceMaps = await this.getHistoricalPriceMaps(
+            txs.map((tx) => tx.asset?.ticker || ''),
+            range,
+        );
 
         // Determine step count
         let stepCount: number;
@@ -306,12 +376,14 @@ export class PortfolioPerformanceService {
             const pointDate = new Date(start.getTime() + i * stepMs);
             if (pointDate > now) break;
 
-            const dateStr = pointDate.toISOString().slice(0, 10);
+            const dateStr = range === '1D'
+                ? pointDate.toISOString()
+                : pointDate.toISOString().slice(0, 10);
             const pastTx = txs.filter((tx) => new Date(tx.date) <= pointDate);
             if (!pastTx.length) continue;
 
             const holdings = this.computeHoldingsAtDate(pastTx, pointDate);
-            const assetsValue = this.computeValueFromHoldings(holdings, quoteMap);
+            const assetsValue = this.computeValueFromHoldings(holdings, quoteMap, historicalPriceMaps, pointDate);
             const cashValue = this.computeCashAtDate(pastTx, pointDate);
             const value = assetsValue + cashValue;
             const invested = this.computeInvestedCapital(pastTx, pointDate);
@@ -347,10 +419,18 @@ export class PortfolioPerformanceService {
             }));
 
         if (series.length < 2) {
-            return { range, currency, series, markers, insufficientData: true, message: 'Datos insuficientes para el rango seleccionado.' };
+            return {
+                range,
+                currency,
+                startDate: firstTxDate.toISOString(),
+                series,
+                markers,
+                insufficientData: true,
+                message: 'Datos insuficientes para el rango seleccionado.',
+            };
         }
 
-        return { range, currency, series, markers, insufficientData: false };
+        return { range, currency, startDate: firstTxDate.toISOString(), series, markers, insufficientData: false };
     }
 
     // ── 3. Allocation ───────────────────────────────────────────────────────────
@@ -814,60 +894,77 @@ export class PortfolioPerformanceService {
         const portfolio = await this.prisma.portfolio.findUnique({
             where: { id: portfolioId },
             include: {
-                holdings: { include: { asset: true } },
                 transactions: { include: { asset: true }, orderBy: { date: 'asc' } },
             },
         });
 
         if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
 
-        const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
-        const txs = portfolio.transactions;
-
-        // Get portfolio performance series for this range
         const perfData = await this.getPerformance(portfolioId, userId, range);
-
-        const benchmarkSymbols: Record<string, string> = {
-            sp500: 'SPY', nasdaq: 'QQQ',
-        };
-
         const returns: Record<string, number> = {};
-
-        // Portfolio return
         const portSeries = perfData.series;
         const portFirstVal = portSeries[0]?.value ?? 0;
         const portLastVal = portSeries[portSeries.length - 1]?.value ?? 0;
         returns['portfolio'] = portFirstVal > 0 ? ((portLastVal - portFirstVal) / portFirstVal) * 100 : 0;
 
-        // Normalize portfolio to base 100
         const portfolioBase100 = portSeries.map((pt) => ({
             date: pt.date,
             normalized: portFirstVal > 0 ? Number(((pt.value / portFirstVal) * 100).toFixed(2)) : 100,
         }));
 
-        // Build benchmark series (simplified without live Yahoo Finance for now)
-        // This is a foundation - a future iteration can fetch actual historical data
-        const benchmarkReturns: Record<string, number> = {
-            sp500: 14.0,
-            nasdaq: 18.5,
-            mep: 8.2, // ARS appreciation
+        const sp500Requested = benchmarks.some((benchmark) => benchmark.toLowerCase() === 'sp500');
+        const sp500Response = sp500Requested
+            ? await this.marketService.getCandles('SPY', this.getMarketHistoryInterval(range), this.getMarketHistoryRange(range)).catch(() => ({ candles: [] }))
+            : { candles: [] };
+        const sp500Candles = (sp500Response.candles ?? [])
+            .map((c) => ({ time: Number(c.time), close: Number(c.close) }))
+            .filter((c) => Number.isFinite(c.time) && Number.isFinite(c.close) && c.close > 0)
+            .sort((a, b) => a.time - b.time);
+
+        const candleAtDate = (date: string) => {
+            const target = new Date(date.includes('T') ? date : `${date}T00:00:00Z`).getTime() / 1000;
+            let latest: number | null = null;
+            let firstAfter: number | null = null;
+
+            for (const candle of sp500Candles) {
+                if (candle.time <= target) latest = candle.close;
+                else if (firstAfter == null) firstAfter = candle.close;
+            }
+
+            return latest ?? firstAfter;
         };
 
-        // Combine into unified series
-        const series = portfolioBase100.map((pt, i) => {
-            const progress = portfolioBase100.length > 1 ? i / (portfolioBase100.length - 1) : 1;
-            const result: Record<string, number | string> = {
+        const firstSp500Close = portfolioBase100.length > 0 ? candleAtDate(portfolioBase100[0].date) : null;
+        const benchmarkAvailable = typeof firstSp500Close === 'number' && firstSp500Close > 0;
+
+        const series = portfolioBase100.map((pt) => {
+            const sp500Close = benchmarkAvailable ? candleAtDate(pt.date) : null;
+            const result: { date: string; portfolio: number; sp500?: number } = {
                 date: pt.date,
                 portfolio: pt.normalized,
             };
-            for (const b of benchmarks) {
-                const totalReturn = benchmarkReturns[b] ?? 0;
-                result[b] = Number((100 + totalReturn * progress).toFixed(2));
-                returns[b] = totalReturn;
+
+            if (typeof sp500Close === 'number' && firstSp500Close) {
+                result.sp500 = Number(((sp500Close / firstSp500Close) * 100).toFixed(2));
             }
-            return result as any;
+
+            return result;
         });
 
-        return { range, series, benchmarks: benchmarks as any[], returns };
+        if (benchmarkAvailable && series.length > 0) {
+            const lastSp500 = series[series.length - 1].sp500;
+            if (typeof lastSp500 === 'number') {
+                returns.sp500 = Number((lastSp500 - 100).toFixed(4));
+            }
+        }
+
+        return {
+            range,
+            startDate: perfData.startDate,
+            benchmarkAvailable,
+            series,
+            benchmarks,
+            returns,
+        };
     }
 }

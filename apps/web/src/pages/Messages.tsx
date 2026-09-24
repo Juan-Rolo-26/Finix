@@ -78,6 +78,7 @@ interface DirectMessage {
     sharedPost?: SharedPostPreview | null;
     isRead: boolean;
     createdAt: string;
+    updatedAt: string;
 }
 
 interface ConversationItem {
@@ -933,11 +934,16 @@ export default function MessagesPage() {
     const [isLoadingConvs, setIsLoadingConvs] = useState(true);
     const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
     const [isSending, setIsSending] = useState(false);
+    const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+    const [editingMessageText, setEditingMessageText] = useState('');
+    const [messageEditError, setMessageEditError] = useState('');
+    const [isSavingMessageEdit, setIsSavingMessageEdit] = useState(false);
     const [showMobileList, setShowMobileList] = useState(true);
 
     const socketRef = useRef<Socket | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const messageEditInputRef = useRef<HTMLTextAreaElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const prevConvRef = useRef<string | null>(null);
@@ -1011,6 +1017,15 @@ export default function MessagesPage() {
             setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
         });
 
+        socket.on('messageUpdated', (msg: DirectMessage) => {
+            setMessages((prev) => prev.map((item) => item.id === msg.id ? msg : item));
+            setConversations((prev) => prev.map((conversation) => (
+                conversation.id === msg.conversationId && conversation.lastMessage?.id === msg.id
+                    ? { ...conversation, lastMessage: msg }
+                    : conversation
+            )));
+        });
+
         socket.on('conversationCreated', () => {
             void loadConversations();
         });
@@ -1037,7 +1052,19 @@ export default function MessagesPage() {
             setTypingUsers((prev) => { const n = new Set(prev); isTyping ? n.add(userId) : n.delete(userId); return n; });
         });
 
-        return () => { socket.disconnect(); };
+        return () => {
+            socket.off('userOnline');
+            socket.off('userOffline');
+            socket.off('newDirectMessage');
+            socket.off('messageUpdated');
+            socket.off('conversationCreated');
+            socket.off('conversationUpdated');
+            socket.off('userTyping');
+            socket.disconnect();
+            if (socketRef.current === socket) {
+                socketRef.current = null;
+            }
+        };
     }, [token, user?.id, loadConversations]);
 
     useEffect(() => { loadConversations(); }, [loadConversations]);
@@ -1060,6 +1087,9 @@ export default function MessagesPage() {
     const handleReturnToInbox = useCallback(() => {
         setActiveConvId(null);
         setMessages([]);
+        setEditingMessageId(null);
+        setEditingMessageText('');
+        setMessageEditError('');
         setShowMobileList(true);
         setTypingUsers(new Set());
         setShowPostPicker(false);
@@ -1087,6 +1117,9 @@ export default function MessagesPage() {
 
         setActiveConvId(convId);
         setMessages([]);
+        setEditingMessageId(null);
+        setEditingMessageText('');
+        setMessageEditError('');
         setShowMobileList(false);
         setTypingUsers(new Set());
         setShowPostPicker(false);
@@ -1295,6 +1328,58 @@ export default function MessagesPage() {
         socketRef.current?.emit('typing', { conversationId: activeConvId, isTyping: false });
     };
 
+    const handleStartMessageEdit = (message: DirectMessage) => {
+        if (message.senderId !== user?.id || !message.content?.trim()) return;
+
+        setEditingMessageId(message.id);
+        setEditingMessageText(message.content);
+        setMessageEditError('');
+        requestAnimationFrame(() => messageEditInputRef.current?.focus());
+    };
+
+    const handleCancelMessageEdit = () => {
+        if (isSavingMessageEdit) return;
+        setEditingMessageId(null);
+        setEditingMessageText('');
+        setMessageEditError('');
+    };
+
+    const handleSaveMessageEdit = async () => {
+        const content = editingMessageText.trim();
+        if (!activeConvId || !editingMessageId || !content || isSavingMessageEdit) return;
+
+        setIsSavingMessageEdit(true);
+        setMessageEditError('');
+
+        try {
+            const res = await apiFetch(`/messages/conversations/${activeConvId}/messages/${editingMessageId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content }),
+            });
+
+            if (!res.ok) {
+                throw new Error(await readApiErrorMessage(res, 'No se pudo editar el mensaje'));
+            }
+
+            const updatedMessage: DirectMessage = await res.json();
+            setMessages((prev) => prev.map((message) => (
+                message.id === updatedMessage.id ? updatedMessage : message
+            )));
+            setConversations((prev) => prev.map((conversation) => (
+                conversation.id === updatedMessage.conversationId && conversation.lastMessage?.id === updatedMessage.id
+                    ? { ...conversation, lastMessage: updatedMessage }
+                    : conversation
+            )));
+            setEditingMessageId(null);
+            setEditingMessageText('');
+        } catch (error: any) {
+            setMessageEditError(error?.message || 'No se pudo editar el mensaje');
+        } finally {
+            setIsSavingMessageEdit(false);
+        }
+    };
+
     const handleInputChange = (val: string) => {
         setInputText(val);
         if (!activeConvId) return;
@@ -1307,6 +1392,18 @@ export default function MessagesPage() {
 
     const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
+    };
+
+    const handleMessageEditKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            handleCancelMessageEdit();
+        }
+
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            void handleSaveMessageEdit();
+        }
     };
 
     const handleEmojiSelect = (emoji: string) => {
@@ -1823,6 +1920,10 @@ export default function MessagesPage() {
                                                 const showAvatar = !isMe && (!prevMsg || prevMsg.senderId !== msg.senderId);
                                                 const isLastInGroup = !nextMsg || nextMsg.senderId !== msg.senderId;
                                                 const isFirstInGroup = !prevMsg || prevMsg.senderId !== msg.senderId;
+                                                const isEdited = Boolean(
+                                                    msg.updatedAt
+                                                    && new Date(msg.updatedAt).getTime() > new Date(msg.createdAt).getTime(),
+                                                );
 
                                                 // Date separator
                                                 const msgDate = new Date(msg.createdAt).toDateString();
@@ -1866,36 +1967,103 @@ export default function MessagesPage() {
                                                                 {(() => {
                                                                     const hasAttachment = Boolean(msg.attachmentType);
                                                                     const hasText = Boolean(msg.content?.trim());
+                                                                    const isEditing = editingMessageId === msg.id;
 
                                                                     return (
-                                                                        <div
-                                                                            className="text-sm leading-relaxed break-words whitespace-pre-wrap overflow-hidden"
-                                                                            style={{
-                                                                                borderRadius: isMe
-                                                                                    ? isFirstInGroup ? '18px 4px 18px 18px' : '18px 4px 4px 18px'
-                                                                                    : isFirstInGroup ? '4px 18px 18px 18px' : '4px 18px 18px 4px',
-                                                                                background: isMe
-                                                                                    ? 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)'
-                                                                                    : bubbleBg,
-                                                                                color: isMe ? '#030d06' : bubbleText,
-                                                                                fontWeight: isMe ? 500 : 400,
-                                                                                boxShadow: isMe ? '0 2px 8px hsl(158 100% 45% / 0.25)' : 'none',
-                                                                                padding: hasAttachment ? '10px' : '10px 14px',
-                                                                            }}
-                                                                        >
-                                                                            {hasAttachment && (
-                                                                                <MessageAttachmentCard
-                                                                                    message={msg}
-                                                                                    isLight={isLight}
-                                                                                    borderColor={isMe ? 'hsl(158 100% 30% / 0.25)' : borderColor}
-                                                                                    textPrimary={isMe ? '#031108' : textPrimary}
-                                                                                    textMuted={isMe ? 'rgba(3,17,8,0.7)' : textMuted}
-                                                                                />
-                                                                            )}
-                                                                            {hasText && (
-                                                                                <div className={hasAttachment ? 'mt-2.5 px-1 pb-1' : ''}>
-                                                                                    {msg.content}
+                                                                        <div className="group/message relative">
+                                                                            {isEditing ? (
+                                                                                <div
+                                                                                    className="min-w-[240px] rounded-2xl border p-3 shadow-lg"
+                                                                                    style={{
+                                                                                        borderColor: 'hsl(158 100% 45% / 0.55)',
+                                                                                        background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 12%)',
+                                                                                    }}
+                                                                                >
+                                                                                    <textarea
+                                                                                        ref={messageEditInputRef}
+                                                                                        value={editingMessageText}
+                                                                                        onChange={(event) => setEditingMessageText(event.target.value)}
+                                                                                        onKeyDown={handleMessageEditKeyDown}
+                                                                                        maxLength={5000}
+                                                                                        rows={3}
+                                                                                        className="w-full resize-none rounded-xl border bg-transparent px-3 py-2 text-sm leading-relaxed outline-none"
+                                                                                        style={{ borderColor: inputBorder, color: textPrimary }}
+                                                                                        aria-label="Editar mensaje"
+                                                                                    />
+                                                                                    {messageEditError && (
+                                                                                        <p className="mt-2 text-xs text-red-500">{messageEditError}</p>
+                                                                                    )}
+                                                                                    <div className="mt-2 flex items-center justify-end gap-2">
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={handleCancelMessageEdit}
+                                                                                            disabled={isSavingMessageEdit}
+                                                                                            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors hover:bg-muted disabled:opacity-50"
+                                                                                            style={{ color: textMuted }}
+                                                                                        >
+                                                                                            Cancelar
+                                                                                        </button>
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => void handleSaveMessageEdit()}
+                                                                                            disabled={!editingMessageText.trim() || isSavingMessageEdit}
+                                                                                            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-bold text-black transition-opacity disabled:opacity-50"
+                                                                                        >
+                                                                                            {isSavingMessageEdit && <Loader2 className="h-3 w-3 animate-spin" />}
+                                                                                            Guardar
+                                                                                        </button>
+                                                                                    </div>
                                                                                 </div>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <div
+                                                                                        className="text-sm leading-relaxed break-words whitespace-pre-wrap overflow-hidden"
+                                                                                        style={{
+                                                                                            borderRadius: isMe
+                                                                                                ? isFirstInGroup ? '18px 4px 18px 18px' : '18px 4px 4px 18px'
+                                                                                                : isFirstInGroup ? '4px 18px 18px 18px' : '4px 18px 18px 4px',
+                                                                                            background: isMe
+                                                                                                ? 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 33%) 100%)'
+                                                                                                : bubbleBg,
+                                                                                            color: isMe ? '#030d06' : bubbleText,
+                                                                                            fontWeight: isMe ? 500 : 400,
+                                                                                            boxShadow: isMe ? '0 2px 8px hsl(158 100% 45% / 0.25)' : 'none',
+                                                                                            padding: hasAttachment ? '10px' : '10px 14px',
+                                                                                        }}
+                                                                                    >
+                                                                                        {hasAttachment && (
+                                                                                            <MessageAttachmentCard
+                                                                                                message={msg}
+                                                                                                isLight={isLight}
+                                                                                                borderColor={isMe ? 'hsl(158 100% 30% / 0.25)' : borderColor}
+                                                                                                textPrimary={isMe ? '#031108' : textPrimary}
+                                                                                                textMuted={isMe ? 'rgba(3,17,8,0.7)' : textMuted}
+                                                                                            />
+                                                                                        )}
+                                                                                        {hasText && (
+                                                                                            <div className={hasAttachment ? 'mt-2.5 px-1 pb-1' : ''}>
+                                                                                                {msg.content}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    {isMe && hasText && (
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => handleStartMessageEdit(msg)}
+                                                                                            className="absolute top-1/2 z-10 -translate-y-1/2 rounded-lg border p-1.5 opacity-100 shadow-sm transition-all hover:scale-105 sm:opacity-0 sm:group-hover/message:opacity-100"
+                                                                                            style={{
+                                                                                                [isMe ? 'right' : 'left']: 'calc(100% + 6px)',
+                                                                                                borderColor,
+                                                                                                background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 12%)',
+                                                                                                color: textMuted,
+                                                                                            }}
+                                                                                            title="Editar mensaje"
+                                                                                            aria-label="Editar mensaje"
+                                                                                        >
+                                                                                            <Pencil className="h-3.5 w-3.5" />
+                                                                                        </button>
+                                                                                    )}
+                                                                                </>
                                                                             )}
                                                                         </div>
                                                                     );
@@ -1904,7 +2072,9 @@ export default function MessagesPage() {
                                                                 {/* Time + read status */}
                                                                 {isLastInGroup && (
                                                                     <div className={`flex items-center gap-1 mt-1 px-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-                                                                        <span className="text-[11px] text-muted-foreground">{formatMsgTime(msg.createdAt)}</span>
+                                                                        <span className="text-[11px] text-muted-foreground">
+                                                                            {formatMsgTime(msg.createdAt)}{isEdited ? ' · editado' : ''}
+                                                                        </span>
                                                                         {isMe && (
                                                                             msg.isRead
                                                                                 ? <CheckCheck className="w-3 h-3" style={{ color: 'hsl(158 100% 45%)' }} />

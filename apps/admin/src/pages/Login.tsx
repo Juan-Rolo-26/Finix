@@ -104,7 +104,7 @@ export default function Login() {
                 return;
             }
 
-            navigate('/dashboard');
+            navigate('/dashboard', { replace: true });
         } catch (err: any) {
             setError(err.message || 'Error validando código');
         } finally {
@@ -129,7 +129,7 @@ export default function Login() {
                 throw new Error(data.message || data.error || 'Código 2FA incorrecto');
             }
 
-            navigate('/dashboard');
+            navigate('/dashboard', { replace: true });
         } catch (err: any) {
             setError(err.message || 'No se pudo verificar el código 2FA');
         } finally {
@@ -292,10 +292,11 @@ export default function Login() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 text-center">
-                                    Código de 6 dígitos
+                                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground text-center">
+                                    Código de verificación
                                 </label>
                                 <input
+                                    aria-label="Código de verificación de 6 dígitos"
                                     type="text"
                                     required
                                     autoFocus
@@ -303,8 +304,9 @@ export default function Login() {
                                     pattern="[0-9]{6}"
                                     value={code}
                                     onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                    className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-lg font-bold text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all tracking-[0.4em] text-center font-mono"
-                                    placeholder="000000"
+                                    maxLength={6}
+                                    className="h-14 w-full rounded-2xl border-2 border-primary/30 bg-primary/[0.04] px-4 text-center font-mono text-2xl font-bold tracking-[0.45em] text-foreground shadow-[0_8px_24px_rgba(16,185,129,0.08)] outline-none transition-[border-color,background-color,box-shadow] placeholder:tracking-[0.22em] placeholder:text-muted-foreground/45 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
+                                    placeholder="123456"
                                 />
                             </div>
 
@@ -393,10 +395,11 @@ export default function Login() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 text-center">
-                                    Código 2FA de 6 dígitos
+                                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground text-center">
+                                    Código de autenticación
                                 </label>
                                 <input
+                                    aria-label="Código de autenticación de 6 dígitos"
                                     type="text"
                                     required
                                     autoFocus
@@ -404,8 +407,9 @@ export default function Login() {
                                     pattern="[0-9]{6}"
                                     value={code}
                                     onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                    className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-lg font-bold text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all tracking-[0.4em] text-center font-mono"
-                                    placeholder="000000"
+                                    maxLength={6}
+                                    className="h-14 w-full rounded-2xl border-2 border-primary/30 bg-primary/[0.04] px-4 text-center font-mono text-2xl font-bold tracking-[0.45em] text-foreground shadow-[0_8px_24px_rgba(16,185,129,0.08)] outline-none transition-[border-color,background-color,box-shadow] placeholder:tracking-[0.22em] placeholder:text-muted-foreground/45 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
+                                    placeholder="123456"
                                 />
                             </div>
 

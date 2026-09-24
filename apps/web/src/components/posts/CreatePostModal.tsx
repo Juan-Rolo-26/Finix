@@ -18,6 +18,8 @@ import {
 
 type PostType = 'post' | 'image' | 'reel' | 'chart';
 
+const MAX_POST_CONTENT_LENGTH = 1000;
+
 interface MediaFile {
     file: File;
     preview: string;
@@ -359,6 +361,10 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                     }
                 }
 
+                if (finalContent.length > MAX_POST_CONTENT_LENGTH) {
+                    throw new Error(`La publicación no puede superar los ${MAX_POST_CONTENT_LENGTH} caracteres.`);
+                }
+
                 const res = await apiFetch('/posts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -402,6 +408,12 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
             const tickerList = tickers.split(/[\s,]+/).map((t) => t.trim().toUpperCase()).filter(Boolean);
             let finalContent = content.trim();
+
+            if (finalContent.length > MAX_POST_CONTENT_LENGTH) {
+                setError(`La publicación no puede superar los ${MAX_POST_CONTENT_LENGTH} caracteres.`);
+                setIsPublishing(false);
+                return;
+            }
 
             const res = await apiFetch('/posts', {
                 method: 'POST',
@@ -711,9 +723,9 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                         <Textarea
                             placeholder={type === 'chart' ? 'Describí tu análisis: zonas clave, stop loss, target, bias...' : '¿Qué estás pensando sobre el mercado?'}
                             value={content} onChange={(e) => setContent(e.target.value)}
-                            className="bg-secondary/30 resize-none text-base border-none focus-visible:ring-0 min-h-[100px]" maxLength={2000}
+                            className="bg-secondary/30 resize-none text-base border-none focus-visible:ring-0 min-h-[100px]" maxLength={MAX_POST_CONTENT_LENGTH}
                         />
-                        <p className="text-xs text-muted-foreground text-right">{content.length}/2000</p>
+                        <p className="text-xs text-muted-foreground text-right">{content.length}/{MAX_POST_CONTENT_LENGTH}</p>
                     </div>
 
                     {/* ── TICKERS ── */}

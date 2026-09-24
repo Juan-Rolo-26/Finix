@@ -18,6 +18,7 @@ import {
     TrendingUp,
     XCircle,
     RefreshCw,
+    ListFilter,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useAuthStore, isProUser } from '@/stores/authStore';
@@ -118,6 +119,56 @@ interface CalendarWeekData {
 }
 
 type CalendarSection = 'GENERAL' | 'BALANCES' | 'DIVIDENDOS';
+type EarningsSort = 'RELEVANCIA' | 'VICTORIOSOS' | 'DESVICTORIOSOS' | 'MIXTOS' | 'PENDIENTES';
+type EarningsOutcome = 'VICTORIOSO' | 'DESVICTORIOSO' | 'MIXTO' | 'INFORMADO' | 'PENDIENTE';
+
+function hasEarningsInformation(earn: EarningsEvent): boolean {
+    return Boolean(
+        earn.reportTiming ||
+        earn.epsEstimate != null ||
+        earn.revenueEstimate != null ||
+        earn.actualEps != null ||
+        earn.actualRevenue != null
+    );
+}
+
+function getEarningsOutcome(earn: EarningsEvent): EarningsOutcome {
+    const surprises = [earn.epsSurprise, earn.revenueSurprise].filter((value): value is number => value != null);
+    if (surprises.length === 0) {
+        return earn.actualEps != null || earn.actualRevenue != null ? 'INFORMADO' : 'PENDIENTE';
+    }
+    if (surprises.every(value => value >= 0)) return 'VICTORIOSO';
+    if (surprises.every(value => value < 0)) return 'DESVICTORIOSO';
+    return 'MIXTO';
+}
+
+function sortEarnings(events: EarningsEvent[], sort: EarningsSort): EarningsEvent[] {
+    const outcomeOrder: Record<EarningsOutcome, number> = {
+        VICTORIOSO: 0,
+        DESVICTORIOSO: 1,
+        MIXTO: 2,
+        INFORMADO: 3,
+        PENDIENTE: 4,
+    };
+    const selectedOutcome = sort === 'VICTORIOSOS' ? 'VICTORIOSO'
+        : sort === 'DESVICTORIOSOS' ? 'DESVICTORIOSO'
+            : sort === 'MIXTOS' ? 'MIXTO'
+                : sort === 'PENDIENTES' ? 'PENDIENTE' : undefined;
+
+    return [...events].sort((a, b) => {
+        if (selectedOutcome) {
+            const aSelected = getEarningsOutcome(a) === selectedOutcome;
+            const bSelected = getEarningsOutcome(b) === selectedOutcome;
+            if (aSelected !== bSelected) return aSelected ? -1 : 1;
+        } else if (sort === 'RELEVANCIA') {
+            const impactDifference = (b.earningsImpactScore ?? 0) - (a.earningsImpactScore ?? 0);
+            if (impactDifference !== 0) return impactDifference;
+        }
+
+        const outcomeDifference = outcomeOrder[getEarningsOutcome(a)] - outcomeOrder[getEarningsOutcome(b)];
+        return outcomeDifference !== 0 ? outcomeDifference : a.ticker.localeCompare(b.ticker);
+    });
+}
 
 // Helper: Get monday of a week offset from today
 function getWeekStartForOffset(offsetWeeks: number): string {
@@ -176,6 +227,7 @@ export default function CalendarPage() {
 
     // 3 Subdivisiones Principales solicitadas: General, Balances, Dividendos
     const [activeSection, setActiveSection] = useState<CalendarSection>('GENERAL');
+    const [earningsSort, setEarningsSort] = useState<EarningsSort>('RELEVANCIA');
     // Filtros de categoría para la sección General
     const [activeCategory, setActiveCategory] = useState<string>('ALL');
     // Week navigation offset (0 = current week, 1 = next, -1 = previous)
@@ -345,7 +397,10 @@ export default function CalendarPage() {
 
     // Totalizadores por sección para mostrar badges
     const totalEconomic = (calendarData?.categories?.us ?? 0) + (calendarData?.categories?.ar ?? 0);
-    const totalEarnings = calendarData?.categories?.earnings ?? 0;
+    const totalEarnings = calendarData?.days.reduce(
+        (total, day) => total + day.earningsEvents.filter(hasEarningsInformation).length,
+        0,
+    ) ?? 0;
     const totalDividends = calendarData?.categories?.dividends ?? 0;
 
     return (
@@ -364,7 +419,7 @@ export default function CalendarPage() {
                                 </h1>
                             </div>
                             <p className="text-sm sm:text-base text-muted-foreground flex items-center gap-2 flex-wrap font-medium">
-                                <span>Seguimiento en tiempo real de macroeconomía, balances y dividendos de acciones de EE. UU.</span>
+                                <span>Seguimiento en tiempo real de macroeconomía, balances de EE. UU. y dividendos del S&amp;P 500.</span>
                                 <span className="inline-flex items-center gap-1.5 font-mono text-xs sm:text-sm text-foreground bg-muted/80 px-2.5 py-1 rounded-lg border border-border/60 font-semibold">
                                     <Clock className="w-3.5 h-3.5 text-primary" /> Hora local: {userTimezoneShort}
                                 </span>
@@ -459,7 +514,7 @@ export default function CalendarPage() {
                                 }`}
                         >
                             <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                            <span>Dividendos EE. UU.</span>
+                            <span>Dividendos S&amp;P 500</span>
                             {calendarData && (
                                 <span className="px-2 py-0.5 rounded-full text-xs font-mono font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
                                     {totalDividends}
@@ -492,6 +547,31 @@ export default function CalendarPage() {
                                     {cat.label}
                                 </button>
                             ))}
+                        </div>
+                    )}
+
+                    {activeSection === 'BALANCES' && (
+                        <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+                            <div>
+                                <p className="text-sm font-black text-foreground">Balances con información disponible</p>
+                                <p className="text-xs text-muted-foreground">Ordená los resultados del día según su comparación con las estimaciones.</p>
+                            </div>
+                            <label className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-border/60 bg-card px-3 py-2 text-xs font-bold text-muted-foreground shadow-sm">
+                                <ListFilter className="h-4 w-4 text-amber-500" />
+                                <span>Ordenar por</span>
+                                <select
+                                    value={earningsSort}
+                                    onChange={(event) => setEarningsSort(event.target.value as EarningsSort)}
+                                    className="cursor-pointer bg-transparent font-black text-foreground outline-none"
+                                    aria-label="Ordenar balances"
+                                >
+                                    <option value="RELEVANCIA">Relevancia</option>
+                                    <option value="VICTORIOSOS">Superaron estimaciones</option>
+                                    <option value="DESVICTORIOSOS">Debajo de estimaciones</option>
+                                    <option value="MIXTOS">Resultados mixtos</option>
+                                    <option value="PENDIENTES">Pendientes</option>
+                                </select>
+                            </label>
                         </div>
                     )}
 
@@ -533,7 +613,7 @@ export default function CalendarPage() {
                         }
 
                         const dayEarnings = activeSection === 'BALANCES'
-                            ? day.earningsEvents
+                            ? sortEarnings(day.earningsEvents.filter(hasEarningsInformation), earningsSort)
                             : [];
                         const dayDividends = activeSection === 'DIVIDENDOS'
                             ? (day.dividendEvents || [])
@@ -667,42 +747,44 @@ export default function CalendarPage() {
 
                                 {/* 2. Earnings de acciones estadounidenses */}
                                 {activeSection === 'BALANCES' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
                                         {dayEarnings.map((earn) => {
                                             const timingLabel = earn.reportTiming === 'AMC'
                                                 ? 'Después del cierre'
                                                 : earn.reportTiming === 'BMO'
                                                     ? 'Antes de la apertura'
-                                                    : earn.reportTiming === 'DMH' ? 'Durante la rueda' : 'Horario no informado';
+                                                    : earn.reportTiming === 'DMH' ? 'Durante la rueda' : 'Horario pendiente';
                                             const hasReportedResult = earn.actualEps != null || earn.actualRevenue != null;
                                             const epsWon = earn.epsSurprise != null && earn.epsSurprise >= 0;
                                             const revenueWon = earn.revenueSurprise != null && earn.revenueSurprise >= 0;
-                                            const reportedMetrics = [earn.epsSurprise, earn.revenueSurprise].filter((value) => value != null);
-                                            const positiveMetrics = reportedMetrics.filter((value) => Number(value) >= 0).length;
-                                            const resultWon = reportedMetrics.length > 0 && positiveMetrics === reportedMetrics.length;
-                                            const resultMixed = reportedMetrics.length > 0 && positiveMetrics > 0 && !resultWon;
+                                            const outcome = getEarningsOutcome(earn);
+                                            const resultWon = outcome === 'VICTORIOSO';
+                                            const resultLost = outcome === 'DESVICTORIOSO';
+                                            const resultMixed = outcome === 'MIXTO';
                                             const marketUp = earn.marketReaction != null && earn.marketReaction >= 0;
+                                            const epsValueClass = earn.epsSurprise == null ? 'text-foreground' : epsWon ? 'text-emerald-500' : 'text-rose-500';
+                                            const revenueValueClass = earn.revenueSurprise == null ? 'text-foreground' : revenueWon ? 'text-emerald-500' : 'text-rose-500';
 
                                             return (
                                                 <div
                                                     key={earn.id}
-                                                    className="p-5 sm:p-6 rounded-2xl border border-border/60 bg-card/80 hover:bg-card transition-all flex flex-col justify-between space-y-4 shadow-sm group hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/5 min-h-[250px]"
+                                                    className="p-6 sm:p-7 rounded-3xl border border-border/60 bg-card/90 hover:bg-card transition-colors flex flex-col justify-between space-y-5 shadow-sm group hover:border-amber-500/50 hover:shadow-xl hover:shadow-amber-500/10 min-h-[300px]"
                                                 >
                                                     <div>
-                                                        <div className="flex items-center justify-between gap-2 mb-3">
-                                                            <span className="text-[11px] font-black tracking-wider uppercase text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
+                                                        <div className="flex items-center justify-between gap-3 mb-5">
+                                                            <span className="text-xs font-black tracking-wider uppercase text-amber-500 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
                                                                 📊 EE. UU.
                                                             </span>
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="text-xs font-semibold text-muted-foreground bg-secondary/80 px-2.5 py-1 rounded-lg border border-border/50">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs sm:text-sm font-bold text-muted-foreground bg-secondary/80 px-3 py-1.5 rounded-xl border border-border/50">
                                                                     {timingLabel}
                                                                 </span>
                                                                 {hasReportedResult ? (
-                                                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${resultWon ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' : resultMixed ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' : 'text-rose-500 bg-rose-500/10 border-rose-500/20'}`}>
+                                                                    <span className={`hidden sm:inline-flex text-[11px] font-black px-2 py-1 rounded-lg border ${resultWon ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' : resultLost ? 'text-rose-500 bg-rose-500/10 border-rose-500/20' : resultMixed ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' : 'text-sky-500 bg-sky-500/10 border-sky-500/20'}`}>
                                                                         Publicado
                                                                     </span>
                                                                 ) : earn.dateStatus === 'ESTIMATED' && (
-                                                                    <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20">
+                                                                    <span className="hidden sm:inline-flex text-[11px] font-black text-amber-400 bg-amber-400/10 px-2 py-1 rounded-lg border border-amber-400/20">
                                                                         Est.
                                                                     </span>
                                                                 )}
@@ -710,8 +792,8 @@ export default function CalendarPage() {
                                                         </div>
 
                                                         {/* Company & Ticker */}
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-12 h-12 rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center ring-1 ring-border/80 bg-card p-1 shadow-xs">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center ring-1 ring-border/80 bg-card p-1.5 shadow-sm">
                                                                 <AssetLogoImg
                                                                     ticker={earn.ticker}
                                                                     src={earn.logoUrl}
@@ -719,53 +801,53 @@ export default function CalendarPage() {
                                                                 />
                                                             </div>
                                                             <div className="min-w-0 flex-1">
-                                                                <div className="flex items-center justify-between gap-1">
-                                                                    <span className="text-xl font-black text-foreground tracking-tight group-hover:text-amber-500 transition-colors">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className="text-2xl font-black text-foreground tracking-tight group-hover:text-amber-500 transition-colors">
                                                                         {earn.ticker}
                                                                     </span>
                                                                     {earn.marketCap && (
-                                                                        <span className="text-[11px] font-mono text-muted-foreground">
+                                                                        <span className="text-xs font-mono font-semibold text-muted-foreground">
                                                                             {formatMarketCap(earn.marketCap) ? `Cap: ${formatMarketCap(earn.marketCap)}` : ''}
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                <p className="text-xs font-semibold text-muted-foreground truncate" title={earn.companyName}>
+                                                                <p className="text-sm font-semibold text-muted-foreground truncate" title={earn.companyName}>
                                                                     {earn.companyName}
                                                                 </p>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="pt-3 border-t border-border/50 space-y-2.5 text-xs">
+                                                    <div className="pt-4 border-t border-border/50 space-y-3 text-sm">
                                                         {hasReportedResult ? (
                                                             <>
-                                                                <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${resultWon ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : resultMixed ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
-                                                                    {resultWon ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
-                                                                    <span className="font-bold">{resultWon ? 'Balance victorioso: superó las estimaciones.' : resultMixed ? 'Balance mixto: hubo métricas a favor y en contra.' : 'Balance por debajo del consenso.'}</span>
+                                                                <div className={`flex items-center gap-2 rounded-2xl px-4 py-3 ${resultWon ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : resultMixed ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : resultLost ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-sky-500/10 text-sky-600 dark:text-sky-400'}`}>
+                                                                    {resultWon ? <CheckCircle2 className="h-5 w-5 shrink-0" /> : resultLost ? <XCircle className="h-5 w-5 shrink-0" /> : <BarChart3 className="h-5 w-5 shrink-0" />}
+                                                                    <span className="font-black">{resultWon ? 'Superó las estimaciones' : resultMixed ? 'Resultado mixto' : resultLost ? 'Quedó debajo de las estimaciones' : 'Resultado informado'}</span>
                                                                 </div>
-                                                                <div className="grid grid-cols-2 gap-2.5 font-mono">
-                                                                    <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
-                                                                        <div className="text-[10px] text-muted-foreground font-sans font-semibold uppercase tracking-wider">Ganancias (EPS)</div>
-                                                                        <div className="mt-1 flex items-baseline justify-between gap-1"><span className="text-muted-foreground">Est. {earn.epsEstimate != null ? `$${earn.epsEstimate.toFixed(2)}` : 'N/D'}</span><span className={`font-black ${epsWon ? 'text-emerald-500' : 'text-rose-500'}`}>Real {earn.actualEps != null ? `$${earn.actualEps.toFixed(2)}` : 'N/D'}</span></div>
-                                                                        <div className={`mt-1 font-bold ${epsWon ? 'text-emerald-500' : 'text-rose-500'}`}>{earn.epsSurprise != null ? `${epsWon ? '+' : ''}${earn.epsSurprise.toFixed(1)}% vs. consenso` : 'Sin comparación'}</div>
+                                                                <div className="grid grid-cols-2 gap-3 font-mono">
+                                                                    <div className="p-3 rounded-2xl bg-secondary/40 border border-border/40">
+                                                                        <div className="text-[11px] text-muted-foreground font-sans font-bold uppercase tracking-wider">Ganancias EPS</div>
+                                                                        <div className="mt-1.5 flex flex-col gap-1"><span className="text-muted-foreground">Est. {earn.epsEstimate != null ? `$${earn.epsEstimate.toFixed(2)}` : 'N/D'}</span><span className={`text-base font-black ${epsValueClass}`}>Real {earn.actualEps != null ? `$${earn.actualEps.toFixed(2)}` : 'N/D'}</span></div>
+                                                                        <div className={`mt-1.5 font-black ${epsValueClass}`}>{earn.epsSurprise != null ? `${epsWon ? '+' : ''}${earn.epsSurprise.toFixed(1)}% vs. est.` : 'Sin comparación'}</div>
                                                                     </div>
-                                                                    <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40">
-                                                                        <div className="text-[10px] text-muted-foreground font-sans font-semibold uppercase tracking-wider">Facturación</div>
-                                                                        <div className="mt-1 flex items-baseline justify-between gap-1"><span className="text-muted-foreground">Est. {formatRevenue(earn.revenueEstimate)}</span><span className={`font-black ${revenueWon ? 'text-emerald-500' : 'text-rose-500'}`}>Real {formatRevenue(earn.actualRevenue)}</span></div>
-                                                                        <div className={`mt-1 font-bold ${revenueWon ? 'text-emerald-500' : 'text-rose-500'}`}>{earn.revenueSurprise != null ? `${revenueWon ? '+' : ''}${earn.revenueSurprise.toFixed(1)}% vs. consenso` : 'Sin comparación'}</div>
+                                                                    <div className="p-3 rounded-2xl bg-secondary/40 border border-border/40">
+                                                                        <div className="text-[11px] text-muted-foreground font-sans font-bold uppercase tracking-wider">Facturación</div>
+                                                                        <div className="mt-1.5 flex flex-col gap-1"><span className="text-muted-foreground">Est. {formatRevenue(earn.revenueEstimate)}</span><span className={`text-base font-black ${revenueValueClass}`}>Real {formatRevenue(earn.actualRevenue)}</span></div>
+                                                                        <div className={`mt-1.5 font-black ${revenueValueClass}`}>{earn.revenueSurprise != null ? `${revenueWon ? '+' : ''}${earn.revenueSurprise.toFixed(1)}% vs. est.` : 'Sin comparación'}</div>
                                                                     </div>
                                                                 </div>
                                                                 {earn.marketReaction != null && (
                                                                     <div className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 ${marketUp ? 'border-emerald-500/25 bg-emerald-500/5' : 'border-rose-500/25 bg-rose-500/5'}`}>
-                                                                        <span className="flex items-center gap-1.5 font-semibold text-muted-foreground">{marketUp ? <TrendingUp className="h-4 w-4 text-emerald-500" /> : <TrendingDown className="h-4 w-4 text-rose-500" />} Reacción del mercado</span>
-                                                                        <span className={`font-black font-mono ${marketUp ? 'text-emerald-500' : 'text-rose-500'}`}>{marketUp ? '+' : ''}{earn.marketReaction.toFixed(2)}% · {marketUp ? 'recibido positivamente' : 'reacción negativa'}</span>
+                                                                        <span className="flex items-center gap-1.5 font-bold text-muted-foreground">{marketUp ? <TrendingUp className="h-5 w-5 text-emerald-500" /> : <TrendingDown className="h-5 w-5 text-rose-500" />} Reacción del mercado</span>
+                                                                        <span className={`font-black font-mono ${marketUp ? 'text-emerald-500' : 'text-rose-500'}`}>{marketUp ? '+' : ''}{earn.marketReaction.toFixed(2)}%</span>
                                                                     </div>
                                                                 )}
                                                             </>
                                                         ) : (
-                                                            <div className="grid grid-cols-2 gap-2.5 font-mono">
-                                                                <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40"><div className="text-[10px] text-muted-foreground font-sans font-semibold uppercase tracking-wider">EPS estimado</div><div className="mt-1 text-sm sm:text-base font-black text-amber-500">{earn.epsEstimate != null ? `$${earn.epsEstimate.toFixed(2)}` : 'N/D'}</div></div>
-                                                                <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/40"><div className="text-[10px] text-muted-foreground font-sans font-semibold uppercase tracking-wider">Facturación est.</div><div className="mt-1 text-sm sm:text-base font-black text-foreground">{formatRevenue(earn.revenueEstimate)}</div></div>
+                                                            <div className="grid grid-cols-2 gap-3 font-mono">
+                                                                <div className="p-3 rounded-2xl bg-secondary/40 border border-border/40"><div className="text-[11px] text-muted-foreground font-sans font-bold uppercase tracking-wider">EPS estimado</div><div className="mt-1.5 text-lg font-black text-amber-500">{earn.epsEstimate != null ? `$${earn.epsEstimate.toFixed(2)}` : 'N/D'}</div></div>
+                                                                <div className="p-3 rounded-2xl bg-secondary/40 border border-border/40"><div className="text-[11px] text-muted-foreground font-sans font-bold uppercase tracking-wider">Facturación est.</div><div className="mt-1.5 text-lg font-black text-foreground">{formatRevenue(earn.revenueEstimate)}</div></div>
                                                             </div>
                                                         )}
                                                     </div>
@@ -775,7 +857,7 @@ export default function CalendarPage() {
                                     </div>
                                 )}
 
-                                {/* 3. Dividendos de acciones estadounidenses — TradingView Style */}
+                                {/* 3. Dividendos del S&P 500 — TradingView Style */}
                                 {activeSection === 'DIVIDENDOS' && (
                                     <div className="space-y-2">
                                         {dayDividends.map((div) => (

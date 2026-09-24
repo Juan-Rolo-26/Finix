@@ -27,6 +27,7 @@ export function formatCurrency(
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
       currency: currencyCode,
+      currencyDisplay: currencyCode.toUpperCase() === 'ARS' ? 'code' : 'symbol',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
       ...options,

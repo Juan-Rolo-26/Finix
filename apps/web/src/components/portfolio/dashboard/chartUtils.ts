@@ -30,23 +30,28 @@ export const CHART_AXIS_TICK = {
     fontSize: 12,
 };
 
+const DASHBOARD_CURRENCY_FORMATTERS = {
+    USD: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', currencyDisplay: 'symbol', maximumFractionDigits: 0 }),
+    ARS: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', currencyDisplay: 'code', maximumFractionDigits: 0 }),
+} as const;
+
+const DASHBOARD_COMPACT_CURRENCY_FORMATTERS = {
+    USD: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', currencyDisplay: 'symbol', notation: 'compact', maximumFractionDigits: 1 }),
+    ARS: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', currencyDisplay: 'code', notation: 'compact', maximumFractionDigits: 1 }),
+} as const;
+
 export function formatCurrency(value: number, currency = 'USD') {
     const safe = typeof value === 'number' && Number.isFinite(value) ? value : 0;
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency,
-        maximumFractionDigits: 0,
-    }).format(safe);
+    const currencyCode = currency === 'USD MEP' ? 'USD' : currency.toUpperCase();
+    const formatter = DASHBOARD_CURRENCY_FORMATTERS[currencyCode as keyof typeof DASHBOARD_CURRENCY_FORMATTERS] ?? DASHBOARD_CURRENCY_FORMATTERS.USD;
+    return formatter.format(safe);
 }
 
 export function formatCompactCurrency(value: number, currency = 'USD') {
     const safe = typeof value === 'number' && Number.isFinite(value) ? value : 0;
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency,
-        notation: 'compact',
-        maximumFractionDigits: 1,
-    }).format(safe);
+    const currencyCode = currency === 'USD MEP' ? 'USD' : currency.toUpperCase();
+    const formatter = DASHBOARD_COMPACT_CURRENCY_FORMATTERS[currencyCode as keyof typeof DASHBOARD_COMPACT_CURRENCY_FORMATTERS] ?? DASHBOARD_COMPACT_CURRENCY_FORMATTERS.USD;
+    return formatter.format(safe);
 }
 
 export function formatPercent(value: number, fractionDigits = 1, signed = false) {
@@ -55,6 +60,29 @@ export function formatPercent(value: number, fractionDigits = 1, signed = false)
     }
     const sign = signed && value > 0 ? '+' : '';
     return `${sign}${value.toFixed(fractionDigits)}%`;
+}
+
+export function formatChartDate(value: string, range?: string) {
+    if (!value || value === 'Inicio' || value === 'Hoy') return value;
+
+    const date = value.includes('T')
+        ? new Date(value)
+        : new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return value;
+
+    if (range === '1D') {
+        return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
+    if (range === '1W') {
+        return date.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit' }).replace('.', '');
+    }
+
+    if (range === '1M' || range === '3M' || range === '6M') {
+        return date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }).replace('.', '');
+    }
+
+    return date.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' }).replace('.', '');
 }
 
 export function truncateLabel(value: string, maxLength = 14) {

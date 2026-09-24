@@ -298,7 +298,7 @@ export class CalendarService {
             dbEarnings.sort((a, b) => a.date.localeCompare(b.date) || b.earningsImpactScore - a.earningsImpactScore);
         }
 
-        // Fetch dividends from DB or the complete TradingView US universe.
+        // Fetch S&P 500 dividends from DB or TradingView.
         let dbDividends: any[] = [];
         if (params.category !== 'US' && params.category !== 'AR' && params.category !== 'EARNINGS') {
             try {
@@ -350,7 +350,9 @@ export class CalendarService {
                 ? d.paymentDate : d.exDate;
         dbDividends.sort((a, b) =>
             (dividendDisplayDate(a) || '').localeCompare(dividendDisplayDate(b) || ''));
-        dbDividends = uniqueEvents(dbDividends, d => `${tickerKey(d.ticker)}|${d.exDate || ''}|${d.paymentDate || ''}|${d.amount ?? ''}`);
+        // Mostrar una sola card por activo. Como antes se ordenó por fecha visible,
+        // se conserva el evento más relevante de la semana y sus dos fechas.
+        dbDividends = uniqueEvents(dbDividends, d => tickerKey(d.ticker));
 
         const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         const shortNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
@@ -1040,7 +1042,7 @@ export class CalendarService {
     }
 
     /**
-     * Sincroniza en tiempo real los dividendos del universo estadounidense desde TradingView Scanner.
+     * Sincroniza en tiempo real los dividendos del universo S&P 500 desde TradingView Scanner.
      * Incluye fecha de pago (cuándo pagan), fecha ex-dividend, monto en USD (cuánto pagan), yield y logo.
      */
     async syncTradingViewDividends() {
@@ -1099,7 +1101,7 @@ export class CalendarService {
                 data: {
                     syncType: 'DIVIDENDS',
                     status: errors === 0 ? 'SUCCESS' : 'PARTIAL',
-                    providerUsed: 'TradingView Official Scanner (NASDAQ/NYSE/AMEX Dividends)',
+                    providerUsed: 'TradingView Official Scanner (S&P 500 Dividends)',
                     eventsProcessed: upserted,
                     eventsFound: list.length,
                     eventsCreated: upserted,

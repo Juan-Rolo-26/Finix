@@ -298,6 +298,44 @@ export class MessagesService {
         };
     }
 
+    /** Update the text of a message created by the requesting user. */
+    async updateMessage(
+        messageId: string,
+        conversationId: string,
+        userId: string,
+        payload: { content: string },
+    ) {
+        const conversation = await this.getConversationForMember(conversationId, userId);
+        const message = await this.prisma.directMessage.findFirst({
+            where: { id: messageId, conversationId },
+            include: MESSAGE_INCLUDE,
+        });
+
+        if (!message) {
+            throw new NotFoundException('El mensaje no existe en esta conversación');
+        }
+
+        if (message.senderId !== userId) {
+            throw new ForbiddenException('Solo podés editar tus propios mensajes');
+        }
+
+        const content = typeof payload.content === 'string' ? payload.content.trim() : '';
+        if (!content && !message.attachmentType) {
+            throw new BadRequestException('El mensaje debe tener texto o un adjunto');
+        }
+
+        const updatedMessage = await this.prisma.directMessage.update({
+            where: { id: messageId },
+            data: { content },
+            include: MESSAGE_INCLUDE,
+        });
+
+        return {
+            message: this.serializeMessage(updatedMessage, conversation),
+            participantIds: conversation.participants.map((participant) => participant.userId),
+        };
+    }
+
     /** Mark all unread messages in a conversation as read */
     async markAsRead(conversationId: string, userId: string) {
         const conv = await this.getConversationForMember(conversationId, userId);

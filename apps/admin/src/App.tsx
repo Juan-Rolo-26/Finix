@@ -16,10 +16,11 @@ import AnalysisManagement from './pages/AnalysisManagement';
 import MarketRankingsManagement from './pages/MarketRankingsManagement';
 import CalendarManagement from './pages/CalendarManagement';
 import EmailMarketing from './pages/EmailMarketing';
-import { adminFetch } from './lib/api';
+import { adminFetch, readAdminErrorMessage } from './lib/api';
 
 const RequireAdminAuth = ({ children }: { children: JSX.Element }) => {
-    const [status, setStatus] = useState<'loading' | 'ok' | 'unauthorized'>('loading');
+    const [status, setStatus] = useState<'loading' | 'ok' | 'unauthorized' | 'forbidden' | 'error'>('loading');
+    const [message, setMessage] = useState('');
 
     useEffect(() => {
         let mounted = true;
@@ -28,10 +29,19 @@ const RequireAdminAuth = ({ children }: { children: JSX.Element }) => {
             try {
                 const res = await adminFetch('/admin/auth/me');
                 if (!mounted) return;
-                setStatus(res.ok ? 'ok' : 'unauthorized');
+
+                if (res.ok) {
+                    setStatus('ok');
+                    return;
+                }
+
+                const errorMessage = await readAdminErrorMessage(res, 'No se pudo validar la sesión del administrador.');
+                setMessage(errorMessage);
+                setStatus(res.status === 403 ? 'forbidden' : 'unauthorized');
             } catch {
                 if (!mounted) return;
-                setStatus('unauthorized');
+                setMessage('No se pudo conectar con la API del administrador.');
+                setStatus('error');
             }
         };
 
@@ -52,6 +62,24 @@ const RequireAdminAuth = ({ children }: { children: JSX.Element }) => {
 
     if (status === 'unauthorized') {
         return <Navigate to="/login" replace />;
+    }
+
+    if (status === 'forbidden' || status === 'error') {
+        return (
+            <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-zinc-100 p-6">
+                <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/80 p-7 text-center shadow-2xl">
+                    <h1 className="text-xl font-bold">No se pudo abrir el admin</h1>
+                    <p className="mt-3 text-sm leading-6 text-zinc-400">{message}</p>
+                    <button
+                        type="button"
+                        onClick={() => window.location.assign('/login')}
+                        className="mt-6 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400"
+                    >
+                        Volver al inicio de sesión
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     return children;

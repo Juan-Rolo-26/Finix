@@ -448,8 +448,9 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                             onChange={(e) => setEditContent(e.target.value)}
                             className="bg-secondary/30 resize-none"
                             rows={4}
-                            maxLength={2000}
+                            maxLength={1000}
                         />
+                        <p className="text-right text-[11px] text-muted-foreground">{editContent.length}/1000</p>
                         <div className="flex gap-2 justify-end">
                             <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancelar</Button>
                             <Button size="sm" onClick={handleSaveEdit} disabled={isSavingEdit}>

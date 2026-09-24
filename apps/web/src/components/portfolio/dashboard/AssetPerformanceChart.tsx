@@ -53,24 +53,19 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
         };
     }, [safeData]);
 
-    // Calcular dominio Y garantizando que el 0 SIEMPRE esté visible como eje base
+    // Ajustar el dominio al rango real evita que una posición con variación
+    // pequeña quede perdida en un gráfico con demasiado espacio vacío.
     const yDomain = useMemo<[number, number]>(() => {
         if (!safeData.length) return [-5, 5];
 
-        let min = 0;
-        let max = 0;
+        const values = safeData.flatMap((item) => [item.return, item.contribution]);
+        const min = Math.min(0, ...values);
+        const max = Math.max(0, ...values);
+        const maxAbs = Math.max(Math.abs(min), Math.abs(max), 0.4);
+        const padding = Math.max(maxAbs * 0.28, 0.12);
 
-        for (const item of safeData) {
-            if (item.return < min) min = item.return;
-            if (item.contribution < min) min = item.contribution;
-            if (item.return > max) max = item.return;
-            if (item.contribution > max) max = item.contribution;
-        }
-
-        // Margen proporcional
-        const padding = Math.max(2, Math.ceil(Math.max(Math.abs(min), Math.abs(max)) * 0.2));
-        const domainMin = Math.floor(min - padding);
-        const domainMax = Math.ceil(max + padding);
+        const domainMin = Number((min - padding).toFixed(2));
+        const domainMax = Number((max + padding).toFixed(2));
 
         return [domainMin, domainMax];
     }, [safeData]);
@@ -121,8 +116,8 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
     };
 
     return (
-        <Card className={cn('rounded-[22px] border border-border/50 bg-card/80 shadow-lg overflow-hidden flex flex-col justify-between', className)}>
-            <CardHeader className="px-6 py-6 sm:px-7 sm:py-7 border-b border-border/40 text-center">
+        <Card className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 shadow-lg overflow-hidden flex flex-col justify-between', className)}>
+            <CardHeader className="px-4 py-5 sm:px-6 sm:py-6 border-b border-border/40 text-center">
                 <div className="flex flex-col items-center justify-center gap-4 text-center">
                     <div className="flex flex-col items-center text-center">
                         <CardTitle className="text-xl font-bold tracking-tight flex items-center justify-center gap-2.5 text-center">
@@ -130,12 +125,12 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                             Rendimiento por Activo
                         </CardTitle>
                         <CardDescription className="text-sm text-muted-foreground/80 mt-1 text-center max-w-md mx-auto">
-                            Comparativa visual de retorno, aporte al capital y peso de cada posición
+                            Retorno, aporte y peso actual de cada posición
                         </CardDescription>
                     </div>
 
                     {/* Selector de modo de vista */}
-                    <div className="flex items-center justify-center gap-1 p-1 rounded-xl bg-secondary/50 border border-border/40">
+                    <div className="flex max-w-full items-center justify-center gap-1 overflow-x-auto p-1 rounded-xl bg-secondary/50 border border-border/40">
                         <button
                             onClick={() => setViewMode('PERFORMANCE')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
@@ -196,7 +191,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                 )}
             </CardHeader>
 
-            <CardContent className="pt-6">
+            <CardContent className="px-4 pt-4 pb-5 sm:px-6 sm:pt-5">
                 {safeData.length === 0 ? (
                     <div className="flex h-[360px] flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-secondary/15 px-6 text-center space-y-3">
                         <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
@@ -210,13 +205,13 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         </div>
                     </div>
                 ) : viewMode === 'PERFORMANCE' ? (
-                    <div className="h-[360px] w-full">
+                    <div className="h-[300px] w-full sm:h-[340px] lg:h-[360px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 data={safeData}
                                 margin={{ top: 20, right: 16, bottom: 8, left: -10 }}
                                 barGap={8}
-                                barCategoryGap={safeData.length <= 2 ? '45%' : '20%'}
+                                barCategoryGap={safeData.length === 1 ? '58%' : safeData.length <= 2 ? '42%' : '20%'}
                             >
                                 <defs>
                                     <linearGradient id="barReturnPos" x1="0" y1="0" x2="0" y2="1">
@@ -238,13 +233,13 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                     dataKey="asset"
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={CHART_AXIS_TICK}
+                                    tick={{ ...CHART_AXIS_TICK, fontSize: 10 }}
                                     tickMargin={10}
                                 />
                                 <YAxis
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={CHART_AXIS_TICK}
+                                    tick={{ ...CHART_AXIS_TICK, fontSize: 10 }}
                                     width={52}
                                     tickFormatter={(val: number) => `${val >= 0 ? '+' : ''}${val}%`}
                                     domain={yDomain}
@@ -292,7 +287,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         </ResponsiveContainer>
                     </div>
                 ) : viewMode === 'WEIGHT' ? (
-                    <div className="h-[360px] w-full flex flex-col justify-center gap-4 px-2 sm:px-6">
+                    <div className="min-h-[300px] w-full flex flex-col justify-center gap-4 px-1 sm:min-h-[340px] sm:px-4">
                         {safeData.map((item) => (
                             <div key={item.asset} className="space-y-1.5">
                                 <div className="flex items-center justify-between text-xs sm:text-sm">
@@ -323,7 +318,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                     </div>
                 ) : (
                     /* Vista de Lista / Detalle */
-                    <div className="h-[360px] w-full overflow-y-auto space-y-2.5 pr-1">
+                    <div className="min-h-[300px] max-h-[360px] w-full overflow-y-auto space-y-2.5 pr-1 sm:min-h-[340px]">
                         {safeData.map((item) => {
                             const isPositive = item.return >= 0;
                             return (

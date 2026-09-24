@@ -161,14 +161,23 @@ const getInitialPortfolioForm = () => ({
 });
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
+const PORTFOLIO_CURRENCY_FORMATTERS = {
+  USD: new Intl.NumberFormat("es-AR", { style: "currency", currency: "USD", currencyDisplay: "symbol", minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  ARS: new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", currencyDisplay: "code", minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+} as const;
+const PORTFOLIO_ARS_INTEGER_FORMATTER = new Intl.NumberFormat("es-AR", {
+  style: "currency",
+  currency: "ARS",
+  currencyDisplay: "code",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
 function fmtCurrency(amount: number, currency = "USD") {
   const safe = typeof amount === "number" && Number.isFinite(amount) ? amount : 0;
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(safe);
+  const currencyCode = currency === "USD MEP" ? "USD" : currency.toUpperCase();
+  const formatter = PORTFOLIO_CURRENCY_FORMATTERS[currencyCode as keyof typeof PORTFOLIO_CURRENCY_FORMATTERS] ?? PORTFOLIO_CURRENCY_FORMATTERS.USD;
+  return formatter.format(safe);
 }
 
 function fmtPct(value: number) {
@@ -178,11 +187,19 @@ function fmtPct(value: number) {
 
 function fmtCompact(value: number, currency = "USD") {
   const safe = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  const currencyCode = currency === "USD MEP" ? "USD" : currency.toUpperCase();
   const abs = Math.abs(safe);
   const sign = safe < 0 ? "-" : "";
-  if (abs >= 1_000_000) return `${sign}${currency} ${(abs / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `${sign}${currency} ${(abs / 1_000).toFixed(1)}K`;
-  return fmtCurrency(safe, currency);
+  if (abs >= 1_000_000) return `${sign}${currencyCode} ${(abs / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `${sign}${currencyCode} ${(abs / 1_000).toFixed(1)}K`;
+  return fmtCurrency(safe, currencyCode);
+}
+
+function fmtArs(amount: number, maximumFractionDigits = 0) {
+  const safe = typeof amount === "number" && Number.isFinite(amount) ? amount : 0;
+  return maximumFractionDigits === 0
+    ? PORTFOLIO_ARS_INTEGER_FORMATTER.format(safe)
+    : PORTFOLIO_CURRENCY_FORMATTERS.ARS.format(safe);
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -311,7 +328,7 @@ function AssetRow({
           </span>
           {asset.isCedear && asset.cedearPriceArs ? (
             <span className="text-[10px] font-semibold text-sky-400/90 mt-0.5 tabular-nums">
-              CEDEAR: ${asset.cedearPriceArs.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+              CEDEAR: {fmtArs(asset.cedearPriceArs)}
               {typeof cedearChange === 'number' && (
                 <span className={cedearChange >= 0 ? " text-emerald-400 ml-1" : " text-red-400 ml-1"}>
                   ({cedearChange >= 0 ? "+" : ""}{cedearChange.toFixed(1)}%)
@@ -351,7 +368,7 @@ function AssetRow({
           <div className="flex flex-col items-end">
             <div className="flex items-center justify-end gap-1">
               <span className="text-[13px] font-bold tabular-nums text-foreground">
-                ${asset.cedearPriceArs.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                {fmtArs(asset.cedearPriceArs)}
               </span>
               <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 leading-none">
                 ARS
@@ -389,7 +406,7 @@ function AssetRow({
         </p>
         {asset.cedearTotalValuationArs && !hideValues ? (
           <p className="text-[10px] text-muted-foreground font-medium tabular-nums mt-0.5" title={`Valuación en pesos argentinos (${asset.cedearQuantity ? `${asset.cedearQuantity.toFixed(2)} CEDEARs` : ''})`}>
-            ≈ ${asset.cedearTotalValuationArs.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+            ≈ {fmtArs(asset.cedearTotalValuationArs)}
           </p>
         ) : null}
       </div>
@@ -1623,7 +1640,7 @@ const PortfolioPage = () => {
                   className="overflow-hidden"
                 >
                   <ErrorBoundary fallbackTitle="Análisis de diversificación temporalmente inaccesible">
-                    <PortfolioAdvancedMetrics metrics={displayMetrics} assets={displayPortfolio.assets} />
+                    <PortfolioAdvancedMetrics metrics={displayMetrics} assets={displayPortfolio.assets} currency={currency} />
                   </ErrorBoundary>
                 </motion.div>
               )}

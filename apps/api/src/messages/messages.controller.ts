@@ -12,7 +12,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { EventsGateway } from '../events.gateway';
 import { MessagesService } from './messages.service';
-import { SendMessageDto, CreateConversationDto, UpdateConversationDto } from './dto/messages.dto';
+import { SendMessageDto, UpdateMessageDto, CreateConversationDto, UpdateConversationDto } from './dto/messages.dto';
 
 @Controller('messages')
 @UseGuards(JwtAuthGuard)
@@ -81,6 +81,30 @@ export class MessagesController {
         }
 
         return message;
+    }
+
+    /** PATCH /api/messages/conversations/:conversationId/messages/:messageId */
+    @Patch('conversations/:conversationId/messages/:messageId')
+    async updateMessage(
+        @Param('conversationId') conversationId: string,
+        @Param('messageId') messageId: string,
+        @Request() req: any,
+        @Body() body: UpdateMessageDto,
+    ) {
+        const result = await this.messagesService.updateMessage(
+            messageId,
+            conversationId,
+            req.user.id,
+            body,
+        );
+
+        try {
+            await this.eventsGateway.emitMessageUpdated(conversationId, result.message, result.participantIds);
+        } catch {
+            // The message is already persisted; realtime delivery is best-effort.
+        }
+
+        return result.message;
     }
 
     /** POST /api/messages/conversations/:id/read */

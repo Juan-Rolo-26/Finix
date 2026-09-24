@@ -356,6 +356,7 @@ function CreatePost({ communityId, plans, onCreated }: {
                     className="flex-1 resize-none bg-transparent text-sm outline-none leading-relaxed"
                     placeholder="¿Qué querés compartir con la comunidad?"
                     rows={3}
+                    maxLength={1000}
                     value={content}
                     onChange={e => setContent(e.target.value)}
                 />
@@ -377,6 +378,8 @@ function CreatePost({ communityId, plans, onCreated }: {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <p className="text-right text-[11px] text-muted-foreground">{content.length}/1000</p>
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                 <div className="flex items-center gap-1.5 flex-wrap">

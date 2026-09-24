@@ -47,6 +47,11 @@ const POPULAR_RECOMMENDATIONS: AssetResult[] = [
 
 const EXCLUDED_EXCHANGE_PREFIXES = ['PYTH', 'SPREADEX', 'CAPITALCOM', 'FX', 'OANDA', 'FOREX', 'CURRENCYCOM'];
 
+const TRANSACTION_CURRENCY_FORMATTERS = {
+    USD: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', currencyDisplay: 'symbol' }),
+    ARS: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', currencyDisplay: 'code' }),
+} as const;
+
 const normalizeAssetResults = (data: unknown): AssetResult[] => {
     if (!Array.isArray(data)) return [];
     const stripHtml = (value: string) => value.replace(/<[^>]*>/g, '').trim();
@@ -857,10 +862,8 @@ function FormContent({
     const cashImpact = transactionType === 'SELL' ? total - safeFee : -(total + safeFee);
     const amountLabel = transactionType === 'SELL' ? 'Monto de venta' : 'Monto del activo';
     const cashImpactLabel = transactionType === 'SELL' ? 'Ingreso neto' : 'Salida de caja';
-    const formatter = new Intl.NumberFormat(currency === 'ARS' ? 'es-AR' : 'en-US', {
-        style: 'currency',
-        currency: currency || 'USD',
-    });
+    const currencyCode = currency === 'ARS' ? 'ARS' : 'USD';
+    const formatter = TRANSACTION_CURRENCY_FORMATTERS[currencyCode];
     return (
         <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">

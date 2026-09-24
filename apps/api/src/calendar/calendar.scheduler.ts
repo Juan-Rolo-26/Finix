@@ -78,13 +78,13 @@ export class CalendarScheduler {
     }
 
     /**
-     * Sincronización periódica de dividendos de acciones estadounidenses durante días hábiles.
+     * Sincronización periódica de dividendos del S&P 500 durante días hábiles.
      */
     @Cron('30 */6 * * 1-5', {
         timeZone: 'America/New_York',
     })
     async handlePeriodicDividendsSync() {
-        this.logger.log('[CalendarScheduler] Iniciando sincronización periódica de Dividendos US...');
+        this.logger.log('[CalendarScheduler] Iniciando sincronización periódica de Dividendos S&P 500...');
         try {
             await this.calendarService.syncTradingViewDividends();
         } catch (error: any) {

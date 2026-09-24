@@ -44,24 +44,27 @@ type DistributionEntry = {
     color: string;
 };
 
-function formatCurrency(value: number) {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value);
+const ADVANCED_CURRENCY_FORMATTERS = {
+    USD: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', currencyDisplay: 'symbol', minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    ARS: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', currencyDisplay: 'code', minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+} as const;
+
+const ADVANCED_COMPACT_CURRENCY_FORMATTERS = {
+    USD: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', currencyDisplay: 'symbol', notation: 'compact', minimumFractionDigits: 0, maximumFractionDigits: 1 }),
+    ARS: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', currencyDisplay: 'code', notation: 'compact', minimumFractionDigits: 0, maximumFractionDigits: 1 }),
+} as const;
+
+function formatCurrency(value: number, currency = 'USD') {
+    const currencyCode = currency === 'USD MEP' ? 'USD' : currency.toUpperCase();
+    const formatter = ADVANCED_CURRENCY_FORMATTERS[currencyCode as keyof typeof ADVANCED_CURRENCY_FORMATTERS] ?? ADVANCED_CURRENCY_FORMATTERS.USD;
+    return formatter.format(value);
 }
 
-function formatCompactCurrency(value: number) {
+function formatCompactCurrency(value: number, currency = 'USD') {
     const safe = typeof value === 'number' && Number.isFinite(value) ? value : 0;
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'USD',
-        notation: 'compact',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 1,
-    }).format(safe);
+    const currencyCode = currency === 'USD MEP' ? 'USD' : currency.toUpperCase();
+    const formatter = ADVANCED_COMPACT_CURRENCY_FORMATTERS[currencyCode as keyof typeof ADVANCED_COMPACT_CURRENCY_FORMATTERS] ?? ADVANCED_COMPACT_CURRENCY_FORMATTERS.USD;
+    return formatter.format(safe);
 }
 
 function formatPercent(value: number) {
@@ -131,12 +134,14 @@ function DistributionCard({
     summary,
     data,
     emptyMessage,
+    currency,
 }: {
     title: string;
     description: string;
     summary: string;
     data: DistributionEntry[];
     emptyMessage: string;
+    currency: string;
 }) {
     const leadingEntry = data[0];
 
@@ -178,7 +183,7 @@ function DistributionCard({
                                         ))}
                                     </Pie>
                                     <RechartsTooltip
-                                        formatter={(value: number) => [formatCurrency(value), 'Valor actual']}
+                                        formatter={(value: number) => [formatCurrency(value, currency), 'Valor actual']}
                                         contentStyle={TOOLTIP_STYLE}
                                         labelStyle={{ color: 'hsl(var(--muted-foreground))', fontWeight: 600, marginBottom: 4 }}
                                         itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: 500 }}
@@ -227,7 +232,7 @@ function DistributionCard({
                                         <span className="truncate text-sm text-foreground/90">{entry.name}</span>
                                     </div>
                                     <span className="flex-shrink-0 text-xs text-muted-foreground">
-                                        {formatCompactCurrency(entry.value)} · {formatPercent(entry.share)}
+                                        {formatCompactCurrency(entry.value, currency)} · {formatPercent(entry.share)}
                                     </span>
                                 </div>
                             ))}
@@ -242,9 +247,11 @@ function DistributionCard({
 export const PortfolioAdvancedMetrics = ({
     metrics,
     assets,
+    currency = 'USD',
 }: {
     metrics?: PortfolioMetrics | null;
     assets: PortfolioAsset[];
+    currency?: string;
 }) => {
     const allocationByType = useMemo(
         () => {
@@ -299,6 +306,7 @@ export const PortfolioAdvancedMetrics = ({
                     : 'Todavia no hay posiciones con valor suficiente para calcular la distribucion por tipo.'}
                 data={allocationByType}
                 emptyMessage="Todavia no hay posiciones suficientes para mostrar la distribucion por tipo de activo."
+                currency={currency}
             />
 
             <DistributionCard
@@ -309,6 +317,7 @@ export const PortfolioAdvancedMetrics = ({
                     : 'Todavia no hay posiciones con valor suficiente para calcular la distribucion por activo.'}
                 data={allocationByAsset}
                 emptyMessage="Todavia no hay posiciones suficientes para mostrar la distribucion individual por activo."
+                currency={currency}
             />
         </div>
     );

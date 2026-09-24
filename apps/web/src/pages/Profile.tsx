@@ -29,6 +29,10 @@ import VerifiedBadge from '@/components/common/VerifiedBadge';
 const PRIMARY = 'hsl(158 100% 45%)';
 const PRIMARY_DIM = 'hsl(158 100% 45% / 0.12)';
 const PRIMARY_BRD = 'hsl(158 100% 45% / 0.25)';
+const PROFILE_CURRENCY_FORMATTERS = {
+    USD: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', currencyDisplay: 'symbol', maximumFractionDigits: 2 }),
+    ARS: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', currencyDisplay: 'code', maximumFractionDigits: 2 }),
+} as const;
 
 interface UserProfile {
     id: string;
@@ -170,7 +174,8 @@ function MiniPieChart({ data }: { data: { label: string; value: number; color: s
     if (total === 0) return <div className="w-40 h-40 flex items-center justify-center text-xs text-muted-foreground">Sin datos</div>;
 
     let cum = 0;
-    const slices = data.map((d) => {
+    const visibleData = data.filter((item) => item.value > 0);
+    const slices = visibleData.map((d) => {
         const start = (cum / total) * 2 * Math.PI - Math.PI / 2;
         cum += d.value;
         const end = (cum / total) * 2 * Math.PI - Math.PI / 2;
@@ -182,10 +187,24 @@ function MiniPieChart({ data }: { data: { label: string; value: number; color: s
     });
 
     return (
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-            {slices.map((s, i) => (
-                <path key={i} d={s.path} fill={s.color} opacity={0.9} className="transition-all hover:opacity-100" />
-            ))}
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Distribución del portafolio">
+            <circle cx={cx} cy={cy} r={r} fill="none" stroke="hsl(var(--border) / 0.55)" strokeWidth="18" />
+            {visibleData.length === 1 ? (
+                <circle
+                    cx={cx}
+                    cy={cy}
+                    r={r}
+                    fill="none"
+                    stroke={visibleData[0].color}
+                    strokeWidth="18"
+                    strokeLinecap="round"
+                    className="transition-opacity"
+                />
+            ) : (
+                slices.map((s, i) => (
+                    <path key={i} d={s.path} fill={s.color} opacity={0.9} className="transition-opacity hover:opacity-100" />
+                ))
+            )}
             <circle cx={cx} cy={cy} r={innerR - 2} fill="hsl(var(--card))" />
             <text x={cx} y={cy - 4} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="9" fontWeight="600">TOTAL</text>
             <text x={cx} y={cy + 11} textAnchor="middle" fill="hsl(var(--foreground))" fontSize="13" fontWeight="800">{data.length}</text>
@@ -213,29 +232,40 @@ function MonthlyBars({
     }
 
     const values = returns.map((entry) => entry.value);
-    const maxAbs = Math.max(...values.map(Math.abs), 1);
+    const maxAbs = Math.max(...values.map(Math.abs), 0.01);
 
     return (
-        <div className="w-full">
-            <div className="flex items-end gap-1 h-24 mb-1">
+        <div className="w-full rounded-2xl border border-border/60 bg-background/35 px-3 pb-3 pt-4 sm:px-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-[10px] font-semibold text-muted-foreground">
+                    <span className="h-2 w-2 rounded-full bg-primary" />
+                    Variación por mes
+                </div>
+                <span className="rounded-full border border-border/70 bg-card/70 px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                    {returns.length} meses
+                </span>
+            </div>
+            <div className="flex h-32 items-stretch gap-1.5 sm:gap-2">
                 {returns.map(({ monthKey, value }, i) => {
                     const v = value;
                     const isPos = v >= 0;
-                    const heightPct = Math.abs(v) / maxAbs * 100;
+                    const heightPct = Math.max((Math.abs(v) / maxAbs) * 42, 4);
                     return (
-                        <div key={monthKey} className="flex-1 flex flex-col items-center justify-end group relative" style={{ height: '96px' }}>
+                        <div key={monthKey} className="group relative flex min-w-0 flex-1 items-stretch">
+                            <div className="absolute inset-x-0 top-1/2 h-px bg-border/80" />
                             <div
-                                className="w-full rounded-t transition-all duration-500"
+                                className="absolute left-1/2 z-[1] w-[min(24px,72%)] -translate-x-1/2 rounded-full transition-[height,opacity] duration-500"
                                 style={{
-                                    height: `${heightPct * 0.96}px`,
+                                    height: `${heightPct}%`,
+                                    ...(isPos ? { bottom: '50%' } : { top: '50%' }),
                                     background: isPos
-                                        ? `linear-gradient(180deg, hsl(158 100% 45%) 0%, hsl(158 100% 30%) 100%)`
-                                        : `linear-gradient(180deg, hsl(0 90% 58%) 0%, hsl(0 90% 40%) 100%)`,
-                                    opacity: i === values.length - 1 ? 1 : 0.7,
+                                        ? 'linear-gradient(180deg, hsl(158 100% 58%), hsl(158 100% 34%))'
+                                        : 'linear-gradient(180deg, hsl(0 85% 63%), hsl(0 75% 45%))',
+                                    opacity: i === values.length - 1 ? 1 : 0.72,
                                 }}
                             />
                             {/* Tooltip */}
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-popover border border-border rounded px-1.5 py-0.5 text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10"
+                            <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1 rounded-lg border border-border bg-popover px-2 py-1 text-[9px] font-bold whitespace-nowrap opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
                                 style={{ color: isPos ? 'hsl(158 100% 45%)' : 'hsl(0 80% 60%)' }}>
                                 {isPos ? '+' : ''}{v.toFixed(1)}%
                             </div>
@@ -243,9 +273,9 @@ function MonthlyBars({
                     );
                 })}
             </div>
-            <div className="flex justify-between">
+            <div className="mt-2 flex justify-between">
                 {returns.map(({ monthKey, label }) => (
-                    <span key={monthKey} className="text-[9px] text-muted-foreground flex-1 text-center">{label}</span>
+                    <span key={monthKey} className="min-w-0 flex-1 truncate text-center text-[9px] font-medium text-muted-foreground">{label}</span>
                 ))}
             </div>
         </div>
@@ -408,7 +438,9 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
 
     const fmt = (n: number, cur = 'USD') => {
         if (!isOwnProfile && (!showExactReturns || returnsVisibilityMode === 'range')) return '***';
-        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: cur, maximumFractionDigits: 2 }).format(n);
+        const currencyCode = cur === 'USD MEP' ? 'USD' : cur.toUpperCase();
+        const formatter = PROFILE_CURRENCY_FORMATTERS[currencyCode as keyof typeof PROFILE_CURRENCY_FORMATTERS] ?? PROFILE_CURRENCY_FORMATTERS.USD;
+        return formatter.format(n);
     };
 
     const fmtPct = (n: number) => isOwnProfile ? formatSignedPercentage(n) : formatSignedPercentage(n, 2, returnsVisibilityMode, showExactReturns);
@@ -505,6 +537,12 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
     const pieData = metrics
         ? Object.entries(metrics.diversificacionPorClase || {}).map(([label, value], i) => ({ label: normalizeAllocationLabel(label), value, color: PIE_COLORS[i % PIE_COLORS.length] }))
         : [];
+    const allocationData = pieData.length > 0 ? pieData : [
+        { label: 'Acciones', value: 55, color: PRIMARY },
+        { label: 'Cripto', value: 25, color: '#3b82f6' },
+        { label: 'Otros', value: 20, color: '#f59e0b' },
+    ];
+    const allocationTotal = allocationData.reduce((sum, item) => sum + Number(item.value), 0) || 1;
 
     const totalValue = metrics?.valorActual ?? 0;
 
@@ -530,7 +568,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
 
             {/* ── 4 KPI Cards ── */}
             {metrics && (
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     {[
                         { label: 'Capital Invertido', value: fmt(metrics.capitalTotal, selected?.monedaBase), icon: DollarSign, color: '#3b82f6', sub: 'Total aportado' },
                         { label: 'Valor Actual', value: fmt(metrics.valorActual, selected?.monedaBase), icon: TrendingUp, color: PRIMARY, sub: 'A precios de mercado' },
@@ -538,32 +576,38 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                         { label: 'Activos en cartera', value: metrics.cantidadActivos.toString(), icon: Layers, color: '#a855f7', sub: `en ${selected?.nombre ?? ''}` },
                     ].map(({ label, value, icon: Icon, color, sub }) => (
                         <motion.div key={label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                            className="rounded-2xl p-3.5" style={{ background: 'hsl(var(--secondary) / 0.45)', border: '1px solid hsl(var(--border))' }}>
-                            <div className="flex items-center gap-2 mb-2">
-                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: color + '18' }}>
-                                    <Icon className="w-3.5 h-3.5" style={{ color }} />
+                            className="relative overflow-hidden rounded-2xl p-4 shadow-sm" style={{ background: 'linear-gradient(145deg, hsl(var(--card) / 0.94), hsl(var(--secondary) / 0.48))', border: '1px solid hsl(var(--border) / 0.78)' }}>
+                            <div className="absolute -right-7 -top-8 h-20 w-20 rounded-full blur-2xl" style={{ background: color, opacity: 0.09 }} />
+                            <div className="relative flex items-start justify-between gap-2">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: color + '18', border: `1px solid ${color}22` }}>
+                                    <Icon className="h-4 w-4" style={{ color }} />
                                 </div>
-                                <span className="text-[11px] text-muted-foreground font-medium">{label}</span>
+                                <span className="pt-1 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
                             </div>
-                            <div className="text-lg font-black text-foreground leading-tight">{value}</div>
-                            <div className="text-[10px] text-muted-foreground mt-0.5">{sub}</div>
+                            <div className="relative mt-4 truncate text-xl font-black leading-tight text-foreground">{value}</div>
+                            <div className="relative mt-1 truncate text-[10px] text-muted-foreground">{sub}</div>
                         </motion.div>
                     ))}
                 </div>
             )}
 
             {/* ── View switcher ── */}
-            <div className="flex gap-1 rounded-xl overflow-hidden p-0.5" style={{ background: 'hsl(var(--secondary) / 0.5)', border: '1px solid hsl(var(--border))' }}>
-                {(['overview', 'assets', 'movements'] as const).map(v => (
+            <div className="flex gap-1 rounded-2xl p-1" style={{ background: 'hsl(var(--card) / 0.72)', border: '1px solid hsl(var(--border) / 0.8)' }}>
+                {(['overview', 'assets', 'movements'] as const).map(v => {
+                    const ViewIcon = v === 'overview' ? BarChart3 : v === 'assets' ? Layers : Activity;
+                    return (
                     <button key={v} onClick={() => setActiveView(v)}
-                        className="flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all capitalize"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-[10px] font-bold uppercase tracking-wide transition-[color,background-color,box-shadow] sm:text-[11px]"
                         style={{
-                            background: activeView === v ? PRIMARY : 'transparent',
-                            color: activeView === v ? '#000' : 'hsl(var(--muted-foreground))',
+                            background: activeView === v ? 'linear-gradient(135deg, hsl(158 100% 50%), hsl(158 100% 38%))' : 'transparent',
+                            color: activeView === v ? '#001b12' : 'hsl(var(--muted-foreground))',
+                            boxShadow: activeView === v ? '0 5px 16px hsl(158 100% 35% / 0.2)' : 'none',
                         }}>
+                        <ViewIcon className="h-3.5 w-3.5" />
                         {v === 'overview' ? 'Resumen' : v === 'assets' ? 'Activos' : 'Movimientos'}
                     </button>
-                ))}
+                    );
+                })}
             </div>
 
             {/* ══ OVERVIEW ══ */}
@@ -571,18 +615,23 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                 {activeView === 'overview' && (
                     <motion.div key="overview" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
                         {/* Monthly returns chart */}
-                        <div className="rounded-2xl p-4" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <h4 className="text-sm font-bold text-foreground">Rendimiento Mensual</h4>
-                                    <p className="text-[11px] text-muted-foreground">Últimos 12 meses</p>
+                        <div className="rounded-[24px] p-4 shadow-sm sm:p-5" style={{ background: 'linear-gradient(145deg, hsl(var(--card) / 0.94), hsl(var(--secondary) / 0.42))', border: '1px solid hsl(var(--border) / 0.8)' }}>
+                            <div className="mb-4 flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: PRIMARY_DIM, color: PRIMARY }}>
+                                        <TrendingUp className="h-4 w-4" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-foreground">Rendimiento mensual</h4>
+                                        <p className="mt-0.5 text-[11px] text-muted-foreground">Evolución de los últimos 12 meses</p>
+                                    </div>
                                 </div>
                                 {totalReturnDisplay !== '—' && (
-                                    <div className="text-right">
-                                        <div className="text-lg font-black" style={{ color: totalReturnColor }}>
+                                    <div className="rounded-xl border border-border/70 bg-background/35 px-3 py-2 text-right">
+                                        <div className="text-base font-black" style={{ color: totalReturnColor }}>
                                             {totalReturnDisplay}
                                         </div>
-                                        <div className="text-[10px] text-muted-foreground">Retorno total</div>
+                                        <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Retorno total</div>
                                     </div>
                                 )}
                             </div>
@@ -590,38 +639,55 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                         </div>
 
                         {/* Diversification + Stats */}
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
+                        <div className="grid gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.35fr)]">
                             {/* Pie chart */}
-                            <div className="col-span-2 rounded-2xl p-4 flex flex-col items-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-3">Clases</p>
-                                <MiniPieChart data={pieData.length > 0 ? pieData : [
-                                    { label: 'Acciones', value: 55, color: PRIMARY },
-                                    { label: 'Crypto', value: 25, color: '#3b82f6' },
-                                    { label: 'Otros', value: 20, color: '#f59e0b' },
-                                ]} />
+                            <div className="rounded-[24px] p-4 shadow-sm sm:p-5" style={{ background: 'linear-gradient(145deg, hsl(var(--card) / 0.94), hsl(var(--secondary) / 0.42))', border: '1px solid hsl(var(--border) / 0.8)' }}>
+                                <div className="mb-3 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Clases</p>
+                                        <p className="mt-1 text-xs text-muted-foreground">Composición del portafolio</p>
+                                    </div>
+                                    <span className="rounded-full border border-border/70 bg-background/35 px-2 py-1 text-[10px] font-bold text-foreground">{allocationData.length} tipos</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                                    <MiniPieChart data={allocationData} />
+                                    <div className="w-full space-y-2 sm:max-w-[150px]">
+                                        {allocationData.slice(0, 4).map((item) => (
+                                            <div key={item.label} className="flex items-center justify-between gap-3 text-[11px]">
+                                                <div className="flex min-w-0 items-center gap-2">
+                                                    <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: item.color }} />
+                                                    <span className="truncate text-muted-foreground">{item.label}</span>
+                                                </div>
+                                                <span className="font-bold text-foreground">{((Number(item.value) / allocationTotal) * 100).toFixed(0)}%</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Legend + risk */}
-                            <div className="col-span-3 rounded-2xl p-4 space-y-3" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Distribución</p>
-                                <div className="space-y-2">
-                                    {(pieData.length > 0 ? pieData : [
-                                        { label: 'Acciones (Tech)', value: 55, color: PRIMARY },
-                                        { label: 'Crypto', value: 25, color: '#3b82f6' },
-                                        { label: 'Commodities', value: 20, color: '#f59e0b' },
-                                    ]).slice(0, 5).map((d) => {
-                                        const pct = totalValue > 0 ? (d.value / (metrics ? Object.values(metrics.diversificacionPorClase || {}).reduce((a, b) => a + Number(b), 0) : 100)) * 100 : d.value;
+                            <div className="rounded-[24px] p-4 shadow-sm sm:p-5" style={{ background: 'linear-gradient(145deg, hsl(var(--card) / 0.94), hsl(var(--secondary) / 0.42))', border: '1px solid hsl(var(--border) / 0.8)' }}>
+                                <div className="mb-4 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Distribución</p>
+                                        <p className="mt-1 text-xs text-muted-foreground">Peso de cada clase de activo</p>
+                                    </div>
+                                    <Layers className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                                <div className="space-y-3">
+                                    {allocationData.slice(0, 5).map((d) => {
+                                        const pct = (Number(d.value) / allocationTotal) * 100;
                                         return (
-                                            <div key={d.label} className="space-y-0.5">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: d.color }} />
-                                                        <span className="text-[11px] text-muted-foreground truncate max-w-[90px]">{d.label}</span>
+                                            <div key={d.label} className="space-y-1.5">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="flex min-w-0 items-center gap-2">
+                                                        <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ background: d.color, boxShadow: `0 0 0 4px ${d.color}18` }} />
+                                                        <span className="truncate text-xs font-semibold text-foreground">{d.label}</span>
                                                     </div>
-                                                    <span className="text-[11px] font-bold text-foreground">{typeof pct === 'number' ? pct.toFixed(0) : d.value}%</span>
+                                                    <span className="text-xs font-black text-foreground">{pct.toFixed(0)}%</span>
                                                 </div>
-                                                <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'hsl(var(--border))' }}>
-                                                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(pct, 100)}%`, background: d.color }} />
+                                                <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: 'hsl(var(--border) / 0.75)' }}>
+                                                    <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${Math.min(pct, 100)}%`, background: `linear-gradient(90deg, ${d.color}, ${d.color}aa)` }} />
                                                 </div>
                                             </div>
                                         );
@@ -630,8 +696,11 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
 
                                 {/* Risk level */}
                                 {selected?.nivelRiesgo && (
-                                    <div className="pt-2 border-t border-border/50">
-                                        <p className="text-[10px] text-muted-foreground mb-2 uppercase tracking-wider font-bold">Nivel de Riesgo</p>
+                                    <div className="mt-5 rounded-2xl border border-border/60 bg-background/30 p-3">
+                                        <div className="mb-2 flex items-center justify-between">
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Nivel de riesgo</p>
+                                            <span className="text-[11px] font-bold text-foreground">{riskLabels[selected.nivelRiesgo.toLowerCase()] ?? selected.nivelRiesgo}</span>
+                                        </div>
                                         <RiskMeter level={selected.nivelRiesgo} />
                                     </div>
                                 )}
@@ -640,12 +709,16 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
 
                         {/* Stats row */}
                         {(showStats || isOwnProfile) && (
-                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                 {statsCards.map(({ label, value, color, icon: Icon }) => (
-                                    <div key={label} className="rounded-xl p-3 text-center" style={{ background: 'hsl(var(--secondary) / 0.5)', border: '1px solid hsl(var(--border))' }}>
-                                        <Icon className="w-4 h-4 mx-auto mb-1.5" style={{ color }} />
-                                        <div className="text-base font-black" style={{ color }}>{value}</div>
-                                        <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">{label}</div>
+                                    <div key={label} className="flex items-center gap-3 rounded-2xl p-4 shadow-sm" style={{ background: 'hsl(var(--card) / 0.82)', border: '1px solid hsl(var(--border) / 0.8)' }}>
+                                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl" style={{ background: color + '18' }}>
+                                            <Icon className="h-4 w-4" style={{ color }} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="truncate text-base font-black" style={{ color }}>{value}</div>
+                                            <div className="mt-0.5 truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

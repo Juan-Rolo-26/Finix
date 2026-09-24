@@ -30,7 +30,7 @@ export class MediaUrlDto {
 
 export class CreatePostDto {
     @IsString()
-    @MaxLength(5000)
+    @MaxLength(1000)
     content: string;
 
     @IsOptional()
@@ -82,7 +82,7 @@ export class CreatePostDto {
 
 export class UpdatePostDto {
     @IsString()
-    @MaxLength(5000)
+    @MaxLength(1000)
     content: string;
 }
 

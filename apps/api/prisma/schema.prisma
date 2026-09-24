@@ -1010,6 +1010,7 @@ model DirectMessage {
   sharedPost     Post?        @relation("SharedPostMessages", fields: [sharedPostId], references: [id], onDelete: SetNull)
   isRead         Boolean      @default(false)
   createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@index([conversationId, createdAt])
   @@index([senderId])

@@ -11,6 +11,7 @@ import { PayWithCardDto } from './dto/create-community.dto';
 import { MercadoPagoService } from '../mercadopago/mercadopago.service';
 
 const ACTIVE_MEMBER_STATUSES = new Set(['ACTIVE']);
+const MAX_POST_CONTENT_LENGTH = 1000;
 
 @Injectable()
 export class CommunitiesService {
@@ -601,6 +602,11 @@ export class CommunitiesService {
     async createPost(userId: string, communityId: string, dto: any) {
         const community = await this.findOne(communityId, userId);
 
+        const content = String(dto.content ?? '');
+        if (content.length > MAX_POST_CONTENT_LENGTH) {
+            throw new BadRequestException(`La publicación no puede superar los ${MAX_POST_CONTENT_LENGTH} caracteres`);
+        }
+
         if (!community.isMember && !community.canManage) {
             throw new ForbiddenException('Debes unirte a la comunidad para poder publicar.');
         }
@@ -613,7 +619,7 @@ export class CommunitiesService {
                 authorId: userId,
                 communityId,
                 sectionId: dto.sectionId || null,
-                content: dto.content,
+                content,
                 type: dto.mediaUrls?.length ? 'image' : 'post',
                 targetVisibility: dto.targetVisibility || 'PUBLIC',
                 requiredTierLevel: dto.requiredTierLevel || 0,

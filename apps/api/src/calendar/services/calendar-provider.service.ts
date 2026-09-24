@@ -548,8 +548,8 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
     private tvDividendsCache: { data: DividendEventItem[]; fetchedAt: number } | null = null;
 
     /**
-     * Consulta oficial a TradingView Scanner para obtener dividendos de todo
-     * el universo de acciones de NASDAQ, NYSE y AMEX.
+     * Consulta oficial a TradingView Scanner para obtener dividendos del
+     * universo S&P 500, con fechas ex-dividendo y de pago.
      */
     async fetchTradingViewSP500Dividends(options?: {
         from?: string;
@@ -565,6 +565,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
             allDividends = this.tvDividendsCache.data;
         } else {
             try {
+                const sp500Tickers = new Set(await this.getConstituentTickers());
                 const rows = await this.fetchTradingViewAmericaScan([
                     'name',
                     'description',
@@ -592,6 +593,8 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                 for (const row of distributions) {
                     const ticker = String(row.d[0] || row.s?.split(':').pop() || '').toUpperCase().trim();
                     if (!ticker) continue;
+                    const normalizedTicker = ticker.replace(/\./g, '-');
+                    if (!sp500Tickers.has(normalizedTicker)) continue;
 
                     const companyName = row.d[1] || ticker;
                     const yieldVal = row.d[3] != null ? Number(row.d[3]) : undefined;
@@ -620,7 +623,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                         amount: amount != null && Number.isFinite(amount) ? Number(amount.toFixed(4)) : undefined,
                         yield: yieldVal != null && Number.isFinite(yieldVal) ? Number(yieldVal.toFixed(2)) : undefined,
                         marketCap,
-                        source: 'TradingView Official Scanner (NASDAQ/NYSE/AMEX)',
+                        source: 'TradingView Official Scanner (S&P 500)',
                         sourceType: 'AUTOMATIC',
                         isPublished: true,
                     };
@@ -638,10 +641,10 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                     });
                     this.tvDividendsCache = { data: fetchedList, fetchedAt: now };
                     allDividends = fetchedList;
-                    this.logger.log(`Successfully fetched ${fetchedList.length} US dividends from TradingView Scanner.`);
+                    this.logger.log(`Successfully fetched ${fetchedList.length} S&P 500 dividends from TradingView Scanner.`);
                 }
             } catch (err: any) {
-                this.logger.warn(`Failed to fetch TradingView US dividends: ${err.message}`);
+                this.logger.warn(`Failed to fetch TradingView S&P 500 dividends: ${err.message}`);
                 if (this.tvDividendsCache) {
                     allDividends = this.tvDividendsCache.data;
                 }

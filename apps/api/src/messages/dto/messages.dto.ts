@@ -29,6 +29,11 @@ export class SendMessageDto {
     attachment?: MessageAttachmentDto | null;
 }
 
+export class UpdateMessageDto {
+    @IsString()
+    content: string;
+}
+
 export class CreateConversationDto {
     @IsOptional()
     @IsString()

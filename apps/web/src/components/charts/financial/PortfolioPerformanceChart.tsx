@@ -17,7 +17,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { ChartContainer } from '../shared/ChartContainer';
 import { ChartSkeleton } from '../shared/ChartSkeleton';
-import { LIGHTWEIGHT_CHART_THEME, CHART_COLORS, TIME_RANGES, type TimeRange } from '../utils/chartTheme';
+import { LIGHTWEIGHT_CHART_THEME, CHART_COLORS, TIME_RANGES, TIME_RANGE_LABELS, type TimeRange } from '../utils/chartTheme';
 import {
   AreaSeries,
   CrosshairMode,
@@ -391,7 +391,7 @@ export function PortfolioPerformanceChart({
                     : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
                 )}
               >
-                {range}
+                {TIME_RANGE_LABELS[range]}
               </button>
             ))}
           </div>

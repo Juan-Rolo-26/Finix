@@ -11,9 +11,8 @@ import {
 } from 'recharts';
 import { Trophy, TrendingUp, TrendingDown, Target, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CHART_AXIS_TICK, formatPercent } from './chartUtils';
-import { TIME_RANGES, type ComparisonDatum, type TimeRange } from './mockData';
-import { buildBenchmarkComparisonSeries, SP500_BENCHMARK_RETURNS } from './benchmarkUtils';
+import { CHART_AXIS_TICK, formatChartDate, formatPercent } from './chartUtils';
+import { TIME_RANGES, TIME_RANGE_LABELS, TIME_RANGE_SHORT_LABELS, type ComparisonDatum, type TimeRange } from './mockData';
 
 interface BenchmarkComparisonChartProps {
     dataByRange: Record<TimeRange, ComparisonDatum[]>;
@@ -28,19 +27,19 @@ const PORTFOLIO_COLOR = '#10b981';
 const SP500_COLOR = '#38bdf8';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function BenchmarkTooltip({ active, payload, label }: any) {
+function BenchmarkTooltip({ active, payload, label, range }: any) {
     if (!active || !payload?.length) return null;
 
     const portfolioRaw = payload.find((p: any) => p.dataKey === 'portfolio')?.value;
     const sp500Raw = payload.find((p: any) => p.dataKey === 'sp500')?.value;
 
     const portfolio = typeof portfolioRaw === 'number' && Number.isFinite(portfolioRaw) ? portfolioRaw : 100;
-    const sp500 = typeof sp500Raw === 'number' && Number.isFinite(sp500Raw) ? sp500Raw : 100;
+    const sp500 = typeof sp500Raw === 'number' && Number.isFinite(sp500Raw) ? sp500Raw : null;
 
     const pReturn = portfolio - 100;
-    const spReturn = sp500 - 100;
-    const spread = portfolio - sp500;
-    const isOutperforming = spread >= 0;
+    const spReturn = sp500 == null ? null : sp500 - 100;
+    const spread = sp500 == null ? null : portfolio - sp500;
+    const isOutperforming = spread == null || spread >= 0;
 
     return (
         <div
@@ -56,7 +55,7 @@ function BenchmarkTooltip({ active, payload, label }: any) {
         >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <p style={{ color: 'rgba(148, 163, 184, 0.9)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                    {label}
+                    {formatChartDate(String(label), range)}
                 </p>
                 <span
                     style={{
@@ -68,7 +67,7 @@ function BenchmarkTooltip({ active, payload, label }: any) {
                         color: isOutperforming ? '#34d399' : '#fb7185',
                     }}
                 >
-                    {isOutperforming ? `+${spread.toFixed(1)} pts` : `${spread.toFixed(1)} pts`}
+                    {spread == null ? 'Sin benchmark' : (isOutperforming ? `+${spread.toFixed(1)} pts` : `${spread.toFixed(1)} pts`)}
                 </span>
             </div>
 
@@ -96,11 +95,11 @@ function BenchmarkTooltip({ active, payload, label }: any) {
                         S&amp;P 500 (SPY)
                     </span>
                     <div style={{ textAlign: 'right' }}>
-                        <span style={{ color: spReturn >= 0 ? '#38bdf8' : '#f87171', fontWeight: 700, fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
-                            {formatPercent(spReturn, 1, true)}
+                        <span style={{ color: spReturn == null ? '#94a3b8' : spReturn >= 0 ? '#38bdf8' : '#f87171', fontWeight: 700, fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
+                            {spReturn == null ? 'N/D' : formatPercent(spReturn, 1, true)}
                         </span>
                         <span style={{ color: 'rgba(148,163,184,0.6)', fontSize: '11px', marginLeft: '6px' }}>
-                            ({sp500.toFixed(1)})
+                            {sp500 == null ? '' : `(${sp500.toFixed(1)})`}
                         </span>
                     </div>
                 </div>
@@ -118,7 +117,9 @@ function BenchmarkTooltip({ active, payload, label }: any) {
                     gap: '5px',
                 }}
             >
-                {isOutperforming ? (
+                {spread == null ? (
+                    <span>SPY todavía no tiene datos para este período</span>
+                ) : isOutperforming ? (
                     <>
                         <span style={{ fontWeight: 600 }}>Superando al índice por {spread.toFixed(1)} pts</span>
                     </>
@@ -136,7 +137,6 @@ export function BenchmarkComparisonChart({
     dataByRange,
     selectedRange,
     onRangeChange,
-    portfolioReturn,
     hasHoldings = true,
     className,
 }: BenchmarkComparisonChartProps) {
@@ -156,45 +156,36 @@ export function BenchmarkComparisonChart({
         }
     };
 
-    // Ensure data is always a complete, multi-point series
+    // Solo mostramos datos reales entregados por la API. Antes este componente
+    // rellenaba la curva con una trayectoria inventada cuando faltaban puntos.
     const activeData = useMemo<ComparisonDatum[]>(() => {
-        if (!hasHoldings) {
-            return buildBenchmarkComparisonSeries({
-                range: activeRange,
-                portfolioReturn: 0,
-                hasHoldings: false,
-            });
-        }
+        if (!hasHoldings) return [];
 
-        const series = dataByRange[activeRange];
-        if (Array.isArray(series) && series.length >= 3) {
-            return series;
-        }
-
-        // Auto-expand with high-fidelity realistic SPY market swings
-        return buildBenchmarkComparisonSeries({
-            range: activeRange,
-            portfolioReturn: typeof portfolioReturn === 'number' && Number.isFinite(portfolioReturn) ? portfolioReturn : 0,
-            hasHoldings: true,
-        });
-    }, [dataByRange, activeRange, hasHoldings, portfolioReturn]);
+        return (dataByRange[activeRange] ?? []).filter((point) =>
+            Number.isFinite(point.portfolio) && point.portfolio > 0,
+        );
+    }, [dataByRange, activeRange, hasHoldings]);
 
     const summary = useMemo(() => {
         const lastPoint = activeData[activeData.length - 1];
-        const isPortfolioInactive = !hasHoldings || ((portfolioReturn === 0) && (!activeData.length || activeData.every((pt) => pt.portfolio === 100)));
-        const pReturn = isPortfolioInactive ? 0 : ((lastPoint?.portfolio ?? 100) - 100);
-        const spReturn = isPortfolioInactive ? 0 : ((lastPoint?.sp500 ?? 100) - 100);
-        const spread = isPortfolioInactive ? 0 : ((lastPoint?.portfolio ?? 100) - (lastPoint?.sp500 ?? 100));
-        const leader = isPortfolioInactive ? 'Sin posiciones' : (spread >= 0 ? 'Portafolio' : 'S&P 500');
+        const isPortfolioInactive = !hasHoldings;
+        const hasData = Boolean(lastPoint);
+        const hasBenchmark = typeof lastPoint?.sp500 === 'number' && Number.isFinite(lastPoint.sp500);
+        const pReturn = hasData ? ((lastPoint?.portfolio ?? 100) - 100) : 0;
+        const spReturn = hasBenchmark ? ((lastPoint?.sp500 ?? 100) - 100) : null;
+        const spread = hasBenchmark ? ((lastPoint?.portfolio ?? 100) - (lastPoint?.sp500 ?? 100)) : null;
+        const leader = isPortfolioInactive ? 'Sin posiciones' : !hasData ? 'Sin datos' : spread == null ? 'SPY no disponible' : (spread >= 0 ? 'Portafolio' : 'S&P 500');
 
         return {
             portfolioReturn: Number.isFinite(pReturn) ? pReturn : 0,
-            sp500Return: Number.isFinite(spReturn) ? spReturn : (SP500_BENCHMARK_RETURNS[activeRange] ?? 0),
-            spread: Number.isFinite(spread) ? spread : 0,
+            sp500Return: spReturn != null && Number.isFinite(spReturn) ? spReturn : null,
+            spread: spread != null && Number.isFinite(spread) ? spread : null,
             leader,
             isPortfolioInactive,
+            hasData,
+            hasBenchmark,
         };
-    }, [activeData, activeRange, hasHoldings, portfolioReturn]);
+    }, [activeData, hasHoldings]);
 
     const chartDomain = useMemo<[number, number]>(() => {
         const values = activeData
@@ -216,11 +207,11 @@ export function BenchmarkComparisonChart({
         ];
     }, [activeData]);
 
-    const isOutperforming = summary.spread >= 0;
+    const isOutperforming = summary.spread != null && summary.spread >= 0;
     const metricCardClass = 'min-w-0 rounded-2xl border border-border/50 bg-background/70 px-4 py-3.5 shadow-xs backdrop-blur-md transition-all hover:border-border/80';
 
     return (
-        <div className={cn('rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-lg flex flex-col justify-between text-center', className)}>
+        <div className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-lg flex flex-col justify-between text-center', className)}>
             {/* Header */}
             <div className="border-b border-border/40 px-6 py-6 sm:px-7 sm:py-7 text-center">
                 <div className="flex flex-col items-center justify-center gap-6 text-center">
@@ -242,7 +233,9 @@ export function BenchmarkComparisonChart({
                             <p className="text-xs sm:text-sm text-muted-foreground/80 max-w-xl text-center mx-auto">
                                 {summary.isPortfolioInactive
                                     ? 'Agregá al menos un activo para activar la comparación contra el S&P 500 (SPY).'
-                                    : 'Curvas de rendimiento relativo indexadas. Si el S&P 500 (SPY) sube o baja en el mercado, se refleja en su curva en tiempo real.'}
+                                    : !summary.hasData
+                                        ? 'Todavía no hay suficientes mediciones reales para este período.'
+                                        : 'Comparación indexada desde la primera medición disponible del portafolio y del SPY.'}
                             </p>
                         </div>
 
@@ -259,27 +252,28 @@ export function BenchmarkComparisonChart({
                                 <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-foreground/90">
                                     <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_#38bdf8]" style={{ backgroundColor: SP500_COLOR }} />
                                     S&P 500 (SPY)
-                                    <span className={cn('font-bold tabular-nums', summary.sp500Return >= 0 ? 'text-sky-500' : 'text-rose-500')}>
-                                        {formatPercent(summary.sp500Return, 1, true)}
+                                <span className={cn('font-bold tabular-nums', summary.sp500Return == null ? 'text-muted-foreground' : summary.sp500Return >= 0 ? 'text-sky-500' : 'text-rose-500')}>
+                                        {summary.sp500Return == null ? 'N/D' : formatPercent(summary.sp500Return, 1, true)}
                                     </span>
                                 </span>
                             </div>
 
                             {/* Range switcher pills */}
-                            <div className="flex items-center justify-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1">
+                            <div className="flex max-w-full items-center justify-start gap-1 overflow-x-auto rounded-xl border border-border/50 bg-background/50 p-1 sm:justify-center">
                                 {TIME_RANGES.map((range) => (
                                     <button
                                         key={range}
                                         type="button"
                                         onClick={() => handleRangeClick(range)}
+                                        title={TIME_RANGE_LABELS[range]}
                                         className={cn(
-                                            'rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer',
+                                            'shrink-0 rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer',
                                             activeRange === range
                                                 ? 'bg-primary text-primary-foreground shadow-xs'
                                                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
                                         )}
                                     >
-                                        {range}
+                                        {TIME_RANGE_SHORT_LABELS[range]}
                                     </button>
                                 ))}
                             </div>
@@ -291,7 +285,7 @@ export function BenchmarkComparisonChart({
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
                             <div className="flex items-center justify-center gap-1.5 text-muted-foreground w-full">
                                 <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-center">Brecha (Alpha)</span>
-                                {summary.isPortfolioInactive ? (
+                                {!summary.hasBenchmark ? (
                                     <Target className="w-4 h-4 text-muted-foreground/60" />
                                 ) : isOutperforming ? (
                                     <TrendingUp className="w-4 h-4 text-emerald-500" />
@@ -300,10 +294,10 @@ export function BenchmarkComparisonChart({
                                 )}
                             </div>
                             <p className={cn('mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums text-center', summary.isPortfolioInactive ? 'text-muted-foreground' : (isOutperforming ? 'text-emerald-500' : 'text-rose-500'))}>
-                                {summary.isPortfolioInactive ? '—' : `${isOutperforming ? '+' : ''}${summary.spread.toFixed(1)} pts`}
+                                {!summary.hasBenchmark ? '—' : `${isOutperforming ? '+' : ''}${summary.spread?.toFixed(1)} pts`}
                             </p>
                             <p className="mt-1.5 text-[11px] text-muted-foreground font-medium text-center">
-                                {summary.isPortfolioInactive ? 'Esperando posiciones activas' : (isOutperforming ? 'Superando al benchmark' : 'Por debajo del benchmark')}
+                                {!summary.hasBenchmark ? 'Esperando datos reales de SPY' : (isOutperforming ? 'Superando al benchmark' : 'Por debajo del benchmark')}
                             </p>
                         </div>
 
@@ -316,7 +310,7 @@ export function BenchmarkComparisonChart({
                                 {summary.leader}
                             </p>
                             <p className="mt-1.5 text-[11px] text-muted-foreground font-medium text-center">
-                                {summary.isPortfolioInactive ? 'Sin activos cargados' : (isOutperforming ? `Ventaja de +${summary.spread.toFixed(1)} pts` : `Diferencia de ${Math.abs(summary.spread).toFixed(1)} pts`)}
+                                {!summary.hasBenchmark ? 'Sin comparación disponible' : (isOutperforming ? `Ventaja de +${summary.spread?.toFixed(1)} pts` : `Diferencia de ${Math.abs(summary.spread ?? 0).toFixed(1)} pts`)}
                             </p>
                         </div>
 
@@ -340,7 +334,7 @@ export function BenchmarkComparisonChart({
             <div className="px-6 pt-4 pb-2 sm:px-7 text-center">
                 <div className="flex flex-col items-center justify-center text-center gap-1">
                     <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70 text-center">
-                        Evolución Temporal ({activeRange})
+                        Evolución temporal · {TIME_RANGE_LABELS[activeRange]}
                     </span>
                     <span className="text-[11px] text-muted-foreground/60 text-center">
                         Línea sólida: Portafolio · Línea punteada: S&P 500 (SPY)
@@ -348,9 +342,10 @@ export function BenchmarkComparisonChart({
                 </div>
             </div>
 
-            <div className="h-[370px] w-full px-3 pb-6 pt-2 sm:h-[400px] sm:px-5">
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={activeData} margin={{ top: 16, right: 16, bottom: 4, left: 0 }}>
+            {activeData.length > 0 ? (
+                <div className="h-[285px] w-full px-1 pb-5 pt-2 sm:h-[350px] sm:px-4 sm:pb-6 lg:h-[390px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={activeData} margin={{ top: 12, right: 10, bottom: 2, left: 0 }}>
                         <defs>
                             {/* Portfolio gradient */}
                             <linearGradient id={gradPortfolioId} x1="0" y1="0" x2="0" y2="1">
@@ -385,30 +380,31 @@ export function BenchmarkComparisonChart({
                             dataKey="date"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ ...CHART_AXIS_TICK, fontSize: 11 }}
+                            tick={{ ...CHART_AXIS_TICK, fontSize: 10 }}
                             padding={{ left: 14, right: 14 }}
-                            minTickGap={28}
-                            tickMargin={12}
+                            minTickGap={30}
+                            tickMargin={9}
+                            tickFormatter={(value: string) => formatChartDate(value, activeRange)}
                         />
 
                         <YAxis
                             axisLine={false}
                             tickLine={false}
                             tick={{ ...CHART_AXIS_TICK, fontSize: 11 }}
-                            width={54}
-                            tickMargin={10}
+                            width={48}
+                            tickMargin={7}
                             tickCount={6}
                             domain={chartDomain}
                             tickFormatter={(v: number) => (Number.isFinite(v) ? v.toFixed(1) : '100')}
                         />
 
                         <RechartsTooltip
-                            content={<BenchmarkTooltip />}
+                            content={<BenchmarkTooltip range={activeRange} />}
                             cursor={{ stroke: 'rgba(148, 163, 184, 0.3)', strokeWidth: 1.5, strokeDasharray: '4 4' }}
                         />
 
-                        {/* S&P 500 Area & Stroke */}
-                        <Area
+                        {/* S&P 500 Area & Stroke: solo si llegó una serie real */}
+                        {summary.hasBenchmark && <Area
                             type="monotone"
                             dataKey="sp500"
                             stroke={SP500_COLOR}
@@ -420,7 +416,7 @@ export function BenchmarkComparisonChart({
                             fillOpacity={1}
                             dot={false}
                             activeDot={{ r: 6, strokeWidth: 2.5, stroke: SP500_COLOR, fill: '#0f172a' }}
-                        />
+                        />}
 
                         {/* Portfolio Area & Stroke */}
                         <Area
@@ -435,9 +431,14 @@ export function BenchmarkComparisonChart({
                             dot={false}
                             activeDot={{ r: 6, strokeWidth: 2.5, stroke: PORTFOLIO_COLOR, fill: '#0f172a' }}
                         />
-                    </AreaChart>
-                </ResponsiveContainer>
-            </div>
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+            ) : (
+                <div className="mx-4 my-4 flex min-h-[230px] items-center justify-center rounded-2xl border border-dashed border-border/50 bg-muted/20 px-6 text-center text-sm text-muted-foreground sm:min-h-[280px]">
+                    {summary.isPortfolioInactive ? 'Agregá una posición para activar la comparación.' : 'Todavía no hay datos reales suficientes para este período.'}
+                </div>
+            )}
         </div>
     );
 }
