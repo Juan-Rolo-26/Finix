@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
-import { useAuthStore } from '../stores/authStore';
+import { hasCommunityAccess, useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
 
 const PRIMARY = 'hsl(var(--primary))';
@@ -47,6 +47,9 @@ export function BottomNav() {
     const [isMoreOpen, setIsMoreOpen] = useState(false);
 
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
+    const visibleMainTabs = hasCommunityAccess(user)
+        ? mainTabs
+        : mainTabs.filter((tab) => tab.path !== '/comunidades');
 
     /* poll unread */
     useEffect(() => {
@@ -85,8 +88,8 @@ export function BottomNav() {
         { label: 'Ajustes',   path: '/settings', icon: Settings    },
     ];
 
-    const LEFT_TABS = mainTabs.slice(0, 2);   // Dashboard, Comunidad
-    const RIGHT_TABS = mainTabs.slice(2);       // Explore, Messages
+    const LEFT_TABS = visibleMainTabs.slice(0, 2);
+    const RIGHT_TABS = visibleMainTabs.slice(2);
 
     return (
         <>

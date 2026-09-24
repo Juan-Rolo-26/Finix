@@ -9,7 +9,7 @@ export class CommunityPermissionsService {
     constructor(private readonly prisma: PrismaService) {}
 
     isPlatformAdmin(user: { role?: string } | null | undefined): boolean {
-        return Boolean(user?.role && ADMIN_ROLES.has(user.role));
+        return ADMIN_ROLES.has(String(user?.role || '').toUpperCase());
     }
 
     canCreateCommunity(user: {
@@ -22,21 +22,67 @@ export class CommunityPermissionsService {
     }): boolean {
         if (this.isPlatformAdmin(user)) return true;
 
+        const role = String(user.role || '').toUpperCase();
+        const accountType = String(user.accountType || '').toUpperCase();
+        const plan = String(user.plan || '').toUpperCase();
         const hasCreatorFlag = Boolean(
             user.isCreator ||
-            user.role === 'CREATOR' ||
-            user.accountType === 'CREATOR' ||
-            user.plan === 'CREATOR' ||
-            user.plan === 'PRO_CREATOR'
+            role === 'CREATOR' ||
+            accountType === 'CREATOR' ||
+            plan === 'CREATOR' ||
+            plan === 'PRO_CREATOR'
         );
 
-        const isActive = Boolean(
-            user.isCreator ||
-            user.role === 'CREATOR' ||
-            ACTIVE_SUBSCRIPTION_STATUSES.has(user.subscriptionStatus || '')
-        );
+        const isActive = ACTIVE_SUBSCRIPTION_STATUSES.has(String(user.subscriptionStatus || '').toUpperCase());
 
         return hasCreatorFlag && isActive;
+    }
+
+    canViewCommunities(user: {
+        role?: string;
+        plan?: string;
+        accountType?: string;
+        isCreator?: boolean;
+        subscriptionStatus?: string;
+    }): boolean {
+        if (this.isPlatformAdmin(user)) return true;
+
+        const isActive = ACTIVE_SUBSCRIPTION_STATUSES.has(String(user.subscriptionStatus || '').toUpperCase());
+        if (!isActive) return false;
+
+        const plan = String(user.plan || '').toUpperCase();
+        const accountType = String(user.accountType || '').toUpperCase();
+        return (
+            plan === 'PRO' ||
+            plan === 'CREATOR' ||
+            plan === 'PRO_CREATOR' ||
+            accountType === 'PRO' ||
+            accountType === 'CREATOR' ||
+            Boolean(user.isCreator)
+        );
+    }
+
+    async assertCanViewCommunities(userId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                role: true,
+                plan: true,
+                accountType: true,
+                isCreator: true,
+                subscriptionStatus: true,
+            },
+        });
+
+        if (!user) throw new NotFoundException('Usuario no encontrado.');
+
+        if (!this.canViewCommunities(user)) {
+            throw new ForbiddenException(
+                'El acceso a Comunidades requiere una suscripción PRO activa de Finix.'
+            );
+        }
+
+        return user;
     }
 
     async assertCanCreateCommunity(userId: string) {
@@ -49,6 +95,7 @@ export class CommunityPermissionsService {
                 accountType: true,
                 isCreator: true,
                 subscriptionStatus: true,
+                isVerified: true,
             },
         });
 
@@ -65,6 +112,8 @@ export class CommunityPermissionsService {
 
     async getMemberRole(communityId: string, userId?: string): Promise<string | null> {
         if (!userId) return null;
+        await this.assertCanViewCommunities(userId);
+
         const member = await this.prisma.communityMember.findUnique({
             where: { communityId_userId: { communityId, userId } },
             select: { role: true, subscriptionStatus: true },
@@ -74,6 +123,7 @@ export class CommunityPermissionsService {
     }
 
     async assertCanManageCommunity(communityId: string, userId: string) {
+        await this.assertCanViewCommunities(userId);
         const community = await this.prisma.community.findUnique({
             where: { id: communityId },
             select: { id: true, creatorId: true, name: true },
@@ -97,6 +147,7 @@ export class CommunityPermissionsService {
     }
 
     async assertCanEditCommunity(communityId: string, userId: string) {
+        await this.assertCanViewCommunities(userId);
         const community = await this.prisma.community.findUnique({
             where: { id: communityId },
             select: { id: true, creatorId: true, name: true },
@@ -115,6 +166,7 @@ export class CommunityPermissionsService {
     }
 
     async assertCanModerateCommunity(communityId: string, userId: string) {
+        await this.assertCanViewCommunities(userId);
         const community = await this.prisma.community.findUnique({
             where: { id: communityId },
             select: { id: true, creatorId: true, name: true },
@@ -138,6 +190,7 @@ export class CommunityPermissionsService {
     }
 
     async assertCanManagePayments(communityId: string, userId: string) {
+        await this.assertCanViewCommunities(userId);
         const community = await this.prisma.community.findUnique({
             where: { id: communityId },
             select: { id: true, creatorId: true, name: true },
@@ -172,12 +225,14 @@ export class CommunityPermissionsService {
 
         if (!userId) {
             return {
-                canView: community.privacyType === 'PUBLIC' || community.showContentBeforeJoin,
+                canView: false,
                 isMember: false,
                 role: null,
                 tierLevel: 0,
             };
         }
+
+        await this.assertCanViewCommunities(userId);
 
         if (community.creatorId === userId) {
             return { canView: true, isMember: true, role: 'OWNER', tierLevel: 999 };

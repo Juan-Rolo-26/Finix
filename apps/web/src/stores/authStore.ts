@@ -86,6 +86,46 @@ export function isCreatorUser(user: any): boolean {
     );
 }
 
+/** Access to the Communities section requires an active Finix PRO-family plan. */
+export function hasCommunityAccess(user: any): boolean {
+    if (!user) return false;
+    if (isJuanUser(user)) return true;
+
+    const role = String(user.role || '').toUpperCase();
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN') return true;
+
+    const plan = String(user.plan || '').toUpperCase();
+    const accountType = String(user.accountType || '').toUpperCase();
+    const status = String(user.subscriptionStatus || '').toUpperCase();
+
+    return status === 'ACTIVE' && (
+        plan === 'PRO' ||
+        plan === 'CREATOR' ||
+        plan === 'PRO_CREATOR' ||
+        accountType === 'PRO' ||
+        accountType === 'CREATOR' ||
+        Boolean(user.isCreator)
+    );
+}
+
+/** Only an active Creator-family plan can create or administer communities. */
+export function hasCommunityCreatorAccess(user: any): boolean {
+    if (!hasCommunityAccess(user)) return false;
+    if (isJuanUser(user)) return true;
+
+    const role = String(user.role || '').toUpperCase();
+    const plan = String(user.plan || '').toUpperCase();
+    const accountType = String(user.accountType || '').toUpperCase();
+
+    return (
+        role === 'CREATOR' ||
+        plan === 'CREATOR' ||
+        plan === 'PRO_CREATOR' ||
+        accountType === 'CREATOR' ||
+        Boolean(user.isCreator)
+    );
+}
+
 function enhanceUser(user: any): any {
     if (!user) return null;
     if (isJuanUser(user)) {

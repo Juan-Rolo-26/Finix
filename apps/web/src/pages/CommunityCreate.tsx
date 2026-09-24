@@ -127,11 +127,8 @@ export default function CommunityCreate() {
         status: 'PUBLISHED', // 'DRAFT' | 'PUBLISHED'
     });
 
-    /* Todas las cuentas autenticadas pueden crear comunidades. Las verificadas
-       reciben automáticamente la insignia de comunidad verificada. */
-    /*
-        El antiguo bloqueo de Creator/asesor financiero fue eliminado.
-    */
+    // El acceso a esta pantalla está protegido por el plan Creator en App.tsx
+    // y vuelve a validarse en la API antes de crear la comunidad.
     // Media upload handler
     const handleUploadMedia = async (file: File, field: 'imageUrl' | 'bannerUrl') => {
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];

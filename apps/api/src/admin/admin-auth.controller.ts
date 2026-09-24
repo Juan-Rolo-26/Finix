@@ -134,11 +134,25 @@ export class AdminAuthController {
         const cookieNames = this.adminAuthService.getCookieNames();
         res.cookie(cookieNames.access, accessToken, this.adminAuthService.buildAccessCookieOptions());
         res.cookie(cookieNames.refresh, refreshToken, this.adminAuthService.buildRefreshCookieOptions());
+        this.clearLegacyApiScopedCookies(res, cookieNames);
     }
 
     private clearSessionCookies(res: Response) {
         const cookieNames = this.adminAuthService.getCookieNames();
         const options = this.adminAuthService.buildClearCookieOptions();
+        res.clearCookie(cookieNames.access, options);
+        res.clearCookie(cookieNames.refresh, options);
+        this.clearLegacyApiScopedCookies(res, cookieNames);
+    }
+
+    private clearLegacyApiScopedCookies(
+        res: Response,
+        cookieNames: { access: string; refresh: string },
+    ) {
+        const options = {
+            ...this.adminAuthService.buildClearCookieOptions(),
+            path: '/api',
+        };
         res.clearCookie(cookieNames.access, options);
         res.clearCookie(cookieNames.refresh, options);
     }

@@ -130,6 +130,11 @@ export class CommunitiesService {
     // ─── Discovery ────────────────────────────────────────────────────────────
 
     async findAll(query: any, userId?: string) {
+        if (!userId) {
+            throw new ForbiddenException('Debes tener una suscripción PRO activa para acceder a Comunidades.');
+        }
+        await this.permissions.assertCanViewCommunities(userId);
+
         const {
             category,
             search,
@@ -199,6 +204,11 @@ export class CommunitiesService {
     }
 
     async findOne(idOrSlug: string, userId?: string) {
+        if (!userId) {
+            throw new ForbiddenException('Debes tener una suscripción PRO activa para acceder a Comunidades.');
+        }
+        await this.permissions.assertCanViewCommunities(userId);
+
         // Try finding by ID first, then by slug
         const community = await this.prisma.community.findFirst({
             where: {
@@ -217,6 +227,7 @@ export class CommunitiesService {
     // ─── My Communities ───────────────────────────────────────────────────────
 
     async getMyCommunities(userId: string) {
+        await this.permissions.assertCanViewCommunities(userId);
         const communities = await this.prisma.community.findMany({
             where: { creatorId: userId },
             include: this.communityInclude(userId),
@@ -226,6 +237,7 @@ export class CommunitiesService {
     }
 
     async getJoinedCommunities(userId: string) {
+        await this.permissions.assertCanViewCommunities(userId);
         const memberships = await this.prisma.communityMember.findMany({
             where: { userId, subscriptionStatus: 'ACTIVE' },
             include: {
@@ -251,13 +263,7 @@ export class CommunitiesService {
     // ─── CRUD (Creator Only) ──────────────────────────────────────────────────
 
     async create(userId: string, dto: any) {
-        // Toda persona autenticada puede crear una comunidad. Solo las cuentas
-        // verificadas reciben la insignia de comunidad verificada.
-        const creatorAccount = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { isVerified: true },
-        });
-        if (!creatorAccount) throw new NotFoundException('Usuario no encontrado');
+        const creatorAccount = await this.permissions.assertCanCreateCommunity(userId);
 
         // 2. Generate slug
         let baseSlug = this.slugify(dto.slug || dto.name);
@@ -664,6 +670,7 @@ export class CommunitiesService {
     }
 
     async deletePost(communityId: string, postId: string, userId: string) {
+        await this.permissions.assertCanViewCommunities(userId);
         const post = await this.prisma.post.findUnique({ where: { id: postId } });
         if (!post) throw new NotFoundException('Publicación no encontrada.');
 
@@ -683,7 +690,8 @@ export class CommunitiesService {
 
     // ─── Members ─────────────────────────────────────────────────────────────
 
-    async getMembers(communityId: string, query: any) {
+    async getMembers(communityId: string, query: any, userId: string) {
+        await this.permissions.assertCanViewCommunities(userId);
         const { limit = 20, offset = 0, search, role } = query;
         const where: Prisma.CommunityMemberWhereInput = {
             communityId,
@@ -761,6 +769,7 @@ export class CommunitiesService {
     // ─── Free Join & Leave ───────────────────────────────────────────────────
 
     async joinFree(userId: string, communityId: string, planId?: string) {
+        await this.permissions.assertCanViewCommunities(userId);
         const community = await this.prisma.community.findUnique({
             where: { id: communityId },
             include: { plans: true },
@@ -812,6 +821,7 @@ export class CommunitiesService {
     }
 
     async leave(userId: string, communityId: string) {
+        await this.permissions.assertCanViewCommunities(userId);
         const community = await this.prisma.community.findUnique({ where: { id: communityId } });
         if (!community) throw new NotFoundException('Comunidad no encontrada');
         if (community.creatorId === userId) {
@@ -831,6 +841,7 @@ export class CommunitiesService {
     // ─── Payments & Subscriptions ─────────────────────────────────────────────
 
     async createCheckoutSession(userId: string, communityId: string, planId: string, provider: string = 'stripe') {
+        await this.permissions.assertCanViewCommunities(userId);
         const community = await this.prisma.community.findUnique({
             where: { id: communityId },
             include: { plans: true },
@@ -856,6 +867,7 @@ export class CommunitiesService {
     }
 
     async processCardPayment(userId: string, communityId: string, dto: PayWithCardDto) {
+        await this.permissions.assertCanViewCommunities(userId);
         throw new BadRequestException('Los pagos con tarjeta se procesan exclusivamente mediante el checkout seguro de Mercado Pago.');
         const { planId, cardNumber, cardholderName, expiryDate, cvc } = dto;
 
@@ -1065,6 +1077,7 @@ export class CommunitiesService {
     }
 
     async cancelSubscription(userId: string, communityId: string) {
+        await this.permissions.assertCanViewCommunities(userId);
         const membership = await this.stripeService.cancelCommunitySubscription(userId, communityId);
 
         if (!membership) {
@@ -1090,6 +1103,7 @@ export class CommunitiesService {
     // ─── Join Requests (Private Communities) ──────────────────────────────────
 
     async createJoinRequest(communityId: string, userId: string, note?: string) {
+        await this.permissions.assertCanViewCommunities(userId);
         const community = await this.prisma.community.findUnique({ where: { id: communityId } });
         if (!community) throw new NotFoundException('Comunidad no encontrada.');
 
@@ -1206,6 +1220,7 @@ export class CommunitiesService {
     }
 
     async acceptInvite(code: string, userId: string) {
+        await this.permissions.assertCanViewCommunities(userId);
         const invite = await this.getInvite(code);
 
         const firstPlan = await this.prisma.communityPlan.findFirst({
@@ -1237,6 +1252,7 @@ export class CommunitiesService {
     // ─── Moderation & Reports ─────────────────────────────────────────────────
 
     async createReport(communityId: string, reporterId: string, dto: any) {
+        await this.permissions.assertCanViewCommunities(reporterId);
         return this.prisma.communityReport.create({
             data: {
                 communityId,

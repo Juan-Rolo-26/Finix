@@ -44,11 +44,19 @@ export default function AuthPage() {
     const mode = searchParams.get('mode');
     const redirectTarget = searchParams.get('redirect') || searchParams.get('returnUrl') || '/dashboard';
     const planRequested = searchParams.get('plan');
+    const callbackReason = searchParams.get('reason');
+    const callbackMessage = searchParams.get('message');
 
     const [view, setView] = useState<AuthView>(mode === 'register' ? 'register' : 'login');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [authError, setAuthError] = useState('');
+    const [authError, setAuthError] = useState(
+        callbackReason === 'google-auth-error'
+            ? callbackMessage || 'No se pudo iniciar sesión con Google.'
+            : callbackReason === 'auth-failed'
+                ? 'No se pudo completar la sesión. Intentá nuevamente.'
+                : '',
+    );
     const [infoMessage, setInfoMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [email, setEmail] = useState('');
@@ -124,7 +132,11 @@ export default function AuthPage() {
 
         if (view === 'register') {
             localStorage.setItem('pendingUsername', username.trim());
+        } else {
+            localStorage.removeItem('pendingUsername');
         }
+
+        sessionStorage.setItem('authRedirect', redirectTarget);
 
         setIsLoading(true);
         clearMessages();

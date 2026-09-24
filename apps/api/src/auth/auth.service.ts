@@ -728,8 +728,28 @@ export class AuthService implements OnModuleInit {
         const subscriptionStatus = isJuan ? 'ACTIVE' : user.subscriptionStatus;
         const role = isJuan ? 'ADMIN' : user.role;
 
-        const isPro = isJuan ? true : (plan === 'PRO' || role === 'ADMIN' || accountType === 'PRO');
-        const isCreator = isJuan ? true : Boolean(user.isCreator || role === 'ADMIN');
+        const normalizedPlan = String(plan || '').toUpperCase();
+        const normalizedAccountType = String(accountType || '').toUpperCase();
+        const normalizedRole = String(role || '').toUpperCase();
+
+        const isPro = isJuan ? true : (
+            normalizedPlan === 'PRO' ||
+            normalizedPlan === 'CREATOR' ||
+            normalizedPlan === 'PRO_CREATOR' ||
+            normalizedRole === 'ADMIN' ||
+            normalizedRole === 'SUPER_ADMIN' ||
+            normalizedAccountType === 'PRO' ||
+            normalizedAccountType === 'CREATOR'
+        );
+        const isCreator = isJuan ? true : Boolean(
+            user.isCreator ||
+            normalizedRole === 'CREATOR' ||
+            normalizedRole === 'ADMIN' ||
+            normalizedRole === 'SUPER_ADMIN' ||
+            normalizedPlan === 'CREATOR' ||
+            normalizedPlan === 'PRO_CREATOR' ||
+            normalizedAccountType === 'CREATOR'
+        );
 
         return {
             id: user.id,

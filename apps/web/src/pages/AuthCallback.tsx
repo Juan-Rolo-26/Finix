@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -12,14 +12,38 @@ import { Loader2 } from 'lucide-react';
 export default function AuthCallback() {
     const navigate = useNavigate();
     const { syncFromSession } = useAuthStore();
+    const handledRef = useRef(false);
 
     useEffect(() => {
         const handle = async () => {
-            // Wait for Supabase to pick up the session from the URL hash
-            const { data: { session }, error } = await supabase.auth.getSession();
+            if (handledRef.current) return;
+            handledRef.current = true;
+
+            const params = new URLSearchParams(window.location.search);
+            const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+            const authError = params.get('error_description') || params.get('error')
+                || hashParams.get('error_description') || hashParams.get('error');
+            if (authError) {
+                sessionStorage.removeItem('authRedirect');
+                navigate(`/?reason=google-auth-error&message=${encodeURIComponent(authError)}`, { replace: true });
+                return;
+            }
+
+            // Supabase restores the OAuth session from the URL before getSession.
+            // A short retry protects slower browsers and mobile redirects.
+            let session = null;
+            let error = null;
+            for (let attempt = 0; attempt < 5 && !session; attempt += 1) {
+                const result = await supabase.auth.getSession();
+                session = result.data.session;
+                error = result.error;
+                if (!session && !error) {
+                    await new Promise((resolve) => window.setTimeout(resolve, 200));
+                }
+            }
 
             if (error || !session) {
-                navigate('/');
+                navigate('/?reason=auth-failed', { replace: true });
                 return;
             }
 
@@ -27,15 +51,23 @@ export default function AuthCallback() {
             const user = await syncFromSession();
 
             if (!user) {
-                navigate('/?reason=auth-failed');
+                navigate('/?reason=auth-failed', { replace: true });
                 return;
             }
 
             const isNewUser = session.user.created_at && (new Date().getTime() - new Date(session.user.created_at).getTime()) < 60000;
-            navigate(!user.onboardingCompleted && isNewUser ? '/onboarding' : '/dashboard');
+            const requestedRedirect = sessionStorage.getItem('authRedirect');
+            sessionStorage.removeItem('authRedirect');
+            const redirectTarget = requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')
+                ? requestedRedirect
+                : '/dashboard';
+            navigate(!user.onboardingCompleted && isNewUser ? '/onboarding' : redirectTarget, { replace: true });
         };
 
-        handle();
+        void handle().catch(() => {
+            sessionStorage.removeItem('authRedirect');
+            navigate('/?reason=auth-failed', { replace: true });
+        });
     }, []);
 
     return (

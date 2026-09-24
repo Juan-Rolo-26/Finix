@@ -23,7 +23,7 @@ import {
     PayWithCardDto,
 } from './dto/create-community.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
+import { CreatorGuard } from './guards/creator.guard';
 
 @Controller('communities')
 export class CommunitiesController {
@@ -31,7 +31,7 @@ export class CommunitiesController {
 
     // ─── Discovery ────────────────────────────────────────────────────────────
 
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get()
     findAll(@Query() query: any, @Request() req: any) {
         return this.communitiesService.findAll(query, req.user?.id);
@@ -66,7 +66,7 @@ export class CommunitiesController {
 
     // ─── Detail ───────────────────────────────────────────────────────────────
 
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get(':id')
     async findOne(@Param('id') id: string, @Request() req: any) {
         return this.communitiesService.findOne(id, req.user?.id);
@@ -74,7 +74,7 @@ export class CommunitiesController {
 
     // ─── CRUD (CREATOR PLAN GATED) ────────────────────────────────────────────
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, CreatorGuard)
     @Post()
     create(@Request() req: any, @Body() dto: CreateCommunityDto) {
         return this.communitiesService.create(req.user.id, dto);
@@ -94,7 +94,7 @@ export class CommunitiesController {
 
     // ─── Sections ─────────────────────────────────────────────────────────────
 
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get(':id/sections')
     listSections(@Param('id') id: string, @Request() req: any) {
         return this.communitiesService.listSections(id, req.user?.id);
@@ -147,10 +147,10 @@ export class CommunitiesController {
         return this.communitiesService.leave(req.user.id, id);
     }
 
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get(':id/members')
-    getMembers(@Param('id') id: string, @Query() query: any) {
-        return this.communitiesService.getMembers(id, query);
+    getMembers(@Param('id') id: string, @Query() query: any, @Request() req: any) {
+        return this.communitiesService.getMembers(id, query, req.user.id);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -200,7 +200,7 @@ export class CommunitiesController {
 
     // ─── Posts ────────────────────────────────────────────────────────────────
 
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get(':id/posts')
     listPosts(@Param('id') id: string, @Request() req: any, @Query() query: any) {
         return this.communitiesService.listPosts(id, req.user?.id, query);
@@ -303,7 +303,7 @@ export class CommunitiesController {
 
     // ─── Resources ───────────────────────────────────────────────────────────
 
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get(':id/resources')
     listResources(@Param('id') id: string, @Request() req: any) {
         return this.communitiesService.listResources(id, req.user?.id);
@@ -323,7 +323,7 @@ export class CommunitiesController {
 
     // ─── Events ──────────────────────────────────────────────────────────────
 
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get(':id/events')
     listEvents(@Param('id') id: string, @Request() req: any) {
         return this.communitiesService.listEvents(id, req.user?.id);

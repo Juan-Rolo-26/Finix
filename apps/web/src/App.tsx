@@ -1,6 +1,6 @@
 import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from './stores/authStore';
+import { hasCommunityAccess, hasCommunityCreatorAccess, useAuthStore } from './stores/authStore';
 import { setAccessToken } from './lib/api';
 import { usePreferencesStore } from './stores/preferencesStore';
 import { supabase } from './lib/supabase';
@@ -85,6 +85,22 @@ function RequireOnboarding({ children }: { children: React.ReactNode }) {
     const { token, user } = useAuthStore();
     if (!token && !user) return <Navigate to="/" replace />;
     // Guard removed: users who skipped onboarding can use the app and edit from profile
+    return <>{children}</>;
+}
+
+function RequireCommunityAccess({
+    children,
+    creatorOnly = false,
+}: {
+    children: React.ReactNode;
+    creatorOnly?: boolean;
+}) {
+    const { user } = useAuthStore();
+
+    if (creatorOnly ? !hasCommunityCreatorAccess(user) : !hasCommunityAccess(user)) {
+        return <Navigate to={creatorOnly ? '/creator' : '/settings/plan'} replace />;
+    }
+
     return <>{children}</>;
 }
 
@@ -186,13 +202,13 @@ export default function App() {
                         <Route path="/settings/plan" element={<ProUpgrade />} />
                         <Route path="/explore" element={<Explore />} />
                         <Route path="/messages" element={<Messages />} />
-                        <Route path="/comunidades" element={<Comunidades />} />
-                        <Route path="/comunidades/crear" element={<CommunityCreate />} />
-                        <Route path="/comunidades/:id" element={<CommunityDetail />} />
-                        <Route path="/comunidades/:id/admin" element={<CommunityAdmin />} />
-                        <Route path="/comunidades/:id/moderacion" element={<CommunityAdmin />} />
-                        <Route path="/comunidades/:id/admin/finanzas" element={<CommunityAdmin />} />
-                        <Route path="/comunidades/:id/admin/configuracion" element={<CommunityAdmin />} />
+                        <Route path="/comunidades" element={<RequireCommunityAccess><Comunidades /></RequireCommunityAccess>} />
+                        <Route path="/comunidades/crear" element={<RequireCommunityAccess creatorOnly><CommunityCreate /></RequireCommunityAccess>} />
+                        <Route path="/comunidades/:id" element={<RequireCommunityAccess><CommunityDetail /></RequireCommunityAccess>} />
+                        <Route path="/comunidades/:id/admin" element={<RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess>} />
+                        <Route path="/comunidades/:id/moderacion" element={<RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess>} />
+                        <Route path="/comunidades/:id/admin/finanzas" element={<RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess>} />
+                        <Route path="/comunidades/:id/admin/configuracion" element={<RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess>} />
                         <Route path="/news" element={<NewsPage />} />
                         <Route path="/notifications" element={<NotificationsPage />} />
                         <Route path="/analysis" element={<AnalysisPage />} />

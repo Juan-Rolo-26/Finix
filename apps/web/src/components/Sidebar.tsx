@@ -30,7 +30,7 @@ import {
     Repeat,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuthStore, isJuanUser } from '../stores/authStore';
+import { hasCommunityAccess, useAuthStore, isJuanUser } from '../stores/authStore';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { NOTIFICATION_HISTORY_DAYS, type NotificationItem, groupNotificationsByDay } from '../lib/notifications';
@@ -326,7 +326,7 @@ export function Sidebar() {
             links: [
                 { name: 'Inicio', path: '/dashboard', icon: LayoutDashboard, badge: 0 },
                 { name: 'Explorar', path: '/explore', icon: Compass, badge: 0 },
-                { name: 'Comunidades', path: '/comunidades', icon: Users, badge: 0 },
+                ...(hasCommunityAccess(user) ? [{ name: 'Comunidades', path: '/comunidades', icon: Users, badge: 0 }] : []),
                 { name: 'Mensajes', path: '/messages', icon: MessageSquare, badge: unreadMsgs },
             ],
         },

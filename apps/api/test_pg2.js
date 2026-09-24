@@ -1,26 +1,28 @@
+require('dotenv').config();
 const { Client } = require('pg');
 
 async function test() {
-  const url = 'postgresql://postgres:Juampi26_08@db.apxfsuxftnovgkvdrwpx.supabase.co:5432/postgres';
-  console.log('Testing direct URL:', url);
-  const client1 = new Client({ connectionString: url, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 5000 });
-  try {
-    await client1.connect();
-    console.log('Direct URL connected!');
-    await client1.end();
-  } catch(e) {
-    console.log('Direct URL failed:', e.message);
+  const urls = [
+    ['Direct URL', process.env.DIRECT_URL],
+    ['Pooler URL', process.env.DATABASE_URL],
+  ].filter(([, url]) => url);
+
+  if (!urls.length) {
+    throw new Error('Configurá DIRECT_URL o DATABASE_URL antes de ejecutar este script.');
   }
 
-  const url2 = 'postgresql://postgres.apxfsuxftnovgkvdrwpx:Juampi26_08@aws-0-us-east-2.pooler.supabase.com:6543/postgres';
-  console.log('Testing Pooler URL:', url2);
-  const client2 = new Client({ connectionString: url2, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 5000 });
-  try {
-    await client2.connect();
-    console.log('Pooler URL connected!');
-    await client2.end();
-  } catch(e) {
-    console.log('Pooler URL failed:', e.message);
+  for (const [label, url] of urls) {
+    const hostname = new URL(url).hostname;
+    console.log(`Testing ${label}: ${hostname}`);
+    const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 5000 });
+    try {
+      await client.connect();
+      console.log(`${label} connected!`);
+    } catch (e) {
+      console.log(`${label} failed:`, e.message);
+    } finally {
+      await client.end().catch(() => {});
+    }
   }
 }
 test();

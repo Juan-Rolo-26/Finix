@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
-import { useAuthStore, isCreatorUser } from '@/stores/authStore';
+import { hasCommunityCreatorAccess, useAuthStore } from '@/stores/authStore';
 import CommunityDetail from './CommunityDetail';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -749,7 +749,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
 export default function Comunidades() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
-    const isCreator = isCreatorUser(user);
+    const isCreator = hasCommunityCreatorAccess(user);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [communities, setCommunities] = useState<Community[]>([]);
@@ -968,18 +968,20 @@ export default function Comunidades() {
                         <Users className="w-12 h-12 opacity-30" />
                         <p className="font-semibold">No hay comunidades</p>
                         <p className="text-sm">
-                            {searchQuery ? `Sin resultados para "${searchQuery}"` : '¡Sé el primero en crear una!'}
+                            {searchQuery ? `Sin resultados para "${searchQuery}"` : 'Todavía no hay comunidades publicadas.'}
                         </p>
-                        <button
-                            onClick={() => setShowCreate(true)}
-                            className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold mt-2"
-                            style={{
-                                background: 'hsl(var(--primary))',
-                                color: 'hsl(var(--primary-foreground))',
-                            }}
-                        >
-                            <Plus className="w-4 h-4" /> Crear comunidad
-                        </button>
+                        {isCreator && (
+                            <button
+                                onClick={() => setShowCreate(true)}
+                                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold mt-2"
+                                style={{
+                                    background: 'hsl(var(--primary))',
+                                    color: 'hsl(var(--primary-foreground))',
+                                }}
+                            >
+                                <Plus className="w-4 h-4" /> Crear comunidad
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

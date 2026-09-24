@@ -5,6 +5,7 @@ import {
     HttpStatus,
     Injectable,
     InternalServerErrorException,
+    Logger,
     UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -44,6 +45,7 @@ const LOCKOUT_MINUTES = 15;
 
 @Injectable()
 export class AdminAuthService {
+    private readonly logger = new Logger(AdminAuthService.name);
     private readonly accessCookieName = process.env.ADMIN_ACCESS_COOKIE_NAME || 'finix_admin_at';
     private readonly refreshCookieName = process.env.ADMIN_REFRESH_COOKIE_NAME || 'finix_admin_rt';
     private readonly accessTtlSeconds = Number(process.env.ADMIN_ACCESS_TTL_SECONDS || DEFAULT_ACCESS_TTL_SECONDS);
@@ -114,7 +116,9 @@ export class AdminAuthService {
             // deployments while keeping the cookie protected from CSRF.
             sameSite: 'lax' as const,
             ...(domain ? { domain } : {}),
-            path: '/api',
+            // The admin and API share the same host in production. Root scope
+            // avoids losing the session when the SPA changes route.
+            path: '/',
             maxAge: this.accessTtlSeconds * 1000,
         };
     }
@@ -126,7 +130,7 @@ export class AdminAuthService {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax' as const,
             ...(domain ? { domain } : {}),
-            path: '/api',
+            path: '/',
             maxAge: this.refreshTtlSeconds * 1000,
         };
     }
@@ -138,7 +142,7 @@ export class AdminAuthService {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax' as const,
             ...(domain ? { domain } : {}),
-            path: '/api',
+            path: '/',
         };
     }
 
@@ -238,7 +242,10 @@ export class AdminAuthService {
                 token: preAuthToken,
             };
         } catch (e: any) {
-            require('fs').writeFileSync('/home/juampi26/Finix/auth-error.log', String(e.stack || e));
+            // Never let diagnostic logging replace the real auth error. A
+            // hardcoded local path made the VPS return 500 for normal login
+            // failures and hid the actual cause from the admin UI.
+            this.logger.error(`Admin login failed: ${e?.stack || e}`);
             throw e;
         }
     }
