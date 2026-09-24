@@ -4,7 +4,6 @@ import { ArrowLeft, Check, Sparkles, Zap, Shield, Target, Loader2, ArrowRight } 
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore, isProUser } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
-import { SubscriptionRenewalChoice } from '@/components/SubscriptionRenewalChoice';
 
 const FEATURES = [
     'Análisis fundamentales detallados de más de 5,000 acciones.',
@@ -13,7 +12,7 @@ const FEATURES = [
     'Estimaciones de "Fair Value" y detección de premiums o descuentos.',
     'Desglose profundo de balances financieros y flujo de caja (Cash Flow).',
     'Badge de Inversor PRO en tu perfil para mayor reputación.',
-    'Elegís entre renovar automáticamente cada mes o pagar un mes por vez.',
+    'Suscripción mensual segura en USD mediante Stripe.',
     'Cero anuncios y soporte prioritario 24/7.'
 ];
 
@@ -22,15 +21,14 @@ export default function ProUpgrade() {
     const user = useAuthStore(s => s.user);
     const hasPro = isProUser(user);
     const [loading, setLoading] = useState(false);
-    const [renewalChoiceOpen, setRenewalChoiceOpen] = useState(false);
-    const [proPrice, setProPrice] = useState(8500);
+    const [proPrice, setProPrice] = useState(4);
 
     useEffect(() => {
-        apiFetch('/mercadopago/config')
+        apiFetch('/stripe/config')
             .then(res => res.json())
             .then(data => {
-                if (data.proPriceArs) {
-                    setProPrice(data.proPriceArs);
+                if (data.proPriceUsd) {
+                    setProPrice(Number(data.proPriceUsd));
                 }
             })
             .catch(() => {});
@@ -41,31 +39,28 @@ export default function ProUpgrade() {
             navigate(`/auth?redirect=${encodeURIComponent('/pro')}&plan=PRO`);
             return;
         }
-        setRenewalChoiceOpen(true);
+        void confirmCheckout();
     };
 
-    const confirmCheckout = async (autoRenew: boolean) => {
+    const confirmCheckout = async () => {
         setLoading(true);
         try {
-            const res = await apiFetch('/mercadopago/checkout/pro', {
+            const res = await apiFetch('/stripe/subscriptions/pro/checkout', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ autoRenew }),
             });
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.message || 'Error al conectar con Mercado Pago');
+                throw new Error(data.message || 'Error al conectar con Stripe');
             }
             const data = await res.json();
-            const checkoutUrl = data.init_point || (import.meta.env.DEV ? data.sandbox_init_point : undefined) || data.url;
+            const checkoutUrl = data.url;
             if (checkoutUrl) {
                 window.location.href = checkoutUrl;
             } else {
-                throw new Error('No se recibió la URL de checkout de Mercado Pago');
+                throw new Error('No se recibió la URL de checkout de Stripe');
             }
         } catch (error: any) {
             alert(error.message || 'Ocurrió un error inesperado.');
-            setRenewalChoiceOpen(false);
         } finally {
             setLoading(false);
         }
@@ -162,11 +157,11 @@ export default function ProUpgrade() {
                             </div>
 
                             <div className="flex items-baseline gap-2 mb-1">
-                                <span className="text-5xl font-extrabold tracking-tighter">${proPrice.toLocaleString('es-AR')}</span>
-                                <span className="text-muted-foreground font-medium">ARS / mes</span>
+                                <span className="text-5xl font-extrabold tracking-tighter">${proPrice.toFixed(2)}</span>
+                                <span className="text-muted-foreground font-medium">USD / mes</span>
                             </div>
                             <p className="text-xs text-emerald-400 font-semibold mb-6 flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5" /> Elegís si querés renovación automática antes de pagar.
+                                <Sparkles className="w-3.5 h-3.5" /> Suscripción mensual automática gestionada por Stripe.
                             </p>
 
                             <button 
@@ -198,7 +193,7 @@ export default function ProUpgrade() {
                                 )}
                             </button>
                             <p className="text-center text-xs text-muted-foreground mt-4 mb-6 leading-relaxed">
-                                Antes del pago elegís entre una única cuota mensual o renovación automática. La renovación se cancela desde <strong className="text-foreground">Configuración &gt; Planes PRO y Creador</strong>.
+                                La suscripción mensual se gestiona de forma segura con Stripe y se puede cancelar desde <strong className="text-foreground">Configuración &gt; Planes PRO y Creador</strong>.
                             </p>
 
                             <div className="space-y-4 pt-6 border-t border-border/40">
@@ -217,14 +212,6 @@ export default function ProUpgrade() {
 
                 </div>
             </main>
-            <SubscriptionRenewalChoice
-                open={renewalChoiceOpen}
-                planName="Finix PRO"
-                monthlyPrice={proPrice.toLocaleString('es-AR')}
-                busy={loading}
-                onClose={() => setRenewalChoiceOpen(false)}
-                onConfirm={(autoRenew) => { void confirmCheckout(autoRenew); }}
-            />
         </div>
     );
 }

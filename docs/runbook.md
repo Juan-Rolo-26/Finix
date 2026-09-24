@@ -31,6 +31,10 @@ npm run dev                   # Inicia API (3010) + Web (5173)
 
 # Deploy manual (emergencia):
 ssh finix-vps 'cd ~/Finix && bash deploy.sh'
+
+# Verificar el commit que quedó publicado:
+curl -fsS https://finixarg.com/release.json
+curl -fsS https://admin.finixarg.com/release.json
 ```
 
 ---

@@ -9,7 +9,13 @@ export class StripeController {
     constructor(private readonly stripeService: StripeService) { }
 
     @Get('config')
-    getConfig() { return { configured: this.stripeService.isConfigured(), communityCurrency: 'ARS' }; }
+    async getConfig() {
+        return {
+            configured: this.stripeService.isConfigured(),
+            communityCurrency: 'ARS',
+            proPriceUsd: await this.stripeService.getProMonthlyPriceUsd(),
+        };
+    }
 
     @UseGuards(JwtAuthGuard)
     @Get('checkout/:sessionId/status')

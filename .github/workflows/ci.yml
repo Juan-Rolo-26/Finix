@@ -265,23 +265,31 @@ jobs:
           command_timeout: 15m
           script: |
             set -e
-            FINIX_DIR=""
-            for candidate in "$HOME/Finix" "/root/Finix" "$HOME/finix" "/var/www/finix"; do
+            FINIX_DIR="${FINIX_DEPLOY_DIR:-}"
+            for candidate in "$FINIX_DIR" "$HOME/Finix" "$HOME/finix" "/root/Finix" "/var/www/finix"; do
+              [ -n "$candidate" ] || continue
               if [ -f "$candidate/deploy.sh" ]; then
-                FINIX_DIR="$candidate"
-                break
+                origin="$(git -C "$candidate" remote get-url origin 2>/dev/null || true)"
+                case "$origin" in
+                  *github.com:Juan-Rolo-26/Finix.git|*github.com/Juan-Rolo-26/Finix.git)
+                    FINIX_DIR="$candidate"
+                    break
+                    ;;
+                esac
               fi
             done
             if [ -z "$FINIX_DIR" ]; then
-              echo "No se encontró el repositorio Finix ni su deploy.sh" >&2
+              echo "No se encontró el repositorio Finix correcto ni su deploy.sh" >&2
               exit 1
             fi
             cd "$FINIX_DIR"
+            echo "Deploy desde: $(pwd)"
+            echo "Antes del pull: $(git rev-parse --short HEAD)"
             bash deploy.sh
       - name: Smoke test production
         run: |
           sleep 15
-          curl -fsS https://finixarg.com/api/health || exit 1
+          curl -fsS https://finixarg.com/health | grep -F '"status":"ok"' || exit 1
           echo "✅ Production smoke test passed"
 
   # ──────────────────────────────────────────────────────────────────────────

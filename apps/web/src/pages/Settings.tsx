@@ -470,6 +470,7 @@ export default function Settings() {
     const [isCancelingSubscription, setIsCancelingSubscription] = useState(false);
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [planToCancel, setPlanToCancel] = useState<'PRO' | 'CREATOR'>('PRO');
+    const [proPriceUsd, setProPriceUsd] = useState(4);
     const proBilling = billingOverview?.subscriptions?.PRO;
     const creatorBilling = billingOverview?.subscriptions?.CREATOR;
 
@@ -488,6 +489,15 @@ export default function Settings() {
     useEffect(() => {
         fetchBillingOverview();
     }, [fetchBillingOverview]);
+
+    useEffect(() => {
+        apiFetch('/stripe/config')
+            .then((res) => res.json())
+            .then((data) => {
+                if (Number(data?.proPriceUsd) > 0) setProPriceUsd(Number(data.proPriceUsd));
+            })
+            .catch(() => {});
+    }, []);
 
     const handleConfirmCancel = async () => {
         setIsCancelingSubscription(true);
@@ -1032,7 +1042,7 @@ export default function Settings() {
                                         </Badge>
                                     </div>
                                     <p className="text-sm text-foreground/80 dark:text-muted-foreground mt-1.5 max-w-3xl leading-relaxed font-normal">
-                                        La renovación automática depende de la opción que elegiste al contratar. Desde acá podés consultar la fecha del próximo cobro o vencimiento y detener los cobros futuros en cualquier momento.
+                                        Desde acá podés consultar la fecha del próximo cobro o vencimiento y detener los cobros futuros en cualquier momento.
                                     </p>
                                 </div>
                             </div>
@@ -1073,8 +1083,8 @@ export default function Settings() {
                             </div>
                             <div className="sm:text-right shrink-0">
                                 <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground tabular-nums">
-                                    ${Number(billingOverview?.proPriceArs || 8500).toLocaleString('es-AR')}
-                                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400 ml-1.5">ARS</span>
+                                    ${proPriceUsd.toFixed(2)}
+                                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400 ml-1.5">USD</span>
                                 </span>
                                 <span className="text-xs sm:text-sm font-semibold text-muted-foreground block mt-0.5">/ mes contratado</span>
                             </div>
@@ -1092,7 +1102,7 @@ export default function Settings() {
                                         'Análisis de ballenas y movimientos institucionales',
                                         'Filtros técnicos avanzados y gráficos sin límites',
                                         'Badge exclusivo Finix PRO en la comunidad',
-                                        'Elección entre renovación automática o pago mensual único',
+                                        'Suscripción mensual automática en USD mediante Stripe',
                                     ].map((feature) => (
                                         <div key={feature} className="flex items-center gap-3">
                                             <div className="rounded-full bg-emerald-500/15 p-1 text-emerald-600 dark:text-emerald-400 shrink-0 border border-emerald-500/25">
@@ -1114,14 +1124,14 @@ export default function Settings() {
                                     </span>
                                     <p className="text-sm sm:text-base font-bold text-foreground leading-relaxed">
                                         {proBilling?.status === 'PENDING'
-                                            ? 'Esperando que completes la autorización de pago en Mercado Pago.'
+                                            ? 'Esperando que completes la autorización de pago en Stripe.'
                                             : isProActive && !proBilling
                                                 ? 'Acceso activo sin una suscripción facturable asociada.'
                                                 : isProActive
                                             ? proBilling?.cancelAtPeriodEnd
                                                 ? `Renovación cancelada. Mantenés acceso hasta el ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'fin del período pago'}.`
                                                 : proBilling?.autoRenew
-                                                    ? `Renovación automática mensual. Próximo cobro: ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'según Mercado Pago'}.`
+                                                    ? `Renovación automática mensual. Próximo cobro: ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'según Stripe'}.`
                                                     : `Sin renovación automática. Acceso hasta el ${proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'fin del período pago'}.`
                                             : 'No hay un plan PRO activo actualmente.'}
                                     </p>
@@ -1598,7 +1608,7 @@ export default function Settings() {
                                                 <Sparkles className="h-3.5 w-3.5" /> Función bloqueada para cuentas gratuitas
                                             </p>
                                             <p>
-                                                Finix PRO se renueva de manera automática cada mes al mismo precio pactado ($19 USD/mes). Podés cancelarlo cuando quieras.
+                                                Finix PRO se renueva de manera automática cada mes al precio pactado ($4 USD/mes). Podés cancelarlo cuando quieras.
                                             </p>
                                         </div>
                                         <Link to="/pricing" className="shrink-0 w-full sm:w-auto">

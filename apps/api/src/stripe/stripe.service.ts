@@ -11,7 +11,7 @@ import {
 
 const DEFAULT_COMMISSION_RATE = 0.10;
 const DEFAULT_PLAN_PRICES: Record<'pro_investor' | 'pro_creator', number> = {
-    pro_investor: 9,
+    pro_investor: 4,
     pro_creator: 19,
 };
 
@@ -56,9 +56,12 @@ export class StripeService {
         }
 
         const customerId = await this.getOrCreateCustomer(user.id, user.email);
-        const priceId = this.getPlanPriceId(planType);
         const planPrice = await this.getPlanMonthlyPrice(planType);
         const planLabel = planType === 'pro_creator' ? 'Pro Creator' : 'Pro Investor';
+        // Pro Investor pricing is controlled by the platform setting so the
+        // checkout always reflects the advertised USD amount. An old Stripe
+        // Price ID may still point to the previous price and must not win here.
+        const priceId = planType === 'pro_investor' ? '' : this.getPlanPriceId(planType);
 
         const session = await this.stripe.checkout.sessions.create({
             customer: customerId,
@@ -805,6 +808,10 @@ export class StripeService {
             return DEFAULT_COMMISSION_RATE;
         }
         return parsed;
+    }
+
+    async getProMonthlyPriceUsd() {
+        return this.getPlanMonthlyPrice('pro_investor');
     }
 
     private async getPlanMonthlyPrice(planType: 'pro_investor' | 'pro_creator') {

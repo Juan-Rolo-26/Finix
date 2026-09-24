@@ -496,7 +496,7 @@ export class BillingService {
         }
 
         if (!mapped.PRO_MONTHLY_PRICE_USD) {
-            mapped.PRO_MONTHLY_PRICE_USD = '15';
+            mapped.PRO_MONTHLY_PRICE_USD = '4';
         }
 
         return mapped;

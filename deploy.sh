@@ -18,6 +18,7 @@ PREVIOUS_ADMIN=""
 NGINX_BACKUP=""
 API_DIST_BACKUP=""
 PUBLISHED=0
+DEPLOY_COMMIT=""
 
 for arg in "$@"; do
     case "$arg" in
@@ -105,10 +106,16 @@ NODE
 }
 
 check_git() {
-    local dirty
+    local dirty remote
     git rev-parse --is-inside-work-tree >/dev/null
     [[ "$(git branch --show-current)" == main ]] || die "El checkout no está en main (actual: $(git branch --show-current))."
-    git remote get-url origin >/dev/null || die 'No existe el remote origin.'
+    remote="$(git remote get-url origin 2>/dev/null || true)"
+    [[ -n "$remote" ]] || die 'No existe el remote origin.'
+    log "Repositorio: $remote"
+    case "$remote" in
+        *github.com:Juan-Rolo-26/Finix.git|*github.com/Juan-Rolo-26/Finix.git) ;;
+        *) die "El remote origin no corresponde a Juan-Rolo-26/Finix.git: $remote" ;;
+    esac
     # Este repositorio histórico contiene algunos artifacts generados tracked. Se ignoran
     # únicamente caches/dependencias/builds; cualquier fuente o configuración sí bloquea.
     dirty="$(git status --porcelain --untracked-files=no | awk '{ path=substr($0,4); if (path !~ /(^|\/)node_modules\// && path !~ /(^|\/)\.vite\// && path !~ /(^|\/)(dist|build)\//) print }')"
@@ -116,6 +123,8 @@ check_git() {
     if [[ "$SKIP_PULL" -eq 0 ]]; then git fetch --prune origin main; git pull --ff-only origin main; fi
     dirty="$(git status --porcelain --untracked-files=no | awk '{ path=substr($0,4); if (path !~ /(^|\/)node_modules\// && path !~ /(^|\/)\.vite\// && path !~ /(^|\/)(dist|build)\//) print }')"
     [[ -z "$dirty" ]] || { printf '%s\n' "$dirty"; die 'El checkout quedó sucio después del pull.'; }
+    DEPLOY_COMMIT="$(git rev-parse HEAD)"
+    log "Commit seleccionado para publicar: $DEPLOY_COMMIT"
 }
 
 check_resources() {
@@ -155,6 +164,10 @@ build_all() {
     [[ -s apps/api/dist/main.js ]] || die 'No existe apps/api/dist/main.js después del build API.'
     [[ -d apps/web/dist && -n "$(find apps/web/dist -mindepth 1 -print -quit)" ]] || die 'apps/web/dist está vacío.'
     [[ -d apps/admin/dist && -n "$(find apps/admin/dist -mindepth 1 -print -quit)" ]] || die 'apps/admin/dist está vacío.'
+
+    # Metadata pública para verificar exactamente qué commit sirve Nginx.
+    printf '{"commit":"%s","builtAt":"%s"}\n' "$DEPLOY_COMMIT" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > apps/web/dist/release.json
+    cp apps/web/dist/release.json apps/admin/dist/release.json
 }
 
 publish_frontends() {
@@ -175,6 +188,7 @@ publish_frontends() {
 deploy_api() {
     mkdir -p logs
     export FINIX_ROOT="$SCRIPT_DIR"
+    export FINIX_COMMIT="$DEPLOY_COMMIT"
     if pm2 describe finix-api >/dev/null 2>&1; then pm2 reload ops/ecosystem.config.cjs --only finix-api --env production --update-env; else pm2 start ops/ecosystem.config.cjs --only finix-api --env production; fi
 }
 
@@ -226,10 +240,11 @@ configure_nginx() {
 }
 
 health_api() {
-    local status attempt
+    local status attempt body
     for attempt in {1..10}; do
-        status="$(curl -sS --max-time 5 -o /dev/null -w '%{http_code}' 'http://127.0.0.1:3010/health' || true)"
-        [[ "$status" == 200 ]] && { ok "API OK (HTTP 200, intento $attempt)"; return; }
+        body="$(curl -sS --max-time 5 'http://127.0.0.1:3010/health' || true)"
+        status="$(printf '%s' "$body" | node -e "let s=''; process.stdin.on('data', d => s += d).on('end', () => { try { const v = JSON.parse(s); process.stdout.write(String(v.status === 'ok' && v.commit === '$DEPLOY_COMMIT' ? 200 : 409)); } catch { process.stdout.write('000'); } });")"
+        [[ "$status" == 200 ]] && { ok "API OK (commit $DEPLOY_COMMIT, intento $attempt)"; return; }
         log "API intento $attempt/10: HTTP ${status:-error}"; sleep 2
     done
     pm2 logs finix-api --lines 40 --nostream || true
@@ -237,7 +252,7 @@ health_api() {
 }
 
 health_external() {
-    local url local_index live_index status expected_js expected_css actual_js actual_css
+    local url local_index live_index release_live status expected_js expected_css actual_js actual_css
     for url in https://finixarg.com https://admin.finixarg.com; do
         if [[ "$url" == 'https://finixarg.com' ]]; then
             local_index='apps/web/dist/index.html'
@@ -250,6 +265,10 @@ health_external() {
         status="$(curl -LfsS --max-time 20 -o "$live_index" -w '%{http_code}' "$url/?deploy=$STAMP" || true)"
         [[ "$status" =~ ^2[0-9][0-9]$|^3[0-9][0-9]$ ]] || die "Health check externo falló: $url (HTTP ${status:-error})"
 
+        release_live="$(curl -LfsS --max-time 20 "$url/release.json?deploy=$STAMP" || true)"
+        grep -Fq "\"commit\":\"$DEPLOY_COMMIT\"" <<< "$release_live" || \
+            die "El dominio $url responde una release distinta (esperado commit $DEPLOY_COMMIT; release: ${release_live:-sin metadata})."
+
         expected_js="$(grep -oE 'src="/assets/index-[^"]+\.js"' "$local_index" | head -n1 || true)"
         expected_css="$(grep -oE 'href="/assets/index-[^"]+\.css"' "$local_index" | head -n1 || true)"
         actual_js="$(grep -oE 'src="/assets/index-[^"]+\.js"' "$live_index" | head -n1 || true)"
@@ -259,7 +278,7 @@ health_external() {
         [[ "$actual_js" == "$expected_js" && "$actual_css" == "$expected_css" ]] || \
             die "El dominio $url responde HTTP $status pero sigue sirviendo assets antiguos (esperado: $expected_js y $expected_css; recibido: ${actual_js:-sin JS} y ${actual_css:-sin CSS})."
 
-        ok "$url (HTTP $status, frontend actualizado: $expected_js)"
+        ok "$url (HTTP $status, commit $DEPLOY_COMMIT, frontend actualizado: $expected_js)"
     done
 }
 

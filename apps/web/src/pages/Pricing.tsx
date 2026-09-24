@@ -419,7 +419,7 @@ export default function Pricing() {
     const syncFromSession = useAuthStore(s => s.syncFromSession);
     const [searchParams] = useSearchParams();
     const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-    const [renewalPlan, setRenewalPlan] = useState<'PRO' | 'Creador' | null>(null);
+    const [renewalPlan, setRenewalPlan] = useState<'Creador' | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<string | null>(searchParams.get('status'));
 
     useEffect(() => {
@@ -429,20 +429,38 @@ export default function Pricing() {
         else if (status === 'pending') setPaymentStatus('pending');
     }, [searchParams, syncFromSession]);
 
+    const startProCheckout = async () => {
+        setLoadingPlan('PRO');
+        try {
+            const res = await apiFetch('/stripe/subscriptions/pro/checkout', { method: 'POST' });
+            const data = await res.json().catch(() => null);
+            if (!res.ok) throw new Error(data?.message || 'No se pudo conectar con Stripe');
+            if (!data?.url) throw new Error('Stripe no devolvió la URL de checkout');
+            window.location.href = data.url;
+        } catch (error: any) {
+            alert(error.message || 'Ocurrió un error inesperado al conectar con Stripe.');
+            setLoadingPlan(null);
+        }
+    };
+
     const handleUpgrade = async (planType: 'PRO' | 'Creador') => {
         if (isJuan) {
             navigate(planType === 'Creador' ? '/comunidades' : '/mercado');
             return;
         }
         if (!user) { navigate(`/auth?redirect=${encodeURIComponent('/pricing')}&plan=${planType}`); return; }
-        setRenewalPlan(planType);
+        if (planType === 'PRO') {
+            void startProCheckout();
+            return;
+        }
+        setRenewalPlan('Creador');
     };
 
     const confirmCheckout = async (autoRenew: boolean) => {
         if (!renewalPlan) return;
         const planType = renewalPlan;
         setLoadingPlan(planType);
-        const endpoint = planType === 'PRO' ? '/mercadopago/checkout/pro' : '/mercadopago/checkout/creator';
+        const endpoint = '/mercadopago/checkout/creator';
         try {
             const res = await apiFetch(endpoint, {
                 method: 'POST',
@@ -461,10 +479,16 @@ export default function Pricing() {
         }
     };
 
-    const [prices, setPrices] = useState({ pro: 8500, creator: 29900 });
+    const [prices, setPrices] = useState({ proUsd: 4, creatorArs: 29900 });
     useEffect(() => {
-        apiFetch('/mercadopago/config').then(r => r.json()).then(d => {
-            if (d.proPriceArs || d.creatorPriceArs) setPrices({ pro: d.proPriceArs || 8500, creator: d.creatorPriceArs || 29900 });
+        Promise.all([
+            apiFetch('/stripe/config').then(r => r.json()),
+            apiFetch('/mercadopago/config').then(r => r.json()),
+        ]).then(([stripe, mercadoPago]) => {
+            setPrices({
+                proUsd: Number(stripe?.proPriceUsd) || 4,
+                creatorArs: Number(mercadoPago?.creatorPriceArs) || 29900,
+            });
         }).catch(() => {});
     }, []);
 
@@ -481,7 +505,7 @@ export default function Pricing() {
             highlight: false,
         },
         {
-            name: 'PRO', price: isJuan ? '$0' : `$${prices.pro.toLocaleString('es-AR')}`, period: isJuan ? ' (Vitalicio)' : ' ARS/mes',
+            name: 'PRO', price: isJuan ? '$0' : `$${prices.proUsd.toFixed(2)}`, period: isJuan ? ' (Vitalicio)' : ' USD/mes',
             description: 'Para inversores que quieren maximizar retornos con la suite cuantitativa completa de Finix.',
             features: [
                 'Todo lo del plan Free',
@@ -494,7 +518,7 @@ export default function Pricing() {
                 'Noticias financieras en vivo con análisis algorítmico de sentimiento e impacto por ticker',
                 'Calendario oficial TradingView con fechas ex-dividend y sorpresas de earnings',
                 'Alertas de Mercado 24/7 por precio y volumen institucional vía Email y Telegram',
-                'Opción de cobro recurrente mensual en ARS (cancelable desde Configuración)',
+                'Cobro mensual automático en USD mediante Stripe (cancelable desde Configuración)',
                 'Soporte prioritario 24/7'
             ],
             missingFeatures: ['Creación de comunidades propias monetizadas'],
@@ -503,7 +527,7 @@ export default function Pricing() {
             icon: Sparkles,
         },
         {
-            name: 'Creador', price: isJuan ? '$0' : `$${prices.creator.toLocaleString('es-AR')}`, period: isJuan ? ' (Vitalicio)' : ' ARS/mes',
+            name: 'Creador', price: isJuan ? '$0' : `$${prices.creatorArs.toLocaleString('es-AR')}`, period: isJuan ? ' (Vitalicio)' : ' ARS/mes',
             description: 'Para líderes de opinión, educadores y analistas financieros profesionales.',
             features: [
                 'Todo lo del plan PRO incluido al 100%',
@@ -581,19 +605,19 @@ export default function Pricing() {
                 {paymentStatus === 'approved' && (
                     <div className="max-w-2xl mx-auto mb-8 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-3 text-emerald-400 animate-in fade-in">
                         <CheckCircle2 className="w-5 h-5 shrink-0" />
-                        <div><h4 className="font-bold text-sm">¡Pago procesado con éxito en Mercado Pago!</h4><p className="text-xs text-emerald-400/80 mt-0.5">Tu membresía ha sido activada. Ya tenés acceso a todas las funciones premium de Finix.</p></div>
+                        <div><h4 className="font-bold text-sm">¡Pago procesado con éxito!</h4><p className="text-xs text-emerald-400/80 mt-0.5">Tu membresía ha sido activada. Ya tenés acceso a todas las funciones premium de Finix.</p></div>
                     </div>
                 )}
                 {paymentStatus === 'failure' && (
                     <div className="max-w-2xl mx-auto mb-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 text-red-400 animate-in fade-in">
                         <AlertCircle className="w-5 h-5 shrink-0" />
-                        <div><h4 className="font-bold text-sm">El pago no pudo completarse</h4><p className="text-xs text-red-400/80 mt-0.5">La operación fue rechazada o cancelada en Mercado Pago. Podés intentar nuevamente.</p></div>
+                        <div><h4 className="font-bold text-sm">El pago no pudo completarse</h4><p className="text-xs text-red-400/80 mt-0.5">La operación fue rechazada o cancelada. Podés intentar nuevamente.</p></div>
                     </div>
                 )}
                 {paymentStatus === 'pending' && (
                     <div className="max-w-2xl mx-auto mb-8 p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 flex items-center gap-3 text-yellow-400 animate-in fade-in">
                         <AlertCircle className="w-5 h-5 shrink-0" />
-                        <div><h4 className="font-bold text-sm">Pago pendiente de acreditación</h4><p className="text-xs text-yellow-400/80 mt-0.5">Mercado Pago está procesando tu pago. Tu suscripción se activará automáticamente al acreditarse.</p></div>
+                        <div><h4 className="font-bold text-sm">Pago pendiente de acreditación</h4><p className="text-xs text-yellow-400/80 mt-0.5">El proveedor está procesando tu pago. Tu suscripción se activará automáticamente al acreditarse.</p></div>
                     </div>
                 )}
 
@@ -856,9 +880,9 @@ export default function Pricing() {
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-primary"><Shield className="w-6 h-6" /></div>
                         <div className="space-y-1">
-                            <h4 className="font-bold text-sm text-foreground">Elegís si querés renovar automáticamente</h4>
+                            <h4 className="font-bold text-sm text-foreground">Facturación segura y transparente</h4>
                             <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
-                                Antes de pagar podés elegir entre un mes sin renovación o el cobro automático mensual. Si activás la renovación, podés cancelarla desde <strong>Configuración &gt; Suscripción</strong>.
+                                El plan PRO se cobra automáticamente cada mes en USD mediante Stripe. El plan Creador permite elegir renovación mensual con Mercado Pago. Podés cancelar desde <strong>Configuración &gt; Suscripción</strong>.
                             </p>
                         </div>
                     </div>
@@ -872,7 +896,7 @@ export default function Pricing() {
             <SubscriptionRenewalChoice
                 open={renewalPlan !== null}
                 planName={renewalPlan === 'Creador' ? 'Creador' : 'Finix PRO'}
-                monthlyPrice={(renewalPlan === 'Creador' ? prices.creator : prices.pro).toLocaleString('es-AR')}
+                monthlyPrice={prices.creatorArs.toLocaleString('es-AR')}
                 busy={loadingPlan !== null}
                 onClose={() => setRenewalPlan(null)}
                 onConfirm={(autoRenew) => { void confirmCheckout(autoRenew); }}

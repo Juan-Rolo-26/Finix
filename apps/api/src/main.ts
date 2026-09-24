@@ -73,6 +73,7 @@ async function bootstrap() {
     httpAdapter.get('/health', (_req, res) => {
         res.status(200).json({
             status: 'ok',
+            commit: process.env.FINIX_COMMIT || 'unknown',
             timestamp: new Date().toISOString(),
             uptime: process.uptime(),
             environment: process.env.NODE_ENV || 'development',

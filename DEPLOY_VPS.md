@@ -247,7 +247,9 @@ Configurá estos secrets en **Settings > Secrets and variables > Actions**:
 - `VPS_SSH_KEY`: clave privada SSH; alternativamente, `VPS_PASSWORD`.
 - `VPS_PORT`: opcional; por defecto `22`.
 
-Cada push aprobado a `main` ejecuta `bash deploy.sh` en el checkout Finix del VPS. El script construye Web, Admin y API, publica Web y Admin en releases y comprueba que los dos dominios entreguen los assets de la versión nueva.
+Cada push aprobado a `main` ejecuta `bash deploy.sh` en el checkout Finix correcto del VPS. El script construye Web, Admin y API, publica Web y Admin en releases y comprueba que los dos dominios entreguen el commit exacto de la versión nueva mediante `/release.json`. El endpoint de salud público es `/health` (no `/api/health`).
+
+El deploy canónico es el `deploy.sh` de la raíz del repositorio. `ops/scripts/deploy.sh` solo conserva compatibilidad y delega a ese script; no debe usarse como un deploy independiente.
 
 Para disparar un deploy manual desde GitHub, usá el workflow **Deploy to VPS** en la pestaña **Actions**. No configures a la vez un webhook de push que ejecute otro deploy.
 
