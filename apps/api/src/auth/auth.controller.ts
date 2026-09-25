@@ -90,12 +90,29 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @HttpCode(HttpStatus.OK)
     @Post('sync-user')
-    syncUser(@Request() req: any, @Body() body: { username?: string }) {
-        return this.authService.syncUser(
+    async syncUser(
+        @Request() req: any,
+        @Body() body: { username?: string },
+        @Req() httpReq: ExpressRequest,
+        @Res({ passthrough: true }) res: Response,
+    ) {
+        const user = await this.authService.syncUser(
             req.user.id,
             req.user.email,
             body.username ?? req.user.username,
         );
+
+        // Supabase/Google gives us the identity token, but Finix also needs
+        // its own long-lived browser session so refresh works after a reload
+        // or browser restart. The cookie is HttpOnly and is revoked by /logout.
+        const session = await this.authService.createPersistentSession(
+            user.id,
+            this.getRequestMeta(httpReq),
+        );
+        this.attachAuthCookies(res, session);
+
+        // Keep the existing frontend contract: sync-user returns the profile.
+        return user;
     }
 
     /**

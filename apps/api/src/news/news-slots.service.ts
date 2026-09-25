@@ -6,22 +6,9 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import * as cheerio from 'cheerio';
+import { DEFAULT_NEWS_CATEGORIES } from './news-catalog';
 
 const SLOT_COUNT = 5;
-
-const INITIAL_CATEGORIES = [
-    { name: 'Economía', slug: 'economia', color: '#10b981', icon: 'TrendingUp', displayOrder: 1 },
-    { name: 'Mercados', slug: 'mercados', color: '#ef4444', icon: 'BarChart3', displayOrder: 2 },
-    { name: 'Argentina', slug: 'argentina', color: '#3b82f6', icon: 'DollarSign', displayOrder: 3 },
-    { name: 'Global', slug: 'global', color: '#06b6d4', icon: 'Globe', displayOrder: 4 },
-    { name: 'Acciones', slug: 'acciones', color: '#a855f7', icon: 'BarChart2', displayOrder: 5 },
-    { name: 'Criptomonedas', slug: 'cripto', color: '#f59e0b', icon: 'Bitcoin', displayOrder: 6 },
-    { name: 'ETFs', slug: 'etfs', color: '#6366f1', icon: 'PieChart', displayOrder: 7 },
-    { name: 'Real Estate', slug: 'real-estate', color: '#10b981', icon: 'Home', displayOrder: 8 },
-    { name: 'Finanzas Personales', slug: 'finanzas-personales', color: '#14b8a6', icon: 'Wallet', displayOrder: 9 },
-    { name: 'Commodities', slug: 'commodities', color: '#eab308', icon: 'TrendingUp', displayOrder: 10 },
-    { name: 'Inteligencia Artificial', slug: 'ai', color: '#ec4899', icon: 'Cpu', displayOrder: 11 },
-];
 
 const PRIVATE_IP_PATTERNS = [
     /^127\./,
@@ -122,10 +109,12 @@ export class NewsSlotsService {
                         sourceName: true,
                         publishedAt: true,
                         author: true,
+                        relevanceScore: true,
                     },
                 },
             },
             orderBy: [
+                { article: { relevanceScore: 'desc' } },
                 { article: { publishedAt: 'desc' } },
                 { updatedAt: 'desc' },
             ],
@@ -147,6 +136,7 @@ export class NewsSlotsService {
                 category: s.category.name,
                 categorySlug: s.category.slug,
                 categoryColor: s.category.color || 'hsl(var(--primary))',
+                relevanceScore: s.article!.relevanceScore,
             }));
     }
 
@@ -274,6 +264,39 @@ export class NewsSlotsService {
                 newArticle: { select: { id: true, title: true, url: true } },
             },
         });
+    }
+
+    /** Replace the public slots with the best automatic articles for a category. */
+    async replaceAutomaticSlots(categoryId: string, articleIds: string[]) {
+        const category = await this.prisma.newsCategory.findUnique({
+            where: { id: categoryId },
+            select: { slug: true },
+        });
+        if (!category) throw new NotFoundException('Categoría no encontrada');
+
+        await this.ensureSlotsExist(categoryId, category.slug);
+        const slots = await this.prisma.newsSlot.findMany({
+            where: { categoryId },
+            orderBy: { position: 'asc' },
+        });
+
+        for (let index = 0; index < slots.length; index += 1) {
+            const slot = slots[index];
+            const nextArticleId = articleIds[index] || null;
+            if (slot.articleId === nextArticleId) continue;
+
+            await this.prisma.newsSlot.update({
+                where: { id: slot.id },
+                data: { articleId: nextArticleId },
+            });
+            await this.prisma.newsSlotHistory.create({
+                data: {
+                    slotId: slot.id,
+                    previousArticleId: slot.articleId || undefined,
+                    newArticleId: nextArticleId || undefined,
+                },
+            });
+        }
     }
 
     async scrapeUrlPreview(url: string): Promise<ScrapedMetadata> {
@@ -407,11 +430,11 @@ export class NewsSlotsService {
     }
 
     async seedCategoriesAndSlots() {
-        for (const cat of INITIAL_CATEGORIES) {
+        for (const cat of DEFAULT_NEWS_CATEGORIES) {
             try {
                 const category = await this.prisma.newsCategory.upsert({
                     where: { slug: cat.slug },
-                    update: { displayOrder: cat.displayOrder, color: cat.color, icon: cat.icon },
+                    update: { name: cat.name, displayOrder: cat.displayOrder, color: cat.color, icon: cat.icon },
                     create: {
                         name: cat.name,
                         slug: cat.slug,
@@ -419,6 +442,10 @@ export class NewsSlotsService {
                         icon: cat.icon,
                         displayOrder: cat.displayOrder,
                         isActive: true,
+                        updateFrequency: cat.updateFrequency,
+                        updateHour: cat.updateHour,
+                        updateMinute: cat.updateMinute,
+                        updateDayOfWeek: cat.updateDayOfWeek,
                     },
                 });
                 await this.ensureSlotsExist(category.id, category.slug);

@@ -80,6 +80,14 @@ export interface AnalysisSummary {
 
 const inputClass = 'w-full min-w-0 rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all';
 const labelClass = 'text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block';
+const toEmailMediaUrl = (value?: string | null) => {
+    if (!value) return '';
+    try {
+        return new URL(value, 'https://finixarg.com').toString();
+    } catch {
+        return value;
+    }
+};
 
 export default function EmailMarketing() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -303,6 +311,14 @@ export default function EmailMarketing() {
                 const ticker = analysis.ticker || analysis.symbol || fallbackTicker || 'AAPL';
                 const name = analysis.companyName || ticker;
                 const publicUrl = `https://finixarg.com/analysis/${encodeURIComponent(analysis.slug || analysis.id)}`;
+                let technicalData: Record<string, any> = {};
+                try {
+                    technicalData = typeof analysis.technicalData === 'string'
+                        ? JSON.parse(analysis.technicalData)
+                        : (analysis.technicalData || {});
+                } catch {
+                    technicalData = {};
+                }
 
                 setForm(f => ({
                     ...f,
@@ -315,6 +331,7 @@ export default function EmailMarketing() {
                     ctaLabel: 'Ver Análisis Completo en Finix PRO',
                     ctaUrl: publicUrl,
                     imageUrl: analysis.logoUrl || f.imageUrl,
+                    chartUrl: toEmailMediaUrl(technicalData.chartSnapshotUrl) || f.chartUrl,
                 }));
                 setNotice(`Análisis de ${name} adjuntado exitosamente.`);
                 setHtmlPreview('');
@@ -400,6 +417,30 @@ export default function EmailMarketing() {
             setHtmlPreview('');
             setNotice('Imagen cargada con éxito');
         });
+    };
+
+    const handleUploadChartImage = (file?: File) => {
+        if (!file) return;
+        const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+            setError('La captura del gráfico debe ser JPG, PNG, WEBP o GIF.');
+            return;
+        }
+        setBusy(true);
+        setError(null);
+        setNotice(null);
+        void (async () => {
+            try {
+                const url = await uploadEmailImage(file);
+                setForm({ ...form, chartUrl: url });
+                setHtmlPreview('');
+                setNotice('Captura del gráfico cargada. Actualizá la vista previa para verla en el email.');
+            } catch (err: any) {
+                setError(err?.message || 'No se pudo cargar la captura del gráfico.');
+            } finally {
+                setBusy(false);
+            }
+        })();
     };
 
     // Gestión de Alertas
@@ -1150,12 +1191,76 @@ export default function EmailMarketing() {
                                 )}
                             </div>
 
-                            {/* Gráfico interactivo TradingView */}
-                            <div className="pt-2">
-                                <TradingViewChartWidget
-                                    symbol={form.ticker}
-                                    height={420}
-                                />
+                            {/* Captura exacta que se enviará en el email */}
+                            <div className="pt-2 rounded-2xl border border-primary/25 bg-primary/5 p-4 space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                                    <div>
+                                        <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                                            <ImagePlus className="w-4 h-4 text-primary" />
+                                            Captura del gráfico para el email
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
+                                            Dibujá en el gráfico, descargá la captura con el ícono de cámara y subila acá. El email mostrará la imagen completa, con todas tus líneas y anotaciones.
+                                        </p>
+                                    </div>
+                                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-muted text-muted-foreground border border-border self-start">
+                                        {form.chartUrl ? 'Captura cargada' : 'Sin captura'}
+                                    </span>
+                                </div>
+
+                                {form.chartUrl ? (
+                                    <div className="rounded-xl border border-border/70 bg-background/70 p-2 overflow-hidden">
+                                        <img
+                                            src={form.chartUrl}
+                                            alt={`Captura del análisis de ${form.ticker || 'activo'}`}
+                                            className="w-full max-h-[520px] object-contain rounded-lg bg-white"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="min-h-[130px] rounded-xl border border-dashed border-border bg-background/50 flex items-center justify-center text-center px-5">
+                                        <p className="text-xs text-muted-foreground">Todavía no hay una captura. El email no enviará un gráfico vacío.</p>
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <label className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold cursor-pointer transition-colors">
+                                        <ImagePlus className="w-4 h-4" />
+                                        {form.chartUrl ? 'Reemplazar captura' : 'Subir captura del gráfico'}
+                                        <input
+                                            type="file"
+                                            accept="image/png,image/jpeg,image/webp,image/gif"
+                                            className="hidden"
+                                            onChange={e => handleUploadChartImage(e.target.files?.[0])}
+                                        />
+                                    </label>
+                                    {form.chartUrl && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setForm(f => ({ ...f, chartUrl: '' }));
+                                                setHtmlPreview('');
+                                            }}
+                                            className="px-3.5 py-2.5 rounded-xl border border-rose-500/25 text-rose-500 hover:bg-rose-500/10 text-xs font-bold transition-colors"
+                                        >
+                                            Quitar captura
+                                        </button>
+                                    )}
+                                </div>
+
+                                <details className="rounded-xl border border-border/60 bg-background/40 overflow-hidden">
+                                    <summary className="px-3.5 py-2.5 text-xs font-semibold text-muted-foreground cursor-pointer hover:text-foreground">
+                                        Abrir gráfico en vivo para dibujar o tomar una nueva captura
+                                    </summary>
+                                    <div className="p-3 border-t border-border/50">
+                                        <TradingViewChartWidget
+                                            symbol={form.ticker}
+                                            height={420}
+                                        />
+                                        <p className="text-[11px] text-muted-foreground mt-2">
+                                            Usá el botón de cámara de TradingView para descargar la imagen y después subila arriba.
+                                        </p>
+                                    </div>
+                                </details>
                             </div>
                         </div>
 

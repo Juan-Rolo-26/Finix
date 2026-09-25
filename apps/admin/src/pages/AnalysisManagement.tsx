@@ -769,6 +769,8 @@ export default function AnalysisManagement() {
     const [fetchingValueCreation, setFetchingValueCreation] = useState(false);
     const [autoTickerInput, setAutoTickerInput] = useState('');
     const [tvMessage, setTvMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [uploadingSnapshot, setUploadingSnapshot] = useState(false);
+    const [snapshotMessage, setSnapshotMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [publishedFeedback, setPublishedFeedback] = useState<{ slug: string; ticker: string; companyName: string } | null>(null);
 
     const getWebAnalysisUrl = (slug: string) => {
@@ -938,6 +940,51 @@ export default function AnalysisManagement() {
         }
     };
 
+    const handleSnapshotUpload = async (file?: File) => {
+        if (!file) return;
+
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+            setSnapshotMessage({ type: 'error', text: 'La captura debe ser JPG, PNG, WEBP o GIF.' });
+            return;
+        }
+
+        if (file.size > 15 * 1024 * 1024) {
+            setSnapshotMessage({ type: 'error', text: 'La captura no puede superar los 15 MB.' });
+            return;
+        }
+
+        setUploadingSnapshot(true);
+        setSnapshotMessage(null);
+        try {
+            const body = new FormData();
+            body.append('file', file);
+            const response = await adminFetch('/admin/analysis/upload-snapshot', {
+                method: 'POST',
+                body,
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(Array.isArray(error.message) ? error.message.join(', ') : (error.message || 'No se pudo subir la captura.'));
+            }
+
+            const uploaded = await response.json();
+            setFormData((previous: any) => ({
+                ...previous,
+                technicalData: {
+                    ...(previous.technicalData || {}),
+                    chartSnapshotUrl: uploaded.url,
+                },
+            }));
+            setSnapshotMessage({ type: 'success', text: 'Captura subida. Guardá el análisis para publicarla.' });
+        } catch (error: any) {
+            setSnapshotMessage({ type: 'error', text: error.message || 'No se pudo subir la captura.' });
+        } finally {
+            setUploadingSnapshot(false);
+        }
+    };
+
     const handleEdit = async (item: any) => {
         try {
             const res = await adminFetch(`/admin/analysis/${item.id}`);
@@ -945,6 +992,7 @@ export default function AnalysisManagement() {
             setFormData(data.data || item);
             setAutoTickerInput(item.ticker || item.symbol || '');
             setTvMessage(null);
+            setSnapshotMessage(null);
             setIsFormOpen(true);
             setActiveTab('overview');
         } catch (e) {
@@ -952,6 +1000,7 @@ export default function AnalysisManagement() {
             setFormData(item);
             setAutoTickerInput(item.ticker || item.symbol || '');
             setTvMessage(null);
+            setSnapshotMessage(null);
             setIsFormOpen(true);
         }
     };
@@ -1157,6 +1206,7 @@ export default function AnalysisManagement() {
                             });
                             setAutoTickerInput('');
                             setTvMessage(null);
+                            setSnapshotMessage(null);
                             setIsFormOpen(true);
                             setActiveTab('overview');
                         }} className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold">
@@ -2553,7 +2603,7 @@ export default function AnalysisManagement() {
                                 />
                             </div>
 
-                            {/* Canvas del Gráfico Interactivo con Herramientas de Dibujo y Auto-Guardado */}
+                            {/* Canvas del Gráfico Interactivo y captura pública del análisis */}
                             {(() => {
                                 const currentChartStorageId = formData.technicalData?.chartStorageId || (formData.id 
                                     ? `finix_analysis_${formData.id}` 
@@ -2570,7 +2620,7 @@ export default function AnalysisManagement() {
                                                     Lienzo Pro Interactivo
                                                 </span>
                                                 <span className="text-xs text-muted-foreground">
-                                                    Trazá líneas, canales, rectángulos o indicadores: se guardan automáticamente en la nube de Finix.
+                                                    Trazá tu análisis y luego subí una captura para conservar exactamente tus líneas y anotaciones.
                                                 </span>
                                             </div>
                                             <div className="text-xs font-mono font-bold text-foreground bg-muted border border-border px-3 py-1 rounded-lg self-start sm:self-auto">
@@ -2584,26 +2634,70 @@ export default function AnalysisManagement() {
                                             chartStorageId={currentChartStorageId}
                                         />
 
-                                        {/* Tarjeta de Confirmación de Auto-Guardado y Proyección Única */}
-                                        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 sm:p-5">
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                <div className="flex items-start sm:items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                                        <CheckCircle2 className="w-5 h-5" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                                            Sincronización Automática de Gráfico Único Activa
-                                                        </h4>
-                                                        <p className="text-xs text-muted-foreground mt-0.5">
-                                                            ¡No necesitás sacar capturas ni subir fotos! Cada trazado de líneas, figuras y soportes se guarda tal cual en tiempo real y se proyecta interactivo para cada usuario.
-                                                        </p>
-                                                    </div>
+                                        {/* Captura exacta que verá el usuario en la publicación */}
+                                        <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4 sm:p-5 space-y-4">
+                                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                                        <LineChart className="w-4 h-4 text-primary" />
+                                                        Captura pública del análisis
+                                                    </h4>
+                                                    <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
+                                                        Subí la imagen final del gráfico después de dibujar. Esa captura se mostrará sin cambios a los usuarios; debajo seguirá disponible el gráfico en vivo.
+                                                    </p>
                                                 </div>
-                                                <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
-                                                    <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                                        ID: {currentChartStorageId}
-                                                    </span>
+                                                <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg bg-muted text-muted-foreground border border-border self-start">
+                                                    {formData.technicalData?.chartSnapshotUrl ? 'Captura cargada' : 'Falta captura'}
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-4 items-start">
+                                                {formData.technicalData?.chartSnapshotUrl ? (
+                                                    <div className="rounded-xl border border-border/70 bg-background/70 p-2 overflow-hidden">
+                                                        <img
+                                                            src={formData.technicalData.chartSnapshotUrl}
+                                                            alt="Vista previa de la captura técnica"
+                                                            className="w-full max-h-[420px] object-contain rounded-lg"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="min-h-[150px] rounded-xl border border-dashed border-border bg-background/50 flex items-center justify-center text-center px-5">
+                                                        <p className="text-xs text-muted-foreground">Todavía no hay una captura cargada.</p>
+                                                    </div>
+                                                )}
+
+                                                <div className="space-y-2">
+                                                    <input
+                                                        id="analysis-chart-snapshot"
+                                                        type="file"
+                                                        accept="image/jpeg,image/png,image/webp,image/gif"
+                                                        className="sr-only"
+                                                        onChange={(event) => handleSnapshotUpload(event.target.files?.[0])}
+                                                    />
+                                                    <label
+                                                        htmlFor="analysis-chart-snapshot"
+                                                        className={`w-full min-h-11 px-3 py-2 rounded-xl border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer flex items-center justify-center gap-2 text-xs font-bold text-center ${uploadingSnapshot ? 'pointer-events-none opacity-60' : ''}`}
+                                                    >
+                                                        {uploadingSnapshot ? <Loader2 className="w-4 h-4 animate-spin" /> : <LineChart className="w-4 h-4" />}
+                                                        {uploadingSnapshot ? 'Subiendo...' : formData.technicalData?.chartSnapshotUrl ? 'Reemplazar captura' : 'Subir captura'}
+                                                    </label>
+                                                    {formData.technicalData?.chartSnapshotUrl && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFormData((previous: any) => ({
+                                                                ...previous,
+                                                                technicalData: { ...(previous.technicalData || {}), chartSnapshotUrl: null },
+                                                            }))}
+                                                            className="w-full px-3 py-2 rounded-xl border border-rose-500/25 text-rose-500 hover:bg-rose-500/10 transition-colors text-xs font-bold flex items-center justify-center gap-2"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" /> Quitar captura
+                                                        </button>
+                                                    )}
+                                                    {snapshotMessage && (
+                                                        <p className={`text-xs leading-relaxed ${snapshotMessage.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
+                                                            {snapshotMessage.text}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

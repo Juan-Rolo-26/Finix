@@ -231,6 +231,24 @@ export class AuthService implements OnModuleInit {
         };
     }
 
+    /**
+     * Creates the same persistent Finix session used by email/password login.
+     * OAuth providers authenticate the user in Supabase first, so the
+     * controller calls this method after syncing the Prisma profile. This
+     * keeps Google and email login consistent across browser restarts.
+     */
+    async createPersistentSession(userId: string, meta: SessionMeta = {}) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            throw new UnauthorizedException('Usuario no encontrado');
+        }
+        if (user.status === 'BANNED' || user.status === 'SUSPENDED') {
+            throw new UnauthorizedException('Cuenta suspendida o baneada');
+        }
+
+        return this.buildAuthResponse(user, meta);
+    }
+
     private getManagedPasswordHash(user: { password?: string | null }) {
         if (!user.password || !user.password.startsWith('$argon2')) {
             return null;

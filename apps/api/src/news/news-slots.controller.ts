@@ -12,6 +12,7 @@ import {
     Query,
 } from '@nestjs/common';
 import { NewsSlotsService } from './news-slots.service';
+import { NewsSyncService } from './news-sync.service';
 import { AdminGuard } from '../admin/admin.guard';
 import type { Request } from 'express';
 
@@ -52,7 +53,57 @@ export class NewsSlotsPublicController {
 @Controller('admin/news/slots')
 @UseGuards(AdminGuard)
 export class NewsSlotsAdminController {
-    constructor(private readonly slotsService: NewsSlotsService) {}
+    constructor(
+        private readonly slotsService: NewsSlotsService,
+        private readonly syncService: NewsSyncService,
+    ) {}
+
+    /** GET /admin/news/slots/automation/overview */
+    @Get('automation/overview')
+    getAutomationOverview() {
+        return this.syncService.getOverview();
+    }
+
+    /** POST /admin/news/slots/automation/run */
+    @Post('automation/run')
+    @HttpCode(HttpStatus.OK)
+    runAutomation(@Body() body: any) {
+        return this.syncService.runManual(body);
+    }
+
+    /** PATCH /admin/news/slots/automation/categories/:id */
+    @Patch('automation/categories/:id')
+    updateAutomationCategory(@Param('id') id: string, @Body() body: any) {
+        return this.syncService.updateCategorySchedule(id, body);
+    }
+
+    /** GET /admin/news/slots/automation/sources */
+    @Get('automation/sources')
+    getAutomationSources() {
+        return this.syncService.getSources();
+    }
+
+    /** POST /admin/news/slots/automation/sources */
+    @Post('automation/sources')
+    createAutomationSource(@Body() body: any) {
+        return this.syncService.createSource(body);
+    }
+
+    /** PATCH /admin/news/slots/automation/sources/:id */
+    @Patch('automation/sources/:id')
+    updateAutomationSource(@Param('id') id: string, @Body() body: any) {
+        return this.syncService.updateSource(id, body);
+    }
+
+    /** PATCH /admin/news/slots/automation/sources/:sourceId/categories/:categoryId */
+    @Patch('automation/sources/:sourceId/categories/:categoryId')
+    updateSourceCategoryPolicy(
+        @Param('sourceId') sourceId: string,
+        @Param('categoryId') categoryId: string,
+        @Body() body: any,
+    ) {
+        return this.syncService.updateSourceCategoryPolicy(sourceId, categoryId, body);
+    }
 
     /** GET /admin/news/slots/categories — all categories (including inactive) */
     @Get('categories')

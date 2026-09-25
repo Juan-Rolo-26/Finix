@@ -170,20 +170,17 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 }
 
 async function syncBackendUser(username?: string) {
-    let response = await withTimeout(apiFetch('/auth/me'), BACKEND_TIMEOUT_MS);
-
-    if (response.status === 401) {
-        response = await withTimeout(
-            apiFetch('/auth/sync-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(username ? { username } : {}),
-            }),
-            BACKEND_TIMEOUT_MS
-        );
-    }
-
-    return response;
+    // This path is used when Supabase restored a Google/OAuth session. Call
+    // sync-user deliberately instead of only reading /auth/me: the backend
+    // uses this request to issue Finix's persistent HttpOnly refresh cookie.
+    return withTimeout(
+        apiFetch('/auth/sync-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(username ? { username } : {}),
+        }),
+        BACKEND_TIMEOUT_MS
+    );
 }
 
 function buildFallbackUser(session: { access_token: string; user: { id: string; email?: string; user_metadata?: Record<string, unknown> } }): import('@finix/shared').User {

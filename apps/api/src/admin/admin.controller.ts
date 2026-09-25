@@ -15,8 +15,11 @@ import {
     UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
+import { extname } from 'path';
+import { readFileSync, unlinkSync } from 'fs';
 import { AdminGuard } from './admin.guard';
 import { PrismaService } from '../prisma.service';
 import {
@@ -38,6 +41,7 @@ import { AnalysisService } from '../analysis/analysis.service';
 import { ProEmailCampaignService } from './pro-email-campaign.service';
 import { ValueCreationService } from '../market/value-creation.service';
 import { EmailMarketingService } from './email-marketing.service';
+import { buildUploadPublicPath, getUploadFolder } from '../uploads/upload-url.util';
 
 type AdminRequest = Request & {
     user?: {
@@ -47,6 +51,26 @@ type AdminRequest = Request & {
         sessionId?: string;
     };
 };
+
+const ANALYSIS_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_ANALYSIS_IMAGE_BYTES = 15 * 1024 * 1024;
+
+function hasExpectedAnalysisImageSignature(path: string, mimeType: string) {
+    const header = readFileSync(path).subarray(0, 16);
+    if (mimeType === 'image/jpeg') return header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
+    if (mimeType === 'image/png') return header.subarray(0, 8).toString('hex') === '89504e470d0a1a0a';
+    if (mimeType === 'image/gif') return header.subarray(0, 6).toString('ascii') === 'GIF87a' || header.subarray(0, 6).toString('ascii') === 'GIF89a';
+    if (mimeType === 'image/webp') return header.subarray(0, 4).toString('ascii') === 'RIFF' && header.subarray(8, 12).toString('ascii') === 'WEBP';
+    return false;
+}
+
+const analysisSnapshotStorage = diskStorage({
+    destination: (_req, _file, cb) => cb(null, getUploadFolder('analysis')),
+    filename: (_req, file, cb) => {
+        const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        cb(null, `${unique}${extname(file.originalname).toLowerCase()}`);
+    },
+});
 
 @Controller('admin')
 @UseGuards(AdminGuard, AdminPermissionsGuard)
@@ -230,6 +254,36 @@ export class AdminController {
         const data = await this.valueCreationService.getTickerValueCreation(cleanSymbol);
         if (!data) throw new BadRequestException(`No hay cobertura ROIC-WACC disponible para ${cleanSymbol.toUpperCase()}`);
         return { data };
+    }
+
+    @Post('analysis/upload-snapshot')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage: analysisSnapshotStorage,
+            limits: { fileSize: MAX_ANALYSIS_IMAGE_BYTES, files: 1 },
+            fileFilter: (_req, file, cb) => {
+                if (!ANALYSIS_IMAGE_MIMES.includes(file.mimetype)) {
+                    return cb(new BadRequestException('Solo se permiten capturas JPG, PNG, WEBP o GIF'), false);
+                }
+                cb(null, true);
+            },
+        }),
+    )
+    uploadAnalysisSnapshot(@UploadedFile() file: Express.Multer.File) {
+        if (!file) throw new BadRequestException('No se recibió ninguna captura');
+
+        if (!hasExpectedAnalysisImageSignature(file.path, file.mimetype)) {
+            try { unlinkSync(file.path); } catch { /* best effort cleanup */ }
+            throw new BadRequestException('El contenido de la captura no coincide con su tipo declarado');
+        }
+
+        return {
+            url: buildUploadPublicPath('analysis', file.filename),
+            mediaType: 'image',
+            originalName: file.originalname,
+            size: file.size,
+        };
     }
 
     @Get('analysis/:id')

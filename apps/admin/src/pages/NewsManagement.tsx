@@ -5,6 +5,7 @@ import {
     RefreshCw, AlertCircle, Image, FileText, Globe
 } from 'lucide-react';
 import { adminFetch } from '../lib/api';
+import NewsAutomationPanel from '../components/NewsAutomationPanel';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -611,6 +612,8 @@ export default function NewsManagement() {
                     Actualizar
                 </button>
             </div>
+
+            <NewsAutomationPanel />
 
             {loading ? (
                 <div className="flex items-center justify-center py-24">

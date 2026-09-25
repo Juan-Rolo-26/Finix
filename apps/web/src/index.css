@@ -1299,3 +1299,27 @@ body {
 .markets-view [class*="text-[13px]"] { font-size: 13.65px !important; }
 .markets-view [class*="text-[14px]"] { font-size: 14.7px !important; }
 .markets-view [class*="text-[15px]"] { font-size: 15.75px !important; }
+
+/* ─── Analysis readability ─── */
+/* Reports contain dense financial data; keep labels readable on desktop and mobile. */
+.analysis-page {
+    font-size: 1.06rem;
+}
+
+.analysis-page .text-xs { font-size: 0.86rem !important; line-height: 1.25rem !important; }
+.analysis-page .text-sm { font-size: 1rem !important; line-height: 1.5rem !important; }
+.analysis-page .text-base { font-size: 1.1rem !important; line-height: 1.7rem !important; }
+.analysis-page .text-lg { font-size: 1.2rem !important; line-height: 1.85rem !important; }
+.analysis-page .text-xl { font-size: 1.3rem !important; line-height: 1.95rem !important; }
+.analysis-page .text-2xl { font-size: 1.55rem !important; line-height: 2rem !important; }
+.analysis-page .text-3xl { font-size: 1.9rem !important; line-height: 2.3rem !important; }
+.analysis-page .text-4xl { font-size: 2.35rem !important; line-height: 2.75rem !important; }
+
+.analysis-page [class*="text-[9px]"],
+.analysis-page [class*="text-[10px]"],
+.analysis-page [class*="text-[11px]"],
+.analysis-page [class*="text-[12px]"],
+.analysis-page [class*="text-[13px]"] {
+    font-size: 0.86rem !important;
+    line-height: 1.25rem !important;
+}

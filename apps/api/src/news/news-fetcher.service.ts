@@ -2,13 +2,14 @@ import { Injectable } from '@nestjs/common';
 import * as Parser from 'rss-parser';
 import * as cheerio from 'cheerio';
 
-interface RawNewsItem {
+export interface RawNewsItem {
     title: string;
     summary: string;
     content: string;
     url: string;
     imageUrl?: string;
     source: string;
+    sourceUrl?: string;
     author?: string;
     publishedAt: Date;
     language?: string;
@@ -95,6 +96,160 @@ export class NewsFetcherService {
 
         console.log(`[NewsFetcher] Total news fetched: ${allNews.length}`);
         return allNews;
+    }
+
+    /**
+     * Fetches one source configured in the database. Keeping this method
+     * separate from the legacy aggregate fetch allows the scheduler to
+     * isolate failures and continue with the remaining sources.
+     */
+    async fetchConfiguredSource(source: {
+        name: string;
+        apiType?: string | null;
+        baseUrl?: string | null;
+        url?: string | null;
+        rssUrl?: string | null;
+        apiUrl?: string | null;
+        country?: string | null;
+        language?: string | null;
+    }): Promise<RawNewsItem[]> {
+        if (source.rssUrl) {
+            return this.fetchConfiguredRssSource(source);
+        }
+        if (source.apiUrl) return this.fetchConfiguredApiSource(source);
+        if (source.apiType === 'scraper' && source.baseUrl) return this.fetchConfiguredScraperSource(source);
+        throw new Error(`La fuente ${source.name} no tiene RSS, API ni scraping habilitado`);
+    }
+
+    private async fetchConfiguredRssSource(source: {
+        name: string;
+        baseUrl?: string | null;
+        url?: string | null;
+        rssUrl?: string | null;
+        country?: string | null;
+        language?: string | null;
+    }): Promise<RawNewsItem[]> {
+
+        const response = await fetch(source.rssUrl, {
+            headers: {
+                'User-Agent': 'FinixNewsBot/1.0 (+https://finixarg.com)',
+                Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
+            },
+            signal: AbortSignal.timeout(15_000),
+        });
+
+        if (!response.ok) {
+            throw new Error(`RSS ${source.name} respondió HTTP ${response.status}`);
+        }
+
+        const xml = await response.text();
+        const parsed = await this.rssParser.parseString(xml);
+        const items: RawNewsItem[] = [];
+
+        for (const item of parsed.items) {
+            if (!item.title || !item.link) continue;
+
+            let htmlContent = item.contentEncoded || item.content || item.description || '';
+            let cleanSummary = '';
+            let cleanContent = '';
+            let imageUrl = '';
+
+            if (htmlContent) {
+                const $ = cheerio.load(htmlContent);
+                const img = $('img').first();
+                imageUrl = img.attr('src') || '';
+                const text = $.text().replace(/\s+/g, ' ').trim();
+                cleanSummary = text.substring(0, 400);
+                cleanContent = text;
+            }
+
+            if (!imageUrl && item.mediaContent && item.mediaContent['$']?.url) {
+                imageUrl = item.mediaContent['$'].url;
+            }
+
+            const publishedAt = item.isoDate || item.pubDate
+                ? new Date(item.isoDate || item.pubDate as string)
+                : new Date();
+
+            items.push({
+                title: String(item.title).trim(),
+                summary: cleanSummary || String(item.description || '').replace(/<[^>]+>/g, '').trim().substring(0, 400),
+                content: cleanContent || cleanSummary,
+                url: String(item.link).trim(),
+                imageUrl: imageUrl || undefined,
+                source: source.name,
+                sourceUrl: source.baseUrl || source.url || undefined,
+                author: item.creator || source.name,
+                publishedAt: Number.isNaN(publishedAt.getTime()) ? new Date() : publishedAt,
+                language: source.language || (source.country === 'AR' ? 'es' : 'en'),
+            });
+
+            if (items.length >= 40) break;
+        }
+
+        return items;
+    }
+
+    private async fetchConfiguredApiSource(source: {
+        name: string;
+        baseUrl?: string | null;
+        apiUrl?: string | null;
+        country?: string | null;
+        language?: string | null;
+    }): Promise<RawNewsItem[]> {
+        if (!source.apiUrl) throw new Error(`La fuente ${source.name} no tiene apiUrl configurada`);
+        const response = await fetch(source.apiUrl, {
+            headers: { 'User-Agent': 'FinixNewsBot/1.0 (+https://finixarg.com)', Accept: 'application/json' },
+            signal: AbortSignal.timeout(15_000),
+        });
+        if (!response.ok) throw new Error(`API ${source.name} respondió HTTP ${response.status}`);
+        const payload: any = await response.json();
+        const records = Array.isArray(payload) ? payload : payload.articles || payload.results || payload.data || [];
+        if (!Array.isArray(records)) throw new Error(`API ${source.name} no devolvió una lista de noticias`);
+        return records.slice(0, 40).map((article: any) => ({
+            title: String(article.title || article.headline || '').trim(),
+            summary: String(article.description || article.summary || '').trim(),
+            content: String(article.content || article.description || article.summary || '').trim(),
+            url: String(article.url || article.link || article.webUrl || '').trim(),
+            imageUrl: article.image || article.imageUrl || article.urlToImage || undefined,
+            source: source.name,
+            sourceUrl: source.baseUrl || undefined,
+            author: article.author || source.name,
+            publishedAt: new Date(article.publishedAt || article.published_at || article.date || Date.now()),
+            language: source.language || (source.country === 'AR' ? 'es' : 'en'),
+        })).filter((article: RawNewsItem) => article.title && article.url);
+    }
+
+    private async fetchConfiguredScraperSource(source: {
+        name: string;
+        baseUrl?: string | null;
+        country?: string | null;
+        language?: string | null;
+    }): Promise<RawNewsItem[]> {
+        if (!source.baseUrl) throw new Error(`La fuente ${source.name} no tiene baseUrl configurada`);
+        const robotsUrl = new URL('/robots.txt', source.baseUrl).toString();
+        const robotsResponse = await fetch(robotsUrl, {
+            headers: { 'User-Agent': 'FinixNewsBot/1.0 (+https://finixarg.com)' },
+            signal: AbortSignal.timeout(8_000),
+        });
+        if (!robotsResponse.ok) throw new Error(`No se pudo verificar robots.txt de ${source.name}`);
+        const robots = await robotsResponse.text();
+        if (/^\s*Disallow:\s*\/\s*$/im.test(robots)) throw new Error(`Scraping bloqueado por robots.txt en ${source.name}`);
+
+        const scraped = await this.scrapeWebsitePage(source.baseUrl);
+        if (!scraped.title || !scraped.text) throw new Error(`Scraping sin contenido utilizable en ${source.name}`);
+        return [{
+            title: scraped.title,
+            summary: scraped.text.slice(0, 400),
+            content: scraped.text,
+            url: source.baseUrl,
+            imageUrl: scraped.image,
+            source: source.name,
+            sourceUrl: source.baseUrl,
+            author: source.name,
+            publishedAt: new Date(),
+            language: source.language || (source.country === 'AR' ? 'es' : 'en'),
+        }];
     }
 
     /**

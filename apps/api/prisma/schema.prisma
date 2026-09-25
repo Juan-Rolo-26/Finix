@@ -10,15 +10,15 @@ datasource db {
 
 model User {
   pushSubscriptions PushSubscription[]
-  id           String    @id @default(uuid())
-  email        String    @unique
-  username     String    @unique
-  password     String? // Managed by Finix for email/password auth; Supabase remains for OAuth
-  role         String    @default("USER") // USER, CREATOR, ADMIN
-  status       String    @default("ACTIVE") // ACTIVE, BANNED
-  shadowbanned Boolean   @default(false)
-  lastLogin    DateTime?
-  flags        String? // JSON array of warnings
+  id                String             @id @default(uuid())
+  email             String             @unique
+  username          String             @unique
+  password          String? // Managed by Finix for email/password auth; Supabase remains for OAuth
+  role              String             @default("USER") // USER, CREATOR, ADMIN
+  status            String             @default("ACTIVE") // ACTIVE, BANNED
+  shadowbanned      Boolean            @default(false)
+  lastLogin         DateTime?
+  flags             String? // JSON array of warnings
 
   // Auth additions
   emailVerified            Boolean   @default(false)
@@ -42,13 +42,13 @@ model User {
   bannerUrl String? // Banner/portada del perfil
 
   // Tipo de cuenta
-  isInfluencer       Boolean @default(false)
+  isInfluencer             Boolean @default(false)
   isVerified               Boolean @default(false)
   financialAdvisorVerified Boolean @default(false)
   accountType              String  @default("BASIC") // BASIC, PRO, CREATOR, ANALYST
-  plan               String  @default("FREE") // FREE | PRO
-  stripeCustomerId   String? @unique
-  subscriptionStatus String  @default("INACTIVE") // INACTIVE | ACTIVE | CANCELED | PAST_DUE | EXPIRED
+  plan                     String  @default("FREE") // FREE | PRO
+  stripeCustomerId         String? @unique
+  subscriptionStatus       String  @default("INACTIVE") // INACTIVE | ACTIVE | CANCELED | PAST_DUE | EXPIRED
 
   // IA limits (for PRO controls)
   aiUsageThisMonth Int       @default(0)
@@ -87,17 +87,17 @@ model User {
   returnsVisibilityMode String  @default("exact") // "exact" | "range"
 
   // Preferencias de la app
-  language            String  @default("es-AR")
-  currency            String  @default("USD")
-  autoRefreshMarket   Boolean @default(true)
-  compactTables       Boolean @default(false)
-  showAdvancedMetrics Boolean @default(false)
-  theme               String  @default("dark") // "dark" | "light" | "system"
-  chartDensity        String  @default("normal") // "basic" | "normal" | "advanced"
-  marketNotifications Boolean @default(false)
+  language                     String  @default("es-AR")
+  currency                     String  @default("USD")
+  autoRefreshMarket            Boolean @default(true)
+  compactTables                Boolean @default(false)
+  showAdvancedMetrics          Boolean @default(false)
+  theme                        String  @default("dark") // "dark" | "light" | "system"
+  chartDensity                 String  @default("normal") // "basic" | "normal" | "advanced"
+  marketNotifications          Boolean @default(false)
   investmentEmailNotifications Boolean @default(false) // Opt-in exclusivo para alertas y campañas de inversión PRO
-  timezone            String  @default("America/Argentina/Cordoba")
-  notificationPrefs   String? // JSON for notification preferences
+  timezone                     String  @default("America/Argentina/Cordoba")
+  notificationPrefs            String? // JSON for notification preferences
 
   // Onboarding
   onboardingCompleted Boolean @default(false)
@@ -118,15 +118,15 @@ model User {
   watchlists Watchlist[]
 
   // Relations: Communities
-  createdCommunities   Community[]         @relation("CommunityCreator")
+  createdCommunities       Community[]            @relation("CommunityCreator")
   communityMemberships     CommunityMember[]
   communityResources       CommunityResource[]
   communityPayments        CommunityPayment[]
   communityJoinRequests    CommunityJoinRequest[]
-  createdInvites           CommunityInvite[]       @relation("CommunityInviteCreator")
-  communityReportsSent     CommunityReport[]       @relation("CommunityReporter")
-  communityReportsReviewed CommunityReport[]       @relation("CommunityReportReviewer")
-  communityAuditLogs       CommunityAuditLog[]     @relation("CommunityAuditActor")
+  createdInvites           CommunityInvite[]      @relation("CommunityInviteCreator")
+  communityReportsSent     CommunityReport[]      @relation("CommunityReporter")
+  communityReportsReviewed CommunityReport[]      @relation("CommunityReportReviewer")
+  communityAuditLogs       CommunityAuditLog[]    @relation("CommunityAuditActor")
   subscriptions            Subscription[]
   creatorBalance           CreatorBalance?
   paymentLogs              PaymentLog[]
@@ -147,16 +147,16 @@ model User {
   storyLikes              StoryLike[]
 
   // Admin relations
-  adminLogs      AdminAuditLog[] @relation("AdminActor")
-  proEmailCampaigns ProEmailCampaign[] @relation("ProEmailCampaignCreator")
-  emailRecipients  EmailCampaignRecipient[]
-  emailEvents      EmailEvent[]
-  emailPreferences EmailPreference?
-  emailSegments    EmailSegment[] @relation("EmailSegmentCreator")
-  emailMedia       EmailMedia[]
-  adminSessions  AdminSession[]
-  userSessions   UserSession[]
-  reportsCreated Report[]        @relation("Reporter")
+  adminLogs         AdminAuditLog[]          @relation("AdminActor")
+  proEmailCampaigns ProEmailCampaign[]       @relation("ProEmailCampaignCreator")
+  emailRecipients   EmailCampaignRecipient[]
+  emailEvents       EmailEvent[]
+  emailPreferences  EmailPreference?
+  emailSegments     EmailSegment[]           @relation("EmailSegmentCreator")
+  emailMedia        EmailMedia[]
+  adminSessions     AdminSession[]
+  userSessions      UserSession[]
+  reportsCreated    Report[]                 @relation("Reporter")
 
   // Notifications
   notifications       Notification[] @relation("UserNotifications")
@@ -170,9 +170,9 @@ model User {
   hubResources HubResource[] @relation("HubResources")
 
   // Financial Advisor Verifications
-  financialVerifications           FinancialAdvisorVerification[] @relation("UserFinancialVerifications")
-  financialVerificationsReviewed   FinancialAdvisorVerification[] @relation("FinancialVerificationsReviewed")
-  financialVerificationAuditLogs   FinancialVerificationAuditLog[] @relation("FinancialVerificationAuditLogs")
+  financialVerifications         FinancialAdvisorVerification[]  @relation("UserFinancialVerifications")
+  financialVerificationsReviewed FinancialAdvisorVerification[]  @relation("FinancialVerificationsReviewed")
+  financialVerificationAuditLogs FinancialVerificationAuditLog[] @relation("FinancialVerificationAuditLogs")
 
   // Technical Chart Analyses
   chartAnalyses ChartAnalysis[] @relation("UserChartAnalyses")
@@ -256,9 +256,9 @@ model Post {
   updatedAt   DateTime   @updatedAt
   Community   Community? @relation(fields: [communityId], references: [id])
   communityId String?
-  
-  targetVisibility   String @default("PUBLIC") // PUBLIC, MEMBERS, PREMIUM_TIER
-  requiredTierLevel  Int    @default(0)
+
+  targetVisibility  String @default("PUBLIC") // PUBLIC, MEMBERS, PREMIUM_TIER
+  requiredTierLevel Int    @default(0)
 
   // Community Section & Pinned
   sectionId          String?
@@ -395,18 +395,18 @@ model Portfolio {
 }
 
 model Asset {
-  id                String   @id @default(uuid())
-  ticker            String   @unique
+  id                String  @id @default(uuid())
+  ticker            String  @unique
   name              String
-  type              String   // STOCK, CRYPTO, ETF, BOND, CEDEAR, INDEX
-  currency          String   @default("USD")
-  symbol            String?  // e.g. "NASDAQ:AAPL", "BINANCE:BTCUSDT"
-  exchange          String?  // e.g. "NASDAQ", "NYSE", "BYMA", "BINANCE"
-  country           String?  // e.g. "US", "AR"
+  type              String // STOCK, CRYPTO, ETF, BOND, CEDEAR, INDEX
+  currency          String  @default("USD")
+  symbol            String? // e.g. "NASDAQ:AAPL", "BINANCE:BTCUSDT"
+  exchange          String? // e.g. "NASDAQ", "NYSE", "BYMA", "BINANCE"
+  country           String? // e.g. "US", "AR"
   logo              String?
-  tradingViewSymbol String?  // canonical TradingView chart symbol
+  tradingViewSymbol String? // canonical TradingView chart symbol
   providerSymbol    String?
-  active            Boolean  @default(true)
+  active            Boolean @default(true)
 
   holdings     Holding[]
   transactions Transaction[]
@@ -423,7 +423,7 @@ model MarketAlert {
   name                String
   alertType           String    @default("PRICE_TARGET") // PRICE_TARGET, PERCENT_CHANGE, 52W_HIGH, 52W_LOW
   targetValue         Float
-  condition           String    // GREATER_THAN, LESS_THAN, CHANGE_PCT_UP, CHANGE_PCT_DOWN
+  condition           String // GREATER_THAN, LESS_THAN, CHANGE_PCT_UP, CHANGE_PCT_DOWN
   status              String    @default("ACTIVE") // ACTIVE, TRIGGERED, DISABLED, CANCELLED
   notificationChannel String    @default("EMAIL") // EMAIL, PUSH, ALL
   destinationEmail    String?
@@ -506,34 +506,52 @@ model Watchlist {
 // ============================================
 
 model NewsSource {
-  id       String  @id @default(uuid())
-  name     String  @unique
-  apiType  String // 'rss', 'api', 'scraper'
-  country  String // 'AR', 'US', 'GLOBAL'
-  language String  @default("es")
-  isActive Boolean @default(true)
-  priority Int     @default(0) // Higher = more important
+  id                 String    @id @default(uuid())
+  name               String    @unique
+  apiType            String    @default("rss") // 'rss', 'api', 'scraper'
+  baseUrl            String?
+  apiUrl             String?
+  /// Legacy alias kept while existing integrations migrate to baseUrl.
+  url                String?
+  rssUrl             String?
+  country            String    @default("GLOBAL") // 'AR', 'US', 'GLOBAL'
+  language           String    @default("es")
+  isActive           Boolean   @default(true)
+  priority           Int       @default(0) // Higher = more important
+  reliabilityScore   Int       @default(50)
+  lastSuccessfulSync DateTime?
+  lastError          String?
 
-  news News[]
+  news           News[]
+  categoryLinks  NewsSourceCategory[]
+  articleSources NewsArticleSource[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  NewsArticle NewsArticle[]
 }
 
 model NewsCategory {
-  id           String  @id @default(uuid())
-  name         String  @unique
-  slug         String  @unique
-  description  String?
-  color        String? // For UI display
-  icon         String? // Icon identifier
-  image        String? // Category hero image
-  isActive     Boolean @default(true)
-  displayOrder Int     @default(0) // Sort order in UI
+  id              String    @id @default(uuid())
+  name            String    @unique
+  slug            String    @unique
+  description     String?
+  color           String? // For UI display
+  icon            String? // Icon identifier
+  image           String? // Category hero image
+  isActive        Boolean   @default(true)
+  displayOrder    Int       @default(0) // Sort order in UI
+  updateFrequency String    @default("WEEKLY") // DAILY | WEEKLY | MANUAL
+  updateHour      Int       @default(9)
+  updateMinute    Int       @default(0)
+  updateDayOfWeek Int       @default(0) // Sunday = 0, used by WEEKLY
+  lastUpdatedAt   DateTime?
+  nextUpdateAt    DateTime?
 
-  news     News[]
-  slots    NewsSlot[]
-  articles NewsArticle[]
+  news        News[]
+  slots       NewsSlot[]
+  articles    NewsArticle[]
+  sourceLinks NewsSourceCategory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -818,8 +836,8 @@ model CommunitySection {
   isActive    Boolean   @default(true)
   posts       Post[]
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([communityId, order])
 }
@@ -861,12 +879,12 @@ model CommunityReport {
   community    Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   reporterId   String
   reporter     User      @relation("CommunityReporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  targetType   String    // POST, COMMENT, USER
+  targetType   String // POST, COMMENT, USER
   targetId     String
-  reason       String    // SPAM, FRAUD, INAPPROPRIATE, FAKE_INFO, HARASSMENT, ADVERTISING, OTHER
+  reason       String // SPAM, FRAUD, INAPPROPRIATE, FAKE_INFO, HARASSMENT, ADVERTISING, OTHER
   details      String?
   status       String    @default("PENDING") // PENDING, RESOLVED, DISMISSED
-  actionTaken  String?   // NONE, DELETED, HIDDEN, WARNED, MUTED, BANNED
+  actionTaken  String? // NONE, DELETED, HIDDEN, WARNED, MUTED, BANNED
   reviewedById String?
   reviewedBy   User?     @relation("CommunityReportReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
   createdAt    DateTime  @default(now())
@@ -881,30 +899,30 @@ model CommunityAuditLog {
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   actorId     String
   actor       User      @relation("CommunityAuditActor", fields: [actorId], references: [id], onDelete: Cascade)
-  action      String    // COMMUNITY_CREATED, COMMUNITY_UPDATED, MEMBER_BANNED, MEMBER_REMOVED, ROLE_CHANGED, PRICE_CHANGED, PLAN_CREATED, PLAN_UPDATED, POST_DELETED, POST_PINNED, SETTINGS_UPDATED, PAYOUT_UPDATED
+  action      String // COMMUNITY_CREATED, COMMUNITY_UPDATED, MEMBER_BANNED, MEMBER_REMOVED, ROLE_CHANGED, PRICE_CHANGED, PLAN_CREATED, PLAN_UPDATED, POST_DELETED, POST_PINNED, SETTINGS_UPDATED, PAYOUT_UPDATED
   targetId    String?
-  metadata    String?   // JSON payload
+  metadata    String? // JSON payload
   createdAt   DateTime  @default(now())
 
   @@index([communityId, createdAt])
 }
 
 model Subscription {
-  id                   String    @id @default(uuid())
-  userId               String
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stripeSubscriptionId String?   @unique
-  stripeCustomerId     String?
-  mercadoPagoPreapprovalId String? @unique
+  id                           String    @id @default(uuid())
+  userId                       String
+  user                         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId         String?   @unique
+  stripeCustomerId             String?
+  mercadoPagoPreapprovalId     String?   @unique
   mercadoPagoExternalReference String?
-  mercadoPagoPaymentId String?   @unique
-  status               String    @default("INACTIVE") // INACTIVE | ACTIVE | CANCELED | PAST_DUE | EXPIRED
-  planType             String    @default("PRO") // PRO | CREATOR (Stripe legacy values are also supported)
-  startDate            DateTime  @default(now())
-  endDate              DateTime?
-  cancelAtPeriodEnd    Boolean   @default(false)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  mercadoPagoPaymentId         String?   @unique
+  status                       String    @default("INACTIVE") // INACTIVE | ACTIVE | CANCELED | PAST_DUE | EXPIRED
+  planType                     String    @default("PRO") // PRO | CREATOR (Stripe legacy values are also supported)
+  startDate                    DateTime  @default(now())
+  endDate                      DateTime?
+  cancelAtPeriodEnd            Boolean   @default(false)
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
 
   revenues FinixRevenue[]
 
@@ -1046,10 +1064,10 @@ model StoryView {
 }
 
 model StoryLike {
-  storyId  String
-  userId   String
-  story    Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
-  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storyId   String
+  userId    String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   @@id([storyId, userId])
@@ -1150,96 +1168,96 @@ model AdminAuditLog {
 }
 
 model ProEmailCampaign {
-  sourceKey String? @unique
+  sourceKey      String?                  @unique
   audienceCursor String?
-  audienceReady Boolean @default(false)
-  @@index([status, scheduledAt])
-  id             String   @id @default(uuid())
+  audienceReady  Boolean                  @default(false)
+  id             String                   @id @default(uuid())
   subject        String
   title          String
   message        String
   imageUrl       String?
   ctaLabel       String?
   ctaUrl         String?
-  recipientCount Int      @default(0)
-  sentCount      Int      @default(0)
-  failedCount    Int      @default(0)
+  recipientCount Int                      @default(0)
+  sentCount      Int                      @default(0)
+  failedCount    Int                      @default(0)
   createdById    String
-  createdBy      User     @relation("ProEmailCampaignCreator", fields: [createdById], references: [id])
-  createdAt      DateTime @default(now())
-  status         String   @default("SENT") // DRAFT | SCHEDULED | SENDING | SENT | FAILED | CANCELLED
+  createdBy      User                     @relation("ProEmailCampaignCreator", fields: [createdById], references: [id])
+  createdAt      DateTime                 @default(now())
+  status         String                   @default("SENT") // DRAFT | SCHEDULED | SENDING | SENT | FAILED | CANCELLED
   previewText    String?
   contentHtml    String?
   contentText    String?
-  audience       String   @default("PRO")
+  audience       String                   @default("PRO")
   scheduledAt    DateTime?
   sentAt         DateTime?
   templateId     String?
-  template       EmailTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  template       EmailTemplate?           @relation(fields: [templateId], references: [id], onDelete: SetNull)
   recipients     EmailCampaignRecipient[]
   events         EmailEvent[]
 
+  @@index([status, scheduledAt])
   @@index([createdAt])
   @@index([createdById, createdAt])
 }
 
 model EmailTemplate {
-  id          String   @id @default(uuid())
+  id          String             @id @default(uuid())
   name        String
-  type        String   @default("MARKETING")
+  type        String             @default("MARKETING")
   subject     String
   previewText String?
   contentHtml String
   contentText String?
   variables   String?
-  isSystem    Boolean  @default(false)
+  isSystem    Boolean            @default(false)
   createdById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   campaigns   ProEmailCampaign[]
 
   @@index([type, updatedAt])
 }
 
 model EmailCampaignRecipient {
-  attempts Int @default(0)
+  attempts       Int              @default(0)
   firstAttemptAt DateTime?
-  nextAttemptAt DateTime @default(now())
-  lockedUntil DateTime?
-  @@index([status, nextAttemptAt])
-  id         String   @id @default(uuid())
-  campaignId String
-  userId     String
-  email      String
-  status     String   @default("QUEUED") // QUEUED | SENT | DELIVERED | FAILED | BOUNCED
-  providerId String?
-  error      String?
-  queuedAt   DateTime @default(now())
-  sentAt     DateTime?
-  deliveredAt DateTime?
-  updatedAt  DateTime @updatedAt
-  campaign   ProEmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  events     EmailEvent[]
+  nextAttemptAt  DateTime         @default(now())
+  lockedUntil    DateTime?
+  id             String           @id @default(uuid())
+  campaignId     String
+  userId         String
+  email          String
+  status         String           @default("QUEUED") // QUEUED | SENT | DELIVERED | FAILED | BOUNCED
+  providerId     String?
+  error          String?
+  queuedAt       DateTime         @default(now())
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  updatedAt      DateTime         @updatedAt
+  campaign       ProEmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events         EmailEvent[]
 
   @@unique([campaignId, userId])
+  @@index([status, nextAttemptAt])
   @@index([campaignId, status])
   @@index([userId, updatedAt])
 }
 
 model EmailEvent {
-  id          String   @id @default(uuid())
-  type        String   // SENT | DELIVERED | OPENED | CLICKED | BOUNCED | COMPLAINED | UNSUBSCRIBED
+  id          String                  @id @default(uuid())
+  type        String // SENT | DELIVERED | OPENED | CLICKED | BOUNCED | COMPLAINED | UNSUBSCRIBED
   providerId  String?
   campaignId  String?
   recipientId String?
   userId      String?
   linkUrl     String?
   metadata    String?
-  createdAt   DateTime @default(now())
-  campaign    ProEmailCampaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdAt   DateTime                @default(now())
+  campaign    ProEmailCampaign?       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   recipient   EmailCampaignRecipient? @relation(fields: [recipientId], references: [id], onDelete: Cascade)
-  user        User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User?                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([type, providerId, recipientId, linkUrl])
   @@index([campaignId, type, createdAt])
@@ -1247,19 +1265,19 @@ model EmailEvent {
 }
 
 model EmailPreference {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  marketing   Boolean  @default(true)
-  alerts      Boolean  @default(true)
-  analysis    Boolean  @default(true)
-  calendar    Boolean  @default(true)
-  earnings    Boolean  @default(true)
-  daily       Boolean  @default(true)
-  weekly      Boolean  @default(true)
-  community   Boolean  @default(true)
-  product     Boolean  @default(true)
-  updatedAt   DateTime @updatedAt
-  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  marketing Boolean  @default(true)
+  alerts    Boolean  @default(true)
+  analysis  Boolean  @default(true)
+  calendar  Boolean  @default(true)
+  earnings  Boolean  @default(true)
+  daily     Boolean  @default(true)
+  weekly    Boolean  @default(true)
+  community Boolean  @default(true)
+  product   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model EmailSegment {
@@ -1269,46 +1287,48 @@ model EmailSegment {
   createdById String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  createdBy   User @relation("EmailSegmentCreator", fields: [createdById], references: [id])
+  createdBy   User     @relation("EmailSegmentCreator", fields: [createdById], references: [id])
+
   @@index([createdById, updatedAt])
 }
 
 model EmailMedia {
-  id        String   @id @default(uuid())
-  url       String
-  altText   String?
-  mimeType  String?
-  size      Int?
+  id           String   @id @default(uuid())
+  url          String
+  altText      String?
+  mimeType     String?
+  size         Int?
   uploadedById String
-  createdAt DateTime @default(now())
-  uploadedBy User @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+
   @@index([createdAt])
 }
 
 model Notification {
-  id         String    @id @default(uuid())
-  userId     String
-  user       User      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
-  
-  type       String
-  priority   String    @default("NORMAL") // LOW, NORMAL, HIGH, CRITICAL
-  
-  title      String
-  message    String?
-  link       String?
-  
-  isRead     Boolean   @default(false)
-  readAt     DateTime?
-  
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  type     String
+  priority String @default("NORMAL") // LOW, NORMAL, HIGH, CRITICAL
+
+  title   String
+  message String?
+  link    String?
+
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
   entityType String?
   entityId   String?
-  
-  actorId    String?
-  actor      User?     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
-  
-  metadata   String?   // JSON payload (e.g. grouped users, market data)
-  
-  createdAt  DateTime  @default(now())
+
+  actorId String?
+  actor   User?   @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  metadata String? // JSON payload (e.g. grouped users, market data)
+
+  createdAt DateTime @default(now())
 
   // Indexes specific for querying
   @@index([userId, createdAt])
@@ -1417,37 +1437,37 @@ model HubResource {
 }
 
 model FinancialAdvisorVerification {
-  id                           String    @id @default(uuid())
-  userId                       String
-  user                         User      @relation("UserFinancialVerifications", fields: [userId], references: [id], onDelete: Cascade)
-  status                       String    @default("pending") // pending, under_review, approved, rejected, suspended, expired
-  fullName                     String
-  documentType                 String
-  documentCountry              String
-  documentNumber               String
-  professionalCategory         String
-  registrationNumber           String
-  registrationEntity           String
-  professionalCountry          String
-  identityDocumentFrontPath    String
-  identityDocumentBackPath     String
-  professionalDocumentPath     String
-  experienceYears              Int?
-  specialization               String?
-  company                      String?
-  professionalPosition         String?
-  cvPath                       String?
-  website                      String?
-  linkedin                     String?
-  professionalDescription      String?
-  submittedAt                  DateTime  @default(now())
-  reviewedAt                   DateTime?
-  reviewedById                 String?
-  reviewedBy                   User?     @relation("FinancialVerificationsReviewed", fields: [reviewedById], references: [id])
-  rejectionReason              String?
-  adminNotes                   String?
-  createdAt                    DateTime  @default(now())
-  updatedAt                    DateTime  @updatedAt
+  id                        String    @id @default(uuid())
+  userId                    String
+  user                      User      @relation("UserFinancialVerifications", fields: [userId], references: [id], onDelete: Cascade)
+  status                    String    @default("pending") // pending, under_review, approved, rejected, suspended, expired
+  fullName                  String
+  documentType              String
+  documentCountry           String
+  documentNumber            String
+  professionalCategory      String
+  registrationNumber        String
+  registrationEntity        String
+  professionalCountry       String
+  identityDocumentFrontPath String
+  identityDocumentBackPath  String
+  professionalDocumentPath  String
+  experienceYears           Int?
+  specialization            String?
+  company                   String?
+  professionalPosition      String?
+  cvPath                    String?
+  website                   String?
+  linkedin                  String?
+  professionalDescription   String?
+  submittedAt               DateTime  @default(now())
+  reviewedAt                DateTime?
+  reviewedById              String?
+  reviewedBy                User?     @relation("FinancialVerificationsReviewed", fields: [reviewedById], references: [id])
+  rejectionReason           String?
+  adminNotes                String?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
 
   auditLogs FinancialVerificationAuditLog[]
 
@@ -1456,222 +1476,223 @@ model FinancialAdvisorVerification {
 }
 
 model FinancialVerificationAuditLog {
-  id              String    @id @default(uuid())
-  verificationId  String
-  verification    FinancialAdvisorVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
-  adminId         String?
-  admin           User?     @relation("FinancialVerificationAuditLogs", fields: [adminId], references: [id])
-  action          String
-  previousStatus  String?
-  newStatus       String?
-  reason          String?
-  createdAt       DateTime  @default(now())
+  id             String                       @id @default(uuid())
+  verificationId String
+  verification   FinancialAdvisorVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+  adminId        String?
+  admin          User?                        @relation("FinancialVerificationAuditLogs", fields: [adminId], references: [id])
+  action         String
+  previousStatus String?
+  newStatus      String?
+  reason         String?
+  createdAt      DateTime                     @default(now())
 
   @@index([verificationId])
   @@index([adminId])
 }
 
 model PushSubscription {
-  id String @id @default(uuid())
-  userId String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  endpoint String @unique
-  p256dh String
-  auth String
-  cursorAt DateTime @default(now())
-  cursorId String @default("")
-  failures Int @default(0)
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint      String   @unique
+  p256dh        String
+  auth          String
+  cursorAt      DateTime @default(now())
+  cursorId      String   @default("")
+  failures      Int      @default(0)
   nextAttemptAt DateTime @default(now())
-  lease String?
+  lease         String?
+
   @@index([nextAttemptAt, failures])
   @@index([userId])
 }
 
 model AssetAnalysis {
-  emailAnnounced Boolean @default(false)
-  id                      String    @id @default(uuid())
-  symbol                  String    // e.g. "NASDAQ:AAPL" or "AAPL"
-  isActive                Boolean   @default(true) // Si está activo, será el que se muestre como destacado
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  emailAnnounced Boolean  @default(false)
+  id             String   @id @default(uuid())
+  symbol         String // e.g. "NASDAQ:AAPL" or "AAPL"
+  isActive       Boolean  @default(true) // Si está activo, será el que se muestre como destacado
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // 1. Información de la empresa
-  companyName             String?
-  ticker                  String?
-  sector                  String?
-  industry                String?
-  country                 String?
-  foundedYear             Int?
-  ceo                     String?
-  employeesCount          Int?
-  marketCap               Float?
-  businessDescription     String?
-  productsServices        String?
-  revenueGeneration       String?
-  mainRevenueSources      String?
-  geographicRevenue       String?
-  businessSegments        String?
-  mainCompetitors         String?
-  competitiveAdvantage    String?
-  customerDependency      String?
-  productDependency       String?
-  marketShare             String?
+  companyName          String?
+  ticker               String?
+  sector               String?
+  industry             String?
+  country              String?
+  foundedYear          Int?
+  ceo                  String?
+  employeesCount       Int?
+  marketCap            Float?
+  businessDescription  String?
+  productsServices     String?
+  revenueGeneration    String?
+  mainRevenueSources   String?
+  geographicRevenue    String?
+  businessSegments     String?
+  mainCompetitors      String?
+  competitiveAdvantage String?
+  customerDependency   String?
+  productDependency    String?
+  marketShare          String?
 
   // 2. Ingresos y crecimiento
-  revenue                 Float?
-  revenueGrowthYoY        Float?
-  revenueCagr3y           Float?
-  revenueCagr5y           Float?
-  growthBySegment         String?
-  growthByRegion          String?
-  recurringRevenue        String?
-  arr                     Float?
-  mrr                     Float?
-  revenueGuidance         String?
-  estimatedRevenue        Float?
-  realVsEstimatedRevenue  String?
+  revenue                Float?
+  revenueGrowthYoY       Float?
+  revenueCagr3y          Float?
+  revenueCagr5y          Float?
+  growthBySegment        String?
+  growthByRegion         String?
+  recurringRevenue       String?
+  arr                    Float?
+  mrr                    Float?
+  revenueGuidance        String?
+  estimatedRevenue       Float?
+  realVsEstimatedRevenue String?
 
   // 3. Rentabilidad
-  eps                     Float?
-  epsGrowth               Float?
-  epsEstimatedVsReal      String?
-  grossMargin             Float?
-  operatingMargin         Float?
-  netMargin               Float?
-  ebit                    Float?
-  ebitda                  Float?
-  ebitdaMargin            Float?
-  roe                     Float?
-  roa                     Float?
-  roic                    Float?
-  roce                    Float?
-  freeCashFlow            Float?
-  fcfMargin               Float?
-  fcfGrowth               Float?
+  eps                Float?
+  epsGrowth          Float?
+  epsEstimatedVsReal String?
+  grossMargin        Float?
+  operatingMargin    Float?
+  netMargin          Float?
+  ebit               Float?
+  ebitda             Float?
+  ebitdaMargin       Float?
+  roe                Float?
+  roa                Float?
+  roic               Float?
+  roce               Float?
+  freeCashFlow       Float?
+  fcfMargin          Float?
+  fcfGrowth          Float?
 
   // 4. Valuación
-  peRatio                 Float?
-  forwardPe               Float?
-  pegRatio                Float?
-  priceToSales            Float?
-  priceToBook             Float?
-  evToEbitda              Float?
-  evToRevenue             Float?
-  priceToFcf              Float?
-  dividendYield           Float?
-  marketCapToFcf          Float?
-  historicalValuation     String?
-  historicalAvgPe         Float?
-  sectorPe                Float?
-  competitorsPe           String?
-  estimatedFairValue      Float?
+  peRatio                  Float?
+  forwardPe                Float?
+  pegRatio                 Float?
+  priceToSales             Float?
+  priceToBook              Float?
+  evToEbitda               Float?
+  evToRevenue              Float?
+  priceToFcf               Float?
+  dividendYield            Float?
+  marketCapToFcf           Float?
+  historicalValuation      String?
+  historicalAvgPe          Float?
+  sectorPe                 Float?
+  competitorsPe            String?
+  estimatedFairValue       Float?
   valuationPremiumDiscount Float?
 
   // 5. Balance financiero
-  cash                    Float?
-  totalDebt               Float?
-  netDebt                 Float?
-  netDebtToEbitda         Float?
-  currentRatio            Float?
-  quickRatio              Float?
-  totalAssets             Float?
-  totalLiabilities        Float?
-  equity                  Float?
-  equityGrowth            Float?
-  longTermDebt            Float?
-  shortTermDebt           Float?
-  interestPaid            Float?
-  interestCoverageRatio   Float?
+  cash                  Float?
+  totalDebt             Float?
+  netDebt               Float?
+  netDebtToEbitda       Float?
+  currentRatio          Float?
+  quickRatio            Float?
+  totalAssets           Float?
+  totalLiabilities      Float?
+  equity                Float?
+  equityGrowth          Float?
+  longTermDebt          Float?
+  shortTermDebt         Float?
+  interestPaid          Float?
+  interestCoverageRatio Float?
 
   // 6. Cash Flow
-  operatingCashFlow       Float?
-  capEx                   Float?
+  operatingCashFlow        Float?
+  capEx                    Float?
   // freeCashFlow is in section 3 but can be shared
-  fcfPerShare             Float?
-  fcfYield                Float?
+  fcfPerShare              Float?
+  fcfYield                 Float?
   earningsToCashConversion Float?
-  historicalCashFlow      String?
+  historicalCashFlow       String?
   // fcfGrowth is in section 3
 
   // 7. Accionistas y mercado
-  sharesOutstanding       Float?
-  shareDilution           Float?
-  insiderOwnership        Float?
-  institutionalOwnership  Float?
-  insiderBuys             String?
-  insiderSells            String?
-  buybacks                String?
-  sharesGrowthReduction   String?
-  shortInterest           Float?
-  shortFloat              Float?
-  beta                    Float?
+  sharesOutstanding      Float?
+  shareDilution          Float?
+  insiderOwnership       Float?
+  institutionalOwnership Float?
+  insiderBuys            String?
+  insiderSells           String?
+  buybacks               String?
+  sharesGrowthReduction  String?
+  shortInterest          Float?
+  shortFloat             Float?
+  beta                   Float?
 
   // 8. Análisis técnico
-  currentPrice            Float?
-  dailyChange             Float?
-  weeklyChange            Float?
-  monthlyChange           Float?
-  yearlyChange            Float?
-  high52w                 Float?
-  low52w                  Float?
-  distanceToHigh          Float?
-  distanceToLow           Float?
-  volume                  Float?
-  avgVolume               Float?
-  relativeVolume          Float?
-  sma20                   Float?
-  sma50                   Float?
-  sma100                  Float?
-  sma200                  Float?
-  rsi                     Float?
-  macd                    String?
-  bollingerBands          String?
-  atr                     Float?
-  supports                String?
-  resistances             String?
-  trend                   String?
-  momentum                String?
-  historicalVolatility    Float?
+  currentPrice         Float?
+  dailyChange          Float?
+  weeklyChange         Float?
+  monthlyChange        Float?
+  yearlyChange         Float?
+  high52w              Float?
+  low52w               Float?
+  distanceToHigh       Float?
+  distanceToLow        Float?
+  volume               Float?
+  avgVolume            Float?
+  relativeVolume       Float?
+  sma20                Float?
+  sma50                Float?
+  sma100               Float?
+  sma200               Float?
+  rsi                  Float?
+  macd                 String?
+  bollingerBands       String?
+  atr                  Float?
+  supports             String?
+  resistances          String?
+  trend                String?
+  momentum             String?
+  historicalVolatility Float?
 
   // Identificadores y publicación
-  slug                    String?   @unique
-  status                  String    @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
-  exchange                String?
-  logoUrl                 String?
-  analysisDate            DateTime?
-  sources                 String?
-  legalDisclaimer         String?
+  slug            String?   @unique
+  status          String    @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+  exchange        String?
+  logoUrl         String?
+  analysisDate    DateTime?
+  sources         String?
+  legalDisclaimer String?
 
   // Secciones estructuradas (JSON almacenado como String)
-  sectionVisibility       String?   // JSON: { showCompany: true, showGrowth: true, ... }
-  executiveSummary        String?   // JSON: { title, summary, positivePoints: [], negativePoints: [], conclusion }
-  businessModel           String?   // JSON: [{ product, description, revenuePct, growth, margin }]
-  historicalSeries        String?   // JSON: { revenue: [], eps: [], margins: [], cashFlow: [], debt: [], pe: [], shares: [] }
-  segmentGrowth           String?   // JSON: [{ segment, revenue, growth, pctOfTotal }]
-  competitorsData         String?   // JSON: [{ name, ticker, revenue, growth, pe, roic, netMargin, fcf, marketCap, debt }]
-  technicalData           String?   // JSON: { priceSeries: [], movingAverages: [], rsiSeries: [], macd: {}, supports: [], resistances: [], technicalScore: 74, technicalSignal: 'BUY' }
-  risksData               String?   // JSON: [{ title, description, severity, probability, impact }]
-  catalystsData           String?   // JSON: [{ title, description, horizon, impact }]
-  scenariosData           String?   // JSON: { bull: {...}, base: {...}, bear: {...} }
-  valuationMethodology    String?   // JSON: { method, assumptions, result, date, notes }
-  swotData                String?   // JSON: { strengths: [], weaknesses: [], opportunities: [], threats: [] }
+  sectionVisibility    String? // JSON: { showCompany: true, showGrowth: true, ... }
+  executiveSummary     String? // JSON: { title, summary, positivePoints: [], negativePoints: [], conclusion }
+  businessModel        String? // JSON: [{ product, description, revenuePct, growth, margin }]
+  historicalSeries     String? // JSON: { revenue: [], eps: [], margins: [], cashFlow: [], debt: [], pe: [], shares: [] }
+  segmentGrowth        String? // JSON: [{ segment, revenue, growth, pctOfTotal }]
+  competitorsData      String? // JSON: [{ name, ticker, revenue, growth, pe, roic, netMargin, fcf, marketCap, debt }]
+  technicalData        String? // JSON: { priceSeries: [], movingAverages: [], rsiSeries: [], macd: {}, supports: [], resistances: [], technicalScore: 74, technicalSignal: 'BUY' }
+  risksData            String? // JSON: [{ title, description, severity, probability, impact }]
+  catalystsData        String? // JSON: [{ title, description, horizon, impact }]
+  scenariosData        String? // JSON: { bull: {...}, base: {...}, bear: {...} }
+  valuationMethodology String? // JSON: { method, assumptions, result, date, notes }
+  swotData             String? // JSON: { strengths: [], weaknesses: [], opportunities: [], threats: [] }
 
-  auditLogs               AnalysisAuditLog[]
+  auditLogs AnalysisAuditLog[]
 
   @@index([status])
   @@index([ticker])
 }
 
 model AnalysisAuditLog {
-  id          String        @id @default(uuid())
-  analysisId  String
-  analysis    AssetAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
-  userId      String?
-  action      String        // CREATE, UPDATE, STATUS_CHANGE, DELETE
-  field       String?
-  oldValue    String?
-  newValue    String?
-  createdAt   DateTime      @default(now())
+  id         String        @id @default(uuid())
+  analysisId String
+  analysis   AssetAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  userId     String?
+  action     String // CREATE, UPDATE, STATUS_CHANGE, DELETE
+  field      String?
+  oldValue   String?
+  newValue   String?
+  createdAt  DateTime      @default(now())
 
   @@index([analysisId])
   @@index([createdAt])
@@ -1683,8 +1704,12 @@ model AnalysisAuditLog {
 
 // NewsArticle: un artículo asignado manualmente por el admin a un slot
 model NewsArticle {
-  id          String    @id @default(uuid())
-  url         String    @unique
+  id               String  @id @default(uuid())
+  url              String  @unique
+  canonicalUrl     String? @unique
+  normalizedTitle  String?
+  eventFingerprint String?
+  relevanceScore   Int     @default(0)
 
   // Metadata automática (extraída por scraping)
   title       String
@@ -1706,29 +1731,85 @@ model NewsArticle {
   status      String  @default("DRAFT") // DRAFT | PUBLISHED | INACTIVE | ERROR
 
   // Categoría opcional (para contexto)
-  categoryId  String?
-  category    NewsCategory? @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  category   NewsCategory? @relation(fields: [categoryId], references: [id])
+  sourceId   String?
+  source     NewsSource?   @relation(fields: [sourceId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  slots          NewsSlot[]
-  historyAsPrev  NewsSlotHistory[] @relation("PreviousArticle")
-  historyAsNew   NewsSlotHistory[] @relation("NewArticle")
+  slots             NewsSlot[]
+  additionalSources NewsArticleSource[]
+  historyAsPrev     NewsSlotHistory[]   @relation("PreviousArticle")
+  historyAsNew      NewsSlotHistory[]   @relation("NewArticle")
 
   @@index([categoryId])
   @@index([status])
   @@index([isPublished])
+  @@index([relevanceScore, publishedAt])
+  @@index([eventFingerprint])
+  @@index([sourceId])
+}
+
+model NewsSourceCategory {
+  sourceId         String
+  categoryId       String
+  priority         Int          @default(0)
+  reliabilityScore Int          @default(50)
+  isActive         Boolean      @default(true)
+  source           NewsSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  category         NewsCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now())
+
+  @@id([sourceId, categoryId])
+  @@index([categoryId])
+}
+
+model NewsArticleSource {
+  id         String   @id @default(uuid())
+  articleId  String
+  sourceId   String?
+  sourceName String
+  url        String
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  article NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  source  NewsSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@unique([articleId, url])
+  @@index([articleId])
+  @@index([sourceId])
+}
+
+model NewsSyncLog {
+  id                  String    @id @default(uuid())
+  startedAt           DateTime  @default(now())
+  finishedAt          DateTime?
+  frequency           String
+  categoriesProcessed String    @default("[]")
+  sourcesProcessed    String    @default("[]")
+  articlesFound       Int       @default(0)
+  articlesCreated     Int       @default(0)
+  articlesUpdated     Int       @default(0)
+  duplicatesDetected  Int       @default(0)
+  failedSources       String    @default("[]")
+  status              String    @default("RUNNING")
+  errorMessage        String?
+
+  @@index([startedAt])
+  @@index([frequency, status])
 }
 
 // NewsSlot: posición fija en el mosaico de una categoría
 model NewsSlot {
-  id         String  @id @default(uuid())
+  id         String       @id @default(uuid())
   categoryId String
   category   NewsCategory @relation(fields: [categoryId], references: [id])
 
   slotKey  String @unique // ej: "economia_slot_1"
-  position Int    // 1-5
+  position Int // 1-5
 
   articleId String?
   article   NewsArticle? @relation(fields: [articleId], references: [id])
@@ -1777,19 +1858,19 @@ model SP500Asset {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  rankings    DailyMarketRanking[]
+  rankings DailyMarketRanking[]
 
   @@index([ticker])
   @@index([isActive])
 }
 
 model DailyMarketRanking {
-  id              String      @id @default(uuid())
-  date            String      // Format: YYYY-MM-DD
-  rankingType     String      // TOP_GAINERS, TOP_LOSERS, etc.
-  rank            Int         // 1 to 5 (or up to N)
-  sp500AssetId    String?
-  sp500Asset      SP500Asset? @relation(fields: [sp500AssetId], references: [id], onDelete: SetNull)
+  id           String      @id @default(uuid())
+  date         String // Format: YYYY-MM-DD
+  rankingType  String // TOP_GAINERS, TOP_LOSERS, etc.
+  rank         Int // 1 to 5 (or up to N)
+  sp500AssetId String?
+  sp500Asset   SP500Asset? @relation(fields: [sp500AssetId], references: [id], onDelete: SetNull)
 
   ticker          String
   companyName     String
@@ -1799,9 +1880,9 @@ model DailyMarketRanking {
   changePercent   Float
   volume          Float
   logoUrl         String?
-  marketTimestamp DateTime    @default(now())
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  marketTimestamp DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@unique([date, rankingType, rank])
   @@index([date, rankingType])
@@ -1813,12 +1894,12 @@ model MarketRankingExecutionLog {
   executedAt      DateTime @default(now())
   rankingType     String
   targetDate      String
-  status          String   // SUCCESS, PARTIAL, FAILED
+  status          String // SUCCESS, PARTIAL, FAILED
   providerUsed    String
   assetsProcessed Int
   errorsCount     Int
   durationMs      Int
-  topResultsJson  String?  // JSON preview of TOP 5
+  topResultsJson  String? // JSON preview of TOP 5
   errorMessage    String?
 
   @@index([executedAt])
@@ -1829,22 +1910,22 @@ model MarketCalendarEvent {
   id                   String   @id @default(uuid())
   externalId           String?
   sourceId             String?
-  sourceName           String?  // Official source name: BLS, INDEC, Federal Reserve, etc.
+  sourceName           String? // Official source name: BLS, INDEC, Federal Reserve, etc.
   eventType            String   @default("ECONOMIC") // ECONOMIC, CORPORATE_EVENT, EARNINGS, MARKET
-  country              String   // US, AR, EU, UK, JP, etc.
-  countryCode          String?  // US, AR, etc.
-  currency             String?  // USD, ARS
+  country              String // US, AR, EU, UK, JP, etc.
+  countryCode          String? // US, AR, etc.
+  currency             String? // USD, ARS
   assetId              String?
   title                String
   description          String?
-  category             String   // INFLATION, CENTRAL_BANK, EMPLOYMENT, GDP, etc.
+  category             String // INFLATION, CENTRAL_BANK, EMPLOYMENT, GDP, etc.
   subcategory          String?
   importance           String   @default("HIGH") // CRITICAL, HIGH, MEDIUM, LOW (compat)
   impact               String   @default("HIGH") // CRITICAL, HIGH, MEDIUM, LOW
   marketImpactScore    Int      @default(0) // 0 to 100 (compat)
   impactScore          Int      @default(0) // 0 to 100
-  date                 String   // YYYY-MM-DD
-  time                 String?  // 10:30, 16:00
+  date                 String // YYYY-MM-DD
+  time                 String? // 10:30, 16:00
   timestampUtc         DateTime
   timezone             String   @default("UTC")
   previousValue        String?
@@ -1855,8 +1936,8 @@ model MarketCalendarEvent {
   surprise             Float?
   surprisePercent      Float?
   expectedMarketEffect String?
-  affectedAssets       String?  // JSON string or comma-separated list of symbols: ["SPY","QQQ","BTC"]
-  source               String?  // Source name (compat)
+  affectedAssets       String? // JSON string or comma-separated list of symbols: ["SPY","QQQ","BTC"]
+  source               String? // Source name (compat)
   sourceUrl            String?
   sourceType           String   @default("AUTOMATIC") // AUTOMATIC, MANUAL
   companyName          String?
@@ -1867,7 +1948,7 @@ model MarketCalendarEvent {
   isVerified           Boolean  @default(false)
   isPublished          Boolean  @default(true)
   isFeatured           Boolean  @default(false)
-  eventFingerprint     String?  // country + date + canonical_slug + ticker
+  eventFingerprint     String? // country + date + canonical_slug + ticker
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -1886,8 +1967,8 @@ model MarketCalendarEvent {
 model CalendarSource {
   id           String    @id @default(uuid())
   name         String
-  type         String    // OFFICIAL, FINANCIAL_API, TRADINGVIEW, SCRAPER, RSS, MANUAL
-  country      String    // US, AR, GLOBAL
+  type         String // OFFICIAL, FINANCIAL_API, TRADINGVIEW, SCRAPER, RSS, MANUAL
+  country      String // US, AR, GLOBAL
   baseUrl      String?
   apiUrl       String?
   isActive     Boolean   @default(true)
@@ -1910,19 +1991,19 @@ model MarketEarningsEvent {
   ticker              String
   companyName         String
   logoUrl             String?
-  date                String   // YYYY-MM-DD
-  time                String?  // 18:00
+  date                String // YYYY-MM-DD
+  time                String? // 18:00
   timestampUtc        DateTime
   timezone            String   @default("America/New_York")
   dateStatus          String   @default("CONFIRMED") // CONFIRMED, ESTIMATED
-  reportTiming        String?  // BMO (Before Market Open), AMC (After Market Close), DMH (During Market Hours)
+  reportTiming        String? // BMO (Before Market Open), AMC (After Market Close), DMH (During Market Hours)
   epsEstimate         Float?
   revenueEstimate     Float?
   actualEps           Float?
   actualRevenue       Float?
   epsSurprise         Float?
   revenueSurprise     Float?
-  marketReaction      Float?   // Variación % de precio post-balance
+  marketReaction      Float? // Variación % de precio post-balance
   marketCap           Float?
   earningsImpactScore Int      @default(0) // 0 to 100
   source              String?
@@ -1946,13 +2027,13 @@ model MarketDividendEvent {
   ticker          String
   companyName     String
   logoUrl         String?
-  exDate          String   // YYYY-MM-DD
-  paymentDate     String?  // YYYY-MM-DD
-  recordDate      String?  // YYYY-MM-DD
-  declarationDate String?  // YYYY-MM-DD
-  amount          Float?   // Monto del dividendo por acción en USD
-  yield           Float?   // Rendimiento de dividendo (%)
-  frequency       String?  // Ej: Trimestral, Anual
+  exDate          String // YYYY-MM-DD
+  paymentDate     String? // YYYY-MM-DD
+  recordDate      String? // YYYY-MM-DD
+  declarationDate String? // YYYY-MM-DD
+  amount          Float? // Monto del dividendo por acción en USD
+  yield           Float? // Rendimiento de dividendo (%)
+  frequency       String? // Ej: Trimestral, Anual
   marketCap       Float?
   source          String?  @default("TradingView Official Scanner")
   sourceType      String   @default("AUTOMATIC")
@@ -1966,15 +2047,14 @@ model MarketDividendEvent {
   @@index([isPublished])
 }
 
-
 model CalendarSyncLog {
   id              String    @id @default(uuid())
   executedAt      DateTime  @default(now())
   startedAt       DateTime  @default(now())
   finishedAt      DateTime?
   sourceId        String?
-  syncType        String    // ALL, MACRO, ECONOMIC, EARNINGS, SOURCE
-  status          String    // SUCCESS, PARTIAL, FAILED
+  syncType        String // ALL, MACRO, ECONOMIC, EARNINGS, SOURCE
+  status          String // SUCCESS, PARTIAL, FAILED
   providerUsed    String
   eventsProcessed Int       @default(0)
   eventsFound     Int       @default(0)
@@ -1995,28 +2075,28 @@ model CalendarSyncLog {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model ChartAnalysis {
-  id           String    @id @default(uuid())
-  userId       String
-  user         User      @relation("UserChartAnalyses", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation("UserChartAnalyses", fields: [userId], references: [id], onDelete: Cascade)
 
-  title        String    @default("Análisis Técnico")
-  description  String?
-  symbol       String    // e.g. "NASDAQ:AAPL", "BYMA:GGAL", "BINANCE:BTCUSDT"
-  exchange     String?   // e.g. "NASDAQ", "BYMA", "BINANCE", "NYSE"
-  timeframe    String    @default("1D") // "1", "5", "15", "60", "1D", "1W", "1M"
+  title       String  @default("Análisis Técnico")
+  description String?
+  symbol      String // e.g. "NASDAQ:AAPL", "BYMA:GGAL", "BINANCE:BTCUSDT"
+  exchange    String? // e.g. "NASDAQ", "BYMA", "BINANCE", "NYSE"
+  timeframe   String  @default("1D") // "1", "5", "15", "60", "1D", "1W", "1M"
 
   // Structural chart state (drawings, coordinates, points, styles, visible range, indicators)
-  chartState   Json
+  chartState Json
 
-  isPublic     Boolean   @default(false)
+  isPublic     Boolean         @default(false)
   forkedFromId String?
   forkedFrom   ChartAnalysis?  @relation("ChartAnalysisForks", fields: [forkedFromId], references: [id], onDelete: SetNull)
   forks        ChartAnalysis[] @relation("ChartAnalysisForks")
 
-  versions     ChartAnalysisVersion[]
+  versions ChartAnalysisVersion[]
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([symbol])
@@ -2024,16 +2104,16 @@ model ChartAnalysis {
 }
 
 model ChartAnalysisVersion {
-  id            String        @id @default(uuid())
-  analysisId    String
-  analysis      ChartAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  id         String        @id @default(uuid())
+  analysisId String
+  analysis   ChartAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
 
-  versionNumber Int           @default(1)
-  chartState    Json          // Immutable frozen snapshot
+  versionNumber Int  @default(1)
+  chartState    Json // Immutable frozen snapshot
 
-  posts         Post[]
+  posts Post[]
 
-  createdAt     DateTime      @default(now())
+  createdAt DateTime @default(now())
 
   @@index([analysisId])
   @@index([createdAt])

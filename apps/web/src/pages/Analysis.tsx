@@ -1034,7 +1034,7 @@ export default function Analysis() {
         );
 
         return (
-            <div className="w-full max-w-full py-10 px-4 sm:px-6 lg:px-8 xl:px-10 space-y-10 pb-28">
+            <div className="analysis-page w-full max-w-full py-10 px-4 sm:px-6 lg:px-8 xl:px-10 space-y-10 pb-28">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs sm:text-sm font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20 mb-3">
@@ -1180,7 +1180,7 @@ export default function Analysis() {
     const methodology = a.valuationMethodology;
 
     return (
-        <div className="w-full max-w-full py-10 px-4 sm:px-6 lg:px-8 xl:px-10 space-y-12 pb-36">
+        <div className="analysis-page w-full max-w-full py-10 px-4 sm:px-6 lg:px-8 xl:px-10 space-y-12 pb-36">
             {/* Navegación Superior */}
             <div className="flex items-center justify-between">
                 <Link to="/analysis" className="inline-flex items-center gap-2.5 text-base sm:text-lg font-black text-muted-foreground hover:text-foreground transition-colors">
@@ -1863,8 +1863,35 @@ export default function Analysis() {
                                 </div>
                             </div>
 
-                            {/* Gráfico Interactivo de TradingView con Herramientas de Dibujo */}
-                            {(() => {
+                                {/* Captura exacta publicada por el analista */}
+                                {tech.chartSnapshotUrl && (
+                                    <div className="rounded-3xl border border-primary/25 bg-primary/5 overflow-hidden shadow-lg">
+                                        <div className="px-5 sm:px-7 py-4 border-b border-primary/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <div className="flex items-center gap-2 text-base sm:text-lg font-black text-foreground">
+                                                    <Camera className="w-5 h-5 text-primary" />
+                                                    Captura del análisis del analista
+                                                </div>
+                                                <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                                                    Esta imagen conserva las líneas, zonas y anotaciones del análisis publicado.
+                                                </p>
+                                            </div>
+                                            <span className="text-xs sm:text-sm font-bold px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 self-start sm:self-auto">
+                                                Referencia publicada
+                                            </span>
+                                        </div>
+                                        <div className="p-3 sm:p-5 bg-background/30">
+                                            <img
+                                                src={tech.chartSnapshotUrl}
+                                                alt={`Captura del análisis técnico de ${a.ticker || a.symbol}`}
+                                                className="w-full h-auto max-h-[760px] object-contain mx-auto rounded-2xl border border-border/50 bg-card"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Gráfico interactivo con datos actuales */}
+                                {(() => {
                                 const chartStorageId = tech.chartStorageId || (a.id 
                                     ? `finix_analysis_${a.id}` 
                                     : `finix_analysis_${(a.ticker || a.symbol || 'asset').toLowerCase().replace(/[^a-z0-9_]/g, '_')}`);
@@ -1875,10 +1902,10 @@ export default function Analysis() {
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <div className="flex items-center gap-3 flex-wrap">
                                                 <span className="text-base sm:text-lg font-black text-foreground uppercase tracking-wider flex items-center gap-2">
-                                                    <Zap className="w-5 h-5 text-primary" /> Proyección Técnica Interactiva en Vivo
+                                                    <Zap className="w-5 h-5 text-primary" /> Gráfico en vivo
                                                 </span>
                                                 <span className="text-xs sm:text-sm px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 font-bold">
-                                                    Líneas y figuras trazadas por el analista
+                                                    Datos de mercado actuales
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-3">
@@ -1898,8 +1925,7 @@ export default function Analysis() {
                                             </div>
                                         </div>
 
-                                        {/* Gráfico Interactivo Único con Persistencia de Dibujos */}
-                            <div className="rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-card w-full min-h-[460px] sm:min-h-[680px] lg:min-h-[840px]">
+                                        <div className="rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-card w-full min-h-[460px] sm:min-h-[680px] lg:min-h-[840px]">
                                             <TradingViewChart 
                                                 symbol={fullSymbol} 
                                                 height={840}
@@ -1927,24 +1953,6 @@ export default function Analysis() {
                                             </div>
                                         )}
 
-                                        {/* Respaldo estático si existiera una captura manual */}
-                                        {tech.chartSnapshotUrl && (
-                                            <details className="group rounded-2xl border border-border/50 bg-muted/10 overflow-hidden">
-                                                <summary className="px-5 py-3 cursor-pointer text-sm sm:text-base font-semibold text-muted-foreground hover:text-foreground flex items-center justify-between transition-colors select-none">
-                                                    <span className="flex items-center gap-2">
-                                                        <Camera className="w-4 h-4 text-muted-foreground" /> Ver captura estática de referencia
-                                                    </span>
-                                                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">Mostrar captura ▼</span>
-                                                </summary>
-                                                <div className="p-3 border-t border-border/40">
-                                                    <img 
-                                                        src={tech.chartSnapshotUrl} 
-                                                        alt={`Captura estática de ${a.ticker || a.symbol}`}
-                                                        className="w-full h-auto max-h-[500px] object-contain mx-auto rounded-xl"
-                                                    />
-                                                </div>
-                                            </details>
-                                        )}
                                     </div>
                                 );
                             })()}
