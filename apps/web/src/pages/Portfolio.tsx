@@ -985,7 +985,7 @@ const PortfolioPage = () => {
               <ProGate
                   section="portfolio"
                   buttonText="Activar Finix PRO"
-                  onUpgrade={() => navigate('/pricing')}
+                  onUpgrade={() => navigate('/pro')}
               />
           </div>
       );
@@ -1303,21 +1303,21 @@ const PortfolioPage = () => {
                       {displayPortfolio.assets.length} {displayPortfolio.assets.length === 1 ? 'posición' : 'posiciones'}
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-center gap-2 flex-wrap w-full sm:w-auto">
+                  <div className="flex w-full min-w-0 items-center justify-center gap-2 flex-wrap sm:w-auto sm:flex-nowrap">
                     {/* Search */}
-                    <div className="relative flex items-center">
-                      <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                    <div className="relative flex min-w-[150px] flex-1 items-center sm:flex-none">
+                      <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-muted-foreground" />
                       <input
                         type="text"
                         placeholder="Buscar por ticker..."
                         value={assetSearch}
                         onChange={(e) => setAssetSearch(e.target.value)}
-                        className="w-36 sm:w-48 pl-8.5 pr-7 h-9 text-xs rounded-xl border border-border/70 bg-card/60 backdrop-blur-xs outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-muted-foreground/60 shadow-xs"
+                        className="h-9 w-full rounded-xl border border-border/70 bg-card/60 pl-9 pr-8 text-xs outline-none shadow-sm backdrop-blur-sm transition-[border-color,box-shadow,background-color] placeholder:text-muted-foreground/60 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 sm:w-48"
                       />
                       {assetSearch && (
                         <button
                           onClick={() => setAssetSearch("")}
-                          className="absolute right-2.5 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer rounded-md transition-colors"
+                          className="absolute right-2.5 cursor-pointer rounded-md p-0.5 text-muted-foreground transition-colors hover:text-foreground"
                           title="Limpiar búsqueda"
                         >
                           <X className="w-3 h-3" />
@@ -1326,7 +1326,7 @@ const PortfolioPage = () => {
                     </div>
                     {/* Sort */}
                     <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-                      <SelectTrigger className="h-9 text-xs w-32 rounded-xl border-border/70 bg-card/60 backdrop-blur-xs hover:border-border transition-colors cursor-pointer shadow-xs">
+                      <SelectTrigger className="h-9 w-[8.5rem] shrink-0 cursor-pointer rounded-xl border-border/70 bg-card/60 text-xs shadow-sm transition-colors hover:border-border sm:w-32">
                         <SortAsc className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" /><SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1339,7 +1339,7 @@ const PortfolioPage = () => {
                     {/* Buy */}
                     <button
                       type="button"
-                      className="group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 shadow-[0_2px_10px_rgba(16,185,129,0.32)] hover:shadow-[0_4px_16px_rgba(16,185,129,0.48)] border border-emerald-400/30 active:scale-[0.97] transition-all duration-200 cursor-pointer select-none"
+                      className="group inline-flex h-9 shrink-0 cursor-pointer select-none items-center gap-1.5 rounded-xl border border-emerald-400/30 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 px-3.5 text-xs font-semibold text-white shadow-[0_2px_10px_rgba(16,185,129,0.32)] transition-[transform,box-shadow,background-color] duration-200 hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 hover:shadow-[0_4px_16px_rgba(16,185,129,0.48)] active:scale-[0.97]"
                       onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
                     >
                       <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-white group-hover:rotate-90 transition-transform duration-200">

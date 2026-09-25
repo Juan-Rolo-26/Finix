@@ -432,7 +432,7 @@ export default function TopGainersPage() {
                                                                          </p>
                                                                      </div>
                                                                      <button
-                                                                         onClick={() => navigate('/pricing')}
+                                                                         onClick={() => navigate('/pro')}
                                                                          className="mt-2 flex items-center justify-center gap-2 px-7 py-3 rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 active:scale-[0.98] transition-all"
                                                                          style={{
                                                                              background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
@@ -448,7 +448,7 @@ export default function TopGainersPage() {
                                                      )}
                                                      <tr
                                                          className="opacity-60 select-none hover:bg-muted/5 transition-colors cursor-pointer"
-                                                         onClick={() => navigate('/pricing')}
+                                                                         onClick={() => navigate('/pro')}
                                                      >
                                                          <td className="py-4 px-4 text-center">
                                                              <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded-lg text-muted-foreground/60">
@@ -484,7 +484,7 @@ export default function TopGainersPage() {
                                                              <button
                                                                  onClick={(e) => {
                                                                      e.stopPropagation();
-                                                                     navigate('/pricing');
+                                                                     navigate('/pro');
                                                                  }}
                                                                  className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors"
                                                                  title="Desbloquear con PRO"

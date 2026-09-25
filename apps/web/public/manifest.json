@@ -1,21 +1,24 @@
 {
   "name": "Finix - Finanzas y Mercados",
   "short_name": "Finix",
+  "id": "/",
   "description": "Comunidad, análisis de mercado y herramientas financieras.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#0B0F17",
   "theme_color": "#10B981",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/finix-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/logo.png",
+      "src": "/finix-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

@@ -7,14 +7,14 @@ import { apiFetch } from '@/lib/api';
 import { SubscriptionRenewalChoice } from '@/components/SubscriptionRenewalChoice';
 
 const FEATURES = [
-    'Análisis fundamentales detallados de más de 5,000 acciones.',
-    'Alertas exclusivas por Gmail en tiempo real y reportes prioritarios.',
-    'Métricas técnicas en tiempo real e indicadores avanzados.',
-    'Estimaciones de "Fair Value" y detección de premiums o descuentos.',
-    'Desglose profundo de balances financieros y flujo de caja (Cash Flow).',
-    'Badge de Inversor PRO en tu perfil para mayor reputación.',
+    'Datos de mercado y Pre-Market organizados.',
+    'Mapas de calor y filtros por sector.',
+    'Portafolios y métricas de seguimiento.',
+    'Balances, múltiplos y herramientas de análisis.',
+    'Noticias, calendario y datos por activo.',
+    'Alertas configurables por Email y Telegram.',
     'Pago mensual seguro en ARS mediante Mercado Pago.',
-    'Cero anuncios y soporte prioritario 24/7.'
+    'Sin permanencia mínima.'
 ];
 
 export default function ProUpgrade() {
@@ -105,16 +105,16 @@ export default function ProUpgrade() {
                     >
                         <div className="space-y-4">
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
-                                <Sparkles className="w-4 h-4" /> Desbloqueá tu potencial
+                                <Sparkles className="w-4 h-4" /> Herramientas para analizar mercados
                             </div>
                             <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold tracking-tight leading-[1.1]">
-                                Invertí con <br />
+                                Entendé mejor el mercado <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">
-                                    Inteligencia Superior
+                                    con más datos
                                 </span>
                             </h1>
                             <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-                                Obtené herramientas claras para analizar tus inversiones y tomar mejores decisiones.
+                                Reuní cotizaciones, noticias, portafolios y métricas en un mismo lugar. Finix ofrece datos y herramientas informativas; no brinda asesoramiento financiero.
                             </p>
                         </div>
 
@@ -124,8 +124,8 @@ export default function ProUpgrade() {
                                     <Target className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-sm">Precisión Total</h4>
-                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Encontrá el "Fair Value" de miles de activos.</p>
+                                    <h4 className="font-bold text-sm">Datos ordenados</h4>
+                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Consultá información de mercados y empresas en un mismo espacio.</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-4">
@@ -133,8 +133,8 @@ export default function ProUpgrade() {
                                     <Shield className="w-5 h-5 text-blue-500" />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-sm">Menos Riesgo</h4>
-                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Conocé el flujo de caja y la deuda de cada empresa.</p>
+                                    <h4 className="font-bold text-sm">Herramientas claras</h4>
+                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Usá métricas y filtros para hacer tu propio seguimiento.</p>
                                 </div>
                             </div>
                         </div>
@@ -154,7 +154,7 @@ export default function ProUpgrade() {
                             <div className="flex justify-between items-start mb-6">
                                 <div>
                                     <h2 className="text-2xl font-bold">Finix Pro</h2>
-                                    <p className="text-muted-foreground text-sm mt-1">El aliado perfecto del inversor.</p>
+                                    <p className="text-muted-foreground text-sm mt-1">Más datos para tu propio análisis.</p>
                                 </div>
                                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                                     <Zap className="w-6 h-6 text-primary" />
@@ -166,7 +166,7 @@ export default function ProUpgrade() {
                                 <span className="text-muted-foreground font-medium">ARS / mes</span>
                             </div>
                             <p className="text-xs text-emerald-400 font-semibold mb-6 flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5" /> Pagá un mes o activá la renovación automática con Mercado Pago.
+                                <Sparkles className="w-3.5 h-3.5" /> Elegí un pago mensual o la renovación automática con Mercado Pago.
                             </p>
 
                             <button 
@@ -185,7 +185,7 @@ export default function ProUpgrade() {
                                     </>
                                 ) : !user ? (
                                     <>
-                                        <span>Iniciar sesión para mejorar a PRO</span>
+                                        <span>Iniciar sesión para comprar</span>
                                         <ArrowRight className="w-5 h-5" />
                                     </>
                                 ) : hasPro ? (
@@ -198,7 +198,7 @@ export default function ProUpgrade() {
                                 )}
                             </button>
                             <p className="text-center text-xs text-muted-foreground mt-4 mb-6 leading-relaxed">
-                                El pago se gestiona de forma segura con Mercado Pago y se puede cancelar desde <strong className="text-foreground">Configuración &gt; Planes PRO y Creador</strong>.
+                                El pago se gestiona de forma segura con Mercado Pago. Podés elegir un mes por vez o renovar automáticamente desde <strong className="text-foreground">Configuración &gt; Planes PRO y Creador</strong>.
                             </p>
 
                             <div className="space-y-4 pt-6 border-t border-border/40">

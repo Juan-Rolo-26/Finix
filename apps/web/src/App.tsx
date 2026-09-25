@@ -219,6 +219,8 @@ export default function App() {
 
                     {/* Info & Legal Routes */}
                     <Route path="/pro" element={<Pricing />} />
+                    {/* Alias kept for all existing upgrade buttons and deep links. */}
+                    <Route path="/pricing" element={<Pricing />} />
                     <Route path="/payment-result" element={<PaymentResult />} />
                     <Route path="/creator" element={<CreatorPage />} />
                     <Route path="/creador" element={<CreatorPage />} />

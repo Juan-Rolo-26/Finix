@@ -10,34 +10,55 @@ interface BeforeInstallPromptEvent extends Event {
     prompt(): Promise<void>;
 }
 
+type InstallMethod = 'native' | 'share' | null;
+
+const DISMISS_KEY = 'finix_install_dismissed_v3';
+
+function isStandaloneMode() {
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.matchMedia('(display-mode: minimal-ui)').matches
+        || window.matchMedia('(display-mode: fullscreen)').matches
+        || (window.navigator as any).standalone === true;
+}
+
+function isIosDevice() {
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    return /iphone|ipad|ipod/.test(userAgent)
+        || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+}
+
 export default function InstallBanner() {
     const [isVisible, setIsVisible] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+    const [installMethod, setInstallMethod] = useState<InstallMethod>(null);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        // 1. Si ya se está ejecutando en modo standalone (instalada como app), no mostrar
-        const isStandalone =
-            window.matchMedia('(display-mode: standalone)').matches ||
-            (window.navigator as any).standalone === true;
-
-        if (isStandalone) {
+        // Si ya está instalada como app, no mostrar otro aviso.
+        if (isStandaloneMode()) {
             return;
         }
 
-        // 2. Verificar si hay prompt capturado tempranamente
-        if ((window as any).__finix_deferred_prompt) {
-            setDeferredPrompt((window as any).__finix_deferred_prompt);
+        if (localStorage.getItem(DISMISS_KEY)) {
+            return;
         }
 
-        // 3. Verificar si el usuario lo descartó recientemente
-        const isDismissed = localStorage.getItem('finix_install_dismissed_v2');
-        if (!isDismissed) {
-            const timer = setTimeout(() => {
-                setIsVisible(true);
-            }, 1000);
-            return () => clearTimeout(timer);
+        // Chrome, Edge y navegadores Chromium entregan este prompt nativo.
+        const prompt = (window as any).__finix_deferred_prompt as BeforeInstallPromptEvent | undefined;
+        if (prompt) {
+            setDeferredPrompt(prompt);
+            setInstallMethod('native');
+            setIsVisible(true);
+            return;
+        }
+
+        // Safari en iPhone/iPad no expone beforeinstallprompt. El menú nativo
+        // de compartir permite llegar a "Agregar a inicio" sin mostrar pasos.
+        if (isIosDevice() && typeof navigator.share === 'function') {
+            setInstallMethod('share');
+            const timer = window.setTimeout(() => setIsVisible(true), 700);
+            return () => window.clearTimeout(timer);
         }
     }, []);
 
@@ -47,12 +68,14 @@ export default function InstallBanner() {
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
             (window as any).__finix_deferred_prompt = e;
-            setIsVisible(true);
+            setInstallMethod('native');
+            if (!localStorage.getItem(DISMISS_KEY)) setIsVisible(true);
         };
         const handleDeferredPromptReady = () => {
             if ((window as any).__finix_deferred_prompt) {
                 setDeferredPrompt((window as any).__finix_deferred_prompt);
-                setIsVisible(true);
+                setInstallMethod('native');
+                if (!localStorage.getItem(DISMISS_KEY)) setIsVisible(true);
             }
         };
 
@@ -66,29 +89,40 @@ export default function InstallBanner() {
     }, []);
 
     const handleDismiss = () => {
-        localStorage.setItem('finix_install_dismissed_v2', 'true');
+        localStorage.setItem(DISMISS_KEY, 'true');
         setIsVisible(false);
     };
 
     const handleInstallClick = async () => {
         const promptEvent = deferredPrompt || (window as any).__finix_deferred_prompt;
-        if (promptEvent) {
+        if (promptEvent && installMethod === 'native') {
             try {
-                // Disparador nativo automático inmediato
                 await promptEvent.prompt();
                 const choice = await promptEvent.userChoice;
                 if (choice && choice.outcome === 'accepted') {
                     setIsVisible(false);
-                    localStorage.setItem('finix_install_dismissed_v2', 'true');
+                    localStorage.setItem(DISMISS_KEY, 'true');
                 }
             } catch (err) {
                 console.error('Error al solicitar instalación PWA:', err);
             }
             setDeferredPrompt(null);
             (window as any).__finix_deferred_prompt = null;
-        } else {
-            // Si el navegador ya tiene la app o no soporta prompt directo, cerrar silenciosamente
-            handleDismiss();
+            return;
+        }
+
+        if (installMethod === 'share' && typeof navigator.share === 'function') {
+            try {
+                await navigator.share({
+                    title: 'Finix',
+                    text: 'Agregar Finix a la pantalla de inicio',
+                    url: window.location.href,
+                });
+                handleDismiss();
+            } catch (error: any) {
+                // Cancelar el menú nativo no debe ocultar la opción para volver a intentarlo.
+                if (error?.name !== 'AbortError') console.error('No se pudo abrir el menú de instalación:', error);
+            }
         }
     };
 
@@ -97,7 +131,7 @@ export default function InstallBanner() {
     return (
         <aside
             aria-label="Instalar Finix"
-            className="md:hidden fixed bottom-[72px] left-3 right-3 max-w-md mx-auto z-40"
+            className="fixed bottom-[72px] left-3 right-3 z-40 mx-auto max-w-md sm:bottom-6 sm:left-auto sm:right-6"
         >
             <div
                 className="relative overflow-hidden rounded-2xl p-3 sm:p-3.5
@@ -130,10 +164,10 @@ export default function InstallBanner() {
 
                     <div className="flex flex-col min-w-0">
                         <span className="text-[13px] font-bold text-foreground leading-snug truncate flex items-center gap-1.5">
-                            Instalar Finix
+                            {installMethod === 'share' ? 'Agregar Finix' : 'Instalar Finix'}
                         </span>
                         <span className="text-[11px] text-muted-foreground font-medium leading-tight truncate">
-                            Acceso directo rápido a tus inversiones
+                            Acceso directo a tus inversiones
                         </span>
                     </div>
                 </div>
@@ -146,7 +180,7 @@ export default function InstallBanner() {
                         className="px-3.5 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-sm hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                         <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>Instalar</span>
+                        <span>{installMethod === 'share' ? 'Agregar' : 'Instalar'}</span>
                     </button>
 
                     <button

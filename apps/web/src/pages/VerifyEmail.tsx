@@ -12,6 +12,10 @@ export default function VerifyEmail() {
     const navigate = useNavigate();
     const { login } = useAuthStore();
     const initialEmail = searchParams.get('email') || '';
+    const requestedRedirect = searchParams.get('redirect');
+    const redirectTarget = requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')
+        ? requestedRedirect
+        : '/dashboard';
     const [email, setEmail] = useState(initialEmail);
     const [code, setCode] = useState(() => (searchParams.get('code') || '').replace(/\D/g, '').slice(0, 6));
     const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +45,7 @@ export default function VerifyEmail() {
 
             if (data.token && data.user) {
                 login(data.token, data.user);
-                navigate('/dashboard');
+                navigate(redirectTarget);
             } else {
                 throw new Error('La cuenta fue verificada, pero no se pudo iniciar la sesión.');
             }

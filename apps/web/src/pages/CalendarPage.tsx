@@ -297,7 +297,7 @@ export default function CalendarPage() {
                 <ProGate
                     section="calendar"
                     buttonText="Activar Finix PRO"
-                    onUpgrade={() => navigate('/pricing')}
+                    onUpgrade={() => navigate('/pro')}
                 />
             </div>
         );

@@ -173,7 +173,7 @@ export default function NewsPage() {
                 <ProGate
                     section="news"
                     buttonText="Activar Finix PRO"
-                    onUpgrade={() => navigate('/pricing')}
+                    onUpgrade={() => navigate('/pro')}
                 />
             </div>
         );

@@ -31,6 +31,13 @@ import {
 
 type AuthView = 'login' | 'register' | 'forgot';
 
+const normalizeRedirectTarget = (value?: string | null) => {
+    if (!value || !value.startsWith('/') || value.startsWith('//')) {
+        return '/dashboard';
+    }
+    return value;
+};
+
 const FeaturePill = ({ icon: Icon, label }: { icon: any; label: string }) => (
     <div className="auth-feature-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs">
         <Icon className="w-3 h-3 text-primary" />
@@ -42,7 +49,7 @@ export default function AuthPage() {
     const t = useTranslation();
     const [searchParams] = useSearchParams();
     const mode = searchParams.get('mode');
-    const redirectTarget = searchParams.get('redirect') || searchParams.get('returnUrl') || '/dashboard';
+    const redirectTarget = normalizeRedirectTarget(searchParams.get('redirect') || searchParams.get('returnUrl'));
     const planRequested = searchParams.get('plan');
     const callbackReason = searchParams.get('reason');
     const callbackMessage = searchParams.get('message');
@@ -205,7 +212,13 @@ export default function AuthPage() {
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data?.message || 'No se pudo enviar el código de verificación.');
 
-            navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}&sent=1`);
+            const verifyParams = new URLSearchParams({
+                email: normalizedEmail,
+                sent: '1',
+                redirect: redirectTarget,
+            });
+            if (planRequested) verifyParams.set('plan', planRequested);
+            navigate(`/verify-email?${verifyParams.toString()}`);
         } catch (err: any) {
             setAuthError(normalizeAuthError(err.message, 'Error de conexión'));
         }

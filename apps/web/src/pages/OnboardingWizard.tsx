@@ -417,7 +417,12 @@ export default function OnboardingWizard() {
 
     const handleFinish = async () => {
         await saveStep(STEPS.length - 1, true);
-        navigate('/dashboard');
+        const requestedRedirect = sessionStorage.getItem('postOnboardingRedirect');
+        sessionStorage.removeItem('postOnboardingRedirect');
+        const redirectTarget = requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')
+            ? requestedRedirect
+            : '/dashboard';
+        navigate(redirectTarget);
     };
 
     const isLastStep = currentStep === STEPS.length - 1;

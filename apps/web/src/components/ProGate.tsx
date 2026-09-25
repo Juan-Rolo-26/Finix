@@ -33,182 +33,182 @@ interface SectionInfo {
 
 const SECTION_DATA: Record<ProSectionType, SectionInfo> = {
     market: {
-        badge: 'MERCADOS EN TIEMPO REAL & PRE-MARKET',
+        badge: 'MERCADOS Y PRE-MARKET',
         icon: LineChart,
-        defaultTitle: 'Mercado Financiero Institucional PRO',
-        defaultDesc: 'Monitoreo de Wall Street y CEDEARs en tiempo real. Pre-Market con cotizaciones congeladas post-apertura, mapa de calor del S&P 500 y lentes técnicas semanales.',
+        defaultTitle: 'Mercados en vivo para seguir mejor la rueda',
+        defaultDesc: 'Consultá cotizaciones, Pre-Market, mapa de calor y filtros técnicos en un mismo espacio.',
         features: [
             {
-                title: 'Pre-Market & Cotizaciones en Vivo',
-                desc: 'Precios en tiempo real durante la rueda y cotización congelada de cierre de premarket a las 10:30 hs para comparar con precisión.',
+                title: 'Pre-Market y cotizaciones',
+                desc: 'Revisá precios de mercado y datos de Pre-Market según la disponibilidad de cada fuente.',
             },
             {
-                title: 'Mapa de Calor Institucional S&P 500',
-                desc: 'Treemap interactivo por capitalización bursátil y los 11 sectores GICS con rotación sectorial y variaciones porcentuales.',
+                title: 'Mapa de calor del S&P 500',
+                desc: 'Explorá sectores, empresas y variaciones con una vista visual y fácil de leer.',
             },
             {
-                title: 'Lentes Técnicas Semanales Multimétricas',
-                desc: 'Filtros confluentes con MACD (impulso), RSI semanal 45/55 (reversión), ADX (fuerza tendencial) y Estocástico rápido.',
+                title: 'Filtros técnicos',
+                desc: 'Aplicá filtros como MACD, RSI y ADX para ordenar la información del mercado.',
             },
             {
-                title: 'Screener de Top Gainers, Losers & Volumen',
-                desc: 'Ranking institucional de activos más activos, mayores subas y bajas intradiarias para detectar oportunidades al instante.',
+                title: 'Rankings del mercado',
+                desc: 'Compará las mayores subas, bajas y movimientos de volumen de la jornada.',
             },
         ],
     },
     portfolio: {
-        badge: 'GESTIÓN PATRIMONIAL AVANZADA',
+        badge: 'PORTAFOLIOS Y MÉTRICAS',
         icon: Briefcase,
-        defaultTitle: 'Gestión Multi-Portafolio Cuantitativa PRO',
-        defaultDesc: 'Seguimiento patrimonial profesional con métricas cuantitativas, análisis de riesgo ponderado y comparativa gráfica contra el S&P 500 ($SPY).',
+        defaultTitle: 'Seguí tus portafolios con claridad',
+        defaultDesc: 'Organizá tus posiciones y revisá su evolución con métricas y comparaciones fáciles de interpretar.',
         features: [
             {
-                title: 'Creación de Múltiples Portafolios Ilimitados',
-                desc: 'Organizá tus inversiones por estrategia: Dividendos, Crecimiento, Renta Fija, Cripto o Carteras de Valor.',
+                title: 'Varios portafolios',
+                desc: 'Separá tus posiciones por estrategia, cuenta o tipo de activo.',
             },
             {
-                title: 'Métricas Institucionales TWR y XIRR',
-                desc: 'Tasa Ponderada en el Tiempo (TWR), Tasa Interna de Retorno (XIRR), Alpha acumulado, Beta y Ratio Sharpe en tiempo real.',
+                title: 'Métricas de rendimiento',
+                desc: 'Consultá TWR, XIRR, volatilidad, beta y otras medidas de seguimiento.',
             },
             {
-                title: 'Benchmark Gráfico Interactivo vs S&P 500 ($SPY)',
-                desc: 'Comparación visual de sobre-rendimiento para medir si tu estrategia de inversión supera al mercado general.',
+                title: 'Comparación con el S&P 500',
+                desc: 'Visualizá tu evolución junto al SPY desde el inicio de tu portafolio.',
             },
             {
-                title: 'Desglose de Riesgo & Proyección de Dividendos',
-                desc: 'Distribución porcentual por sector, ponderación de activos y calendario predictivo de cobro de dividendos.',
+                title: 'Distribución y dividendos',
+                desc: 'Revisá el peso de cada activo y las fechas de dividendos informadas.',
             },
         ],
     },
     analysis: {
-        badge: 'RESEARCH & VALUACIÓN FUNDAMENTAL',
+        badge: 'ANÁLISIS DE EMPRESAS',
         icon: Layers,
-        defaultTitle: 'Modelos de Valuación Cuantitativa & DCF PRO',
-        defaultDesc: 'Modelos matemáticos de valuación intrínseca, cálculo de Fair Value por DCF, mapa ROIC vs WACC y balances auditados de 10 años.',
+        defaultTitle: 'Datos para analizar empresas',
+        defaultDesc: 'Revisá balances, múltiplos y modelos de valuación para entender mejor cada compañía.',
         features: [
             {
-                title: 'Modelo de Flujos de Fondos Descontados (DCF)',
-                desc: 'Estimación automática de Valor Intrínseco (Fair Value) con supuestos proyectados a 5 años y cálculo de margen de seguridad.',
+                title: 'Modelo DCF',
+                desc: 'Consultá una valuación basada en flujos de caja y supuestos editables.',
             },
             {
-                title: 'Mapa de Creación de Valor (ROIC vs WACC)',
-                desc: 'Matriz visual de retorno sobre capital invertido vs costo de capital con calculadora interactiva de WACC.',
+                title: 'ROIC y WACC',
+                desc: 'Compará el retorno sobre el capital con el costo de financiamiento.',
             },
             {
-                title: 'Scores de Salud Financiera Piotroski F-Score y Altman Z',
-                desc: 'Puntuación matemática de solvencia (0-9), calidad contable y probabilidad de quiebra corporativa.',
+                title: 'Indicadores financieros',
+                desc: 'Usá Piotroski, Altman y otros datos como referencias para tu propio análisis.',
             },
             {
-                title: 'Balances de 10 Años y Múltiplos Comparables',
-                desc: 'Histórico completo de Estado de Resultados, Balance y FCF con múltiplos EV/EBITDA, P/E, P/FCF y PEG.',
+                title: 'Balances y múltiplos',
+                desc: 'Revisá históricos, flujo de caja y múltiplos comparables de cada empresa.',
             },
         ],
     },
     news: {
-        badge: 'FEED & SENTIMIENTO EN TIEMPO REAL',
+        badge: 'NOTICIAS FINANCIERAS',
         icon: Newspaper,
-        defaultTitle: 'Inteligencia de Noticias Financieras con IA PRO',
-        defaultDesc: 'Cobertura continua de Wall Street, Reserva Federal y macroeconomía con análisis algorítmico de sentimiento e impacto en activos.',
+        defaultTitle: 'Noticias ordenadas por tema y activo',
+        defaultDesc: 'Leé noticias financieras con filtros por categoría, empresa y activo relacionado.',
         features: [
             {
-                title: 'Feed en Vivo sin Límites de Lectura',
-                desc: 'Cobertura ininterrumpida de Wall Street, balances trimestrales, decisiones de tasas y contexto argentino.',
+                title: 'Feed de noticias',
+                desc: 'Accedé a las publicaciones procesadas por Finix y ordenadas por actualidad y relevancia.',
             },
             {
-                title: 'Análisis Algorítmico de Sentimiento por IA',
-                desc: 'Clasificación de noticias (Alcista / Neutral / Bajista) con puntaje de impacto proyectado en la cotización.',
+                title: 'Contexto del titular',
+                desc: 'Consultá la clasificación informativa y el contexto asociado a cada noticia.',
             },
             {
-                title: 'Detección Directa de Tickers Impactados',
-                desc: 'Vinculación inteligente de noticias a acciones ($NVDA, $AAPL, $TSLA, etc.) para operar con ventaja inmediata.',
+                title: 'Noticias por activo',
+                desc: 'Encontrá rápidamente las noticias vinculadas con una empresa o ticker.',
             },
             {
-                title: 'Alertas Tempranas de Catalizadores',
-                desc: 'Notificaciones sobre reportes de balances, minutas de la Fed y catalizadores que mueven el mercado.',
+                title: 'Filtros temáticos',
+                desc: 'Filtrá por mercados, balances, economía, Argentina, cripto y otras categorías.',
             },
         ],
     },
     calendar: {
-        badge: 'CALENDARIO MACRO, EARNINGS & DIVIDENDOS',
+        badge: 'CALENDARIO DE MERCADO',
         icon: Calendar,
-        defaultTitle: 'Calendario Económico Institucional PRO',
-        defaultDesc: 'Eventos económicos de alto impacto de TradingView, reportes trimestrales de ganancias (Earnings Season) y dividendos oficiales.',
+        defaultTitle: 'Fechas importantes en un solo lugar',
+        defaultDesc: 'Consultá eventos económicos, balances y dividendos informados para planificar tu seguimiento.',
         features: [
             {
-                title: 'Calendario Macroeconómico de Alto Impacto',
-                desc: 'Decisiones de tasas de la Fed (FOMC), datos de inflación (IPC/CPI), empleo (NFP) y actividad económica global.',
+                title: 'Eventos económicos',
+                desc: 'Revisá tasas, inflación, empleo y otros datos macroeconómicos publicados.',
             },
             {
-                title: 'Temporada de Balances (Earnings) con % Sorpresa',
-                desc: 'Fechas de reportes corporativos con consenso de analistas, ingresos y EPS proyectado vs real con sorpresa.',
+                title: 'Fechas de balances',
+                desc: 'Consultá cuándo presentan resultados las empresas y qué datos están disponibles.',
             },
             {
-                title: 'Calendario Oficial de Dividendos S&P 500 y CEDEARs',
-                desc: 'Fechas ex-dividend, fechas de pago, montos en efectivo y rendimiento por dividendo (Dividend Yield) anual.',
+                title: 'Dividendos del S&P 500',
+                desc: 'Visualizá fechas ex-dividendo, pagos y montos informados de los activos incluidos.',
             },
             {
-                title: 'Cuentas Regresivas & Nivel de Impacto',
-                desc: 'Temporizadores en tiempo real hasta la apertura de cada evento para proteger tus posiciones de la volatilidad.',
+                title: 'Vista por fecha',
+                desc: 'Ordená los eventos en el calendario para encontrar rápidamente lo que te interesa.',
             },
         ],
     },
     alerts: {
-        badge: 'ALERTAS & ENVÍOS AUTOMÁTICOS',
+        badge: 'ALERTAS Y NOTIFICACIONES',
         icon: Bell,
-        defaultTitle: 'Sistema de Alertas Financieras PRO',
-        defaultDesc: 'Monitoreo activo 24/7 en segundo plano con disparadores personalizados de precio, volumen y cruces técnicos vía Email y Telegram.',
+        defaultTitle: 'Avisos para seguir tus activos',
+        defaultDesc: 'Configurá avisos por precio, variación o volumen y recibilos por los canales disponibles.',
         features: [
             {
-                title: 'Monitoreo en Servidor 24/7 sin Mantener la App Abierta',
-                desc: 'Tus alertas se ejecutan continuamente en la nube detectando movimientos de mercado en tiempo real.',
+                title: 'Seguimiento automático',
+                desc: 'Las alertas se revisan desde el servidor sin que tengas que dejar la web abierta.',
             },
             {
-                title: 'Disparadores por Precio, Variación y Volumen Inusual',
-                desc: 'Configurá condiciones exactas (precio mayor/menor, quiebre de soporte/resistencia o saltos porcentuales).',
+                title: 'Condiciones personalizadas',
+                desc: 'Elegí un precio, porcentaje de variación o volumen como condición de aviso.',
             },
             {
-                title: 'Notificaciones Multicanal Instantáneas',
-                desc: 'Recibí el aviso de inmediato con plantilla HTML responsive en tu Email y mensaje directo en tu Telegram.',
+                title: 'Avisos por Email y Telegram',
+                desc: 'Recibí una notificación cuando se cumpla la condición configurada.',
             },
             {
-                title: 'Auditoría y Tasa de Entrega en Vivo',
-                desc: 'Historial completo de alertas disparadas, estado de despacho y contexto técnico del activo en el momento.',
+                title: 'Historial de alertas',
+                desc: 'Consultá cuándo se activó cada aviso y cuál era el valor registrado.',
             },
         ],
     },
     general: {
-        badge: 'FINIX PRO · ACCESO TOTAL',
+        badge: 'FINIX PRO · HERRAMIENTAS AVANZADAS',
         icon: Sparkles,
-        defaultTitle: 'Funcionalidad Exclusiva PRO',
-        defaultDesc: 'Accedé a herramientas financieras avanzadas, análisis institucional, cotizaciones en tiempo real y alertas automáticas.',
+        defaultTitle: 'Más información para tus decisiones',
+        defaultDesc: 'Accedé a más datos, filtros y herramientas para analizar mercados y empresas por tu cuenta.',
         features: [
             {
-                title: 'Mercados en Vivo & Pre-Market',
-                desc: 'Cotizaciones en tiempo real sin delay, precios congelados post-apertura y mapa de calor S&P 500.',
+                title: 'Mercados y Pre-Market',
+                desc: 'Cotizaciones, mapa de calor y filtros para explorar la rueda.',
             },
             {
-                title: 'Modelos de Valuación Fundamental DCF & ROIC/WACC',
-                desc: 'Cálculo automático de Valor Intrínseco (Fair Value), múltiplos de mercado y puntuación Piotroski F-Score.',
+                title: 'Análisis de empresas',
+                desc: 'Balances, múltiplos y modelos de valuación como apoyo para tu análisis.',
             },
             {
-                title: 'Gestión Multi-Portafolio Cuantitativa',
-                desc: 'Métricas TWR, XIRR, Alpha y Ratio Sharpe con comparativa gráfica contra el S&P 500 ($SPY).',
+                title: 'Portafolios y métricas',
+                desc: 'Organizá posiciones y compará su evolución con referencias de mercado.',
             },
             {
-                title: 'Calendario Económico, Dividendos y Alertas 24/7',
-                desc: 'Eventos de alto impacto de la Reserva Federal, Earnings corporativos, fechas ex-dividend y alertas multicanal.',
+                title: 'Calendario y alertas',
+                desc: 'Fechas económicas, balances, dividendos y avisos configurables.',
             },
         ],
     },
 };
 
 const ALL_SECTIONS_OVERVIEW = [
-    { name: 'Mercados', icon: LineChart, desc: 'Cotizaciones en vivo, Pre-Market congelado a las 10:30 hs, heatmap S&P 500 y lentes técnicas semanales.' },
-    { name: 'Portafolios', icon: Briefcase, desc: 'Multi-carteras ilimitadas, métricas TWR, XIRR, Sharpe Ratio y benchmark vs SPY.' },
-    { name: 'Análisis', icon: Layers, desc: 'Modelo DCF de Fair Value intrínseco, matriz ROIC vs WACC y balances de 10 años.' },
-    { name: 'Noticias', icon: Newspaper, desc: 'Feed financiero en vivo, análisis de sentimiento con IA y alertas por ticker.' },
-    { name: 'Calendario', icon: Calendar, desc: 'Datos oficiales TradingView, reportes de Earnings con sorpresa y dividendos S&P 500.' },
-    { name: 'Alertas', icon: Bell, desc: 'Disparadores 24/7 por precio y volumen con avisos automáticos por Email y Telegram.' },
+    { name: 'Mercados', icon: LineChart, desc: 'Cotizaciones, Pre-Market, mapa de calor y filtros técnicos.' },
+    { name: 'Portafolios', icon: Briefcase, desc: 'Posiciones, métricas de rendimiento y comparación con el SPY.' },
+    { name: 'Análisis', icon: Layers, desc: 'Balances, múltiplos y modelos DCF para revisar empresas.' },
+    { name: 'Noticias', icon: Newspaper, desc: 'Noticias ordenadas por categoría, empresa y activo.' },
+    { name: 'Calendario', icon: Calendar, desc: 'Eventos económicos, balances y dividendos del S&P 500.' },
+    { name: 'Alertas', icon: Bell, desc: 'Avisos configurables por precio, variación y volumen.' },
 ];
 
 export interface ProGateProps {
@@ -267,9 +267,9 @@ export function ProGate({
 
     const handleUpgrade = onUpgrade || (() => {
         if (!user) {
-            navigate(`/auth?redirect=${encodeURIComponent('/pricing')}&plan=PRO`);
+            navigate(`/auth?redirect=${encodeURIComponent('/pro')}&plan=PRO`);
         } else {
-            navigate('/pricing');
+            navigate('/pro');
         }
     });
 
@@ -495,7 +495,7 @@ export function ProGate({
 
                     <div className="flex items-start gap-2.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold pt-2 border-t border-border/40">
                         <Zap className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                        <span><strong>Cobro recurrente mensual automático</strong> a precio fijo protegido. Cancelás cuando quieras en 1 clic.</span>
+                        <span><strong>Elegí cómo pagar</strong>: un mes por vez o renovación automática. Podés cancelarla desde Configuración.</span>
                     </div>
                 </div>
 
@@ -548,7 +548,7 @@ export function ProGate({
                     </Button>
 
                     <p className="text-[11px] text-muted-foreground/80 leading-tight">
-                        🔒 Facturación mensual automática sin permanencia mínima. Podés dar de baja tu plan en cualquier momento desde tu Configuración.
+                        🔒 Pago seguro con Mercado Pago. Elegí un mes o renovación automática; no hay permanencia mínima.
                     </p>
                 </div>
             </motion.div>

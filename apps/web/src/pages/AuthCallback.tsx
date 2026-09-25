@@ -61,7 +61,12 @@ export default function AuthCallback() {
             const redirectTarget = requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')
                 ? requestedRedirect
                 : '/dashboard';
-            navigate(!user.onboardingCompleted && isNewUser ? '/onboarding' : redirectTarget, { replace: true });
+            if (!user.onboardingCompleted && isNewUser) {
+                sessionStorage.setItem('postOnboardingRedirect', redirectTarget);
+                navigate('/onboarding', { replace: true });
+                return;
+            }
+            navigate(redirectTarget, { replace: true });
         };
 
         void handle().catch(() => {

@@ -260,7 +260,7 @@ function HeadlinesCard({
                     </div>
                 ) : (
                     <div className="space-y-3.5">
-                        {headlines.map((item) => (
+                        {headlines.slice(0, 3).map((item) => (
                             <div
                                 key={item.id}
                                 className="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition-opacity group"
@@ -371,7 +371,7 @@ export default function Dashboard() {
 
     const fetchHeadlines = () => {
         setIsHeadlinesLoading(true);
-        apiFetch('/news/slots/headlines')
+        apiFetch('/news/slots/headlines?limit=3')
             .then(r => r.ok ? r.json() : [])
             .then(data => {
                 if (Array.isArray(data)) setHeadlines(data);
@@ -474,7 +474,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* ── Middle Column (or joined in Right on lg) ── */}
-                <aside className="hidden lg:flex flex-col gap-5 sticky top-6 self-start max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-hide">
+                <aside className="hidden lg:flex flex-col gap-5 sticky top-6 z-10 self-start max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-contain scrollbar-hide">
 
                     {/* Mejores Rendimientos (S&P 500 Top Gainers) */}
                     <TopGainersCard
@@ -517,7 +517,7 @@ export default function Dashboard() {
                 </aside>
 
                 {/* ── Right Column (2xl only) ── */}
-                <aside className="hidden 2xl:flex flex-col gap-5 sticky top-6 self-start max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-hide">
+                <aside className="hidden 2xl:flex flex-col gap-5 sticky top-6 z-10 self-start max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-contain scrollbar-hide">
 
                     {/* Peores Rendimientos (S&P 500 Top Losers) — AL LADO Y DEL MISMO TAMAÑO */}
                     <TopLosersCard

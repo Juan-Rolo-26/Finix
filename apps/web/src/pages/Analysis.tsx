@@ -122,7 +122,7 @@ function ProPaywallGate({ analysis }: { analysis: any }) {
 
                 <div className="pt-2">
                     <Button 
-                        onClick={() => navigate('/pricing')} 
+                        onClick={() => navigate('/pro')}
                         className="h-12 px-8 rounded-full font-bold text-sm shadow-xl shadow-primary/25 bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-primary-foreground transition-all duration-300 transform hover:scale-105"
                     >
                         Desbloquear con Finix PRO
@@ -1019,7 +1019,7 @@ export default function Analysis() {
                 <ProGate
                     section="analysis"
                     buttonText="Activar Finix PRO"
-                    onUpgrade={() => navigate('/pricing')}
+                    onUpgrade={() => navigate('/pro')}
                 />
             </div>
         );

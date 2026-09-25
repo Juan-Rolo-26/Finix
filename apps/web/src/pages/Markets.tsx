@@ -266,7 +266,7 @@ export default function Markets() {
                 <ProGate
                     section="market"
                     buttonText="Activar Finix PRO"
-                    onUpgrade={() => navigate('/pricing')}
+                    onUpgrade={() => navigate('/pro')}
                 />
             </div>
         );

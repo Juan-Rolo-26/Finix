@@ -1160,7 +1160,7 @@ export default function Settings() {
                                                 <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
                                                     La baja del plan ya fue solicitada. Conservás acceso hasta el {proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'fin del período'}.
                                                 </p>
-                                                <Link to="/pricing" className="w-full sm:w-auto">
+                                                <Link to="/pro" className="w-full sm:w-auto">
                                                     <Button variant="outline" size="sm" className="w-full sm:w-auto font-bold text-sm rounded-xl border-amber-500/40 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10">
                                                         Reactivar plan PRO
                                                     </Button>
@@ -1191,7 +1191,7 @@ export default function Settings() {
                                         <p className="text-sm text-muted-foreground font-medium">
                                             Subí a PRO para acceder a todas las secciones bloqueadas y alertas por Gmail.
                                         </p>
-                                        <Link to="/pricing" className="w-full sm:w-auto">
+                                                <Link to="/pro" className="w-full sm:w-auto">
                                             <Button
                                                 type="button"
                                                 size="sm"
@@ -1611,7 +1611,7 @@ export default function Settings() {
                                                 Finix PRO cuesta $${proPriceArs.toLocaleString('es-AR')} ARS/mes. Podés pagar un mes o renovarlo automáticamente y cancelarlo cuando quieras.
                                             </p>
                                         </div>
-                                        <Link to="/pricing" className="shrink-0 w-full sm:w-auto">
+                                        <Link to="/pro" className="shrink-0 w-full sm:w-auto">
                                             <Button size="sm" className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-bold text-xs gap-1.5 shadow-md shadow-amber-500/20">
                                                 <Zap className="h-3.5 w-3.5" /> Obtener Finix PRO
                                             </Button>
