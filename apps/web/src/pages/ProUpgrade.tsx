@@ -24,6 +24,7 @@ export default function ProUpgrade() {
     const [loading, setLoading] = useState(false);
     const [proPriceArs, setProPriceArs] = useState(6300);
     const [renewalOpen, setRenewalOpen] = useState(false);
+    const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
     useEffect(() => {
         apiFetch('/mercadopago/config')
@@ -41,11 +42,13 @@ export default function ProUpgrade() {
             navigate(`/auth?redirect=${encodeURIComponent('/pro')}&plan=PRO`);
             return;
         }
+        setCheckoutError(null);
         setRenewalOpen(true);
     };
 
     const confirmCheckout = async (autoRenew: boolean) => {
         setLoading(true);
+        setCheckoutError(null);
         try {
             const res = await apiFetch('/mercadopago/checkout/pro', {
                 method: 'POST',
@@ -57,17 +60,23 @@ export default function ProUpgrade() {
                 throw new Error(data.message || 'Error al conectar con Mercado Pago');
             }
             const data = await res.json();
-            const checkoutUrl = data.init_point || (import.meta.env.DEV ? data.sandbox_init_point : undefined) || data.url;
+            const checkoutUrl = data.checkoutUrl
+                || (data.environment === 'sandbox' ? data.sandbox_init_point : data.init_point)
+                || data.init_point
+                || data.sandbox_init_point
+                || data.url;
             if (checkoutUrl) {
                 window.location.href = checkoutUrl;
             } else {
                 throw new Error('No se recibió la URL de checkout de Mercado Pago');
             }
         } catch (error: any) {
-            alert(error.message || 'Ocurrió un error inesperado.');
+            const message = String(error?.message || 'Ocurrió un error inesperado.');
+            setCheckoutError(/both payer and collector must be real or test users/i.test(message)
+                ? 'Mercado Pago detectó una mezcla entre una cuenta real y una cuenta de prueba. Para pagar en producción, iniciá sesión con una cuenta real de Mercado Pago. Para probar el checkout, configurá credenciales TEST y usá un comprador y un vendedor de prueba.'
+                : message);
         } finally {
             setLoading(false);
-            setRenewalOpen(false);
         }
     };
 
@@ -222,7 +231,8 @@ export default function ProUpgrade() {
                 planName="Finix PRO"
                 monthlyPrice={proPriceArs.toLocaleString('es-AR')}
                 busy={loading}
-                onClose={() => setRenewalOpen(false)}
+                error={checkoutError}
+                onClose={() => { setRenewalOpen(false); setCheckoutError(null); }}
                 onConfirm={(autoRenew) => { void confirmCheckout(autoRenew); }}
             />
         </div>

@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
-import { CalendarDays, Check, Loader2, RefreshCw, X } from 'lucide-react';
+import { AlertCircle, CalendarDays, Check, Loader2, RefreshCw, X } from 'lucide-react';
 
 interface SubscriptionRenewalChoiceProps {
     open: boolean;
     planName: string;
     monthlyPrice: string;
     busy?: boolean;
+    error?: string | null;
     onClose: () => void;
     onConfirm: (autoRenew: boolean) => void;
 }
 
-export function SubscriptionRenewalChoice({ open, planName, monthlyPrice, busy = false, onClose, onConfirm }: SubscriptionRenewalChoiceProps) {
+export function SubscriptionRenewalChoice({ open, planName, monthlyPrice, busy = false, error, onClose, onConfirm }: SubscriptionRenewalChoiceProps) {
     const [autoRenew, setAutoRenew] = useState(false);
     useEffect(() => { if (open) setAutoRenew(false); }, [open]);
     if (!open) return null;
@@ -37,6 +38,13 @@ export function SubscriptionRenewalChoice({ open, planName, monthlyPrice, busy =
                         <span className="mt-1 block pl-6 text-xs leading-relaxed text-muted-foreground">Mercado Pago cobrará {monthlyPrice} ARS por mes hasta que canceles la renovación desde Configuración → Suscripción.</span>
                     </button>
                 </div>
+
+                {error && (
+                    <div role="alert" className="flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-700 dark:text-rose-300">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <p className="leading-relaxed">{error}</p>
+                    </div>
+                )}
 
                 <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                     <button type="button" disabled={busy} onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50">Volver</button>

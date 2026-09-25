@@ -12,7 +12,9 @@ export class MercadoPagoService {
     private readonly publicKey = process.env.MP_PUBLIC_KEY || '';
     private readonly frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     private readonly apiUrl = (process.env.API_URL || 'http://localhost:3010').replace(/\/$/, '');
-    private readonly environment = (process.env.MP_ENVIRONMENT || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase();
+    private readonly environment = (process.env.MP_ENVIRONMENT || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase() === 'test'
+        ? 'sandbox'
+        : (process.env.MP_ENVIRONMENT || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase();
 
     constructor(
         private readonly prisma: PrismaService,
@@ -23,12 +25,36 @@ export class MercadoPagoService {
         const validToken = /^(APP_USR|TEST)-/.test(this.accessToken)
             && !this.accessToken.includes('...')
             && this.accessToken.length > 20;
-        const environmentMatches = this.environment !== 'production' || this.isProductionCredential();
+        const environmentMatches = this.environment === 'production'
+            ? this.isProductionCredential()
+            : this.isSandboxCredential();
         return validToken && environmentMatches;
     }
 
     public isProductionCredential(): boolean {
         return this.accessToken.startsWith('APP_USR-');
+    }
+
+    private isSandboxCredential(): boolean {
+        return this.accessToken.startsWith('TEST-');
+    }
+
+    private providerErrorMessage(data: any, fallback: string): string {
+        const causes = Array.isArray(data?.cause)
+            ? data.cause.map((cause: any) => cause?.description || cause?.message || '').join(' ')
+            : '';
+        const rawMessage = [data?.message, data?.error, causes]
+            .filter(Boolean)
+            .join(' ')
+            .trim();
+
+        if (/both payer and collector must be real or test users/i.test(rawMessage)) {
+            return this.environment === 'production'
+                ? 'Mercado Pago detectó una mezcla entre una cuenta real y una cuenta de prueba. Para pagar en producción, iniciá sesión con una cuenta real de Mercado Pago. Para probar el checkout, configurá credenciales TEST y usá un comprador y un vendedor de prueba.'
+                : 'Mercado Pago detectó una mezcla entre cuentas reales y de prueba. En modo prueba, tanto el vendedor como el comprador deben ser usuarios de prueba creados desde la misma aplicación.';
+        }
+
+        return rawMessage || fallback;
     }
 
     public isCheckoutReady(): boolean {
@@ -151,14 +177,19 @@ export class MercadoPagoService {
                 if (!response.ok) {
                     this.logger.error('Error creating Mercado Pago subscription:', data);
                     await this.prisma.subscription.update({ where: { id: localSubscription.id }, data: { status: 'CANCELED' } });
-                    throw new BadRequestException(data.message || 'Mercado Pago no pudo iniciar la renovación automática.');
+                    throw new BadRequestException(this.providerErrorMessage(data, 'Mercado Pago no pudo iniciar la renovación automática.'));
                 }
 
                 await this.prisma.subscription.update({
                     where: { id: localSubscription.id },
                     data: { mercadoPagoPreapprovalId: String(data.id) },
                 });
-                return { id: data.id, init_point: data.init_point, autoRenew: true };
+                return {
+                    id: data.id,
+                    init_point: data.init_point,
+                    checkoutUrl: data.init_point,
+                    autoRenew: true,
+                };
             } catch (error: any) {
                 await this.prisma.subscription.updateMany({
                     where: { id: localSubscription.id, status: 'PENDING', mercadoPagoPreapprovalId: null },
@@ -220,15 +251,19 @@ export class MercadoPagoService {
             }
 
             const data = await response.json();
+            const checkoutUrl = this.environment === 'sandbox'
+                ? (data.sandbox_init_point || data.init_point)
+                : (data.init_point || data.sandbox_init_point);
             return {
                 id: data.id,
                 init_point: data.init_point,
                 sandbox_init_point: data.sandbox_init_point,
+                checkoutUrl,
                 publicKey: this.publicKey,
             };
         } catch (err: any) {
             this.logger.error('Mercado Pago preference error:', err);
-            throw new BadRequestException(err.message || 'Error al generar checkout de Mercado Pago');
+            throw new BadRequestException(this.providerErrorMessage(err, 'Error al generar checkout de Mercado Pago'));
         }
     }
 
