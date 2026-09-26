@@ -51,21 +51,13 @@ const SIZES: Record<NonNullable<VerifiedBadgeProps['size']>, { px: number; strok
 export function resolveVerifiedVariant({
     variant,
     isVerified,
-    isInfluencer,
-    role,
-    username,
+    // These fields remain in the public API for compatibility, but are not
+    // allowed to grant the badge.
 }: Pick<VerifiedBadgeProps, 'variant' | 'isVerified' | 'isInfluencer' | 'role' | 'username'>): VerifiedVariant | null {
-    if (variant) return variant;
-
-    const lowerUser = (username || '').toLowerCase();
-    const isOfficialFinix = lowerUser === 'finix' || lowerUser === 'finixarg' || lowerUser === 'finix_oficial';
-    if (isOfficialFinix) return 'official';
-
-    if (isVerified) return 'verified';
-    if (isInfluencer) return 'influencer';
-    if (role && ['ADMIN', 'SUPER_ADMIN'].includes(role.toUpperCase())) return 'staff';
-
-    return null;
+    // The public badge is an administrative trust signal. Influencer status,
+    // staff role and username never grant verification by themselves.
+    if (isVerified !== true) return null;
+    return variant || 'verified';
 }
 
 export default function VerifiedBadge({

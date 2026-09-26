@@ -32,6 +32,7 @@ export default function CreatorPage() {
     const [loadingCheckout, setLoadingCheckout] = useState(false);
     const [renewalChoiceOpen, setRenewalChoiceOpen] = useState(false);
     const [creatorPrice, setCreatorPrice] = useState(29900);
+    const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
     // Earnings Calculator State
     const [memberCount, setMemberCount] = useState<number>(100);
@@ -62,6 +63,7 @@ export default function CreatorPage() {
             return;
         }
 
+        setCheckoutError(null);
         setRenewalChoiceOpen(true);
     };
 
@@ -78,15 +80,14 @@ export default function CreatorPage() {
                 throw new Error(data.message || 'Error al conectar con Mercado Pago');
             }
             const data = await res.json();
-            const checkoutUrl = data.init_point || (import.meta.env.DEV ? data.sandbox_init_point : undefined) || data.url;
+            const checkoutUrl = data.checkoutUrl || data.url || data.init_point;
             if (checkoutUrl) {
                 window.location.href = checkoutUrl;
             } else {
                 throw new Error('No se recibió el enlace de pago');
             }
         } catch (error: any) {
-            alert(error.message || 'Ocurrió un error al procesar la solicitud.');
-            setRenewalChoiceOpen(false);
+            setCheckoutError(error.message || 'Ocurrió un error al procesar la solicitud.');
         } finally {
             setLoadingCheckout(false);
         }
@@ -785,7 +786,8 @@ export default function CreatorPage() {
                 planName="Creador"
                 monthlyPrice={creatorPrice.toLocaleString('es-AR')}
                 busy={loadingCheckout}
-                onClose={() => setRenewalChoiceOpen(false)}
+                error={checkoutError}
+                onClose={() => { setRenewalChoiceOpen(false); setCheckoutError(null); }}
                 onConfirm={(autoRenew) => { void confirmCreatorCheckout(autoRenew); }}
             />
         </div>

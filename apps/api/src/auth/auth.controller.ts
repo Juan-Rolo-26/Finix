@@ -103,8 +103,9 @@ export class AuthController {
         );
 
         // Supabase/Google gives us the identity token, but Finix also needs
-        // its own long-lived browser session so refresh works after a reload
-        // or browser restart. The cookie is HttpOnly and is revoked by /logout.
+        // its own persistent browser session so refresh works after a reload,
+        // browser restart, or long inactivity. The cookie is HttpOnly and is
+        // revoked only by /logout (or an administrator).
         const session = await this.authService.createPersistentSession(
             user.id,
             this.getRequestMeta(httpReq),

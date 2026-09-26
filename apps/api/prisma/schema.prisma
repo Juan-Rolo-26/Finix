@@ -47,6 +47,8 @@ model User {
   financialAdvisorVerified Boolean @default(false)
   accountType              String  @default("BASIC") // BASIC, PRO, CREATOR, ANALYST
   plan                     String  @default("FREE") // FREE | PRO
+  // null = billing/role rules decide; true/false = explicit admin grant/revoke
+  proAccessOverride        Boolean?
   stripeCustomerId         String? @unique
   subscriptionStatus       String  @default("INACTIVE") // INACTIVE | ACTIVE | CANCELED | PAST_DUE | EXPIRED
 
@@ -116,6 +118,13 @@ model User {
 
   portfolios Portfolio[]
   watchlists Watchlist[]
+
+  personalFinanceAccounts          PersonalFinanceAccount[]
+  personalFinanceTransactions     PersonalFinanceTransaction[]
+  personalFinanceBudgets          PersonalFinanceBudget[]
+  personalFinanceGoals            PersonalFinanceGoal[]
+  personalFinanceRecurringPayments PersonalFinanceRecurringPayment[]
+  personalFinanceCards            PersonalFinanceCard[]
 
   // Relations: Communities
   createdCommunities       Community[]            @relation("CommunityCreator")
@@ -487,6 +496,137 @@ model CashAccount {
   portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
   @@unique([portfolioId, currency])
+}
+
+// Personal finance workspace. These records are intentionally separate from
+// investment portfolio transactions: a household expense must never alter an
+// investment holding or its performance history.
+model PersonalFinanceAccount {
+  id            String   @id @default(uuid())
+  userId        String
+  name          String
+  institution   String?
+  kind          String   @default("bank")
+  currency      String   @default("ARS")
+  balance       Decimal  @default(0)
+  hidden        Boolean  @default(false)
+  changePct     Float    @default(0)
+  lastSyncedAt  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user              User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      PersonalFinanceTransaction[]
+  recurringPayments PersonalFinanceRecurringPayment[]
+  cards             PersonalFinanceCard[]
+
+  @@index([userId])
+}
+
+model PersonalFinanceTransaction {
+  id           String   @id @default(uuid())
+  userId       String
+  accountId    String?
+  cardId       String?
+  date         DateTime @default(now())
+  description  String
+  merchant     String?
+  category     String   @default("Otros")
+  categoryKey  String   @default("other")
+  type         String   @default("expense")
+  amount       Decimal  @default(0)
+  currency     String   @default("ARS")
+  status       String   @default("confirmed")
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user    User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account PersonalFinanceAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  card    PersonalFinanceCard?    @relation(fields: [cardId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@index([userId, categoryKey, date])
+  @@index([accountId])
+  @@index([cardId])
+}
+
+model PersonalFinanceBudget {
+  id          String   @id @default(uuid())
+  userId      String
+  category    String
+  categoryKey String
+  limit       Decimal  @default(0)
+  month       Int
+  year        Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryKey, month, year])
+  @@index([userId, year, month])
+}
+
+model PersonalFinanceGoal {
+  id                 String   @id @default(uuid())
+  userId             String
+  name               String
+  icon               String   @default("○")
+  saved              Decimal  @default(0)
+  target             Decimal  @default(0)
+  currency           String   @default("ARS")
+  deadline           DateTime?
+  monthlyContribution Decimal @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PersonalFinanceRecurringPayment {
+  id          String   @id @default(uuid())
+  userId      String
+  accountId   String?
+  name        String
+  category    String   @default("Suscripciones")
+  amount      Decimal  @default(0)
+  currency    String   @default("ARS")
+  nextDate    DateTime
+  frequency   String   @default("monthly")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account PersonalFinanceAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([userId, nextDate])
+}
+
+model PersonalFinanceCard {
+  id             String   @id @default(uuid())
+  userId         String
+  accountId      String?
+  name           String
+  brand          String   @default("Visa")
+  last4          String?
+  currency       String   @default("ARS")
+  creditLimit    Decimal  @default(0)
+  currentBalance Decimal  @default(0)
+  closingDay     Int?
+  dueDay         Int?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account      PersonalFinanceAccount?       @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  transactions PersonalFinanceTransaction[]
+
+  @@index([userId])
 }
 
 model Watchlist {
@@ -1124,7 +1264,7 @@ model UserSession {
   refreshTokenHash String    @unique
   userAgent        String?
   ipAddress        String?
-  expiresAt        DateTime
+  expiresAt        DateTime?
   revokedAt        DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt

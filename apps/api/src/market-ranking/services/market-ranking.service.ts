@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma.service';
 import { MarketDataProviderService } from './market-data-provider.service';
 import { AssetLogoService } from './asset-logo.service';
 import { MarketQuoteResult } from '../interfaces/market-data-provider.interface';
+import { hasEffectiveProAccess } from '../../auth/pro-access';
 
 export interface TopGainersResponse {
     type: 'TOP_GAINERS' | 'TOP_LOSERS';
@@ -411,16 +412,7 @@ export class MarketRankingService {
         let date = options.date;
 
         const user = options.user;
-        const isPaidRankingUser = Boolean(
-            user?.role === 'ADMIN' ||
-            (user?.plan === 'PRO' && user?.subscriptionStatus === 'ACTIVE') ||
-            user?.isCreator === true ||
-            user?.role === 'CREATOR' ||
-            user?.plan === 'CREATOR' ||
-            user?.plan === 'PRO_CREATOR' ||
-            user?.accountType === 'CREATOR' ||
-            (user?.email && (user.email.toLowerCase().includes('juanpablo') || user.email.toLowerCase().includes('juan-rolo')))
-        );
+        const isPaidRankingUser = hasEffectiveProAccess(user);
 
         if (options.refresh) {
             try {

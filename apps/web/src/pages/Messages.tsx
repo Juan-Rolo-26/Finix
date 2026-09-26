@@ -55,6 +55,7 @@ import type {
 } from '@/components/messages/messageTypes';
 import { useAuthStore } from '@/stores/authStore';
 import { usePreferencesStore } from '@/stores/preferencesStore';
+import TradingViewWidget from '@/components/TradingViewWidget';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -570,13 +571,23 @@ function MessageAttachmentCard({
                     background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 100% / 0.04)',
                 }}
             >
-                {message.attachmentUrl && (
+                {message.attachmentUrl ? (
                     <img
                         src={resolveMediaUrl(message.attachmentUrl)}
                         alt={`Grafico ${symbol}`}
                         className="w-full max-h-80 object-cover"
                         loading="lazy"
                     />
+                ) : (
+                    <div className="p-2" aria-label={`Gráfico interactivo de ${symbol}`}>
+                        <TradingViewWidget
+                            symbol={symbol}
+                            interval={interval}
+                            theme={isLight ? 'light' : 'dark'}
+                            height={230}
+                            hideSideToolbar={true}
+                        />
+                    </div>
                 )}
                 <div className="p-3 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">

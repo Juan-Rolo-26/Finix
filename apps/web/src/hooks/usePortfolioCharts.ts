@@ -129,20 +129,22 @@ export function useAssetPnL(
 export function usePortfolioReturns(
   portfolioId: string,
   year?: number,
+  currency?: string,
 ): AsyncState<MonthlyReturn[]> {
   return useAsyncData(
-    () => getPortfolioReturns(portfolioId, year),
-    [portfolioId, year],
+    () => getPortfolioReturns(portfolioId, year, currency),
+    [portfolioId, year, currency],
   );
 }
 
 export function usePortfolioDrawdown(
   portfolioId: string,
   range?: string,
+  currency?: string,
 ): AsyncState<DrawdownStats> {
   return useAsyncData(
-    () => getPortfolioDrawdown(portfolioId, range),
-    [portfolioId, range],
+    () => getPortfolioDrawdown(portfolioId, range, currency),
+    [portfolioId, range, currency],
   );
 }
 
@@ -171,10 +173,11 @@ export function usePortfolioBenchmarks(
   portfolioId: string,
   range: TimeRange,
   benchmarks?: string[],
+  currency?: string,
 ): AsyncState<BenchmarkData> {
   const benchmarksKey = (benchmarks ?? ['sp500']).join(',');
   return useAsyncData(
-    () => getPortfolioBenchmarks(portfolioId, range, benchmarks),
-    [portfolioId, range, benchmarksKey],
+    () => getPortfolioBenchmarks(portfolioId, range, benchmarks, currency),
+    [portfolioId, range, benchmarksKey, currency],
   );
 }

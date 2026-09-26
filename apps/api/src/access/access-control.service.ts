@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { hasEffectiveProAccess } from '../auth/pro-access';
 
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['ACTIVE']);
 const ACTIVE_COMMUNITY_STATUSES = new Set(['ACTIVE']);
@@ -7,20 +8,6 @@ const ACTIVE_COMMUNITY_STATUSES = new Set(['ACTIVE']);
 @Injectable()
 export class AccessControlService {
     constructor(private readonly prisma: PrismaService) { }
-
-    private isJuanUser(user: any): boolean {
-        if (!user) return false;
-        const username = String(user.username || '').trim().toLowerCase();
-        const email = String(user.email || '').trim().toLowerCase();
-        return (
-            username === 'juan26-08' ||
-            username === 'juan26_08' ||
-            username === 'juan2608' ||
-            username.includes('juan26') ||
-            email.includes('juanpablorolo') ||
-            (email.includes('juan') && email.includes('26'))
-        );
-    }
 
     async requirePro(userId: string) {
         const user = await this.prisma.user.findUnique({
@@ -32,6 +19,8 @@ export class AccessControlService {
                 role: true,
                 plan: true,
                 subscriptionStatus: true,
+                accountType: true,
+                proAccessOverride: true,
             },
         });
 
@@ -39,12 +28,7 @@ export class AccessControlService {
             throw new NotFoundException('Usuario no encontrado');
         }
 
-        if (user.role === 'ADMIN' || this.isJuanUser(user)) {
-            return user;
-        }
-
-        const isPro = ['PRO', 'CREATOR', 'PRO_CREATOR'].includes(user.plan) && ACTIVE_SUBSCRIPTION_STATUSES.has(user.subscriptionStatus);
-        if (!isPro) {
+        if (!hasEffectiveProAccess(user)) {
             throw new ForbiddenException('Esta funcionalidad requiere un plan PRO activo.');
         }
 
@@ -61,6 +45,8 @@ export class AccessControlService {
                 role: true,
                 plan: true,
                 subscriptionStatus: true,
+                accountType: true,
+                proAccessOverride: true,
             },
         });
 
@@ -68,12 +54,7 @@ export class AccessControlService {
             throw new NotFoundException('Usuario no encontrado');
         }
 
-        if (user.role === 'ADMIN' || this.isJuanUser(user)) {
-            return true;
-        }
-
-        const hasActivePro = ['PRO', 'CREATOR', 'PRO_CREATOR'].includes(user.plan) && ACTIVE_SUBSCRIPTION_STATUSES.has(user.subscriptionStatus);
-        if (hasActivePro) {
+        if (hasEffectiveProAccess(user)) {
             return true;
         }
 
@@ -178,6 +159,7 @@ export class AccessControlService {
                 role: true,
                 plan: true,
                 subscriptionStatus: true,
+                proAccessOverride: true,
             },
         });
 
@@ -185,8 +167,12 @@ export class AccessControlService {
             throw new NotFoundException('Usuario no encontrado');
         }
 
-        if (user.role === 'ADMIN') {
+        if (user.role === 'ADMIN' || user.proAccessOverride === true) {
             return user;
+        }
+
+        if (user.proAccessOverride === false) {
+            throw new ForbiddenException(`Esta funcionalidad requiere uno de los siguientes planes: ${allowedPlans.join(', ')} y una suscripción activa.`);
         }
 
         const isPlanAllowed = allowedPlans.includes(user.plan);

@@ -518,6 +518,7 @@ export class AdminController {
         const users = await this.prisma.user.findMany({
             where: {
                 OR: [
+                    { proAccessOverride: true },
                     { accountType: 'PRO' },
                     { plan: 'PRO' },
                     { subscriptions: { some: { status: 'ACTIVE' } } }
@@ -532,6 +533,9 @@ export class AdminController {
                 email: true,
                 accountType: true,
                 plan: true,
+                proAccessOverride: true,
+                isVerified: true,
+                subscriptionStatus: true,
                 aiUsageThisMonth: true,
                 aiUsageLimit: true,
                 createdAt: true,
@@ -545,6 +549,7 @@ export class AdminController {
         const total = await this.prisma.user.count({
             where: {
                 OR: [
+                    { proAccessOverride: true },
                     { accountType: 'PRO' },
                     { plan: 'PRO' },
                     { subscriptions: { some: { status: 'ACTIVE' } } }
@@ -584,6 +589,11 @@ export class AdminController {
                 role: true,
                 status: true,
                 shadowbanned: true,
+                isVerified: true,
+                plan: true,
+                accountType: true,
+                subscriptionStatus: true,
+                proAccessOverride: true,
                 lastLogin: true,
                 createdAt: true,
                 flags: true,
@@ -606,6 +616,8 @@ export class AdminController {
         const updateData: any = {};
         if (body.status !== undefined) updateData.status = body.status;
         if (body.shadowbanned !== undefined) updateData.shadowbanned = body.shadowbanned;
+        if (body.isVerified !== undefined) updateData.isVerified = body.isVerified;
+        if (body.proAccessOverride !== undefined) updateData.proAccessOverride = body.proAccessOverride;
         if (body.role !== undefined) updateData.role = body.role;
 
         if (Object.keys(updateData).length === 0) {
@@ -628,6 +640,12 @@ export class AdminController {
             action = 'BAN_USER';
         } else if (body.status === 'ACTIVE') {
             action = 'UNBAN_USER';
+        } else if (body.isVerified !== undefined) {
+            action = body.isVerified ? 'VERIFY_USER' : 'UNVERIFY_USER';
+        } else if (body.proAccessOverride !== undefined) {
+            action = body.proAccessOverride === null
+                ? 'RESET_PRO_ACCESS_OVERRIDE'
+                : body.proAccessOverride ? 'GRANT_PRO_ACCESS' : 'REVOKE_PRO_ACCESS';
         } else if (body.shadowbanned !== undefined) {
             action = body.shadowbanned ? 'SHADOWBAN_USER' : 'UNSHADOWBAN_USER';
         }

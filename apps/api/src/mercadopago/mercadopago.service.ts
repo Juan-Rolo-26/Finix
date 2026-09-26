@@ -187,7 +187,10 @@ export class MercadoPagoService {
                 return {
                     id: data.id,
                     init_point: data.init_point,
-                    checkoutUrl: data.init_point,
+                    sandbox_init_point: data.sandbox_init_point,
+                    checkoutUrl: this.environment === 'sandbox'
+                        ? (data.sandbox_init_point || data.init_point)
+                        : (data.init_point || data.sandbox_init_point),
                     autoRenew: true,
                 };
             } catch (error: any) {
@@ -287,7 +290,16 @@ export class MercadoPagoService {
         const response = await fetch('https://api.mercadopago.com/checkout/preferences', { method: 'POST', headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (!response.ok) throw new BadRequestException('Mercado Pago no pudo crear el checkout de la comunidad.');
         const data = await response.json();
-        return { id: data.id, init_point: data.init_point, sandbox_init_point: data.sandbox_init_point, commissionRate: 0.05 };
+        const checkoutUrl = this.environment === 'sandbox'
+            ? (data.sandbox_init_point || data.init_point)
+            : (data.init_point || data.sandbox_init_point);
+        return {
+            id: data.id,
+            init_point: data.init_point,
+            sandbox_init_point: data.sandbox_init_point,
+            checkoutUrl,
+            commissionRate: 0.05,
+        };
     }
 
     async handleWebhook(body: any, query: any, signature?: string, requestId?: string) {

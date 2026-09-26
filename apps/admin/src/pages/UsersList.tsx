@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { adminFetch, readAdminErrorMessage } from '../lib/api';
-import { RefreshCw, Search, ShieldAlert, Trash2, UserMinus, Users } from 'lucide-react';
+import { BadgeCheck, RefreshCw, RotateCcw, Search, ShieldAlert, Star, Trash2, UserMinus, Users } from 'lucide-react';
 
 type AdminUserRow = {
     id: string;
@@ -9,6 +9,11 @@ type AdminUserRow = {
     role: string;
     status: string;
     shadowbanned: boolean;
+    isVerified: boolean;
+    plan: string;
+    accountType: string;
+    subscriptionStatus: string;
+    proAccessOverride: boolean | null;
     lastLogin: string | null;
     createdAt: string;
     flags: string | null;
@@ -332,6 +337,7 @@ export default function UsersList() {
                                 <th className="px-6 py-4 font-semibold">Usuario</th>
                                 <th className="px-6 py-4 font-semibold">Rol</th>
                                 <th className="px-6 py-4 font-semibold">Estado</th>
+                                <th className="px-6 py-4 font-semibold">Distintivos</th>
                                 <th className="px-6 py-4 font-semibold">Actividad</th>
                                 <th className="px-6 py-4 font-semibold">Flags</th>
                                 <th className="px-6 py-4 text-right font-semibold">Acciones</th>
@@ -340,6 +346,14 @@ export default function UsersList() {
                         <tbody className="divide-y divide-zinc-800/60">
                             {users.map((user) => {
                                 const isPending = pendingUserId === user.id;
+                                const hasAutomaticPro = user.plan === 'PRO'
+                                    || user.plan === 'CREATOR'
+                                    || user.plan === 'PRO_CREATOR'
+                                    || user.accountType === 'PRO'
+                                    || user.accountType === 'CREATOR'
+                                    || user.subscriptionStatus === 'ACTIVE';
+                                const hasEffectivePro = user.proAccessOverride === true
+                                    || (user.proAccessOverride == null && hasAutomaticPro);
 
                                 return (
                                     <tr key={user.id} className="transition-colors hover:bg-secondary/20">
@@ -378,6 +392,24 @@ export default function UsersList() {
                                                 {user.status}
                                             </span>
                                         </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold ${user.isVerified
+                                                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+                                                    : 'border-border bg-secondary text-muted-foreground'
+                                                }`}>
+                                                    <BadgeCheck className="h-3.5 w-3.5" />
+                                                    {user.isVerified ? 'Verificado' : 'No verificado'}
+                                                </span>
+                                                <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold ${hasEffectivePro
+                                                    ? 'border-amber-500/25 bg-amber-500/10 text-amber-300'
+                                                    : 'border-border bg-secondary text-muted-foreground'
+                                                }`}>
+                                                    <Star className="h-3.5 w-3.5" />
+                                                    {hasEffectivePro ? 'PRO' : 'Free'}
+                                                </span>
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4 text-xs text-muted-foreground">
                                             Último login: {formatDate(user.lastLogin)}
                                         </td>
@@ -386,6 +418,62 @@ export default function UsersList() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    disabled={isPending}
+                                                    onClick={() => handlePatchAction(
+                                                        user.id,
+                                                        { isVerified: !user.isVerified },
+                                                        user.isVerified ? `${user.username} dejó de estar verificado.` : `${user.username} ahora está verificado.`,
+                                                        user.isVerified ? `¿Quitar la verificación de ${user.username}?` : `¿Verificar a ${user.username}?`,
+                                                    )}
+                                                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${user.isVerified
+                                                        ? 'bg-slate-500/10 text-slate-300 hover:bg-slate-500/20'
+                                                        : 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
+                                                    }`}
+                                                    title="Controlar insignia pública de verificado"
+                                                >
+                                                    <BadgeCheck className="mr-1 inline h-3.5 w-3.5" />
+                                                    {user.isVerified ? 'Quitar verificado' : 'Verificar'}
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    disabled={isPending}
+                                                    onClick={() => handlePatchAction(
+                                                        user.id,
+                                                        { proAccessOverride: hasEffectivePro },
+                                                        hasEffectivePro ? `${user.username} quedó sin acceso PRO manual.` : `${user.username} recibió acceso PRO manual.`,
+                                                        hasEffectivePro ? `¿Quitar PRO a ${user.username}?` : `¿Dar PRO a ${user.username}?`,
+                                                    )}
+                                                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${hasEffectivePro
+                                                        ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
+                                                        : 'bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20'
+                                                    }`}
+                                                    title="Conceder o revocar acceso PRO sin modificar el pago"
+                                                >
+                                                    <Star className="mr-1 inline h-3.5 w-3.5" />
+                                                    {hasEffectivePro ? 'Quitar PRO' : 'Dar PRO'}
+                                                </button>
+
+                                                {user.proAccessOverride !== null && user.proAccessOverride !== undefined && (
+                                                    <button
+                                                        type="button"
+                                                        disabled={isPending}
+                                                        onClick={() => handlePatchAction(
+                                                            user.id,
+                                                            { proAccessOverride: null },
+                                                            `El acceso PRO de ${user.username} volvió a modo automático.`,
+                                                            `¿Restaurar el PRO automático para ${user.username}?`,
+                                                        )}
+                                                        className="rounded-lg bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-300 transition-colors hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        title="Volver a decidir PRO según el pago"
+                                                    >
+                                                        <RotateCcw className="mr-1 inline h-3.5 w-3.5" />
+                                                        Automático
+                                                    </button>
+                                                )}
+
                                                 {user.status === 'ACTIVE' ? (
                                                     <button
                                                         type="button"
@@ -452,7 +540,7 @@ export default function UsersList() {
 
                             {users.length === 0 && !loading && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                                    <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                                         No se encontraron usuarios con esos filtros.
                                     </td>
                                 </tr>
@@ -460,7 +548,7 @@ export default function UsersList() {
 
                             {loading && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                                    <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                                         Cargando usuarios...
                                     </td>
                                 </tr>

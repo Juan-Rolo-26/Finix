@@ -413,12 +413,14 @@ const PRO_SECTIONS = [
 export default function Pricing() {
     const navigate = useNavigate();
     const user = useAuthStore(s => s.user);
-    const isJuan = isJuanUser(user);
+    const isJuan = isJuanUser(user) && (user as any)?.proAccessOverride !== false;
     const syncFromSession = useAuthStore(s => s.syncFromSession);
     const [searchParams] = useSearchParams();
     const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
     const [renewalPlan, setRenewalPlan] = useState<'PRO' | 'Creador' | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<string | null>(searchParams.get('status'));
+    const [checkoutError, setCheckoutError] = useState<string | null>(null);
+    const [paymentProviders, setPaymentProviders] = useState({ mercadopago: true, stripe: false });
 
     useEffect(() => {
         const status = searchParams.get('status');
@@ -433,6 +435,7 @@ export default function Pricing() {
             return;
         }
         if (!user) { navigate(`/?redirect=${encodeURIComponent('/pro')}&plan=${planType}`); return; }
+        setCheckoutError(null);
         if (planType === 'PRO') {
             setRenewalPlan('PRO');
             return;
@@ -444,6 +447,7 @@ export default function Pricing() {
         if (!renewalPlan) return;
         const planType = renewalPlan;
         setLoadingPlan(planType);
+        setCheckoutError(null);
         const endpoint = planType === 'PRO' ? '/mercadopago/checkout/pro' : '/mercadopago/checkout/creator';
         try {
             const res = await apiFetch(endpoint, {
@@ -453,27 +457,59 @@ export default function Pricing() {
             });
             if (!res.ok) { const data = await res.json(); throw new Error(data.message || 'Error al conectar con Mercado Pago'); }
             const data = await res.json();
-            // Never send production users to Mercado Pago's test checkout.
-            const checkoutUrl = data.init_point || (import.meta.env.DEV ? data.sandbox_init_point : undefined) || data.url;
+            // The API selects the URL according to the configured MP environment.
+            // Prefer that value so production never falls back to a test checkout.
+            const checkoutUrl = data.checkoutUrl || data.url || data.init_point;
             if (checkoutUrl) { window.location.href = checkoutUrl; } else { throw new Error('No se recibió la URL de checkout de Mercado Pago'); }
         } catch (error: any) {
-            alert(error.message || 'Ocurrió un error inesperado al conectar con Mercado Pago.');
+            setCheckoutError(error.message || 'Ocurrió un error inesperado al conectar con Mercado Pago.');
             setLoadingPlan(null);
-            setRenewalPlan(null);
+        }
+    };
+
+    const confirmStripeCheckout = async () => {
+        if (!renewalPlan) return;
+        const planType = renewalPlan;
+        setLoadingPlan(planType);
+        setCheckoutError(null);
+        const endpoint = planType === 'PRO' ? '/stripe/subscriptions/pro/checkout' : '/stripe/subscriptions/creator/checkout';
+        try {
+            const res = await apiFetch(endpoint, { method: 'POST' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || 'Error al conectar con Stripe');
+            if (!data.url) throw new Error('Stripe no devolvió la URL de pago.');
+            window.location.href = data.url;
+        } catch (error: any) {
+            setCheckoutError(error.message || 'Ocurrió un error inesperado al conectar con Stripe.');
+            setLoadingPlan(null);
         }
     };
 
     const [prices, setPrices] = useState({ proArs: 6300, creatorArs: 29900 });
     useEffect(() => {
-        apiFetch('/mercadopago/config').then(r => r.json()).then((mercadoPago) => {
+        Promise.all([
+            apiFetch('/mercadopago/config'),
+            apiFetch('/stripe/config'),
+        ]).then(async ([mercadoPagoResponse, stripeResponse]) => {
+            const [mercadoPago, stripe] = await Promise.all([
+                mercadoPagoResponse.json().catch(() => ({})),
+                stripeResponse.json().catch(() => ({})),
+            ]);
             setPrices({
                 proArs: Number(mercadoPago?.proPriceArs) || 6300,
                 creatorArs: Number(mercadoPago?.creatorPriceArs) || 29900,
             });
-        }).catch(() => {});
+            setPaymentProviders({
+                mercadopago: mercadoPago?.configured === true,
+                stripe: stripe?.configured === true,
+            });
+        }).catch(() => {
+            // Keep Mercado Pago visible so a transient config request does not
+            // remove the primary checkout from the plans page.
+        });
     }, []);
 
-    const isProUser = isJuan || checkIsPro(user);
+    const isProUser = checkIsPro(user);
     const isCreator = isJuan || (user as any)?.role === 'ADMIN' || (user as any)?.plan === 'CREATOR' || (user as any)?.accountType === 'CREATOR' || (user as any)?.isCreator;
 
     const plans = [
@@ -851,7 +887,7 @@ export default function Pricing() {
                         <div className="space-y-1">
                             <h4 className="font-bold text-sm text-foreground">Facturación segura y transparente</h4>
                             <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
-                                El plan PRO cuesta ${prices.proArs.toLocaleString('es-AR')} ARS por mes y se procesa con Mercado Pago. Podés pagar un mes o activar la renovación automática. Podés cancelar desde <strong>Configuración &gt; Suscripción</strong>.
+                                El plan PRO cuesta ${prices.proArs.toLocaleString('es-AR')} ARS por mes. Podés pagar con tarjeta de crédito o débito (Visa, Mastercard y las tarjetas habilitadas por tu banco), billeteras y otros medios disponibles en Mercado Pago. También ofrecemos Stripe cuando está habilitado. Podés cancelar desde <strong>Configuración &gt; Suscripción</strong>.
                             </p>
                         </div>
                     </div>
@@ -867,8 +903,12 @@ export default function Pricing() {
                 planName={renewalPlan === 'Creador' ? 'Creador' : 'Finix PRO'}
                 monthlyPrice={(renewalPlan === 'PRO' ? prices.proArs : prices.creatorArs).toLocaleString('es-AR')}
                 busy={loadingPlan !== null}
+                error={checkoutError}
+                mercadoPagoAvailable={paymentProviders.mercadopago}
+                stripeAvailable={paymentProviders.stripe}
                 onClose={() => setRenewalPlan(null)}
                 onConfirm={(autoRenew) => { void confirmCheckout(autoRenew); }}
+                onConfirmStripe={() => { void confirmStripeCheckout(); }}
             />
         </div>
     );

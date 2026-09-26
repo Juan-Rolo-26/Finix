@@ -16,12 +16,13 @@ import {
     ChevronUp,
     Sparkles,
     Bell,
+    WalletCards,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useAuthStore, isJuanUser, isProUser } from '@/stores/authStore';
+import { useAuthStore, isProUser } from '@/stores/authStore';
 
-export type ProSectionType = 'market' | 'portfolio' | 'analysis' | 'news' | 'calendar' | 'alerts' | 'general';
+export type ProSectionType = 'market' | 'portfolio' | 'analysis' | 'news' | 'calendar' | 'alerts' | 'finance' | 'general';
 
 interface SectionInfo {
     badge: string;
@@ -176,6 +177,18 @@ const SECTION_DATA: Record<ProSectionType, SectionInfo> = {
             },
         ],
     },
+    finance: {
+        badge: 'FINANZAS PERSONALES · FINIX PRO',
+        icon: WalletCards,
+        defaultTitle: 'Ordená toda tu vida financiera',
+        defaultDesc: 'Consolidá cuentas, movimientos, presupuestos, objetivos, tarjetas e inversiones en una sección privada.',
+        features: [
+            { title: 'Datos privados y persistentes', desc: 'Tus registros se guardan en tu cuenta y solo se muestran con tu sesión activa.' },
+            { title: 'Resumen consolidado', desc: 'Entendé patrimonio, liquidez, ahorro y compromisos sin mezclar datos de otros usuarios.' },
+            { title: 'Planificación accionable', desc: 'Creá presupuestos y objetivos que se actualizan con tus movimientos reales.' },
+            { title: 'Análisis e inversiones', desc: 'Combiná tus movimientos personales con los portafolios de Finix para tener contexto completo.' },
+        ],
+    },
     general: {
         badge: 'FINIX PRO · HERRAMIENTAS AVANZADAS',
         icon: Sparkles,
@@ -239,10 +252,8 @@ export function ProGate({
     const user = useAuthStore((s) => s.user);
     const [showAllSections, setShowAllSections] = useState(false);
 
-    const isJuan = isJuanUser(user);
-    const isPro = isJuan || isProUser(user);
+    const isPro = isProUser(user);
 
-    // Juan26-08 (and active PRO / Admin users) are permanently exempt and never blocked
     if (isPro) {
         return children ? <>{children}</> : null;
     }
@@ -256,6 +267,7 @@ export function ProGate({
         pathname.includes('/news') || pathname.includes('/noticias') ? 'news' :
         pathname.includes('/calendar') || pathname.includes('/calendario') ? 'calendar' :
         pathname.includes('/alert') || pathname.includes('/alerta') || pathname.includes('/email') ? 'alerts' :
+        pathname.includes('/finanzas') ? 'finance' :
         'general'
     );
 

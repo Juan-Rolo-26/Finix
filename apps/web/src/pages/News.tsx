@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Newspaper } from 'lucide-react';
-import { useAuthStore, isJuanUser } from '@/stores/authStore';
+import { isProUser, useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
 import { NewsMosaic, NewsMosaicSkeleton } from '@/components/news/NewsMosaic';
 import type { NewsSlotData } from '@/components/news/NewsCard';
@@ -117,14 +117,7 @@ export default function NewsPage() {
     const [slotsLoading, setSlotsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const isPro = Boolean(
-        (user as any)?.isPro ||
-        (user as any)?.subscriptionTier === 'pro' ||
-        (user as any)?.role === 'ADMIN' ||
-        (user as any)?.plan === 'PRO' ||
-        (user as any)?.accountType === 'PRO' ||
-        isJuanUser(user)
-    );
+    const isPro = isProUser(user);
 
     // Load categories from API
     useEffect(() => {

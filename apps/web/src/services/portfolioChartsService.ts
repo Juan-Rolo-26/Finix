@@ -111,9 +111,11 @@ export async function getAssetPnL(
 export async function getPortfolioReturns(
   portfolioId: string,
   year?: number,
+  currency?: string,
 ): Promise<MonthlyReturn[]> {
   return apiFetch<MonthlyReturn[]>(`/portfolios/${portfolioId}/returns`, {
     ...(year ? { year: String(year) } : {}),
+    ...(currency ? { currency } : {}),
   });
 }
 
@@ -123,9 +125,11 @@ export async function getPortfolioReturns(
 export async function getPortfolioDrawdown(
   portfolioId: string,
   range?: string,
+  currency?: string,
 ): Promise<DrawdownStats> {
   return apiFetch<DrawdownStats>(`/portfolios/${portfolioId}/drawdown`, {
     ...(range ? { range } : {}),
+    ...(currency ? { currency } : {}),
   });
 }
 
@@ -162,9 +166,11 @@ export async function getPortfolioBenchmarks(
   portfolioId: string,
   range: TimeRange,
   benchmarks = ['sp500'],
+  currency?: string,
 ): Promise<BenchmarkData> {
   return apiFetch<BenchmarkData>(`/portfolios/${portfolioId}/benchmarks`, {
     range,
     benchmarks: benchmarks.join(','),
+    ...(currency ? { currency } : {}),
   });
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, HttpCode, HttpStatus, Param, Post, Req, UseGuards, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Headers, HttpCode, HttpStatus, Param, Post, Req, UseGuards, Body } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { StripeService } from './stripe.service';
@@ -34,8 +34,8 @@ export class StripeController {
 
     @UseGuards(JwtAuthGuard)
     @Post('subscriptions/pro/checkout')
-    createProSubscription() {
-        throw new BadRequestException('El plan Pro se cobra en pesos argentinos mediante Mercado Pago.');
+    createProSubscription(@Req() req: any) {
+        return this.stripeService.createSubscription(req.user.id, 'pro_investor');
     }
 
     @UseGuards(JwtAuthGuard)

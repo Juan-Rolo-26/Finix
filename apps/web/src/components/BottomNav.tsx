@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import type { ComponentType } from 'react';
 import {
     LayoutDashboard,
     Compass,
@@ -20,11 +21,13 @@ import {
     Briefcase,
     AreaChart,
     Calendar,
+    Receipt,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { hasCommunityAccess, useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
+import { cn } from '../lib/utils';
 
 const PRIMARY = 'hsl(var(--primary))';
 
@@ -36,6 +39,30 @@ const mainTabs = [
     { path: '/explore', icon: Compass },
     { path: '/messages', icon: MessageSquare },
 ];
+
+export function FinanceMobileNav({ location, navigate }: { location: ReturnType<typeof useLocation>; navigate: ReturnType<typeof useNavigate> }) {
+    const items = [
+        { label: 'Inicio', path: '/finanzas', icon: LayoutDashboard },
+        { label: 'Movimientos', path: '/finanzas/movimientos', icon: Receipt },
+        { label: 'Analytics', path: '/finanzas/analytics', icon: AreaChart },
+        { label: 'Perfil', path: '/profile', icon: User },
+    ];
+    const active = (path: string) => path === '/finanzas' ? location.pathname === path : location.pathname.startsWith(path);
+
+    return (
+        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label="Navegación de finanzas">
+            <div className="mx-auto grid h-[68px] max-w-lg grid-cols-5 items-center px-2">
+                {items.slice(0, 2).map(({ label, path, icon: Icon }) => <FinanceMobileNavItem key={path} label={label} path={path} Icon={Icon} isActive={active(path)} onNavigate={navigate} />)}
+                <button type="button" onClick={() => navigate('/finanzas/movimientos?new=expense')} className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-95" aria-label="Agregar movimiento"><Plus className="h-5 w-5" /></button>
+                {items.slice(2).map(({ label, path, icon: Icon }) => <FinanceMobileNavItem key={path} label={label} path={path} Icon={Icon} isActive={active(path)} onNavigate={navigate} />)}
+            </div>
+        </nav>
+    );
+}
+
+function FinanceMobileNavItem({ label, path, Icon, isActive, onNavigate }: { label: string; path: string; Icon: ComponentType<{ className?: string }>; isActive: boolean; onNavigate: (path: string) => void }) {
+    return <button type="button" onClick={() => onNavigate(path)} className={cn('flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-semibold transition-colors', isActive ? 'text-primary' : 'text-muted-foreground')} aria-current={isActive ? 'page' : undefined}><Icon className="h-5 w-5" /><span>{label}</span></button>;
+}
 
 export function BottomNav() {
     const location = useLocation();

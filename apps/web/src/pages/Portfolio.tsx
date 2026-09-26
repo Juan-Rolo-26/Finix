@@ -639,7 +639,7 @@ function PortfolioSkeleton() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const PortfolioPage = () => {
   const t = useTranslation();
-  const { user } = useAuthStore();
+  const { user, syncFromSession } = useAuthStore();
   const navigate = useNavigate();
   const isPro = isProUser(user);
 
@@ -650,6 +650,9 @@ const PortfolioPage = () => {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isInitialLoadRef = useRef(true);
+  const initialDataLoadStartedRef = useRef(false);
+  const portfoliosRequestInFlightRef = useRef(false);
+  const ratesRequestInFlightRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // UI state
@@ -682,13 +685,28 @@ const PortfolioPage = () => {
       setLoading(false);
       return;
     }
+    // React StrictMode and quick navigation can invoke the loader twice. Do
+    // not create a second request while the first one is still pending.
+    if (portfoliosRequestInFlightRef.current) return;
+    portfoliosRequestInFlightRef.current = true;
     if (isInitialLoadRef.current && !silent) {
       setLoading(true);
     } else {
       setIsRefreshing(true);
     }
     try {
-      const res = await apiFetch("/portfolios");
+      let res = await apiFetch("/portfolios");
+      // A portfolio page can render from the persisted profile before the
+      // short-lived access token has been restored after a reload. Refresh the
+      // Finix session once and retry the request instead of showing a dead
+      // "Unauthorized" state to an already logged-in user.
+      if (res.status === 401) {
+        const refreshed = await apiFetch('/auth/refresh', { method: 'POST' });
+        if (!refreshed.ok) {
+          await syncFromSession();
+        }
+        res = await apiFetch("/portfolios");
+      }
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || "No se pudieron cargar los portafolios (Error del servidor)");
@@ -713,11 +731,14 @@ const PortfolioPage = () => {
       isInitialLoadRef.current = false;
       setLoading(false);
       setIsRefreshing(false);
+      portfoliosRequestInFlightRef.current = false;
     }
-  }, [isPro]);
+  }, [isPro, syncFromSession]);
 
   const loadRates = useCallback(async () => {
     if (!isPro) return;
+    if (ratesRequestInFlightRef.current) return;
+    ratesRequestInFlightRef.current = true;
     try {
       const r = await apiFetch("/market/dolar/rates");
       if (r.ok) {
@@ -732,14 +753,19 @@ const PortfolioPage = () => {
       }
     } catch {
       // noop
+    } finally {
+      ratesRequestInFlightRef.current = false;
     }
   }, [isPro]);
 
   useEffect(() => {
     if (!isPro) {
+      initialDataLoadStartedRef.current = false;
       setLoading(false);
       return;
     }
+    if (initialDataLoadStartedRef.current) return;
+    initialDataLoadStartedRef.current = true;
     void loadPortfolios();
     void loadRates();
     // No auto-reloads on focus or intervals: only loads when user opens/refreshes the page or triggers manual refresh.

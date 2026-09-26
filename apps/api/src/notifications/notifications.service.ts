@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma.service';
 import { Notification } from '@prisma/client';
+import { hasEffectiveProAccess } from '../auth/pro-access';
 
 export type NotificationPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
 export type NotificationType =
@@ -110,13 +111,15 @@ export class NotificationsService {
                     username: true,
                     emailVerified: true,
                     plan: true,
+                    accountType: true,
+                    role: true,
                     subscriptionStatus: true,
+                    proAccessOverride: true,
                     investmentEmailNotifications: true,
                 },
             } as any);
             const isInvestmentNotification = category === 'MARKET';
-            const canReceiveInvestmentEmail = recipient?.plan === 'PRO'
-                && recipient?.subscriptionStatus === 'ACTIVE'
+            const canReceiveInvestmentEmail = hasEffectiveProAccess(recipient)
                 && recipient?.investmentEmailNotifications === true;
 
             if (recipient?.email && recipient.emailVerified && (!isInvestmentNotification || canReceiveInvestmentEmail)) {

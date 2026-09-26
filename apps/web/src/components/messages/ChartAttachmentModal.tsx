@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     BarChart2,
@@ -10,6 +10,7 @@ import {
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import type { ComposerAttachment } from './messageTypes';
 import { uploadChatBlob } from './mediaUpload';
+import { captureTradingViewCanvas } from '@/lib/chartCapture';
 
 const POPULAR_SYMBOLS = [
     'AAPL',
@@ -148,6 +149,9 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
     const widgetRef = useRef<any | null>(null);
+    const handleWidgetReady = useCallback((widget: any | null) => {
+        widgetRef.current = widget;
+    }, []);
 
     const applySymbol = () => {
         const next = symbolInput.trim().toUpperCase();
@@ -161,41 +165,38 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
         setError('');
 
         try {
-            if (!widgetRef.current || typeof widgetRef.current.imageCanvas !== 'function') {
-                throw new Error('El gráfico todavía está cargando. Esperá un momento e intentá de nuevo.');
-            }
+            // A screenshot is optional: public tv.js embeds do not always
+            // expose the Charting Library screenshot API. In that case the
+            // chat receives the same symbol and interval as an interactive card.
+            const canvas = await captureTradingViewCanvas(widgetRef.current);
+            let uploaded: Awaited<ReturnType<typeof uploadChatBlob>> | null = null;
 
-            // TradingView devuelve una imagen del viewport actual. Eso congela
-            // zoom, velas, indicadores y trazados para que el receptor vea
-            // exactamente la misma composición, aunque no tenga TradingView.
-            const canvasPromise = widgetRef.current.imageCanvas();
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('La captura del gráfico tardó demasiado.')), 5000),
-            );
-            const canvas: any = await Promise.race([canvasPromise, timeoutPromise]);
-            if (!canvas || typeof canvas.toBlob !== 'function') {
-                throw new Error('No se pudo capturar el gráfico.');
-            }
+            if (canvas) {
+                const blob = await new Promise<Blob>((resolve, reject) => {
+                    canvas.toBlob((value: Blob | null) => {
+                        if (value) resolve(value);
+                        else reject(new Error('No se pudo crear la imagen del gráfico.'));
+                    }, 'image/png');
+                });
 
-            const blob = await new Promise<Blob>((resolve, reject) => {
-                canvas.toBlob((value: Blob | null) => {
-                    if (value) resolve(value);
-                    else reject(new Error('No se pudo crear la imagen del gráfico.'));
-                }, 'image/png');
-            });
-            const uploaded = await uploadChatBlob(blob, `chart_${assetSymbol}_${Date.now()}.png`);
+                try {
+                    uploaded = await uploadChatBlob(blob, `chart_${assetSymbol}_${Date.now()}.png`);
+                } catch {
+                    // Keep the interactive chart fallback if image upload fails.
+                }
+            }
 
             onSelect({
                 type: 'chart',
-                url: uploaded.url,
+                url: uploaded?.url,
                 meta: {
                     symbol: assetSymbol,
                     interval,
                     title: `Grafico ${assetSymbol}`,
                     analysisType,
                     riskLevel,
-                    originalName: uploaded.originalName,
-                    size: uploaded.size,
+                    originalName: uploaded?.originalName,
+                    size: uploaded?.size,
                 },
             });
             onClose();
@@ -298,7 +299,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                         symbol={assetSymbol}
                         interval={interval}
                         theme={tvTheme}
-                        onWidgetReady={(widget) => { widgetRef.current = widget; }}
+                        onWidgetReady={handleWidgetReady}
                     />
 
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -347,7 +348,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                             <div>
                                 <p className="text-sm font-bold text-primary">Adjuntar análisis</p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Se enviará un mensaje interactivo con el símbolo seleccionado para que los demás puedan verlo en detalle.
+                                    Se enviará el gráfico al chat. Si TradingView no permite capturar la imagen, se compartirá como gráfico interactivo.
                                 </p>
                             </div>
                         </div>

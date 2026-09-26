@@ -71,6 +71,15 @@ export class AdminUpdateUserDto {
     shadowbanned?: boolean;
 
     @IsOptional()
+    @IsBoolean()
+    isVerified?: boolean;
+
+    /** null restores automatic access based on an active paid subscription. */
+    @IsOptional()
+    @IsBoolean()
+    proAccessOverride?: boolean | null;
+
+    @IsOptional()
     @Transform(trimString)
     @IsString()
     @IsIn(USER_ROLES)

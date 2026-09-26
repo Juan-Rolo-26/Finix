@@ -64,6 +64,7 @@ const INTERVALS = [
 
 import TradingViewChart from '@/components/TradingViewChart';
 import { createChartAnalysis } from '@/lib/chart/finix-chart-api';
+import { captureTradingViewCanvas } from '@/lib/chartCapture';
 
 async function uploadFile(file: File): Promise<string> {
     const formData = new FormData();
@@ -216,47 +217,14 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
     };
 
     const captureCurrentChart = async (): Promise<string | null> => {
-        if (tvWidgetRef.current && typeof tvWidgetRef.current.imageCanvas === 'function') {
-            try {
-                const canvasPromise = tvWidgetRef.current.imageCanvas();
-                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500));
-                const canvas: any = await Promise.race([canvasPromise, timeoutPromise]);
-                if (canvas && typeof canvas.toDataURL === 'function') {
-                    // Check if canvas actually has content and is not empty/transparent
-                    try {
-                        const ctx = canvas.getContext ? canvas.getContext('2d') : null;
-                        if (ctx && canvas.width > 0 && canvas.height > 0) {
-                            const sampleW = Math.min(canvas.width, 100);
-                            const sampleH = Math.min(canvas.height, 100);
-                            const imgData = ctx.getImageData(0, 0, sampleW, sampleH);
-                            let hasVisiblePixel = false;
-                            for (let i = 3; i < imgData.data.length; i += 4) {
-                                if (imgData.data[i] > 30) {
-                                    hasVisiblePixel = true;
-                                    break;
-                                }
-                            }
-                            if (!hasVisiblePixel) {
-                                console.warn('Canvas capture is transparent/empty, skipping upload.');
-                                return null;
-                            }
-                        }
-                    } catch {
-                        // ignore cross-origin error on getImageData
-                    }
+        const canvas = await captureTradingViewCanvas(tvWidgetRef.current);
+        if (!canvas) return null;
 
-                    const dataUrl = canvas.toDataURL('image/png');
-                    const resp = await fetch(dataUrl);
-                    const blob = await resp.blob();
-                    const file = new File([blob], `chart_${assetSymbol}_${Date.now()}.png`, { type: 'image/png' });
-                    const uploadedUrl = await uploadFile(file);
-                    return uploadedUrl || null;
-                }
-            } catch (canvasErr) {
-                console.debug('widget.imageCanvas() capture error:', canvasErr);
-            }
-        }
-        return null;
+        const dataUrl = canvas.toDataURL('image/png');
+        const resp = await fetch(dataUrl);
+        const blob = await resp.blob();
+        const file = new File([blob], `chart_${assetSymbol}_${Date.now()}.png`, { type: 'image/png' });
+        return (await uploadFile(file)) || null;
     };
 
     const handleManualCapture = async () => {

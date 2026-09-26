@@ -1,6 +1,6 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
-import { BottomNav } from '../components/BottomNav';
+import { BottomNav, FinanceMobileNav } from '../components/BottomNav';
 import { MobileTopBar } from '../components/MobileTopBar';
 import { GlobalSearch } from '../components/GlobalSearch';
 import { useState, useEffect } from 'react';
@@ -8,7 +8,9 @@ import { usePreferencesStore } from '../stores/preferencesStore';
 
 export default function DashboardLayout() {
     const location = useLocation();
+    const navigate = useNavigate();
     const isMessages = location.pathname.startsWith('/messages');
+    const isFinance = location.pathname.startsWith('/finanzas');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const collapsed = usePreferencesStore(s => s.sidebarCollapsed);
 
@@ -64,7 +66,9 @@ export default function DashboardLayout() {
             </div>
 
             {/* Bottom Nav — mobile only */}
-            <BottomNav />
+            {isFinance
+                ? <FinanceMobileNav location={location} navigate={navigate} />
+                : <BottomNav />}
             <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         </div>
     );

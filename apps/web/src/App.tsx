@@ -13,7 +13,17 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
+const SocialDashboard = lazy(() => import('./pages/Dashboard'));
+const FinanceDashboard = lazy(() => import('./pages/FinanceDashboard'));
+const FinanceAccounts = lazy(() => import('./pages/FinanceAccounts'));
+const FinanceTransactions = lazy(() => import('./pages/FinanceTransactions'));
+const FinanceAnalytics = lazy(() => import('./pages/FinanceAnalytics'));
+const FinanceInvestments = lazy(() => import('./pages/FinanceInvestments'));
+const FinancePlanning = lazy(() => import('./pages/FinancePlanning'));
+
+// Finanzas personales queda preservada, pero temporalmente fuera de servicio.
+// Para reactivarla alcanza con cambiar esta bandera a true.
+const PERSONAL_FINANCE_ENABLED = false;
 const PortfolioPage = lazy(() => import('./pages/Portfolio'));
 const InfoPage = lazy(() => import('./pages/InfoPage'));
 const OnboardingWizard = lazy(() => import('./pages/OnboardingWizard'));
@@ -116,11 +126,9 @@ export default function App() {
                 setAccessToken(session.access_token);
                 useAuthStore.setState({ token: session.access_token });
             }
-            if (event === 'SIGNED_OUT') {
-                setAccessToken(null);
-                localStorage.removeItem('user');
-                useAuthStore.setState({ token: null, user: null });
-            }
+            // Supabase may emit SIGNED_OUT when its own provider session is
+            // refreshed or revoked. That must not close the independent Finix
+            // session; only the explicit Finix logout action does that.
         });
 
         // On first load, sync user from existing Supabase session
@@ -189,7 +197,18 @@ export default function App() {
                             </RequireOnboarding>
                         }
                     >
-                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/dashboard" element={<SocialDashboard />} />
+                        <Route path="/social" element={<SocialDashboard />} />
+                        <Route path="/finanzas" element={PERSONAL_FINANCE_ENABLED ? <FinanceDashboard /> : <Navigate to="/dashboard" replace />} />
+                        <Route path="/finanzas/cuentas" element={PERSONAL_FINANCE_ENABLED ? <FinanceAccounts /> : <Navigate to="/dashboard" replace />} />
+                        <Route path="/finanzas/movimientos" element={PERSONAL_FINANCE_ENABLED ? <FinanceTransactions /> : <Navigate to="/dashboard" replace />} />
+                        <Route path="/finanzas/presupuestos" element={PERSONAL_FINANCE_ENABLED ? <FinancePlanning /> : <Navigate to="/dashboard" replace />} />
+                        <Route path="/finanzas/objetivos" element={PERSONAL_FINANCE_ENABLED ? <FinancePlanning /> : <Navigate to="/dashboard" replace />} />
+                        <Route path="/finanzas/inversiones" element={PERSONAL_FINANCE_ENABLED ? <FinanceInvestments /> : <Navigate to="/dashboard" replace />} />
+                        <Route path="/finanzas/tarjetas" element={PERSONAL_FINANCE_ENABLED ? <FinancePlanning /> : <Navigate to="/dashboard" replace />} />
+                        <Route path="/finanzas/calendario" element={PERSONAL_FINANCE_ENABLED ? <FinancePlanning /> : <Navigate to="/dashboard" replace />} />
+                        <Route path="/finanzas/analytics" element={PERSONAL_FINANCE_ENABLED ? <FinanceAnalytics /> : <Navigate to="/dashboard" replace />} />
+                        <Route path="/finanzas/configuracion" element={PERSONAL_FINANCE_ENABLED ? <Settings /> : <Navigate to="/dashboard" replace />} />
                         <Route path="/portfolio" element={<PortfolioPage />} />
                         <Route path="/market" element={<Markets />} />
                         <Route path="/mercado/mejores-rendimientos" element={<TopGainersPage />} />

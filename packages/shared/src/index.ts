@@ -22,6 +22,7 @@ export const UserSchema = z.object({
     plan: z.nativeEnum(AccountPlan).default(AccountPlan.FREE),
     accountType: z.string().default('BASIC'),
     subscriptionStatus: z.string().optional(),
+    proAccessOverride: z.boolean().nullable().optional(),
     isInfluencer: z.boolean().default(false),
     isCreator: z.boolean().default(false),
     isVerified: z.boolean().default(false),
@@ -108,4 +109,3 @@ export type CreatePostDto = z.infer<typeof CreatePostSchema>;
 export type CreatePortfolioDto = z.infer<typeof CreatePortfolioSchema>;
 export type CreateAssetDto = z.infer<typeof CreateAssetSchema>;
 export type CreateMovementDto = z.infer<typeof CreateMovementSchema>;
-

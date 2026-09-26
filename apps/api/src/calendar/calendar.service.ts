@@ -12,6 +12,7 @@ import {
 import { CalendarProviderService } from './services/calendar-provider.service';
 import { MarketImpactScoringService } from './services/market-impact-scoring.service';
 import { EarningsImpactScoringService } from './services/earnings-impact-scoring.service';
+import { hasEffectiveProAccess } from '../auth/pro-access';
 
 @Injectable()
 export class CalendarService {
@@ -222,14 +223,7 @@ export class CalendarService {
         importance?: 'HIGH' | 'MEDIUM' | 'LOW';
         user?: any;
     }): Promise<CalendarWeekResponse> {
-        const isProUser = Boolean(
-            params.user?.role === 'ADMIN' ||
-            params.user?.plan === 'PRO' ||
-            params.user?.accountType === 'PRO' ||
-            params.user?.subscriptionStatus === 'ACTIVE' ||
-            params.user?.isPro ||
-            params.user?.subscriptionTier === 'pro'
-        );
+        const isProUser = hasEffectiveProAccess(params.user);
 
         const isAll = params.weekStart === 'ALL' || params.weekStart === 'all';
 

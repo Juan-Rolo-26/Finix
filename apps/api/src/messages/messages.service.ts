@@ -595,11 +595,11 @@ export class MessagesService {
             };
         }
 
-        if (!input.url) {
-            throw new BadRequestException('El adjunto necesita una URL');
-        }
-
         if (type === 'image') {
+            if (!input.url) {
+                throw new BadRequestException('El adjunto necesita una URL');
+            }
+
             const meta = input.meta && typeof input.meta === 'object'
                 ? {
                     originalName:
@@ -629,7 +629,7 @@ export class MessagesService {
 
         return {
             attachmentType: 'chart' as const,
-            attachmentUrl: normalizeStoredUploadUrl(input.url) ?? input.url,
+            attachmentUrl: input.url ? normalizeStoredUploadUrl(input.url) ?? input.url : null,
             attachmentData: this.stringifyMeta({
                 symbol,
                 interval: typeof meta.interval === 'string' ? meta.interval : 'D',

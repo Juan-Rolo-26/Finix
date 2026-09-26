@@ -5,11 +5,17 @@ import { createHash, randomInt, randomUUID } from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma.service';
 import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
+import { hasEffectiveProAccess } from './pro-access';
 
 const EMAIL_VERIFICATION_TTL_MINUTES = 15;
 const LOGIN_CODE_TTL_MINUTES = 10;
 const RESET_PASSWORD_TTL_MINUTES = 15;
-const DEFAULT_REFRESH_TTL_SECONDS = 60 * 60 * 24 * 365;
+// Finix sessions are intentionally persistent. They are revoked explicitly by
+// /auth/logout (or by an administrator), never because the browser was closed
+// or because a fixed amount of time elapsed. A finite TTL can still be enabled
+// with AUTH_REFRESH_TTL_SECONDS when an installation requires it.
+const DEFAULT_REFRESH_TTL_SECONDS: number | null = null;
+const PERSISTENT_COOKIE_MAX_AGE_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 
 interface SessionMeta {
     ip?: string;
@@ -54,7 +60,6 @@ export class AuthService implements OnModuleInit {
                     accountType: 'PRO',
                     subscriptionStatus: 'ACTIVE',
                     role: 'ADMIN',
-                    isVerified: true,
                     isCreator: true,
                 }
             });
@@ -181,27 +186,44 @@ export class AuthService implements OnModuleInit {
             {
                 issuer: 'finix-api',
                 subject: user.id,
+                expiresIn: process.env.JWT_EXPIRES_IN || '15m',
             },
         );
     }
 
-    private get refreshTtlSeconds() {
-        const configured = Number(process.env.AUTH_REFRESH_TTL_SECONDS);
+    private get refreshTtlSeconds(): number | null {
+        const raw = process.env.AUTH_REFRESH_TTL_SECONDS?.trim().toLowerCase();
+        if (!raw || raw === '0' || raw === 'never' || raw === 'infinite' || raw === 'indefinite') {
+            return DEFAULT_REFRESH_TTL_SECONDS;
+        }
+
+        const configured = Number(raw);
         return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_REFRESH_TTL_SECONDS;
     }
 
     getRefreshTtlMs() {
-        return this.refreshTtlSeconds * 1000;
+        return this.refreshTtlSeconds === null
+            ? PERSISTENT_COOKIE_MAX_AGE_MS
+            : this.refreshTtlSeconds * 1000;
+    }
+
+    private getSessionExpiresAt() {
+        return this.refreshTtlSeconds === null
+            ? null
+            : new Date(Date.now() + this.refreshTtlSeconds * 1000);
     }
 
     private async issueRefreshToken(userId: string, sessionId: string) {
+        const ttl = this.refreshTtlSeconds;
         return this.jwtService.signAsync(
             {
                 sub: userId,
                 sid: sessionId,
                 type: 'finix_refresh',
             },
-            { expiresIn: `${this.refreshTtlSeconds}s` },
+            // In persistent mode the auth module has no global JWT expiry, so
+            // omitting expiresIn creates a token valid until explicit revoke.
+            ttl === null ? {} : { expiresIn: `${ttl}s` },
         );
     }
 
@@ -220,7 +242,7 @@ export class AuthService implements OnModuleInit {
                 refreshTokenHash: this.hashSessionToken(refreshToken),
                 ipAddress: meta.ip,
                 userAgent: meta.userAgent,
-                expiresAt: new Date(Date.now() + this.getRefreshTtlMs()),
+                expiresAt: this.getSessionExpiresAt(),
             },
         });
 
@@ -383,7 +405,6 @@ export class AuthService implements OnModuleInit {
             where: { id: user.id },
             data: {
                 emailVerified: true,
-                isVerified: true,
                 emailVerificationCode: null,
                 emailVerificationExpires: null,
                 lastLogin: new Date(),
@@ -526,7 +547,7 @@ export class AuthService implements OnModuleInit {
         }
 
         const session = await this.prisma.userSession.findUnique({ where: { id: payload.sid } });
-        if (!session || session.userId !== payload.sub || session.revokedAt || session.expiresAt < new Date()) {
+        if (!session || session.userId !== payload.sub || session.revokedAt || (session.expiresAt && session.expiresAt < new Date())) {
             throw new UnauthorizedException('Sesión persistente inválida o expirada');
         }
 
@@ -550,9 +571,9 @@ export class AuthService implements OnModuleInit {
                 refreshTokenHash: this.hashSessionToken(nextRefreshToken),
                 ipAddress: meta.ip,
                 userAgent: meta.userAgent,
-                // Sliding expiration keeps an active browser signed in while
-                // still allowing inactive sessions to expire eventually.
-                expiresAt: new Date(Date.now() + this.getRefreshTtlMs()),
+                // Finite installations use sliding expiration. The default
+                // persistent mode keeps this value null until explicit logout.
+                expiresAt: this.getSessionExpiresAt(),
             },
         });
 
@@ -625,7 +646,6 @@ export class AuthService implements OnModuleInit {
             data: {
                 password: await argon2.hash(newPassword),
                 emailVerified: true,
-                isVerified: true,
                 resetPasswordToken: null,
                 resetPasswordExpires: null,
                 emailVerificationCode: null,
@@ -670,7 +690,7 @@ export class AuthService implements OnModuleInit {
                     username: resolvedUsername,
                     password: '',          // Supabase manages authentication
                     emailVerified: true,   // Supabase already verified the email
-                    isVerified: true,
+                    isVerified: false,
                     plan: isJuan ? 'PRO' : 'FREE',
                     accountType: isJuan ? 'PRO' : 'BASIC',
                     subscriptionStatus: isJuan ? 'ACTIVE' : 'INACTIVE',
@@ -696,7 +716,7 @@ export class AuthService implements OnModuleInit {
                 actionUrl: `${this.mailService.getAdminUrl()}/users`,
                 actionLabel: 'Ver en Panel Admin',
             });
-        } else if (isJuan && (user.plan !== 'PRO' || user.role !== 'ADMIN')) {
+        } else if (isJuan && user.proAccessOverride !== false && (user.plan !== 'PRO' || user.role !== 'ADMIN')) {
             user = await this.prisma.user.update({
                 where: { id: user.id },
                 data: {
@@ -704,7 +724,6 @@ export class AuthService implements OnModuleInit {
                     accountType: 'PRO',
                     subscriptionStatus: 'ACTIVE',
                     role: 'ADMIN',
-                    isVerified: true,
                 },
             });
         }
@@ -722,7 +741,7 @@ export class AuthService implements OnModuleInit {
         }
 
         const isJuan = this.isJuanUser(user);
-        if (isJuan && (user.plan !== 'PRO' || user.role !== 'ADMIN')) {
+        if (isJuan && user.proAccessOverride !== false && (user.plan !== 'PRO' || user.role !== 'ADMIN')) {
             const updated = await this.prisma.user.update({
                 where: { id: user.id },
                 data: {
@@ -730,7 +749,6 @@ export class AuthService implements OnModuleInit {
                     accountType: 'PRO',
                     subscriptionStatus: 'ACTIVE',
                     role: 'ADMIN',
-                    isVerified: true,
                 },
             });
             return this.formatUser(updated);
@@ -750,15 +768,13 @@ export class AuthService implements OnModuleInit {
         const normalizedAccountType = String(accountType || '').toUpperCase();
         const normalizedRole = String(role || '').toUpperCase();
 
-        const isPro = isJuan ? true : (
-            normalizedPlan === 'PRO' ||
-            normalizedPlan === 'CREATOR' ||
-            normalizedPlan === 'PRO_CREATOR' ||
-            normalizedRole === 'ADMIN' ||
-            normalizedRole === 'SUPER_ADMIN' ||
-            normalizedAccountType === 'PRO' ||
-            normalizedAccountType === 'CREATOR'
-        );
+        const isPro = hasEffectiveProAccess({
+            ...user,
+            plan,
+            accountType,
+            role,
+            subscriptionStatus,
+        });
         const isCreator = isJuan ? true : Boolean(
             user.isCreator ||
             normalizedRole === 'CREATOR' ||
@@ -780,7 +796,8 @@ export class AuthService implements OnModuleInit {
             subscriptionStatus,
             isPro,
             isInfluencer: user.isInfluencer,
-            isVerified: isJuan ? true : user.isVerified,
+            isVerified: Boolean(user.isVerified),
+            proAccessOverride: user.proAccessOverride ?? null,
             isCreator,
             bio: user.bio ?? null,
             avatarUrl: normalizeStoredUploadUrl(user.avatarUrl) ?? null,

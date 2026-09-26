@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { hasEffectiveProAccess } from '../auth/pro-access';
 import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 @Injectable()
@@ -158,9 +159,9 @@ export class SettingsService {
             if (enabled) {
                 const user = await this.prisma.user.findUnique({
                     where: { id: userId },
-                    select: { plan: true, subscriptionStatus: true },
+                    select: { plan: true, accountType: true, role: true, subscriptionStatus: true, proAccessOverride: true },
                 });
-                const isPro = user?.plan === 'PRO' && user?.subscriptionStatus === 'ACTIVE';
+                const isPro = hasEffectiveProAccess(user);
                 if (!isPro) {
                     throw new ForbiddenException('Las alertas por email de inversiones son exclusivas para Finix PRO');
                 }

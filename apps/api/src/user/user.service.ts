@@ -409,6 +409,7 @@ export class UserService {
             plan: true,
             accountType: true,
             subscriptionStatus: true,
+            proAccessOverride: true,
             title: true,
             company: true,
             location: true,

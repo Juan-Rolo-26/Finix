@@ -26,17 +26,6 @@ const buildUrl = (base: string, path: string) => {
     return `${base.replace(/\/$/, '')}${normalized}`;
 };
 
-const clearAuthAndRedirect = () => {
-    if (typeof window === 'undefined') return;
-    setAccessToken(null);
-    localStorage.removeItem('user');
-
-    if (window.location.pathname !== '/') {
-        const target = '/?reason=session-expired';
-        window.location.assign(target);
-    }
-};
-
 const SESSION_AUTH_ENDPOINTS = [
     '/auth/login',
     '/auth/register',
@@ -48,11 +37,6 @@ const SESSION_AUTH_ENDPOINTS = [
 const isSessionAuthEndpoint = (path: string) => {
     const normalizedPath = path.toLowerCase();
     return SESSION_AUTH_ENDPOINTS.some((endpoint) => normalizedPath.includes(endpoint));
-};
-
-const isAuthBootstrapEndpoint = (path: string) => {
-    const normalizedPath = path.toLowerCase();
-    return normalizedPath.includes('/auth/me') || normalizedPath.includes('/auth/sync-user');
 };
 
 const persistRefreshedSession = (data: any) => {
@@ -177,9 +161,10 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
             }
 
             activeBase = base;
-            if (response.status === 401 && !didRefresh && !isSessionAuthEndpoint(path) && !isAuthBootstrapEndpoint(path)) {
-                clearAuthAndRedirect();
-            }
+            // A failed request must not log the user out. The persistent
+            // session is closed only by the explicit logout action; keeping
+            // the stored profile also prevents transient API failures from
+            // sending the user to the login screen.
             return response;
         }
 

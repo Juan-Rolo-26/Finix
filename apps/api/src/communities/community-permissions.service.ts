@@ -19,8 +19,10 @@ export class CommunityPermissionsService {
         accountType?: string;
         isCreator?: boolean;
         subscriptionStatus?: string;
+        proAccessOverride?: boolean | null;
     }): boolean {
         if (this.isPlatformAdmin(user)) return true;
+        if (user.proAccessOverride === false) return false;
 
         const role = String(user.role || '').toUpperCase();
         const accountType = String(user.accountType || '').toUpperCase();
@@ -44,8 +46,11 @@ export class CommunityPermissionsService {
         accountType?: string;
         isCreator?: boolean;
         subscriptionStatus?: string;
+        proAccessOverride?: boolean | null;
     }): boolean {
         if (this.isPlatformAdmin(user)) return true;
+        if (user.proAccessOverride === false) return false;
+        if (user.proAccessOverride === true) return true;
 
         const isActive = ACTIVE_SUBSCRIPTION_STATUSES.has(String(user.subscriptionStatus || '').toUpperCase());
         if (!isActive) return false;
@@ -71,6 +76,7 @@ export class CommunityPermissionsService {
                 accountType: true,
                 isCreator: true,
                 subscriptionStatus: true,
+                proAccessOverride: true,
             },
         });
 
@@ -95,6 +101,7 @@ export class CommunityPermissionsService {
                 accountType: true,
                 isCreator: true,
                 subscriptionStatus: true,
+                proAccessOverride: true,
                 isVerified: true,
             },
         });

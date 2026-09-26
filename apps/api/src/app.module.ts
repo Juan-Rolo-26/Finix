@@ -32,6 +32,7 @@ import { CalendarModule } from './calendar/calendar.module';
 import { ChartAnalysisModule } from './chart-analysis/chart-analysis.module';
 import { MercadoPagoModule } from './mercadopago/mercadopago.module';
 import { AlertsModule } from './alerts/alerts.module';
+import { FinanceModule } from './finance/finance.module';
 
 @Module({
     imports: [
@@ -83,6 +84,7 @@ import { AlertsModule } from './alerts/alerts.module';
         ChartAnalysisModule,
         MercadoPagoModule,
         AlertsModule,
+        FinanceModule,
     ],
     controllers: [],
     providers: [

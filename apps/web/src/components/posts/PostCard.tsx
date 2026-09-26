@@ -77,7 +77,46 @@ function getTradingViewUrl(content: string) {
 
 // ─── Media Carousel ───────────────────────────────────────────────────────────
 
-function MediaCarousel({ media }: { media: Post['media'] }) {
+function isFlatChartImage(image: HTMLImageElement) {
+    if (!image.naturalWidth || !image.naturalHeight) return true;
+
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 40;
+        const context = canvas.getContext('2d');
+        if (!context) return false;
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        const colors = new Set<string>();
+        const luminances: number[] = [];
+
+        for (let i = 0; i < pixels.length; i += 16) {
+            const red = pixels[i];
+            const green = pixels[i + 1];
+            const blue = pixels[i + 2];
+            colors.add(`${red >> 4}-${green >> 4}-${blue >> 4}`);
+            luminances.push((red * 0.299) + (green * 0.587) + (blue * 0.114));
+        }
+
+        const average = luminances.reduce((sum, value) => sum + value, 0) / Math.max(1, luminances.length);
+        const variance = luminances.reduce((sum, value) => sum + Math.pow(value - average, 2), 0) / Math.max(1, luminances.length);
+        return colors.size < 8 || Math.sqrt(variance) < 4;
+    } catch {
+        // Cross-origin images cannot be inspected; keep them visible.
+        return false;
+    }
+}
+
+function MediaCarousel({
+    media,
+    validateChart = false,
+    onInvalidChart,
+}: {
+    media: Post['media'];
+    validateChart?: boolean;
+    onInvalidChart?: () => void;
+}) {
     const [idx, setIdx] = useState(0);
     const [playing, setPlaying] = useState(true);
     const [muted, setMuted] = useState(true);
@@ -132,6 +171,10 @@ function MediaCarousel({ media }: { media: Post['media'] }) {
                     alt="Post media"
                     className="w-full max-h-[460px] object-contain"
                     loading="lazy"
+                    onLoad={validateChart ? (event) => {
+                        if (isFlatChartImage(event.currentTarget)) onInvalidChart?.();
+                    } : undefined}
+                    onError={validateChart ? onInvalidChart : undefined}
                 />
             )}
 
@@ -198,6 +241,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     const [showReportModal, setShowReportModal] = useState(false);
     const [commentsCount, setCommentsCount] = useState(post.commentsCount);
     const [showLiveChart, setShowLiveChart] = useState(true);
+    const [invalidCapturedChart, setInvalidCapturedChart] = useState(false);
 
     const isOwner = currentUserId === post.author.id;
     const canEdit = isOwner && !post.contentEditedAt &&
@@ -215,6 +259,8 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
         setSaved(post.savedByMe);
         setCommentsCount(post.commentsCount);
         setEditContent(post.content);
+        setInvalidCapturedChart(false);
+        setShowLiveChart(true);
     }, [
         post.id,
         post.likedByMe,
@@ -540,11 +586,26 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             {(() => {
                 const regularMedia = (post.media || []).filter((m: any) => !m.url?.startsWith('tvchart:'));
                 const chartSymbol = post.assetSymbol || (post.tickers ? String(post.tickers).split(',')[0].trim().replace('$', '') : 'AAPL');
-                const hasCapturedMedia = regularMedia.length > 0;
+                const hasCapturedMedia = regularMedia.length > 0 && !invalidCapturedChart;
+                const handleInvalidCapturedChart = () => {
+                    setInvalidCapturedChart(true);
+                    setShowLiveChart(true);
+                };
 
                 if (post.type === 'chart') {
                     return (
                         <div className="px-4 pb-3 space-y-2.5">
+                            {regularMedia.length > 0 && showLiveChart && !invalidCapturedChart && (
+                                <img
+                                    src={resolveMediaUrl(regularMedia[0].url)}
+                                    alt=""
+                                    className="hidden"
+                                    onLoad={(event) => {
+                                        if (isFlatChartImage(event.currentTarget)) handleInvalidCapturedChart();
+                                    }}
+                                    onError={handleInvalidCapturedChart}
+                                />
+                            )}
                             {hasCapturedMedia && (
                                 <div className="flex items-center justify-between px-1">
                                     <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
@@ -563,7 +624,11 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                             )}
 
                             {hasCapturedMedia && !showLiveChart ? (
-                                <MediaCarousel media={regularMedia} />
+                                <MediaCarousel
+                                    media={regularMedia}
+                                    validateChart
+                                    onInvalidChart={handleInvalidCapturedChart}
+                                />
                             ) : (
                                 <div className="h-[420px] sm:h-[490px] min-h-[420px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
                                     <TradingViewWidget symbol={chartSymbol} height={490} />

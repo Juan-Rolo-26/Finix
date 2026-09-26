@@ -295,8 +295,8 @@ export function PortfolioDashboard({
         setLiveComparison((prev) => ({ ...prev, [selectedRange]: [] }));
 
         Promise.all([
-            apiFetch(`/portfolios/${portfolioId}/performance?range=${selectedRange}`),
-            apiFetch(`/portfolios/${portfolioId}/benchmarks?range=${selectedRange}&benchmarks=sp500`),
+            apiFetch(`/portfolios/${portfolioId}/performance?range=${selectedRange}&currency=${encodeURIComponent(currency)}`),
+            apiFetch(`/portfolios/${portfolioId}/benchmarks?range=${selectedRange}&benchmarks=sp500&currency=${encodeURIComponent(currency)}`),
         ])
             .then(async ([performanceResponse, benchmarkResponse]) => {
                 const performance = performanceResponse.ok ? await performanceResponse.json() : null;
@@ -328,7 +328,8 @@ export function PortfolioDashboard({
                 setLiveHistory((prev) => ({ ...prev, [selectedRange]: performanceSeries }));
                 setLiveComparison((prev) => ({ ...prev, [selectedRange]: comparisonSeries }));
 
-                if (performance?.message && performanceSeries.length < 2) {
+                const distinctPerformanceDates = new Set(performanceSeries.map((point: PortfolioValuePoint) => point.date)).size;
+                if (performance?.message && (performanceSeries.length < 2 || distinctPerformanceDates < 2)) {
                     setHistoryNotice(performance.message);
                 } else if (benchmark?.benchmarkAvailable === false && performance?.startDate) {
                     const startLabel = new Date(performance.startDate).toLocaleDateString('es-AR', {
@@ -356,7 +357,7 @@ export function PortfolioDashboard({
         return () => {
             isMounted = false;
         };
-    }, [assets.length, metrics?.cantidadActivos, portfolioId, selectedRange]);
+    }, [assets.length, currency, metrics?.cantidadActivos, portfolioId, selectedRange]);
 
     const resolvedData = useMemo(() => {
         const hasHoldings = (metrics?.cantidadActivos ?? assets.length) > 0;

@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
-import { useAuthStore } from '@/stores/authStore';
+import { isProUser, useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
 import PushSettings from '@/components/PushSettings';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
@@ -68,6 +68,7 @@ interface FullSettings {
     isInfluencer: boolean;
     isVerified: boolean;
     isCreator: boolean;
+    proAccessOverride?: boolean | null;
     accountType: string;
     plan?: string;
     subscriptionStatus?: string;
@@ -448,15 +449,11 @@ export default function Settings() {
         }, 700);
     };
 
-    const isExplicitlyFree = user?.plan === 'FREE' || settings?.plan === 'FREE' || (user as any)?.isPro === false;
-    const isExplicitlyNoCreator = user?.isCreator === false || settings?.isCreator === false;
+    const effectiveUser = settings ? { ...(user || {}), ...settings } : user;
+    const isExplicitlyFree = (effectiveUser as any)?.proAccessOverride === false || effectiveUser?.plan === 'FREE' || (effectiveUser as any)?.isPro === false;
+    const isExplicitlyNoCreator = (effectiveUser as any)?.proAccessOverride === false || user?.isCreator === false || settings?.isCreator === false;
 
-    const isProActive = !isExplicitlyFree && Boolean(
-        ((settings?.plan === 'PRO' || settings?.plan === 'CREATOR') && settings?.subscriptionStatus === 'ACTIVE') ||
-        ((['PRO', 'CREATOR'].includes(String((user as any)?.plan || '')) && user?.subscriptionStatus === 'ACTIVE')) ||
-        user?.role === 'ADMIN' ||
-        (user as any)?.isPro
-    );
+    const isProActive = !isExplicitlyFree && isProUser(effectiveUser);
 
     const isCreatorActive = !isExplicitlyNoCreator && Boolean(
         (user?.isCreator && user?.subscriptionStatus === 'ACTIVE') ||

@@ -26,7 +26,8 @@ export function isJuanUser(user: any): boolean {
     const email = String(candidate.email || '').trim().toLowerCase();
     const name = String(candidate.name || '').trim().toLowerCase();
     
-    // Juan26-08 is the platform owner and always has full PRO & Admin privileges permanently
+    // Legacy owner identity helper. Effective PRO access can still be revoked
+    // explicitly by an administrator through proAccessOverride.
     return (
         username === 'juan26-08' ||
         username === 'juan26_08' ||
@@ -48,6 +49,8 @@ export function isProUser(user: any): boolean {
         } catch { }
     }
     if (!candidate) return false;
+    if (candidate.proAccessOverride === true) return true;
+    if (candidate.proAccessOverride === false) return false;
     if (candidate.plan === 'FREE' || candidate.isPro === false || candidate.subscriptionStatus === 'CANCELED') {
         return false;
     }
@@ -70,6 +73,7 @@ export function isProUser(user: any): boolean {
 
 export function isCreatorUser(user: any): boolean {
     if (!user) return false;
+    if (user.proAccessOverride === false) return false;
     if (user.isCreator === false) return false;
     if (isJuanUser(user)) return true;
     const role = String(user.role || '').toUpperCase();
@@ -89,6 +93,8 @@ export function isCreatorUser(user: any): boolean {
 /** Access to the Communities section requires an active Finix PRO-family plan. */
 export function hasCommunityAccess(user: any): boolean {
     if (!user) return false;
+    if (user.proAccessOverride === false) return false;
+    if (user.proAccessOverride === true) return true;
     if (isJuanUser(user)) return true;
 
     const role = String(user.role || '').toUpperCase();
@@ -129,7 +135,7 @@ export function hasCommunityCreatorAccess(user: any): boolean {
 function enhanceUser(user: any): any {
     if (!user) return null;
     if (isJuanUser(user)) {
-        const isFree = user.plan === 'FREE' || user.isPro === false;
+        const isFree = user.proAccessOverride === false || user.plan === 'FREE' || user.isPro === false;
         const isNotCreator = user.isCreator === false;
         return {
             ...user,
@@ -137,9 +143,10 @@ function enhanceUser(user: any): any {
             plan: isFree ? 'FREE' : (user.plan || 'PRO'),
             accountType: isFree ? (isNotCreator ? 'BASIC' : 'CREATOR') : (user.accountType || 'PRO'),
             subscriptionStatus: isFree && isNotCreator ? (user.subscriptionStatus || 'CANCELED') : (user.subscriptionStatus || 'ACTIVE'),
-            isPro: !isFree,
+            isPro: user.proAccessOverride === true ? true : !isFree,
             isCreator: !isNotCreator,
-            isVerified: true,
+            isVerified: Boolean(user.isVerified),
+            proAccessOverride: user.proAccessOverride ?? null,
         };
     }
     return user;
@@ -229,7 +236,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ token: null, user: null });
     },
 
-    syncFromSession: async () => {
+    syncFromSession: async (): Promise<User | null> => {
         const existingToken = getAccessToken();
         try {
             if (!existingToken) {
@@ -266,9 +273,14 @@ export const useAuthStore = create<AuthState>((set) => ({
 
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-            persistToken(null);
-            persistUser(null);
-            set({ token: null, user: null });
+            // Do not turn a missing/expired provider session into a Finix
+            // logout. Email/password users and OAuth users both have an
+            // independent persistent Finix session that is closed explicitly.
+            const persistedUser = enhanceUser(JSON.parse(localStorage.getItem('user') || 'null')) as User | null;
+            if (persistedUser) {
+                set({ token: getAccessToken(), user: persistedUser });
+                return persistedUser;
+            }
             return null;
         }
 
@@ -329,10 +341,5 @@ supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'TOKEN_REFRESHED' && session) {
         persistToken(session.access_token);
         useAuthStore.setState({ token: session.access_token });
-    }
-    if (event === 'SIGNED_OUT') {
-        persistToken(null);
-        persistUser(null);
-        useAuthStore.setState({ token: null, user: null });
     }
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type TouchEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { BadgeCheck, ChevronLeft, ChevronRight, Eye, Heart, Send, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -78,6 +78,28 @@ function buildStoryAttachment(story: StoryItem): ComposerAttachment {
     };
 }
 
+function getReadableStoryTextColor(color?: string | null) {
+    if (!color) return '#ffffff';
+
+    const normalized = color.trim().replace('#', '');
+    if (![3, 6].includes(normalized.length) || !/^[0-9a-f]+$/i.test(normalized)) {
+        return color;
+    }
+
+    const hex = normalized.length === 3
+        ? normalized.split('').map((value) => `${value}${value}`).join('')
+        : normalized;
+    const channels = [0, 2, 4].map((index) => Number.parseInt(hex.slice(index, index + 2), 16) / 255);
+    const luminance = channels.reduce((total, channel, index) => {
+        const linear = channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+        return total + linear * [0.2126, 0.7152, 0.0722][index];
+    }, 0);
+
+    // Text is shown over a dark readability panel, so very dark custom colors
+    // would disappear even if they were valid colors in the story composer.
+    return luminance < 0.42 ? '#ffffff' : color;
+}
+
 export function StoryViewerModal({
     groups,
     activeGroupIndex,
@@ -99,6 +121,7 @@ export function StoryViewerModal({
     const [replyText, setReplyText] = useState('');
     const [isLiking, setIsLiking] = useState(false);
     const [isSendingReply, setIsSendingReply] = useState(false);
+    const touchStartX = useRef<number | null>(null);
 
     const open = activeGroupIndex !== null && groups.length > 0;
 
@@ -179,6 +202,27 @@ export function StoryViewerModal({
         }
     };
 
+    const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+        touchStartX.current = event.changedTouches[0]?.clientX ?? null;
+    };
+
+    const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+        const startX = touchStartX.current;
+        touchStartX.current = null;
+        if (startX === null) return;
+
+        const endX = event.changedTouches[0]?.clientX;
+        if (endX === undefined) return;
+
+        const deltaX = endX - startX;
+        if (Math.abs(deltaX) < 45) return;
+        if (deltaX < 0) {
+            goNext();
+        } else {
+            goPrevious();
+        }
+    };
+
     useEffect(() => {
         if (!open || !currentStory) return;
 
@@ -230,6 +274,7 @@ export function StoryViewerModal({
     if (!open || !currentStory || !currentGroup) return null;
 
     const isOwnStory = currentStory.authorId === currentUserId;
+    const storyTextColor = getReadableStoryTextColor(currentStory.textColor);
 
     const handleDelete = async () => {
         if (!isOwnStory || isDeleting) return;
@@ -339,13 +384,13 @@ ${replyText.trim()}`,
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[90] bg-black/95">
+        <div className="fixed inset-0 z-[90] bg-slate-950/95">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.18),_transparent_38%)]" />
 
             <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-4 top-4 z-[95] rounded-full border border-white/10 bg-black/40 p-2 text-white/80 backdrop-blur transition-colors hover:text-white"
+                className="absolute right-4 top-4 z-[95] rounded-full border border-white/25 bg-slate-950/85 p-2 text-white shadow-lg backdrop-blur transition-colors hover:bg-slate-900 hover:text-white"
                 aria-label="Cerrar historias"
             >
                 <X className="h-5 w-5" />
@@ -357,7 +402,7 @@ ${replyText.trim()}`,
                         <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#09110d] shadow-[0_30px_120px_rgba(0,0,0,0.55)]">
                             <div className="absolute inset-x-0 top-0 z-[60] flex gap-1.5 px-4 pt-4">
                                 {currentGroup.stories.map((story, index) => (
-                                    <div key={story.id} className="h-1 flex-1 overflow-hidden rounded-full bg-white/30 backdrop-blur-sm">
+                                    <div key={story.id} className="h-1.5 flex-1 overflow-hidden rounded-full border border-white/20 bg-slate-950/60 backdrop-blur-sm">
                                         <div
                                             className="h-full rounded-full bg-white transition-all duration-100 ease-linear"
                                             style={{
@@ -373,13 +418,13 @@ ${replyText.trim()}`,
                                 ))}
                             </div>
 
-                            <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-8 pb-4">
+                            <div className="absolute inset-x-0 top-0 z-40 flex items-center justify-between px-4 pb-4 pt-8">
                                 <button
                                     type="button"
                                     onClick={handleOpenProfile}
-                                    className="flex min-w-0 items-center gap-3 rounded-full bg-black/35 px-3 py-2 text-left backdrop-blur transition-colors hover:bg-black/50"
+                                    className="flex min-w-0 items-center gap-3 rounded-full border border-white/20 bg-slate-950/80 px-3 py-2 text-left shadow-lg backdrop-blur-md transition-colors hover:bg-slate-900/90"
                                 >
-                                    <div className="h-10 w-10 overflow-hidden rounded-full border border-white/15 bg-black/30">
+                                    <div className="h-10 w-10 overflow-hidden rounded-full border border-white/25 bg-slate-950/80">
                                         {currentStory.author.avatarUrl ? (
                                             <img
                                                 src={resolveMediaUrl(currentStory.author.avatarUrl)}
@@ -395,9 +440,9 @@ ${replyText.trim()}`,
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-1 text-sm font-semibold text-white">
                                             <span className="truncate">{currentStory.author.username}</span>
-                                            {currentStory.author.isVerified ? <BadgeCheck className="h-4 w-4 text-primary" /> : null}
+                                            {currentStory.author.isVerified ? <BadgeCheck className="h-4 w-4 text-emerald-300" /> : null}
                                         </div>
-                                        <div className="text-[11px] text-white/65">{timeAgo(currentStory.createdAt)}</div>
+                                        <div className="text-[11px] text-white/90">{timeAgo(currentStory.createdAt)}</div>
                                     </div>
                                 </button>
 
@@ -408,7 +453,7 @@ ${replyText.trim()}`,
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="rounded-full bg-black/35 text-white hover:bg-red-500/20 hover:text-red-200"
+                                            className="rounded-full border border-white/20 bg-slate-950/80 text-white shadow-lg hover:bg-red-500/25 hover:text-red-100"
                                             onClick={handleDelete}
                                             disabled={isDeleting}
                                         >
@@ -420,6 +465,9 @@ ${replyText.trim()}`,
 
                             <div
                                 className="relative aspect-[9/16] max-h-[min(82vh,760px)] min-h-[min(62vh,620px)] w-full overflow-hidden"
+                                onTouchStart={handleTouchStart}
+                                onTouchEnd={handleTouchEnd}
+                                onTouchCancel={() => { touchStartX.current = null; }}
                                 style={{ background: currentStory.background || 'linear-gradient(135deg, #0f172a 0%, #111827 45%, #10b981 100%)' }}
                             >
                                 {currentStory.mediaUrl ? (
@@ -430,13 +478,13 @@ ${replyText.trim()}`,
                                     />
                                 ) : null}
 
-                                <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/55" />
+                                <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-transparent to-slate-950/75" />
 
                                 {!currentStory.mediaUrl ? (
-                                    <div className="relative z-10 flex h-full items-center justify-center p-10 text-center">
+                                    <div className="relative z-10 flex h-full items-center justify-center p-8 text-center">
                                         <p
-                                            className="max-w-[88%] whitespace-pre-wrap break-words text-[1.9rem] font-semibold leading-tight"
-                                            style={{ color: currentStory.textColor || '#ffffff', textShadow: '0 16px 52px rgba(0,0,0,0.38)' }}
+                                            className="max-w-[88%] whitespace-pre-wrap break-words rounded-3xl border border-white/20 bg-slate-950/65 px-6 py-4 text-[1.9rem] font-semibold leading-tight shadow-[0_12px_48px_rgba(0,0,0,0.35)] backdrop-blur-md"
+                                            style={{ color: storyTextColor, textShadow: '0 2px 5px rgba(0,0,0,0.9)' }}
                                         >
                                             {currentStory.content}
                                         </p>
@@ -445,10 +493,10 @@ ${replyText.trim()}`,
 
                                 {currentStory.content ? (
                                     <div className="absolute inset-x-0 bottom-0 z-10 p-6">
-                                        <div className="rounded-[1.5rem] bg-black/35 p-4 backdrop-blur">
+                                        <div className="rounded-[1.5rem] border border-white/20 bg-slate-950/75 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-md">
                                             <p
                                                 className="whitespace-pre-wrap break-words text-base font-medium leading-relaxed"
-                                                style={{ color: currentStory.textColor || '#ffffff' }}
+                                                style={{ color: storyTextColor, textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}
                                             >
                                                 {currentStory.content}
                                             </p>
@@ -459,23 +507,23 @@ ${replyText.trim()}`,
                                 <button
                                     type="button"
                                     onClick={goPrevious}
-                                    className="absolute inset-y-0 left-0 z-10 w-1/3"
+                                    className="absolute inset-y-0 left-0 z-20 w-1/3 cursor-pointer"
                                     aria-label="Historia anterior"
                                 />
                                 <button
                                     type="button"
                                     onClick={goNext}
-                                    className="absolute inset-y-0 right-0 z-10 w-1/3"
+                                    className="absolute inset-y-0 right-0 z-20 w-1/3 cursor-pointer"
                                     aria-label="Siguiente historia"
                                 />
 
-                                <div className="absolute inset-y-0 left-3 z-20 flex items-center">
-                                    <div className="rounded-full bg-black/30 p-2 text-white/80 backdrop-blur">
+                                <div className="pointer-events-none absolute inset-y-0 left-3 z-30 flex items-center">
+                                    <div className="rounded-full border border-white/30 bg-slate-950/75 p-2.5 text-white shadow-lg backdrop-blur-md">
                                         <ChevronLeft className="h-5 w-5" />
                                     </div>
                                 </div>
-                                <div className="absolute inset-y-0 right-3 z-20 flex items-center">
-                                    <div className="rounded-full bg-black/30 p-2 text-white/80 backdrop-blur">
+                                <div className="pointer-events-none absolute inset-y-0 right-3 z-30 flex items-center">
+                                    <div className="rounded-full border border-white/30 bg-slate-950/75 p-2.5 text-white shadow-lg backdrop-blur-md">
                                         <ChevronRight className="h-5 w-5" />
                                     </div>
                                 </div>
@@ -483,9 +531,9 @@ ${replyText.trim()}`,
                         </div>
 
                         
-                        <div className="mt-4 flex items-center gap-3 w-full">
+                        <div className="mt-4 flex w-full items-center gap-3">
                             {isOwnStory ? (
-                                <div className="flex w-full items-center justify-between px-2 text-xs text-white/65">
+                                <div className="flex w-full items-center justify-between rounded-2xl border border-white/15 bg-slate-950/70 px-3 py-2 text-xs text-white/85 shadow-lg backdrop-blur-md">
                                     <div className="flex items-center gap-4">
                                         <span className="inline-flex items-center gap-1.5">
                                             <Eye className="h-4 w-4" />
@@ -501,7 +549,7 @@ ${replyText.trim()}`,
                                     <button
                                         type="button"
                                         onClick={handleShareToChat}
-                                        className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-transparent text-white backdrop-blur-sm hover:border-white/40 transition-colors"
+                                        className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/30 bg-slate-900/80 text-white shadow hover:border-white/60 transition-colors"
                                         title="Compartir historia"
                                     >
                                         <Send className="h-4 w-4 transition-transform group-hover:scale-110 group-hover:-translate-y-1 group-hover:translate-x-1" />
@@ -517,13 +565,13 @@ ${replyText.trim()}`,
                                                 onChange={(e) => setReplyText(e.target.value)}
                                                 onKeyDown={(e) => e.stopPropagation()}
                                                 placeholder={`Responder a ${currentStory.author.username}...`}
-                                                className="w-full rounded-full border border-white/20 bg-transparent px-4 py-2.5 pr-10 text-sm text-white placeholder-white/60 focus:border-white/50 focus:outline-none focus:ring-1 focus:ring-white/50 backdrop-blur-sm"
+                                                className="w-full rounded-full border border-white/30 bg-slate-950/85 px-4 py-2.5 pr-10 text-sm text-white placeholder-white/80 shadow-lg backdrop-blur-md focus:border-emerald-300/70 focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
                                             />
                                             {replyText.trim() && (
                                                 <button
                                                     type="submit"
                                                     disabled={isSendingReply}
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-50 transition-colors"
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-white hover:bg-white/15 hover:text-white disabled:opacity-50 transition-colors"
                                                 >
                                                     <Send className="h-4 w-4" />
                                                 </button>
@@ -533,7 +581,7 @@ ${replyText.trim()}`,
                                             type="button"
                                             onClick={handleToggleLike}
                                             disabled={isLiking}
-                                            className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-transparent text-white backdrop-blur-sm hover:border-white/40 transition-colors"
+                                            className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/30 bg-slate-950/85 text-white shadow-lg backdrop-blur-md hover:border-white/60 transition-colors"
                                             title={currentStory.isLiked ? "Ya no me gusta" : "Me gusta"}
                                         >
                                             <Heart className={`h-5 w-5 transition-transform group-hover:scale-110 ${currentStory.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
@@ -541,14 +589,14 @@ ${replyText.trim()}`,
                                         <button
                                             type="button"
                                             onClick={handleShareToChat}
-                                            className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-transparent text-white backdrop-blur-sm hover:border-white/40 transition-colors"
+                                            className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/30 bg-slate-950/85 text-white shadow-lg backdrop-blur-md hover:border-white/60 transition-colors"
                                             title="Compartir historia"
                                         >
                                             <Send className="h-5 w-5 transition-transform group-hover:scale-110 group-hover:-translate-y-1 group-hover:translate-x-1" />
                                         </button>
                                     </>
                                 ) : (
-                                    <div className="w-full text-center text-xs text-white/50">Iniciá sesión para interactuar</div>
+                                    <div className="w-full rounded-2xl border border-white/15 bg-slate-950/70 px-3 py-2 text-center text-xs text-white/85 shadow-lg backdrop-blur-md">Iniciá sesión para interactuar</div>
                                 )
                             )}
                         </div>

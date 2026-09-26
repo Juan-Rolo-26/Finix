@@ -196,7 +196,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                     where: { id: payload.sid },
                     select: { userId: true, revokedAt: true, expiresAt: true },
                 });
-                if (!session || session.userId !== payload.sub || session.revokedAt || session.expiresAt < new Date()) {
+                if (!session || session.userId !== payload.sub || session.revokedAt || (session.expiresAt && session.expiresAt < new Date())) {
                     throw new UnauthorizedException('Sesión inválida o cerrada');
                 }
             }
@@ -210,6 +210,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                     role: true,
                     plan: true,
                     subscriptionStatus: true,
+                    proAccessOverride: true,
                     status: true,
                 },
             });
@@ -229,6 +230,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                 role: finixUser.role,
                 plan: finixUser.plan,
                 subscriptionStatus: finixUser.subscriptionStatus,
+                proAccessOverride: finixUser.proAccessOverride,
                 status: finixUser.status,
             };
         }
@@ -243,6 +245,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                 role: true,
                 plan: true,
                 subscriptionStatus: true,
+                proAccessOverride: true,
                 status: true,
             },
         });
@@ -261,6 +264,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                         role: true,
                         plan: true,
                         subscriptionStatus: true,
+                        proAccessOverride: true,
                         status: true,
                     }
                 });
@@ -285,6 +289,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                         role: created.role,
                         plan: created.plan,
                         subscriptionStatus: created.subscriptionStatus,
+                        proAccessOverride: created.proAccessOverride,
                         status: created.status,
                     };
                 }
@@ -305,6 +310,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             role: user?.role ?? 'USER',
             plan: user?.plan ?? 'FREE',
             subscriptionStatus: user?.subscriptionStatus ?? 'INACTIVE',
+            proAccessOverride: user?.proAccessOverride ?? null,
             status: user?.status ?? 'ACTIVE',
         };
     }

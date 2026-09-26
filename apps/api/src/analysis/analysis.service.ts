@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { queuePublishedAnalysis } from '../admin/email-content';
+import { hasEffectiveProAccess } from '../auth/pro-access';
 import {
     KNOWN_PROFILES,
     generateDynamicSectorIntelligence,
@@ -620,8 +621,7 @@ export class AnalysisService {
             throw new NotFoundException(`No se encontró ningún análisis para '${slugOrTicker}'`);
         }
 
-        const isJuan = this.isJuanUser(user);
-        const isPro = user?.role === 'ADMIN' || user?.plan === 'PRO' || user?.subscriptionStatus === 'ACTIVE' || isJuan;
+        const isPro = hasEffectiveProAccess(user);
         const computed = this.calculateDerivedMetrics(analysis);
 
         // Parsear campos JSON estructurados

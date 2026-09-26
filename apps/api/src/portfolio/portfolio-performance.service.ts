@@ -16,6 +16,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { MarketService } from '../market/market.service';
+import { getCedearDefinition } from '../market/cedear.data';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -77,15 +78,100 @@ export class PortfolioPerformanceService {
         const symbols = new Set<string>();
         for (const h of holdings) {
             const t = this.normalizeTicker(h?.asset?.ticker || '');
-            if (t) symbols.add(t);
+            if (!t) continue;
+
+            const cleanTicker = t.replace(/^(BCBA|BYMA|NASDAQ|NYSE|AMEX):/i, '').toUpperCase();
+            const cedear = getCedearDefinition(t) || getCedearDefinition(cleanTicker);
+            const isCedear = h?.asset?.type === 'CEDEAR' || t.startsWith('BCBA:') || Boolean(cedear);
+
+            symbols.add(t);
+            if (isCedear) {
+                symbols.add(`BCBA:${cedear?.ticker || cleanTicker}`);
+                if (cedear?.underlyingTicker) {
+                    symbols.add(cedear.underlyingTicker);
+                    if (cedear.underlyingExchange) {
+                        symbols.add(`${cedear.underlyingExchange}:${cedear.underlyingTicker}`);
+                    }
+                }
+            }
         }
         if (!symbols.size) return new Map<string, any>();
         const quotes = await this.marketService.getQuotes([...symbols]).catch(() => []);
         const map = new Map<string, any>();
         for (const q of quotes) {
-            if (q.inputSymbol) map.set(this.normalizeTicker(q.inputSymbol), q);
+            if (!q.inputSymbol) continue;
+            const key = this.normalizeTicker(q.inputSymbol);
+            map.set(key, q);
+            if (key.includes(':')) {
+                const short = key.split(':')[1];
+                if (short && !map.has(short)) map.set(short, q);
+            }
         }
         return map;
+    }
+
+    private async getCclRate() {
+        const ccl = await this.marketService.getDolarCcl().catch(() => null);
+        const rate = Number(ccl?.venta || ccl?.compra || 1590);
+        return Number.isFinite(rate) && rate > 0 ? rate : 1590;
+    }
+
+    private isUsdCurrency(currency: string) {
+        return String(currency || '').trim().toUpperCase().startsWith('USD');
+    }
+
+    private convertCurrencyAmount(amount: number, sourceCurrency: string, targetCurrency: string, cclRate: number) {
+        const source = String(sourceCurrency || 'USD').trim().toUpperCase();
+        if (this.isUsdCurrency(targetCurrency) && source === 'ARS') return amount / cclRate;
+        if (!this.isUsdCurrency(targetCurrency) && source.startsWith('USD')) return amount * cclRate;
+        return amount;
+    }
+
+    private getQuote(quoteMap: Map<string, any>, keys: Array<string | undefined>) {
+        for (const key of keys) {
+            if (!key) continue;
+            const quote = quoteMap.get(this.normalizeTicker(key));
+            if (quote && Number.isFinite(Number(quote.price)) && Number(quote.price) > 0) return quote;
+        }
+        return null;
+    }
+
+    /** Returns a price in the requested portfolio currency. CEDEARs are quoted
+     * in ARS locally while their underlying is quoted in USD. */
+    private resolveHoldingPrice(
+        ticker: string,
+        quoteMap: Map<string, any>,
+        currency: string,
+        cclRate: number,
+        fallbackPrice?: number,
+    ) {
+        const normalized = this.normalizeTicker(ticker);
+        const cleanTicker = normalized.replace(/^(BCBA|BYMA|NASDAQ|NYSE|AMEX):/i, '').toUpperCase();
+        const cedear = getCedearDefinition(normalized) || getCedearDefinition(cleanTicker);
+
+        if (cedear && cedear.ratio > 0) {
+            const localQuote = this.getQuote(quoteMap, [
+                `BCBA:${cedear.ticker}`,
+                `BYMA:${cedear.ticker}`,
+                cedear.ticker,
+                normalized,
+            ]);
+            const underlyingQuote = this.getQuote(quoteMap, [
+                cedear.underlyingTicker,
+                `${cedear.underlyingExchange}:${cedear.underlyingTicker}`,
+            ]);
+
+            if (this.isUsdCurrency(currency)) {
+                if (underlyingQuote) return Number(underlyingQuote.price) / cedear.ratio;
+                if (localQuote) return Number(localQuote.price) / cclRate;
+            } else {
+                if (localQuote) return Number(localQuote.price);
+                if (underlyingQuote) return (Number(underlyingQuote.price) * cclRate) / cedear.ratio;
+            }
+        }
+
+        const quote = this.getQuote(quoteMap, [normalized, cleanTicker]);
+        return quote ? Number(quote.price) : (Number.isFinite(Number(fallbackPrice)) ? Number(fallbackPrice) : 0);
     }
 
     private getMarketHistoryRange(range: string) {
@@ -112,7 +198,13 @@ export class PortfolioPerformanceService {
         const interval = this.getMarketHistoryInterval(range);
         const histories = await Promise.all(
             uniqueTickers.map(async (ticker) => {
-                const response = await this.marketService.getCandles(ticker, interval, yahooRange).catch(() => ({ candles: [] }));
+                const cleanTicker = ticker.replace(/^(BCBA|BYMA|NASDAQ|NYSE|AMEX):/i, '').toUpperCase();
+                const cedear = getCedearDefinition(ticker) || getCedearDefinition(cleanTicker);
+                // Yahoo returns the US underlying for a CEDEAR ticker. Keep the
+                // map keyed by the portfolio ticker so valuation can convert it
+                // back to local ARS using the CEDEAR ratio and CCL.
+                const sourceTicker = cedear?.underlyingTicker || ticker;
+                const response = await this.marketService.getCandles(sourceTicker, interval, yahooRange).catch(() => ({ candles: [] }));
                 const candles = Array.isArray(response.candles)
                     ? response.candles
                         .map((c) => ({ time: Number(c.time), close: Number(c.close) }))
@@ -123,6 +215,26 @@ export class PortfolioPerformanceService {
         );
 
         return new Map(histories);
+    }
+
+    private getHistoricalHoldingPrice(
+        ticker: string,
+        historicalPriceMaps: Map<string, Array<{ time: number; close: number }>> | undefined,
+        cutoff: Date,
+        currency: string,
+        cclRate: number,
+    ) {
+        const normalized = this.normalizeTicker(ticker);
+        const cleanTicker = normalized.replace(/^(BCBA|BYMA|NASDAQ|NYSE|AMEX):/i, '').toUpperCase();
+        const historicalPrice = this.getHistoricalPriceAtDate(historicalPriceMaps?.get(normalized), cutoff);
+        if (!historicalPrice) return null;
+
+        const cedear = getCedearDefinition(normalized) || getCedearDefinition(cleanTicker);
+        if (!cedear || cedear.ratio <= 0) return historicalPrice;
+
+        return this.isUsdCurrency(currency)
+            ? historicalPrice / cedear.ratio
+            : (historicalPrice * cclRate) / cedear.ratio;
     }
 
     private getHistoricalPriceAtDate(
@@ -202,37 +314,44 @@ export class PortfolioPerformanceService {
         quoteMap: Map<string, any>,
         historicalPriceMaps?: Map<string, Array<{ time: number; close: number }>>,
         cutoff?: Date,
+        currency = 'USD',
+        cclRate = 1590,
     ): number {
         let total = 0;
         for (const [ticker, h] of holdings.entries()) {
             if (h.qty <= 0) continue;
-            const quote = quoteMap.get(ticker);
-            const historicalPrice = cutoff
-                ? this.getHistoricalPriceAtDate(historicalPriceMaps?.get(ticker), cutoff)
+            const isCurrentPoint = cutoff && (Date.now() - cutoff.getTime()) <= 2 * 86400000;
+            const historicalPrice = cutoff && !isCurrentPoint
+                ? this.getHistoricalHoldingPrice(ticker, historicalPriceMaps, cutoff, currency, cclRate)
                 : null;
-            const price = historicalPrice ?? ((quote && typeof quote.price === 'number') ? quote.price : h.lastPrice);
+            const price = historicalPrice ?? this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, h.lastPrice);
             total += h.qty * price;
         }
         return total;
     }
 
-    private computeInvestedCapital(transactions: any[], cutoff: Date): number {
+    private computeInvestedCapital(transactions: any[], cutoff: Date, currency = 'USD', cclRate = 1590): number {
         const holdings = this.computeHoldingsAtDate(transactions, cutoff);
         let invested = 0;
-        for (const [, h] of holdings.entries()) {
-            if (h.qty > 0) invested += h.qty * h.wac;
+        for (const [ticker, h] of holdings.entries()) {
+            if (h.qty <= 0) continue;
+            const cleanTicker = ticker.replace(/^(BCBA|BYMA):/i, '');
+            const cedear = getCedearDefinition(ticker) || getCedearDefinition(cleanTicker);
+            const value = h.qty * h.wac;
+            invested += cedear && this.isUsdCurrency(currency) ? value / cclRate : value;
         }
         return invested;
     }
 
     // ── Cash balance helpers ────────────────────────────────────────────────────
 
-    private computeCashAtDate(transactions: any[], cutoff: Date): number {
+    private computeCashAtDate(transactions: any[], cutoff: Date, currency = 'USD', cclRate = 1590): number {
         let cash = 0;
         for (const tx of transactions) {
             if (new Date(tx.date) > cutoff) break;
-            const total = Number(tx.total || 0);
-            const fee = Number(tx.fee || 0);
+            const txCurrency = String(tx.currency || 'USD').trim().toUpperCase();
+            const total = this.convertCurrencyAmount(Number(tx.total || 0), txCurrency, currency, cclRate);
+            const fee = this.convertCurrencyAmount(Number(tx.fee || 0), txCurrency, currency, cclRate);
             if (tx.type === 'BUY') cash -= total + fee;
             else if (tx.type === 'SELL') cash += total - fee;
             else if (tx.type === 'DIVIDEND') cash += total;
@@ -241,6 +360,22 @@ export class PortfolioPerformanceService {
             else if (tx.type === 'FEE') cash -= total;
         }
         return Math.max(0, cash);
+    }
+
+    private holdingsFromPortfolio(portfolioHoldings: any[]) {
+        const holdings = new Map<string, { qty: number; wac: number; lastPrice: number }>();
+        for (const holding of portfolioHoldings ?? []) {
+            const ticker = this.normalizeTicker(holding?.asset?.ticker || '');
+            const qty = Number(holding?.quantity || 0);
+            if (!ticker || qty <= 0) continue;
+            const averageCost = Number(holding?.averageCost || 0);
+            holdings.set(ticker, {
+                qty,
+                wac: averageCost,
+                lastPrice: averageCost,
+            });
+        }
+        return holdings;
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -263,18 +398,30 @@ export class PortfolioPerformanceService {
 
         if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
 
-        const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
+        const [quoteMap, cclRate] = await Promise.all([
+            this.getLiveQuoteMap(portfolio.holdings),
+            this.getCclRate(),
+        ]);
         const txs = portfolio.transactions;
         const now = new Date();
 
         // Current value
-        const currentHoldings = this.computeHoldingsAtDate(txs, now);
-        const assetsValue = this.computeValueFromHoldings(currentHoldings, quoteMap);
-        const cashBalance = this.computeCashAtDate(txs, now);
+        const currentHoldings = txs.length > 0
+            ? this.computeHoldingsAtDate(txs, now)
+            : this.holdingsFromPortfolio(portfolio.holdings);
+        const assetsValue = this.computeValueFromHoldings(currentHoldings, quoteMap, undefined, undefined, currency, cclRate);
+        const cashBalance = this.computeCashAtDate(txs, now, currency, cclRate);
         const totalValue = assetsValue + cashBalance;
 
         // Invested capital (sum of qty × WAC for all current positions)
-        const investedCapital = this.computeInvestedCapital(txs, now);
+        const investedCapital = txs.length > 0
+            ? this.computeInvestedCapital(txs, now, currency, cclRate)
+            : Array.from(currentHoldings.entries()).reduce((sum, [ticker, holding]) => {
+                const cleanTicker = ticker.replace(/^(BCBA|BYMA):/i, '');
+                const cedear = getCedearDefinition(ticker) || getCedearDefinition(cleanTicker);
+                const value = holding.qty * holding.wac;
+                return sum + (cedear && this.isUsdCurrency(currency) ? value / cclRate : value);
+            }, 0);
 
         // Total PnL
         const totalPnl = totalValue - investedCapital;
@@ -282,14 +429,16 @@ export class PortfolioPerformanceService {
 
         // YTD return
         const ytdStart = new Date(now.getFullYear(), 0, 1);
-        const ytdHoldings = this.computeHoldingsAtDate(txs, ytdStart);
-        const ytdStartValue = this.computeValueFromHoldings(ytdHoldings, quoteMap) + this.computeCashAtDate(txs, ytdStart);
+        const ytdHoldings = txs.length > 0 ? this.computeHoldingsAtDate(txs, ytdStart) : currentHoldings;
+        const ytdStartValue = this.computeValueFromHoldings(ytdHoldings, quoteMap, undefined, undefined, currency, cclRate)
+            + this.computeCashAtDate(txs, ytdStart, currency, cclRate);
         const ytdReturn = ytdStartValue > 0 ? ((totalValue - ytdStartValue) / ytdStartValue) * 100 : 0;
 
         // 1Y return
         const oneYearAgo = new Date(now.getTime() - 365 * 86400000);
-        const oneYearHoldings = this.computeHoldingsAtDate(txs, oneYearAgo);
-        const oneYearStartValue = this.computeValueFromHoldings(oneYearHoldings, quoteMap) + this.computeCashAtDate(txs, oneYearAgo);
+        const oneYearHoldings = txs.length > 0 ? this.computeHoldingsAtDate(txs, oneYearAgo) : currentHoldings;
+        const oneYearStartValue = this.computeValueFromHoldings(oneYearHoldings, quoteMap, undefined, undefined, currency, cclRate)
+            + this.computeCashAtDate(txs, oneYearAgo, currency, cclRate);
         const oneYearReturn = oneYearStartValue > 0 ? ((totalValue - oneYearStartValue) / oneYearStartValue) * 100 : 0;
 
         // CAGR
@@ -341,11 +490,19 @@ export class PortfolioPerformanceService {
         if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
 
         const txs = portfolio.transactions;
+        const [quoteMap, cclRate] = await Promise.all([
+            this.getLiveQuoteMap(portfolio.holdings),
+            this.getCclRate(),
+        ]);
         if (!txs.length) {
-            return { range, currency, series: [], markers: [], insufficientData: true, message: 'Sin operaciones registradas.' };
+            const holdings = this.holdingsFromPortfolio(portfolio.holdings);
+            const value = this.computeValueFromHoldings(holdings, quoteMap, undefined, undefined, currency, cclRate);
+            const series = value > 0
+                ? [{ date: new Date().toISOString(), value: Number(value.toFixed(2)), returnPct: 0, pnl: 0, invested: 0 }]
+                : [];
+            return { range, currency, series, markers: [], insufficientData: true, message: 'Sin operaciones registradas.' };
         }
 
-        const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
         const firstAssetTransaction = txs.find((tx) =>
             Boolean(tx.asset?.ticker) && (tx.type === 'BUY' || tx.type === 'SELL'),
         );
@@ -383,10 +540,17 @@ export class PortfolioPerformanceService {
             if (!pastTx.length) continue;
 
             const holdings = this.computeHoldingsAtDate(pastTx, pointDate);
-            const assetsValue = this.computeValueFromHoldings(holdings, quoteMap, historicalPriceMaps, pointDate);
-            const cashValue = this.computeCashAtDate(pastTx, pointDate);
+            const assetsValue = this.computeValueFromHoldings(
+                holdings,
+                quoteMap,
+                historicalPriceMaps,
+                pointDate,
+                currency,
+                cclRate,
+            );
+            const cashValue = this.computeCashAtDate(pastTx, pointDate, currency, cclRate);
             const value = assetsValue + cashValue;
-            const invested = this.computeInvestedCapital(pastTx, pointDate);
+            const invested = this.computeInvestedCapital(pastTx, pointDate, currency, cclRate);
 
             if (firstValue === null && value > 0) firstValue = value;
 
@@ -418,7 +582,8 @@ export class PortfolioPerformanceService {
                 amount: Number(tx.total || 0),
             }));
 
-        if (series.length < 2) {
+        const distinctDates = new Set(series.map((point) => point.date)).size;
+        if (series.length < 2 || distinctDates < 2) {
             return {
                 range,
                 currency,
@@ -445,14 +610,16 @@ export class PortfolioPerformanceService {
 
         if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
 
-        const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
+        const [quoteMap, cclRate] = await Promise.all([
+            this.getLiveQuoteMap(portfolio.holdings),
+            this.getCclRate(),
+        ]);
         const groups = new Map<string, { value: number; ticker?: string }>();
 
         for (const h of portfolio.holdings) {
             const qty = Number(h.quantity || 0);
             const ticker = this.normalizeTicker(h.asset?.ticker || '');
-            const quote = quoteMap.get(ticker);
-            const price = (quote?.price && Number.isFinite(quote.price)) ? quote.price : Number(h.averageCost || 0);
+            const price = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, Number(h.averageCost || 0));
             const value = qty * price;
             if (value <= 0) continue;
 
@@ -471,9 +638,15 @@ export class PortfolioPerformanceService {
         for (const ca of portfolio.cashAccounts ?? []) {
             const balance = Number(ca.balance || 0);
             if (balance <= 0) continue;
+            const cashCurrency = String(ca.currency || 'USD').toUpperCase();
+            const normalizedBalance = this.isUsdCurrency(currency) && cashCurrency === 'ARS'
+                ? balance / cclRate
+                : !this.isUsdCurrency(currency) && cashCurrency.startsWith('USD')
+                    ? balance * cclRate
+                    : balance;
             const key = groupBy === 'currency' ? ca.currency : 'EFECTIVO';
             const prev = groups.get(key) ?? { value: 0 };
-            groups.set(key, { value: prev.value + balance, ticker: undefined });
+            groups.set(key, { value: prev.value + normalizedBalance, ticker: undefined });
         }
 
         const total = Array.from(groups.values()).reduce((sum, g) => sum + g.value, 0);
@@ -503,12 +676,14 @@ export class PortfolioPerformanceService {
 
         if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
 
-        const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
+        const [quoteMap, cclRate] = await Promise.all([
+            this.getLiveQuoteMap(portfolio.holdings),
+            this.getCclRate(),
+        ]);
         const totalPortfolioValue = portfolio.holdings.reduce((sum, h) => {
             const qty = Number(h.quantity || 0);
             const ticker = this.normalizeTicker(h.asset?.ticker || '');
-            const quote = quoteMap.get(ticker);
-            const price = (quote?.price && Number.isFinite(quote.price)) ? quote.price : Number(h.averageCost || 0);
+            const price = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, Number(h.averageCost || 0));
             return sum + qty * price;
         }, 0);
 
@@ -516,10 +691,9 @@ export class PortfolioPerformanceService {
             const qty = Number(h.quantity || 0);
             const wac = Number(h.averageCost || 0);
             const ticker = this.normalizeTicker(h.asset?.ticker || '');
-            const quote = quoteMap.get(ticker);
-            const currentPrice = (quote?.price && Number.isFinite(quote.price)) ? quote.price : wac;
+            const currentPrice = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, wac);
             const currentValue = qty * currentPrice;
-            const costBasis = qty * wac;
+            const costBasis = qty * wac / (this.isUsdCurrency(currency) && Boolean(getCedearDefinition(ticker.replace(/^(BCBA|BYMA):/i, ''))) ? cclRate : 1);
             const pnlUsd = currentValue - costBasis;
             const returnPct = costBasis > 0 ? (pnlUsd / costBasis) * 100 : 0;
             const weight = totalPortfolioValue > 0 ? (currentValue / totalPortfolioValue) * 100 : 0;
@@ -539,7 +713,7 @@ export class PortfolioPerformanceService {
 
     // ── 5. Monthly returns ──────────────────────────────────────────────────────
 
-    async getReturns(portfolioId: string, userId: string) {
+    async getReturns(portfolioId: string, userId: string, currency = 'USD') {
         await this.assertOwner(portfolioId, userId);
 
         const portfolio = await this.prisma.portfolio.findUnique({
@@ -553,7 +727,10 @@ export class PortfolioPerformanceService {
 
         if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
 
-        const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
+        const [quoteMap, cclRate] = await Promise.all([
+            this.getLiveQuoteMap(portfolio.holdings),
+            this.getCclRate(),
+        ]);
         const txs = portfolio.transactions;
 
         if (!txs.length) return [];
@@ -587,8 +764,10 @@ export class PortfolioPerformanceService {
             const startHoldings = this.computeHoldingsAtDate(startTxs, monthStart);
             const endHoldings = this.computeHoldingsAtDate(endTxs, monthEnd);
 
-            const startValue = this.computeValueFromHoldings(startHoldings, quoteMap) + this.computeCashAtDate(startTxs, monthStart);
-            const endValue = this.computeValueFromHoldings(endHoldings, quoteMap) + this.computeCashAtDate(endTxs, monthEnd);
+            const startValue = this.computeValueFromHoldings(startHoldings, quoteMap, undefined, undefined, currency, cclRate)
+                + this.computeCashAtDate(startTxs, monthStart, currency, cclRate);
+            const endValue = this.computeValueFromHoldings(endHoldings, quoteMap, undefined, undefined, currency, cclRate)
+                + this.computeCashAtDate(endTxs, monthEnd, currency, cclRate);
 
             // Net external flows during this month (deposits/withdraws only)
             const monthFlows = txs
@@ -597,7 +776,8 @@ export class PortfolioPerformanceService {
                     return d >= monthStart && d <= monthEnd && (tx.type === 'DEPOSIT' || tx.type === 'WITHDRAW');
                 })
                 .reduce((sum, tx) => {
-                    const amount = Number(tx.total || 0);
+                    const rawAmount = Number(tx.total || 0);
+                    const amount = this.convertCurrencyAmount(rawAmount, tx.currency || 'USD', currency, cclRate);
                     return sum + (tx.type === 'DEPOSIT' ? amount : -amount);
                 }, 0);
 
@@ -619,7 +799,7 @@ export class PortfolioPerformanceService {
 
     // ── 6. Drawdown ─────────────────────────────────────────────────────────────
 
-    async getDrawdown(portfolioId: string, userId: string, range = 'ALL') {
+    async getDrawdown(portfolioId: string, userId: string, range = 'ALL', currency = 'USD') {
         await this.assertOwner(portfolioId, userId);
 
         const portfolio = await this.prisma.portfolio.findUnique({
@@ -632,7 +812,10 @@ export class PortfolioPerformanceService {
 
         if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
 
-        const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
+        const [quoteMap, cclRate] = await Promise.all([
+            this.getLiveQuoteMap(portfolio.holdings),
+            this.getCclRate(),
+        ]);
         const txs = portfolio.transactions;
 
         if (txs.length < 2) {
@@ -662,7 +845,8 @@ export class PortfolioPerformanceService {
             if (!pastTx.length) continue;
 
             const holdings = this.computeHoldingsAtDate(pastTx, d);
-            const value = this.computeValueFromHoldings(holdings, quoteMap) + this.computeCashAtDate(pastTx, d);
+            const value = this.computeValueFromHoldings(holdings, quoteMap, undefined, undefined, currency, cclRate)
+                + this.computeCashAtDate(pastTx, d, currency, cclRate);
             if (value > 0) {
                 series.push({ date: d.toISOString().slice(0, 10), value });
             }
@@ -728,6 +912,7 @@ export class PortfolioPerformanceService {
         if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
 
         const now = new Date();
+        const cclRate = await this.getCclRate();
         const { start } = this.resolveRange(range, null);
 
         const dividends = portfolio.transactions
@@ -740,7 +925,7 @@ export class PortfolioPerformanceService {
             const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             const label = `${MONTH_LABELS_ES[date.getMonth()]} ${date.getFullYear().toString().slice(-2)}`;
             const prev = byMonthMap.get(key) ?? 0;
-            byMonthMap.set(key, prev + Number(d.total || 0));
+            byMonthMap.set(key, prev + this.convertCurrencyAmount(Number(d.total || 0), d.currency || 'USD', currency, cclRate));
         }
 
         const byMonth = Array.from(byMonthMap.entries())
@@ -759,7 +944,8 @@ export class PortfolioPerformanceService {
         for (const d of dividends) {
             const ticker = this.normalizeTicker(d.asset?.ticker || 'N/D');
             const prev = byAssetMap.get(ticker) ?? { total: 0, count: 0 };
-            byAssetMap.set(ticker, { total: prev.total + Number(d.total || 0), count: prev.count + 1 });
+            const amount = this.convertCurrencyAmount(Number(d.total || 0), d.currency || 'USD', currency, cclRate);
+            byAssetMap.set(ticker, { total: prev.total + amount, count: prev.count + 1 });
         }
 
         const byAsset = Array.from(byAssetMap.entries())
@@ -769,18 +955,20 @@ export class PortfolioPerformanceService {
         // Accumulated
         let cum = 0;
         const accumulated = dividends.map((d) => {
-            cum += Number(d.total || 0);
+            cum += this.convertCurrencyAmount(Number(d.total || 0), d.currency || 'USD', currency, cclRate);
             return { date: new Date(d.date).toISOString().slice(0, 10), cumulative: Number(cum.toFixed(2)) };
         });
 
-        const totalReceived = dividends.reduce((s, d) => s + Number(d.total || 0), 0);
+        const totalReceived = dividends.reduce(
+            (s, d) => s + this.convertCurrencyAmount(Number(d.total || 0), d.currency || 'USD', currency, cclRate),
+            0,
+        );
 
         // Estimated yield (total dividends / current portfolio value, annualized)
         const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
         const portfolioValue = portfolio.holdings.reduce((s, h) => {
             const ticker = this.normalizeTicker(h.asset?.ticker || '');
-            const q = quoteMap.get(ticker);
-            const price = (q?.price && Number.isFinite(q.price)) ? q.price : Number(h.averageCost || 0);
+            const price = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, Number(h.averageCost || 0));
             return s + Number(h.quantity || 0) * price;
         }, 0);
 
@@ -799,8 +987,8 @@ export class PortfolioPerformanceService {
             confirmed: dividends.map((d) => ({
                 date: new Date(d.date).toISOString().slice(0, 10),
                 ticker: this.normalizeTicker(d.asset?.ticker || 'N/D'),
-                amount: Number(d.total || 0),
-                currency: d.currency || 'USD',
+                amount: Number(this.convertCurrencyAmount(Number(d.total || 0), d.currency || 'USD', currency, cclRate).toFixed(2)),
+                currency,
             })),
         };
     }
@@ -820,7 +1008,10 @@ export class PortfolioPerformanceService {
 
         if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
 
-        const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
+        const [quoteMap, cclRate] = await Promise.all([
+            this.getLiveQuoteMap(portfolio.holdings),
+            this.getCclRate(),
+        ]);
         const txs = portfolio.transactions;
         const now = new Date();
         const oneYearAgo = new Date(now.getTime() - 365 * 86400000);
@@ -828,8 +1019,7 @@ export class PortfolioPerformanceService {
         // Portfolio total value for weights
         const totalValue = portfolio.holdings.reduce((sum, h) => {
             const ticker = this.normalizeTicker(h.asset?.ticker || '');
-            const q = quoteMap.get(ticker);
-            const price = (q?.price && Number.isFinite(q.price)) ? q.price : Number(h.averageCost || 0);
+            const price = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, Number(h.averageCost || 0));
             return sum + Number(h.quantity || 0) * price;
         }, 0);
 
@@ -837,10 +1027,11 @@ export class PortfolioPerformanceService {
             const qty = Number(h.quantity || 0);
             const wac = Number(h.averageCost || 0);
             const ticker = this.normalizeTicker(h.asset?.ticker || '');
-            const q = quoteMap.get(ticker);
-            const currentPrice = (q?.price && Number.isFinite(q.price)) ? q.price : wac;
+            const currentPrice = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, wac);
             const currentValue = qty * currentPrice;
-            const costBasis = qty * wac;
+            const cleanTicker = ticker.replace(/^(BCBA|BYMA):/i, '');
+            const cedear = getCedearDefinition(ticker) || getCedearDefinition(cleanTicker);
+            const costBasis = qty * wac / (cedear && this.isUsdCurrency(currency) ? cclRate : 1);
             const returnPct = costBasis > 0 ? ((currentValue - costBasis) / costBasis) * 100 : 0;
             const weight = totalValue > 0 ? (currentValue / totalValue) * 100 : 0;
 
@@ -888,7 +1079,7 @@ export class PortfolioPerformanceService {
 
     // ── 9. Benchmarks ───────────────────────────────────────────────────────────
 
-    async getBenchmarks(portfolioId: string, userId: string, range = '1Y', benchmarks = ['sp500']) {
+    async getBenchmarks(portfolioId: string, userId: string, range = '1Y', benchmarks = ['sp500'], currency = 'USD') {
         await this.assertOwner(portfolioId, userId);
 
         const portfolio = await this.prisma.portfolio.findUnique({
@@ -900,7 +1091,7 @@ export class PortfolioPerformanceService {
 
         if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
 
-        const perfData = await this.getPerformance(portfolioId, userId, range);
+        const perfData = await this.getPerformance(portfolioId, userId, range, currency);
         const returns: Record<string, number> = {};
         const portSeries = perfData.series;
         const portFirstVal = portSeries[0]?.value ?? 0;

@@ -14,7 +14,7 @@ export interface TradingViewChartProps {
     withDateRanges?: boolean;
     allowSymbolChange?: boolean;
     className?: string;
-    onWidgetReady?: (widget: any) => void;
+    onWidgetReady?: (widget: any | null) => void;
 }
 
 function TradingViewChart({
@@ -44,6 +44,8 @@ function TradingViewChart({
 
     useEffect(() => {
         if (!containerRef.current) return;
+        let disposed = false;
+        let readyTimer: number | undefined;
 
         // Clear previous widget
         containerRef.current.innerHTML = '';
@@ -98,8 +100,21 @@ function TradingViewChart({
                     studies: studies,
                     support_host: 'https://www.tradingview.com',
                 });
-                if (onWidgetReady) {
-                    onWidgetReady(widget);
+
+                const notifyReady = () => {
+                    if (!disposed) onWidgetReady?.(widget);
+                };
+
+                // Do not expose the widget to capture buttons until TradingView
+                // has finished painting the first chart. Calling imageCanvas()
+                // immediately after construction can produce only a flat
+                // loading pane, which is what used to appear in posts.
+                if (typeof widget.onChartReady === 'function') {
+                    widget.onChartReady(notifyReady);
+                } else if (typeof widget.ready === 'function') {
+                    widget.ready(notifyReady);
+                } else {
+                    readyTimer = window.setTimeout(notifyReady, 1800);
                 }
             }
         };
@@ -119,6 +134,9 @@ function TradingViewChart({
 
         // Cleanup
         return () => {
+            disposed = true;
+            if (readyTimer !== undefined) window.clearTimeout(readyTimer);
+            onWidgetReady?.(null);
             if (containerRef.current) {
                 containerRef.current.innerHTML = '';
             }

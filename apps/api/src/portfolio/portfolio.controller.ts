@@ -18,8 +18,16 @@ import { PortfolioPerformanceService } from './portfolio-performance.service';
 import { CreatePortfolioDto, UpdatePortfolioDto, CreateAssetDto, UpdateAssetDto, CreateTransactionDto, CreateWatchlistDto, UpdateWatchlistDto } from './dto/portfolio.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { LimitFreePortfolioGuard } from '../access/limit-free-portfolio.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('portfolios')
+// The portfolio screen loads several authenticated read endpoints together.
+// Keep throttling enabled, but allow that normal dashboard burst.
+@Throttle({
+    short: { limit: 20, ttl: 1000 },
+    medium: { limit: 80, ttl: 10000 },
+    long: { limit: 300, ttl: 60000 },
+})
 export class PortfolioController {
     constructor(
         private portfolioService: PortfolioService,
@@ -275,9 +283,10 @@ export class PortfolioController {
     async getPortfolioReturns(
         @Request() req,
         @Param('id') id: string,
+        @Query('currency') currency?: string,
     ) {
         const userId = this.resolveUserId(req);
-        return this.performanceService.getReturns(id, userId);
+        return this.performanceService.getReturns(id, userId, currency || 'USD');
     }
 
     @UseGuards(JwtAuthGuard)
@@ -286,9 +295,10 @@ export class PortfolioController {
         @Request() req,
         @Param('id') id: string,
         @Query('range') range?: string,
+        @Query('currency') currency?: string,
     ) {
         const userId = this.resolveUserId(req);
-        return this.performanceService.getDrawdown(id, userId, range || 'ALL');
+        return this.performanceService.getDrawdown(id, userId, range || 'ALL', currency || 'USD');
     }
 
     @UseGuards(JwtAuthGuard)
@@ -321,10 +331,10 @@ export class PortfolioController {
         @Param('id') id: string,
         @Query('range') range?: string,
         @Query('benchmarks') benchmarks?: string,
+        @Query('currency') currency?: string,
     ) {
         const userId = this.resolveUserId(req);
         const benchmarkList = benchmarks ? benchmarks.split(',').map((b) => b.trim()) : ['sp500'];
-        return this.performanceService.getBenchmarks(id, userId, range || '1Y', benchmarkList);
+        return this.performanceService.getBenchmarks(id, userId, range || '1Y', benchmarkList, currency || 'USD');
     }
 }
-
