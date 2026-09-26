@@ -125,10 +125,10 @@ check_git() {
     esac
     # Este repositorio histórico contiene algunos artifacts generados tracked. Se ignoran
     # únicamente caches/dependencias/builds; cualquier fuente o configuración sí bloquea.
-    dirty="$(git status --porcelain --untracked-files=no | awk '{ path=substr($0,4); if (path !~ /(^|\/)node_modules\// && path !~ /(^|\/)\.vite\// && path !~ /(^|\/)(dist|build)\//) print }')"
+    dirty="$(git status --porcelain --untracked-files=no | awk '{ path=substr($0,4); if (path !~ /(^|\/)node_modules\// && path !~ /(^|\/)\.vite\// && path !~ /(^|\/)\.cache\// && path !~ /(^|\/)(dist|build)\//) print }')"
     if [[ -n "$dirty" ]]; then printf '%s\n' "$dirty"; die 'Hay cambios tracked de código/configuración; deploy cancelado.'; fi
     if [[ "$SKIP_PULL" -eq 0 ]]; then git fetch --prune origin main; git pull --ff-only origin main; fi
-    dirty="$(git status --porcelain --untracked-files=no | awk '{ path=substr($0,4); if (path !~ /(^|\/)node_modules\// && path !~ /(^|\/)\.vite\// && path !~ /(^|\/)(dist|build)\//) print }')"
+    dirty="$(git status --porcelain --untracked-files=no | awk '{ path=substr($0,4); if (path !~ /(^|\/)node_modules\// && path !~ /(^|\/)\.vite\// && path !~ /(^|\/)\.cache\// && path !~ /(^|\/)(dist|build)\//) print }')"
     [[ -z "$dirty" ]] || { printf '%s\n' "$dirty"; die 'El checkout quedó sucio después del pull.'; }
     DEPLOY_COMMIT="$(git rev-parse HEAD)"
     log "Commit seleccionado para publicar: $DEPLOY_COMMIT"
