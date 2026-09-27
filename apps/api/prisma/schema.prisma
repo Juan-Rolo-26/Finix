@@ -1852,13 +1852,16 @@ model NewsArticle {
   relevanceScore   Int     @default(0)
 
   // Metadata automática (extraída por scraping)
-  title       String
-  description String?
-  imageUrl    String?
-  sourceName  String?
-  sourceUrl   String?
-  publishedAt DateTime?
-  author      String?
+  title                  String
+  titleEs                String?
+  description            String?
+  descriptionEs          String?
+  translationAttemptedAt DateTime?
+  imageUrl               String?
+  sourceName             String?
+  sourceUrl              String?
+  publishedAt            DateTime?
+  author                 String?
 
   // Flags de override manual (cuando el admin edita manualmente)
   customTitle       Boolean @default(false)

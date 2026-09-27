@@ -5,6 +5,7 @@ import {
     Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { NewsTranslationService } from './news-translation.service';
 import * as cheerio from 'cheerio';
 import { DEFAULT_NEWS_CATEGORIES } from './news-catalog';
 
@@ -53,7 +54,10 @@ export interface AssignArticleDto {
 export class NewsSlotsService {
     private readonly logger = new Logger(NewsSlotsService.name);
 
-    constructor(private readonly prisma: PrismaService) {
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly translator: NewsTranslationService,
+    ) {
         this.seedCategoriesAndSlots().catch((err) =>
             this.logger.warn('Seed warning: ' + err?.message),
         );
@@ -104,12 +108,16 @@ export class NewsSlotsService {
                         id: true,
                         url: true,
                         title: true,
+                        titleEs: true,
                         description: true,
+                        descriptionEs: true,
+                        translationAttemptedAt: true,
                         imageUrl: true,
                         sourceName: true,
                         publishedAt: true,
                         author: true,
                         relevanceScore: true,
+                        source: { select: { language: true } },
                     },
                 },
             },
@@ -121,22 +129,25 @@ export class NewsSlotsService {
             take: limit,
         });
 
-        return slots
+        return Promise.all(slots
             .filter((s) => s.article)
-            .map((s) => ({
-                id: s.article!.id,
-                slotId: s.id,
-                slotKey: s.slotKey,
-                title: s.article!.title,
-                description: s.article!.description,
-                imageUrl: s.article!.imageUrl,
-                url: s.article!.url,
-                sourceName: s.article!.sourceName || 'Finix',
-                publishedAt: s.article!.publishedAt,
-                category: s.category.name,
-                categorySlug: s.category.slug,
-                categoryColor: s.category.color || 'hsl(var(--primary))',
-                relevanceScore: s.article!.relevanceScore,
+            .map(async (s) => {
+                const article = await this.toSpanishArticle(s.article);
+                return {
+                    id: article.id,
+                    slotId: s.id,
+                    slotKey: s.slotKey,
+                    title: article.title,
+                    description: article.description,
+                    imageUrl: article.imageUrl,
+                    url: article.url,
+                    sourceName: article.sourceName || 'Finix',
+                    publishedAt: article.publishedAt,
+                    category: s.category.name,
+                    categorySlug: s.category.slug,
+                    categoryColor: s.category.color || 'hsl(var(--primary))',
+                    relevanceScore: article.relevanceScore,
+                };
             }));
     }
 
@@ -157,7 +168,10 @@ export class NewsSlotsService {
                         id: true,
                         url: true,
                         title: true,
+                        titleEs: true,
                         description: true,
+                        descriptionEs: true,
+                        translationAttemptedAt: true,
                         imageUrl: true,
                         sourceName: true,
                         publishedAt: true,
@@ -165,6 +179,7 @@ export class NewsSlotsService {
                         status: true,
                         isPublished: true,
                         isActive: true,
+                        source: { select: { language: true } },
                     },
                 },
             },
@@ -179,16 +194,67 @@ export class NewsSlotsService {
                 icon: category.icon,
                 image: category.image,
             },
-            slots: slots.map((slot) => ({
+            slots: await Promise.all(slots.map(async (slot) => ({
                 id: slot.id,
                 slotKey: slot.slotKey,
                 position: slot.position,
                 isActive: slot.isActive,
                 article:
                     slot.isActive && slot.article?.isPublished && slot.article?.isActive
-                        ? slot.article
+                        ? await this.toSpanishArticle(slot.article)
                         : null,
-            })),
+            }))),
+        };
+    }
+
+    private async toSpanishArticle(article: any) {
+        if (!article) return article;
+
+        const sourceLanguage = article.source?.language || undefined;
+        const attemptIsRecent = article.translationAttemptedAt &&
+            Date.now() - new Date(article.translationAttemptedAt).getTime() < 4 * 60 * 60 * 1000;
+        const titleNeedsTranslation = !article.titleEs;
+        const descriptionNeedsTranslation = Boolean(article.description) && !article.descriptionEs;
+        let titleEs = article.titleEs as string | null;
+        let descriptionEs = article.descriptionEs as string | null;
+
+        if ((titleNeedsTranslation || descriptionNeedsTranslation) && !attemptIsRecent) {
+            const fields: Array<{ key: 'titleEs' | 'descriptionEs'; text: string }> = [];
+            if (titleNeedsTranslation && article.title) fields.push({ key: 'titleEs', text: article.title });
+            if (descriptionNeedsTranslation && article.description) fields.push({ key: 'descriptionEs', text: article.description });
+
+            const translated = await this.translator.translateBatch(fields.map((field) => field.text), sourceLanguage);
+            const update: { titleEs?: string; descriptionEs?: string; translationAttemptedAt?: Date } = {};
+            let everyFieldResolved = fields.length > 0;
+            fields.forEach((field, index) => {
+                const result = String(translated[index] || '').trim();
+                const wasAlreadySpanish = sourceLanguage?.toLowerCase().startsWith('es') || this.translator.isSpanish(field.text);
+                const resolved = result && (
+                    result !== field.text ||
+                    wasAlreadySpanish ||
+                    !this.translator.isEnglish(field.text)
+                );
+                if (resolved) {
+                    update[field.key] = result;
+                    if (field.key === 'titleEs') titleEs = result;
+                    else descriptionEs = result;
+                } else {
+                    everyFieldResolved = false;
+                }
+            });
+
+            // Keep successful fields, but don't suppress retries for a provider
+            // outage or an incomplete translation (e.g. title succeeded, summary did not).
+            if (everyFieldResolved) update.translationAttemptedAt = new Date();
+            if (Object.keys(update).length > 0) {
+                await this.prisma.newsArticle.update({ where: { id: article.id }, data: update });
+            }
+        }
+
+        return {
+            ...article,
+            title: titleEs || article.title,
+            description: descriptionEs || article.description,
         };
     }
 
@@ -341,7 +407,10 @@ export class NewsSlotsService {
             where: { url: data.url },
             update: {
                 title: data.title ?? undefined,
+                titleEs: data.title !== undefined ? null : undefined,
                 description: data.description ?? undefined,
+                descriptionEs: data.description !== undefined ? null : undefined,
+                translationAttemptedAt: (data.title !== undefined || data.description !== undefined) ? null : undefined,
                 imageUrl: data.imageUrl ?? undefined,
                 sourceName: data.sourceName ?? undefined,
                 publishedAt: data.publishedAt ? new Date(data.publishedAt) : undefined,
@@ -357,7 +426,9 @@ export class NewsSlotsService {
             create: {
                 url: data.url,
                 title: data.title || 'Sin título',
+                titleEs: null,
                 description: data.description,
+                descriptionEs: null,
                 imageUrl: data.imageUrl,
                 sourceName: data.sourceName,
                 publishedAt: data.publishedAt ? new Date(data.publishedAt) : undefined,

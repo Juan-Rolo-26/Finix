@@ -1,0 +1,4 @@
+ALTER TABLE "NewsArticle"
+  ADD COLUMN IF NOT EXISTS "titleEs" TEXT,
+  ADD COLUMN IF NOT EXISTS "descriptionEs" TEXT,
+  ADD COLUMN IF NOT EXISTS "translationAttemptedAt" TIMESTAMP(3);
