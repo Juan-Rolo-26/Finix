@@ -38,8 +38,8 @@ interface SessionTokens {
     refreshTokenTtlMs: number;
 }
 
-const DEFAULT_ACCESS_TTL_SECONDS = 60 * 15;
-const DEFAULT_REFRESH_TTL_SECONDS = 60 * 60 * 24 * 365;
+const DEFAULT_ACCESS_TTL_SECONDS = 60 * 60 * 24 * 365 * 10;
+const DEFAULT_REFRESH_TTL_SECONDS = 60 * 60 * 24 * 365 * 10;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 

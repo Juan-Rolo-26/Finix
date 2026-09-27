@@ -122,7 +122,7 @@ export default function App() {
     // Restore session on app load and keep token in sync
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'TOKEN_REFRESHED' && session) {
+            if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && session) {
                 setAccessToken(session.access_token);
                 useAuthStore.setState({ token: session.access_token });
             }

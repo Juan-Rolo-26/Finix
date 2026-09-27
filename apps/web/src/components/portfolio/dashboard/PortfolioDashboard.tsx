@@ -3,6 +3,7 @@ import { ArrowDownRight, ArrowUpRight, Layers3, Target, WalletCards } from 'luci
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { apiFetch } from '@/lib/api';
+import { resolveAssetInfo } from '@/lib/tradingview';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { AssetPerformanceChart } from './AssetPerformanceChart';
 import { BenchmarkComparisonChart } from './BenchmarkComparisonChart';
@@ -23,6 +24,7 @@ import {
 
 interface DashboardAsset {
     ticker: string;
+    name?: string;
     tipoActivo: string;
     montoInvertido: number;
     ppc: number;
@@ -189,9 +191,15 @@ function buildAssetPerformanceData(metrics?: DashboardMetrics | null, assets: Da
         .map((asset) => {
             const currentValue = getAssetValue(asset);
             const pnl = currentValue - asset.montoInvertido;
+            const ticker = asset.ticker.split(':').pop() || asset.ticker;
+            const storedName = asset.name?.trim();
+            const assetName = storedName && storedName.toLowerCase() !== ticker.toLowerCase()
+                ? storedName
+                : resolveAssetInfo(ticker).displayName;
 
             return {
-                asset: asset.ticker.split(':').pop() || asset.ticker,
+                asset: ticker,
+                name: assetName,
                 return: Number(getAssetReturn(asset).toFixed(1)),
                 contribution: Number((baseCapital > 0 ? (pnl / baseCapital) * 100 : 0).toFixed(1)),
                 weight: Number((totalValue > 0 ? (currentValue / totalValue) * 100 : 0).toFixed(1)),

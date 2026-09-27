@@ -56,16 +56,17 @@ export class AuthController {
 
     @HttpCode(HttpStatus.OK)
     @Post('refresh')
-    async refresh(@Req() req: ExpressRequest, @Res({ passthrough: true }) res: Response) {
-        const refreshToken = req.cookies?.finix_refresh_token;
+    async refresh(@Body() body: any, @Req() req: ExpressRequest, @Res({ passthrough: true }) res: Response) {
+        const refreshToken = req.cookies?.finix_refresh_token || body?.refreshToken;
         const data = await this.authService.refreshSession(refreshToken, this.getRequestMeta(req));
         return this.attachAuthCookies(res, data);
     }
 
     @HttpCode(HttpStatus.OK)
     @Post('logout')
-    async logout(@Req() req: ExpressRequest, @Res({ passthrough: true }) res: Response) {
-        await this.authService.logout(req.cookies?.finix_refresh_token);
+    async logout(@Body() body: any, @Req() req: ExpressRequest, @Res({ passthrough: true }) res: Response) {
+        const refreshToken = req.cookies?.finix_refresh_token || body?.refreshToken;
+        await this.authService.logout(refreshToken);
         this.clearAuthCookies(res);
         return { success: true };
     }
@@ -112,8 +113,12 @@ export class AuthController {
         );
         this.attachAuthCookies(res, session);
 
-        // Keep the existing frontend contract: sync-user returns the profile.
-        return user;
+        // Return user with persistent token and refresh token
+        return {
+            ...user,
+            token: session.token,
+            refreshToken: session.refreshToken,
+        };
     }
 
     /**
@@ -128,26 +133,21 @@ export class AuthController {
 
     private attachAuthCookies(res: Response, data: { token: string; refreshToken?: string; user: unknown }) {
         const secure = process.env.NODE_ENV === 'production';
+        const maxAge = this.authService.getRefreshTtlMs();
         const cookieOptions = {
             httpOnly: true,
             secure,
             sameSite: 'lax' as const,
-            path: '/api',
+            path: '/',
+            maxAge,
         };
 
-        res.cookie('finix_token', data.token, {
-            ...cookieOptions,
-            maxAge: 15 * 60 * 1000,
-        });
+        res.cookie('finix_token', data.token, cookieOptions);
         if (data.refreshToken) {
-            res.cookie('finix_refresh_token', data.refreshToken, {
-                ...cookieOptions,
-                maxAge: this.authService.getRefreshTtlMs(),
-            });
+            res.cookie('finix_refresh_token', data.refreshToken, cookieOptions);
         }
 
-        const { refreshToken: _refreshToken, ...safeData } = data;
-        return safeData;
+        return data;
     }
 
     private clearAuthCookies(res: Response) {

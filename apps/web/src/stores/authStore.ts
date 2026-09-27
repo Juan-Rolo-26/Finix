@@ -6,7 +6,7 @@ import { usePreferencesStore } from './preferencesStore';
 interface AuthState {
     token: string | null;
     user: User | null;
-    login: (token: string, user: User) => void;
+    login: (token: string, user: User, refreshToken?: string) => void;
     updateUser: (patch: Partial<User>) => void;
     logout: () => void;
     /** Restore the current Finix or Supabase-backed session */
@@ -156,12 +156,24 @@ function persistToken(token: string | null) {
     setAccessToken(token);
 }
 
+function persistRefreshToken(refreshToken: string | null) {
+    if (typeof window !== 'undefined') {
+        if (refreshToken) {
+            localStorage.setItem('refreshToken', refreshToken);
+        } else {
+            localStorage.removeItem('refreshToken');
+        }
+    }
+}
+
 function persistUser(user: User | null) {
     const enhanced = enhanceUser(user);
-    if (enhanced) {
-        localStorage.setItem('user', JSON.stringify(enhanced));
-    } else {
-        localStorage.removeItem('user');
+    if (typeof window !== 'undefined') {
+        if (enhanced) {
+            localStorage.setItem('user', JSON.stringify(enhanced));
+        } else {
+            localStorage.removeItem('user');
+        }
     }
 }
 
@@ -200,24 +212,38 @@ function buildFallbackUser(session: { access_token: string; user: { id: string; 
     } as import('@finix/shared').User;
 }
 
-const initialUser = enhanceUser(JSON.parse(localStorage.getItem('user') || 'null'));
+const initialToken = typeof window !== 'undefined'
+    ? (localStorage.getItem('token') || localStorage.getItem('accessToken') || null)
+    : null;
+if (initialToken) {
+    setAccessToken(initialToken);
+}
+
+const initialUser = enhanceUser(
+    typeof window !== 'undefined'
+        ? JSON.parse(localStorage.getItem('user') || 'null')
+        : null
+);
 if (initialUser) {
     persistUser(initialUser);
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-    token: null,
+    token: initialToken,
     user: initialUser,
 
-    login: (token, user) => {
+    login: (token, user, refreshToken) => {
         const enhanced = enhanceUser(user);
         persistToken(token);
+        if (refreshToken) {
+            persistRefreshToken(refreshToken);
+        }
         persistUser(enhanced);
         set({ token, user: enhanced });
     },
 
     updateUser: (patch) => {
-        const currentRaw = localStorage.getItem('user');
+        const currentRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
         const currentUser = currentRaw ? JSON.parse(currentRaw) : null;
         const nextUser = enhanceUser(currentUser ? { ...currentUser, ...patch } : patch);
         persistUser(nextUser as User);
@@ -226,33 +252,48 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     logout: async () => {
         try {
-            await apiFetch('/auth/logout', { method: 'POST' });
+            const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : undefined;
+            await apiFetch('/auth/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+            });
         } catch {
             // The local session is still cleared if the API is temporarily unavailable.
         }
         await supabase.auth.signOut();
         persistToken(null);
+        persistRefreshToken(null);
         persistUser(null);
         set({ token: null, user: null });
     },
 
     syncFromSession: async (): Promise<User | null> => {
         const existingToken = getAccessToken();
+        const existingRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
         try {
-            if (!existingToken) {
+            if (!existingToken && existingRefreshToken) {
+                // Exchange persistent refresh token for a fresh access token
+                await apiFetch('/auth/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken: existingRefreshToken }),
+                });
+            } else if (!existingToken) {
                 // A new browser profile may have the persistent cookie but no
                 // localStorage state yet. Exchange it for a fresh access token.
                 await apiFetch('/auth/refresh', { method: 'POST' });
             }
 
-            // This also restores a session from the persistent httpOnly cookie
-            // when the short-lived access token is missing or expired.
+            // This also restores a session from the persistent httpOnly cookie or stored token
             const existingSessionRes = await apiFetch('/auth/me');
             if (existingSessionRes.ok) {
                 const user: User = await existingSessionRes.json();
                 const enhanced = enhanceUser(user);
                 persistUser(enhanced);
-                set({ token: getAccessToken() || existingToken, user: enhanced });
+                const currentToken = getAccessToken() || existingToken;
+                if (currentToken) persistToken(currentToken);
+                set({ token: currentToken, user: enhanced });
 
                 // Sync preferences globally
                 const { language, theme, currency } = user as any;
@@ -268,7 +309,7 @@ export const useAuthStore = create<AuthState>((set) => ({
                 return user;
             }
         } catch {
-                // Fall through to Supabase session restoration.
+            // Fall through to Supabase session restoration.
         }
 
         const { data: { session } } = await supabase.auth.getSession();
@@ -278,7 +319,8 @@ export const useAuthStore = create<AuthState>((set) => ({
             // independent persistent Finix session that is closed explicitly.
             const persistedUser = enhanceUser(JSON.parse(localStorage.getItem('user') || 'null')) as User | null;
             if (persistedUser) {
-                set({ token: getAccessToken(), user: persistedUser });
+                const currentToken = getAccessToken() || existingToken;
+                set({ token: currentToken, user: persistedUser });
                 return persistedUser;
             }
             return null;
@@ -306,13 +348,19 @@ export const useAuthStore = create<AuthState>((set) => ({
                 throw new Error('Backend sync failed');
             }
 
-            const user: User = await res.json();
-            const enhanced = enhanceUser(user);
+            const syncData = await res.json();
+            const enhanced = enhanceUser(syncData);
             persistUser(enhanced);
-            set({ token: accessToken, user: enhanced });
+            if (syncData.token) {
+                persistToken(syncData.token);
+            }
+            if (syncData.refreshToken) {
+                persistRefreshToken(syncData.refreshToken);
+            }
+            set({ token: syncData.token || accessToken, user: enhanced });
 
             // Sync preferences globally
-            const { language, theme, currency } = user as any;
+            const { language, theme, currency } = syncData as any;
             if (language || theme || currency) {
                 usePreferencesStore.getState().updatePreferences({
                     ...(language && { language }),
@@ -338,7 +386,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 // Keep localStorage.token in sync whenever Supabase refreshes the access token
 supabase.auth.onAuthStateChange((event, session) => {
-    if (event === 'TOKEN_REFRESHED' && session) {
+    if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && session) {
         persistToken(session.access_token);
         useAuthStore.setState({ token: session.access_token });
     }

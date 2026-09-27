@@ -44,7 +44,7 @@ export default function VerifyEmail() {
             if (!response.ok) throw new Error(data?.message || 'Código incorrecto o expirado.');
 
             if (data.token && data.user) {
-                login(data.token, data.user);
+                login(data.token, data.user, data.refreshToken);
                 navigate(redirectTarget);
             } else {
                 throw new Error('La cuenta fue verificada, pero no se pudo iniciar la sesión.');

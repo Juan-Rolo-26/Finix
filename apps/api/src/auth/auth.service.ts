@@ -186,7 +186,7 @@ export class AuthService implements OnModuleInit {
             {
                 issuer: 'finix-api',
                 subject: user.id,
-                expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+                expiresIn: process.env.JWT_EXPIRES_IN || '3650d',
             },
         );
     }
@@ -222,8 +222,8 @@ export class AuthService implements OnModuleInit {
                 type: 'finix_refresh',
             },
             // In persistent mode the auth module has no global JWT expiry, so
-            // omitting expiresIn creates a token valid until explicit revoke.
-            ttl === null ? {} : { expiresIn: `${ttl}s` },
+            // token remains valid until explicit revoke.
+            ttl === null ? { expiresIn: '3650d' } : { expiresIn: `${ttl}s` },
         );
     }
 

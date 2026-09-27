@@ -90,6 +90,7 @@ interface Portfolio {
 interface Asset {
   id: string;
   ticker: string;
+  name?: string;
   tipoActivo: string;
   montoInvertido: number;
   ppc: number;

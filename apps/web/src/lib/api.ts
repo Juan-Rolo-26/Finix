@@ -10,13 +10,29 @@ const defaultBases = Array.from(
 ) as string[];
 
 let activeBase = defaultBases[0];
-let runtimeAccessToken: string | null = null;
+let runtimeAccessToken: string | null = (typeof window !== 'undefined')
+    ? (localStorage.getItem('token') || localStorage.getItem('accessToken') || null)
+    : null;
 
 export const setAccessToken = (token: string | null) => {
     runtimeAccessToken = token;
+    if (typeof window !== 'undefined') {
+        if (token) {
+            localStorage.setItem('token', token);
+            localStorage.setItem('accessToken', token);
+        } else {
+            localStorage.removeItem('token');
+            localStorage.removeItem('accessToken');
+        }
+    }
 };
 
-export const getAccessToken = () => runtimeAccessToken;
+export const getAccessToken = () => {
+    if (!runtimeAccessToken && typeof window !== 'undefined') {
+        runtimeAccessToken = localStorage.getItem('token') || localStorage.getItem('accessToken') || null;
+    }
+    return runtimeAccessToken;
+};
 
 const buildUrl = (base: string, path: string) => {
     if (/^https?:\/\//i.test(path)) {
@@ -42,6 +58,9 @@ const isSessionAuthEndpoint = (path: string) => {
 const persistRefreshedSession = (data: any) => {
     if (typeof window === 'undefined' || !data?.token) return false;
     setAccessToken(data.token);
+    if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
+    }
     if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
     }
@@ -55,10 +74,12 @@ const tryRefreshSession = async (base: string) => {
 
     refreshPromise = (async () => {
         try {
+            const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
             const response = await fetch(buildUrl(base, '/auth/refresh'), {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(refreshToken ? { refreshToken } : {}),
                 cache: 'no-store',
             });
             if (!response.ok) return false;

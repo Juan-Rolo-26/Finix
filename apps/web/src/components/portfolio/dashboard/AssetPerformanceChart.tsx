@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { cn } from '@/lib/utils';
 import { CHART_AXIS_TICK, CHART_TOOLTIP_STYLE, formatPercent } from './chartUtils';
 import type { AssetPerformanceDatum } from './mockData';
+import { resolveAssetInfo } from '@/lib/tradingview';
 import { TrendingUp, TrendingDown, PieChart, BarChart3, ListFilter } from 'lucide-react';
 
 interface AssetPerformanceChartProps {
@@ -29,12 +30,21 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
 
     // Sanitizar datos para evitar NaN o undefined que causen pantalla blanca
     const safeData = useMemo(() => {
-        return (data || []).map((d) => ({
-            asset: String(d.asset || 'N/D'),
-            return: Number(d.return) || 0,
-            contribution: Number(d.contribution) || 0,
-            weight: Math.max(0, Number(d.weight) || 0),
-        }));
+        return (data || []).map((d) => {
+            const asset = String(d.asset || 'N/D');
+            const suppliedName = String(d.name || '').trim();
+            const name = suppliedName && suppliedName.toLowerCase() !== asset.toLowerCase()
+                ? suppliedName
+                : resolveAssetInfo(asset).displayName;
+
+            return {
+                asset,
+                name,
+                return: Number(d.return) || 0,
+                contribution: Number(d.contribution) || 0,
+                weight: Math.max(0, Number(d.weight) || 0),
+            };
+        });
     }, [data]);
 
     // Resumen de máximos y destacados
@@ -82,8 +92,9 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
         return (
             <div style={CHART_TOOLTIP_STYLE} className="space-y-2.5">
                 <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-2">
-                    <span className="font-heading font-black text-base text-foreground">
-                        {item.asset}
+                    <span className="min-w-0">
+                        <span className="block max-w-[200px] truncate font-heading font-black text-base text-foreground">{item.name}</span>
+                        <span className="block text-xs text-muted-foreground">{item.asset}</span>
                     </span>
                     <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-secondary text-muted-foreground">
                         Peso: {item.weight.toFixed(1)}%
@@ -173,18 +184,18 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         {summary.topPerformer && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
                                 <TrendingUp className="w-3.5 h-3.5" />
-                                Mejor: {summary.topPerformer.asset} ({formatPercent(summary.topPerformer.return, 1, true)})
+                                Mejor: {summary.topPerformer.name || summary.topPerformer.asset} ({formatPercent(summary.topPerformer.return, 1, true)})
                             </span>
                         )}
                         {summary.worstPerformer && summary.worstPerformer.return < 0 && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">
                                 <TrendingDown className="w-3.5 h-3.5" />
-                                Menor: {summary.worstPerformer.asset} ({formatPercent(summary.worstPerformer.return, 1, true)})
+                                Menor: {summary.worstPerformer.name || summary.worstPerformer.asset} ({formatPercent(summary.worstPerformer.return, 1, true)})
                             </span>
                         )}
                         {summary.topWeight && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 font-bold">
-                                Mayor peso: {summary.topWeight.asset} ({summary.topWeight.weight.toFixed(1)}%)
+                                Mayor peso: {summary.topWeight.name || summary.topWeight.asset} ({summary.topWeight.weight.toFixed(1)}%)
                             </span>
                         )}
                     </div>
@@ -291,9 +302,10 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         {safeData.map((item) => (
                             <div key={item.asset} className="space-y-1.5">
                                 <div className="flex items-center justify-between text-xs sm:text-sm">
-                                    <span className="font-heading font-black text-foreground flex items-center gap-2">
+                                    <span className="font-heading font-black text-foreground flex min-w-0 items-center gap-2">
                                         <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                                        {item.asset}
+                                        <span className="truncate">{item.name}</span>
+                                        <span className="shrink-0 font-normal text-muted-foreground">({item.asset})</span>
                                     </span>
                                     <div className="flex items-center gap-3 font-mono">
                                         <span className="text-muted-foreground">
@@ -326,14 +338,15 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                     key={item.asset}
                                     className="p-3.5 rounded-xl bg-secondary/30 border border-border/40 flex items-center justify-between gap-3 hover:bg-secondary/50 transition-all"
                                 >
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex min-w-0 flex-1 items-center gap-3">
                                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-heading font-black text-xs ${
                                             isPositive ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
                                         }`}>
                                             {item.asset.slice(0, 4)}
                                         </div>
-                                        <div>
-                                            <div className="font-bold text-foreground text-sm">{item.asset}</div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="break-words font-bold text-foreground text-sm leading-tight">{item.name}</div>
+                                            <div className="text-xs text-muted-foreground">{item.asset}</div>
                                             <div className="text-xs text-muted-foreground">
                                                 Participación en cartera: <span className="text-foreground font-mono font-bold">{item.weight.toFixed(1)}%</span>
                                             </div>

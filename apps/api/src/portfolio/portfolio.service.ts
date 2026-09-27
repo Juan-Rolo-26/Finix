@@ -776,6 +776,7 @@ export class PortfolioService {
         return {
             id: holding.assetId,
             ticker,
+            name: holding.asset?.name ?? cedearDef?.name ?? cleanTicker,
             tipoActivo: holding.asset?.type ?? (cedearDef ? 'CEDEAR' : 'STOCK'),
             cantidad,
             ppc,

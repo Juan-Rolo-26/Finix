@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 import { formatCurrency } from '../lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
@@ -296,9 +296,72 @@ function HeadlinesCard({
     );
 }
 
+function useSmartSticky() {
+    const ref = useRef<HTMLElement>(null);
+    const [top, setTop] = useState<number>(24);
+    const topRef = useRef(24);
+    const lastScrollY = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
+
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+
+        const updatePosition = () => {
+            const scrollY = window.scrollY;
+            const delta = scrollY - lastScrollY.current;
+            lastScrollY.current = scrollY;
+
+            const height = el.offsetHeight;
+            const vh = window.innerHeight;
+            const pad = 24;
+
+            // If the element fits comfortably within the viewport, pin it to the top
+            if (height + pad * 2 <= vh) {
+                if (topRef.current !== pad) {
+                    topRef.current = pad;
+                    setTop(pad);
+                }
+                return;
+            }
+
+            const minTop = vh - height - pad; // fully scrolled down (bottom-pinned)
+            const maxTop = pad;               // fully scrolled up (top-pinned)
+
+            let nextTop = topRef.current - delta;
+            if (nextTop < minTop) nextTop = minTop;
+            if (nextTop > maxTop) nextTop = maxTop;
+
+            if (Math.abs(nextTop - topRef.current) > 0.5) {
+                topRef.current = nextTop;
+                setTop(Math.round(nextTop));
+            }
+        };
+
+        window.addEventListener('scroll', updatePosition, { passive: true });
+        window.addEventListener('resize', updatePosition, { passive: true });
+
+        const ro = new ResizeObserver(() => {
+            updatePosition();
+        });
+        ro.observe(el);
+
+        updatePosition();
+
+        return () => {
+            window.removeEventListener('scroll', updatePosition);
+            window.removeEventListener('resize', updatePosition);
+            ro.disconnect();
+        };
+    }, []);
+
+    return { ref, style: { position: 'sticky' as const, top: `${top}px` } };
+}
+
 /* ── Main Dashboard ─────────────────────────────────────────────── */
 export default function Dashboard() {
     const navigate = useNavigate();
+    const middleSticky = useSmartSticky();
+    const rightSticky = useSmartSticky();
     const [topGainers, setTopGainers] = useState<any[]>([]);
     const [isGainersLoading, setIsGainersLoading] = useState<boolean>(true);
     const [isGainersError, setIsGainersError] = useState<boolean>(false);
@@ -474,7 +537,11 @@ export default function Dashboard() {
                 </div>
 
                 {/* ── Middle Column (or joined in Right on lg) ── */}
-                <aside className="hidden lg:flex flex-col gap-5 sticky top-6 z-10 self-start max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-contain scrollbar-hide">
+                <aside
+                    ref={middleSticky.ref}
+                    style={middleSticky.style}
+                    className="hidden lg:flex flex-col gap-5 z-10 self-start w-full"
+                >
 
                     {/* Mejores Rendimientos (S&P 500 Top Gainers) */}
                     <TopGainersCard
@@ -517,7 +584,11 @@ export default function Dashboard() {
                 </aside>
 
                 {/* ── Right Column (2xl only) ── */}
-                <aside className="hidden 2xl:flex flex-col gap-5 sticky top-6 z-10 self-start max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-contain scrollbar-hide">
+                <aside
+                    ref={rightSticky.ref}
+                    style={rightSticky.style}
+                    className="hidden 2xl:flex flex-col gap-5 z-10 self-start w-full"
+                >
 
                     {/* Peores Rendimientos (S&P 500 Top Losers) — AL LADO Y DEL MISMO TAMAÑO */}
                     <TopLosersCard

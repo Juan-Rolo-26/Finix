@@ -191,7 +191,7 @@ export default function AuthPage() {
         if (!response.ok || !data?.token || !data?.user) {
             throw new Error(data?.message || 'El código de verificación es incorrecto o venció.');
         }
-        useAuthStore.getState().login(data.token, data.user);
+        useAuthStore.getState().login(data.token, data.user, data.refreshToken);
         return true;
     };
 

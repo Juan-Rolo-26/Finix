@@ -37,6 +37,7 @@ export interface AllocationDatum {
 
 export interface AssetPerformanceDatum {
     asset: string;
+    name?: string;
     return: number;
     contribution: number;
     weight: number;
