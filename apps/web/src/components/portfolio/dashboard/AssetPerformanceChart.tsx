@@ -336,36 +336,37 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                             return (
                                 <div
                                     key={item.asset}
-                                    className="p-3.5 rounded-xl bg-secondary/30 border border-border/40 flex items-center justify-between gap-3 hover:bg-secondary/50 transition-all"
+                                    className="p-3 rounded-xl bg-secondary/30 border border-border/40 hover:bg-secondary/50 transition-all"
                                 >
-                                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-heading font-black text-xs ${
+                                    {/* Top row: icon + name + ticker */}
+                                    <div className="flex items-center gap-3 mb-2.5">
+                                        <div className={`w-8 h-8 shrink-0 rounded-xl flex items-center justify-center font-heading font-black text-[10px] ${
                                             isPositive ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
                                         }`}>
-                                            {item.asset.slice(0, 4)}
+                                            {item.asset.slice(0, 3)}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <div className="break-words font-bold text-foreground text-sm leading-tight">{item.name}</div>
-                                            <div className="text-xs text-muted-foreground">{item.asset}</div>
-                                            <div className="text-xs text-muted-foreground">
-                                                Participación en cartera: <span className="text-foreground font-mono font-bold">{item.weight.toFixed(1)}%</span>
-                                            </div>
+                                            <div className="font-bold text-foreground text-sm leading-tight truncate">{item.name}</div>
+                                            <div className="text-xs text-muted-foreground">{item.asset} · {item.weight.toFixed(1)}% del portafolio</div>
                                         </div>
                                     </div>
-
-                                    <div className="flex items-center gap-4 text-right font-mono">
-                                        <div>
-                                            <div className="text-xs text-muted-foreground">Retorno</div>
+                                    {/* Bottom row: retorno + aporte side by side */}
+                                    <div className="flex items-center gap-3 font-mono pl-11">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Retorno</div>
                                             <div className={`text-sm font-black ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                 {formatPercent(item.return, 2, true)}
                                             </div>
                                         </div>
-                                        <div>
-                                            <div className="text-xs text-muted-foreground">Aporte</div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Aporte</div>
                                             <div className={`text-sm font-bold ${item.contribution >= 0 ? 'text-sky-400' : 'text-rose-300'}`}>
                                                 {formatPercent(item.contribution, 2, true)}
                                             </div>
                                         </div>
+                                        <span className="font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/25 text-xs shrink-0">
+                                            {item.weight.toFixed(1)}%
+                                        </span>
                                     </div>
                                 </div>
                             );

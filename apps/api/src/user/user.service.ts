@@ -511,6 +511,7 @@ export class UserService {
                 plan: user.plan,
                 isProfilePublic: false,
                 isFollowedByMe,
+                ...((viewerId === user.id || isFollowedByMe) ? { _count: user._count } : {}),
             });
         }
 
@@ -736,6 +737,89 @@ export class UserService {
             followingCount: user._count.following,
             portfoliosCount: user._count.portfolios,
             ...portfolioStats,
+        };
+    }
+
+    async getUserConnections(
+        username: string,
+        type: 'followers' | 'following',
+        viewerId?: string,
+        limitParam?: string,
+        offsetParam?: string,
+    ) {
+        const target = await this.prisma.user.findUnique({
+            where: { username },
+            select: { id: true, isProfilePublic: true },
+        });
+        if (!target) throw new NotFoundException('Usuario no encontrado');
+
+        const isOwner = viewerId === target.id;
+        const followsTarget = viewerId && !isOwner
+            ? Boolean(await this.prisma.follow.findUnique({
+                where: { followerId_followingId: { followerId: viewerId, followingId: target.id } },
+                select: { followerId: true },
+            }))
+            : false;
+
+        if (!target.isProfilePublic && !isOwner && !followsTarget) {
+            return { users: [], total: null, limit: 0, offset: 0, hasMore: false, canView: false };
+        }
+
+        const requestedLimit = Number.parseInt(limitParam || '20', 10);
+        const requestedOffset = Number.parseInt(offsetParam || '0', 10);
+        const take = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 20;
+        const skip = Number.isFinite(requestedOffset) ? Math.max(requestedOffset, 0) : 0;
+        const where = type === 'followers'
+            ? { followingId: target.id }
+            : { followerId: target.id };
+        const userSelect = {
+            id: true,
+            username: true,
+            avatarUrl: true,
+            isVerified: true,
+            isInfluencer: true,
+            title: true,
+            company: true,
+            bio: true,
+        } as const;
+
+        const [total, relations] = await Promise.all([
+            this.prisma.follow.count({ where }),
+            type === 'followers'
+                ? this.prisma.follow.findMany({
+                    where,
+                    select: { follower: { select: userSelect } },
+                    orderBy: { follower: { username: 'asc' } },
+                    skip,
+                    take,
+                })
+                : this.prisma.follow.findMany({
+                    where,
+                    select: { following: { select: userSelect } },
+                    orderBy: { following: { username: 'asc' } },
+                    skip,
+                    take,
+                }),
+        ]);
+
+        const users = relations.map((relation: any) => type === 'followers' ? relation.follower : relation.following);
+        const followedIds = viewerId && users.length
+            ? await this.prisma.follow.findMany({
+                where: { followerId: viewerId, followingId: { in: users.map((user: any) => user.id) } },
+                select: { followingId: true },
+            }).then((follows) => new Set(follows.map((follow) => follow.followingId)))
+            : new Set<string>();
+
+        return {
+            users: users.map((user: any) => ({
+                ...this.normalizeUserMedia(user),
+                isFollowedByMe: followedIds.has(user.id),
+            })),
+            total,
+            limit: take,
+            offset: skip,
+            hasMore: skip + users.length < total,
+            canView: true,
         };
     }
 

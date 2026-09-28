@@ -698,14 +698,14 @@ const PortfolioPage = () => {
     try {
       let res = await apiFetch("/portfolios");
       // A portfolio page can render from the persisted profile before the
-      // short-lived access token has been restored after a reload. Refresh the
-      // Finix session once and retry the request instead of showing a dead
+      // Finix API session has been restored after a reload. Reconcile the
+      // session once and retry instead of showing a dead
       // "Unauthorized" state to an already logged-in user.
       if (res.status === 401) {
-        const refreshed = await apiFetch('/auth/refresh', { method: 'POST' });
-        if (!refreshed.ok) {
-          await syncFromSession();
-        }
+        // apiFetch already performs one shared refresh attempt on 401. Let the
+        // auth store reconcile provider/Finix state before one final request;
+        // a second direct refresh here can rotate the same token twice.
+        await syncFromSession();
         res = await apiFetch("/portfolios");
       }
       if (!res.ok) {

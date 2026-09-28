@@ -656,26 +656,62 @@ function NewMessageModal({
     const [q, setQ] = useState('');
     const [results, setResults] = useState<MsgUser[]>([]);
     const [loading, setLoading] = useState(false);
+    const [searchError, setSearchError] = useState('');
     const [selectedUsers, setSelectedUsers] = useState<MsgUser[]>([]);
     const [groupTitle, setGroupTitle] = useState('');
     const [groupDescription, setGroupDescription] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
+    const normalizedQuery = q.trim().replace(/^@+/, '');
+    const syncFromSession = useAuthStore((state) => state.syncFromSession);
 
     useEffect(() => { inputRef.current?.focus(); }, []);
 
     useEffect(() => {
-        if (!q.trim()) { setResults([]); return; }
+        if (normalizedQuery.length < 2) {
+            setResults([]);
+            setSearchError('');
+            setLoading(false);
+            return;
+        }
+
+        const controller = new AbortController();
+        setResults([]);
+        setLoading(true);
         const t = setTimeout(async () => {
-            setLoading(true);
+            setSearchError('');
             try {
-                const res = await apiFetch(`/messages/search-users?q=${encodeURIComponent(q)}`);
-                if (res.ok) setResults(await res.json());
+                const path = `/messages/search-users?q=${encodeURIComponent(normalizedQuery)}`;
+                let res = await apiFetch(path, {
+                    signal: controller.signal,
+                });
+
+                if (res.status === 401 && !controller.signal.aborted) {
+                    await syncFromSession();
+                    if (controller.signal.aborted) return;
+                    res = await apiFetch(path, { signal: controller.signal });
+                }
+
+                if (res.status === 401) throw new Error('No se pudo validar la sesión (401).');
+                if (res.status === 429) throw new Error('Demasiadas búsquedas seguidas. Esperá un momento e intentá de nuevo.');
+                if (!res.ok) throw new Error(`El servidor rechazó la búsqueda (${res.status}).`);
+                const users = await res.json();
+                if (!controller.signal.aborted) setResults(Array.isArray(users) ? users : []);
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    setResults([]);
+                    setSearchError(error instanceof Error
+                        ? error.message
+                        : 'No se pudo conectar con el servidor.');
+                }
             } finally {
-                setLoading(false);
+                if (!controller.signal.aborted) setLoading(false);
             }
         }, 280);
-        return () => clearTimeout(t);
-    }, [q]);
+        return () => {
+            clearTimeout(t);
+            controller.abort();
+        };
+    }, [normalizedQuery, syncFromSession]);
 
     const selectedIds = new Set(selectedUsers.map((user) => user.id));
     const isGroup = selectedUsers.length > 1 || groupTitle.trim().length > 0;
@@ -751,7 +787,7 @@ function NewMessageModal({
                                     disabled={isSubmitting}
                                     className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
                                 >
-                                    <span>{selectedUser.username}</span>
+                                    <span>@{selectedUser.username}</span>
                                     <X className="w-3 h-3" />
                                 </button>
                             ))}
@@ -795,10 +831,12 @@ function NewMessageModal({
                         <input
                             ref={inputRef}
                             type="text"
-                            placeholder="Buscar usuario..."
+                            placeholder="Buscar por usuario (@nombredeusuario)"
+                            aria-label="Buscar por nombre de usuario"
                             value={q}
                             onChange={(e) => setQ(e.target.value)}
                             disabled={isSubmitting}
+                            maxLength={32}
                             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                         />
                         {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
@@ -807,10 +845,14 @@ function NewMessageModal({
 
                 {/* Results */}
                 <div className="max-h-72 overflow-y-auto pb-3">
-                    {results.length === 0 && q.trim().length > 0 && !loading ? (
-                        <p className="text-sm text-muted-foreground text-center py-8">No se encontraron usuarios</p>
-                    ) : results.length === 0 && !q.trim() ? (
-                        <p className="text-xs text-muted-foreground text-center py-6">Comenzá a escribir para buscar contactos</p>
+                    {results.length === 0 && normalizedQuery.length >= 2 && !loading && searchError ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">{searchError}</p>
+                    ) : results.length === 0 && normalizedQuery.length >= 2 && !loading ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">No hay usuarios con ese nombre de usuario</p>
+                    ) : results.length === 0 && normalizedQuery.length > 0 && !loading ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">Escribí al menos 2 caracteres del usuario</p>
+                    ) : results.length === 0 && normalizedQuery.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-6">Buscá personas por su nombre de usuario</p>
                     ) : (
                         results.map((u) => (
                             <button
@@ -822,7 +864,7 @@ function NewMessageModal({
                                 <UserAvatar user={u} size={40} />
                                 <div className="text-left flex-1 min-w-0">
                                     <div className="flex items-center gap-1">
-                                        <span className="font-semibold text-sm">{u.username}</span>
+                                        <span className="font-semibold text-sm">@{u.username}</span>
                                         {u.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-primary" />}
                                     </div>
                                     {u.title && <p className="text-xs text-muted-foreground">{u.title}</p>}

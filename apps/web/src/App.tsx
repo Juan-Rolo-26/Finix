@@ -1,9 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { hasCommunityAccess, hasCommunityCreatorAccess, useAuthStore } from './stores/authStore';
-import { setAccessToken } from './lib/api';
 import { usePreferencesStore } from './stores/preferencesStore';
-import { supabase } from './lib/supabase';
 import DashboardLayout from './layouts/DashboardLayout';
 import InstallBanner from './components/InstallBanner';
 import CookieConsent from './components/CookieConsent';
@@ -119,22 +117,10 @@ function RequireCommunityAccess({
 export default function App() {
     const { token, user, syncFromSession } = useAuthStore();
 
-    // Restore session on app load and keep token in sync
+    // Restore the Finix session on app load. Auth token ownership and provider
+    // refresh handling live in authStore so Supabase cannot replace the API token.
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && session) {
-                setAccessToken(session.access_token);
-                useAuthStore.setState({ token: session.access_token });
-            }
-            // Supabase may emit SIGNED_OUT when its own provider session is
-            // refreshed or revoked. That must not close the independent Finix
-            // session; only the explicit Finix logout action does that.
-        });
-
-        // On first load, sync user from existing Supabase session
         syncFromSession();
-
-        return () => subscription.unsubscribe();
     }, []);
 
     return (

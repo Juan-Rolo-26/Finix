@@ -217,11 +217,11 @@ function AssetTile({
 
     const content = (
         <>
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                     <SymbolLogo symbol={item.symbol} size={36} className="shrink-0" />
                     <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-bold text-foreground truncate">{item.label}</p>
                             <span className="text-[10px] font-semibold text-muted-foreground uppercase bg-muted/40 px-1.5 py-0.5 rounded tracking-wider shrink-0">
                                 {toShortSymbol(item.symbol)}
@@ -244,15 +244,15 @@ function AssetTile({
                 </div>
             </div>
 
-            <div className="mt-4 flex items-end justify-between gap-2">
-                <div>
-                    <p className="text-2xl font-black tracking-tight text-foreground">{formatValue(item)}</p>
+            <div className="mt-4 flex items-end justify-between gap-2 flex-wrap">
+                <div className="min-w-0">
+                    <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground leading-tight">{formatValue(item)}</p>
                     <span className="text-xs text-muted-foreground">{formatRelativeTime(item.updatedAt)}</span>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                     <span
                         className={cn(
-                            'inline-block text-sm font-bold px-2 py-0.5 rounded-lg',
+                            'inline-block text-sm font-bold px-2 py-0.5 rounded-lg whitespace-nowrap',
                             positive ? 'market-trend-chip--positive text-emerald-400' : negative ? 'market-trend-chip--negative text-red-400' : 'text-muted-foreground'
                         )}
                     >
@@ -348,7 +348,7 @@ function SectionCard({
                     <Badge variant="outline" className={meta.badge}>{items.length} activos</Badge>
                 </div>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
+            <CardContent className="grid gap-4 md:grid-cols-2">
                 {items.map((item) => (
                     <AssetTile key={item.id} item={item} onSelect={onSelectSymbol} />
                 ))}
@@ -576,7 +576,7 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol,
                             </CardTitle>
                             <CardDescription>Activos con mayor rendimiento positivo en la jornada</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid gap-3 sm:grid-cols-2">
+                        <CardContent className="grid gap-3 md:grid-cols-2">
                             {data.leaders.gainers.slice(0, 4).map((item) => (
                                 <AssetTile key={`gainer-${item.id}`} item={item} onSelect={onSelectSymbol} />
                             ))}
@@ -591,7 +591,7 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol,
                             </CardTitle>
                             <CardDescription>Activos con mayor corrección o retroceso de la jornada</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid gap-3 sm:grid-cols-2">
+                        <CardContent className="grid gap-3 md:grid-cols-2">
                             {data.leaders.losers.slice(0, 4).map((item) => (
                                 <AssetTile key={`loser-${item.id}`} item={item} onSelect={onSelectSymbol} />
                             ))}
@@ -599,6 +599,7 @@ export default function MarketDashboard({ data, loading = false, onSelectSymbol,
                     </Card>
                 </div>
             )}
+
 
             {/* Market Sections Grid */}
             <div className="grid gap-8 xl:grid-cols-2">

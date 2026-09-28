@@ -9,6 +9,7 @@ import {
     UseGuards,
     Request,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { EventsGateway } from '../events.gateway';
 import { MessagesService } from './messages.service';
@@ -121,6 +122,11 @@ export class MessagesController {
 
     /** GET /api/messages/search-users?q=query */
     @Get('search-users')
+    @Throttle({
+        short: { limit: 12, ttl: 1000 },
+        medium: { limit: 80, ttl: 10000 },
+        long: { limit: 300, ttl: 60000 },
+    })
     searchUsers(@Query('q') q: string, @Request() req: any) {
         return this.messagesService.searchUsers(q || '', req.user.id);
     }

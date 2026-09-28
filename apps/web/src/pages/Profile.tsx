@@ -7,6 +7,7 @@ import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { uploadProfileImage } from '@/lib/profileMedia';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SymbolLogo } from '@/components/SymbolLogo';
+import { UserConnectionsDialog, type ConnectionsListType } from '@/components/UserConnectionsDialog';
 import { resolveAssetInfo } from '@/lib/tradingview';
 import PostCard from '@/components/posts/PostCard';
 import type { Post } from '@/pages/Explore';
@@ -878,8 +879,13 @@ export default function Profile() {
     const [activeTab, setActiveTab] = useState<'posts' | 'saved'>('posts');
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowSubmitting, setIsFollowSubmitting] = useState(false);
+    const [connectionsOpen, setConnectionsOpen] = useState(false);
+    const [connectionsType, setConnectionsType] = useState<ConnectionsListType>('followers');
     const [profilePosts, setProfilePosts] = useState<Post[]>([]);
     const [savedPosts, setSavedPosts] = useState<Post[]>([]);
+    const savedPostsCursorRef = useRef<string | null>(null);
+    const [hasMoreSavedPosts, setHasMoreSavedPosts] = useState(false);
+    const [savedPostsError, setSavedPostsError] = useState('');
     const [isLoadingPosts, setIsLoadingPosts] = useState(false);
     const [isLoadingSavedPosts, setIsLoadingSavedPosts] = useState(false);
 
@@ -1184,21 +1190,37 @@ export default function Profile() {
         }
     };
 
-    const loadSavedPosts = async () => {
+    const loadSavedPosts = async (reset = true) => {
         if (!isOwnProfile) return;
 
+        if (reset) {
+            setSavedPosts([]);
+            savedPostsCursorRef.current = null;
+            setHasMoreSavedPosts(false);
+        }
+        setSavedPostsError('');
         setIsLoadingSavedPosts(true);
         try {
-            const res = await apiFetch('/posts/saved?limit=20');
+            const params = new URLSearchParams({ limit: '20' });
+            if (!reset && savedPostsCursorRef.current) params.set('cursor', savedPostsCursorRef.current);
+
+            const res = await apiFetch(`/posts/saved?${params.toString()}`);
             if (!res.ok) {
-                setSavedPosts([]);
-                return;
+                const error = await res.json().catch(() => ({}));
+                throw new Error(error.message || `No se pudieron cargar los guardados (${res.status}).`);
             }
 
             const data = await res.json();
-            setSavedPosts(Array.isArray(data?.posts) ? data.posts : []);
-        } catch {
-            setSavedPosts([]);
+            const loadedPosts: Post[] = Array.isArray(data?.posts) ? data.posts : [];
+            setSavedPosts((current) => {
+                if (reset) return loadedPosts;
+                const existingIds = new Set(current.map((post) => post.id));
+                return [...current, ...loadedPosts.filter((post) => !existingIds.has(post.id))];
+            });
+            savedPostsCursorRef.current = data?.nextCursor || null;
+            setHasMoreSavedPosts(Boolean(data?.hasMore));
+        } catch (error) {
+            setSavedPostsError(error instanceof Error ? error.message : 'No se pudieron cargar las publicaciones guardadas.');
         } finally {
             setIsLoadingSavedPosts(false);
         }
@@ -1755,8 +1777,8 @@ export default function Profile() {
                     {/* ── STATS ROW ────────────────────────────── */}
                     <div className="grid grid-cols-1 gap-3 mb-6 sm:grid-cols-3">
                         {[
-                            { value: profile._count?.followedBy?.toLocaleString() || '0', label: 'Seguidores' },
-                            { value: profile._count?.following?.toLocaleString() || '0', label: 'Siguiendo' },
+                            { value: profile._count?.followedBy?.toLocaleString('es-AR') ?? (profile.isProfilePublic ? '0' : 'Privado'), label: 'Seguidores' },
+                            { value: profile._count?.following?.toLocaleString('es-AR') ?? (profile.isProfilePublic ? '0' : 'Privado'), label: 'Siguiendo' },
                             {
                                 value: formatSignedPercentage(profile.totalReturn, 1),
                                 label: 'Retorno Total',
@@ -1767,38 +1789,61 @@ export default function Profile() {
                                             : 'negative'
                                         : 'neutral',
                             },
-                        ].map((s, i) => (
-                            <div key={i} className="rounded-2xl p-4 text-center"
-                                style={{
-                                    background:
-                                        s.tone === 'positive'
-                                            ? 'linear-gradient(135deg, hsl(158 100% 45% / 0.12) 0%, hsl(158 100% 45% / 0.04) 100%)'
-                                            : s.tone === 'negative'
-                                                ? 'linear-gradient(135deg, hsl(0 90% 58% / 0.12) 0%, hsl(0 90% 58% / 0.04) 100%)'
-                                                : 'hsl(var(--secondary) / 0.5)',
-                                    border:
-                                        s.tone === 'positive'
-                                            ? `1px solid ${PRIMARY_BRD}`
-                                            : s.tone === 'negative'
-                                                ? '1px solid hsl(0 90% 58% / 0.2)'
-                                                : '1px solid hsl(var(--border))',
-                                }}>
-                                <div
-                                    className="text-xl font-black mb-0.5"
-                                    style={{
-                                        color:
-                                            s.tone === 'positive'
-                                                ? PRIMARY
-                                                : s.tone === 'negative'
-                                                    ? 'hsl(0 90% 58%)'
-                                                    : 'hsl(var(--foreground))',
+                        ].map((s, i) => {
+                            const connectionType: ConnectionsListType | null = i === 0 ? 'followers' : i === 1 ? 'following' : null;
+                            const cardStyle = {
+                                background:
+                                    s.tone === 'positive'
+                                        ? 'linear-gradient(135deg, hsl(158 100% 45% / 0.12) 0%, hsl(158 100% 45% / 0.04) 100%)'
+                                        : s.tone === 'negative'
+                                            ? 'linear-gradient(135deg, hsl(0 90% 58% / 0.12) 0%, hsl(0 90% 58% / 0.04) 100%)'
+                                            : 'hsl(var(--secondary) / 0.5)',
+                                border:
+                                    s.tone === 'positive'
+                                        ? `1px solid ${PRIMARY_BRD}`
+                                        : s.tone === 'negative'
+                                            ? '1px solid hsl(0 90% 58% / 0.2)'
+                                            : '1px solid hsl(var(--border))',
+                            };
+                            const content = (
+                                <>
+                                    <div
+                                        className="mb-0.5 text-xl font-black"
+                                        style={{
+                                            color:
+                                                s.tone === 'positive'
+                                                    ? PRIMARY
+                                                    : s.tone === 'negative'
+                                                        ? 'hsl(0 90% 58%)'
+                                                        : 'hsl(var(--foreground))',
+                                        }}
+                                    >
+                                        {s.value}
+                                    </div>
+                                    <div className="text-[11px] uppercase tracking-widest text-muted-foreground">{s.label}</div>
+                                </>
+                            );
+
+                            return connectionType ? (
+                                <button
+                                    key={s.label}
+                                    type="button"
+                                    onClick={() => {
+                                        setConnectionsType(connectionType);
+                                        setConnectionsOpen(true);
                                     }}
+                                    className="rounded-2xl p-4 text-center transition-colors hover:border-primary/40 hover:bg-secondary/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                                    style={cardStyle}
+                                    aria-label={`Ver la lista de ${s.label.toLowerCase()} de @${profile.username}`}
                                 >
-                                    {s.value}
+                                    {content}
+                                </button>
+                            ) : (
+                                <div key={s.label} className="rounded-2xl p-4 text-center" style={cardStyle}>
+                                    {content}
                                 </div>
-                                <div className="text-[11px] uppercase tracking-widest text-muted-foreground">{s.label}</div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {(profile.bioLong || profile.yearsExperience || specializations.length > 0 || certifications.length > 0) && (
@@ -2043,34 +2088,68 @@ export default function Profile() {
 
                         {activeTab === 'saved' && (
                             <motion.div key="saved" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                                {isLoadingSavedPosts ? (
+                                {isLoadingSavedPosts && savedPosts.length === 0 ? (
                                     <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
                                         <Loader2 className="w-12 h-12 mx-auto mb-3 opacity-40 animate-spin" />
                                         <p className="text-muted-foreground text-sm">Cargando guardados...</p>
                                     </div>
-                                ) : savedPosts.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {savedPosts.map((post) => (
-                                            <PostCard
-                                                key={post.id}
-                                                post={post}
-                                                currentUserId={currentUser?.id}
-                                                onUpdated={(updatedPost) => {
-                                                    if (activeTab === 'saved' && !updatedPost.savedByMe) {
-                                                        setSavedPosts((prev) => prev.filter((item) => item.id !== updatedPost.id));
-                                                        setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
-                                                        return;
-                                                    }
-                                                    setSavedPosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
-                                                    setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
-                                                }}
-                                                onDeleted={(postId) => {
-                                                    setSavedPosts((prev) => prev.filter((item) => item.id !== postId));
-                                                    setProfilePosts((prev) => prev.filter((item) => item.id !== postId));
-                                                }}
-                                            />
-                                        ))}
+                                ) : savedPostsError && savedPosts.length === 0 ? (
+                                    <div className="rounded-2xl py-12 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
+                                        <AlertCircle className="w-10 h-10 mx-auto mb-3 text-red-400 opacity-80" />
+                                        <p className="text-sm text-red-300">{savedPostsError}</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => void loadSavedPosts()}
+                                            className="mt-4 rounded-xl border border-border px-4 py-2 text-xs font-semibold hover:bg-secondary"
+                                        >
+                                            Reintentar
+                                        </button>
                                     </div>
+                                ) : savedPosts.length > 0 ? (
+                                    <>
+                                        <div className="space-y-4">
+                                            {savedPosts.map((post) => (
+                                                <PostCard
+                                                    key={post.id}
+                                                    post={post}
+                                                    currentUserId={currentUser?.id}
+                                                    onUpdated={(updatedPost) => {
+                                                        if (!updatedPost.savedByMe) {
+                                                            setSavedPosts((prev) => prev.filter((item) => item.id !== updatedPost.id));
+                                                            setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
+                                                            return;
+                                                        }
+                                                        setSavedPosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
+                                                        setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
+                                                    }}
+                                                    onDeleted={(postId) => {
+                                                        setSavedPosts((prev) => prev.filter((item) => item.id !== postId));
+                                                        setProfilePosts((prev) => prev.filter((item) => item.id !== postId));
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                        {savedPostsError && (
+                                            <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-center">
+                                                <p className="text-sm text-red-300">{savedPostsError}</p>
+                                                <button type="button" onClick={() => void loadSavedPosts(false)} className="mt-2 text-xs font-semibold text-primary hover:underline">
+                                                    Reintentar
+                                                </button>
+                                            </div>
+                                        )}
+                                        {hasMoreSavedPosts && (
+                                            <div className="flex justify-center py-5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => void loadSavedPosts(false)}
+                                                    disabled={isLoadingSavedPosts}
+                                                    className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold hover:bg-secondary disabled:cursor-wait disabled:opacity-60"
+                                                >
+                                                    {isLoadingSavedPosts ? 'Cargando…' : 'Cargar más guardados'}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
                                         <Bookmark className="w-12 h-12 mx-auto mb-3 opacity-20" />
@@ -2260,6 +2339,15 @@ export default function Profile() {
                     </>
                 )}
             </AnimatePresence>
+
+            <UserConnectionsDialog
+                open={connectionsOpen}
+                username={profile.username}
+                listType={connectionsType}
+                counts={{ followers: profile._count?.followedBy, following: profile._count?.following }}
+                onListTypeChange={setConnectionsType}
+                onOpenChange={setConnectionsOpen}
+            />
         </div >
     );
 }

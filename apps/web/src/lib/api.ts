@@ -96,6 +96,11 @@ const tryRefreshSession = async (base: string) => {
     }
 };
 
+/** Restore the persistent Finix session through the same single-flight path
+ * used by apiFetch after a 401. Keeping one shared refresh prevents parallel
+ * app startup requests from rotating the same refresh token twice. */
+export const refreshAccessToken = () => tryRefreshSession(activeBase ?? defaultBases[0]);
+
 export const apiUrl = (path: string) => buildUrl(activeBase ?? '', path);
 
 import { handleMockNews } from './mockNews';

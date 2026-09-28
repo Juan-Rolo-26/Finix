@@ -749,18 +749,25 @@ export class PostsService {
         const post = await this.prisma.post.findUnique({ where: { id: postId } });
         if (!post) throw new NotFoundException('Post no encontrado');
 
-        const existing = await this.prisma.save.findUnique({
-            where: { userId_postId: { userId, postId } },
+        const result = await this.prisma.$transaction(async (tx) => {
+            const existing = await tx.save.findUnique({
+                where: { userId_postId: { userId, postId } },
+            });
+
+            if (existing) {
+                await tx.save.delete({ where: { userId_postId: { userId, postId } } });
+            } else {
+                await tx.save.create({ data: { userId, postId } });
+            }
+
+            return {
+                saved: !existing,
+                savesCount: await tx.save.count({ where: { postId } }),
+            };
         });
 
-        if (existing) {
-            await this.prisma.save.delete({ where: { userId_postId: { userId, postId } } });
-            this.clearFeedCache();
-            return { saved: false };
-        }
-        await this.prisma.save.create({ data: { userId, postId } });
         this.clearFeedCache();
-        return { saved: true };
+        return result;
     }
 
     async getSavedPosts(userId: string, cursor?: string, limit = 20) {

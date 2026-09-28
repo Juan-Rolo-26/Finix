@@ -388,7 +388,8 @@ export class MessagesService {
 
     /** Search users to start a conversation with */
     async searchUsers(query: string, userId: string) {
-        if (!query || query.trim().length < 1) return [];
+        const usernameQuery = (query || '').trim().replace(/^@+/, '');
+        if (usernameQuery.length < 2) return [];
 
         return this.prisma.user.findMany({
             where: {
@@ -396,12 +397,13 @@ export class MessagesService {
                     { id: { not: userId } },
                     {
                         username: {
-                            contains: query.trim(),
+                            contains: usernameQuery,
                             mode: 'insensitive',
                         },
                     },
                 ],
             },
+            orderBy: { username: 'asc' },
             select: {
                 ...USER_SELECT,
                 title: true,

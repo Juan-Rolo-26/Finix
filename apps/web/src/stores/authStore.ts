@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { User } from '@finix/shared';
 import { supabase } from '@/lib/supabase';
-import { apiFetch, getAccessToken, setAccessToken } from '@/lib/api';
+import { apiFetch, getAccessToken, refreshAccessToken, setAccessToken } from '@/lib/api';
 import { usePreferencesStore } from './preferencesStore';
 interface AuthState {
     token: string | null;
@@ -177,6 +177,23 @@ function persistUser(user: User | null) {
     }
 }
 
+let sessionSyncPromise: Promise<User | null> | null = null;
+
+/** The provider token is only a bootstrap credential. Once the API has issued
+ * a Finix token, Supabase token refresh events must never replace it. */
+function isFinixApiToken(token: string | null | undefined) {
+    if (!token || typeof window === 'undefined') return false;
+    try {
+        const payload = token.split('.')[1];
+        if (!payload) return false;
+        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const decoded = JSON.parse(window.atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')));
+        return decoded?.iss === 'finix-api';
+    } catch {
+        return false;
+    }
+}
+
 const BACKEND_TIMEOUT_MS = 5000;
 
 async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -269,125 +286,142 @@ export const useAuthStore = create<AuthState>((set) => ({
     },
 
     syncFromSession: async (): Promise<User | null> => {
-        const existingToken = getAccessToken();
-        const existingRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
-        try {
-            if (!existingToken && existingRefreshToken) {
-                // Exchange persistent refresh token for a fresh access token
-                await apiFetch('/auth/refresh', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ refreshToken: existingRefreshToken }),
-                });
-            } else if (!existingToken) {
-                // A new browser profile may have the persistent cookie but no
-                // localStorage state yet. Exchange it for a fresh access token.
-                await apiFetch('/auth/refresh', { method: 'POST' });
+        if (sessionSyncPromise) return sessionSyncPromise;
+
+        sessionSyncPromise = (async (): Promise<User | null> => {
+            const existingToken = getAccessToken();
+            const existingRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+            const persistedUser = enhanceUser(JSON.parse(localStorage.getItem('user') || 'null')) as User | null;
+            let session = null;
+            try {
+                const result = await supabase.auth.getSession();
+                session = result.data.session;
+            } catch {
+                // The independent Finix session can still be restored by its cookie.
             }
 
-            // This also restores a session from the persistent httpOnly cookie or stored token
-            const existingSessionRes = await apiFetch('/auth/me');
-            if (existingSessionRes.ok) {
-                const user: User = await existingSessionRes.json();
-                const enhanced = enhanceUser(user);
-                persistUser(enhanced);
-                const currentToken = getAccessToken() || existingToken;
-                if (currentToken) persistToken(currentToken);
-                set({ token: currentToken, user: enhanced });
-
-                // Sync preferences globally
-                const { language, theme, currency } = user as any;
-                if (language || theme || currency) {
-                    usePreferencesStore.getState().updatePreferences({
-                        ...(language && { language }),
-                        ...(theme && { theme }),
-                        ...(currency && { currency }),
-                    });
-                    if (theme) usePreferencesStore.getState().setTheme(theme);
+            try {
+                // A previous Supabase refresh may have overwritten the Finix
+                // access token. Exchange the saved Finix refresh token through
+                // apiFetch's single-flight refresh path before hitting private APIs.
+                if (existingRefreshToken && !isFinixApiToken(existingToken)) {
+                    const restored = await refreshAccessToken();
+                    if (!restored) {
+                        if (persistedUser) set({ token: existingToken, user: persistedUser });
+                        return persistedUser;
+                    }
                 }
 
-                return user;
-            }
-        } catch {
-            // Fall through to Supabase session restoration.
-        }
+                const hasProviderSession = Boolean(session);
+                const shouldRestoreFinixSession = isFinixApiToken(getAccessToken()) || !hasProviderSession;
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            // Do not turn a missing/expired provider session into a Finix
-            // logout. Email/password users and OAuth users both have an
-            // independent persistent Finix session that is closed explicitly.
-            const persistedUser = enhanceUser(JSON.parse(localStorage.getItem('user') || 'null')) as User | null;
-            if (persistedUser) {
-                const currentToken = getAccessToken() || existingToken;
-                set({ token: currentToken, user: persistedUser });
+                if (shouldRestoreFinixSession) {
+                    // A 401 here automatically attempts the shared refresh flow,
+                    // including the HttpOnly cookie for a new browser profile.
+                    const existingSessionRes = await apiFetch('/auth/me');
+                    if (existingSessionRes.ok) {
+                        const user: User = await existingSessionRes.json();
+                        const enhanced = enhanceUser(user);
+                        persistUser(enhanced);
+                        const currentToken = getAccessToken() || existingToken;
+                        if (currentToken) persistToken(currentToken);
+                        set({ token: currentToken, user: enhanced });
+
+                        const { language, theme, currency } = user as any;
+                        if (language || theme || currency) {
+                            usePreferencesStore.getState().updatePreferences({
+                                ...(language && { language }),
+                                ...(theme && { theme }),
+                                ...(currency && { currency }),
+                            });
+                            if (theme) usePreferencesStore.getState().setTheme(theme);
+                        }
+                        return enhanced;
+                    }
+                }
+
+                // A provider session without a Finix refresh token is a first
+                // login (or legacy OAuth session): exchange it for the API's
+                // persistent session, even if Supabase /auth/me would accept it.
+                if (session && !existingRefreshToken && !isFinixApiToken(existingToken)) {
+                    const accessToken = session.access_token;
+                    persistToken(accessToken);
+                    let username = session.user.user_metadata?.username as string | undefined;
+                    const pendingUsername = localStorage.getItem('pendingUsername');
+                    if (pendingUsername) {
+                        username = pendingUsername;
+                        localStorage.removeItem('pendingUsername');
+                        try {
+                            await supabase.auth.updateUser({ data: { username } });
+                        } catch {
+                            // Ignore metadata error if Supabase throws.
+                        }
+                    }
+
+                    const res = await syncBackendUser(username);
+
+                    if (!res.ok) throw new Error('Backend sync failed');
+
+                    const syncData = await res.json();
+                    const enhanced = enhanceUser(syncData);
+                    persistUser(enhanced);
+                    if (syncData.token) persistToken(syncData.token);
+                    if (syncData.refreshToken) persistRefreshToken(syncData.refreshToken);
+                    set({ token: syncData.token || accessToken, user: enhanced });
+
+                    const { language, theme, currency } = syncData as any;
+                    if (language || theme || currency) {
+                        usePreferencesStore.getState().updatePreferences({
+                            ...(language && { language }),
+                            ...(theme && { theme }),
+                            ...(currency && { currency }),
+                        });
+                        if (theme) usePreferencesStore.getState().setTheme(theme);
+                    }
+                    return enhanced;
+                }
+
+                if (session) {
+                    const fallbackUser = enhanceUser(buildFallbackUser(session));
+                    persistUser(fallbackUser);
+                    set({ token: getAccessToken() || existingToken, user: fallbackUser });
+                    return fallbackUser;
+                }
+
+                if (persistedUser) {
+                    set({ token: getAccessToken() || existingToken, user: persistedUser });
+                    return persistedUser;
+                }
+                return null;
+            } catch (error) {
+                console.warn('[AuthStore] Backend session sync failed:', error);
+                if (session && !existingRefreshToken && !isFinixApiToken(existingToken)) {
+                    const fallbackUser = enhanceUser(buildFallbackUser(session));
+                    persistUser(fallbackUser);
+                    set({ token: getAccessToken() || session.access_token, user: fallbackUser });
+                    return fallbackUser;
+                }
+                if (persistedUser) set({ token: getAccessToken() || existingToken, user: persistedUser });
                 return persistedUser;
             }
-            return null;
-        }
-
-        const accessToken = session.access_token;
-        persistToken(accessToken);
+        })();
 
         try {
-            let username = session.user.user_metadata?.username as string | undefined;
-            const pendingUsername = localStorage.getItem('pendingUsername');
-            if (pendingUsername) {
-                username = pendingUsername;
-                localStorage.removeItem('pendingUsername');
-                try {
-                    await supabase.auth.updateUser({ data: { username } });
-                } catch (e) {
-                    // Ignore metadata error if Supabase throws
-                }
-            }
-
-            const res = await syncBackendUser(username);
-
-            if (!res.ok) {
-                throw new Error('Backend sync failed');
-            }
-
-            const syncData = await res.json();
-            const enhanced = enhanceUser(syncData);
-            persistUser(enhanced);
-            if (syncData.token) {
-                persistToken(syncData.token);
-            }
-            if (syncData.refreshToken) {
-                persistRefreshToken(syncData.refreshToken);
-            }
-            set({ token: syncData.token || accessToken, user: enhanced });
-
-            // Sync preferences globally
-            const { language, theme, currency } = syncData as any;
-            if (language || theme || currency) {
-                usePreferencesStore.getState().updatePreferences({
-                    ...(language && { language }),
-                    ...(theme && { theme }),
-                    ...(currency && { currency }),
-                });
-                if (theme) usePreferencesStore.getState().setTheme(theme);
-            }
-
-            return enhanced;
-        } catch (error) {
-            // Backend is unreachable (timeout, network error, etc.)
-            // Fall back to building a minimal user from the Supabase session
-            // so the user stays logged in rather than being kicked out.
-            console.warn('[AuthStore] Backend sync failed, using Supabase session fallback:', error);
-            const fallbackUser = enhanceUser(buildFallbackUser(session));
-            persistUser(fallbackUser);
-            set({ token: accessToken, user: fallbackUser });
-            return fallbackUser;
+            return await sessionSyncPromise;
+        } finally {
+            sessionSyncPromise = null;
         }
     },
 }));
 
-// Keep localStorage.token in sync whenever Supabase refreshes the access token
+// Supabase is only a bootstrap identity provider. Never overwrite an issued
+// Finix API token; private backend endpoints use its persistent session id.
 supabase.auth.onAuthStateChange((event, session) => {
     if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && session) {
-        persistToken(session.access_token);
-        useAuthStore.setState({ token: session.access_token });
+        const hasFinixRefreshToken = typeof window !== 'undefined' && Boolean(localStorage.getItem('refreshToken'));
+        if (!hasFinixRefreshToken) {
+            persistToken(session.access_token);
+            useAuthStore.setState({ token: session.access_token });
+        }
     }
 });

@@ -751,6 +751,7 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
             }`}
             style={{
                 backdropFilter: 'blur(16px)',
+                gridColumn: isOpen ? '1 / -1' : undefined,
             }}
         >
             {/* Top gradient accent line */}
@@ -843,7 +844,8 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.28, ease: 'easeOut' }}
-                        className="overflow-hidden"
+                        className="overflow-hidden w-full max-w-full"
+                        style={{ overflowX: 'hidden' }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="pt-3 mt-1.5 border-t border-border/50 space-y-3">
@@ -1231,28 +1233,28 @@ export default function Analysis() {
 
                 {/* Desglose de Rendimientos Periódicos de TradingView */}
                 {(a.dailyChange !== null || a.weeklyChange !== null || a.monthlyChange !== null || a.yearlyChange !== null) && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-5 border-t border-border/40">
-                        <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex items-center justify-between">
-                            <span className="text-xs sm:text-sm font-black text-muted-foreground uppercase tracking-wider">1 Día</span>
-                            <span className={`text-base sm:text-lg font-black flex items-center gap-0.5 ${Number(a.dailyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 border-t border-border/40">
+                        <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex flex-col gap-1">
+                            <span className="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-wider">1 Día</span>
+                            <span className={`text-lg sm:text-xl font-black ${Number(a.dailyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {Number(a.dailyChange) >= 0 ? '+' : ''}{Number(a.dailyChange || 0).toFixed(2)}%
                             </span>
                         </div>
-                        <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex items-center justify-between">
-                            <span className="text-xs sm:text-sm font-black text-muted-foreground uppercase tracking-wider">1 Semana</span>
-                            <span className={`text-base sm:text-lg font-black flex items-center gap-0.5 ${Number(a.weeklyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex flex-col gap-1">
+                            <span className="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-wider">1 Semana</span>
+                            <span className={`text-lg sm:text-xl font-black ${Number(a.weeklyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {Number(a.weeklyChange) >= 0 ? '+' : ''}{Number(a.weeklyChange || 0).toFixed(2)}%
                             </span>
                         </div>
-                        <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex items-center justify-between">
-                            <span className="text-xs sm:text-sm font-black text-muted-foreground uppercase tracking-wider">1 Mes</span>
-                            <span className={`text-base sm:text-lg font-black flex items-center gap-0.5 ${Number(a.monthlyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex flex-col gap-1">
+                            <span className="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-wider">1 Mes</span>
+                            <span className={`text-lg sm:text-xl font-black ${Number(a.monthlyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {Number(a.monthlyChange) >= 0 ? '+' : ''}{Number(a.monthlyChange || 0).toFixed(2)}%
                             </span>
                         </div>
-                        <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex items-center justify-between">
-                            <span className="text-xs sm:text-sm font-black text-muted-foreground uppercase tracking-wider">1 Año</span>
-                            <span className={`text-base sm:text-lg font-black flex items-center gap-0.5 ${Number(a.yearlyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex flex-col gap-1">
+                            <span className="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-wider">1 Año</span>
+                            <span className={`text-lg sm:text-xl font-black ${Number(a.yearlyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {Number(a.yearlyChange) >= 0 ? '+' : ''}{Number(a.yearlyChange || 0).toFixed(2)}%
                             </span>
                         </div>
@@ -1260,9 +1262,9 @@ export default function Analysis() {
                 )}
 
                 {/* Métricas de Mercado y Liquidez */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4 pt-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 pt-2">
                     <MetricBox 
-                        label="Cap. de Mercado" 
+                        label="Cap. Mercado" 
                         value={formatCurrency(a.marketCap, true)} 
                         tooltip="Capitalización bursátil total" 
                     />
@@ -1274,12 +1276,12 @@ export default function Analysis() {
                         tooltip="Precio sobre Beneficios" 
                     />
                     <MetricBox 
-                        label="Volumen Hoy" 
+                        label="Vol. Hoy" 
                         value={formatNumber(a.volume, true)} 
                         tooltip="Acciones negociadas hoy" 
                     />
                     <MetricBox 
-                        label="Vol. Prom. (30D)" 
+                        label="Vol. Prom. 30D" 
                         value={formatNumber(a.avgVolume, true)} 
                         tooltip="Volumen promedio diario de 30 días" 
                     />
@@ -1291,7 +1293,7 @@ export default function Analysis() {
                         tooltip="Volumen actual respecto al promedio" 
                     />
                     <MetricBox 
-                        label="Beta (1Y)" 
+                        label="Beta (1A)" 
                         value={a.beta ? Number(a.beta).toFixed(2) : null} 
                         tooltip="Sensibilidad y volatilidad frente al mercado" 
                     />
@@ -1299,7 +1301,7 @@ export default function Analysis() {
 
                 {/* Rango de Precios 52 Semanas Interactivo */}
                 {a.high52w && a.low52w && (
-                    <div className="p-6 rounded-2xl bg-muted/20 border border-border/40 space-y-3.5">
+                    <div className="hidden sm:block p-6 rounded-2xl bg-muted/20 border border-border/40 space-y-3.5">
                         <div className="flex items-center justify-between text-base">
                             <div>
                                 <span className="text-muted-foreground font-black block text-xs sm:text-sm uppercase tracking-wider">Mínimo 52S</span>

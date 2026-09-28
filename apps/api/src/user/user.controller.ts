@@ -86,6 +86,28 @@ export class UserController {
     }
 
     @UseGuards(OptionalJwtAuthGuard)
+    @Get(':username/followers')
+    async getFollowers(
+        @Param('username') username: string,
+        @Request() req,
+        @Query('limit') limit?: string,
+        @Query('offset') offset?: string,
+    ) {
+        return this.userService.getUserConnections(username, 'followers', req.user?.id, limit, offset);
+    }
+
+    @UseGuards(OptionalJwtAuthGuard)
+    @Get(':username/following')
+    async getFollowing(
+        @Param('username') username: string,
+        @Request() req,
+        @Query('limit') limit?: string,
+        @Query('offset') offset?: string,
+    ) {
+        return this.userService.getUserConnections(username, 'following', req.user?.id, limit, offset);
+    }
+
+    @UseGuards(OptionalJwtAuthGuard)
     @Get(':username')
     async getUserProfile(@Param('username') username: string, @Request() req) {
         return this.userService.getUserProfile(username, req.user?.id);

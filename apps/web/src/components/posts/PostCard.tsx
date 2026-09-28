@@ -229,6 +229,9 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     const [reposted, setReposted] = useState(post.repostedByMe);
     const [repostsCount, setRepostsCount] = useState(post.repostsCount);
     const [saved, setSaved] = useState(post.savedByMe);
+    const [isSavingPost, setIsSavingPost] = useState(false);
+    const [saveError, setSaveError] = useState('');
+    const saveRequestRef = useRef(false);
     const [showComments, setShowComments] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -257,6 +260,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
         setReposted(post.repostedByMe);
         setRepostsCount(post.repostsCount);
         setSaved(post.savedByMe);
+        setSaveError('');
         setCommentsCount(post.commentsCount);
         setEditContent(post.content);
         setInvalidCapturedChart(false);
@@ -287,15 +291,37 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     };
 
     const handleSave = async () => {
+        if (saveRequestRef.current) return;
+        saveRequestRef.current = true;
+        setIsSavingPost(true);
+        setSaveError('');
+
         const prev = saved;
         const nextSaved = !saved;
         setSaved(nextSaved);
         try {
             const response = await apiFetch(`/posts/${post.id}/save`, { method: 'POST' });
-            if (!response.ok) throw new Error('No se pudo guardar la publicación');
-            onUpdated({ ...post, savedByMe: nextSaved });
-        } catch {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || typeof data.saved !== 'boolean') {
+                throw new Error(data.message || 'No se pudo guardar la publicación. Intentá de nuevo.');
+            }
+
+            const savedOnServer = data.saved as boolean;
+            setSaved(savedOnServer);
+            const saveCountDelta = savedOnServer === prev ? 0 : savedOnServer ? 1 : -1;
+            onUpdated({
+                ...post,
+                savedByMe: savedOnServer,
+                savesCount: typeof data.savesCount === 'number'
+                    ? data.savesCount
+                    : Math.max(0, post.savesCount + saveCountDelta),
+            });
+        } catch (error) {
             setSaved(prev);
+            setSaveError(error instanceof Error ? error.message : 'No se pudo guardar la publicación.');
+        } finally {
+            saveRequestRef.current = false;
+            setIsSavingPost(false);
         }
     };
 
@@ -708,14 +734,24 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
 
                     {/* Save */}
                     <button
+                        type="button"
                         onClick={handleSave}
-                        className={`p-2 rounded-lg transition-all hover:bg-secondary/50 ${saved ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                        disabled={isSavingPost}
+                        aria-pressed={saved}
+                        aria-busy={isSavingPost}
+                        className={`p-2 rounded-lg transition-all hover:bg-secondary/50 disabled:cursor-wait disabled:opacity-60 ${saved ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                         title={saved ? 'Quitar de guardados' : 'Guardar'}
                     >
                         <Bookmark className={`w-4 h-4 ${saved ? 'fill-primary' : ''}`} />
                     </button>
                 </div>
             </div>
+
+            {saveError && (
+                <p role="alert" className="px-4 pb-3 text-xs text-red-400">
+                    {saveError}
+                </p>
+            )}
 
             {/* Comments panel */}
             <AnimatePresence>
@@ -812,4 +848,4 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     );
 }
 
-export default memo(PostCard, (prev, next) => prev.post.id === next.post.id && prev.post.likedByMe === next.post.likedByMe && prev.post.likesCount === next.post.likesCount && prev.post.repostedByMe === next.post.repostedByMe && prev.post.repostsCount === next.post.repostsCount && prev.post.savedByMe === next.post.savedByMe && prev.post.commentsCount === next.post.commentsCount && prev.post.content === next.post.content);
+export default memo(PostCard, (prev, next) => prev.post.id === next.post.id && prev.post.likedByMe === next.post.likedByMe && prev.post.likesCount === next.post.likesCount && prev.post.repostedByMe === next.post.repostedByMe && prev.post.repostsCount === next.post.repostsCount && prev.post.savedByMe === next.post.savedByMe && prev.post.savesCount === next.post.savesCount && prev.post.commentsCount === next.post.commentsCount && prev.post.content === next.post.content);
