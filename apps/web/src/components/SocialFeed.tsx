@@ -7,7 +7,7 @@ import { resolveMediaUrl } from '@/lib/mediaUrl';
 import {
     Heart, MessageSquare, Repeat2, Share2,
     MoreHorizontal, ExternalLink, Flag, Trash2,
-    Bookmark, MessageCircle,
+    Bookmark, MessageCircle, BarChart2,
 } from 'lucide-react';
 import CreatePostWidget from './CreatePostWidget';
 import TradingViewWidget from './TradingViewWidget';
@@ -218,6 +218,8 @@ function FeedItem({ post }: { post: Post }) {
     const [showReportModal, setShowReportModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showLiveChart, setShowLiveChart] = useState(false);
+    const [capturedChartError, setCapturedChartError] = useState(false);
 
     const isOwner = Boolean(
         (user?.id && post.author?.id && user.id === post.author.id) ||
@@ -288,6 +290,7 @@ function FeedItem({ post }: { post: Post }) {
     const rawTicker = post.assetSymbol || primaryTicker;
     const tvSymbol = rawTicker ? rawTicker.trim().toUpperCase() : null;
     const isChartPost = post.type === 'chart';
+    const hasCapturedChart = Boolean(mediaUrl) && !capturedChartError;
 
     return (
         <article
@@ -423,9 +426,42 @@ function FeedItem({ post }: { post: Post }) {
                     {/* Media / Chart Display */}
                     {isChartPost && tvSymbol ? (
                         <div className="space-y-2.5">
-                            <div className="h-[460px] sm:h-[500px] min-h-[460px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
-                                <TradingViewWidget symbol={tvSymbol} height={500} />
-                            </div>
+                            {hasCapturedChart && (
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                        {showLiveChart ? 'Gráfico interactivo en vivo' : 'Análisis y trazado original'}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            setShowLiveChart(value => !value);
+                                        }}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-bold transition-colors"
+                                        style={{
+                                            borderColor: 'hsl(var(--border) / 0.6)',
+                                            background: 'hsl(var(--secondary) / 0.4)',
+                                            color: 'hsl(var(--foreground))',
+                                        }}
+                                    >
+                                        <BarChart2 className="h-3.5 w-3.5" style={{ color: 'hsl(var(--primary))' }} />
+                                        {showLiveChart ? 'Ver captura con dibujos' : 'Ver en vivo'}
+                                    </button>
+                                </div>
+                            )}
+                            {hasCapturedChart && !showLiveChart ? (
+                                <img
+                                    src={resolveMediaUrl(mediaUrl!)}
+                                    alt={`Análisis trazado de ${tvSymbol}`}
+                                    className="w-full h-auto max-h-[500px] rounded-2xl object-contain shadow-xs border border-border/40"
+                                    loading="lazy"
+                                    onError={() => setCapturedChartError(true)}
+                                />
+                            ) : (
+                                <div className="h-[460px] sm:h-[500px] min-h-[460px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
+                                    <TradingViewWidget symbol={tvSymbol} height={500} />
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <>

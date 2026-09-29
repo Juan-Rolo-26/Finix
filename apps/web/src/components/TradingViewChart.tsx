@@ -23,6 +23,9 @@ function TradingViewChart({
     theme,
     height = 540,
     studies = [],
+    chartStorageId,
+    loadLastChart = false,
+    autoSave = false,
     hideSideToolbar = false,
     withDateRanges = true,
     allowSymbolChange = true,
@@ -31,7 +34,12 @@ function TradingViewChart({
 }: TradingViewChartProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const scriptLoadedRef = useRef(false);
+    const onWidgetReadyRef = useRef(onWidgetReady);
     const { theme: storeTheme } = usePreferencesStore();
+
+    useEffect(() => {
+        onWidgetReadyRef.current = onWidgetReady;
+    }, [onWidgetReady]);
 
     // Resolve theme dynamically
     const activeTheme: 'light' | 'dark' = theme || (
@@ -97,12 +105,20 @@ function TradingViewChart({
                     hide_volume: false,
                     disabled_features: [],
                     enabled_features: ['study_templates', 'header_indicators', 'header_widget'],
-                    studies: studies,
+                    studies: JSON.parse(studiesKey),
+                    ...(chartStorageId ? {
+                        charts_storage_url: 'https://saveload.tradingview.com',
+                        charts_storage_api_version: '1.1',
+                        client_id: 'finix.app',
+                        user_id: chartStorageId,
+                        load_last_chart: loadLastChart,
+                        ...(autoSave ? { auto_save_delay: 1 } : {}),
+                    } : {}),
                     support_host: 'https://www.tradingview.com',
                 });
 
                 const notifyReady = () => {
-                    if (!disposed) onWidgetReady?.(widget);
+                    if (!disposed) onWidgetReadyRef.current?.(widget);
                 };
 
                 // Do not expose the widget to capture buttons until TradingView
@@ -136,12 +152,24 @@ function TradingViewChart({
         return () => {
             disposed = true;
             if (readyTimer !== undefined) window.clearTimeout(readyTimer);
-            onWidgetReady?.(null);
+            onWidgetReadyRef.current?.(null);
             if (containerRef.current) {
                 containerRef.current.innerHTML = '';
             }
         };
-    }, [symbol, interval, activeTheme, height, studiesKey, hideSideToolbar, withDateRanges, allowSymbolChange]);
+    }, [
+        symbol,
+        interval,
+        activeTheme,
+        height,
+        studiesKey,
+        chartStorageId,
+        loadLastChart,
+        autoSave,
+        hideSideToolbar,
+        withDateRanges,
+        allowSymbolChange,
+    ]);
 
     const resolvedHeightStyle = typeof height === 'number' ? `${height}px` : height;
 

@@ -958,6 +958,7 @@ export default function Analysis() {
     const [isProRestricted, setIsProRestricted] = useState(false);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [showLiveTechnicalChart, setShowLiveTechnicalChart] = useState(false);
 
     const isPro = isProUser(user);
 
@@ -972,6 +973,10 @@ export default function Analysis() {
             fetchCatalog();
         }
     }, [slug, user, isPro]);
+
+    useEffect(() => {
+        setShowLiveTechnicalChart(false);
+    }, [analysisData?.id, slug]);
 
     const fetchCatalog = async () => {
         try {
@@ -1865,8 +1870,8 @@ export default function Analysis() {
                                 </div>
                             </div>
 
-                                {/* Captura exacta publicada por el analista */}
-                                {tech.chartSnapshotUrl && (
+                                {/* Captura exacta publicada por el analista. Es la vista inicial. */}
+                                {tech.chartSnapshotUrl && !showLiveTechnicalChart && (
                                     <div className="rounded-3xl border border-primary/25 bg-primary/5 overflow-hidden shadow-lg">
                                         <div className="px-5 sm:px-7 py-4 border-b border-primary/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                             <div>
@@ -1881,19 +1886,27 @@ export default function Analysis() {
                                             <span className="text-xs sm:text-sm font-bold px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 self-start sm:self-auto">
                                                 Referencia publicada
                                             </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowLiveTechnicalChart(true)}
+                                                className="self-start sm:self-auto rounded-xl border border-border/60 bg-secondary/60 px-3.5 py-2 text-xs font-bold text-foreground transition-colors hover:bg-secondary"
+                                            >
+                                                Ver gráfico en vivo
+                                            </button>
                                         </div>
                                         <div className="p-3 sm:p-5 bg-background/30">
                                             <img
                                                 src={tech.chartSnapshotUrl}
                                                 alt={`Captura del análisis técnico de ${a.ticker || a.symbol}`}
                                                 className="w-full h-auto max-h-[760px] object-contain mx-auto rounded-2xl border border-border/50 bg-card"
+                                                onError={() => setShowLiveTechnicalChart(true)}
                                             />
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Gráfico interactivo con datos actuales */}
-                                {(() => {
+                                {/* Gráfico interactivo con datos actuales, como alternativa a la captura trazada */}
+                                {(!tech.chartSnapshotUrl || showLiveTechnicalChart) && (() => {
                                 const chartStorageId = tech.chartStorageId || (a.id 
                                     ? `finix_analysis_${a.id}` 
                                     : `finix_analysis_${(a.ticker || a.symbol || 'asset').toLowerCase().replace(/[^a-z0-9_]/g, '_')}`);
@@ -1911,6 +1924,15 @@ export default function Analysis() {
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-3">
+                                                {tech.chartSnapshotUrl && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowLiveTechnicalChart(false)}
+                                                        className="rounded-xl border border-border/60 bg-secondary/60 px-3.5 py-2 text-xs font-bold text-foreground transition-colors hover:bg-secondary"
+                                                    >
+                                                        Ver análisis trazado
+                                                    </button>
+                                                )}
                                                 <span className="text-sm sm:text-base font-mono font-black text-primary bg-primary/10 border border-primary/30 px-3.5 py-1 rounded-xl">
                                                     {fullSymbol}
                                                 </span>

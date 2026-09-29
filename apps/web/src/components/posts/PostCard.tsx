@@ -243,7 +243,9 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     const [repostComment, setRepostComment] = useState('');
     const [showReportModal, setShowReportModal] = useState(false);
     const [commentsCount, setCommentsCount] = useState(post.commentsCount);
-    const [showLiveChart, setShowLiveChart] = useState(true);
+    // A chart post should show the author's captured analysis first. The live
+    // TradingView chart remains available as an explicit alternative.
+    const [showLiveChart, setShowLiveChart] = useState(false);
     const [invalidCapturedChart, setInvalidCapturedChart] = useState(false);
 
     const isOwner = currentUserId === post.author.id;
@@ -264,7 +266,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
         setCommentsCount(post.commentsCount);
         setEditContent(post.content);
         setInvalidCapturedChart(false);
-        setShowLiveChart(true);
+        setShowLiveChart(false);
     }, [
         post.id,
         post.likedByMe,
