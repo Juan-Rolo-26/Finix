@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { CHART_AXIS_TICK, CHART_TOOLTIP_STYLE, formatPercent } from './chartUtils';
 import type { AssetPerformanceDatum } from './mockData';
 import { resolveAssetInfo } from '@/lib/tradingview';
+import { SymbolLogo } from '@/components/SymbolLogo';
 import { TrendingUp, TrendingDown, PieChart, BarChart3, ListFilter } from 'lucide-react';
 
 interface AssetPerformanceChartProps {
@@ -39,6 +40,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
 
             return {
                 asset,
+                symbol: String(d.symbol || asset),
                 name,
                 return: Number(d.return) || 0,
                 contribution: Number(d.contribution) || 0,
@@ -303,7 +305,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                             <div key={item.asset} className="space-y-1.5">
                                 <div className="flex items-center justify-between text-xs sm:text-sm">
                                     <span className="font-heading font-black text-foreground flex min-w-0 items-center gap-2">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                                        <SymbolLogo symbol={item.symbol} size={24} className="shrink-0" />
                                         <span className="truncate">{item.name}</span>
                                         <span className="shrink-0 font-normal text-muted-foreground">({item.asset})</span>
                                     </span>
@@ -340,11 +342,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                 >
                                     {/* Top row: icon + name + ticker */}
                                     <div className="flex items-center gap-3 mb-2.5">
-                                        <div className={`w-8 h-8 shrink-0 rounded-xl flex items-center justify-center font-heading font-black text-[10px] ${
-                                            isPositive ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                                        }`}>
-                                            {item.asset.slice(0, 3)}
-                                        </div>
+                                        <SymbolLogo symbol={item.symbol} size={34} className="shrink-0" />
                                         <div className="min-w-0 flex-1">
                                             <div className="font-bold text-foreground text-sm leading-tight truncate">{item.name}</div>
                                             <div className="text-xs text-muted-foreground">{item.asset} · {item.weight.toFixed(1)}% del portafolio</div>

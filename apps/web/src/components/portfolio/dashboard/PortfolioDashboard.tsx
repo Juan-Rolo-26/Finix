@@ -199,6 +199,7 @@ function buildAssetPerformanceData(metrics?: DashboardMetrics | null, assets: Da
 
             return {
                 asset: ticker,
+                symbol: asset.ticker,
                 name: assetName,
                 return: Number(getAssetReturn(asset).toFixed(1)),
                 contribution: Number((baseCapital > 0 ? (pnl / baseCapital) * 100 : 0).toFixed(1)),
@@ -319,6 +320,7 @@ export function PortfolioDashboard({
                         .map((point: any) => ({
                             date: String(point.date || ''),
                             portfolio: Number(point.value),
+                            returnPct: Number(point.returnPct),
                         }))
                         .filter((point: PortfolioValuePoint) => point.date && Number.isFinite(point.portfolio) && point.portfolio > 0)
                     : [];
@@ -391,9 +393,13 @@ export function PortfolioDashboard({
         const lastPoint = activePortfolioSeries[activePortfolioSeries.length - 1];
         const lastComparison = activeComparisonSeries[activeComparisonSeries.length - 1];
         const absoluteChange = firstPoint && lastPoint ? lastPoint.portfolio - firstPoint.portfolio : 0;
-        const rangeReturn = firstPoint && lastPoint && firstPoint.portfolio > 0
-            ? (absoluteChange / firstPoint.portfolio) * 100
-            : 0;
+        const rangeReturn = typeof lastPoint?.returnPct === 'number' && Number.isFinite(lastPoint.returnPct)
+            ? lastPoint.returnPct
+            : lastComparison
+                ? lastComparison.portfolio - 100
+                : firstPoint && lastPoint && firstPoint.portfolio > 0
+                    ? (absoluteChange / firstPoint.portfolio) * 100
+                    : 0;
         const isPortfolioEmpty = (metrics?.cantidadActivos ?? assets.length) === 0;
         const benchmarkSpread = isPortfolioEmpty || typeof lastComparison?.sp500 !== 'number'
             ? null

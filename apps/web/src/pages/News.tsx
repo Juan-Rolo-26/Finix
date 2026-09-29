@@ -134,7 +134,7 @@ export default function NewsPage() {
     }, [isPro]);
 
     // Load slots for selected category
-    const loadSlots = useCallback(async (slug: string) => {
+    const loadSlots = useCallback(async (slug: string, background = false) => {
         setSlotsLoading(true);
         setError(null);
         try {
@@ -144,14 +144,19 @@ export default function NewsPage() {
             setCategoryData(data);
         } catch {
             setError('No se pudo cargar el contenido. Intentá de nuevo.');
-            setCategoryData(null);
+            if (!background) setCategoryData(null);
         } finally {
             setSlotsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        if (selectedSlug) loadSlots(selectedSlug);
+        if (!selectedSlug) return;
+        void loadSlots(selectedSlug);
+        const refreshTimer = window.setInterval(() => {
+            void loadSlots(selectedSlug, true);
+        }, 5 * 60 * 1000);
+        return () => window.clearInterval(refreshTimer);
     }, [selectedSlug, loadSlots]);
 
     // Click tracking
@@ -174,6 +179,7 @@ export default function NewsPage() {
 
     const selectedCat = categories.find((c) => c.slug === selectedSlug);
     const hasContent = categoryData?.slots.some((s) => s.article !== null) ?? false;
+    const showSkeleton = slotsLoading && !categoryData;
 
     return (
         <div className="min-h-screen bg-background w-full">
@@ -235,7 +241,7 @@ export default function NewsPage() {
 
                 {/* Mosaic */}
                 <AnimatePresence mode="wait">
-                    {slotsLoading ? (
+                    {showSkeleton ? (
                         <motion.div
                             key="skeleton"
                             initial={{ opacity: 0 }}

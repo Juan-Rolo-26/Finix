@@ -279,6 +279,7 @@ export default function NewsAutomationPanel() {
                         <h2 className="text-lg font-bold">Automatización de Noticias</h2>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">La fuente central que publica las noticias visibles en Finix.</p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Todas las categorías activas se sincronizan automáticamente cada hora.</p>
                     <p className="text-xs text-muted-foreground mt-1">Zona horaria: {overview?.timeZone || 'America/Argentina/Cordoba'}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">

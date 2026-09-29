@@ -9,6 +9,7 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../prisma.service';
 import { NewsFetcherService, RawNewsItem } from './news-fetcher.service';
 import { NewsSlotsService } from './news-slots.service';
+import { resolveNewsImage } from './news-image.util';
 import {
     DEFAULT_NEWS_CATEGORIES,
     DEFAULT_NEWS_SOURCES,
@@ -195,6 +196,15 @@ export class NewsSyncService {
         await this.dispatchFrequencyIfDue('WEEKLY');
     }
 
+    /** Refreshes every active category hourly so new headlines never depend on a manual admin run. */
+    @Cron('0 * * * *', {
+        name: 'news-hourly-sync',
+        timeZone: NEWS_TIME_ZONE,
+    })
+    async dispatchHourlyUpdates() {
+        await this.syncFrequency('MANUAL');
+    }
+
     private async dispatchFrequencyIfDue(frequency: 'DAILY' | 'WEEKLY') {
         if (this.running) return;
         const due = await this.prisma.newsCategory.findMany({
@@ -215,9 +225,8 @@ export class NewsSyncService {
     async runManual(request: ManualSyncRequest) {
         switch (request.scope) {
             case 'ALL': {
-                const daily = await this.syncFrequency('DAILY');
-                const weekly = await this.syncFrequency('WEEKLY');
-                return { scope: 'ALL', runs: [daily, weekly] };
+                const all = await this.syncFrequency('MANUAL');
+                return { scope: 'ALL', runs: [all] };
             }
             case 'DAILY':
                 return this.syncFrequency('DAILY');
@@ -738,7 +747,19 @@ export class NewsSyncService {
                     { createdAt: { gte: new Date(Date.now() - DEDUP_WINDOW_MS) } },
                 ],
             },
-            select: { id: true, url: true, canonicalUrl: true, title: true, normalizedTitle: true, eventFingerprint: true, categoryId: true, relevanceScore: true, publishedAt: true },
+            select: {
+                id: true,
+                url: true,
+                canonicalUrl: true,
+                title: true,
+                normalizedTitle: true,
+                eventFingerprint: true,
+                categoryId: true,
+                relevanceScore: true,
+                publishedAt: true,
+                imageUrl: true,
+                customImage: true,
+            },
             take: 1500,
         });
         const candidates = [...recent];
@@ -765,9 +786,15 @@ export class NewsSyncService {
             if (existing) {
                 duplicates += 1;
                 const nextScore = Math.max(existing.relevanceScore || 0, relevance);
+                const nextImageUrl = existing.customImage
+                    ? existing.imageUrl
+                    : resolveNewsImage(item.title, record.category.slug, item.imageUrl || existing.imageUrl);
                 await this.prisma.newsArticle.update({
                     where: { id: existing.id },
-                    data: { relevanceScore: nextScore },
+                    data: {
+                        relevanceScore: nextScore,
+                        imageUrl: nextImageUrl,
+                    },
                 });
                 await this.prisma.newsArticleSource.upsert({
                     where: { articleId_url: { articleId: existing.id, url: item.url } },
@@ -788,7 +815,7 @@ export class NewsSyncService {
                     relevanceScore: relevance,
                     title: item.title.slice(0, 500),
                     description: (item.summary || item.content || '').slice(0, 2000),
-                    imageUrl: item.imageUrl,
+                    imageUrl: resolveNewsImage(item.title, record.category.slug, item.imageUrl),
                     sourceName: record.source.name,
                     sourceUrl: record.source.baseUrl || record.source.url,
                     publishedAt,

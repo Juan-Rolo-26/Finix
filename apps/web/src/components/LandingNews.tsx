@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Clock } from 'lucide-react';
+import { resolveNewsImage } from '@/lib/newsImage';
 
 interface NewsItem {
     id: string;
@@ -31,7 +32,11 @@ export default function LandingNews() {
                 setLoading(false);
             }
         };
-        fetchNews();
+        void fetchNews();
+        const refreshTimer = window.setInterval(() => {
+            void fetchNews();
+        }, 5 * 60 * 1000);
+        return () => window.clearInterval(refreshTimer);
     }, []);
 
     if (loading || news.length === 0) {
@@ -53,15 +58,16 @@ export default function LandingNews() {
                         rel="noreferrer"
                         className="group flex flex-col bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden hover:border-primary/50 transition-all hover:shadow-lg hover:-translate-y-1"
                     >
-                        {item.imageUrl && (
-                            <div className="h-48 w-full overflow-hidden">
-                                <img
-                                    src={item.imageUrl}
-                                    alt={item.title}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                />
-                            </div>
-                        )}
+                        <div className="h-48 w-full overflow-hidden">
+                            <img
+                                src={resolveNewsImage(item.title, item.category?.name, item.imageUrl)}
+                                alt={item.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                onError={(event) => {
+                                    event.currentTarget.src = resolveNewsImage(item.title, item.category?.name);
+                                }}
+                            />
+                        </div>
                         <div className="p-5 flex flex-col flex-1">
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="text-xs font-semibold text-primary uppercase tracking-wider">

@@ -9,7 +9,7 @@ export function buildBenchmarkComparisonSeries({
     apiSeries = [],
     hasHoldings = true,
 }: {
-    apiSeries?: Array<{ date: string; portfolio?: number; value?: number; sp500?: number }>;
+    apiSeries?: Array<{ date: string; portfolio?: number; value?: number; returnPct?: number; sp500?: number }>;
     hasHoldings?: boolean;
 }): ComparisonDatum[] {
     if (!hasHoldings || !Array.isArray(apiSeries)) {
@@ -19,7 +19,7 @@ export function buildBenchmarkComparisonSeries({
     const validSeries = apiSeries
         .map((point) => ({
             date: String(point.date || ''),
-            portfolio: Number(point.portfolio ?? point.value),
+            portfolio: Number(point.returnPct != null ? 100 + point.returnPct : point.portfolio ?? point.value),
             sp500: point.sp500 == null ? undefined : Number(point.sp500),
         }))
         .filter((point) => point.date && Number.isFinite(point.portfolio) && point.portfolio > 0);

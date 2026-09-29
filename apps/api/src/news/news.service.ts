@@ -3,8 +3,9 @@ import { PrismaService } from '../prisma.service';
 import { NewsFetcherService } from './news-fetcher.service';
 import { NewsTranslationService } from './news-translation.service';
 import { NewsSentimentService } from './news-sentiment.service';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import * as crypto from 'crypto';
+import { resolveNewsImage } from './news-image.util';
 
 interface NewsFilter {
     category?: string;
@@ -26,10 +27,20 @@ export class NewsService {
         console.log('[NewsService] Initialized');
         this.initializeCategories();
 
-        // Commented out optimize boot scraping to avoid filling up news automatically
+        // Keep boot lightweight; the scheduled sync below handles automatic updates.
         // setTimeout(() => {
         //     this.fetchAndStoreNews().catch(console.error);
         // }, 3000);
+    }
+
+    /** Keeps the legacy /news endpoint used by the landing page up to date too. */
+    @Cron('0 */2 * * *', { name: 'legacy-news-sync' })
+    async scheduledNewsSync() {
+        try {
+            await this.fetchAndStoreNews();
+        } catch (error: any) {
+            console.error('[NewsService] Automatic news sync failed:', error?.message || error);
+        }
     }
 
     /**
@@ -344,7 +355,7 @@ export class NewsService {
                             summaryEs,
                             url: item.url,
                             urlHash,
-                            imageUrl: item.imageUrl,
+                            imageUrl: resolveNewsImage(item.title, category?.slug, item.imageUrl),
                             language: item.language || 'en',
                             wasTranslated,
                             categoryId: category?.id,
@@ -374,6 +385,7 @@ export class NewsService {
             }
 
             console.log(`[NewsService] Processed: ${processed}, Skipped: ${skipped}`);
+            this.queryCache.clear();
 
             // Clean old news (older than 30 days)
             await this.cleanOldNews();
@@ -429,7 +441,7 @@ export class NewsService {
                 summaryEs,
                 url: url,
                 urlHash,
-                imageUrl: scraped.image || null,
+                imageUrl: resolveNewsImage(scraped.title, category?.slug, scraped.image),
                 language: 'es',
                 wasTranslated,
                 categoryId: category?.id,
@@ -521,7 +533,8 @@ export class NewsService {
             summary: item.summaryEs || item.summary,
             content: item.contentEs || item.content,
             url: item.url,
-            image: item.imageUrl,
+            image: resolveNewsImage(item.titleEs || item.title, item.category?.slug || item.category?.name, item.imageUrl),
+            imageUrl: resolveNewsImage(item.titleEs || item.title, item.category?.slug || item.category?.name, item.imageUrl),
             source: item.source.name,
             category: item.category?.name,
             categorySlug: item.category?.slug,

@@ -235,7 +235,7 @@ export function BenchmarkComparisonChart({
                                     ? 'Agregá al menos un activo para activar la comparación contra el S&P 500 (SPY).'
                                     : !summary.hasData
                                         ? 'Todavía no hay suficientes mediciones reales para este período.'
-                                        : 'Comparación indexada desde la primera medición disponible del portafolio y del SPY.'}
+                                        : 'Rendimiento desde la primera medición. Aportes, retiros y compras no cuentan como ganancia.'}
                             </p>
                         </div>
 

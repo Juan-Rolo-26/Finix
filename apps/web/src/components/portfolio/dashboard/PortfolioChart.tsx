@@ -74,7 +74,11 @@ export function PortfolioChart({
         }
 
         const absoluteChange = last.portfolio - first.portfolio;
-        const percentChange = first.portfolio > 0 ? (absoluteChange / first.portfolio) * 100 : 0;
+        const percentChange = typeof last.returnPct === 'number' && Number.isFinite(last.returnPct)
+            ? last.returnPct
+            : first.portfolio > 0
+                ? (absoluteChange / first.portfolio) * 100
+                : 0;
         const portfolioValues = safeActiveData.map((p) => p.portfolio).filter(Number.isFinite);
         const minValue = portfolioValues.length ? Math.min(...portfolioValues) : 0;
         const maxValue = portfolioValues.length ? Math.max(...portfolioValues) : 100;

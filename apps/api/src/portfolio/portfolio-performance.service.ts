@@ -6,7 +6,7 @@
  * Monthly Returns, Drawdown, Dividends, Risk/Return, Benchmarks.
  *
  * Financial methodology:
- *  - Returns: Time-Weighted Return (TWR) — deposits don't inflate returns
+ *  - Returns: linked flow-adjusted return — deposits don't inflate returns
  *  - Drawdown: peak-to-trough as % from rolling maximum
  *  - Volatility: annualized std dev of daily log returns × √252
  *  - Sharpe: (E[Rp] - Rf) / σ(Rp), Rf = 0 (ARS), 4.5% (USD)
@@ -362,6 +362,47 @@ export class PortfolioPerformanceService {
         return Math.max(0, cash);
     }
 
+    /**
+     * External capital must not be treated as portfolio performance. BUY/SELL
+     * operations are internal transfers between cash and assets, while only
+     * DEPOSIT/WITHDRAW change the capital supplied by the investor.
+     *
+     * The weighted flow is used for the period return so a deposit made at the
+     * beginning of a period does not dilute the return in the same way as one
+     * made at the end of it.
+     */
+    private computeExternalFlowBetweenDates(
+        transactions: any[],
+        from: Date,
+        to: Date,
+        currency = 'USD',
+        cclRate = 1590,
+    ) {
+        const intervalMs = to.getTime() - from.getTime();
+        let netFlow = 0;
+        let weightedFlow = 0;
+
+        for (const tx of transactions) {
+            const transactionDate = new Date(tx.date);
+            if (transactionDate <= from || transactionDate > to) continue;
+            if (tx.type !== 'DEPOSIT' && tx.type !== 'WITHDRAW') continue;
+
+            const txCurrency = String(tx.currency || 'USD').trim().toUpperCase();
+            const amount = this.convertCurrencyAmount(Number(tx.total || 0), txCurrency, currency, cclRate);
+            if (!Number.isFinite(amount) || amount === 0) continue;
+
+            const signedFlow = tx.type === 'DEPOSIT' ? amount : -amount;
+            netFlow += signedFlow;
+
+            if (intervalMs > 0) {
+                const remainingWeight = Math.min(1, Math.max(0, (to.getTime() - transactionDate.getTime()) / intervalMs));
+                weightedFlow += signedFlow * remainingWeight;
+            }
+        }
+
+        return { netFlow, weightedFlow };
+    }
+
     private holdingsFromPortfolio(portfolioHoldings: any[]) {
         const holdings = new Map<string, { qty: number; wac: number; lastPrice: number }>();
         for (const holding of portfolioHoldings ?? []) {
@@ -527,7 +568,8 @@ export class PortfolioPerformanceService {
 
         const stepMs = (now.getTime() - start.getTime()) / Math.max(1, stepCount - 1);
         const series: PerformancePoint[] = [];
-        let firstValue: number | null = null;
+        let previousPointDate: Date | null = null;
+        let cumulativeReturnFactor = 1;
 
         for (let i = 0; i < stepCount; i++) {
             const pointDate = new Date(start.getTime() + i * stepMs);
@@ -552,14 +594,30 @@ export class PortfolioPerformanceService {
             const value = assetsValue + cashValue;
             const invested = this.computeInvestedCapital(pastTx, pointDate, currency, cclRate);
 
-            if (firstValue === null && value > 0) firstValue = value;
-
-            const returnPct = firstValue && firstValue > 0 ? ((value - firstValue) / firstValue) * 100 : 0;
             const pnl = value - invested;
 
-            // Daily return (compared to previous point)
+            // Link period returns after removing only external capital flows.
+            // Purchases and sales are already neutral because cash and holdings
+            // are valued together in `value`.
             const prevPoint = series[series.length - 1];
-            const dailyReturn = prevPoint && prevPoint.value > 0 ? ((value - prevPoint.value) / prevPoint.value) * 100 : undefined;
+            let returnPct = 0;
+            let dailyReturn: number | undefined;
+            if (prevPoint && previousPointDate) {
+                const { netFlow, weightedFlow } = this.computeExternalFlowBetweenDates(
+                    txs,
+                    previousPointDate,
+                    pointDate,
+                    currency,
+                    cclRate,
+                );
+                const periodBase = prevPoint.value + weightedFlow;
+                const periodGain = value - prevPoint.value - netFlow;
+                const periodReturn = Math.abs(periodBase) > 1e-6 ? (periodGain / periodBase) * 100 : 0;
+
+                cumulativeReturnFactor *= Math.max(0, 1 + (Number.isFinite(periodReturn) ? periodReturn : 0) / 100);
+                returnPct = (cumulativeReturnFactor - 1) * 100;
+                dailyReturn = Number.isFinite(periodReturn) ? periodReturn : undefined;
+            }
 
             series.push({
                 date: dateStr,
@@ -569,6 +627,7 @@ export class PortfolioPerformanceService {
                 invested: Number(invested.toFixed(2)),
                 dailyReturn: dailyReturn !== undefined ? Number(dailyReturn.toFixed(4)) : undefined,
             });
+            previousPointDate = pointDate;
         }
 
         // Build markers for significant operations
@@ -1094,13 +1153,12 @@ export class PortfolioPerformanceService {
         const perfData = await this.getPerformance(portfolioId, userId, range, currency);
         const returns: Record<string, number> = {};
         const portSeries = perfData.series;
-        const portFirstVal = portSeries[0]?.value ?? 0;
-        const portLastVal = portSeries[portSeries.length - 1]?.value ?? 0;
-        returns['portfolio'] = portFirstVal > 0 ? ((portLastVal - portFirstVal) / portFirstVal) * 100 : 0;
+        const lastPortfolioPoint = portSeries[portSeries.length - 1];
+        returns['portfolio'] = Number(lastPortfolioPoint?.returnPct ?? 0);
 
         const portfolioBase100 = portSeries.map((pt) => ({
             date: pt.date,
-            normalized: portFirstVal > 0 ? Number(((pt.value / portFirstVal) * 100).toFixed(2)) : 100,
+            normalized: Number(Math.max(0, 100 + Number(pt.returnPct || 0)).toFixed(2)),
         }));
 
         const sp500Requested = benchmarks.some((benchmark) => benchmark.toLowerCase() === 'sp500');

@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma.service';
 import { NewsTranslationService } from './news-translation.service';
 import * as cheerio from 'cheerio';
 import { DEFAULT_NEWS_CATEGORIES } from './news-catalog';
+import { resolveNewsImage } from './news-image.util';
 
 const SLOT_COUNT = 5;
 
@@ -139,7 +140,7 @@ export class NewsSlotsService {
                     slotKey: s.slotKey,
                     title: article.title,
                     description: article.description,
-                    imageUrl: article.imageUrl,
+                    imageUrl: resolveNewsImage(article.title, s.category.slug, article.imageUrl),
                     url: article.url,
                     sourceName: article.sourceName || 'Finix',
                     publishedAt: article.publishedAt,
@@ -201,7 +202,10 @@ export class NewsSlotsService {
                 isActive: slot.isActive,
                 article:
                     slot.isActive && slot.article?.isPublished && slot.article?.isActive
-                        ? await this.toSpanishArticle(slot.article)
+                        ? {
+                            ...(await this.toSpanishArticle(slot.article)),
+                            imageUrl: resolveNewsImage(slot.article.title, category.slug, slot.article.imageUrl),
+                        }
                         : null,
             }))),
         };
@@ -402,6 +406,17 @@ export class NewsSlotsService {
 
         const previousArticleId = slot.articleId;
         const isPublished = data.status === 'PUBLISHED';
+        const articleTitle = data.title || slot.article?.title || 'Noticia';
+        const targetCategoryId = data.categoryId ?? slot.categoryId;
+        const targetCategory = await this.prisma.newsCategory.findUnique({
+            where: { id: targetCategoryId },
+            select: { slug: true },
+        });
+        const customImage = data.customImage ?? slot.article?.customImage ?? false;
+        const sourceImage = data.imageUrl ?? slot.article?.imageUrl;
+        const imageUrl = customImage
+            ? sourceImage || resolveNewsImage(articleTitle, targetCategory?.slug, sourceImage)
+            : resolveNewsImage(articleTitle, targetCategory?.slug, sourceImage);
 
         const article = await this.prisma.newsArticle.upsert({
             where: { url: data.url },
@@ -411,17 +426,17 @@ export class NewsSlotsService {
                 description: data.description ?? undefined,
                 descriptionEs: data.description !== undefined ? null : undefined,
                 translationAttemptedAt: (data.title !== undefined || data.description !== undefined) ? null : undefined,
-                imageUrl: data.imageUrl ?? undefined,
+                imageUrl,
                 sourceName: data.sourceName ?? undefined,
                 publishedAt: data.publishedAt ? new Date(data.publishedAt) : undefined,
                 author: data.author ?? undefined,
                 customTitle: data.customTitle ?? false,
                 customDescription: data.customDescription ?? false,
-                customImage: data.customImage ?? false,
+                customImage,
                 status: data.status ?? 'DRAFT',
                 isPublished,
                 isActive: data.isActive ?? true,
-                categoryId: data.categoryId ?? slot.categoryId,
+                categoryId: targetCategoryId,
             },
             create: {
                 url: data.url,
@@ -429,17 +444,17 @@ export class NewsSlotsService {
                 titleEs: null,
                 description: data.description,
                 descriptionEs: null,
-                imageUrl: data.imageUrl,
+                imageUrl,
                 sourceName: data.sourceName,
                 publishedAt: data.publishedAt ? new Date(data.publishedAt) : undefined,
                 author: data.author,
                 customTitle: data.customTitle ?? false,
                 customDescription: data.customDescription ?? false,
-                customImage: data.customImage ?? false,
+                customImage,
                 status: data.status ?? 'DRAFT',
                 isPublished,
                 isActive: data.isActive ?? true,
-                categoryId: data.categoryId ?? slot.categoryId,
+                categoryId: targetCategoryId,
             },
         });
 

@@ -98,6 +98,32 @@ export class NewsFetcherService {
         return allNews;
     }
 
+    private extractRssImage(item: any): string | undefined {
+        const read = (value: any): string | undefined => {
+            if (Array.isArray(value)) {
+                for (const entry of value) {
+                    const image = read(entry);
+                    if (image) return image;
+                }
+                return undefined;
+            }
+            if (typeof value === 'string') return value.trim() || undefined;
+            if (!value || typeof value !== 'object') return undefined;
+            return [value.url, value.href, value.$?.url, value.$?.href, value._].find(
+                (candidate) => typeof candidate === 'string' && candidate.trim(),
+            )?.trim();
+        };
+
+        return [
+            item.mediaContent,
+            item.mediaThumbnail,
+            item['media:thumbnail'],
+            item.enclosure,
+            item.image,
+            item['itunes:image'],
+        ].map(read).find(Boolean);
+    }
+
     /**
      * Fetches one source configured in the database. Keeping this method
      * separate from the legacy aggregate fetch allows the scheduler to
@@ -163,9 +189,7 @@ export class NewsFetcherService {
                 cleanContent = text;
             }
 
-            if (!imageUrl && item.mediaContent && item.mediaContent['$']?.url) {
-                imageUrl = item.mediaContent['$'].url;
-            }
+            if (!imageUrl) imageUrl = this.extractRssImage(item) || '';
 
             const publishedAt = item.isoDate || item.pubDate
                 ? new Date(item.isoDate || item.pubDate as string)
@@ -303,10 +327,8 @@ export class NewsFetcherService {
                         }
                     }
 
-                    // Fallback to custom media:content for images
-                    if (!imageUrl && item.mediaContent && item.mediaContent['$'] && item.mediaContent['$']['url']) {
-                        imageUrl = item.mediaContent['$']['url'];
-                    }
+                    // Feeds expose images through several RSS/Atom conventions.
+                    if (!imageUrl) imageUrl = this.extractRssImage(item) || '';
 
                     items.push({
                         title: item.title,

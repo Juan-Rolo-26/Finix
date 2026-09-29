@@ -1,4 +1,5 @@
 import { Clock, ExternalLink } from 'lucide-react';
+import { resolveNewsImage } from '@/lib/newsImage';
 
 export interface NewsArticle {
     id: string;
@@ -45,8 +46,6 @@ function formatRelativeTime(value?: string): string {
     return date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-const FINIX_PLACEHOLDER = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%25" stop-color="%230f172a"/><stop offset="100%25" stop-color="%231e293b"/></linearGradient><linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop offset="0%25" stop-color="%2310b981" stop-opacity="0.15"/><stop offset="100%25" stop-color="%230ea5e9" stop-opacity="0.08"/></linearGradient></defs><rect width="800" height="450" fill="url(%23bg)"/><rect width="800" height="450" fill="url(%23shine)"/><circle cx="400" cy="200" r="120" fill="%2310b981" fill-opacity="0.06"/><circle cx="400" cy="200" r="70" fill="%2310b981" fill-opacity="0.08"/><rect x="340" y="168" width="120" height="8" rx="4" fill="%2334d399" fill-opacity="0.4"/><rect x="320" y="186" width="160" height="6" rx="3" fill="%2334d399" fill-opacity="0.25"/><rect x="350" y="202" width="100" height="6" rx="3" fill="%2334d399" fill-opacity="0.2"/><text x="400" y="260" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="%2364748b" letter-spacing="3">FINIX</text></svg>';
-
 export function NewsCard({ slot, variant = 'standard', categoryColor, categoryName, onClickTracking }: NewsCardProps) {
     const article = slot.article;
 
@@ -59,7 +58,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
         return null;
     }
 
-    const imgSrc = article.imageUrl || FINIX_PLACEHOLDER;
+    const imgSrc = resolveNewsImage(article.title, categoryName, article.imageUrl);
     const time = formatRelativeTime(article.publishedAt);
 
     if (variant === 'hero') {
@@ -78,7 +77,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         alt={article.title}
                         loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = FINIX_PLACEHOLDER; }}
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = resolveNewsImage(article.title, categoryName); }}
                     />
                     {/* Multi-stop deep dark overlay to guarantee 100% contrast for white text */}
                     <div
@@ -162,7 +161,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         alt={article.title}
                         loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = FINIX_PLACEHOLDER; }}
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = resolveNewsImage(article.title, categoryName); }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     {categoryName && (
@@ -225,7 +224,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         alt={article.title}
                         loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = FINIX_PLACEHOLDER; }}
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = resolveNewsImage(article.title, categoryName); }}
                     />
                     <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[hsl(var(--card))]" />
                     <div className="md:hidden absolute inset-0 bg-gradient-to-t from-[hsl(var(--card))] via-transparent to-transparent" />
@@ -288,7 +287,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                     alt={article.title}
                     loading="lazy"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = FINIX_PLACEHOLDER; }}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = resolveNewsImage(article.title, categoryName); }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                 {categoryName && (

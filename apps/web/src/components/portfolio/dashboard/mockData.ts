@@ -27,6 +27,7 @@ export const TIME_RANGE_SHORT_LABELS: Record<TimeRange, string> = {
 export interface PortfolioValuePoint {
     date: string;
     portfolio: number;
+    returnPct?: number;
     sp500?: number;
 }
 
@@ -37,6 +38,7 @@ export interface AllocationDatum {
 
 export interface AssetPerformanceDatum {
     asset: string;
+    symbol?: string;
     name?: string;
     return: number;
     contribution: number;
