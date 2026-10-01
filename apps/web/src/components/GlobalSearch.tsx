@@ -10,10 +10,12 @@ import {
     History,
     Sparkles,
     ChevronRight,
-    Loader2
+    Loader2,
+    Bookmark
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
+import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
 
 // Búsquedas sugeridas "inteligentes"
 const SUGGESTED_QUERIES = [
@@ -31,6 +33,7 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     const [isLoading, setIsLoading] = useState(false);
     const [results, setResults] = useState<any[]>([]);
     const [history, setHistory] = useState<string[]>(['AAPL', 'Warren Buffett']);
+    const [watchlistAsset, setWatchlistAsset] = useState<{ symbol: string; name?: string } | null>(null);
 
     // Focus input on open
     useEffect(() => {
@@ -248,6 +251,17 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                                                         {r.exchange}:{r.symbol}
                                                     </span>
                                                 </div>
+                                                <button
+                                                    type="button"
+                                                    title="Agregar a Seguimiento"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setWatchlistAsset({ symbol: r.symbol, name: r.name });
+                                                    }}
+                                                    className="p-2 rounded-lg hover:bg-violet-500/20 text-muted-foreground hover:text-violet-400 transition-colors"
+                                                >
+                                                    <Bookmark className="w-4 h-4" />
+                                                </button>
                                             </button>
                                         );
                                     }
@@ -295,6 +309,15 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                     </div>
                 </motion.div>
             </motion.div>
+
+            {watchlistAsset && (
+                <AddToWatchlistModal
+                    isOpen={Boolean(watchlistAsset)}
+                    onClose={() => setWatchlistAsset(null)}
+                    symbol={watchlistAsset.symbol}
+                    name={watchlistAsset.name}
+                />
+            )}
         </AnimatePresence>
     );
 }

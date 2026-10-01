@@ -379,32 +379,34 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                     </div>
                 )}
 
-                {/* MODE SELECTOR (ULTRA-AESTHETIC LENSES) */}
-                <div className="mt-6 pt-6 border-t border-border/60 space-y-3">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                            Seleccionar Tipo de Visualización:
+                {/* MODE SELECTOR */}
+                <div className="mt-6 space-y-3 border-t border-border/60 pt-5">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                            Vista del mercado
                         </span>
-                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hidden sm:inline-block">
-                            Cambia de perspectiva técnica con un clic
+                        <span className="hidden text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 sm:inline-block">
+                            Cambiá de enfoque con un clic
                         </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
-                        {/* 1. Mapa de Calor Mercado General */}
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-5">
+                        {/* 1. Mercado */}
                         <button
                             type="button"
+                            aria-label="Ver mercado general del S&P 500 por sectores y capitalización"
+                            aria-pressed={activeMode === 'general'}
                             onClick={() => setActiveMode('general')}
                             className={cn(
-                                'group relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left cursor-pointer bg-white dark:bg-card hover:-translate-y-0.5',
+                                'group relative flex min-h-16 items-center gap-2.5 overflow-hidden rounded-xl border bg-white/90 px-3 py-2.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 dark:bg-card/90',
                                 activeMode === 'general'
-                                    ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-sm'
-                                    : 'border-border/70 hover:border-emerald-500/40 text-muted-foreground'
+                                    ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-[0_8px_24px_-12px_rgba(16,185,129,0.75)] dark:bg-emerald-500/[0.08]'
+                                    : 'border-border/70 text-muted-foreground hover:border-emerald-500/40'
                             )}
                         >
                             <div
                                 className={cn(
-                                    'w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-xs shrink-0 transition-colors',
+                                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border font-bold text-xs shadow-sm transition-colors',
                                     activeMode === 'general'
                                         ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
                                         : 'border-border/70 bg-secondary/50 text-muted-foreground group-hover:text-foreground'
@@ -413,34 +415,36 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                 <Layers className="w-5 h-5" />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between">
-                                    <span className={cn('font-bold text-sm leading-snug', activeMode === 'general' ? 'text-foreground font-black' : 'text-foreground/80')}>
-                                        Mercado General
+                                <div className="flex items-center gap-2">
+                                    <span className={cn('text-[13px] font-semibold leading-tight', activeMode === 'general' ? 'font-bold text-foreground' : 'text-foreground/80')}>
+                                        Mercado
                                     </span>
                                     {activeMode === 'general' && (
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                     )}
                                 </div>
-                                <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                                    S&amp;P 500 por Sectores y Cap
+                                <div className="mt-1 truncate text-[10px] font-medium tracking-[0.01em] text-muted-foreground">
+                                    S&amp;P 500 · sectores
                                 </div>
                             </div>
                         </button>
 
-                        {/* 2. MACD Semanal */}
+                        {/* 2. MACD */}
                         <button
                             type="button"
+                            aria-label="Ver MACD semanal, histograma y aceleración"
+                            aria-pressed={activeMode === 'macd'}
                             onClick={() => setActiveMode('macd')}
                             className={cn(
-                                'group relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left cursor-pointer bg-white dark:bg-card hover:-translate-y-0.5',
+                                'group relative flex min-h-16 items-center gap-2.5 overflow-hidden rounded-xl border bg-white/90 px-3 py-2.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 dark:bg-card/90',
                                 activeMode === 'macd'
-                                    ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-sm'
-                                    : 'border-border/70 hover:border-emerald-500/40 text-muted-foreground'
+                                    ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-[0_8px_24px_-12px_rgba(16,185,129,0.75)] dark:bg-emerald-500/[0.08]'
+                                    : 'border-border/70 text-muted-foreground hover:border-emerald-500/40'
                             )}
                         >
                             <div
                                 className={cn(
-                                    'w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-xs shrink-0 transition-colors',
+                                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border font-bold text-xs shadow-sm transition-colors',
                                     activeMode === 'macd'
                                         ? 'border-violet-500/40 bg-violet-500/20 text-violet-700 dark:text-violet-300'
                                         : 'border-border/70 bg-secondary/50 text-muted-foreground group-hover:text-foreground'
@@ -449,34 +453,36 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                 <TrendingUp className="w-5 h-5" />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between">
-                                    <span className={cn('font-bold text-sm leading-snug', activeMode === 'macd' ? 'text-foreground font-black' : 'text-foreground/80')}>
-                                        MACD (Momento)
+                                <div className="flex items-center gap-2">
+                                    <span className={cn('text-[13px] font-semibold leading-tight', activeMode === 'macd' ? 'font-bold text-foreground' : 'text-foreground/80')}>
+                                        MACD
                                     </span>
                                     {activeMode === 'macd' && (
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                     )}
                                 </div>
-                                <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                                    Histograma y aceleración
+                                <div className="mt-1 truncate text-[10px] font-medium tracking-[0.01em] text-muted-foreground">
+                                    Momento
                                 </div>
                             </div>
                         </button>
 
-                        {/* 3. RSI Semanal */}
+                        {/* 3. RSI */}
                         <button
                             type="button"
+                            aria-label="Ver RSI semanal, sobreventa y sobrecompra"
+                            aria-pressed={activeMode === 'rsi'}
                             onClick={() => setActiveMode('rsi')}
                             className={cn(
-                                'group relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left cursor-pointer bg-white dark:bg-card hover:-translate-y-0.5',
+                                'group relative flex min-h-16 items-center gap-2.5 overflow-hidden rounded-xl border bg-white/90 px-3 py-2.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 dark:bg-card/90',
                                 activeMode === 'rsi'
-                                    ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-sm'
-                                    : 'border-border/70 hover:border-emerald-500/40 text-muted-foreground'
+                                    ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-[0_8px_24px_-12px_rgba(16,185,129,0.75)] dark:bg-emerald-500/[0.08]'
+                                    : 'border-border/70 text-muted-foreground hover:border-emerald-500/40'
                             )}
                         >
                             <div
                                 className={cn(
-                                    'w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-xs shrink-0 transition-colors',
+                                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border font-bold text-xs shadow-sm transition-colors',
                                     activeMode === 'rsi'
                                         ? 'border-amber-500/40 bg-amber-500/20 text-amber-700 dark:text-amber-300'
                                         : 'border-border/70 bg-secondary/50 text-muted-foreground group-hover:text-foreground'
@@ -485,34 +491,36 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                 <BarChart3 className="w-5 h-5" />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between">
-                                    <span className={cn('font-bold text-sm leading-snug', activeMode === 'rsi' ? 'text-foreground font-black' : 'text-foreground/80')}>
-                                        RSI (Oscilador)
+                                <div className="flex items-center gap-2">
+                                    <span className={cn('text-[13px] font-semibold leading-tight', activeMode === 'rsi' ? 'font-bold text-foreground' : 'text-foreground/80')}>
+                                        RSI
                                     </span>
                                     {activeMode === 'rsi' && (
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                     )}
                                 </div>
-                                <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                                    Sobreventa &lt;45 / Sobrecompra &gt;55
+                                <div className="mt-1 truncate text-[10px] font-medium tracking-[0.01em] text-muted-foreground">
+                                    Fuerza relativa
                                 </div>
                             </div>
                         </button>
 
-                        {/* 4. ADX Semanal */}
+                        {/* 4. ADX */}
                         <button
                             type="button"
+                            aria-label="Ver ADX semanal y fuerza de tendencia"
+                            aria-pressed={activeMode === 'adx'}
                             onClick={() => setActiveMode('adx')}
                             className={cn(
-                                'group relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left cursor-pointer bg-white dark:bg-card hover:-translate-y-0.5',
+                                'group relative flex min-h-16 items-center gap-2.5 overflow-hidden rounded-xl border bg-white/90 px-3 py-2.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 dark:bg-card/90',
                                 activeMode === 'adx'
-                                    ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-sm'
-                                    : 'border-border/70 hover:border-emerald-500/40 text-muted-foreground'
+                                    ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-[0_8px_24px_-12px_rgba(16,185,129,0.75)] dark:bg-emerald-500/[0.08]'
+                                    : 'border-border/70 text-muted-foreground hover:border-emerald-500/40'
                             )}
                         >
                             <div
                                 className={cn(
-                                    'w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-xs shrink-0 transition-colors',
+                                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border font-bold text-xs shadow-sm transition-colors',
                                     activeMode === 'adx'
                                         ? 'border-blue-500/40 bg-blue-500/20 text-blue-700 dark:text-blue-300'
                                         : 'border-border/70 bg-secondary/50 text-muted-foreground group-hover:text-foreground'
@@ -521,34 +529,36 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                 <Zap className="w-5 h-5" />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between">
-                                    <span className={cn('font-bold text-sm leading-snug', activeMode === 'adx' ? 'text-foreground font-black' : 'text-foreground/80')}>
-                                        ADX Semanal
+                                <div className="flex items-center gap-2">
+                                    <span className={cn('text-[13px] font-semibold leading-tight', activeMode === 'adx' ? 'font-bold text-foreground' : 'text-foreground/80')}>
+                                        ADX
                                     </span>
                                     {activeMode === 'adx' && (
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                     )}
                                 </div>
-                                <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                                    Fuerza de tendencia (≥25)
+                                <div className="mt-1 truncate text-[10px] font-medium tracking-[0.01em] text-muted-foreground">
+                                    Tendencia
                                 </div>
                             </div>
                         </button>
 
-                        {/* 5. Estocástico Semanal */}
+                        {/* 5. Estocástico */}
                         <button
                             type="button"
+                            aria-label="Ver oscilador estocástico semanal para detectar giros rápidos"
+                            aria-pressed={activeMode === 'stoch'}
                             onClick={() => setActiveMode('stoch')}
                             className={cn(
-                                'group relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left cursor-pointer bg-white dark:bg-card hover:-translate-y-0.5',
+                                'group relative flex min-h-16 items-center gap-2.5 overflow-hidden rounded-xl border bg-white/90 px-3 py-2.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 dark:bg-card/90',
                                 activeMode === 'stoch'
-                                    ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-sm'
-                                    : 'border-border/70 hover:border-emerald-500/40 text-muted-foreground'
+                                    ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-[0_8px_24px_-12px_rgba(16,185,129,0.75)] dark:bg-emerald-500/[0.08]'
+                                    : 'border-border/70 text-muted-foreground hover:border-emerald-500/40'
                             )}
                         >
                             <div
                                 className={cn(
-                                    'w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-xs shrink-0 transition-colors',
+                                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border font-bold text-xs shadow-sm transition-colors',
                                     activeMode === 'stoch'
                                         ? 'border-rose-500/40 bg-rose-500/20 text-rose-700 dark:text-rose-300'
                                         : 'border-border/70 bg-secondary/50 text-muted-foreground group-hover:text-foreground'
@@ -557,16 +567,16 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                 <Sliders className="w-5 h-5" />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between">
-                                    <span className={cn('font-bold text-sm leading-snug', activeMode === 'stoch' ? 'text-foreground font-black' : 'text-foreground/80')}>
+                                <div className="flex items-center gap-2">
+                                    <span className={cn('text-[13px] font-semibold leading-tight', activeMode === 'stoch' ? 'font-bold text-foreground' : 'text-foreground/80')}>
                                         Estocástico
                                     </span>
                                     {activeMode === 'stoch' && (
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                     )}
                                 </div>
-                                <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                                    Timing y giro rápido (20/80)
+                                <div className="mt-1 truncate text-[10px] font-medium tracking-[0.01em] text-muted-foreground">
+                                    Giros rápidos
                                 </div>
                             </div>
                         </button>

@@ -12,16 +12,8 @@ const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const SocialDashboard = lazy(() => import('./pages/Dashboard'));
-const FinanceDashboard = lazy(() => import('./pages/FinanceDashboard'));
-const FinanceAccounts = lazy(() => import('./pages/FinanceAccounts'));
-const FinanceTransactions = lazy(() => import('./pages/FinanceTransactions'));
-const FinanceAnalytics = lazy(() => import('./pages/FinanceAnalytics'));
-const FinanceInvestments = lazy(() => import('./pages/FinanceInvestments'));
-const FinancePlanning = lazy(() => import('./pages/FinancePlanning'));
+const FinanceWorkspace = lazy(() => import('./pages/FinanceWorkspace'));
 
-// Finanzas personales queda preservada, pero temporalmente fuera de servicio.
-// Para reactivarla alcanza con cambiar esta bandera a true.
-const PERSONAL_FINANCE_ENABLED = false;
 const PortfolioPage = lazy(() => import('./pages/Portfolio'));
 const InfoPage = lazy(() => import('./pages/InfoPage'));
 const OnboardingWizard = lazy(() => import('./pages/OnboardingWizard'));
@@ -49,6 +41,7 @@ const AnalysisPage = lazy(() => import('./pages/Analysis'));
 const TopGainersPage = lazy(() => import('./pages/TopGainersPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const CreatorPage = lazy(() => import('./pages/CreatorPage'));
+const WatchlistPage = lazy(() => import('./pages/WatchlistPage'));
 
 // ─── Theme Applier ────────────────────────────────────────────────────────────
 
@@ -185,18 +178,13 @@ export default function App() {
                     >
                         <Route path="/dashboard" element={<SocialDashboard />} />
                         <Route path="/social" element={<SocialDashboard />} />
-                        <Route path="/finanzas" element={PERSONAL_FINANCE_ENABLED ? <FinanceDashboard /> : <Navigate to="/dashboard" replace />} />
-                        <Route path="/finanzas/cuentas" element={PERSONAL_FINANCE_ENABLED ? <FinanceAccounts /> : <Navigate to="/dashboard" replace />} />
-                        <Route path="/finanzas/movimientos" element={PERSONAL_FINANCE_ENABLED ? <FinanceTransactions /> : <Navigate to="/dashboard" replace />} />
-                        <Route path="/finanzas/presupuestos" element={PERSONAL_FINANCE_ENABLED ? <FinancePlanning /> : <Navigate to="/dashboard" replace />} />
-                        <Route path="/finanzas/objetivos" element={PERSONAL_FINANCE_ENABLED ? <FinancePlanning /> : <Navigate to="/dashboard" replace />} />
-                        <Route path="/finanzas/inversiones" element={PERSONAL_FINANCE_ENABLED ? <FinanceInvestments /> : <Navigate to="/dashboard" replace />} />
-                        <Route path="/finanzas/tarjetas" element={PERSONAL_FINANCE_ENABLED ? <FinancePlanning /> : <Navigate to="/dashboard" replace />} />
-                        <Route path="/finanzas/calendario" element={PERSONAL_FINANCE_ENABLED ? <FinancePlanning /> : <Navigate to="/dashboard" replace />} />
-                        <Route path="/finanzas/analytics" element={PERSONAL_FINANCE_ENABLED ? <FinanceAnalytics /> : <Navigate to="/dashboard" replace />} />
-                        <Route path="/finanzas/configuracion" element={PERSONAL_FINANCE_ENABLED ? <Settings /> : <Navigate to="/dashboard" replace />} />
+                        <Route path="/finanzas/*" element={<FinanceWorkspace />} />
+                        <Route path="/finanzas-personales" element={<Navigate to="/finanzas" replace />} />
                         <Route path="/portfolio" element={<PortfolioPage />} />
                         <Route path="/market" element={<Markets />} />
+                        <Route path="/mercado/seguimiento" element={<WatchlistPage />} />
+                        <Route path="/market/seguimiento" element={<WatchlistPage />} />
+                        <Route path="/market/watchlist" element={<WatchlistPage />} />
                         <Route path="/mercado/mejores-rendimientos" element={<TopGainersPage />} />
                         <Route path="/market/top-gainers" element={<TopGainersPage />} />
                         <Route path="/calendario" element={<CalendarPage />} />

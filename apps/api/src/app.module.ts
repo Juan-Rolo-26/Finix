@@ -33,6 +33,7 @@ import { ChartAnalysisModule } from './chart-analysis/chart-analysis.module';
 import { MercadoPagoModule } from './mercadopago/mercadopago.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { FinanceModule } from './finance/finance.module';
+import { WatchlistModule } from './watchlist/watchlist.module';
 
 @Module({
     imports: [
@@ -85,6 +86,7 @@ import { FinanceModule } from './finance/finance.module';
         MercadoPagoModule,
         AlertsModule,
         FinanceModule,
+        WatchlistModule,
     ],
     controllers: [],
     providers: [

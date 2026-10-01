@@ -50,7 +50,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
                     },
                     // Timeout global de queries: 30s máximo antes de fallar
                     // Evita que las queries cuelguen indefinidamente
-                    log: process.env.NODE_ENV !== 'production' ? ['warn', 'error'] : ['error'],
+                    // Query errors can contain financial descriptions and amounts.
+                    // Do not print Prisma's argument formatter to application logs.
+                    log: [],
                 }
                 : undefined,
         );

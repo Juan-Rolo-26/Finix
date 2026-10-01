@@ -216,6 +216,12 @@ export default function Privacy() {
 
                             <Section id="datos-directos" title="4. Información proporcionada directamente por el usuario">
                                 <p>
+                                    Finanzas Personales guarda los movimientos, fuentes informativas, categorías, presupuestos, metas y preferencias que decidís cargar. Estos datos son privados y no se incorporan a perfiles públicos, publicaciones, comunidades ni segmentación publicitaria. El CSV original se procesa sin conservar el archivo; sólo se guardan los movimientos que confirmás importar, inicialmente pendientes de revisión. No ingreses números completos de tarjeta, CVV, PIN ni credenciales bancarias. No hay conexiones bancarias automáticas activas.
+                                </p>
+                                <p>
+                                    Desde Finanzas Personales podés exportar tus movimientos y categorías o eliminar los registros de esta sección, sin borrar tu Portafolio. La eliminación de la cuenta también elimina estos registros. Las copias de respaldo de la infraestructura siguen su política de retención; esta función no garantiza su purga inmediata. Los avisos financieros usan mensajes genéricos, sin importes ni comercios.
+                                </p>
+                                <p>
                                     Incluye todos los datos que el usuario introduce activamente en la Plataforma: datos de registro, información del perfil, contenido publicado (posts, comentarios, análisis, imágenes), activos cargados en el portafolio y cualquier consulta enviada al soporte.
                                 </p>
                                 <p>

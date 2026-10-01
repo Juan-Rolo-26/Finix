@@ -1,16 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Building2, ChevronDown, HelpCircle, Filter, Gem, HeartPulse, Leaf, Loader2, RefreshCw, Search, Sparkles, TrendingUp } from 'lucide-react';
+import { Building2, ChevronDown, HelpCircle, Filter, Gem, HeartPulse, Leaf, Loader2, RefreshCw, Search, Sparkles, TrendingUp, Bookmark } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SymbolLogo } from '@/components/SymbolLogo';
+import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
 
 type Category = 'ALL' | 'UNDERVALUED' | 'HEALTH' | 'GROWTH' | 'DIVIDEND';
 type Opportunity = any;
+type MetricTone = 'default' | 'positive' | 'negative' | 'accent';
+type OpportunityMetric = {
+    label: string;
+    value: (item: Opportunity) => string;
+    tone?: (item: Opportunity) => MetricTone;
+};
 
 const format = (value: number | null | undefined, signed = false) => value === null || value === undefined ? '—' : `${signed && value > 0 ? '+' : ''}${value.toFixed(1)}%`;
 const money = (value: number | null | undefined) => value === null || value === undefined ? '—' : `$${value.toFixed(2)}`;
+const decimal = (value: number | null | undefined, digits = 1) => value === null || value === undefined ? '—' : value.toFixed(digits);
+const signedTone = (value: number | null | undefined): MetricTone => value === null || value === undefined ? 'default' : value >= 0 ? 'positive' : 'negative';
+const scoreValue = (value: number | null | undefined) => decimal(value, 0);
 
 const categoryMeta: Record<Category, { label: string; icon: typeof Gem; description: string }> = {
     ALL: { label: 'Todas', icon: Sparkles, description: 'El universo completo ordenado por score Finix' },
@@ -18,6 +28,47 @@ const categoryMeta: Record<Category, { label: string; icon: typeof Gem; descript
     HEALTH: { label: 'Salud financiera', icon: HeartPulse, description: 'Balance, liquidez y calidad operativa' },
     GROWTH: { label: 'Crecimiento', icon: TrendingUp, description: 'Crecimiento fundamental con cobertura disponible' },
     DIVIDEND: { label: 'Dividendos', icon: Leaf, description: 'Empresas con rendimiento de dividendo' },
+};
+
+const categoryMetrics: Record<Category, OpportunityMetric[]> = {
+    ALL: [
+        { label: 'Score Finix', value: (item) => scoreValue(item.opportunityScore), tone: () => 'accent' },
+        { label: 'Potencial', value: (item) => format(item.upside, true), tone: (item) => signedTone(item.upside) },
+        { label: 'ROIC', value: (item) => format(item.roic), tone: (item) => signedTone(item.roic) },
+        { label: 'FCF yield', value: (item) => format(item.fcfYield), tone: (item) => signedTone(item.fcfYield) },
+        { label: 'Dividendo', value: (item) => format(item.dividendYield), tone: (item) => signedTone(item.dividendYield) },
+    ],
+    UNDERVALUED: [
+        { label: 'Potencial', value: (item) => format(item.upside, true), tone: (item) => signedTone(item.upside) },
+        { label: 'Valor justo', value: (item) => money(item.fairValue) },
+        { label: 'P/E', value: (item) => decimal(item.pe) },
+        { label: 'FCF yield', value: (item) => format(item.fcfYield), tone: (item) => signedTone(item.fcfYield) },
+        { label: 'Score Finix', value: (item) => scoreValue(item.opportunityScore), tone: () => 'accent' },
+    ],
+    HEALTH: [
+        { label: 'Balance', value: (item) => scoreValue(item.scoreBreakdown?.balance), tone: () => 'accent' },
+        { label: 'ROIC', value: (item) => format(item.roic), tone: (item) => signedTone(item.roic) },
+        { label: 'ROE', value: (item) => format(item.roe), tone: (item) => signedTone(item.roe) },
+        { label: 'Margen neto', value: (item) => format(item.netMargin), tone: (item) => signedTone(item.netMargin) },
+        { label: 'Deuda/EBITDA', value: (item) => decimal(item.netDebtToEbitda) },
+        { label: 'Piotroski', value: (item) => scoreValue(item.piotroskiScore) },
+    ],
+    GROWTH: [
+        { label: 'Ingresos', value: (item) => format(item.revenueGrowth, true), tone: (item) => signedTone(item.revenueGrowth) },
+        { label: 'EPS', value: (item) => format(item.epsGrowth, true), tone: (item) => signedTone(item.epsGrowth) },
+        { label: 'EBITDA', value: (item) => format(item.ebitdaGrowth, true), tone: (item) => signedTone(item.ebitdaGrowth) },
+        { label: 'FCF', value: (item) => format(item.fcfGrowth, true), tone: (item) => signedTone(item.fcfGrowth) },
+        { label: 'Flujo de caja', value: (item) => format(item.operatingCashFlowGrowth, true), tone: (item) => signedTone(item.operatingCashFlowGrowth) },
+        { label: 'Score Finix', value: (item) => scoreValue(item.opportunityScore), tone: () => 'accent' },
+    ],
+    DIVIDEND: [
+        { label: 'Yield', value: (item) => format(item.dividendYield), tone: (item) => signedTone(item.dividendYield) },
+        { label: 'Payout', value: (item) => format(item.payoutRatio), tone: (item) => signedTone(item.payoutRatio) },
+        { label: 'FCF yield', value: (item) => format(item.fcfYield), tone: (item) => signedTone(item.fcfYield) },
+        { label: 'ROE', value: (item) => format(item.roe), tone: (item) => signedTone(item.roe) },
+        { label: 'Potencial', value: (item) => format(item.upside, true), tone: (item) => signedTone(item.upside) },
+        { label: 'Score Finix', value: (item) => scoreValue(item.opportunityScore), tone: () => 'accent' },
+    ],
 };
 
 export default function OpportunityScreener({ onOpenAnalysis }: { onOpenAnalysis: (ticker: string) => void }) {
@@ -29,10 +80,12 @@ export default function OpportunityScreener({ onOpenAnalysis }: { onOpenAnalysis
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [watchlistSymbol, setWatchlistSymbol] = useState<string | null>(null);
+    const [watchlistName, setWatchlistName] = useState<string | undefined>(undefined);
 
     const load = async (refresh = false) => {
         refresh ? setRefreshing(true) : setLoading(true);
-        const params = new URLSearchParams({ category, sector, query: search, sort: category === 'UNDERVALUED' ? 'upside' : category === 'DIVIDEND' ? 'dividend' : category === 'HEALTH' ? 'health' : 'score', limit: '150' });
+        const params = new URLSearchParams({ category, sector, query: search, sort: category === 'UNDERVALUED' ? 'upside' : category === 'DIVIDEND' ? 'dividend' : category === 'HEALTH' ? 'health' : category === 'GROWTH' ? 'growth' : 'score', limit: '150' });
         if (refresh) params.set('refresh', 'true');
         Object.entries(filters).forEach(([key, value]) => { if (value !== '') params.set(key, value); });
         if (!refresh) params.set('_t', String(Date.now()));
@@ -64,7 +117,7 @@ export default function OpportunityScreener({ onOpenAnalysis }: { onOpenAnalysis
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Stat icon={Building2} label="Universo S&P 500" value={data?.summary?.totalCount ?? '—'} tone="neutral" /><Stat icon={Sparkles} label="Con puntuación de oportunidad" value={data?.summary?.scoredCount ?? '—'} tone="violet" /><Stat icon={Gem} label="Potencial alcista estimado ≥20%" value={data?.summary?.undervaluedCount ?? '—'} tone="emerald" /><Stat icon={Leaf} label="Con dividendo" value={data?.summary?.dividendCount ?? '—'} tone="amber" /></div>
         </Card>
 
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{(Object.keys(categoryMeta) as Category[]).map((key) => { const meta = categoryMeta[key]; const Icon = meta.icon; return <button key={key} onClick={() => setCategory(key)} className={cn('rounded-2xl border p-3 text-left transition-all', category === key ? 'border-violet-500 bg-violet-500/13 shadow-sm' : 'border-border/60 bg-card/60 hover:border-violet-500/40')}><div className="flex items-center gap-2"><Icon className={cn('h-4 w-4', category === key ? 'text-violet-500' : 'text-muted-foreground')} /><span className="text-sm font-black text-foreground">{meta.label}</span></div><p className="mt-1 text-[10px] leading-snug text-muted-foreground">{meta.description}</p></button>; })}</div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{(Object.keys(categoryMeta) as Category[]).map((key) => { const meta = categoryMeta[key]; const Icon = meta.icon; return <button key={key} type="button" aria-pressed={category === key} onClick={() => setCategory(key)} className={cn('rounded-2xl border p-3 text-left transition-all', category === key ? 'border-violet-500 bg-violet-500/13 shadow-sm' : 'border-border/60 bg-card/60 hover:border-violet-500/40')}><div className="flex items-center gap-2"><Icon className={cn('h-4 w-4', category === key ? 'text-violet-500' : 'text-muted-foreground')} /><span className="text-sm font-black text-foreground">{meta.label}</span></div><p className="mt-1 text-[10px] leading-snug text-muted-foreground">{meta.description}</p></button>; })}</div>
 
         <Card className="rounded-[24px] border-border/60 bg-card/70 p-3 shadow-sm"><div className="flex flex-col gap-3 xl:flex-row xl:items-center"><div className="relative min-w-0 flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar ticker o empresa…" className="h-10 w-full rounded-xl border border-border/60 bg-background/70 pl-9 pr-3 text-sm outline-none focus:border-violet-500" /></div><select value={sector} onChange={(event) => setSector(event.target.value)} className="h-10 rounded-xl border border-border/60 bg-background px-3 text-xs font-bold outline-none focus:border-violet-500"><option value="ALL">Todos los sectores</option>{(data?.filters?.sectors || []).map((item: string) => <option key={item}>{item}</option>)}</select><Button variant="outline" onClick={() => setAdvanced((value) => !value)} className="h-10 gap-2 rounded-xl"><Filter className="h-4 w-4" />Filtros avanzados<ChevronDown className={cn('h-3.5 w-3.5 transition-transform', advanced && 'rotate-180')} /></Button></div>
             {advanced && <div className="mt-3 grid gap-2 border-t border-border/60 pt-3 sm:grid-cols-2 lg:grid-cols-5"><Field label="Capitalización mín. ($B)" value={filters.minMarketCap} onChange={(value: string) => setFilters({ ...filters, minMarketCap: value ? String(Number(value) * 1e9) : '' })} displayBillions /><Field label="P/E máximo" value={filters.maxPe} onChange={(value: string) => setFilters({ ...filters, maxPe: value })} /><Field label="ROIC mínimo %" value={filters.minRoic} onChange={(value: string) => setFilters({ ...filters, minRoic: value })} /><Field label="Potencial alcista mínimo %" value={filters.minUpside} onChange={(value: string) => setFilters({ ...filters, minUpside: value })} /><Field label="Rendimiento de dividendo mín. %" value={filters.minDividendYield} onChange={(value: string) => setFilters({ ...filters, minDividendYield: value })} /><Field label="Crecimiento de ingresos mín. %" value={filters.minRevenueGrowth} onChange={(value: string) => setFilters({ ...filters, minRevenueGrowth: value })} /><Field label="Crecimiento de FCF mín. %" value={filters.minFcfGrowth} onChange={(value: string) => setFilters({ ...filters, minFcfGrowth: value })} /><Field label="Deuda neta / EBITDA máx." value={filters.maxNetDebtToEbitda} onChange={(value: string) => setFilters({ ...filters, maxNetDebtToEbitda: value })} /><Field label="Piotroski mínimo" value={filters.minPiotroski} onChange={(value: string) => setFilters({ ...filters, minPiotroski: value })} /><Field label="Altman Z mínimo" value={filters.minAltman} onChange={(value: string) => setFilters({ ...filters, minAltman: value })} /></div>}
@@ -80,25 +133,39 @@ export default function OpportunityScreener({ onOpenAnalysis }: { onOpenAnalysis
                             <tr>
                                 <th className="px-4 py-3">Empresa</th>
                                 <th className="px-3 py-3">Precio</th>
-                                <th className="px-3 py-3">Valor razonable</th>
-                                <th className="px-3 py-3">Potencial alcista</th>
-                                <th className="px-3 py-3">P/E</th>
-                                <th className="px-3 py-3">ROIC</th>
-                                <th className="px-3 py-3">{category === 'DIVIDEND' ? 'Dividendo (Yield)' : 'Rend. FCF'}</th>
-                                <th className="px-3 py-3">Puntuación</th>
+                                {categoryMetrics[category].map((metric) => <th key={metric.label} className="px-3 py-3">{metric.label}</th>)}
                                 <th className="px-3 py-3">Cobertura</th>
+                                <th className="px-3 py-3 text-right"></th>
                             </tr>
                         </thead>
                         <tbody>
                             {items.map((item) => (
-                                <OpportunityRow key={item.ticker} item={item} category={category} onOpen={onOpenAnalysis} />
+                                <OpportunityRow
+                                    key={item.ticker}
+                                    item={item}
+                                    category={category}
+                                    onOpen={onOpenAnalysis}
+                                    onAddToWatchlist={(ticker, name) => {
+                                        setWatchlistSymbol(ticker);
+                                        setWatchlistName(name);
+                                    }}
+                                />
                             ))}
                         </tbody>
                     </table>
                 </div>
                 <div className="grid gap-3 p-3 lg:hidden">
                     {items.map((item) => (
-                        <OpportunityCard key={item.ticker} item={item} category={category} onOpen={onOpenAnalysis} />
+                        <OpportunityCard
+                            key={item.ticker}
+                            item={item}
+                            category={category}
+                            onOpen={onOpenAnalysis}
+                            onAddToWatchlist={(ticker, name) => {
+                                setWatchlistSymbol(ticker);
+                                setWatchlistName(name);
+                            }}
+                        />
                     ))}
                 </div>
                 {!items.length && (
@@ -119,6 +186,15 @@ export default function OpportunityScreener({ onOpenAnalysis }: { onOpenAnalysis
                 </div>
             </div>
         </Card>
+
+        {watchlistSymbol && (
+            <AddToWatchlistModal
+                isOpen={Boolean(watchlistSymbol)}
+                onClose={() => setWatchlistSymbol(null)}
+                symbol={watchlistSymbol}
+                name={watchlistName}
+            />
+        )}
     </div>;
 }
 
@@ -143,7 +219,18 @@ function Field({ label, value, onChange, displayBillions }: any) {
     );
 }
 
-function OpportunityRow({ item, category, onOpen }: { item: Opportunity; category: Category; onOpen: (ticker: string) => void }) {
+function OpportunityRow({
+    item,
+    category,
+    onOpen,
+    onAddToWatchlist
+}: {
+    item: Opportunity;
+    category: Category;
+    onOpen: (ticker: string) => void;
+    onAddToWatchlist: (ticker: string, name?: string) => void;
+}) {
+    const metrics = categoryMetrics[category];
     return (
         <tr onClick={() => onOpen(item.ticker)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-violet-500/5">
             <td className="px-4 py-3">
@@ -159,56 +246,82 @@ function OpportunityRow({ item, category, onOpen }: { item: Opportunity; categor
                 {money(item.price)}
                 <p className={cn('text-[10px]', (item.change || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{format(item.change, true)}</p>
             </td>
-            <td className="px-3 py-3 font-bold text-foreground">
-                {money(item.fairValue)}
-                <p className="text-[10px] text-muted-foreground">{item.fairValueModel ? 'DCF FCF' : 'Sin cobertura'}</p>
+            {metrics.map((metric) => (
+                <td key={metric.label} className="px-3 py-3 font-bold text-foreground">
+                    <span className={cn(metricToneClass(metric.tone?.(item) || 'default'))}>{metric.value(item)}</span>
+                </td>
+            ))}
+            <td className="px-3 py-3 text-muted-foreground">{item.scoreCoverage ?? 0}%</td>
+            <td className="px-3 py-3 text-right">
+                <button
+                    type="button"
+                    title="Agregar a Seguimiento"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onAddToWatchlist(item.ticker, item.name);
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 text-muted-foreground hover:border-violet-500 hover:text-violet-500 hover:bg-violet-500/10 transition-all"
+                >
+                    <Bookmark className="h-4 w-4" />
+                </button>
             </td>
-            <td className={cn('px-3 py-3 font-black', (item.upside || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{format(item.upside, true)}</td>
-            <td className="px-3 py-3 font-bold text-foreground">{item.pe?.toFixed(1) ?? '—'}</td>
-            <td className="px-3 py-3 font-bold text-foreground">{format(item.roic)}</td>
-            <td className="px-3 py-3 font-bold text-foreground">
-                {category === 'DIVIDEND' ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 font-extrabold text-xs">
-                        {item.dividendYield !== null && item.dividendYield !== undefined ? `${item.dividendYield.toFixed(2)}%` : '—'}
-                    </span>
-                ) : (
-                    format(item.fcfYield)
-                )}
-            </td>
-            <td className="px-3 py-3">
-                <span className="rounded-lg bg-violet-500/15 px-2 py-1 font-black text-violet-700 dark:text-violet-300">{item.opportunityScore?.toFixed(0) ?? '—'}</span>
-            </td>
-            <td className="px-3 py-3 text-muted-foreground">{item.scoreCoverage}%</td>
         </tr>
     );
 }
 
-function OpportunityCard({ item, category, onOpen }: { item: Opportunity; category: Category; onOpen: (ticker: string) => void }) {
+function OpportunityCard({
+    item,
+    category,
+    onOpen,
+    onAddToWatchlist
+}: {
+    item: Opportunity;
+    category: Category;
+    onOpen: (ticker: string) => void;
+    onAddToWatchlist: (ticker: string, name?: string) => void;
+}) {
+    const metrics = categoryMetrics[category];
+    const primaryMetric = metrics[0];
     return (
-        <button onClick={() => onOpen(item.ticker)} className="rounded-2xl border border-border/60 bg-background/50 p-4 text-left">
+        <div className="rounded-2xl border border-border/60 bg-background/50 p-4 text-left transition-colors hover:border-violet-500/40">
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div onClick={() => onOpen(item.ticker)} className="flex items-center gap-2 cursor-pointer">
                     <SymbolLogo symbol={item.symbol} size={30} />
                     <div>
                         <b className="text-foreground">{item.ticker}</b>
                         <p className="max-w-[190px] truncate text-[10px] text-muted-foreground">{item.name}</p>
                     </div>
                 </div>
-                <span className="rounded-lg bg-violet-500/15 px-2 py-1 text-sm font-black text-violet-700 dark:text-violet-300">{item.opportunityScore?.toFixed(0) ?? '—'}</span>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        title="Agregar a Seguimiento"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onAddToWatchlist(item.ticker, item.name);
+                        }}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 text-muted-foreground hover:border-violet-500 hover:text-violet-500 hover:bg-violet-500/10 transition-all"
+                    >
+                        <Bookmark className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="rounded-lg bg-violet-500/15 px-2 py-1 text-right text-violet-700 dark:text-violet-300">
+                        <span className="block text-[9px] font-bold uppercase tracking-wide">{primaryMetric.label}</span>
+                        <span className={cn('block text-sm font-black', metricToneClass(primaryMetric.tone?.(item) || 'accent'))}>{primaryMetric.value(item)}</span>
+                    </span>
+                </div>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+            <div onClick={() => onOpen(item.ticker)} className="mt-4 grid grid-cols-3 gap-2 text-xs cursor-pointer">
                 <Metric label="Precio" value={money(item.price)} />
-                <Metric label="Valor razonable" value={money(item.fairValue)} />
-                <Metric label="Potencial alcista" value={format(item.upside, true)} positive={(item.upside || 0) >= 0} />
-                <Metric label="P/E" value={item.pe?.toFixed(1) ?? '—'} />
-                <Metric label="ROIC" value={format(item.roic)} />
-                <Metric
-                    label={category === 'DIVIDEND' ? 'Dividendo' : 'Rend. FCF'}
-                    value={category === 'DIVIDEND' ? (item.dividendYield ? `${item.dividendYield.toFixed(2)}%` : '—') : format(item.fcfYield)}
-                    positive={category === 'DIVIDEND' ? Boolean(item.dividendYield && item.dividendYield > 0) : undefined}
-                />
+                {metrics.slice(1).map((metric) => <Metric key={metric.label} label={metric.label} value={metric.value(item)} tone={metric.tone?.(item)} />)}
             </div>
-        </button>
+        </div>
     );
 }
-function Metric({ label, value, positive }: any) { return <div><p className="text-[9px] font-bold uppercase text-muted-foreground">{label}</p><p className={cn('mt-0.5 font-black', positive === undefined ? 'text-foreground' : positive ? 'text-emerald-500' : 'text-rose-500')}>{value}</p></div>; }
+
+function metricToneClass(tone: MetricTone) {
+    return tone === 'positive' ? 'text-emerald-500' : tone === 'negative' ? 'text-rose-500' : tone === 'accent' ? 'text-violet-700 dark:text-violet-300' : 'text-foreground';
+}
+
+function Metric({ label, value, tone = 'default' }: { label: string; value: string; tone?: MetricTone }) {
+    return <div><p className="text-[9px] font-bold uppercase text-muted-foreground">{label}</p><p className={cn('mt-0.5 font-black', metricToneClass(tone))}>{value}</p></div>;
+}

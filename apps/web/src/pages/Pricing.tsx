@@ -525,6 +525,7 @@ export default function Pricing() {
             description: 'Datos y herramientas para analizar mercados con más contexto.',
             features: [
                 'Todo lo del plan Free',
+                'Finanzas Personales y control de gastos',
                 'Datos de mercado y Pre-Market',
                 'Mapas de calor y filtros sectoriales',
                 'Portafolios y métricas de seguimiento',

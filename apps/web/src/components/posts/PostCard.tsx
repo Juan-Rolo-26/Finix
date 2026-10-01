@@ -37,6 +37,7 @@ import ReportModal from '@/components/ReportModal';
 import DeletePostModal from '@/components/DeletePostModal';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import VerifiedBadge from '@/components/common/VerifiedBadge';
+import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -247,6 +248,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     // TradingView chart remains available as an explicit alternative.
     const [showLiveChart, setShowLiveChart] = useState(false);
     const [invalidCapturedChart, setInvalidCapturedChart] = useState(false);
+    const [watchlistTarget, setWatchlistTarget] = useState<{ symbol: string; name?: string } | null>(null);
 
     const isOwner = currentUserId === post.author.id;
     const canEdit = isOwner && !post.contentEditedAt &&
@@ -486,11 +488,23 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
 
             {/* Chart metadata */}
             {post.type === 'chart' && post.assetSymbol && (
-                <div className="px-4 pb-2 flex flex-wrap gap-2">
+                <div className="px-4 pb-2 flex flex-wrap items-center gap-2">
                     <span className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg bg-blue-400/10 border border-blue-400/20 text-blue-400">
                         <TrendingUp className="w-3 h-3" />
                         ${post.assetSymbol}
                     </span>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setWatchlistTarget({ symbol: post.assetSymbol! });
+                        }}
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20 transition-all font-semibold"
+                        title="Seguir en Mis listas"
+                    >
+                        <Bookmark className="w-3 h-3" />
+                        <span>Seguir</span>
+                    </button>
                     {post.analysisType && (
                         <span className="text-xs px-2 py-1 rounded-lg bg-secondary/50 border border-border/50 text-muted-foreground capitalize">
                             {post.analysisType === 'technical' ? 'Análisis Técnico' : 'Análisis Fundamental'}
@@ -506,10 +520,25 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
 
             {/* Tickers */}
             {post.tickers && (
-                <div className="px-4 pb-2 flex flex-wrap gap-1">
-                    {(Array.isArray(post.tickers) ? post.tickers : post.tickers.split(',')).filter(Boolean).map((t: string) => (
-                        <span key={t} className="text-xs text-primary font-medium">#{t.trim()}</span>
-                    ))}
+                <div className="px-4 pb-2 flex flex-wrap items-center gap-1.5">
+                    {(Array.isArray(post.tickers) ? post.tickers : post.tickers.split(',')).filter(Boolean).map((t: string) => {
+                        const cleanTicker = t.trim().replace(/^[$#]/, '');
+                        return (
+                            <button
+                                key={t}
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setWatchlistTarget({ symbol: cleanTicker });
+                                }}
+                                className="group inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/5 hover:bg-primary/10 border border-transparent hover:border-primary/20 text-xs text-primary font-medium transition-all"
+                                title={`Seguir ${cleanTicker} en Mis listas`}
+                            >
+                                <span>#{cleanTicker}</span>
+                                <Bookmark className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                            </button>
+                        );
+                    })}
                 </div>
             )}
 
@@ -846,6 +875,15 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                 onConfirm={confirmDelete}
                 isDeleting={isDeleting}
             />
+
+            {watchlistTarget && (
+                <AddToWatchlistModal
+                    isOpen={Boolean(watchlistTarget)}
+                    onClose={() => setWatchlistTarget(null)}
+                    symbol={watchlistTarget.symbol}
+                    name={watchlistTarget.name}
+                />
+            )}
         </motion.article>
     );
 }

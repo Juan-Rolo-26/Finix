@@ -28,6 +28,8 @@ import {
     Heart,
     UserPlus,
     Repeat,
+    Bookmark,
+    Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { hasCommunityAccess, isProUser, useAuthStore } from '../stores/authStore';
@@ -162,7 +164,7 @@ function SectionLabel({ label, collapsed }: { label: string; collapsed: boolean 
     return (
         <p
             className="mb-1.5 px-3 pt-1 text-[10px] font-bold uppercase tracking-[0.2em]"
-            style={{ color: 'hsl(var(--sidebar-section-label))' }}
+            style={{ color: label === 'PRO' ? PRIMARY : 'hsl(var(--sidebar-section-label))' }}
         >
             {label}
         </p>
@@ -333,11 +335,13 @@ export function Sidebar() {
         {
             label: 'Mercados',
             links: [
-                { name: 'Mercado',   path: '/market',   icon: TrendingUp,  badge: 0 },
-                { name: 'Calendario', path: '/calendario', icon: Calendar, badge: 0 },
-                { name: 'Portafolio',path: '/portfolio', icon: Briefcase,   badge: 0 },
-                { name: 'Noticias',  path: '/news',     icon: Newspaper,   badge: 0 },
-                { name: 'Análisis',  path: '/analysis', icon: AreaChart,  badge: 0 },
+                { name: 'Mercado',     path: '/market',            icon: TrendingUp, badge: 0 },
+                { name: 'Seguimiento', path: '/market/seguimiento', icon: Bookmark,   badge: 0 },
+                { name: 'Calendario',  path: '/calendario',        icon: Calendar,   badge: 0 },
+                { name: 'Portafolio',  path: '/portfolio',         icon: Briefcase,  badge: 0 },
+                { name: 'Finanzas Personales', path: '/finanzas', icon: Wallet, badge: 0 },
+                { name: 'Noticias',    path: '/news',              icon: Newspaper,  badge: 0 },
+                { name: 'Análisis',    path: '/analysis',          icon: AreaChart,  badge: 0 },
                 // { name: 'Aprender', path: '/learn', icon: BookOpen, badge: 0 },
             ],
         },

@@ -16,7 +16,7 @@ import {
     ChevronUp,
     Sparkles,
     Bell,
-    WalletCards,
+    Wallet,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -179,7 +179,7 @@ const SECTION_DATA: Record<ProSectionType, SectionInfo> = {
     },
     finance: {
         badge: 'FINANZAS PERSONALES · FINIX PRO',
-        icon: WalletCards,
+        icon: Wallet,
         defaultTitle: 'Ordená toda tu vida financiera',
         defaultDesc: 'Consolidá cuentas, movimientos, presupuestos, objetivos, tarjetas e inversiones en una sección privada.',
         features: [

@@ -118,6 +118,7 @@ model User {
 
   portfolios Portfolio[]
   watchlists Watchlist[]
+  followedIdeas WatchlistFollowedIdea[]
 
   personalFinanceAccounts          PersonalFinanceAccount[]
   personalFinanceTransactions     PersonalFinanceTransaction[]
@@ -125,6 +126,7 @@ model User {
   personalFinanceGoals            PersonalFinanceGoal[]
   personalFinanceRecurringPayments PersonalFinanceRecurringPayment[]
   personalFinanceCards            PersonalFinanceCard[]
+  personalFinancePreferences      PersonalFinancePreferences?
 
   // Relations: Communities
   createdCommunities       Community[]            @relation("CommunityCreator")
@@ -538,6 +540,8 @@ model PersonalFinanceTransaction {
   currency     String   @default("ARS")
   status       String   @default("confirmed")
   notes        String?
+  details      String   @default("{}")
+  importKey    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -549,6 +553,14 @@ model PersonalFinanceTransaction {
   @@index([userId, categoryKey, date])
   @@index([accountId])
   @@index([cardId])
+  @@unique([userId, importKey])
+}
+
+model PersonalFinancePreferences {
+  userId    String @id
+  data      String @default("{}")
+  updatedAt DateTime @updatedAt
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PersonalFinanceBudget {
@@ -559,12 +571,14 @@ model PersonalFinanceBudget {
   limit       Decimal  @default(0)
   month       Int
   year        Int
+  currency    String @default("ARS")
+  alertAt     Int @default(80)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, categoryKey, month, year])
+  @@unique([userId, categoryKey, month, year, currency])
   @@index([userId, year, month])
 }
 
@@ -630,14 +644,74 @@ model PersonalFinanceCard {
 }
 
 model Watchlist {
-  id      String @id @default(uuid())
-  name    String
-  userId  String
-  user    User   @relation(fields: [userId], references: [id])
-  tickers String
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  color       String?  @default("emerald")
+  isDefault   Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  order       Int      @default(0)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tickers     String   @default("") // Kept for legacy compatibility
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
+  items       WatchlistItem[]
+
+  @@index([userId])
+  @@index([userId, isArchived])
+}
+
+model WatchlistItem {
+  id              String   @id @default(uuid())
+  watchlistId     String
+  watchlist       Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  symbol          String   // e.g. "AAPL", "BCBA:AAPL"
+  name            String?
+  market          String?  // "NASDAQ", "NYSE", "BCBA", "BINANCE"
+  currency        String   @default("USD")
+  assetType       String   @default("STOCK") // "STOCK" | "CEDEAR" | "CRYPTO" | "ETF"
+  sector          String?
+  industry        String?
+  addedPrice      Float?
+  targetPrice     Float?
+  targetDirection String?  // "ABOVE" | "BELOW"
+  personalStatus  String   @default("RESEARCHING") // "RESEARCHING" | "WAITING_PRICE" | "EARNINGS" | "DISCARDED"
+  reason          String?
+  tags            String?  // Comma-separated tags
+  order           Int      @default(0)
+  alertId         String?  // Linked MarketAlert ID
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  notes           WatchlistNote[]
+
+  @@unique([watchlistId, symbol])
+  @@index([watchlistId])
+  @@index([symbol])
+}
+
+model WatchlistNote {
+  id        String   @id @default(uuid())
+  itemId    String
+  item      WatchlistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  content   String
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
+  @@index([itemId])
+}
+
+model WatchlistFollowedIdea {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     String   // "UNDERVALUED" | "HEALTH" | "GROWTH" | "DIVIDEND"
+  lastViewedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, category])
   @@index([userId])
 }
 

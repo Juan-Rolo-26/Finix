@@ -1,0 +1,27 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Field, fieldClass, financeRequest, Surface, today } from './workspaceShared';
+
+export function WorkspaceSettings({ preferences, saved, erase }: any) {
+    const [form, setForm] = useState<any>(preferences);
+    const [categories, setCategories] = useState(preferences.categories.join('\n'));
+    const [message, setMessage] = useState('');
+    const [busy, setBusy] = useState(false);
+    const update = (key: string, value: any) => setForm((p: any) => ({ ...p, [key]: value }));
+    async function save(e: React.FormEvent) {
+        e.preventDefault(); setBusy(true); setMessage('');
+        try { await financeRequest('preferences', { ...form, categories: [...new Set(categories.split('\n').map((s: string) => s.trim()).filter(Boolean))] }); await saved(); setMessage('Preferencias guardadas.'); }
+        catch (e) { setMessage((e as Error).message); } finally { setBusy(false); }
+    }
+    return <div className="space-y-5"><Surface title="Tu espacio, tus supuestos"><form onSubmit={save} className="space-y-5"><fieldset disabled={busy} className="space-y-5">
+        <Field label="Categorías (una por línea; editar no cambia movimientos anteriores)"><textarea className={fieldClass} rows={5} value={categories} onChange={e => setCategories(e.target.value)} /></Field>
+        <div className="space-y-3"><h3 className="text-sm font-semibold">Reglas de categorización</h3><p className="text-xs text-muted-foreground">Primera coincidencia en la descripción. Se aplica al importar o al salir del campo de descripción de un gasto nuevo; siempre podés corregirla.</p>{form.rules.map((r: any, i: number) => <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-end gap-2"><Field label="Si contiene"><input required className={fieldClass} value={r.contains} onChange={e => update('rules', form.rules.map((v: any, j: number) => j === i ? { ...v, contains: e.target.value } : v))} /></Field><Field label="Usar categoría"><input required className={fieldClass} value={r.category} onChange={e => update('rules', form.rules.map((v: any, j: number) => j === i ? { ...v, category: e.target.value } : v))} /></Field><Button type="button" variant="ghost" aria-label={`Quitar regla ${i + 1}`} onClick={() => update('rules', form.rules.filter((_: any, j: number) => j !== i))}>×</Button></div>)}<Button type="button" size="sm" variant="outline" onClick={() => update('rules', [...form.rules, { contains: '', category: '' }])}>Agregar regla</Button></div>
+        {[['hideEstimate', 'Ocultar disponible estimado'], ['dataComplete', 'Confirmo que cargué mis ingresos y compromisos relevantes'], ['reminders', 'Recibir avisos privados de vencimientos y presupuestos'], ['includePortfolio', 'Mostrar mis portafolios en esta pantalla privada']].map(([key, label]) => <label key={key} className="flex items-start gap-2 text-sm"><input type="checkbox" checked={!!form[key]} onChange={e => update(key, e.target.checked)} />{label}</label>)}
+        <div className="grid gap-4 sm:grid-cols-3">{['ARS', 'USD', 'EUR'].map(c => <Field key={c} label={`Reserva mensual ${c}`}><input type="number" min="0" step="0.01" className={fieldClass} value={form.reserves[c] || 0} onChange={e => update('reserves', { ...form.reserves, [c]: Number(e.target.value) })} /></Field>)}</div>
+        <Field label="Avisar con cuántos días de anticipación (0–30)"><input type="number" min="0" max="30" className={fieldClass} value={form.reminderDays} onChange={e => update('reminderDays', Number(e.target.value))} /></Field>
+        <p className="text-xs text-muted-foreground">Los avisos no incluyen importes, comercios ni nombres de cuentas. Las metas son registros manuales: no trasladan dinero ni se suman a Portafolio.</p>
+        <label className="flex gap-2 text-sm"><input type="checkbox" checked={!!form.conversion?.enabled} onChange={e => update('conversion', e.target.checked ? { enabled: true, usdToArs: '', source: '', date: today() } : null)} />Mostrar total de ARS + USD convertido a pesos</label>
+        {form.conversion?.enabled && <div className="grid gap-4 sm:grid-cols-3"><Field label="ARS por 1 USD (manual)"><input required type="number" min="0.000001" step="any" className={fieldClass} value={form.conversion.usdToArs} onChange={e => update('conversion', { ...form.conversion, usdToArs: Number(e.target.value) })} /></Field><Field label="Fuente / criterio elegido"><input required className={fieldClass} value={form.conversion.source} onChange={e => update('conversion', { ...form.conversion, source: e.target.value })} /></Field><Field label="Fecha de la cotización"><input required type="date" className={fieldClass} value={form.conversion.date} onChange={e => update('conversion', { ...form.conversion, date: e.target.value })} /></Field></div>}
+        <Button disabled={busy}>{busy ? 'Guardando…' : 'Guardar preferencias'}</Button>{message && <p role="status" className="text-sm">{message}</p>}
+    </fieldset></form></Surface><Surface title="Privacidad y eliminación"><p className="mb-4 text-sm text-muted-foreground">Estos registros no se publican en tu perfil, feed ni comunidades. El CSV original no se conserva. No hay conexiones bancarias activas. Exportá tus datos antes de eliminarlos: esta acción no se puede deshacer desde Finix y no borra tu Portafolio.</p><Button variant="destructive" onClick={erase}>Eliminar mis datos financieros</Button></Surface></div>;
+}

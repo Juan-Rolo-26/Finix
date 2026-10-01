@@ -4,7 +4,6 @@ import {
     Search,
     Sunrise,
     TrendingUp,
-    TrendingDown,
     Lock,
     Radio,
     Flame,
@@ -242,80 +241,6 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
                 </div>
             </header>
 
-            {/* ─── Top Movers Section (Gainers & Losers) ───────────────── */}
-            {data && ((data.topGainers && data.topGainers.length > 0) || (data.topLosers && data.topLosers.length > 0)) && (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                    {/* Top Gainers */}
-                    <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 sm:p-6">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <TrendingUp className="w-4 h-4" /> Mayores subas
-                            </h3>
-                            <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                                {data.topGainers?.slice(0, 5).length || 0} activos
-                            </span>
-                        </div>
-                        <div className="grid grid-cols-2 2xl:grid-cols-5 gap-3">
-                            {data.topGainers?.slice(0, 5).map((a) => (
-                                <button
-                                    key={a.id}
-                                    type="button"
-                                    onClick={() => onSelectSymbol?.(a.symbol)}
-                                    className="flex min-h-[76px] items-center justify-between gap-3 p-3.5 rounded-xl bg-background/85 hover:bg-background border border-border/50 hover:border-emerald-500/40 transition-colors text-left group shadow-sm"
-                                >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <SymbolLogo symbol={a.symbol} size={30} className="shrink-0" />
-                                        <span className="text-sm font-black truncate group-hover:text-emerald-500 transition-colors">
-                                            {a.symbol.split(':').pop()}
-                                        </span>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <p className="text-sm font-bold tabular-nums text-foreground">{formatAssetPrice(a)}</p>
-                                        <span className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400">
-                                            {formatChange(a.change)}
-                                        </span>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Top Losers */}
-                    <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-5 sm:p-6">
-                        <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-xs font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <TrendingDown className="w-4 h-4" /> Mayores bajas
-                            </h3>
-                            <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400">
-                                {data.topLosers?.slice(0, 5).length || 0} activos
-                            </span>
-                        </div>
-                        <div className="grid grid-cols-2 2xl:grid-cols-5 gap-3">
-                            {data.topLosers?.slice(0, 5).map((a) => (
-                                <button
-                                    key={a.id}
-                                    type="button"
-                                    onClick={() => onSelectSymbol?.(a.symbol)}
-                                    className="flex min-h-[76px] items-center justify-between gap-3 p-3.5 rounded-xl bg-background/85 hover:bg-background border border-border/50 hover:border-rose-500/40 transition-colors text-left group shadow-sm"
-                                >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <SymbolLogo symbol={a.symbol} size={30} className="shrink-0" />
-                                        <span className="text-sm font-black truncate group-hover:text-rose-500 transition-colors">
-                                            {a.symbol.split(':').pop()}
-                                        </span>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <p className="text-sm font-bold tabular-nums text-foreground">{formatAssetPrice(a)}</p>
-                                        <span className="text-[11px] font-extrabold text-rose-600 dark:text-rose-400">
-                                            {formatChange(a.change)}
-                                        </span>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* ─── Controls: Search & Category Pills ───────────────────── */}
             <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/60 p-3">

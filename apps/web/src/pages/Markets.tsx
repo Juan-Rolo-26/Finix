@@ -19,6 +19,7 @@ import {
     Building2,
     Sparkles,
     Clock,
+    Bookmark,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -286,6 +287,21 @@ export default function Markets() {
             <div className="absolute inset-x-0 top-0 -z-10 h-[360px] opacity-40 dark:opacity-100 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.08),transparent_70%)] pointer-events-none" />
 
             <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-4 md:px-6 lg:px-8">
+                <div className="flex items-center justify-between max-w-6xl mx-auto w-full">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate('/mercado/seguimiento')}
+                        className="rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold gap-1.5 shadow-xs transition-all"
+                    >
+                        <Bookmark className="h-3.5 w-3.5" />
+                        Seguimiento
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 font-extrabold uppercase tracking-wider">
+                            PRO
+                        </span>
+                    </Button>
+                </div>
+
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                     <TabsList className="grid h-auto w-full max-w-6xl mx-auto mb-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 rounded-[24px] border border-border/40 bg-secondary/30 p-1.5 backdrop-blur-sm gap-1">
                         <TabsTrigger

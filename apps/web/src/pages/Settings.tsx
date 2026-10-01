@@ -1095,6 +1095,7 @@ export default function Settings() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 p-5 rounded-2xl border border-border/60 bg-secondary/30 dark:bg-card/50">
                                     {[
                                         'Acceso ilimitado a todas las secciones y métricas PRO',
+                                        'Finanzas Personales: gastos, tarjetas, cuentas y presupuestos',
                                         'Alertas en tiempo real por Gmail y notificaciones push',
                                         'Análisis de ballenas y movimientos institucionales',
                                         'Filtros técnicos avanzados y gráficos sin límites',
