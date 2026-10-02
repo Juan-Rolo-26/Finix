@@ -6,6 +6,7 @@ import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma.service';
 import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 import { hasEffectiveProAccess } from './pro-access';
+import { getAccessMode } from '../access/free-access';
 
 const EMAIL_VERIFICATION_TTL_MINUTES = 15;
 const LOGIN_CODE_TTL_MINUTES = 10;
@@ -790,6 +791,7 @@ export class AuthService implements OnModuleInit {
             username: user.username,
             email: user.email,
             emailVerified: user.emailVerified,
+            ...getAccessMode(),
             role,
             plan,
             accountType,

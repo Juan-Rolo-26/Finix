@@ -21,6 +21,8 @@ import {
     Loader2,
     Crown,
     X,
+    LayoutDashboard,
+    List,
 } from 'lucide-react';
 
 import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
@@ -29,6 +31,7 @@ import DeleteWatchlistModal from '@/components/watchlist/DeleteWatchlistModal';
 import ImportWatchlistModal from '@/components/watchlist/ImportWatchlistModal';
 import WatchlistDetailDrawer from '@/components/watchlist/WatchlistDetailDrawer';
 import WatchlistIdeasSection from '@/components/watchlist/WatchlistIdeasSection';
+import WatchlistDashboard from '@/components/watchlist/WatchlistDashboard';
 
 export default function WatchlistPage() {
     const navigate = useNavigate();
@@ -45,6 +48,7 @@ export default function WatchlistPage() {
 
     // Vistas y filtros
     const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'list'>('dashboard');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [portfolioFilter, setPortfolioFilter] = useState('ALL');
@@ -388,90 +392,95 @@ export default function WatchlistPage() {
                     )}
                 </div>
 
-                {/* Barra de herramientas: Búsqueda, Filtros y Modo de vista */}
+                {/* Tabs: Dashboard / Lista + Barra de herramientas */}
                 {activeList && (
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        <div className="flex flex-1 flex-wrap items-center gap-2">
-                            {/* Buscador dentro de la lista */}
-                            <div className="relative min-w-[200px] flex-1 max-w-sm">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                <input
-                                    type="text"
-                                    placeholder="Buscar en esta lista por ticker o tag..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full h-9 pl-9 pr-3 rounded-xl border border-border/60 bg-background/80 text-xs outline-none focus:border-emerald-500 transition-colors"
-                                />
+                    <div className="flex flex-col gap-3">
+                        {/* Tab switcher */}
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-1 rounded-2xl border border-border/60 p-1 bg-secondary/20">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('dashboard')}
+                                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                        activeTab === 'dashboard'
+                                            ? 'bg-card text-foreground shadow-sm border border-border/40'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    <LayoutDashboard className="w-3.5 h-3.5" />
+                                    Dashboard
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('list')}
+                                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                        activeTab === 'list'
+                                            ? 'bg-card text-foreground shadow-sm border border-border/40'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    <List className="w-3.5 h-3.5" />
+                                    Lista
+                                </button>
                             </div>
 
-                            {/* Filtro por estado personal */}
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="h-9 px-3 rounded-xl border border-border/60 bg-background text-xs font-bold outline-none focus:border-emerald-500"
-                            >
-                                <option value="ALL">Todos los estados</option>
-                                <option value="RESEARCHING">Investigando</option>
-                                <option value="WAITING_PRICE">Esperando precio</option>
-                                <option value="EARNINGS">Siguiendo resultados</option>
-                                <option value="DISCARDED">Descartada</option>
-                            </select>
-
-                            {/* Filtro por portafolio */}
-                            <select
-                                value={portfolioFilter}
-                                onChange={(e) => setPortfolioFilter(e.target.value)}
-                                className="h-9 px-3 rounded-xl border border-border/60 bg-background text-xs font-bold outline-none focus:border-emerald-500"
-                            >
-                                <option value="ALL">Portafolio: Todos</option>
-                                <option value="IN_PORTFOLIO">En mi Portafolio</option>
-                                <option value="NOT_IN_PORTFOLIO">Solo en seguimiento</option>
-                            </select>
-                        </div>
-
-                        {/* Switcher de vista y acciones masivas */}
-                        <div className="flex items-center gap-2">
-                            {selectedItemIds.length > 0 && (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-muted-foreground">
-                                        {selectedItemIds.length} seleccionados
-                                    </span>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        disabled={bulkActionLoading}
-                                        onClick={handleBulkDelete}
-                                        className="h-8 rounded-xl text-xs font-bold gap-1"
-                                    >
-                                        <Trash2 className="w-3 h-3" /> Quitar
-                                    </Button>
+                            {/* Controles de la vista lista */}
+                            {activeTab === 'list' && (
+                                <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
+                                    <div className="flex flex-1 flex-wrap items-center gap-2">
+                                        <div className="relative min-w-[200px] flex-1 max-w-sm">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                            <input
+                                                type="text"
+                                                placeholder="Buscar en esta lista por ticker o tag..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="w-full h-9 pl-9 pr-3 rounded-xl border border-border/60 bg-background/80 text-xs outline-none focus:border-emerald-500 transition-colors"
+                                            />
+                                        </div>
+                                        <select
+                                            value={statusFilter}
+                                            onChange={(e) => setStatusFilter(e.target.value)}
+                                            className="h-9 px-3 rounded-xl border border-border/60 bg-background text-xs font-bold outline-none focus:border-emerald-500"
+                                        >
+                                            <option value="ALL">Todos los estados</option>
+                                            <option value="RESEARCHING">Investigando</option>
+                                            <option value="WAITING_PRICE">Esperando precio</option>
+                                            <option value="EARNINGS">Siguiendo resultados</option>
+                                            <option value="DISCARDED">Descartada</option>
+                                        </select>
+                                        <select
+                                            value={portfolioFilter}
+                                            onChange={(e) => setPortfolioFilter(e.target.value)}
+                                            className="h-9 px-3 rounded-xl border border-border/60 bg-background text-xs font-bold outline-none focus:border-emerald-500"
+                                        >
+                                            <option value="ALL">Portafolio: Todos</option>
+                                            <option value="IN_PORTFOLIO">En mi Portafolio</option>
+                                            <option value="NOT_IN_PORTFOLIO">Solo en seguimiento</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {selectedItemIds.length > 0 && (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold text-muted-foreground">{selectedItemIds.length} seleccionados</span>
+                                                <Button variant="destructive" size="sm" disabled={bulkActionLoading} onClick={handleBulkDelete} className="h-8 rounded-xl text-xs font-bold gap-1">
+                                                    <Trash2 className="w-3 h-3" /> Quitar
+                                                </Button>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center rounded-xl border border-border/60 p-0.5 bg-secondary/30">
+                                            <button type="button" onClick={() => setViewMode('table')}
+                                                className={`p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`} title="Vista de tabla">
+                                                <TableIcon className="w-4 h-4" />
+                                            </button>
+                                            <button type="button" onClick={() => setViewMode('cards')}
+                                                className={`p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'cards' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`} title="Vista de tarjetas">
+                                                <LayoutGrid className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
-
-                            <div className="flex items-center rounded-xl border border-border/60 p-0.5 bg-secondary/30">
-                                <button
-                                    type="button"
-                                    onClick={() => setViewMode('table')}
-                                    className={`p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'table'
-                                            ? 'bg-card text-foreground shadow-xs'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                        }`}
-                                    title="Vista de tabla"
-                                >
-                                    <TableIcon className="w-4 h-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setViewMode('cards')}
-                                    className={`p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'cards'
-                                            ? 'bg-card text-foreground shadow-xs'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                        }`}
-                                    title="Vista móvil de tarjetas"
-                                >
-                                    <LayoutGrid className="w-4 h-4" />
-                                </button>
-                            </div>
                         </div>
                     </div>
                 )}
@@ -499,6 +508,30 @@ export default function WatchlistPage() {
                             <Plus className="w-4 h-4" /> Crear mi primera lista
                         </Button>
                     </div>
+                ) : activeTab === 'dashboard' ? (
+                    /* DASHBOARD VIEW */
+                    activeListDetail?.items?.length > 0 ? (
+                        <WatchlistDashboard
+                            items={activeListDetail.items}
+                            onItemClick={setSelectedItemForDrawer}
+                        />
+                    ) : (
+                        <div className="rounded-3xl border border-dashed border-border/80 bg-card/40 p-12 text-center max-w-md mx-auto">
+                            <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground mx-auto mb-3">
+                                <LayoutDashboard className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-base font-bold text-foreground">Esta lista está vacía</h3>
+                            <p className="text-xs text-muted-foreground mt-1 mb-5">Agregá activos a tu lista para ver el dashboard con análisis y timeline.</p>
+                            <div className="flex justify-center gap-2">
+                                <Button size="sm" onClick={() => setIsImportModalOpen(true)} className="rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5">
+                                    <UploadCloud className="w-3.5 h-3.5" /> Importar activos
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => navigate('/market')} className="rounded-xl text-xs font-bold">
+                                    Explorar Mercado
+                                </Button>
+                            </div>
+                        </div>
+                    )
                 ) : filteredItems.length === 0 ? (
                     /* Estado vacío de la lista seleccionada */
                     <div className="rounded-3xl border border-dashed border-border/80 bg-card/40 p-12 text-center max-w-md mx-auto">

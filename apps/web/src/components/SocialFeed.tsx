@@ -102,14 +102,27 @@ function EmptyFeed() {
     );
 }
 
+/* ── Safe date distance helper ──────────────────────────────────── */
+function safeFormatDistance(dateStr?: string | null): string {
+    if (!dateStr) return '';
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '';
+        return formatDistanceToNow(d, { addSuffix: true, locale: es });
+    } catch {
+        return '';
+    }
+}
+
 /* ── Ticker chips ───────────────────────────────────────────────── */
 function TickerChips({ tickers }: { tickers?: string | string[] }) {
     if (!tickers) return null;
     const list = Array.isArray(tickers)
-        ? tickers.slice(0, 5)
+        ? tickers.map(t => typeof t === 'string' ? t.trim() : '').filter(Boolean).slice(0, 5)
         : typeof tickers === 'string'
             ? tickers.split(',').map(t => t.trim()).filter(Boolean).slice(0, 5)
             : [];
+    if (list.length === 0) return null;
     return (
         <div className="flex flex-wrap gap-1.5 mb-2">
             {list.map(t => (
@@ -124,7 +137,8 @@ function TickerChips({ tickers }: { tickers?: string | string[] }) {
 }
 
 /* ── Content text with $ticker highlights ───────────────────────── */
-function PostContent({ text }: { text: string }) {
+function PostContent({ text }: { text?: string | null }) {
+    if (!text || typeof text !== 'string') return null;
     const parts = text.split(/(\$[A-Za-z][A-Za-z0-9]{0,9})/g);
     return (
         <p className="text-[13.5px] leading-[1.7] whitespace-pre-wrap" style={{ color: 'hsl(var(--foreground) / 0.88)' }}>
@@ -201,8 +215,13 @@ export default function SocialFeed({ initialPosts, isLoading = false, onPostCrea
 
 /* ── FeedItem ─────────────────────────────────────────────────── */
 function FeedItem({ post }: { post: Post }) {
+    if (!post) return null;
     const navigate = useNavigate();
     const { user } = useAuthStore();
+    const authorUsername = post.author?.username || 'Usuario';
+    const authorInitial = (authorUsername[0] || 'U').toUpperCase();
+    const authorAvatar = post.author?.avatarUrl ? resolveMediaUrl(post.author.avatarUrl) : undefined;
+
     const [likes, setLikes] = useState(post.likesCount ?? post.likes?.length ?? 0);
     const [isLiked, setIsLiked] = useState(Boolean(post.likedByMe));
     const [isReposting, setIsReposting] = useState(false);
@@ -316,17 +335,17 @@ function FeedItem({ post }: { post: Post }) {
                 {/* ── Author row ─── */}
                 <div className="flex items-start justify-between gap-2 mb-3">
                     <Link
-                        to={`/profile/${post.author.username}`}
+                        to={`/profile/${authorUsername}`}
                         className="flex items-center gap-3 group/author min-w-0 flex-1"
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Avatar */}
                         <div className="flex-shrink-0">
                             <Avatar className="w-9 h-9 ring-2 ring-border/20">
-                                <AvatarImage src={resolveMediaUrl(post.author.avatarUrl)} />
+                                {authorAvatar && <AvatarImage src={authorAvatar} />}
                                 <AvatarFallback className="text-[12px] font-bold"
                                     style={{ background: 'hsl(var(--primary) / 0.12)', color: 'hsl(var(--primary))' }}>
-                                    {post.author.username[0].toUpperCase()}
+                                    {authorInitial}
                                 </AvatarFallback>
                             </Avatar>
                         </div>
@@ -335,13 +354,13 @@ function FeedItem({ post }: { post: Post }) {
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="text-[13.5px] font-semibold leading-tight group-hover/author:text-primary transition-colors">
-                                    {post.author.username}
+                                    {authorUsername}
                                 </span>
                                 <VerifiedBadge
-                                    isVerified={post.author.isVerified}
-                                    isInfluencer={post.author.isInfluencer}
-                                    role={post.author.role}
-                                    username={post.author.username}
+                                    isVerified={post.author?.isVerified}
+                                    isInfluencer={post.author?.isInfluencer}
+                                    role={post.author?.role || 'user'}
+                                    username={authorUsername}
                                     size="sm"
                                 />
                                 {typeConfig && (
@@ -352,7 +371,7 @@ function FeedItem({ post }: { post: Post }) {
                                 )}
                             </div>
                             <span className="text-[10.5px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>
-                                {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: es })}
+                                {safeFormatDistance(post.createdAt)}
                             </span>
                         </div>
                     </Link>
@@ -389,7 +408,7 @@ function FeedItem({ post }: { post: Post }) {
                                         onClick={e => e.stopPropagation()}
                                     >
                                         {[
-                                            { icon: <ExternalLink className="w-3.5 h-3.5" />, label: 'Ver perfil', action: () => { navigate(`/profile/${post.author.username}`); setShowMenu(false); } },
+                                            { icon: <ExternalLink className="w-3.5 h-3.5" />, label: 'Ver perfil', action: () => { navigate(`/profile/${authorUsername}`); setShowMenu(false); } },
                                             { icon: <Share2 className="w-3.5 h-3.5" />, label: 'Copiar enlace', action: handleCopyLink },
                                         ].map(item => (
                                             <button key={item.label} onClick={item.action}
@@ -496,16 +515,18 @@ function FeedItem({ post }: { post: Post }) {
                         >
                             <div className="flex items-center gap-2 mb-2">
                                 <Avatar className="w-4 h-4">
-                                    <AvatarImage src={post.quotedPost.author.avatarUrl} />
-                                    <AvatarFallback className="text-[8px]">{post.quotedPost.author.username[0]}</AvatarFallback>
+                                    <AvatarImage src={post.quotedPost.author?.avatarUrl ? resolveMediaUrl(post.quotedPost.author.avatarUrl) : undefined} />
+                                    <AvatarFallback className="text-[8px]">
+                                        {((post.quotedPost.author?.username?.[0]) || 'U').toUpperCase()}
+                                    </AvatarFallback>
                                 </Avatar>
-                                <span className="text-[11.5px] font-semibold">{post.quotedPost.author.username}</span>
+                                <span className="text-[11.5px] font-semibold">{post.quotedPost.author?.username || 'Usuario'}</span>
                                 <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>
-                                    · {formatDistanceToNow(new Date(post.quotedPost.createdAt), { locale: es })}
+                                    · {safeFormatDistance(post.quotedPost.createdAt)}
                                 </span>
                             </div>
                             <p className="text-[12.5px] leading-relaxed line-clamp-2" style={{ color: 'hsl(var(--foreground) / 0.75)' }}>
-                                {post.quotedPost.content}
+                                {post.quotedPost.content || ''}
                             </p>
                         </button>
                     )}

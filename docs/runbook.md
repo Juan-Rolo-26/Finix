@@ -37,6 +37,28 @@ curl -fsS https://finixarg.com/release.json
 curl -fsS https://admin.finixarg.com/release.json
 ```
 
+### Pull bloqueado por la caché de pre-market
+
+La API genera `apps/api/.cache/market/premarket.json` durante la ejecución. La
+carpeta `.cache` está ignorada y el snapshot no debe versionarse. Los checkouts
+anteriores que todavía tienen el archivo tracked pueden bloquear el pull con
+`Your local changes would be overwritten by merge`.
+
+Para destrabar ese checkout, respaldar el snapshot y restaurar únicamente ese
+archivo antes de volver a desplegar:
+
+```bash
+cd ~/Finix
+mkdir -p logs/deploy
+cp -p -- apps/api/.cache/market/premarket.json "logs/deploy/premarket-$(date -u +%Y%m%dT%H%M%SZ).json" &&
+git restore --source=HEAD --worktree -- apps/api/.cache/market/premarket.json &&
+bash deploy.sh
+```
+
+El respaldo queda en `logs/deploy`. Una vez incorporada la eliminación del archivo
+del índice de Git, los nuevos snapshots quedan como caché local ignorada y no
+bloquean futuros pulls. La API crea la carpeta y el archivo cuando guarda datos.
+
 ---
 
 ## ⏮️ Rollback

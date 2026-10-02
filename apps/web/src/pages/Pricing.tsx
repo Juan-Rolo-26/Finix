@@ -1,3 +1,5 @@
+import FreeAccessNotice from '@/components/FreeAccessNotice';
+import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { useEffect, useState, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -411,6 +413,7 @@ const PRO_SECTIONS = [
 ];
 
 export default function Pricing() {
+    const { freeAccessEnabled: freeAccess, purchasesPaused } = usePlatformAccessStore();
     const navigate = useNavigate();
     const user = useAuthStore(s => s.user);
     const isJuan = isJuanUser(user) && (user as any)?.proAccessOverride !== false;
@@ -430,6 +433,7 @@ export default function Pricing() {
     }, [searchParams, syncFromSession]);
 
     const handleUpgrade = async (planType: 'PRO' | 'Creador') => {
+        if (purchasesPaused) { navigate(user ? (planType === 'Creador' ? '/comunidades/crear' : '/market') : '/auth?mode=register'); return; }
         if (isJuan) {
             navigate(planType === 'Creador' ? '/comunidades' : '/mercado');
             return;
@@ -444,7 +448,7 @@ export default function Pricing() {
     };
 
     const confirmCheckout = async (autoRenew: boolean) => {
-        if (!renewalPlan) return;
+        if (!renewalPlan || purchasesPaused) return;
         const planType = renewalPlan;
         setLoadingPlan(planType);
         setCheckoutError(null);
@@ -468,7 +472,7 @@ export default function Pricing() {
     };
 
     const confirmStripeCheckout = async () => {
-        if (!renewalPlan) return;
+        if (!renewalPlan || purchasesPaused) return;
         const planType = renewalPlan;
         setLoadingPlan(planType);
         setCheckoutError(null);
@@ -521,7 +525,7 @@ export default function Pricing() {
             highlight: false,
         },
         {
-            name: 'PRO', price: isJuan ? '$0' : `$${prices.proArs.toLocaleString('es-AR')}`, period: isJuan ? ' (Vitalicio)' : ' ARS/mes',
+            name: 'PRO', price: (freeAccess || isJuan) ? '$0' : `$${prices.proArs.toLocaleString('es-AR')}`, period: freeAccess ? ' durante esta etapa' : isJuan ? ' (Vitalicio)' : ' ARS/mes',
             description: 'Datos y herramientas para analizar mercados con más contexto.',
             features: [
                 'Todo lo del plan Free',
@@ -537,7 +541,7 @@ export default function Pricing() {
             icon: Sparkles,
         },
         {
-            name: 'Creador', price: isJuan ? '$0' : `$${prices.creatorArs.toLocaleString('es-AR')}`, period: isJuan ? ' (Vitalicio)' : ' ARS/mes',
+            name: 'Creador', price: (freeAccess || isJuan) ? '$0' : `$${prices.creatorArs.toLocaleString('es-AR')}`, period: freeAccess ? ' durante esta etapa' : isJuan ? ' (Vitalicio)' : ' ARS/mes',
             description: 'Herramientas para crear y gestionar tu comunidad.',
             features: [
                 'Todo lo del plan PRO',
@@ -554,6 +558,7 @@ export default function Pricing() {
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden">
+            <div className="mx-auto w-full max-w-7xl px-4 pt-4"><FreeAccessNotice /></div>
             {/* Ambient glows */}
             <div className="absolute inset-0 pointer-events-none z-0">
                 <div className="absolute top-[-20%] left-[-10%] w-[55%] h-[55%] rounded-full opacity-25" style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.5) 0%, transparent 70%)', filter: 'blur(90px)' }} />
@@ -662,13 +667,14 @@ export default function Pricing() {
                                     </div>
                                     {plan.name !== 'Free' && (
                                         <p className="text-[10px] font-semibold text-emerald-400 mt-1 flex items-center justify-center gap-1 text-center">
-                                            <Sparkles className="w-3 h-3 shrink-0" /> Precio mensual informado antes del checkout
+                                            <Sparkles className="w-3 h-3 shrink-0" /> {freeAccess ? 'Incluido gratis durante esta etapa' : 'Precio mensual informado antes del checkout'}
                                         </p>
                                     )}
                                 </div>
                                 <button
                                     disabled={(Boolean(user && plan.name === 'Free') && !isJuan) || loadingPlan === plan.name}
                                     onClick={() => {
+                                        if (purchasesPaused) { navigate(user ? (plan.name === 'Creador' ? '/comunidades/crear' : '/market') : '/auth?mode=register'); return; }
                                         if (isJuan) {
                                             navigate(plan.name === 'Creador' ? '/comunidades' : '/mercado');
                                             return;
@@ -694,10 +700,10 @@ export default function Pricing() {
                                 >
                                     {loadingPlan === plan.name ? (
                                         <><Loader2 className="w-5 h-5 animate-spin" /><span>Conectando...</span></>
-                                    ) : (!user && plan.name !== 'Free') ? (
+                                    ) : (!freeAccess && !user && plan.name !== 'Free') ? (
                                         <><span>Iniciar sesión para comprar</span><ArrowRight className="w-4 h-4" /></>
                                     ) : (
-                                        <><span>{plan.buttonText}</span><ArrowRight className="w-4 h-4" /></>
+                                        <><span>{freeAccess ? (!user ? 'Crear cuenta gratis' : plan.name === 'Creador' ? 'Crear mi comunidad gratis' : 'Usar gratis') : plan.buttonText}</span><ArrowRight className="w-4 h-4" /></>
                                     )}
                                 </button>
                                 <div className="mt-1 flex-1 border-t border-border/40 pt-4">
@@ -888,7 +894,7 @@ export default function Pricing() {
                         <div className="space-y-1">
                             <h4 className="font-bold text-sm text-foreground">Facturación segura y transparente</h4>
                             <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
-                                El plan PRO cuesta ${prices.proArs.toLocaleString('es-AR')} ARS por mes. Podés pagar con tarjeta de crédito o débito (Visa, Mastercard y las tarjetas habilitadas por tu banco), billeteras y otros medios disponibles en Mercado Pago. También ofrecemos Stripe cuando está habilitado. Podés cancelar desde <strong>Configuración &gt; Suscripción</strong>.
+                                {freeAccess ? 'En esta etapa, PRO y Creator están incluidos gratis. Las nuevas compras están pausadas.' : <>El plan PRO cuesta ${prices.proArs.toLocaleString('es-AR')} ARS por mes. Podés pagar con tarjeta de crédito o débito (Visa, Mastercard y las tarjetas habilitadas por tu banco), billeteras y otros medios disponibles en Mercado Pago. También ofrecemos Stripe cuando está habilitado. Podés cancelar desde <strong>Configuración &gt; Suscripción</strong>.</>}
                             </p>
                         </div>
                     </div>

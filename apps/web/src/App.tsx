@@ -5,6 +5,7 @@ import { usePreferencesStore } from './stores/preferencesStore';
 import DashboardLayout from './layouts/DashboardLayout';
 import InstallBanner from './components/InstallBanner';
 import CookieConsent from './components/CookieConsent';
+import { usePlatformAccessStore } from './stores/platformAccessStore';
 
 // ─── Lazy Loaded Pages ────────────────────────────────────────────────────────
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -108,13 +109,18 @@ function RequireCommunityAccess({
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
+    const { loaded: accessLoaded, load: loadAccess } = usePlatformAccessStore();
     const { token, user, syncFromSession } = useAuthStore();
 
     // Restore the Finix session on app load. Auth token ownership and provider
     // refresh handling live in authStore so Supabase cannot replace the API token.
     useEffect(() => {
+        void loadAccess();
         syncFromSession();
-    }, []);
+    }, [loadAccess, syncFromSession]);
+
+    // Resolve the server's launch mode before mounting pages with plan gates.
+    if (!accessLoaded) return <div className="min-h-screen grid place-items-center" role="status">Cargando Finix…</div>;
 
     return (
         <>

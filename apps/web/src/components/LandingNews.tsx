@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Clock } from 'lucide-react';
-import { resolveNewsImage } from '@/lib/newsImage';
+import { handleNewsImageError, resolveNewsImage } from '@/lib/newsImage';
 
 interface NewsItem {
     id: string;
@@ -63,9 +63,8 @@ export default function LandingNews() {
                                 src={resolveNewsImage(item.title, item.category?.name, item.imageUrl)}
                                 alt={item.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                onError={(event) => {
-                                    event.currentTarget.src = resolveNewsImage(item.title, item.category?.name);
-                                }}
+                                referrerPolicy="no-referrer"
+                                onError={(event) => handleNewsImageError(event, item.title, item.category?.name)}
                             />
                         </div>
                         <div className="p-5 flex flex-col flex-1">

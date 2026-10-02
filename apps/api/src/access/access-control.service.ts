@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { hasEffectiveProAccess } from '../auth/pro-access';
+import { isFreeAccessEnabled, isCommunityMembershipActive } from './free-access';
 
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['ACTIVE']);
 const ACTIVE_COMMUNITY_STATUSES = new Set(['ACTIVE']);
@@ -97,6 +98,7 @@ export class AccessControlService {
             select: {
                 subscriptionStatus: true,
                 expiresAt: true,
+                paymentStatus: true,
             },
         });
 
@@ -105,7 +107,7 @@ export class AccessControlService {
         }
 
         const notExpired = !membership.expiresAt || membership.expiresAt.getTime() > Date.now();
-        const active = ACTIVE_COMMUNITY_STATUSES.has(membership.subscriptionStatus) && notExpired;
+        const active = isCommunityMembershipActive(membership) && (isFreeAccessEnabled() || notExpired);
         if (!active) {
             throw new ForbiddenException('Tu acceso a esta comunidad paga no está activo.');
         }
@@ -129,6 +131,8 @@ export class AccessControlService {
         if (!user) {
             throw new NotFoundException('Usuario no encontrado');
         }
+
+        if (isFreeAccessEnabled()) return user;
 
         const adminRoles = new Set(['ADMIN', 'SUPER_ADMIN']);
         if (adminRoles.has(user.role)) {
@@ -167,7 +171,7 @@ export class AccessControlService {
             throw new NotFoundException('Usuario no encontrado');
         }
 
-        if (user.role === 'ADMIN' || user.proAccessOverride === true) {
+        if (isFreeAccessEnabled() || user.role === 'ADMIN' || user.proAccessOverride === true) {
             return user;
         }
 

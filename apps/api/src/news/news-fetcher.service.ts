@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import * as Parser from 'rss-parser';
 import * as cheerio from 'cheerio';
+import { extractHtmlNewsImage, extractRssNewsImage, isNewsArticleUrl, isPublisherArticleUrl, normalizeSourceImage } from './news-source-image.util';
+import { isIllustrativeNewsImage, resolveNewsImage } from './news-image.util';
 
 export interface RawNewsItem {
     title: string;
@@ -17,7 +19,7 @@ export interface RawNewsItem {
 
 /**
  * Service for fetching news from multiple sources
- * Supports: GNews API (free tier), RSS feeds, and fallback mock data
+ * Supports: GNews API (free tier) and RSS feeds with source images
  */
 @Injectable()
 export class NewsFetcherService {
@@ -57,7 +59,9 @@ export class NewsFetcherService {
     private rssParser = new Parser({
         customFields: {
             item: [
-                ['media:content', 'mediaContent'],
+                ['media:content', 'mediaContent', { keepArray: true }],
+                ['media:thumbnail', 'mediaThumbnail', { keepArray: true }],
+                ['media:group', 'mediaGroup'],
                 ['content:encoded', 'contentEncoded'],
                 ['description', 'description'],
             ],
@@ -88,40 +92,95 @@ export class NewsFetcherService {
             console.error('[NewsFetcher] GNews fetch failed:', error.message);
         }
 
-        // If we got no news, use fallback
+        // Keep the published news when sources fail; do not manufacture new stories.
         if (allNews.length === 0) {
-            console.log('[NewsFetcher] No news fetched, using fallback');
-            return this.getFallbackNews();
+            console.log('[NewsFetcher] No se encontraron noticias con foto');
+            return [];
         }
 
         console.log(`[NewsFetcher] Total news fetched: ${allNews.length}`);
         return allNews;
     }
 
-    private extractRssImage(item: any): string | undefined {
-        const read = (value: any): string | undefined => {
-            if (Array.isArray(value)) {
-                for (const entry of value) {
-                    const image = read(entry);
-                    if (image) return image;
-                }
-                return undefined;
-            }
-            if (typeof value === 'string') return value.trim() || undefined;
-            if (!value || typeof value !== 'object') return undefined;
-            return [value.url, value.href, value.$?.url, value.$?.href, value._].find(
-                (candidate) => typeof candidate === 'string' && candidate.trim(),
-            )?.trim();
-        };
+    private readonly imageCache = new Map<string, { image?: string; expiresAt: number }>();
 
-        return [
-            item.mediaContent,
-            item.mediaThumbnail,
-            item['media:thumbnail'],
-            item.enclosure,
-            item.image,
-            item['itunes:image'],
-        ].map(read).find(Boolean);
+    private async fetchArticleImage(url: string, publisherUrls: string[]): Promise<string | undefined> {
+        if (!isPublisherArticleUrl(url, publisherUrls)) return undefined;
+        const cached = this.imageCache.get(url);
+        if (cached && cached.expiresAt > Date.now()) return cached.image;
+        let image: string | undefined;
+        try {
+            const signal = AbortSignal.timeout(4_000);
+            let target = url;
+            for (let redirects = 0; redirects <= 3; redirects++) {
+                if (!isPublisherArticleUrl(target, publisherUrls)) break;
+                const response = await fetch(target, {
+                    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FinixNewsBot/1.0; +https://finixarg.com)', Accept: 'text/html' },
+                    redirect: 'manual',
+                    signal,
+                });
+                if ([301, 302, 303, 307, 308].includes(response.status)) {
+                    const location = response.headers.get('location');
+                    await response.body?.cancel();
+                    if (!location) break;
+                    target = new URL(location, target).toString();
+                    continue;
+                }
+                if (!response.ok || !response.headers.get('content-type')?.includes('text/html')) {
+                    await response.body?.cancel();
+                    break;
+                }
+                // Bound page downloads: metadata normally lives at the start of the HTML.
+                const reader = response.body?.getReader();
+                if (!reader) break;
+                const decoder = new TextDecoder();
+                let html = '';
+                let size = 0;
+                try {
+                    while (size < 512_000) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        const chunk = value.subarray(0, 512_000 - size);
+                        size += chunk.byteLength;
+                        html += decoder.decode(chunk, { stream: true });
+                    }
+                    html += decoder.decode();
+                } finally {
+                    await reader.cancel();
+                }
+                image = extractHtmlNewsImage(html, target);
+                break;
+            }
+        } catch {
+            // A blocked or unavailable article must not stop the other news sources.
+        }
+        if (this.imageCache.size >= 500) this.imageCache.delete(this.imageCache.keys().next().value);
+        this.imageCache.set(url, { image, expiresAt: Date.now() + (image ? 3_600_000 : 300_000) });
+        return image;
+    }
+
+    private async ensureNewsImages(items: RawNewsItem[], publisherUrls: string[]): Promise<RawNewsItem[]> {
+        items = items.filter(item => isNewsArticleUrl(item.url));
+        const deadline = Date.now() + 15_000;
+        let next = 0;
+        await Promise.all(Array.from({ length: Math.min(4, items.length) }, async () => {
+            while (next < items.length) {
+                const item = items[next++];
+                item.imageUrl = normalizeSourceImage(item.imageUrl, item.url);
+                if (!item.imageUrl && Date.now() < deadline) {
+                    item.imageUrl = await this.fetchArticleImage(item.url, publisherUrls);
+                }
+            }
+        }));
+        let addedPhotos = 0;
+        for (const item of items) {
+            if (!item.imageUrl) {
+                item.imageUrl = resolveNewsImage(item.title);
+                addedPhotos++;
+            }
+        }
+        if (addedPhotos) console.log(`[NewsFetcher] Se agregaron fotos relacionadas a ${addedPhotos} noticias`);
+        return items.sort((a, b) => Number(isIllustrativeNewsImage(a.imageUrl)) - Number(isIllustrativeNewsImage(b.imageUrl)));
     }
 
     /**
@@ -140,10 +199,10 @@ export class NewsFetcherService {
         language?: string | null;
     }): Promise<RawNewsItem[]> {
         if (source.rssUrl) {
-            return this.fetchConfiguredRssSource(source);
+            return this.ensureNewsImages(await this.fetchConfiguredRssSource(source), [source.baseUrl, source.url, source.rssUrl].filter(Boolean));
         }
-        if (source.apiUrl) return this.fetchConfiguredApiSource(source);
-        if (source.apiType === 'scraper' && source.baseUrl) return this.fetchConfiguredScraperSource(source);
+        if (source.apiUrl) return this.ensureNewsImages(await this.fetchConfiguredApiSource(source), [source.baseUrl, source.url, source.apiUrl].filter(Boolean));
+        if (source.apiType === 'scraper' && source.baseUrl) return this.ensureNewsImages(await this.fetchConfiguredScraperSource(source), [source.baseUrl]);
         throw new Error(`La fuente ${source.name} no tiene RSS, API ni scraping habilitado`);
     }
 
@@ -175,21 +234,17 @@ export class NewsFetcherService {
         for (const item of parsed.items) {
             if (!item.title || !item.link) continue;
 
-            let htmlContent = item.contentEncoded || item.content || item.description || '';
+            const htmlContent = item.contentEncoded || item.content || item.description || '';
             let cleanSummary = '';
             let cleanContent = '';
-            let imageUrl = '';
+            const imageUrl = extractRssNewsImage(item, item.link);
 
             if (htmlContent) {
                 const $ = cheerio.load(htmlContent);
-                const img = $('img').first();
-                imageUrl = img.attr('src') || '';
                 const text = $.text().replace(/\s+/g, ' ').trim();
                 cleanSummary = text.substring(0, 400);
                 cleanContent = text;
             }
-
-            if (!imageUrl) imageUrl = this.extractRssImage(item) || '';
 
             const publishedAt = item.isoDate || item.pubDate
                 ? new Date(item.isoDate || item.pubDate as string)
@@ -304,20 +359,14 @@ export class NewsFetcherService {
                     if (!item.title || !item.link) continue;
 
                     // 1. Extract content safely using Cheerio if HTML exists
-                    let htmlContent = item.contentEncoded || item.content || item.description || '';
+                    const htmlContent = item.contentEncoded || item.content || item.description || '';
                     let cleanSummary = '';
                     let cleanContent = '';
-                    let imageUrl = '';
+                    const imageUrl = extractRssNewsImage(item, item.link);
 
                     if (htmlContent) {
                         try {
                             const $ = cheerio.load(htmlContent);
-                            // Extract image
-                            const img = $('img').first();
-                            if (img.length && img.attr('src')) {
-                                imageUrl = img.attr('src') as string;
-                            }
-
                             // Extract pure text
                             const text = $.text().replace(/\s+/g, ' ').trim();
                             cleanSummary = text.substring(0, 300);
@@ -326,9 +375,6 @@ export class NewsFetcherService {
                             cleanSummary = htmlContent.replace(/<[^>]+>/g, '').substring(0, 300);
                         }
                     }
-
-                    // Feeds expose images through several RSS/Atom conventions.
-                    if (!imageUrl) imageUrl = this.extractRssImage(item) || '';
 
                     items.push({
                         title: item.title,
@@ -346,8 +392,9 @@ export class NewsFetcherService {
                     if (items.length >= 20) break;
                 }
 
-                allNews.push(...items);
-                console.log(`[NewsFetcher] Fetched ${items.length} items from ${feed.name}`);
+                const illustrated = await this.ensureNewsImages(items, [feed.url]);
+                allNews.push(...illustrated);
+                console.log(`[NewsFetcher] Fetched ${illustrated.length} illustrated items from ${feed.name}`);
 
                 await new Promise(resolve => setTimeout(resolve, 800));
 
@@ -374,13 +421,12 @@ export class NewsFetcherService {
 
             const $ = cheerio.load(html);
 
+            const ogImage = extractHtmlNewsImage(html, res.url || url);
+
             // Remove unnecessary tags
             $('script, style, noscript, iframe, nav, footer, header').remove();
 
             const title = $('title').text() || $('h1').first().text();
-
-            let ogImage = $('meta[property="og:image"]').attr('content');
-            if (!ogImage) ogImage = $('img').first().attr('src');
 
             // Focus on paragraphs for article text
             const paragraphs: string[] = [];
@@ -462,94 +508,7 @@ export class NewsFetcherService {
             }
         }
 
-        return allNews;
+        return this.ensureNewsImages(allNews, []);
     }
 
-    /**
-     * Fallback mock news when APIs fail
-     */
-    private getFallbackNews(): RawNewsItem[] {
-        return [
-            {
-                title: 'Apple Unveils Revolutionary AI Features for iPhone',
-                summary: 'Apple announced groundbreaking AI integration across its product lineup, sending shares higher in after-hours trading.',
-                content: 'Apple Inc. has announced a major update to its iPhone lineup with new AI-powered features...',
-                url: 'https://example.com/apple-ai',
-                imageUrl: 'https://images.unsplash.com/photo-1611974765270-ca1258634369?w=600',
-                source: 'Financial Times',
-                publishedAt: new Date(),
-                language: 'en',
-            },
-            {
-                title: 'Bitcoin Alcanza Nuevo Máximo Histórico',
-                summary: 'El Bitcoin supera los $70,000 impulsado por la creciente adopción institucional.',
-                content: 'Bitcoin ha alcanzado un nuevo máximo histórico superando los $70,000...',
-                url: 'https://example.com/bitcoin-ath',
-                imageUrl: 'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=600',
-                source: 'Ámbito Financiero',
-                publishedAt: new Date(Date.now() - 3600000),
-                language: 'es',
-            },
-            {
-                title: 'Fed Mantiene Tasas de Interés Estables',
-                summary: 'La Reserva Federal mantiene las tasas sin cambios mientras evalúa datos económicos recientes.',
-                content: 'La Reserva Federal de Estados Unidos ha decidido mantener las tasas de interés...',
-                url: 'https://example.com/fed-rates',
-                imageUrl: 'https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=600',
-                source: 'El Cronista',
-                publishedAt: new Date(Date.now() - 7200000),
-                language: 'es',
-            },
-            {
-                title: 'Tesla Expands Production Capacity',
-                summary: 'Tesla announces plans to increase global production capacity with new manufacturing facilities.',
-                content: 'Tesla Inc. has announced plans to significantly expand its production capacity...',
-                url: 'https://example.com/tesla-expansion',
-                imageUrl: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=600',
-                source: 'Reuters',
-                publishedAt: new Date(Date.now() - 10800000),
-                language: 'en',
-            },
-            {
-                title: 'Mercado Libre Expande Operaciones Fintech',
-                summary: 'La compañía argentina anuncia nuevos servicios financieros digitales.',
-                content: 'Mercado Libre continúa su expansión en el sector fintech con nuevos servicios...',
-                url: 'https://example.com/meli-fintech',
-                imageUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600',
-                source: 'iProfesional',
-                publishedAt: new Date(Date.now() - 14400000),
-                language: 'es',
-            },
-            {
-                title: 'S&P 500 Reaches All-Time High',
-                summary: 'Major stock indices hit new records driven by tech and financial sectors.',
-                content: 'The S&P 500 index has reached a new all-time high as investor confidence grows...',
-                url: 'https://example.com/sp500-high',
-                imageUrl: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=600',
-                source: 'Bloomberg',
-                publishedAt: new Date(Date.now() - 18000000),
-                language: 'en',
-            },
-            {
-                title: 'YPF Anuncia Récord de Producción en Vaca Muerta',
-                summary: 'La petrolera estatal alcanza niveles históricos de extracción.',
-                content: 'YPF ha anunciado récords de producción en la formación Vaca Muerta...',
-                url: 'https://example.com/ypf-record',
-                imageUrl: 'https://images.unsplash.com/photo-1545670723-196ed0954986?w=600',
-                source: 'Ámbito Financiero',
-                publishedAt: new Date(Date.now() - 21600000),
-                language: 'es',
-            },
-            {
-                title: 'Nvidia Announces Next-Gen AI Chips',
-                summary: 'Nvidia unveils powerful new processors for artificial intelligence applications.',
-                content: 'Nvidia Corporation has announced a new generation of AI processors...',
-                url: 'https://example.com/nvidia-chips',
-                imageUrl: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=600',
-                source: 'CNBC',
-                publishedAt: new Date(Date.now() - 25200000),
-                language: 'en',
-            },
-        ];
-    }
 }

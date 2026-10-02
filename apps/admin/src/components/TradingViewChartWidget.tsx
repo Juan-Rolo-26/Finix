@@ -176,11 +176,23 @@ export function TradingViewChartWidget({
         widgetContainer.style.minHeight = typeof height === 'number' ? `${height}px` : height;
         containerRef.current.appendChild(widgetContainer);
 
+        // Forzar a que cualquier wrapper o iframe interno generado por TradingView use el 100% de la altura
+        const styleTag = document.createElement('style');
+        styleTag.textContent = `
+            #${containerId}, #${containerId} > div, #${containerId} iframe {
+                width: 100% !important;
+                height: 100% !important;
+                min-height: 100% !important;
+            }
+        `;
+        widgetContainer.appendChild(styleTag);
+
         let isMounted = true;
         let timeoutId: any = null;
+        let observer: ResizeObserver | null = null;
 
         const initWidget = () => {
-            if (!isMounted) return;
+            if (!isMounted || !containerRef.current) return;
             try {
                 if (typeof (window as any).TradingView === 'undefined') {
                     setHasError(true);
@@ -192,7 +204,7 @@ export function TradingViewChartWidget({
                     container_id: containerId,
                     autosize: true,
                     width: '100%',
-                    height: '100%',
+                    height: typeof height === 'number' ? height : '100%',
                     symbol: canonicalSymbol,
                     interval: interval,
                     timezone: 'America/Argentina/Buenos_Aires',
@@ -224,33 +236,58 @@ export function TradingViewChartWidget({
             }
         };
 
-        // Cargar script de TradingView si no existe
-        if (typeof (window as any).TradingView === 'undefined') {
-            const existingScript = document.getElementById('tradingview-widget-script');
-            if (!existingScript) {
-                const script = document.createElement('script');
-                script.id = 'tradingview-widget-script';
-                script.src = 'https://s3.tradingview.com/tv.js';
-                script.async = true;
-                script.onload = () => {
-                    if (isMounted) initWidget();
-                };
-                script.onerror = () => {
-                    if (isMounted) {
-                        setHasError(true);
-                        setLoading(false);
-                    }
-                };
-                document.head.appendChild(script);
-            } else {
-                existingScript.addEventListener('load', initWidget, { once: true });
+        const tryStart = () => {
+            if (!containerRef.current) return;
+            // Si el contenedor se encuentra dentro de un elemento oculto (<details> cerrado, tab, etc.)
+            // esperamos con ResizeObserver a que tenga dimensiones visibles para que TradingView no se aplaste
+            if (containerRef.current.offsetHeight === 0 && containerRef.current.offsetWidth === 0) {
+                if (typeof ResizeObserver !== 'undefined' && !observer) {
+                    observer = new ResizeObserver((entries) => {
+                        for (const entry of entries) {
+                            if (entry.contentRect.height > 50 && entry.contentRect.width > 50) {
+                                observer?.disconnect();
+                                observer = null;
+                                tryStart();
+                                break;
+                            }
+                        }
+                    });
+                    observer.observe(containerRef.current);
+                }
+                return;
             }
-        } else {
-            initWidget();
-        }
+
+            // Cargar script de TradingView si no existe
+            if (typeof (window as any).TradingView === 'undefined') {
+                const existingScript = document.getElementById('tradingview-widget-script');
+                if (!existingScript) {
+                    const script = document.createElement('script');
+                    script.id = 'tradingview-widget-script';
+                    script.src = 'https://s3.tradingview.com/tv.js';
+                    script.async = true;
+                    script.onload = () => {
+                        if (isMounted) initWidget();
+                    };
+                    script.onerror = () => {
+                        if (isMounted) {
+                            setHasError(true);
+                            setLoading(false);
+                        }
+                    };
+                    document.head.appendChild(script);
+                } else {
+                    existingScript.addEventListener('load', initWidget, { once: true });
+                }
+            } else {
+                initWidget();
+            }
+        };
+
+        tryStart();
 
         return () => {
             isMounted = false;
+            if (observer) observer.disconnect();
             if (timeoutId) clearTimeout(timeoutId);
         };
     }, [canonicalSymbol, interval, height, currentTheme, allowSymbolChange, retryKey]);

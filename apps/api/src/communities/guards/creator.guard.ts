@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
+import { isFreeAccessEnabled } from '../../access/free-access';
 
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['ACTIVE']);
 
@@ -30,6 +31,8 @@ export class CreatorGuard implements CanActivate {
         if (!user) {
             throw new UnauthorizedException('Usuario no encontrado.');
         }
+
+        if (isFreeAccessEnabled()) return true;
 
         const adminRoles = new Set(['ADMIN', 'SUPER_ADMIN']);
         if (adminRoles.has(user.role)) {

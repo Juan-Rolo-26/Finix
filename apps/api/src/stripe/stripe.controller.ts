@@ -3,6 +3,7 @@ import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { StripeService } from './stripe.service';
 import { CreateCommunityPaymentDto } from './dto/stripe.dto';
+import { getAccessMode, isFreeAccessEnabled } from '../access/free-access';
 
 @Controller('stripe')
 export class StripeController {
@@ -11,7 +12,9 @@ export class StripeController {
     @Get('config')
     async getConfig() {
         return {
-            configured: this.stripeService.isConfigured(),
+            ...getAccessMode(),
+            configured: !isFreeAccessEnabled() && this.stripeService.isConfigured(),
+            credentialsConfigured: this.stripeService.isConfigured(),
             communityCurrency: 'ARS',
             proPriceUsd: await this.stripeService.getProMonthlyPriceUsd(),
         };

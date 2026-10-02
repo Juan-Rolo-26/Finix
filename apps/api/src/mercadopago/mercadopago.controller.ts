@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { MercadoPagoService } from './mercadopago.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { getAccessMode } from '../access/free-access';
 
 @Controller('mercadopago')
 export class MercadoPagoController {
@@ -45,6 +46,7 @@ export class MercadoPagoController {
     @Get('config')
     getConfig() {
         return {
+            ...getAccessMode(),
             configured: this.mpService.isCheckoutReady(),
             credentialsConfigured: this.mpService.isConfigured(),
             production: this.mpService.isProductionCredential(),

@@ -3,6 +3,7 @@ import { User } from '@finix/shared';
 import { supabase } from '@/lib/supabase';
 import { apiFetch, getAccessToken, refreshAccessToken, setAccessToken } from '@/lib/api';
 import { usePreferencesStore } from './preferencesStore';
+import { isFreeAccessEnabled } from './platformAccessStore';
 interface AuthState {
     token: string | null;
     user: User | null;
@@ -49,6 +50,7 @@ export function isProUser(user: any): boolean {
         } catch { }
     }
     if (!candidate) return false;
+    if (isFreeAccessEnabled()) return true;
     if (candidate.proAccessOverride === true) return true;
     if (candidate.proAccessOverride === false) return false;
     if (candidate.plan === 'FREE' || candidate.isPro === false || candidate.subscriptionStatus === 'CANCELED') {
@@ -73,6 +75,7 @@ export function isProUser(user: any): boolean {
 
 export function isCreatorUser(user: any): boolean {
     if (!user) return false;
+    if (isFreeAccessEnabled()) return true;
     if (user.proAccessOverride === false) return false;
     if (user.isCreator === false) return false;
     if (isJuanUser(user)) return true;
@@ -93,6 +96,7 @@ export function isCreatorUser(user: any): boolean {
 /** Access to the Communities section requires an active Finix PRO-family plan. */
 export function hasCommunityAccess(user: any): boolean {
     if (!user) return false;
+    if (isFreeAccessEnabled()) return true;
     if (user.proAccessOverride === false) return false;
     if (user.proAccessOverride === true) return true;
     if (isJuanUser(user)) return true;
@@ -117,6 +121,7 @@ export function hasCommunityAccess(user: any): boolean {
 /** Only an active Creator-family plan can create or administer communities. */
 export function hasCommunityCreatorAccess(user: any): boolean {
     if (!hasCommunityAccess(user)) return false;
+    if (isFreeAccessEnabled()) return true;
     if (isJuanUser(user)) return true;
 
     const role = String(user.role || '').toUpperCase();

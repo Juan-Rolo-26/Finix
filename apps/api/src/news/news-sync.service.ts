@@ -9,7 +9,8 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../prisma.service';
 import { NewsFetcherService, RawNewsItem } from './news-fetcher.service';
 import { NewsSlotsService } from './news-slots.service';
-import { resolveNewsImage } from './news-image.util';
+import { normalizeSourceImage } from './news-source-image.util';
+import { isIllustrativeNewsImage, NEWS_ILLUSTRATION_URLS, resolveNewsImage } from './news-image.util';
 import {
     DEFAULT_NEWS_CATEGORIES,
     DEFAULT_NEWS_SOURCES,
@@ -334,20 +335,7 @@ export class NewsSyncService {
             duplicatesDetected = result.duplicates;
 
             for (const category of categories) {
-                const topArticles = await this.prisma.newsArticle.findMany({
-                    where: {
-                        categoryId: category.id,
-                        isActive: true,
-                        isPublished: true,
-                        status: 'PUBLISHED',
-                    },
-                    orderBy: [
-                        { relevanceScore: 'desc' },
-                        { publishedAt: 'desc' },
-                    ],
-                    take: 5,
-                    select: { id: true },
-                });
+                const topArticles = await this.findArticlesWithPhotos(category.id);
                 await this.slotsService.replaceAutomaticSlots(category.id, topArticles.map((article) => article.id));
                 await this.prisma.newsCategory.update({
                     where: { id: category.id },
@@ -731,6 +719,33 @@ export class NewsSyncService {
         return scored[0]?.category || links[0];
     }
 
+    private async findArticlesWithPhotos(categoryId: string) {
+        const options = {
+            where: {
+                categoryId,
+                isActive: true,
+                isPublished: true,
+                status: 'PUBLISHED' as const,
+                AND: [{ imageUrl: { not: null } }, { imageUrl: { not: '' } }],
+            },
+            orderBy: [{ relevanceScore: 'desc' as const }, { publishedAt: 'desc' as const }],
+            select: { id: true },
+        };
+        // Prefer another news story with its own photo before using illustrations.
+        const originals = await this.prisma.newsArticle.findMany({
+            ...options,
+            where: { ...options.where, imageUrl: { notIn: NEWS_ILLUSTRATION_URLS } },
+            take: 5,
+        });
+        if (originals.length === 5) return originals;
+        const illustrated = await this.prisma.newsArticle.findMany({
+            ...options,
+            where: { ...options.where, imageUrl: { in: NEWS_ILLUSTRATION_URLS } },
+            take: 5 - originals.length,
+        });
+        return [...originals, ...illustrated];
+    }
+
     private async persistArticles(
         collected: Array<{ item: RawNewsItem; source: any; category: any }>,
         categories: any[],
@@ -771,6 +786,9 @@ export class NewsSyncService {
 
         for (const record of ordered) {
             const item = record.item;
+            // Enforce the photo requirement again at the database boundary.
+            const suppliedImage = normalizeSourceImage(item.imageUrl, item.url);
+            const sourceImage = resolveNewsImage(item.title, record.category.slug, isIllustrativeNewsImage(suppliedImage) ? undefined : suppliedImage);
             const normalizedUrl = normalizeNewsUrl(item.url);
             const normalizedTitle = normalizeNewsTitle(item.title);
             const tickers = this.extractTickers(`${item.title} ${item.summary} ${item.content}`);
@@ -786,9 +804,10 @@ export class NewsSyncService {
             if (existing) {
                 duplicates += 1;
                 const nextScore = Math.max(existing.relevanceScore || 0, relevance);
-                const nextImageUrl = existing.customImage
-                    ? existing.imageUrl
-                    : resolveNewsImage(item.title, record.category.slug, item.imageUrl || existing.imageUrl);
+                const previousImage = normalizeSourceImage(existing.imageUrl, existing.url);
+                const keepPreviousPhoto = previousImage && (existing.customImage ||
+                    (isIllustrativeNewsImage(sourceImage) && !isIllustrativeNewsImage(previousImage)));
+                const nextImageUrl = keepPreviousPhoto ? previousImage : sourceImage;
                 await this.prisma.newsArticle.update({
                     where: { id: existing.id },
                     data: {
@@ -815,7 +834,7 @@ export class NewsSyncService {
                     relevanceScore: relevance,
                     title: item.title.slice(0, 500),
                     description: (item.summary || item.content || '').slice(0, 2000),
-                    imageUrl: resolveNewsImage(item.title, record.category.slug, item.imageUrl),
+                    imageUrl: sourceImage,
                     sourceName: record.source.name,
                     sourceUrl: record.source.baseUrl || record.source.url,
                     publishedAt,

@@ -1,3 +1,5 @@
+import FreeAccessNotice from '@/components/FreeAccessNotice';
+import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import { isProUser, useAuthStore } from '@/stores/authStore';
@@ -155,6 +157,7 @@ const SectionHeader = ({ icon, title, description }: { icon: React.ReactNode; ti
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Settings() {
+    const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const navigate = useNavigate();
     const { user, updateUser, syncFromSession, logout } = useAuthStore();
     const { setTheme: setGlobalTheme, setLanguage: setGlobalLanguage, updatePreferences: setGlobalPreferences } = usePreferencesStore();
@@ -453,14 +456,14 @@ export default function Settings() {
     const isExplicitlyFree = (effectiveUser as any)?.proAccessOverride === false || effectiveUser?.plan === 'FREE' || (effectiveUser as any)?.isPro === false;
     const isExplicitlyNoCreator = (effectiveUser as any)?.proAccessOverride === false || user?.isCreator === false || settings?.isCreator === false;
 
-    const isProActive = !isExplicitlyFree && isProUser(effectiveUser);
+    const isProActive = freeAccess || (!isExplicitlyFree && isProUser(effectiveUser));
 
-    const isCreatorActive = !isExplicitlyNoCreator && Boolean(
+    const isCreatorActive = freeAccess || (!isExplicitlyNoCreator && Boolean(
         (user?.isCreator && user?.subscriptionStatus === 'ACTIVE') ||
         (settings?.isCreator && settings?.subscriptionStatus === 'ACTIVE') ||
         ((user?.accountType === 'CREATOR' || settings?.accountType === 'CREATOR') && (user?.subscriptionStatus === 'ACTIVE' || settings?.subscriptionStatus === 'ACTIVE')) ||
         user?.role === 'ADMIN'
-    );
+    ));
 
     // ─── Subscription management ─────────────────────────────────────────────
     const [billingOverview, setBillingOverview] = useState<any>(null);
@@ -620,6 +623,7 @@ export default function Settings() {
 
     return (
         <div className="p-4 md:p-6 lg:p-8 w-full space-y-6 pb-16">
+            <FreeAccessNotice />
             {/* Header */}
             <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-7 shadow-xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1080,10 +1084,10 @@ export default function Settings() {
                             </div>
                             <div className="sm:text-right shrink-0">
                                 <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground tabular-nums">
-                                    ${proPriceArs.toLocaleString('es-AR')}
-                                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400 ml-1.5">ARS</span>
+                                    {freeAccess ? 'Gratis' : `$${proPriceArs.toLocaleString('es-AR')}`}
+                                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400 ml-1.5">{!freeAccess && 'ARS'}</span>
                                 </span>
-                                <span className="text-xs sm:text-sm font-semibold text-muted-foreground block mt-0.5">/ mes contratado</span>
+                                <span className="text-xs sm:text-sm font-semibold text-muted-foreground block mt-0.5">{freeAccess ? 'durante esta etapa' : '/ mes contratado'}</span>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-6 p-6 sm:p-7">
@@ -1139,14 +1143,14 @@ export default function Settings() {
                                         Estado del plan
                                     </span>
                                     <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold uppercase tracking-wide bg-background border border-border/80 shadow-2xs text-foreground">
-                                        {proBilling?.status === 'PENDING' ? 'Pendiente' : isProActive ? (proBilling?.status || settings?.subscriptionStatus || 'Activo') : 'Inactivo'}
+                                        {freeAccess && !proBilling ? 'Acceso gratuito' : proBilling?.status === 'PENDING' ? 'Pendiente' : isProActive ? (proBilling?.status || settings?.subscriptionStatus || 'Activo') : 'Inactivo'}
                                     </span>
                                 </div>
                             </div>
 
                             {/* Actions */}
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-border/40">
-                                {proBilling?.status === 'PENDING' ? (
+                                {freeAccess && !proBilling ? <p className="text-sm font-medium">PRO está incluido gratis. No necesitás contratar una suscripción.</p> : proBilling?.status === 'PENDING' ? (
                                     <>
                                         <p className="text-sm text-muted-foreground font-medium">La autorización de pago todavía está pendiente.</p>
                                         <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('PRO'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl shadow-xs">Cancelar solicitud</Button>
@@ -1239,10 +1243,10 @@ export default function Settings() {
                             </div>
                             <div className="sm:text-right shrink-0">
                                 <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground tabular-nums">
-                                    ${Number(billingOverview?.creatorPriceArs || 29900).toLocaleString('es-AR')}
-                                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400 ml-1.5">ARS</span>
+                                    {freeAccess ? 'Gratis' : `$${Number(billingOverview?.creatorPriceArs || 29900).toLocaleString('es-AR')}`}
+                                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400 ml-1.5">{!freeAccess && 'ARS'}</span>
                                 </span>
-                                <span className="block text-xs sm:text-sm font-semibold text-muted-foreground mt-0.5">/ mes contratado</span>
+                                <span className="block text-xs sm:text-sm font-semibold text-muted-foreground mt-0.5">{freeAccess ? 'durante esta etapa' : '/ mes contratado'}</span>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-6 p-6 sm:p-7">
@@ -1291,13 +1295,13 @@ export default function Settings() {
                                         Estado
                                     </span>
                                     <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold uppercase tracking-wide bg-background border border-border/80 shadow-2xs text-foreground">
-                                        {isCreatorActive ? 'Activo' : 'Inactivo'}
+                                        {freeAccess && !creatorBilling ? 'Acceso gratuito' : isCreatorActive ? 'Activo' : 'Inactivo'}
                                     </span>
                                 </div>
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-border/40">
-                                {creatorBilling?.status === 'PENDING' ? (
+                                {freeAccess && !creatorBilling ? <p className="text-sm font-medium">Creator está incluido gratis. Podés crear tu comunidad sin pagar.</p> : creatorBilling?.status === 'PENDING' ? (
                                     <>
                                         <p className="text-sm text-muted-foreground font-medium">La autorización de pago todavía está pendiente.</p>
                                         <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl shadow-xs">Cancelar solicitud</Button>
@@ -1597,7 +1601,7 @@ export default function Settings() {
                                 {isProActive ? (
                                     <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2.5 text-xs text-emerald-400">
                                         <Check className="h-4 w-4 shrink-0" />
-                                        <span>Tu suscripción Finix PRO está activa. Tenés acceso total a las notificaciones y reportes directos en tu casilla.</span>
+                                        <span>{freeAccess ? 'Las notificaciones y reportes están incluidos gratis durante esta etapa.' : 'Tu suscripción Finix PRO está activa. Tenés acceso total a las notificaciones y reportes directos en tu casilla.'}</span>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-500/25 bg-background/80 p-3.5">

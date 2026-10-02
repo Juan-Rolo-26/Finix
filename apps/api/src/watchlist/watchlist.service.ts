@@ -10,6 +10,7 @@ import { MarketService } from '../market/market.service';
 import { AlertsService } from '../alerts/alerts.service';
 import { getCedearDefinition } from '../market/cedear.data';
 import { WATCHLIST_CONFIG } from './watchlist.config';
+import { isFreeAccessEnabled } from '../access/free-access';
 import {
     CreateWatchlistDto,
     UpdateWatchlistDto,
@@ -37,6 +38,7 @@ export class WatchlistService {
             select: { plan: true },
         });
         const plan = (user?.plan || 'FREE').toUpperCase();
+        if (user && isFreeAccessEnabled()) return 'CREATOR';
         if (plan === 'CREATOR') return 'CREATOR';
         if (plan === 'PRO') return 'PRO';
         return 'FREE';

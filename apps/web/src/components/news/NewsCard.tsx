@@ -1,5 +1,5 @@
 import { Clock, ExternalLink } from 'lucide-react';
-import { resolveNewsImage } from '@/lib/newsImage';
+import { handleNewsImageError, resolveNewsImage } from '@/lib/newsImage';
 
 export interface NewsArticle {
     id: string;
@@ -77,7 +77,8 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         alt={article.title}
                         loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = resolveNewsImage(article.title, categoryName); }}
+                        referrerPolicy="no-referrer"
+                        onError={(event) => handleNewsImageError(event, article.title, categoryName)}
                     />
                     {/* Multi-stop deep dark overlay to guarantee 100% contrast for white text */}
                     <div
@@ -161,7 +162,8 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         alt={article.title}
                         loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = resolveNewsImage(article.title, categoryName); }}
+                        referrerPolicy="no-referrer"
+                        onError={(event) => handleNewsImageError(event, article.title, categoryName)}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     {categoryName && (
@@ -224,7 +226,8 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         alt={article.title}
                         loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = resolveNewsImage(article.title, categoryName); }}
+                        referrerPolicy="no-referrer"
+                        onError={(event) => handleNewsImageError(event, article.title, categoryName)}
                     />
                     <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[hsl(var(--card))]" />
                     <div className="md:hidden absolute inset-0 bg-gradient-to-t from-[hsl(var(--card))] via-transparent to-transparent" />
@@ -287,7 +290,8 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                     alt={article.title}
                     loading="lazy"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = resolveNewsImage(article.title, categoryName); }}
+                    referrerPolicy="no-referrer"
+                    onError={(event) => handleNewsImageError(event, article.title, categoryName)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                 {categoryName && (

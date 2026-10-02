@@ -1,3 +1,5 @@
+import FreeAccessNotice from '@/components/FreeAccessNotice';
+import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Check, Sparkles, Zap, Shield, Target, Loader2, ArrowRight } from 'lucide-react';
@@ -18,6 +20,7 @@ const FEATURES = [
 ];
 
 export default function ProUpgrade() {
+    const { freeAccessEnabled: freeAccess, purchasesPaused } = usePlatformAccessStore();
     const navigate = useNavigate();
     const user = useAuthStore(s => s.user);
     const hasPro = isProUser(user);
@@ -38,6 +41,7 @@ export default function ProUpgrade() {
     }, []);
 
     const handleUpgrade = async () => {
+        if (purchasesPaused) { navigate(user ? '/market' : '/auth?mode=register'); return; }
         if (!user) {
             navigate(`/auth?redirect=${encodeURIComponent('/pro')}&plan=PRO`);
             return;
@@ -47,6 +51,7 @@ export default function ProUpgrade() {
     };
 
     const confirmCheckout = async (autoRenew: boolean) => {
+        if (purchasesPaused) return;
         setLoading(true);
         setCheckoutError(null);
         try {
@@ -82,6 +87,7 @@ export default function ProUpgrade() {
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden">
+            <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-4"><FreeAccessNotice /></div>
             {/* Background Effects */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full opacity-30"
@@ -171,18 +177,18 @@ export default function ProUpgrade() {
                             </div>
 
                             <div className="flex items-baseline gap-2 mb-1">
-                                <span className="text-5xl font-extrabold tracking-tighter">${proPriceArs.toLocaleString('es-AR')}</span>
-                                <span className="text-muted-foreground font-medium">ARS / mes</span>
+                                <span className="text-5xl font-extrabold tracking-tighter">{freeAccess ? 'Gratis' : `$${proPriceArs.toLocaleString('es-AR')}`} </span>
+                                <span className="text-muted-foreground font-medium">{freeAccess ? 'durante esta etapa' : 'ARS / mes'}</span>
                             </div>
                             <p className="text-xs text-emerald-400 font-semibold mb-6 flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5" /> Elegí un pago mensual o la renovación automática con Mercado Pago.
+                                <Sparkles className="w-3.5 h-3.5" /> {freeAccess ? 'Todas las funciones PRO están incluidas sin pagar.' : 'Elegí un pago mensual o la renovación automática con Mercado Pago.'}
                             </p>
 
                             <button 
                                 onClick={handleUpgrade}
-                                disabled={loading || hasPro}
+                                disabled={loading || (!freeAccess && hasPro)}
                                 className={`w-full py-4 px-6 rounded-2xl font-extrabold text-base sm:text-lg flex items-center justify-center gap-3 transition-all duration-200 ${
-                                    hasPro
+                                    hasPro && !freeAccess
                                         ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                                         : 'bg-gradient-to-r from-emerald-600 via-primary to-emerald-500 hover:from-emerald-500 hover:to-primary text-white shadow-xl shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.01] active:scale-[0.99] border border-emerald-400/30 cursor-pointer'
                                 }`}
@@ -194,10 +200,10 @@ export default function ProUpgrade() {
                                     </>
                                 ) : !user ? (
                                     <>
-                                        <span>Iniciar sesión para comprar</span>
+                                        <span>{freeAccess ? 'Crear cuenta gratis' : 'Iniciar sesión para comprar'}</span>
                                         <ArrowRight className="w-5 h-5" />
                                     </>
-                                ) : hasPro ? (
+                                ) : freeAccess ? ('Usar PRO gratis') : hasPro ? (
                                     'Ya eres PRO'
                                 ) : (
                                     <>
@@ -211,7 +217,7 @@ export default function ProUpgrade() {
                             </p>
 
                             <div className="space-y-4 pt-6 border-t border-border/40">
-                                {FEATURES.map((feat, i) => (
+                                {FEATURES.filter(feature => !freeAccess || !feature.startsWith('Pago mensual')).map((feat, i) => (
                                     <div key={i} className="flex items-start gap-3">
                                         <div className="mt-0.5 rounded-full bg-primary/20 p-1 shrink-0">
                                             <Check className="w-3 h-3 text-primary" />

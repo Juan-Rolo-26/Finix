@@ -69,14 +69,14 @@ export function StoriesRail() {
 
     const currentUserStory = useMemo(() => {
         if (!currentUser) return null;
-        return groups.find((group) => group.author.id === currentUser.id) || null;
+        return groups.find((group) => group?.author?.id === currentUser.id) || null;
     }, [currentUser, groups]);
 
     const handleStoryCreated = (story: StoryItem) => {
         if (!currentUser) return;
 
         setGroups((previous) => {
-            const existingIndex = previous.findIndex((group) => group.author.id === currentUser.id);
+            const existingIndex = previous.findIndex((group) => group?.author?.id === currentUser.id);
 
             if (existingIndex === -1) {
                 return [buildOwnGroup(story, currentUser), ...previous];
@@ -87,7 +87,7 @@ export function StoriesRail() {
             next[existingIndex] = {
                 ...currentGroup,
                 author: currentGroup.author || currentUser,
-                stories: [...currentGroup.stories, { ...story, author: currentGroup.author || currentUser, viewedByMe: true }],
+                stories: [...(currentGroup.stories || []), { ...story, author: currentGroup.author || currentUser, viewedByMe: true }],
                 latestAt: story.createdAt,
                 hasUnseen: false,
             };
@@ -111,7 +111,7 @@ export function StoriesRail() {
                         className="group flex flex-shrink-0 flex-col items-center gap-2"
                         onClick={() => {
                             if (currentUserStory && currentUser) {
-                                const ownIndex = groups.findIndex((group) => group.author.id === currentUser.id);
+                                const ownIndex = groups.findIndex((group) => group?.author?.id === currentUser.id);
                                 setViewerGroupIndex(ownIndex >= 0 ? ownIndex : null);
                                 return;
                             }
@@ -153,33 +153,35 @@ export function StoriesRail() {
                         ))
                     ) : (
                         groups
-                            .filter((group) => group.author.id !== currentUser?.id)
-                            .map((group) => {
-                                const index = groups.findIndex((entry) => entry.author.id === group.author.id);
-                                const latestStory = group.stories[group.stories.length - 1];
+                            .filter((group) => group?.author?.id && group.author.id !== currentUser?.id)
+                            .map((group, groupIdx) => {
+                                const index = groups.findIndex((entry) => entry?.author?.id === group.author?.id);
+                                const latestStory = group.stories?.[group.stories.length - 1];
+                                const authorUsername = group.author?.username || 'Usuario';
+                                const authorInitial = (authorUsername[0] || 'U').toUpperCase();
 
                                 return (
                                     <button
-                                        key={group.author.id}
+                                        key={group.author?.id || `story-group-${groupIdx}`}
                                         type="button"
                                         className="group flex flex-shrink-0 flex-col items-center gap-2"
-                                        onClick={() => setViewerGroupIndex(index)}
+                                        onClick={() => setViewerGroupIndex(index >= 0 ? index : null)}
                                     >
                                         <div className={`h-20 w-20 rounded-full p-[3px] ${group.hasUnseen ? 'bg-gradient-to-br from-primary via-emerald-300 to-sky-400' : 'bg-border/70'
                                             }`}>
                                             <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-background bg-card">
-                                                {group.author.avatarUrl ? (
-                                                    <img src={resolveMediaUrl(group.author.avatarUrl)} alt={group.author.username} className="h-full w-full object-cover" />
+                                                {group.author?.avatarUrl ? (
+                                                    <img src={resolveMediaUrl(group.author.avatarUrl)} alt={authorUsername} className="h-full w-full object-cover" />
                                                 ) : (
-                                                    <span className="text-xl font-bold uppercase text-foreground">{group.author.username[0]}</span>
+                                                    <span className="text-xl font-bold uppercase text-foreground">{authorInitial}</span>
                                                 )}
                                             </div>
                                         </div>
                                         <span className="w-20 truncate text-center text-[11px] font-medium text-foreground/75 group-hover:text-foreground">
-                                            {group.author.username}
+                                            {authorUsername}
                                         </span>
                                         <span className="text-[10px] text-muted-foreground/70">
-                                            {latestStory ? new Date(latestStory.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                            {latestStory?.createdAt ? new Date(latestStory.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''}
                                         </span>
                                     </button>
                                 );

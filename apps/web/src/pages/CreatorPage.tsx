@@ -1,3 +1,5 @@
+import FreeAccessNotice from '@/components/FreeAccessNotice';
+import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,6 +27,7 @@ import { apiFetch } from '@/lib/api';
 import { SubscriptionRenewalChoice } from '@/components/SubscriptionRenewalChoice';
 
 export default function CreatorPage() {
+    const { freeAccessEnabled: freeAccess, purchasesPaused } = usePlatformAccessStore();
     const navigate = useNavigate();
     const user = useAuthStore(s => s.user);
     const isCreator = isCreatorUser(user);
@@ -53,6 +56,7 @@ export default function CreatorPage() {
     }, []);
 
     const handleCheckoutCreator = async () => {
+        if (purchasesPaused) { navigate(user ? '/comunidades/crear' : '/auth?mode=register'); return; }
         if (!user) {
             navigate(`/auth?redirect=${encodeURIComponent('/creator')}&plan=Creador`);
             return;
@@ -68,6 +72,7 @@ export default function CreatorPage() {
     };
 
     const confirmCreatorCheckout = async (autoRenew: boolean) => {
+        if (purchasesPaused) return;
         setLoadingCheckout(true);
         try {
             const res = await apiFetch('/mercadopago/checkout/creator', {
@@ -123,6 +128,7 @@ export default function CreatorPage() {
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden selection:bg-amber-500/20 selection:text-amber-300">
+            <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-4"><FreeAccessNotice /></div>
             {/* Ambient Background Glows */}
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                 <div
@@ -390,7 +396,7 @@ export default function CreatorPage() {
                                 <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 text-xs text-muted-foreground space-y-1.5">
                                     <div className="flex items-center gap-1.5 text-foreground font-semibold">
                                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                                        Cobros automáticos recurrentes cada 30 días
+                                        {freeAccess ? 'Simulación para la futura etapa paga. Hoy los cobros están pausados.' : 'Cobros automáticos recurrentes cada 30 días'}
                                     </div>
                                     <p>
                                         Finix gestiona la cobranza automática vía Mercado Pago. Si el pago de un miembro falla, el sistema gestiona los reintentos y suspende el acceso al canal VIP sin que tengas que intervenir.
@@ -634,16 +640,16 @@ export default function CreatorPage() {
                                 Comenzá hoy como Finix Creator
                             </h3>
                             <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-6">
-                                Creá tu comunidad, atraé miembros y cobrá cuotas mensuales con el respaldo de una plataforma institucional.
+                                {freeAccess ? 'Creá tu comunidad y compartí contenido sin pagar. Los cobros a miembros están pausados durante esta etapa.' : 'Creá tu comunidad, atraé miembros y cobrá cuotas mensuales con el respaldo de una plataforma institucional.'}
                             </p>
 
                             <div className="flex items-baseline gap-2 mb-6">
                                 <span className="text-4xl sm:text-5xl font-black text-foreground">
-                                    ${creatorPrice.toLocaleString('es-AR')}
+                                    {freeAccess ? 'Gratis' : `$${creatorPrice.toLocaleString('es-AR')}`}
                                 </span>
-                                <span className="text-sm font-semibold text-muted-foreground">ARS / mes</span>
+                                <span className="text-sm font-semibold text-muted-foreground">{freeAccess ? 'durante esta etapa' : 'ARS / mes'}</span>
                                 <span className="ml-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                                    Precio mensual
+                                    {freeAccess ? 'Acceso gratuito' : 'Precio mensual'}
                                 </span>
                             </div>
 
@@ -700,7 +706,7 @@ export default function CreatorPage() {
                                         <div className="flex items-center gap-2">
                                             <Crown className="w-5 h-5 fill-black" />
                                             <span>
-                                                {user ? 'Suscribirme al Plan Creador' : 'Iniciar sesión para suscribirme'}
+                                                {freeAccess ? 'Crear cuenta gratis' : user ? 'Suscribirme al Plan Creador' : 'Iniciar sesión para suscribirme'}
                                             </span>
                                             <ArrowRight className="w-4 h-4" />
                                         </div>

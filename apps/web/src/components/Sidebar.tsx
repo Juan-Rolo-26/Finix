@@ -1,3 +1,4 @@
+import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import type { ComponentType } from 'react';
 import { useState, useEffect } from 'react';
@@ -175,6 +176,7 @@ export function Sidebar() {
     const location = useLocation();
     const navigate = useNavigate();
     const { logout, user } = useAuthStore();
+    const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const { theme, setTheme, sidebarCollapsed: collapsed, toggleSidebar: setCollapsed } = usePreferencesStore();
     const [hov, setHov] = useState<string | null>(null);
     const [unreadMsgs, setUnreadMsgs] = useState(0);
@@ -844,7 +846,7 @@ export function Sidebar() {
                                 </p>
                                 <p className="text-[9.5px] uppercase tracking-[0.14em] font-bold leading-tight mt-0.5"
                                     style={{ color: (user?.role === 'ADMIN' || isProUser(user)) ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.6)' }}>
-                                    {user?.role === 'ADMIN' ? (isProUser(user) ? 'ADMIN · PRO' : 'ADMIN') : (isProUser(user) ? 'PRO' : 'Inversor')}
+                                    {freeAccess ? (user?.role === 'ADMIN' ? 'ADMIN · ACCESO GRATUITO' : 'ACCESO GRATUITO') : user?.role === 'ADMIN' ? (isProUser(user) ? 'ADMIN · PRO' : 'ADMIN') : (isProUser(user) ? 'PRO' : 'Inversor')}
                                 </p>
                             </div>
                         )}

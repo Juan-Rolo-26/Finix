@@ -4,6 +4,7 @@ import { MailService } from '../mail/mail.service';
 import { Prisma } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Interval } from '@nestjs/schedule';
+import { assertPurchasesEnabled, isFreeAccessEnabled } from '../access/free-access';
 
 @Injectable()
 export class MercadoPagoService {
@@ -58,11 +59,12 @@ export class MercadoPagoService {
     }
 
     public isCheckoutReady(): boolean {
-        return this.isConfigured()
+        return !isFreeAccessEnabled() && this.isConfigured()
             && (process.env.NODE_ENV !== 'production' || Boolean(process.env.MP_WEBHOOK_SECRET?.trim()));
     }
 
     private ensureCheckoutReady() {
+        assertPurchasesEnabled();
         if (!this.isConfigured()) {
             throw new ServiceUnavailableException('Mercado Pago no está configurado con credenciales válidas para este entorno.');
         }

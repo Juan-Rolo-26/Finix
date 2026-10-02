@@ -41,17 +41,24 @@ import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function timeAgo(dateStr: string): string {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const s = Math.floor(diff / 1000);
-    if (s < 60) return `${s}s`;
-    const m = Math.floor(s / 60);
-    if (m < 60) return `${m}m`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h`;
-    const d = Math.floor(h / 24);
-    if (d < 7) return `${d}d`;
-    return new Date(dateStr).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+function timeAgo(dateStr?: string | null): string {
+    if (!dateStr) return '';
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '';
+        const diff = Date.now() - d.getTime();
+        const s = Math.floor(diff / 1000);
+        if (s < 60) return `${s}s`;
+        const m = Math.floor(s / 60);
+        if (m < 60) return `${m}m`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `${h}h`;
+        const days = Math.floor(h / 24);
+        if (days < 7) return `${days}d`;
+        return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+    } catch {
+        return '';
+    }
 }
 
 const TYPE_BADGE: Record<string, { label: string; icon: any; color: string; borderColor: string }> = {

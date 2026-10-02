@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TopGainersCard } from '@/components/TopGainersCard';
 import { TopLosersCard } from '@/components/TopLosersCard';
 import { CalendarPreviewCard } from '@/components/CalendarPreviewCard';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 interface MarketTicker {
     symbol: string;
@@ -440,7 +441,9 @@ export default function Dashboard() {
                 <div className="space-y-4 min-w-0 max-w-[800px] w-full mx-auto 2xl:mx-0 2xl:max-w-none">
 
                     {/* Top stories */}
-                    <StoriesRail />
+                    <ErrorBoundary fallbackTitle="Historias no disponibles temporalmente">
+                        <StoriesRail />
+                    </ErrorBoundary>
 
                     {/* Main Feed Container */}
                     <div className="rounded-2xl border transition-all duration-300"
@@ -457,18 +460,30 @@ export default function Dashboard() {
                                 transition={{ duration: 0.18 }}
                                 className="p-4"
                             >
-                                <SocialFeed
-                                    initialPosts={posts}
-                                    isLoading={isFeedLoading}
-                                    onPostCreated={(newPost) => {
-                                        const next = [newPost, ...posts];
-                                        setPosts(next);
-                                        feedMemoryCache[activeTab] = next;
+                                <ErrorBoundary
+                                    fallbackTitle="Error al cargar el feed de publicaciones"
+                                    fallbackMessage="Ocurrió un error inesperado al mostrar las publicaciones. Podés reintentar para restablecer la vista."
+                                    onReset={() => {
                                         try {
-                                            sessionStorage.setItem(`finix_cached_feed_${activeTab}`, JSON.stringify(next));
+                                            sessionStorage.removeItem(`finix_cached_feed_${activeTab}`);
+                                            feedMemoryCache[activeTab] = [];
                                         } catch {}
+                                        window.location.reload();
                                     }}
-                                />
+                                >
+                                    <SocialFeed
+                                        initialPosts={posts}
+                                        isLoading={isFeedLoading}
+                                        onPostCreated={(newPost) => {
+                                            const next = [newPost, ...posts];
+                                            setPosts(next);
+                                            feedMemoryCache[activeTab] = next;
+                                            try {
+                                                sessionStorage.setItem(`finix_cached_feed_${activeTab}`, JSON.stringify(next));
+                                            } catch {}
+                                        }}
+                                    />
+                                </ErrorBoundary>
                             </motion.div>
                         </AnimatePresence>
                     </div>
@@ -476,7 +491,7 @@ export default function Dashboard() {
 
                 {/* ── Middle Column (or joined in Right on lg) ── */}
                 <aside
-                    className="hidden lg:flex lg:sticky lg:top-6 flex-col gap-5 z-10 self-start w-full"
+                    className="hidden lg:flex lg:sticky lg:top-6 flex-col gap-5 z-10 self-start w-full max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-hide pb-4"
                 >
 
                     {/* Mejores Rendimientos (S&P 500 Top Gainers) */}
@@ -521,7 +536,7 @@ export default function Dashboard() {
 
                 {/* ── Right Column (2xl only) ── */}
                 <aside
-                    className="hidden 2xl:flex 2xl:sticky 2xl:top-6 flex-col gap-5 z-10 self-start w-full"
+                    className="hidden 2xl:flex 2xl:sticky 2xl:top-6 flex-col gap-5 z-10 self-start w-full max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-hide pb-4"
                 >
 
                     {/* Peores Rendimientos (S&P 500 Top Losers) — AL LADO Y DEL MISMO TAMAÑO */}

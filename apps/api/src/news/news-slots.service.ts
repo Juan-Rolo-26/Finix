@@ -9,6 +9,7 @@ import { NewsTranslationService } from './news-translation.service';
 import * as cheerio from 'cheerio';
 import { DEFAULT_NEWS_CATEGORIES } from './news-catalog';
 import { resolveNewsImage } from './news-image.util';
+import { extractHtmlNewsImage, normalizeSourceImage } from './news-source-image.util';
 
 const SLOT_COUNT = 5;
 
@@ -384,7 +385,7 @@ export class NewsSlotsService {
                 return { error: `El servidor respondió con código ${response.status}` };
             }
             const html = await response.text();
-            return this.extractMetadata(html, url);
+            return this.extractMetadata(html, response.url || url);
         } catch (err: any) {
             const isTimeout = err?.name === 'TimeoutError' || err?.name === 'AbortError';
             return {
@@ -406,17 +407,11 @@ export class NewsSlotsService {
 
         const previousArticleId = slot.articleId;
         const isPublished = data.status === 'PUBLISHED';
-        const articleTitle = data.title || slot.article?.title || 'Noticia';
         const targetCategoryId = data.categoryId ?? slot.categoryId;
-        const targetCategory = await this.prisma.newsCategory.findUnique({
-            where: { id: targetCategoryId },
-            select: { slug: true },
-        });
         const customImage = data.customImage ?? slot.article?.customImage ?? false;
-        const sourceImage = data.imageUrl ?? slot.article?.imageUrl;
-        const imageUrl = customImage
-            ? sourceImage || resolveNewsImage(articleTitle, targetCategory?.slug, sourceImage)
-            : resolveNewsImage(articleTitle, targetCategory?.slug, sourceImage);
+        // A replacement must get its own photo, never inherit the previous story's.
+        const existingImage = slot.article?.url === data.url ? slot.article.imageUrl : undefined;
+        const imageUrl = await this.ensureArticlePhoto(data.url, data.title || slot.article?.title || 'Noticia', data.imageUrl ?? existingImage, targetCategoryId);
 
         const article = await this.prisma.newsArticle.upsert({
             where: { url: data.url },
@@ -485,9 +480,10 @@ export class NewsSlotsService {
         });
         if (!slot) throw new NotFoundException('Slot no encontrado');
         if (!slot.article) throw new BadRequestException('El slot no tiene artículo asignado');
+        const imageUrl = await this.ensureArticlePhoto(slot.article.url, slot.article.title, slot.article.imageUrl, slot.categoryId);
         await this.prisma.newsArticle.update({
             where: { id: slot.article.id },
-            data: { status: 'PUBLISHED', isPublished: true },
+            data: { status: 'PUBLISHED', isPublished: true, imageUrl },
         });
         return { ok: true, slotId, articleId: slot.article.id };
     }
@@ -555,6 +551,18 @@ export class NewsSlotsService {
         }
     }
 
+    private async ensureArticlePhoto(url: string, title: string, providedImage?: string | null, categoryId?: string): Promise<string> {
+        const provided = normalizeSourceImage(providedImage, url);
+        if (provided) return provided;
+        const metadata = await this.scrapeUrlPreview(url);
+        const photo = normalizeSourceImage(metadata.imageUrl, url);
+        if (photo) return photo;
+        const category = categoryId
+            ? await this.prisma.newsCategory.findUnique({ where: { id: categoryId }, select: { slug: true } })
+            : null;
+        return resolveNewsImage(title || metadata.title || 'Noticia', category?.slug);
+    }
+
     private validateUrl(url: string) {
         let parsed: URL;
         try { parsed = new URL(url); } catch { throw new BadRequestException('URL inválida'); }
@@ -597,17 +605,7 @@ export class NewsSlotsService {
                 'meta[name="description"]',
             ]) || undefined;
 
-        let imageUrl =
-            getMeta([
-                'meta[property="og:image"]',
-                'meta[property="og:image:url"]',
-                'meta[name="twitter:image"]',
-                'meta[name="twitter:image:src"]',
-            ]) || undefined;
-
-        if (imageUrl && !imageUrl.startsWith('http')) {
-            try { imageUrl = new URL(imageUrl, base.origin).toString(); } catch { imageUrl = undefined; }
-        }
+        const imageUrl = extractHtmlNewsImage(html, baseUrl);
 
         const canonical =
             getMeta(['meta[property="og:url"]']) ||

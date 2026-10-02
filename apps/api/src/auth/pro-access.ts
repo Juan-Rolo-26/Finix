@@ -1,3 +1,5 @@
+import { isFreeAccessEnabled } from '../access/free-access';
+
 const PRO_PLANS = new Set(['PRO', 'CREATOR', 'PRO_CREATOR']);
 
 function isJuanUser(user: any) {
@@ -15,11 +17,12 @@ function isJuanUser(user: any) {
 }
 
 /**
- * Resolves effective PRO access. An explicit admin decision always wins over
- * payment, role, and legacy owner rules; null keeps the automatic behavior.
+ * Resolves effective PRO access. Launch mode opens features without changing
+ * saved plans. Outside launch mode, explicit admin decisions retain precedence.
  */
 export function hasEffectiveProAccess(user: any): boolean {
     if (!user) return false;
+    if (isFreeAccessEnabled()) return true;
     if (user.proAccessOverride === true) return true;
     if (user.proAccessOverride === false) return false;
 

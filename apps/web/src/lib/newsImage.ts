@@ -1,3 +1,16 @@
+import type { SyntheticEvent } from 'react';
+
+export const LOCAL_NEWS_IMAGE = '/news-fallback.jpg';
+
+/** Try a topic photo, then a bundled photo without retrying a failed URL forever. */
+export function handleNewsImageError(event: SyntheticEvent<HTMLImageElement>, title: string, categoryName = '') {
+    const image = event.currentTarget;
+    const localUrl = new URL(LOCAL_NEWS_IMAGE, window.location.origin).href;
+    if (image.src === localUrl) return;
+    const topicImage = resolveNewsImage(title, categoryName);
+    image.src = image.src === topicImage ? localUrl : topicImage;
+}
+
 const NEWS_IMAGE_LIBRARY = {
     markets: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1200&q=80',
     crypto: 'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?auto=format&fit=crop&w=1200&q=80',

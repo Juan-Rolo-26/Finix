@@ -1,5 +1,6 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { isFreeAccessEnabled, isCommunityMembershipActive } from '../access/free-access';
 
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['ACTIVE']);
 const ADMIN_ROLES = new Set(['ADMIN', 'SUPER_ADMIN']);
@@ -21,7 +22,7 @@ export class CommunityPermissionsService {
         subscriptionStatus?: string;
         proAccessOverride?: boolean | null;
     }): boolean {
-        if (this.isPlatformAdmin(user)) return true;
+        if (isFreeAccessEnabled() || this.isPlatformAdmin(user)) return true;
         if (user.proAccessOverride === false) return false;
 
         const role = String(user.role || '').toUpperCase();
@@ -48,7 +49,7 @@ export class CommunityPermissionsService {
         subscriptionStatus?: string;
         proAccessOverride?: boolean | null;
     }): boolean {
-        if (this.isPlatformAdmin(user)) return true;
+        if (isFreeAccessEnabled() || this.isPlatformAdmin(user)) return true;
         if (user.proAccessOverride === false) return false;
         if (user.proAccessOverride === true) return true;
 
@@ -123,9 +124,9 @@ export class CommunityPermissionsService {
 
         const member = await this.prisma.communityMember.findUnique({
             where: { communityId_userId: { communityId, userId } },
-            select: { role: true, subscriptionStatus: true },
+            select: { role: true, subscriptionStatus: true, paymentStatus: true },
         });
-        if (!member || member.subscriptionStatus !== 'ACTIVE') return null;
+        if (!isCommunityMembershipActive(member)) return null;
         return member.role;
     }
 
@@ -258,8 +259,8 @@ export class CommunityPermissionsService {
             include: { plan: true },
         });
 
-        const isActive = member && member.subscriptionStatus === 'ACTIVE';
-        const tierLevel = isActive ? (member?.plan?.tierLevel ?? 0) : 0;
+        const isActive = isCommunityMembershipActive(member);
+        const tierLevel = isActive ? (isFreeAccessEnabled() ? Number.MAX_SAFE_INTEGER : member?.plan?.tierLevel ?? 0) : 0;
 
         const canView = isActive || community.privacyType === 'PUBLIC' || community.showContentBeforeJoin;
 

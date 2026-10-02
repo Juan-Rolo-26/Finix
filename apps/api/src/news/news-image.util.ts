@@ -10,6 +10,13 @@ const NEWS_IMAGE_LIBRARY = {
     argentina: 'https://images.unsplash.com/photo-1589909202802-8f4aadce1849?auto=format&fit=crop&w=1200&q=80',
 } as const;
 
+/** Photos chosen by Finix when the original article has no image. */
+export const NEWS_ILLUSTRATION_URLS: string[] = Object.values(NEWS_IMAGE_LIBRARY);
+
+export function isIllustrativeNewsImage(imageUrl?: string | null): boolean {
+    return !!imageUrl && NEWS_ILLUSTRATION_URLS.includes(imageUrl);
+}
+
 const TOPIC_IMAGES: Array<{ keywords: string[]; image: string }> = [
     { keywords: ['bitcoin', 'ethereum', 'cripto', 'crypto', 'blockchain', 'token', 'web3', 'defi'], image: NEWS_IMAGE_LIBRARY.crypto },
     { keywords: ['inteligencia artificial', 'artificial intelligence', 'machine learning', 'openai', 'nvidia', 'chip', 'semiconductor', 'tecnologia'], image: NEWS_IMAGE_LIBRARY.technology },

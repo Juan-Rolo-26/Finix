@@ -5,7 +5,8 @@ import { NewsTranslationService } from './news-translation.service';
 import { NewsSentimentService } from './news-sentiment.service';
 import { Cron } from '@nestjs/schedule';
 import * as crypto from 'crypto';
-import { resolveNewsImage } from './news-image.util';
+import { isIllustrativeNewsImage, resolveNewsImage } from './news-image.util';
+import { normalizeSourceImage } from './news-source-image.util';
 
 interface NewsFilter {
     category?: string;
@@ -341,6 +342,8 @@ export class NewsService {
 
                     // Get or create source
                     const source = await this.getOrCreateSource(item.source);
+                    const suppliedImage = normalizeSourceImage(item.imageUrl, item.url);
+                    const imageUrl = resolveNewsImage(item.title, category?.slug, isIllustrativeNewsImage(suppliedImage) ? undefined : suppliedImage);
 
                     // Store news with upsert to avoid Unique Constraint crash
                     await this.prisma.news.upsert({
@@ -355,7 +358,7 @@ export class NewsService {
                             summaryEs,
                             url: item.url,
                             urlHash,
-                            imageUrl: resolveNewsImage(item.title, category?.slug, item.imageUrl),
+                            imageUrl,
                             language: item.language || 'en',
                             wasTranslated,
                             categoryId: category?.id,
@@ -428,6 +431,7 @@ export class NewsService {
 
         // Find or create FINIX_ADMIN source
         const source = await this.getOrCreateSource('Finix Admin');
+        const imageUrl = resolveNewsImage(scraped.title, category?.slug, normalizeSourceImage(scraped.image, url));
 
         const news = await this.prisma.news.upsert({
             where: { url },
@@ -441,7 +445,7 @@ export class NewsService {
                 summaryEs,
                 url: url,
                 urlHash,
-                imageUrl: resolveNewsImage(scraped.title, category?.slug, scraped.image),
+                imageUrl,
                 language: 'es',
                 wasTranslated,
                 categoryId: category?.id,

@@ -9,6 +9,7 @@ import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
 import { PayWithCardDto } from './dto/create-community.dto';
 import { MercadoPagoService } from '../mercadopago/mercadopago.service';
+import { isFreeAccessEnabled, isCommunityMembershipActive } from '../access/free-access';
 
 const ACTIVE_MEMBER_STATUSES = new Set(['ACTIVE']);
 const MAX_POST_CONTENT_LENGTH = 1000;
@@ -26,9 +27,7 @@ export class CommunitiesService {
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private isMembershipActive(membership: any): boolean {
-        if (!membership) return false;
-        const sub = String(membership.subscriptionStatus || '').toUpperCase();
-        return ACTIVE_MEMBER_STATUSES.has(sub);
+        return isCommunityMembershipActive(membership);
     }
 
     private slugify(text: string): string {
@@ -120,7 +119,7 @@ export class CommunitiesService {
             ...community,
             isMember: active,
             membership,
-            tierLevel: active ? (membership?.plan?.tierLevel ?? 0) : 0,
+            tierLevel: active ? (isFreeAccessEnabled() ? Number.MAX_SAFE_INTEGER : membership?.plan?.tierLevel ?? 0) : 0,
             canManage: role === 'OWNER' || role === 'ADMIN',
             canModerate: role === 'OWNER' || role === 'ADMIN' || role === 'MODERATOR',
             isOwner: false,
@@ -252,11 +251,11 @@ export class CommunitiesService {
             orderBy: { joinedAt: 'desc' },
         });
 
-        return memberships.map(m => ({
+        return memberships.filter(m => this.isMembershipActive(m)).map(m => ({
             ...m.community,
             membership: m,
             isMember: true,
-            tierLevel: m.plan?.tierLevel ?? 0,
+            tierLevel: isFreeAccessEnabled() ? Number.MAX_SAFE_INTEGER : m.plan?.tierLevel ?? 0,
         }));
     }
 
@@ -780,26 +779,37 @@ export class CommunitiesService {
             throw new ForbiddenException('Esta comunidad es privada. Debes enviar una solicitud de ingreso.');
         }
 
+        const freeAccess = isFreeAccessEnabled();
+        // Do not overwrite an existing paid membership or provider identifiers.
+        if (freeAccess) {
+            const existing = await this.prisma.communityMember.findUnique({
+                where: { communityId_userId: { communityId, userId } },
+            });
+            if (this.isMembershipActive(existing)) return existing;
+        }
+
         let chosenPlan: any;
         if (planId) {
             chosenPlan = community.plans.find(p => p.id === planId);
             if (!chosenPlan) throw new NotFoundException('Plan no encontrado');
-            if (Number(chosenPlan.price) > 0) {
+            if (!freeAccess && Number(chosenPlan.price) > 0) {
                 throw new BadRequestException('Este plan requiere pago. Utiliza el checkout de suscripción.');
             }
         } else {
-            chosenPlan = community.plans.find(p => Number(p.price) === 0);
+            chosenPlan = community.plans.find(p => Number(p.price) === 0)
+                || (freeAccess ? community.plans[0] : null);
             if (!chosenPlan) {
                 throw new BadRequestException('Esta comunidad es exclusivamente paga. Requiere suscripción.');
             }
         }
 
+        const paymentStatus = freeAccess && Number(chosenPlan.price) > 0 ? 'FREE_ACCESS' : 'SUCCEEDED';
         const member = await this.prisma.communityMember.upsert({
             where: { communityId_userId: { communityId, userId } },
             update: {
                 planId: chosenPlan.id,
                 subscriptionStatus: 'ACTIVE',
-                paymentStatus: 'SUCCEEDED',
+                paymentStatus,
             },
             create: {
                 communityId,
@@ -807,7 +817,7 @@ export class CommunitiesService {
                 planId: chosenPlan.id,
                 role: 'MEMBER',
                 subscriptionStatus: 'ACTIVE',
-                paymentStatus: 'SUCCEEDED',
+                paymentStatus,
             },
         });
 
@@ -851,7 +861,7 @@ export class CommunitiesService {
         const plan = community.plans.find(p => p.id === planId);
         if (!plan) throw new NotFoundException('Plan no encontrado');
 
-        if (Number(plan.price) === 0) {
+        if (isFreeAccessEnabled() || Number(plan.price) === 0) {
             const member = await this.joinFree(userId, communityId, planId);
             return { freeJoined: true, member };
         }
@@ -1438,6 +1448,7 @@ export class CommunitiesService {
                     communityId,
                     subscriptionStatus: 'ACTIVE',
                     plan: { price: { gt: 0 } },
+                    OR: [{ paymentStatus: null }, { paymentStatus: { not: 'FREE_ACCESS' } }],
                 },
             }),
             this.prisma.communityMember.count({
@@ -1486,7 +1497,7 @@ export class CommunitiesService {
 
         // MRR Calculation
         const monthlyRecurringRevenue = activeMembersData.reduce((acc, m) => {
-            if (m.subscriptionStatus === 'ACTIVE' && m.plan && Number(m.plan.price) > 0) {
+            if (m.subscriptionStatus === 'ACTIVE' && m.paymentStatus !== 'FREE_ACCESS' && m.plan && Number(m.plan.price) > 0) {
                 const price = Number(m.plan.price);
                 return acc + (m.plan.interval === 'yearly' ? price / 12 : price);
             }

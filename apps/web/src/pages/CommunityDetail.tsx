@@ -1,3 +1,4 @@
+import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -433,8 +434,9 @@ function SubscribeModal({ community, onClose, onJoined, onSelectPaidPlan }: {
     const [activePlanId, setActivePlanId] = useState<string | null>(null);
     const [error, setError] = useState('');
 
-    const freePlan = community.plans.find(p => Number(p.price) === 0);
-    const paidPlans = community.plans.filter(p => Number(p.price) > 0);
+    const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
+    const freePlan = community.plans.find(p => Number(p.price) === 0) || (freeAccess ? community.plans[0] : undefined);
+    const paidPlans = freeAccess ? [] : community.plans.filter(p => Number(p.price) > 0);
 
     const handleJoinFree = async () => {
         setLoading(true); setError('');

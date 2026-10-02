@@ -4,6 +4,7 @@ import { AccessControlService } from '../access/access-control.service';
 import { StripeService } from '../stripe/stripe.service';
 import { MercadoPagoService } from '../mercadopago/mercadopago.service';
 import { Interval } from '@nestjs/schedule';
+import { getAccessMode } from '../access/free-access';
 
 const DEFAULT_COMMISSION_RATE = 0.10;
 
@@ -68,6 +69,7 @@ export class BillingService {
 
         return {
             currentPlan: user.plan,
+            ...getAccessMode(),
             subscriptionStatus: user.subscriptionStatus,
             nextBillingDate: latestByPlan.PRO?.endDate || null,
             cancelAtPeriodEnd: latestByPlan.PRO?.cancelAtPeriodEnd || false,

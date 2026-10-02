@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundEx
 import { PrismaService } from '../prisma.service';
 import { MailService } from '../mail/mail.service';
 import Stripe from 'stripe';
+import { assertPurchasesEnabled } from '../access/free-access';
 import {
     PLAN_PERMISSIONS,
     PlanType,
@@ -30,6 +31,7 @@ export class StripeService {
     ) { }
 
     async createSubscription(userId: string, planType: 'pro_investor' | 'pro_creator') {
+        assertPurchasesEnabled();
         this.ensureStripeConfigured();
 
         const user = await this.prisma.user.findUnique({
@@ -198,6 +200,7 @@ export class StripeService {
     }
 
     async createCommunityPayment(userId: string, communityId: string, planId: string) {
+        assertPurchasesEnabled();
         this.ensureStripeConfigured();
 
         const [user, community, plan] = await Promise.all([

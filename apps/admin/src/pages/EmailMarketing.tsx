@@ -133,6 +133,7 @@ export default function EmailMarketing() {
     const [htmlPreview, setHtmlPreview] = useState('');
     const [mobilePreview, setMobilePreview] = useState(false);
     const [testEmail, setTestEmail] = useState('juan@finixarg.com');
+    const [isLiveChartOpen, setIsLiveChartOpen] = useState(false);
 
     // Alertas
     const [alerts, setAlerts] = useState<MarketAlertItem[]>([]);
@@ -1247,15 +1248,28 @@ export default function EmailMarketing() {
                                     )}
                                 </div>
 
-                                <details className="rounded-xl border border-border/60 bg-background/40 overflow-hidden">
-                                    <summary className="px-3.5 py-2.5 text-xs font-semibold text-muted-foreground cursor-pointer hover:text-foreground">
+                                <details
+                                    className="rounded-xl border border-border/60 bg-background/40 overflow-hidden"
+                                    onToggle={(e) => {
+                                        const open = (e.target as HTMLDetailsElement).open;
+                                        setIsLiveChartOpen(open);
+                                        if (open) {
+                                            setTimeout(() => {
+                                                window.dispatchEvent(new Event('resize'));
+                                            }, 100);
+                                        }
+                                    }}
+                                >
+                                    <summary className="px-3.5 py-2.5 text-xs font-semibold text-muted-foreground cursor-pointer hover:text-foreground select-none">
                                         Abrir gráfico en vivo para dibujar o tomar una nueva captura
                                     </summary>
                                     <div className="p-3 border-t border-border/50">
-                                        <TradingViewChartWidget
-                                            symbol={form.ticker}
-                                            height={420}
-                                        />
+                                        {isLiveChartOpen && (
+                                            <TradingViewChartWidget
+                                                symbol={form.ticker}
+                                                height={520}
+                                            />
+                                        )}
                                         <p className="text-[11px] text-muted-foreground mt-2">
                                             Usá el botón de cámara de TradingView para descargar la imagen y después subila arriba.
                                         </p>
