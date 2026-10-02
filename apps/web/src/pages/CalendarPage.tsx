@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Calendar as CalendarIcon,
@@ -9,13 +9,10 @@ import {
     Globe,
     BarChart3,
     Coins,
-    DollarSign,
     ChevronLeft,
     ChevronRight,
     ArrowUpRight,
     CheckCircle2,
-    TrendingDown,
-    TrendingUp,
     XCircle,
     RefreshCw,
     ListFilter,
@@ -24,6 +21,8 @@ import { apiFetch } from '@/lib/api';
 import { useAuthStore, isProUser } from '@/stores/authStore';
 import { ProGate } from '@/components/ProGate';
 import { AssetLogoImg } from '@/components/TopGainersCard';
+import { MarketHeader, MarketChange } from '@/components/markets/MarketPrimitives';
+import './calendar.css';
 
 interface CalendarEvent {
     id: string;
@@ -106,6 +105,11 @@ interface CalendarDay {
 }
 
 interface CalendarWeekData {
+    economicData?: {
+        status: 'READY' | 'UNAVAILABLE' | 'NOT_CONFIGURED';
+        httpStatus?: number;
+        excludedLegacyEvents?: number;
+    };
     weekRange: { from: string; to: string };
     isProUser: boolean;
     categories: {
@@ -122,23 +126,15 @@ type CalendarSection = 'GENERAL' | 'BALANCES' | 'DIVIDENDOS';
 type EarningsSort = 'RELEVANCIA' | 'VICTORIOSOS' | 'DESVICTORIOSOS' | 'MIXTOS' | 'PENDIENTES';
 type EarningsOutcome = 'VICTORIOSO' | 'DESVICTORIOSO' | 'MIXTO' | 'INFORMADO' | 'PENDIENTE';
 
-function hasEarningsInformation(earn: EarningsEvent): boolean {
-    return Boolean(
-        earn.reportTiming ||
-        earn.epsEstimate != null ||
-        earn.revenueEstimate != null ||
-        earn.actualEps != null ||
-        earn.actualRevenue != null
-    );
-}
-
 function getEarningsOutcome(earn: EarningsEvent): EarningsOutcome {
-    const surprises = [earn.epsSurprise, earn.revenueSurprise].filter((value): value is number => value != null);
+    const surprises = [earn.epsSurprise, earn.revenueSurprise].filter(
+        (value): value is number => value != null,
+    );
     if (surprises.length === 0) {
         return earn.actualEps != null || earn.actualRevenue != null ? 'INFORMADO' : 'PENDIENTE';
     }
-    if (surprises.every(value => value >= 0)) return 'VICTORIOSO';
-    if (surprises.every(value => value < 0)) return 'DESVICTORIOSO';
+    if (surprises.every((value) => value >= 0)) return 'VICTORIOSO';
+    if (surprises.every((value) => value < 0)) return 'DESVICTORIOSO';
     return 'MIXTO';
 }
 
@@ -150,10 +146,16 @@ function sortEarnings(events: EarningsEvent[], sort: EarningsSort): EarningsEven
         INFORMADO: 3,
         PENDIENTE: 4,
     };
-    const selectedOutcome = sort === 'VICTORIOSOS' ? 'VICTORIOSO'
-        : sort === 'DESVICTORIOSOS' ? 'DESVICTORIOSO'
-            : sort === 'MIXTOS' ? 'MIXTO'
-                : sort === 'PENDIENTES' ? 'PENDIENTE' : undefined;
+    const selectedOutcome =
+        sort === 'VICTORIOSOS'
+            ? 'VICTORIOSO'
+            : sort === 'DESVICTORIOSOS'
+              ? 'DESVICTORIOSO'
+              : sort === 'MIXTOS'
+                ? 'MIXTO'
+                : sort === 'PENDIENTES'
+                  ? 'PENDIENTE'
+                  : undefined;
 
     return [...events].sort((a, b) => {
         if (selectedOutcome) {
@@ -165,7 +167,8 @@ function sortEarnings(events: EarningsEvent[], sort: EarningsSort): EarningsEven
             if (impactDifference !== 0) return impactDifference;
         }
 
-        const outcomeDifference = outcomeOrder[getEarningsOutcome(a)] - outcomeOrder[getEarningsOutcome(b)];
+        const outcomeDifference =
+            outcomeOrder[getEarningsOutcome(a)] - outcomeOrder[getEarningsOutcome(b)];
         return outcomeDifference !== 0 ? outcomeDifference : a.ticker.localeCompare(b.ticker);
     });
 }
@@ -190,36 +193,6 @@ function formatDateLabel(dateStr: string): string {
     return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: 'short' }).format(dt);
 }
 
-// Helper: returns true if the given YYYY-MM-DD string is strictly before today (local)
-function isDayBeforeToday(dateStr: string): boolean {
-    if (!dateStr) return false;
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dayDate = new Date(y, m - 1, d);
-    return dayDate < today;
-}
-
-// Helper: returns true if a calendar event's timestamp is already in the past
-function isEventExpired(evt: { date: string; time?: string; timestampUtc?: string }): boolean {
-    try {
-        let dt: Date;
-        if (evt.timestampUtc) {
-            dt = new Date(evt.timestampUtc);
-        } else if (evt.time) {
-            // Parse as local-ish (use UTC noon as a safe default if no tz info)
-            dt = new Date(`${evt.date}T${evt.time}:00Z`);
-        } else {
-            // No time info — treat end of day (23:59 UTC) as expiry
-            dt = new Date(`${evt.date}T23:59:00Z`);
-        }
-        if (isNaN(dt.getTime())) return false;
-        return dt < new Date();
-    } catch {
-        return false;
-    }
-}
-
 export default function CalendarPage() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
@@ -236,11 +209,14 @@ export default function CalendarPage() {
     const [calendarData, setCalendarData] = useState<CalendarWeekData | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isError, setIsError] = useState<boolean>(false);
+    const activeRequest = useRef<AbortController | null>(null);
 
     // Detección automática del timezone local del usuario
     const userTimezone = useMemo(() => {
         try {
-            return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Argentina/Buenos_Aires';
+            return (
+                Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Argentina/Buenos_Aires'
+            );
         } catch {
             return 'America/Argentina/Buenos_Aires';
         }
@@ -248,48 +224,48 @@ export default function CalendarPage() {
 
     // Abreviación del timezone para el usuario
     const userTimezoneShort = useMemo(() => {
-        if (userTimezone.includes('Argentina') || userTimezone.includes('Cordoba') || userTimezone.includes('Buenos_Aires')) return 'ART';
+        if (
+            userTimezone.includes('Argentina') ||
+            userTimezone.includes('Cordoba') ||
+            userTimezone.includes('Buenos_Aires')
+        )
+            return 'ART';
         if (userTimezone.includes('New_York') || userTimezone.includes('Eastern')) return 'ET';
         if (userTimezone.includes('London')) return 'BST/GMT';
         if (userTimezone.includes('Madrid') || userTimezone.includes('Paris')) return 'CET';
         return userTimezone.split('/').pop()?.replace(/_/g, ' ') || 'Local';
     }, [userTimezone]);
 
-    const loadCalendar = async () => {
+    const loadCalendar = useCallback(async () => {
+        activeRequest.current?.abort();
+        const request = new AbortController();
+        activeRequest.current = request;
         setIsLoading(true);
         setIsError(false);
         try {
-            const queryParams = new URLSearchParams();
-            // La semana elegida siempre se envía al servidor. Así los balances
-            // publicados siguen disponibles al volver a semanas anteriores.
-            queryParams.set('weekStart', getWeekStartForOffset(weekOffset));
-            if (activeSection === 'BALANCES') {
-                queryParams.set('category', 'EARNINGS');
-            } else if (activeSection === 'DIVIDENDOS') {
-                queryParams.set('category', 'DIVIDEND');
-            } else {
-                if (activeCategory === 'US' || activeCategory === 'AR') {
-                    queryParams.set('category', activeCategory);
-                } else {
-                    queryParams.set('category', 'ALL');
-                }
-            }
-
-            const res = await apiFetch(`/calendar/week?${queryParams.toString()}`);
+            // One complete week keeps all sections and their counters consistent.
+            const queryParams = new URLSearchParams({
+                weekStart: getWeekStartForOffset(weekOffset),
+                category: 'ALL',
+            });
+            const res = await apiFetch('/calendar/week?' + queryParams.toString(), {
+                signal: request.signal,
+            });
             if (!res.ok) throw new Error('Error loading calendar');
-            const data = await res.json();
-            setCalendarData(data);
+            const data: CalendarWeekData = await res.json();
+            if (!request.signal.aborted) setCalendarData(data);
         } catch {
-            setIsError(true);
+            if (!request.signal.aborted) setIsError(true);
         } finally {
-            setIsLoading(false);
+            if (!request.signal.aborted) setIsLoading(false);
         }
-    };
+    }, [weekOffset]);
 
     useEffect(() => {
         if (!isPro) return;
-        loadCalendar();
-    }, [isPro, activeSection, activeCategory, weekOffset]);
+        void loadCalendar();
+        return () => activeRequest.current?.abort();
+    }, [isPro, loadCalendar]);
 
     if (!isPro) {
         return (
@@ -305,6 +281,7 @@ export default function CalendarPage() {
 
     // Formateador de fecha/hora al timezone local
     const formatLocalTime = (dateStr: string, timeStr?: string, timestampUtc?: string) => {
+        if (!timeStr && !timestampUtc) return 'Horario pendiente';
         try {
             let dt: Date;
             if (timestampUtc) {
@@ -355,7 +332,7 @@ export default function CalendarPage() {
         if (s >= 90 || imp === 'CRITICAL') {
             return {
                 label: 'CRÍTICO',
-                className: 'bg-purple-600/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 font-black',
+                className: 'calendar-badge--negative',
                 dotColor: 'bg-purple-500',
                 isCritical: true,
             };
@@ -363,7 +340,7 @@ export default function CalendarPage() {
         if (s >= 70 || imp === 'HIGH') {
             return {
                 label: 'ALTO',
-                className: 'bg-rose-500/10 text-rose-500 border border-rose-500/20 font-extrabold',
+                className: 'calendar-badge--negative',
                 dotColor: 'bg-rose-500',
                 isCritical: false,
             };
@@ -371,14 +348,14 @@ export default function CalendarPage() {
         if (s >= 40 || imp === 'MEDIUM') {
             return {
                 label: 'MEDIO',
-                className: 'bg-amber-500/10 text-amber-500 border border-amber-500/20 font-bold',
+                className: 'calendar-badge--amber',
                 dotColor: 'bg-amber-500',
                 isCritical: false,
             };
         }
         return {
             label: 'BAJO',
-            className: 'bg-slate-500/10 text-slate-400 border border-slate-500/20 font-medium',
+            className: 'calendar-badge--blue',
             dotColor: 'bg-slate-400',
             isCritical: false,
         };
@@ -386,8 +363,15 @@ export default function CalendarPage() {
 
     // Filtrar eventos de economía por categorías secundarias
     const filterEventByCategory = (e: CalendarEvent) => {
-        if (activeCategory === 'ALL' || activeCategory === 'US' || activeCategory === 'AR') return true;
-        if (activeCategory === 'RATES') return e.category === 'MONETARY_POLICY' || e.category === 'INTEREST_RATES' || e.category === 'CENTRAL_BANK';
+        if (activeCategory === 'ALL') return true;
+        if (activeCategory === 'US' || activeCategory === 'AR')
+            return (e.countryCode || e.country) === activeCategory;
+        if (activeCategory === 'RATES')
+            return (
+                e.category === 'MONETARY_POLICY' ||
+                e.category === 'INTEREST_RATES' ||
+                e.category === 'CENTRAL_BANK'
+            );
         if (activeCategory === 'INFLATION') return e.category === 'INFLATION';
         if (activeCategory === 'EMPLOYMENT') return e.category === 'EMPLOYMENT';
         if (activeCategory === 'GDP') return e.category === 'GDP' || e.category === 'ACTIVITY';
@@ -395,540 +379,672 @@ export default function CalendarPage() {
         return e.category === activeCategory;
     };
 
-    // Totalizadores por sección para mostrar badges
-    const totalEconomic = (calendarData?.categories?.us ?? 0) + (calendarData?.categories?.ar ?? 0);
-    const totalEarnings = calendarData?.days.reduce(
-        (total, day) => total + day.earningsEvents.filter(hasEarningsInformation).length,
-        0,
-    ) ?? 0;
-    const totalDividends = calendarData?.categories?.dividends ?? 0;
+    const totalEconomic =
+        calendarData?.days.reduce((total, day) => total + day.economicEvents.length, 0) ?? 0;
+    const totalEarnings =
+        calendarData?.days.reduce((total, day) => total + day.earningsEvents.length, 0) ?? 0;
+    const totalDividends =
+        calendarData?.days.reduce((total, day) => total + day.dividendEvents.length, 0) ?? 0;
+
+    const visibleDays = (calendarData?.days ?? []).flatMap((day) => {
+        const economic =
+            activeSection === 'GENERAL' ? day.economicEvents.filter(filterEventByCategory) : [];
+        const earnings =
+            activeSection === 'BALANCES' ? sortEarnings(day.earningsEvents, earningsSort) : [];
+        const dividends = activeSection === 'DIVIDENDOS' ? day.dividendEvents || [] : [];
+        return economic.length || earnings.length || dividends.length
+            ? [{ ...day, economic, earnings, dividends }]
+            : [];
+    });
+    const economicUnavailable =
+        activeSection === 'GENERAL' &&
+        calendarData?.economicData &&
+        calendarData.economicData.status !== 'READY';
+    const economicStatusMessage =
+        calendarData?.economicData?.status === 'NOT_CONFIGURED'
+            ? 'La fuente de datos económicos no está configurada.'
+            : calendarData?.economicData?.httpStatus === 402
+              ? 'La fuente económica no tiene acceso habilitado.'
+              : 'No se pudo actualizar la fuente de datos económicos.';
 
     return (
-        <div className="min-h-screen bg-background text-foreground pb-24">
-            {/* Header / Hero Section */}
-            <div className="border-b border-border/40 bg-card/40 backdrop-blur-md sticky top-0 z-30">
-                <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-5">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <div className="flex items-center gap-3 mb-1.5">
-                                <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm">
-                                    <CalendarIcon className="w-5 h-5" />
-                                </div>
-                                <h1 className="text-3xl sm:text-4xl font-heading font-black tracking-tight text-foreground">
-                                    Calendario de Mercado
-                                </h1>
+        <div className="markets-view market-shell calendar-view">
+            <div className="market-section">
+                <MarketHeader
+                    title="Calendario de mercado"
+                    eyebrow="AGENDA · FINIX"
+                    icon={CalendarIcon}
+                    description={
+                        <span className="calendar-subtitle">
+                            Economía, balances de EE. UU. y dividendos del S&amp;P 500.
+                            <span>
+                                <Clock size={15} aria-hidden="true" /> Hora local:{' '}
+                                {userTimezoneShort}
+                            </span>
+                        </span>
+                    }
+                    actions={
+                        <div className="calendar-week-controls">
+                            <div className="calendar-week-label">
+                                <span>
+                                    {weekOffset === 0
+                                        ? 'Semana actual'
+                                        : weekOffset > 0
+                                          ? '+' + weekOffset + ' sem.'
+                                          : weekOffset + ' sem.'}
+                                </span>
+                                {calendarData?.weekRange && (
+                                    <strong>
+                                        {formatDateLabel(calendarData.weekRange.from)} al{' '}
+                                        {formatDateLabel(calendarData.weekRange.to)}
+                                    </strong>
+                                )}
                             </div>
-                            <p className="text-sm sm:text-base text-muted-foreground flex items-center gap-2 flex-wrap font-medium">
-                                <span>Seguimiento en tiempo real de macroeconomía, balances de EE. UU. y dividendos del S&amp;P 500.</span>
-                                <span className="inline-flex items-center gap-1.5 font-mono text-xs sm:text-sm text-foreground bg-muted/80 px-2.5 py-1 rounded-lg border border-border/60 font-semibold">
-                                    <Clock className="w-3.5 h-3.5 text-primary" /> Hora local: {userTimezoneShort}
-                                </span>
-                            </p>
-                        </div>
-
-                        {/* Indicador de Semana Activa con navegación */}
-                        <div className="flex items-center gap-2 bg-secondary/50 px-3 py-2 rounded-2xl border border-border/50 self-start md:self-auto shadow-sm">
-                            <button
-                                onClick={() => setWeekOffset(w => Math.max(-4, w - 1))}
-                                disabled={weekOffset <= -4}
-                                className="p-1 rounded-lg hover:bg-background/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                                title="Semana anterior"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-                            <div className="flex items-center gap-2 px-1">
-                                <span className="relative flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                                </span>
-                                <span className="text-xs sm:text-sm font-black text-foreground">
-                                    {weekOffset === 0 ? 'Semana Actual' : weekOffset > 0 ? `+${weekOffset} sem.` : `${weekOffset} sem.`}
-                                </span>
-                            </div>
-                            {calendarData?.weekRange && (
-                                <span className="text-xs font-mono font-bold text-muted-foreground border-l border-border/60 pl-2">
-                                    {formatDateLabel(calendarData.weekRange.from)} al {formatDateLabel(calendarData.weekRange.to)}
-                                </span>
-                            )}
-                            <button
-                                onClick={() => setWeekOffset(w => Math.min(4, w + 1))}
-                                disabled={weekOffset >= 4}
-                                className="p-1 rounded-lg hover:bg-background/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                                title="Semana siguiente"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => loadCalendar()}
-                                disabled={isLoading}
-                                className="p-1 rounded-lg hover:bg-background/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer border-l border-border/60 pl-2 ml-0.5"
-                                title="Actualizar datos"
-                            >
-                                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* 3 Subdivisiones Principales: General, Balances, Dividendos */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 mt-6 p-1.5 bg-secondary/40 backdrop-blur-md rounded-2xl border border-border/60">
-                        {/* 1. Sección General */}
-                        <button
-                            onClick={() => setActiveSection('GENERAL')}
-                            className={`flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl font-heading font-extrabold text-sm sm:text-base transition-all ${activeSection === 'GENERAL'
-                                ? 'bg-card text-foreground shadow-md shadow-primary/10 border border-primary/40'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-                                }`}
-                        >
-                            <Globe className={`w-4 h-4 sm:w-5 sm:h-5 ${activeSection === 'GENERAL' ? 'text-primary' : 'text-muted-foreground'}`} />
-                            <span>General (Economía)</span>
-                            {calendarData && (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-black bg-primary/15 text-primary border border-primary/25">
-                                    {totalEconomic}
-                                </span>
-                            )}
-                        </button>
-
-                        {/* 2. Sección Balances */}
-                        <button
-                            onClick={() => setActiveSection('BALANCES')}
-                            className={`flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl font-heading font-extrabold text-sm sm:text-base transition-all ${activeSection === 'BALANCES'
-                                ? 'bg-card text-foreground shadow-md shadow-primary/10 border border-primary/40'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-                                }`}
-                        >
-                            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                            <span>Balances EE. UU.</span>
-                            {calendarData && (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-black bg-primary/15 text-primary border border-primary/25">
-                                    {totalEarnings}
-                                </span>
-                            )}
-                        </button>
-
-                        {/* 3. Sección Dividendos */}
-                        <button
-                            onClick={() => setActiveSection('DIVIDENDOS')}
-                            className={`flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl font-heading font-extrabold text-sm sm:text-base transition-all ${activeSection === 'DIVIDENDOS'
-                                ? 'bg-card text-foreground shadow-md shadow-emerald-500/10 border border-emerald-500/40'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-                                }`}
-                        >
-                            <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                            <span>Dividendos S&amp;P 500</span>
-                            {calendarData && (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                                    {totalDividends}
-                                </span>
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Sub-filtros dinámicos según la sección activa */}
-                    {activeSection === 'GENERAL' && (
-                        <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar text-xs sm:text-sm font-bold">
-                            {[
-                                { key: 'ALL', label: 'Todos los indicadores' },
-                                { key: 'US', label: 'Estados Unidos 🇺🇸' },
-                                { key: 'AR', label: 'Argentina 🇦🇷' },
-                                { key: 'RATES', label: 'Tasas & Fed 🏛️' },
-                                { key: 'INFLATION', label: 'Inflación / IPC 📈' },
-                                { key: 'EMPLOYMENT', label: 'Empleo & Nóminas 💼' },
-                                { key: 'GDP', label: 'PIB & Actividad 🏭' },
-                                { key: 'TRADE', label: 'Comercio Exterior 🚢' },
-                            ].map((cat) => (
+                            <div className="calendar-week-buttons">
                                 <button
-                                    key={cat.key}
-                                    onClick={() => setActiveCategory(cat.key)}
-                                    className={`px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all border ${activeCategory === cat.key
-                                        ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
-                                        : 'bg-card/70 border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary/50 font-semibold'
-                                        }`}
+                                    type="button"
+                                    className="calendar-icon-button"
+                                    onClick={() => setWeekOffset((w) => Math.max(-4, w - 1))}
+                                    disabled={weekOffset <= -4}
+                                    title="Semana anterior"
+                                    aria-label="Semana anterior"
                                 >
-                                    {cat.label}
+                                    <ChevronLeft size={19} />
                                 </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {activeSection === 'BALANCES' && (
-                        <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-                            <div>
-                                <p className="text-sm font-black text-foreground">Balances con información disponible</p>
-                                <p className="text-xs text-muted-foreground">Ordená los resultados del día según su comparación con las estimaciones.</p>
-                            </div>
-                            <label className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-border/60 bg-card px-3 py-2 text-xs font-bold text-muted-foreground shadow-sm">
-                                <ListFilter className="h-4 w-4 text-amber-500" />
-                                <span>Ordenar por</span>
-                                <select
-                                    value={earningsSort}
-                                    onChange={(event) => setEarningsSort(event.target.value as EarningsSort)}
-                                    className="cursor-pointer bg-transparent font-black text-foreground outline-none"
-                                    aria-label="Ordenar balances"
+                                <button
+                                    type="button"
+                                    className="calendar-icon-button"
+                                    onClick={() => setWeekOffset((w) => Math.min(4, w + 1))}
+                                    disabled={weekOffset >= 4}
+                                    title="Semana siguiente"
+                                    aria-label="Semana siguiente"
                                 >
-                                    <option value="RELEVANCIA">Relevancia</option>
-                                    <option value="VICTORIOSOS">Superaron estimaciones</option>
-                                    <option value="DESVICTORIOSOS">Debajo de estimaciones</option>
-                                    <option value="MIXTOS">Resultados mixtos</option>
-                                    <option value="PENDIENTES">Pendientes</option>
-                                </select>
-                            </label>
+                                    <ChevronRight size={19} />
+                                </button>
+                                <button
+                                    type="button"
+                                    className="calendar-icon-button"
+                                    onClick={() => loadCalendar()}
+                                    disabled={isLoading}
+                                    title="Actualizar datos"
+                                    aria-label="Actualizar datos"
+                                >
+                                    <RefreshCw
+                                        size={17}
+                                        className={isLoading ? 'animate-spin' : ''}
+                                    />
+                                </button>
+                            </div>
                         </div>
-                    )}
+                    }
+                />
 
-                </div>
-            </div>
+                <nav className="market-tabs calendar-tabs" aria-label="Secciones del calendario">
+                    {(
+                        [
+                            { key: 'GENERAL', label: 'General', icon: Globe, count: totalEconomic },
+                            {
+                                key: 'BALANCES',
+                                label: 'Balances',
+                                icon: BarChart3,
+                                count: totalEarnings,
+                            },
+                            {
+                                key: 'DIVIDENDOS',
+                                label: 'Dividendos',
+                                icon: Coins,
+                                count: totalDividends,
+                            },
+                        ] as const
+                    ).map((section) => (
+                        <button
+                            type="button"
+                            key={section.key}
+                            aria-pressed={activeSection === section.key}
+                            onClick={() => setActiveSection(section.key)}
+                        >
+                            <section.icon size={18} aria-hidden="true" />
+                            <span>{section.label}</span>
+                            {calendarData && (
+                                <span className="calendar-count">{section.count}</span>
+                            )}
+                        </button>
+                    ))}
+                </nav>
 
-            {/* Main Content Area */}
-            <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-6 space-y-8">
+                {activeSection === 'GENERAL' && (
+                    <div className="calendar-filters" aria-label="Indicadores económicos">
+                        {[
+                            { key: 'ALL', label: 'Todos' },
+                            { key: 'US', label: 'Estados Unidos' },
+                            { key: 'AR', label: 'Argentina' },
+                            { key: 'RATES', label: 'Tasas y Fed' },
+                            { key: 'INFLATION', label: 'Inflación' },
+                            { key: 'EMPLOYMENT', label: 'Empleo' },
+                            { key: 'GDP', label: 'PIB y actividad' },
+                            { key: 'TRADE', label: 'Comercio exterior' },
+                        ].map((category) => (
+                            <button
+                                type="button"
+                                key={category.key}
+                                aria-pressed={activeCategory === category.key}
+                                onClick={() => setActiveCategory(category.key)}
+                            >
+                                {category.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {activeSection === 'BALANCES' && (
+                    <div className="calendar-earnings-toolbar">
+                        <span>
+                            Balances EE. UU.{' '}
+                            <span className="calendar-muted">· Publicados y pendientes</span>
+                        </span>
+                        <label className="calendar-sort">
+                            <ListFilter size={18} aria-hidden="true" />
+                            <span>Ordenar por</span>
+                            <select
+                                value={earningsSort}
+                                onChange={(event) =>
+                                    setEarningsSort(event.target.value as EarningsSort)
+                                }
+                                aria-label="Ordenar balances"
+                            >
+                                <option value="RELEVANCIA">Relevancia</option>
+                                <option value="VICTORIOSOS">Superaron estimaciones</option>
+                                <option value="DESVICTORIOSOS">Debajo de estimaciones</option>
+                                <option value="MIXTOS">Resultados mixtos</option>
+                                <option value="PENDIENTES">Pendientes</option>
+                            </select>
+                        </label>
+                    </div>
+                )}
+
+                {!isLoading && !isError && economicUnavailable && visibleDays.length > 0 && (
+                    <div className="calendar-context mb-6" role="status">
+                        <Info size={17} />
+                        <p>{economicStatusMessage} Se muestran los eventos guardados.</p>
+                    </div>
+                )}
                 {isLoading ? (
-                    <div className="py-24 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                        <p className="text-sm font-semibold">Cargando eventos de mercado de la semana...</p>
+                    <div className="calendar-state" role="status">
+                        <Loader2 size={32} className="animate-spin" />
+                        <p>Cargando eventos de la semana...</p>
                     </div>
                 ) : isError || !calendarData ? (
-                    <div className="py-20 text-center rounded-2xl border border-dashed border-border/60 p-8">
-                        <CalendarIcon className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-40" />
-                        <h3 className="text-base font-bold text-foreground">No se pudieron cargar los eventos de la semana</h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Por favor revisá tu conexión e intentá de nuevo.
+                    <div className="calendar-state" role="alert">
+                        <CalendarIcon size={36} />
+                        <h2>No se pudieron cargar los eventos</h2>
+                        <p>Revisá tu conexión e intentá de nuevo.</p>
+                        <button
+                            type="button"
+                            className="calendar-retry"
+                            onClick={() => loadCalendar()}
+                        >
+                            <RefreshCw size={17} /> Reintentar
+                        </button>
+                    </div>
+                ) : !visibleDays.length ? (
+                    <div className="calendar-state">
+                        <CalendarIcon size={36} />
+                        <h2>
+                            {economicUnavailable
+                                ? 'Calendario económico no disponible'
+                                : 'No hay eventos disponibles'}
+                        </h2>
+                        <p>
+                            {economicUnavailable
+                                ? economicStatusMessage
+                                : activeSection === 'GENERAL'
+                                  ? 'Sin eventos para este filtro y semana.'
+                                  : 'Sin eventos informados para esta semana.'}
                         </p>
                     </div>
                 ) : (
-                    calendarData.days.map((day) => {
-                        // On the current week (weekOffset === 0), skip days fully in the past
-                        if (weekOffset === 0 && isDayBeforeToday(day.date)) return null;
-
-                        // Determine if this is today
-                        const [dy, dm, dd] = day.date.split('-').map(Number);
-                        const now = new Date();
-                        const isToday = dy === now.getFullYear() && dm - 1 === now.getMonth() && dd === now.getDate();
-
-                        let dayEconomic = activeSection === 'GENERAL'
-                            ? day.economicEvents.filter(e => filterEventByCategory(e))
-                            : [];
-
-                        // On today, filter out economic events whose exact timestamp has already passed
-                        if (weekOffset === 0 && isToday && activeSection === 'GENERAL') {
-                            dayEconomic = dayEconomic.filter(e => !isEventExpired(e));
-                        }
-
-                        const dayEarnings = activeSection === 'BALANCES'
-                            ? sortEarnings(day.earningsEvents.filter(hasEarningsInformation), earningsSort)
-                            : [];
-                        const dayDividends = activeSection === 'DIVIDENDOS'
-                            ? (day.dividendEvents || [])
-                            : [];
-
-                        const hasEventsInDay = dayEconomic.length > 0 || dayEarnings.length > 0 || dayDividends.length > 0;
-
-                        if (!hasEventsInDay) return null;
-
-                        return (
-                            <div key={day.date} className="space-y-4">
-                                {/* Day Header Bar */}
-                                <div className="flex items-center gap-3 pb-2.5 border-b border-border/40">
-                                    <div className="flex items-baseline gap-3">
-                                        <span className="text-2xl sm:text-3xl font-heading font-black text-foreground">
-                                            {day.dayName}
-                                        </span>
-                                        <span className="text-sm sm:text-base font-bold text-muted-foreground font-mono">
-                                            {day.date}
-                                        </span>
-                                    </div>
+                    <div className="calendar-agenda">
+                        {visibleDays.map((day) => (
+                            <section
+                                key={day.date}
+                                className="calendar-day"
+                                aria-label={day.dayName + ' ' + day.date}
+                            >
+                                <div className="calendar-day-heading">
+                                    <CalendarIcon size={19} aria-hidden="true" />
+                                    <h2>{day.dayName}</h2>
+                                    <span>{formatDateLabel(day.date)}</span>
                                     {day.isToday && (
-                                        <span className="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                        <span className="calendar-badge calendar-badge--positive">
                                             Hoy
                                         </span>
                                     )}
+                                    <span className="calendar-day-count">
+                                        {day.economic.length +
+                                            day.earnings.length +
+                                            day.dividends.length}{' '}
+                                        eventos
+                                    </span>
                                 </div>
-
-                                {/* Events List for Day */}
-                                {activeSection === 'GENERAL' && (
-                                    <div className="space-y-4">
-                                        {dayEconomic.map((evt) => {
-                                            const impactBadge = getImpactBadge(evt.impactScore ?? evt.marketImpactScore, evt.importance);
-                                            const flag = evt.country === 'AR' ? '🇦🇷' : evt.country === 'US' ? '🇺🇸' : '🌐';
-                                            const localTime = formatLocalTime(evt.date, evt.time, evt.timestampUtc);
-                                            const surprisePositive = (evt.surprise ?? 0) > 0;
-
-                                            return (
-                                                <div
-                                                    key={evt.id}
-                                                    className="p-5 sm:p-6 rounded-2xl border border-border/50 bg-card/70 hover:bg-card/95 transition-all space-y-4 shadow-sm group"
-                                                >
-                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                        <div className="flex items-center gap-2.5 flex-wrap">
-                                                            <span className="text-xl">{flag}</span>
-                                                            <span className={`text-xs uppercase tracking-wider px-2.5 py-1 rounded-lg border font-black flex items-center gap-1.5 ${impactBadge.className}`}>
-                                                                {impactBadge.isCritical && <Flame className="w-3.5 h-3.5 text-purple-500 animate-pulse" />}
-                                                                Impacto {impactBadge.label}
-                                                            </span>
-                                                            <span className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5 font-mono bg-muted/60 px-2.5 py-1 rounded-lg border border-border/40">
-                                                                <Clock className="w-3.5 h-3.5 text-muted-foreground" /> {localTime}
-                                                            </span>
-                                                            <span className="text-xs font-semibold text-muted-foreground">
-                                                                {evt.country === 'AR' ? 'Argentina' : 'Estados Unidos'}
-                                                            </span>
-                                                        </div>
-                                                        {evt.source && (
-                                                            <span className="text-xs text-muted-foreground font-mono">
-                                                                Fuente: {evt.source}
-                                                            </span>
+                                <div className="market-grid calendar-event-grid">
+                                    {day.economic.map((event) => {
+                                        const impact = getImpactBadge(
+                                            event.impactScore ?? event.marketImpactScore,
+                                            event.importance,
+                                        );
+                                        return (
+                                            <article
+                                                key={event.id}
+                                                className="market-quote-card calendar-event-card"
+                                            >
+                                                <div className="calendar-card-meta">
+                                                    <span
+                                                        className={
+                                                            'calendar-badge ' + impact.className
+                                                        }
+                                                    >
+                                                        {impact.isCritical && <Flame size={14} />}
+                                                        Impacto {impact.label}
+                                                    </span>
+                                                    <span className="calendar-time">
+                                                        <Clock size={14} />
+                                                        {formatLocalTime(
+                                                            event.date,
+                                                            event.time,
+                                                            event.timestampUtc,
                                                         )}
-                                                    </div>
-
-                                                    <div>
-                                                        <h3 className="text-base sm:text-xl font-bold text-foreground">
-                                                            {evt.title}
-                                                        </h3>
-                                                        {evt.description && (
-                                                            <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
-                                                                {evt.description}
-                                                            </p>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Metrics Data Bar */}
-                                                    {(evt.actualValue != null || evt.consensusValue != null || evt.previousValue != null) && (
-                                                        <div className="pt-3 border-t border-border/40 flex flex-wrap items-center gap-4 sm:gap-8 text-sm font-mono">
-                                                            {evt.actualValue != null && (
-                                                                <div>
-                                                                    <span className="text-muted-foreground font-sans">Actual: </span>
-                                                                    <span className="font-black text-foreground text-base">{evt.actualValue}{evt.unit ? ` ${evt.unit}` : ''}</span>
-                                                                </div>
-                                                            )}
-                                                            {evt.consensusValue != null && (
-                                                                <div>
-                                                                    <span className="text-muted-foreground font-sans">Estimado: </span>
-                                                                    <span className="font-bold text-foreground">{evt.consensusValue}{evt.unit ? ` ${evt.unit}` : ''}</span>
-                                                                </div>
-                                                            )}
-                                                            {evt.previousValue != null && (
-                                                                <div>
-                                                                    <span className="text-muted-foreground font-sans">Previo: </span>
-                                                                    <span className="font-semibold text-muted-foreground">{evt.previousValue}{evt.unit ? ` ${evt.unit}` : ''}</span>
-                                                                </div>
-                                                            )}
-                                                            {evt.surprise != null && (
-                                                                <div>
-                                                                    <span className="text-muted-foreground font-sans">Sorpresa: </span>
-                                                                    <span className={`font-black ${surprisePositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                        {surprisePositive ? '+' : ''}{evt.surprise}{evt.unit ? ` ${evt.unit}` : ''}
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                    </span>
+                                                </div>
+                                                <div className="calendar-event-title">
+                                                    <span className="calendar-country">
+                                                        {event.country === 'AR'
+                                                            ? 'Argentina'
+                                                            : event.country === 'US'
+                                                              ? 'Estados Unidos'
+                                                              : event.country}
+                                                    </span>
+                                                    <h3>{event.title}</h3>
+                                                    {event.description && (
+                                                        <p>{event.description}</p>
                                                     )}
-
-                                                    {/* Affected assets */}
-                                                    {evt.affectedAssets && evt.affectedAssets.length > 0 && (
-                                                        <div className="flex items-center gap-2 flex-wrap pt-1">
-                                                            <span className="text-xs text-muted-foreground font-semibold">Activos afectados:</span>
-                                                            {evt.affectedAssets.map((asset, aIdx) => (
-                                                                <span key={aIdx} className="px-2 py-0.5 rounded-md bg-secondary text-xs font-black text-foreground border border-border/60">
+                                                </div>
+                                                {(event.actualValue != null ||
+                                                    (event.consensusValue ?? event.forecastValue) !=
+                                                        null ||
+                                                    event.previousValue != null) && (
+                                                    <dl className="calendar-metrics">
+                                                        {event.actualValue != null && (
+                                                            <div>
+                                                                <dt>Actual</dt>
+                                                                <dd className="calendar-metric-primary">
+                                                                    {event.actualValue}
+                                                                    {event.unit
+                                                                        ? ' ' + event.unit
+                                                                        : ''}
+                                                                </dd>
+                                                            </div>
+                                                        )}
+                                                        {(event.consensusValue ??
+                                                            event.forecastValue) != null && (
+                                                            <div>
+                                                                <dt>Estimado</dt>
+                                                                <dd>
+                                                                    {event.consensusValue ??
+                                                                        event.forecastValue}
+                                                                    {event.unit
+                                                                        ? ' ' + event.unit
+                                                                        : ''}
+                                                                </dd>
+                                                            </div>
+                                                        )}
+                                                        {event.previousValue != null && (
+                                                            <div>
+                                                                <dt>Previo</dt>
+                                                                <dd>
+                                                                    {event.previousValue}
+                                                                    {event.unit
+                                                                        ? ' ' + event.unit
+                                                                        : ''}
+                                                                </dd>
+                                                            </div>
+                                                        )}
+                                                        {event.surprise != null && (
+                                                            <div>
+                                                                <dt>Sorpresa</dt>
+                                                                <dd
+                                                                    className={
+                                                                        event.surprise > 0
+                                                                            ? 'calendar-positive'
+                                                                            : 'calendar-negative'
+                                                                    }
+                                                                >
+                                                                    {event.surprise > 0 ? '+' : ''}
+                                                                    {event.surprise}
+                                                                    {event.unit
+                                                                        ? ' ' + event.unit
+                                                                        : ''}
+                                                                </dd>
+                                                            </div>
+                                                        )}
+                                                    </dl>
+                                                )}
+                                                {event.affectedAssets &&
+                                                    event.affectedAssets.length > 0 && (
+                                                        <div className="calendar-assets">
+                                                            <span>Activos afectados</span>
+                                                            {event.affectedAssets.map((asset) => (
+                                                                <span
+                                                                    key={asset}
+                                                                    className="calendar-badge"
+                                                                >
                                                                     {asset}
                                                                 </span>
                                                             ))}
                                                         </div>
                                                     )}
+                                                {event.expectedMarketEffect && (
+                                                    <div className="calendar-context">
+                                                        <Info size={17} />
+                                                        <p>{event.expectedMarketEffect}</p>
+                                                    </div>
+                                                )}
+                                                {event.source && (
+                                                    <div className="calendar-card-footer">
+                                                        <span>Fuente: {event.source}</span>
+                                                    </div>
+                                                )}
+                                            </article>
+                                        );
+                                    })}
 
-                                                    {/* Contextual Market Effect */}
-                                                    {evt.expectedMarketEffect && (
-                                                        <div className="p-3.5 sm:p-4 rounded-xl bg-secondary/40 border border-border/40 text-sm text-foreground/90 flex items-start gap-3">
-                                                            <Info className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                                                            <p className="leading-relaxed font-medium">{evt.expectedMarketEffect}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-
-                                {/* 2. Earnings de acciones estadounidenses */}
-                                {activeSection === 'BALANCES' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
-                                        {dayEarnings.map((earn) => {
-                                            const timingLabel = earn.reportTiming === 'AMC'
+                                    {day.earnings.map((earn) => {
+                                        const timing =
+                                            earn.reportTiming === 'AMC'
                                                 ? 'Después del cierre'
                                                 : earn.reportTiming === 'BMO'
-                                                    ? 'Antes de la apertura'
-                                                    : earn.reportTiming === 'DMH' ? 'Durante la rueda' : 'Horario pendiente';
-                                            const hasReportedResult = earn.actualEps != null || earn.actualRevenue != null;
-                                            const epsWon = earn.epsSurprise != null && earn.epsSurprise >= 0;
-                                            const revenueWon = earn.revenueSurprise != null && earn.revenueSurprise >= 0;
-                                            const outcome = getEarningsOutcome(earn);
-                                            const resultWon = outcome === 'VICTORIOSO';
-                                            const resultLost = outcome === 'DESVICTORIOSO';
-                                            const resultMixed = outcome === 'MIXTO';
-                                            const marketUp = earn.marketReaction != null && earn.marketReaction >= 0;
-                                            const epsValueClass = earn.epsSurprise == null ? 'text-foreground' : epsWon ? 'text-emerald-500' : 'text-rose-500';
-                                            const revenueValueClass = earn.revenueSurprise == null ? 'text-foreground' : revenueWon ? 'text-emerald-500' : 'text-rose-500';
-
-                                            return (
-                                                <div
-                                                    key={earn.id}
-                                                    className="p-6 sm:p-7 rounded-3xl border border-border/60 bg-card/90 hover:bg-card transition-colors flex flex-col justify-between space-y-5 shadow-sm group hover:border-amber-500/50 hover:shadow-xl hover:shadow-amber-500/10 min-h-[300px]"
-                                                >
-                                                    <div>
-                                                        <div className="flex items-center justify-between gap-3 mb-5">
-                                                            <span className="text-xs font-black tracking-wider uppercase text-amber-500 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
-                                                                📊 EE. UU.
-                                                            </span>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-xs sm:text-sm font-bold text-muted-foreground bg-secondary/80 px-3 py-1.5 rounded-xl border border-border/50">
-                                                                    {timingLabel}
-                                                                </span>
-                                                                {hasReportedResult ? (
-                                                                    <span className={`hidden sm:inline-flex text-[11px] font-black px-2 py-1 rounded-lg border ${resultWon ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' : resultLost ? 'text-rose-500 bg-rose-500/10 border-rose-500/20' : resultMixed ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' : 'text-sky-500 bg-sky-500/10 border-sky-500/20'}`}>
-                                                                        Publicado
-                                                                    </span>
-                                                                ) : earn.dateStatus === 'ESTIMATED' && (
-                                                                    <span className="hidden sm:inline-flex text-[11px] font-black text-amber-400 bg-amber-400/10 px-2 py-1 rounded-lg border border-amber-400/20">
-                                                                        Est.
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Company & Ticker */}
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center ring-1 ring-border/80 bg-card p-1.5 shadow-sm">
-                                                                <AssetLogoImg
-                                                                    ticker={earn.ticker}
-                                                                    src={earn.logoUrl}
-                                                                    name={earn.companyName}
-                                                                />
-                                                            </div>
-                                                            <div className="min-w-0 flex-1">
-                                                                <div className="flex items-center justify-between gap-2">
-                                                                    <span className="text-2xl font-black text-foreground tracking-tight group-hover:text-amber-500 transition-colors">
-                                                                        {earn.ticker}
-                                                                    </span>
-                                                                    {earn.marketCap && (
-                                                                        <span className="text-xs font-mono font-semibold text-muted-foreground">
-                                                                            {formatMarketCap(earn.marketCap) ? `Cap: ${formatMarketCap(earn.marketCap)}` : ''}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <p className="text-sm font-semibold text-muted-foreground truncate" title={earn.companyName}>
-                                                                    {earn.companyName}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="pt-4 border-t border-border/50 space-y-3 text-sm">
-                                                        {hasReportedResult ? (
-                                                            <>
-                                                                <div className={`flex items-center gap-2 rounded-2xl px-4 py-3 ${resultWon ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : resultMixed ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : resultLost ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-sky-500/10 text-sky-600 dark:text-sky-400'}`}>
-                                                                    {resultWon ? <CheckCircle2 className="h-5 w-5 shrink-0" /> : resultLost ? <XCircle className="h-5 w-5 shrink-0" /> : <BarChart3 className="h-5 w-5 shrink-0" />}
-                                                                    <span className="font-black">{resultWon ? 'Superó las estimaciones' : resultMixed ? 'Resultado mixto' : resultLost ? 'Quedó debajo de las estimaciones' : 'Resultado informado'}</span>
-                                                                </div>
-                                                                <div className="grid grid-cols-2 gap-3 font-mono">
-                                                                    <div className="p-3 rounded-2xl bg-secondary/40 border border-border/40">
-                                                                        <div className="text-[11px] text-muted-foreground font-sans font-bold uppercase tracking-wider">Ganancias EPS</div>
-                                                                        <div className="mt-1.5 flex flex-col gap-1"><span className="text-muted-foreground">Est. {earn.epsEstimate != null ? `$${earn.epsEstimate.toFixed(2)}` : 'N/D'}</span><span className={`text-base font-black ${epsValueClass}`}>Real {earn.actualEps != null ? `$${earn.actualEps.toFixed(2)}` : 'N/D'}</span></div>
-                                                                        <div className={`mt-1.5 font-black ${epsValueClass}`}>{earn.epsSurprise != null ? `${epsWon ? '+' : ''}${earn.epsSurprise.toFixed(1)}% vs. est.` : 'Sin comparación'}</div>
-                                                                    </div>
-                                                                    <div className="p-3 rounded-2xl bg-secondary/40 border border-border/40">
-                                                                        <div className="text-[11px] text-muted-foreground font-sans font-bold uppercase tracking-wider">Facturación</div>
-                                                                        <div className="mt-1.5 flex flex-col gap-1"><span className="text-muted-foreground">Est. {formatRevenue(earn.revenueEstimate)}</span><span className={`text-base font-black ${revenueValueClass}`}>Real {formatRevenue(earn.actualRevenue)}</span></div>
-                                                                        <div className={`mt-1.5 font-black ${revenueValueClass}`}>{earn.revenueSurprise != null ? `${revenueWon ? '+' : ''}${earn.revenueSurprise.toFixed(1)}% vs. est.` : 'Sin comparación'}</div>
-                                                                    </div>
-                                                                </div>
-                                                                {earn.marketReaction != null && (
-                                                                    <div className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 ${marketUp ? 'border-emerald-500/25 bg-emerald-500/5' : 'border-rose-500/25 bg-rose-500/5'}`}>
-                                                                        <span className="flex items-center gap-1.5 font-bold text-muted-foreground">{marketUp ? <TrendingUp className="h-5 w-5 text-emerald-500" /> : <TrendingDown className="h-5 w-5 text-rose-500" />} Reacción del mercado</span>
-                                                                        <span className={`font-black font-mono ${marketUp ? 'text-emerald-500' : 'text-rose-500'}`}>{marketUp ? '+' : ''}{earn.marketReaction.toFixed(2)}%</span>
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        ) : (
-                                                            <div className="grid grid-cols-2 gap-3 font-mono">
-                                                                <div className="p-3 rounded-2xl bg-secondary/40 border border-border/40"><div className="text-[11px] text-muted-foreground font-sans font-bold uppercase tracking-wider">EPS estimado</div><div className="mt-1.5 text-lg font-black text-amber-500">{earn.epsEstimate != null ? `$${earn.epsEstimate.toFixed(2)}` : 'N/D'}</div></div>
-                                                                <div className="p-3 rounded-2xl bg-secondary/40 border border-border/40"><div className="text-[11px] text-muted-foreground font-sans font-bold uppercase tracking-wider">Facturación est.</div><div className="mt-1.5 text-lg font-black text-foreground">{formatRevenue(earn.revenueEstimate)}</div></div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-
-                                {/* 3. Dividendos del S&P 500 — TradingView Style */}
-                                {activeSection === 'DIVIDENDOS' && (
-                                    <div className="space-y-2">
-                                        {dayDividends.map((div) => (
-                                            <div
-                                                key={div.id}
-                                                className="flex items-center gap-3 sm:gap-4 px-4 py-3.5 rounded-2xl border border-border/50 bg-card/70 hover:bg-card hover:border-emerald-500/40 transition-all group shadow-sm"
+                                                  ? 'Antes de la apertura'
+                                                  : earn.reportTiming === 'DMH'
+                                                    ? 'Durante la rueda'
+                                                    : 'Horario pendiente';
+                                        const reported =
+                                            earn.actualEps != null || earn.actualRevenue != null;
+                                        const outcome = getEarningsOutcome(earn);
+                                        const tone =
+                                            outcome === 'VICTORIOSO'
+                                                ? 'positive'
+                                                : outcome === 'DESVICTORIOSO'
+                                                  ? 'negative'
+                                                  : outcome === 'MIXTO'
+                                                    ? 'amber'
+                                                    : 'blue';
+                                        const epsTone =
+                                            earn.epsSurprise == null
+                                                ? ''
+                                                : earn.epsSurprise >= 0
+                                                  ? 'calendar-positive'
+                                                  : 'calendar-negative';
+                                        const revenueTone =
+                                            earn.revenueSurprise == null
+                                                ? ''
+                                                : earn.revenueSurprise >= 0
+                                                  ? 'calendar-positive'
+                                                  : 'calendar-negative';
+                                        return (
+                                            <article
+                                                key={earn.id}
+                                                className="market-quote-card calendar-event-card"
                                             >
-                                                {/* Logo */}
-                                                <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center ring-1 ring-border/60 bg-card p-1">
-                                                    <AssetLogoImg ticker={div.ticker} src={div.logoUrl} name={div.companyName} />
-                                                </div>
-
-                                                {/* Ticker + Company */}
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-base font-black text-foreground group-hover:text-emerald-400 transition-colors tracking-tight">
-                                                            {div.ticker}
+                                                <div className="calendar-card-meta">
+                                                    <span className="calendar-time">
+                                                        <Clock size={14} />
+                                                        {timing}
+                                                    </span>
+                                                    {reported ? (
+                                                        <span
+                                                            className={
+                                                                'calendar-badge calendar-badge--' +
+                                                                tone
+                                                            }
+                                                        >
+                                                            Publicado
                                                         </span>
-                                                        {div.frequency && (
-                                                            <span className="text-[10px] font-bold text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded border border-border/40 hidden sm:inline-block">
-                                                                {div.frequency}
+                                                    ) : (
+                                                        earn.dateStatus === 'ESTIMATED' && (
+                                                            <span className="calendar-badge calendar-badge--amber">
+                                                                Fecha estimada
                                                             </span>
+                                                        )
+                                                    )}
+                                                </div>
+                                                <div className="calendar-company">
+                                                    <div className="calendar-company-logo">
+                                                        <AssetLogoImg
+                                                            ticker={earn.ticker}
+                                                            src={earn.logoUrl}
+                                                            name={earn.companyName}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <h3>{earn.ticker}</h3>
+                                                        <p>{earn.companyName}</p>
+                                                    </div>
+                                                </div>
+                                                {reported && (
+                                                    <div
+                                                        className={
+                                                            'calendar-outcome calendar-' + tone
+                                                        }
+                                                    >
+                                                        {outcome === 'VICTORIOSO' ? (
+                                                            <CheckCircle2 size={19} />
+                                                        ) : outcome === 'DESVICTORIOSO' ? (
+                                                            <XCircle size={19} />
+                                                        ) : (
+                                                            <BarChart3 size={19} />
+                                                        )}
+                                                        <span>
+                                                            {outcome === 'VICTORIOSO'
+                                                                ? 'Superó las estimaciones'
+                                                                : outcome === 'DESVICTORIOSO'
+                                                                  ? 'Debajo de las estimaciones'
+                                                                  : outcome === 'MIXTO'
+                                                                    ? 'Resultado mixto'
+                                                                    : 'Resultado informado'}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <dl className="calendar-metrics calendar-earnings-metrics">
+                                                    <div>
+                                                        <dt>
+                                                            {reported
+                                                                ? 'Ganancias EPS'
+                                                                : 'EPS estimado'}
+                                                        </dt>
+                                                        <dd
+                                                            className={
+                                                                'calendar-metric-primary ' + epsTone
+                                                            }
+                                                        >
+                                                            {reported
+                                                                ? earn.actualEps != null
+                                                                    ? '$' +
+                                                                      earn.actualEps.toFixed(2)
+                                                                    : 'N/D'
+                                                                : earn.epsEstimate != null
+                                                                  ? '$' +
+                                                                    earn.epsEstimate.toFixed(2)
+                                                                  : 'N/D'}
+                                                        </dd>
+                                                        {reported && (
+                                                            <>
+                                                                <dd className="calendar-metric-detail">
+                                                                    Est.{' '}
+                                                                    {earn.epsEstimate != null
+                                                                        ? '$' +
+                                                                          earn.epsEstimate.toFixed(
+                                                                              2,
+                                                                          )
+                                                                        : 'N/D'}
+                                                                </dd>
+                                                                <dd
+                                                                    className={
+                                                                        'calendar-metric-detail ' +
+                                                                        epsTone
+                                                                    }
+                                                                >
+                                                                    {earn.epsSurprise != null
+                                                                        ? (earn.epsSurprise >= 0
+                                                                              ? '+'
+                                                                              : '') +
+                                                                          earn.epsSurprise.toFixed(
+                                                                              1,
+                                                                          ) +
+                                                                          '% vs. est.'
+                                                                        : 'Sin comparación'}
+                                                                </dd>
+                                                            </>
                                                         )}
                                                     </div>
-                                                    <p className="text-xs text-muted-foreground font-medium truncate">{div.companyName}</p>
-                                                </div>
-
-                                                {/* Ex-Date — most important field like TradingView */}
-                                                <div className="text-center flex-shrink-0 hidden sm:block">
-                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-0.5">Ex-Date</div>
-                                                    <div className="text-sm font-black text-foreground font-mono">{div.exDate ? formatDateLabel(div.exDate) : 'Sin anunciar'}</div>
-                                                </div>
-
-                                                {/* Payment Date */}
-                                                <div className="text-center flex-shrink-0 hidden md:block">
-                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                                                        <CalendarIcon className="w-2.5 h-2.5" /> Pago
+                                                    <div>
+                                                        <dt>
+                                                            {reported
+                                                                ? 'Facturación'
+                                                                : 'Facturación est.'}
+                                                        </dt>
+                                                        <dd
+                                                            className={
+                                                                'calendar-metric-primary ' +
+                                                                revenueTone
+                                                            }
+                                                        >
+                                                            {formatRevenue(
+                                                                reported
+                                                                    ? earn.actualRevenue
+                                                                    : earn.revenueEstimate,
+                                                            )}
+                                                        </dd>
+                                                        {reported && (
+                                                            <>
+                                                                <dd className="calendar-metric-detail">
+                                                                    Est.{' '}
+                                                                    {formatRevenue(
+                                                                        earn.revenueEstimate,
+                                                                    )}
+                                                                </dd>
+                                                                <dd
+                                                                    className={
+                                                                        'calendar-metric-detail ' +
+                                                                        revenueTone
+                                                                    }
+                                                                >
+                                                                    {earn.revenueSurprise != null
+                                                                        ? (earn.revenueSurprise >= 0
+                                                                              ? '+'
+                                                                              : '') +
+                                                                          earn.revenueSurprise.toFixed(
+                                                                              1,
+                                                                          ) +
+                                                                          '% vs. est.'
+                                                                        : 'Sin comparación'}
+                                                                </dd>
+                                                            </>
+                                                        )}
                                                     </div>
-                                                    <div className="text-sm font-bold text-emerald-400 font-mono">
-                                                        {div.paymentDate ? formatDateLabel(div.paymentDate) : '—'}
-                                                    </div>
-                                                </div>
-
-                                                {/* Amount per share */}
-                                                <div className="text-center flex-shrink-0">
-                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                                                        <DollarSign className="w-2.5 h-2.5" /> Por acción
-                                                    </div>
-                                                    <div className="text-sm font-black text-foreground font-mono">
-                                                        {div.amount != null ? `$${div.amount.toFixed(4).replace(/\.?0+$/, '')}` : '—'}
-                                                    </div>
-                                                </div>
-
-                                                {/* Yield — highlighted like TradingView */}
-                                                <div className="flex-shrink-0">
-                                                    {div.yield != null ? (
-                                                        <div className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/25 rounded-xl px-3 py-1.5">
-                                                            <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
-                                                            <span className="text-sm font-black text-emerald-400">{div.yield.toFixed(2)}%</span>
-                                                        </div>
+                                                </dl>
+                                                <div className="calendar-card-footer">
+                                                    {earn.marketCap ? (
+                                                        <span>
+                                                            Cap. {formatMarketCap(earn.marketCap)}
+                                                        </span>
                                                     ) : (
-                                                        <span className="text-xs text-muted-foreground">—</span>
+                                                        <span>EE. UU.</span>
+                                                    )}
+                                                    {earn.marketReaction != null && (
+                                                        <span className="calendar-reaction">
+                                                            <span>Reacción</span>
+                                                            <MarketChange
+                                                                value={earn.marketReaction}
+                                                            />
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </article>
+                                        );
+                                    })}
+
+                                    {day.dividends.map((dividend) => (
+                                        <article
+                                            key={dividend.id}
+                                            className="market-quote-card calendar-event-card"
+                                        >
+                                            <div className="calendar-card-meta">
+                                                <span className="calendar-country">
+                                                    S&amp;P 500
+                                                </span>
+                                                {dividend.frequency && (
+                                                    <span className="calendar-badge">
+                                                        {dividend.frequency}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="calendar-company">
+                                                <div className="calendar-company-logo">
+                                                    <AssetLogoImg
+                                                        ticker={dividend.ticker}
+                                                        src={dividend.logoUrl}
+                                                        name={dividend.companyName}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <h3>{dividend.ticker}</h3>
+                                                    <p>{dividend.companyName}</p>
+                                                </div>
+                                            </div>
+                                            <div className="market-quote-card__quote">
+                                                <span className="market-quote-card__quote-label">
+                                                    Dividendo por acción<span>USD</span>
+                                                </span>
+                                                <div className="market-quote-card__numbers">
+                                                    <span className="market-quote-card__price">
+                                                        {dividend.amount != null
+                                                            ? '$' +
+                                                              dividend.amount
+                                                                  .toFixed(4)
+                                                                  .replace(/\.?0+$/, '')
+                                                            : 'N/D'}
+                                                    </span>
+                                                    {dividend.yield != null && (
+                                                        <span className="calendar-badge calendar-badge--positive">
+                                                            <ArrowUpRight size={15} />
+                                                            {dividend.yield.toFixed(2)}% yield
+                                                        </span>
                                                     )}
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })
+                                            <div className="calendar-card-footer calendar-dividend-dates">
+                                                <span>
+                                                    <span>Ex-dividendo</span>
+                                                    <strong>
+                                                        {dividend.exDate
+                                                            ? formatDateLabel(dividend.exDate)
+                                                            : 'Sin anunciar'}
+                                                    </strong>
+                                                </span>
+                                                <span>
+                                                    <span>Fecha de pago</span>
+                                                    <strong>
+                                                        {dividend.paymentDate
+                                                            ? formatDateLabel(dividend.paymentDate)
+                                                            : 'Sin anunciar'}
+                                                    </strong>
+                                                </span>
+                                            </div>
+                                        </article>
+                                    ))}
+                                </div>
+                            </section>
+                        ))}
+                    </div>
                 )}
             </div>
         </div>

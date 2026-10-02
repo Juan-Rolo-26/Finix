@@ -626,19 +626,19 @@ export default function Settings() {
             <FreeAccessNotice />
             {/* Header */}
             <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-7 shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl sm:text-4xl font-heading font-black tracking-tight text-foreground">Configuración</h1>
-                        <p className="mt-1.5 text-sm sm:text-base text-muted-foreground leading-relaxed font-normal">
+                <div className="flex flex-col items-center justify-center text-center gap-4 max-w-2xl mx-auto">
+                    <div className="flex flex-col items-center text-center">
+                        <h1 className="text-3xl sm:text-4xl font-heading font-black tracking-tight text-foreground text-center">Configuración</h1>
+                        <p className="mt-1.5 text-sm sm:text-base text-muted-foreground leading-relaxed font-normal text-center">
                             Gestioná tu cuenta, privacidad, preferencias de la app y seguridad.
                         </p>
                         {accountAge && (
-                            <p className="mt-1 text-xs sm:text-sm text-muted-foreground/75 font-medium">
+                            <p className="mt-1 text-xs sm:text-sm text-muted-foreground/75 font-medium text-center">
                                 Cuenta creada el {accountAge}
                             </p>
                         )}
                     </div>
-                    <div className="flex flex-wrap gap-2.5 shrink-0">
+                    <div className="flex flex-wrap justify-center gap-2.5 shrink-0">
                         {settings?.isVerified && <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold px-3 py-1">✓ Verificado</Badge>}
                         {settings?.isCreator && <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs font-bold px-3 py-1">Creador</Badge>}
                     </div>

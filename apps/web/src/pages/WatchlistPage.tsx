@@ -16,14 +16,26 @@ import {
     Trash2,
     Edit3,
     Bell,
-    ArrowUpRight,
+    BellOff,
     ArrowDownRight,
     Loader2,
     Crown,
     X,
     LayoutDashboard,
     List,
+    TrendingUp,
+    ChevronRight,
+    Eye,
+    Filter,
+    RefreshCw,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+    MarketHeader,
+    MarketChange,
+    MarketQuoteCard,
+} from '@/components/markets/MarketPrimitives';
+import '@/components/markets/market.css';
 
 import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
 import CreateEditWatchlistModal from '@/components/watchlist/CreateEditWatchlistModal';
@@ -33,20 +45,48 @@ import WatchlistDetailDrawer from '@/components/watchlist/WatchlistDetailDrawer'
 import WatchlistIdeasSection from '@/components/watchlist/WatchlistIdeasSection';
 import WatchlistDashboard from '@/components/watchlist/WatchlistDashboard';
 
+const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
+    RESEARCHING: {
+        label: 'Investigando',
+        color: 'bg-blue-500/15 text-blue-400 border border-blue-500/30',
+        dot: 'bg-blue-400',
+    },
+    WAITING_PRICE: {
+        label: 'Esperando precio',
+        color: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',
+        dot: 'bg-amber-400',
+    },
+    EARNINGS: {
+        label: 'Resultados',
+        color: 'bg-purple-500/15 text-purple-400 border border-purple-500/30',
+        dot: 'bg-purple-400',
+    },
+    DISCARDED: {
+        label: 'Descartada',
+        color: 'bg-rose-500/15 text-rose-400 border border-rose-500/30',
+        dot: 'bg-rose-400',
+    },
+};
+
+const getStatusConfig = (status: string) =>
+    STATUS_CONFIG[status] ?? {
+        label: status,
+        color: 'bg-secondary text-muted-foreground border border-border/40',
+        dot: 'bg-muted-foreground',
+    };
+
 export default function WatchlistPage() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuthStore();
     const isPro = isProUser(user);
 
-    // Estado de listas
     const [watchlists, setWatchlists] = useState<any[]>([]);
     const [activeListId, setActiveListId] = useState<string | null>(null);
     const [activeListDetail, setActiveListDetail] = useState<any | null>(null);
     const [loadingLists, setLoadingLists] = useState(true);
     const [loadingDetail, setLoadingDetail] = useState(false);
 
-    // Vistas y filtros
     const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
     const [activeTab, setActiveTab] = useState<'dashboard' | 'list'>('dashboard');
     const [searchQuery, setSearchQuery] = useState('');
@@ -56,8 +96,8 @@ export default function WatchlistPage() {
     const [showOnboarding, setShowOnboarding] = useState(() => {
         return localStorage.getItem('finix_watchlist_onboarding_dismissed') !== 'true';
     });
+    const [showFilters, setShowFilters] = useState(false);
 
-    // Modales y drawers
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingList, setEditingList] = useState<any | null>(null);
     const [deletingListId, setDeletingListId] = useState<string | null>(null);
@@ -66,11 +106,10 @@ export default function WatchlistPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [addModalSymbol, setAddModalSymbol] = useState('');
 
-    // Selección en lote
     const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
     const [bulkActionLoading, setBulkActionLoading] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // Cargar listas al iniciar
     const fetchWatchlists = async () => {
         if (!user) return;
         setLoadingLists(true);
@@ -99,7 +138,6 @@ export default function WatchlistPage() {
         fetchWatchlists();
     }, [user]);
 
-    // Cargar detalle de la lista activa
     const fetchListDetail = async (listId: string) => {
         setLoadingDetail(true);
         try {
@@ -107,7 +145,6 @@ export default function WatchlistPage() {
             if (res.ok) {
                 const data = await res.json();
                 setActiveListDetail(data);
-                // Si el drawer está abierto para un ítem, actualizarlo
                 if (selectedItemForDrawer) {
                     const updated = data.items?.find((i: any) => i.id === selectedItemForDrawer.id);
                     if (updated) setSelectedItemForDrawer(updated);
@@ -126,6 +163,13 @@ export default function WatchlistPage() {
             setSelectedItemIds([]);
         }
     }, [activeListId]);
+
+    const handleRefresh = async () => {
+        if (!activeListId) return;
+        setIsRefreshing(true);
+        await fetchListDetail(activeListId);
+        setIsRefreshing(false);
+    };
 
     const handleDismissOnboarding = () => {
         setShowOnboarding(false);
@@ -169,7 +213,6 @@ export default function WatchlistPage() {
         }
     };
 
-    // Filtrar ítems de la lista activa
     const filteredItems = useMemo(() => {
         if (!activeListDetail?.items) return [];
         return activeListDetail.items.filter((item: any) => {
@@ -193,101 +236,91 @@ export default function WatchlistPage() {
 
     const activeList = watchlists.find((w) => w.id === activeListId);
 
+    // Stats rapidas
+    const totalItems = activeListDetail?.items?.length ?? 0;
+    const gainersCount = activeListDetail?.items?.filter((i: any) => (i.changePercent ?? 0) >= 0).length ?? 0;
+    const losersCount = totalItems - gainersCount;
+    const withAlert = activeListDetail?.items?.filter((i: any) => i.hasActiveAlert).length ?? 0;
+
     return (
-        <div className="min-h-screen bg-background text-foreground pb-20">
-            {/* Background glow sutil */}
-            <div className="absolute inset-x-0 top-0 -z-10 h-[320px] opacity-40 dark:opacity-100 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.08),transparent_70%)] pointer-events-none" />
+        <div className="relative w-full overflow-hidden pb-20 markets-view">
+            <div className="market-shell">
+                {/* HEADER PRINCIPAL */}
+                <MarketHeader
+                    title="Seguimiento"
+                    eyebrow="PORTAFOLIO & MERCADOS · FINIX"
+                    icon={Bookmark}
+                    description="Organizá y monitoreá activos bajo tus propias condiciones y alertas"
+                    actions={
+                        <>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowIdeasSection(!showIdeasSection)}
+                                className={cn(
+                                    'market-action flex items-center border border-border px-3.5 py-2 hover:bg-secondary/40',
+                                    showIdeasSection && 'border-primary text-primary bg-primary/10',
+                                )}
+                            >
+                                <Sparkles size={16} />
+                                <span>{showIdeasSection ? 'Ocultar ideas' : 'Ideas para explorar'}</span>
+                            </Button>
 
-            <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-6 md:px-6 lg:px-8">
-                {/* Header principal */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/40 pb-5">
-                    <div>
-                        <div className="flex items-center gap-2.5">
-                            <h1 className="text-2xl font-black tracking-tight text-foreground md:text-3xl">
-                                Seguimiento
-                            </h1>
-                            <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-xs font-black text-emerald-600 dark:text-emerald-400">
-                                <Crown className="h-3 w-3" /> PRO
-                            </span>
-                        </div>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Organizá y seguí activos bajo tus propias condiciones.
-                        </p>
-                    </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={!activeListId}
+                                onClick={() => setIsImportModalOpen(true)}
+                                className="market-action flex items-center border border-border px-3.5 py-2 hover:bg-secondary/40 disabled:opacity-40"
+                            >
+                                <UploadCloud size={16} />
+                                <span>Importar</span>
+                            </Button>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        {/* Botón Explorar ideas */}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowIdeasSection(!showIdeasSection)}
-                            className={`rounded-xl h-9 text-xs font-bold gap-1.5 transition-all ${showIdeasSection
-                                    ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                                    : 'border-border/60 hover:bg-secondary/40'
-                                }`}
-                        >
-                            <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-                            {showIdeasSection ? 'Ocultar ideas' : 'Ideas para explorar'}
-                        </Button>
-
-                        {/* Botón Importar */}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={!activeListId}
-                            onClick={() => setIsImportModalOpen(true)}
-                            className="rounded-xl h-9 text-xs font-bold gap-1.5 border-border/60 hover:bg-secondary/40"
-                        >
-                            <UploadCloud className="h-3.5 w-3.5" />
-                            Importar
-                        </Button>
-
-                        {/* Botón Exportar */}
-                        <div className="relative group">
                             <Button
                                 variant="outline"
                                 size="sm"
                                 disabled={!activeListId}
                                 onClick={() => handleExport('csv')}
-                                className="rounded-xl h-9 text-xs font-bold gap-1.5 border-border/60 hover:bg-secondary/40"
+                                className="market-action flex items-center border border-border px-3.5 py-2 hover:bg-secondary/40 disabled:opacity-40"
                             >
-                                <Download className="h-3.5 w-3.5" />
-                                Exportar
+                                <Download size={16} />
+                                <span>Exportar</span>
                             </Button>
-                        </div>
 
-                        {/* Botón Nueva lista */}
-                        <Button
-                            size="sm"
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="rounded-xl h-9 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm"
-                        >
-                            <Plus className="h-3.5 w-3.5" />
-                            Nueva lista
-                        </Button>
-                    </div>
-                </div>
+                            <Button
+                                size="sm"
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="market-action flex items-center bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2"
+                            >
+                                <Plus size={16} />
+                                <span>Nueva lista</span>
+                            </Button>
+                        </>
+                    }
+                />
 
-                {/* Banner de bienvenida y aclaración conceptual */}
+                {/* BANNER BIENVENIDA */}
                 {showOnboarding && (
-                    <div className="relative overflow-hidden rounded-3xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent p-5 backdrop-blur-md">
+                    <div className="relative overflow-hidden rounded-lg border border-primary/25 bg-primary/5 p-4 mb-6">
                         <button
                             type="button"
                             onClick={handleDismissOnboarding}
-                            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1 rounded-lg"
+                            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground p-1 rounded hover:bg-secondary/60 transition-colors"
+                            aria-label="Cerrar aviso"
                         >
-                            <X className="w-4 h-4" />
+                            <X size={16} />
                         </button>
                         <div className="flex items-start gap-3.5 max-w-4xl">
-                            <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                                <Bookmark className="w-4 h-4" />
+                            <div className="w-9 h-9 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+                                <Eye size={18} />
                             </div>
                             <div className="space-y-1">
-                                <h3 className="text-sm font-black text-foreground">
+                                <h3 className="font-bold text-foreground text-base">
                                     Bienvenido a Seguimiento en Finix
                                 </h3>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                    <b className="text-foreground">Seguimiento no es un portafolio:</b> agregar una
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    <span className="font-bold text-foreground">Seguimiento no es un portafolio:</span> agregar una
                                     acción o CEDEAR acá no altera tus saldos, compras ni rendimientos reales. Usá este
                                     espacio para investigar activos, definir tus propios puntos de entrada y recibir
                                     alertas cuando el mercado alcance tus condiciones.
@@ -297,28 +330,30 @@ export default function WatchlistPage() {
                     </div>
                 )}
 
-                {/* Aviso para usuarios Free */}
+                {/* AVISO PLAN FREE */}
                 {!isPro && (
-                    <div className="flex items-center justify-between rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-700 dark:text-amber-400">
-                        <div className="flex items-center gap-2">
-                            <Crown className="w-4 h-4 shrink-0 text-amber-500" />
-                            <span>
-                                Estás en el plan Free (1 lista, hasta 5 activos). Pasate a <b>Finix PRO</b> para listas ilimitadas, importación CSV y alertas avanzadas.
+                    <div className="flex items-center justify-between rounded-lg border border-amber-500/25 bg-amber-500/8 px-4 py-3 mb-6">
+                        <div className="flex items-center gap-3">
+                            <Crown className="w-5 h-5 text-amber-500 shrink-0" />
+                            <span className="text-sm text-amber-300 font-medium">
+                                Plan Free — 1 lista y hasta 5 activos. Pasá a{' '}
+                                <span className="font-bold text-amber-400">Finix PRO</span> para listas ilimitadas,
+                                importación CSV y alertas avanzadas.
                             </span>
                         </div>
                         <Button
                             size="sm"
                             onClick={() => navigate('/settings/plan')}
-                            className="h-7 px-3 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shrink-0 ml-2"
+                            className="market-action h-9 px-4 font-bold bg-amber-500 hover:bg-amber-400 text-black shrink-0 ml-3"
                         >
                             Pasar a PRO
                         </Button>
                     </div>
                 )}
 
-                {/* Sección opcional: Ideas para explorar */}
+                {/* SECCION IDEAS */}
                 {showIdeasSection && (
-                    <div className="animate-in fade-in slide-in-from-top-4 duration-200">
+                    <div className="mb-6">
                         <WatchlistIdeasSection
                             onAddSymbol={(symbol) => {
                                 setAddModalSymbol(symbol);
@@ -328,21 +363,19 @@ export default function WatchlistPage() {
                     </div>
                 )}
 
-                {/* Selector de listas e información de capacidad */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
+                {/* SELECTOR DE LISTAS */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-2 mb-4">
                     {loadingLists ? (
-                        <div className="flex items-center gap-2 py-2">
-                            <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
-                            <span className="text-xs text-muted-foreground">Cargando tus listas...</span>
+                        <div className="flex items-center gap-2.5 py-2 text-muted-foreground text-sm">
+                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                            <span>Cargando tus listas...</span>
                         </div>
                     ) : watchlists.length === 0 ? (
-                        <div className="py-2">
-                            <span className="text-xs font-semibold text-muted-foreground">
-                                No tenés listas de seguimiento creadas todavía.
-                            </span>
-                        </div>
+                        <span className="text-sm font-semibold text-muted-foreground py-2">
+                            No tenés listas de seguimiento creadas todavía.
+                        </span>
                     ) : (
-                        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                        <div className="market-segments" role="group" aria-label="Listas de seguimiento">
                             {watchlists.map((wl) => {
                                 const isActive = wl.id === activeListId;
                                 return (
@@ -353,14 +386,11 @@ export default function WatchlistPage() {
                                             setActiveListId(wl.id);
                                             setSearchParams({ list: wl.id });
                                         }}
-                                        className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border text-xs font-bold transition-all shrink-0 ${isActive
-                                                ? 'border-emerald-500/60 bg-emerald-500/15 text-foreground shadow-xs'
-                                                : 'border-border/60 hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
-                                            }`}
+                                        aria-pressed={isActive}
+                                        className="flex items-center gap-2"
                                     >
-                                        <span className={`w-2 h-2 rounded-full bg-${wl.color || 'emerald'}-500`} />
                                         <span>{wl.name}</span>
-                                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-secondary text-muted-foreground">
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-semibold">
                                             {wl.itemCount}
                                         </span>
                                     </button>
@@ -369,257 +399,328 @@ export default function WatchlistPage() {
                         </div>
                     )}
 
-                    {/* Acciones sobre la lista activa */}
                     {activeList && (
-                        <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
-                            <Button
-                                variant="ghost"
-                                size="sm"
+                        <div className="flex items-center gap-2 shrink-0">
+                            <button
+                                type="button"
+                                onClick={handleRefresh}
+                                disabled={isRefreshing}
+                                className="market-icon-action"
+                                title="Actualizar cotizaciones"
+                                aria-label="Actualizar cotizaciones"
+                            >
+                                <RefreshCw size={17} className={isRefreshing ? 'animate-spin text-primary' : ''} />
+                            </button>
+                            <button
+                                type="button"
                                 onClick={() => setEditingList(activeList)}
-                                className="h-8 px-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground gap-1"
+                                className="market-icon-action"
+                                title="Editar lista"
+                                aria-label="Editar lista"
                             >
-                                <Edit3 className="w-3.5 h-3.5" /> Editar
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="sm"
+                                <Edit3 size={17} />
+                            </button>
+                            <button
+                                type="button"
                                 onClick={() => setDeletingListId(activeList.id)}
-                                className="h-8 px-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-destructive gap-1"
+                                className="market-icon-action hover:text-rose-500 hover:border-rose-500/50"
+                                title="Eliminar lista"
+                                aria-label="Eliminar lista"
                             >
-                                <Trash2 className="w-3.5 h-3.5" /> Eliminar
-                            </Button>
+                                <Trash2 size={17} />
+                            </button>
                         </div>
                     )}
                 </div>
 
-                {/* Tabs: Dashboard / Lista + Barra de herramientas */}
-                {activeList && (
-                    <div className="flex flex-col gap-3">
-                        {/* Tab switcher */}
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                            <div className="flex items-center gap-1 rounded-2xl border border-border/60 p-1 bg-secondary/20">
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('dashboard')}
-                                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                                        activeTab === 'dashboard'
-                                            ? 'bg-card text-foreground shadow-sm border border-border/40'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                                >
-                                    <LayoutDashboard className="w-3.5 h-3.5" />
-                                    Dashboard
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('list')}
-                                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                                        activeTab === 'list'
-                                            ? 'bg-card text-foreground shadow-sm border border-border/40'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                                >
-                                    <List className="w-3.5 h-3.5" />
-                                    Lista
-                                </button>
-                            </div>
-
-                            {/* Controles de la vista lista */}
-                            {activeTab === 'list' && (
-                                <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
-                                    <div className="flex flex-1 flex-wrap items-center gap-2">
-                                        <div className="relative min-w-[200px] flex-1 max-w-sm">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                            <input
-                                                type="text"
-                                                placeholder="Buscar en esta lista por ticker o tag..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="w-full h-9 pl-9 pr-3 rounded-xl border border-border/60 bg-background/80 text-xs outline-none focus:border-emerald-500 transition-colors"
-                                            />
-                                        </div>
-                                        <select
-                                            value={statusFilter}
-                                            onChange={(e) => setStatusFilter(e.target.value)}
-                                            className="h-9 px-3 rounded-xl border border-border/60 bg-background text-xs font-bold outline-none focus:border-emerald-500"
-                                        >
-                                            <option value="ALL">Todos los estados</option>
-                                            <option value="RESEARCHING">Investigando</option>
-                                            <option value="WAITING_PRICE">Esperando precio</option>
-                                            <option value="EARNINGS">Siguiendo resultados</option>
-                                            <option value="DISCARDED">Descartada</option>
-                                        </select>
-                                        <select
-                                            value={portfolioFilter}
-                                            onChange={(e) => setPortfolioFilter(e.target.value)}
-                                            className="h-9 px-3 rounded-xl border border-border/60 bg-background text-xs font-bold outline-none focus:border-emerald-500"
-                                        >
-                                            <option value="ALL">Portafolio: Todos</option>
-                                            <option value="IN_PORTFOLIO">En mi Portafolio</option>
-                                            <option value="NOT_IN_PORTFOLIO">Solo en seguimiento</option>
-                                        </select>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {selectedItemIds.length > 0 && (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-bold text-muted-foreground">{selectedItemIds.length} seleccionados</span>
-                                                <Button variant="destructive" size="sm" disabled={bulkActionLoading} onClick={handleBulkDelete} className="h-8 rounded-xl text-xs font-bold gap-1">
-                                                    <Trash2 className="w-3 h-3" /> Quitar
-                                                </Button>
-                                            </div>
-                                        )}
-                                        <div className="flex items-center rounded-xl border border-border/60 p-0.5 bg-secondary/30">
-                                            <button type="button" onClick={() => setViewMode('table')}
-                                                className={`p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`} title="Vista de tabla">
-                                                <TableIcon className="w-4 h-4" />
-                                            </button>
-                                            <button type="button" onClick={() => setViewMode('cards')}
-                                                className={`p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'cards' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`} title="Vista de tarjetas">
-                                                <LayoutGrid className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                {/* STATS RAPIDAS */}
+                {activeList && totalItems > 0 && (
+                    <div className="market-overview">
+                        <div className="market-stat">
+                            <p className="market-stat__label">
+                                <List size={16} /> Activos
+                            </p>
+                            <p className="market-stat__value">{totalItems}</p>
+                            <p className="market-stat__detail">En esta lista</p>
+                        </div>
+                        <div className="market-stat">
+                            <p className="market-stat__label">
+                                <TrendingUp size={16} className="text-emerald-500" /> Al alza hoy
+                            </p>
+                            <p className="market-stat__value text-emerald-500">{gainersCount}</p>
+                            <p className="market-stat__detail">Variación positiva</p>
+                        </div>
+                        <div className="market-stat">
+                            <p className="market-stat__label">
+                                <ArrowDownRight size={16} className="text-rose-500" /> A la baja
+                            </p>
+                            <p className="market-stat__value text-rose-500">{losersCount}</p>
+                            <p className="market-stat__detail">Variación negativa</p>
+                        </div>
+                        <div className="market-stat">
+                            <p className="market-stat__label">
+                                <Bell size={16} className="text-amber-500" /> Con alertas
+                            </p>
+                            <p className="market-stat__value text-amber-500">{withAlert}</p>
+                            <p className="market-stat__detail">Monitoreo activo</p>
                         </div>
                     </div>
                 )}
 
-                {/* Contenido principal de la lista */}
+                {/* TABS + TOOLBAR */}
+                {activeList && (
+                    <div className="flex flex-col gap-4 mb-6">
+                        <div className="market-segments" role="tablist" aria-label="Vistas de seguimiento">
+                            <button
+                                type="button"
+                                role="tab"
+                                aria-selected={activeTab === 'dashboard'}
+                                aria-pressed={activeTab === 'dashboard'}
+                                onClick={() => setActiveTab('dashboard')}
+                            >
+                                <LayoutDashboard size={18} />
+                                <span>Dashboard</span>
+                            </button>
+                            <button
+                                type="button"
+                                role="tab"
+                                aria-selected={activeTab === 'list'}
+                                aria-pressed={activeTab === 'list'}
+                                onClick={() => setActiveTab('list')}
+                            >
+                                <List size={18} />
+                                <span>Lista de seguimiento</span>
+                            </button>
+                        </div>
+
+                        {activeTab === 'list' && (
+                            <div className="market-toolbar">
+                                <div className="market-search">
+                                    <Search size={18} />
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar por ticker, nombre o tag..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={cn(
+                                        'market-action flex items-center border border-border px-3.5 py-2 hover:bg-secondary/40',
+                                        (showFilters || statusFilter !== 'ALL' || portfolioFilter !== 'ALL') &&
+                                            'border-primary text-primary',
+                                    )}
+                                >
+                                    <Filter size={16} />
+                                    <span>Filtros</span>
+                                    {(statusFilter !== 'ALL' || portfolioFilter !== 'ALL') && (
+                                        <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">
+                                            {(statusFilter !== 'ALL' ? 1 : 0) +
+                                                (portfolioFilter !== 'ALL' ? 1 : 0)}
+                                        </span>
+                                    )}
+                                </Button>
+
+                                {selectedItemIds.length > 0 && (
+                                    <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/30 rounded-md px-3 py-1.5">
+                                        <span className="text-sm font-bold text-rose-500">
+                                            {selectedItemIds.length} seleccionados
+                                        </span>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            disabled={bulkActionLoading}
+                                            onClick={handleBulkDelete}
+                                            className="market-action h-8 px-2.5 rounded text-xs font-bold gap-1"
+                                        >
+                                            <Trash2 size={14} /> Quitar
+                                        </Button>
+                                    </div>
+                                )}
+
+                                <div className="market-segments ml-auto" role="group" aria-label="Modo de vista">
+                                    <button
+                                        type="button"
+                                        className="market-segment-icon"
+                                        aria-pressed={viewMode === 'table'}
+                                        onClick={() => setViewMode('table')}
+                                        title="Vista tabla"
+                                    >
+                                        <TableIcon size={18} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="market-segment-icon"
+                                        aria-pressed={viewMode === 'cards'}
+                                        onClick={() => setViewMode('cards')}
+                                        title="Vista tarjetas"
+                                    >
+                                        <LayoutGrid size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'list' && showFilters && (
+                            <div className="flex flex-wrap gap-4 p-4 rounded-md border border-border bg-card/60">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="market-metric-label">Estado personal</label>
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        className="market-control min-w-[200px]"
+                                    >
+                                        <option value="ALL">Todos los estados</option>
+                                        <option value="RESEARCHING">Investigando</option>
+                                        <option value="WAITING_PRICE">Esperando precio</option>
+                                        <option value="EARNINGS">Siguiendo resultados</option>
+                                        <option value="DISCARDED">Descartada</option>
+                                    </select>
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="market-metric-label">Portafolio</label>
+                                    <select
+                                        value={portfolioFilter}
+                                        onChange={(e) => setPortfolioFilter(e.target.value)}
+                                        className="market-control min-w-[200px]"
+                                    >
+                                        <option value="ALL">Todos</option>
+                                        <option value="IN_PORTFOLIO">En mi Portafolio</option>
+                                        <option value="NOT_IN_PORTFOLIO">Solo en seguimiento</option>
+                                    </select>
+                                </div>
+                                {(statusFilter !== 'ALL' || portfolioFilter !== 'ALL') && (
+                                    <div className="flex items-end">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                setStatusFilter('ALL');
+                                                setPortfolioFilter('ALL');
+                                            }}
+                                            className="market-action flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            <X size={15} /> Limpiar filtros
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* CONTENIDO PRINCIPAL */}
                 {loadingDetail ? (
-                    <div className="rounded-3xl border border-border/60 bg-card/60 p-12 flex flex-col items-center justify-center gap-3">
-                        <Loader2 className="w-7 h-7 animate-spin text-emerald-500" />
-                        <span className="text-xs text-muted-foreground">Actualizando cotizaciones y datos de seguimiento...</span>
+                    <div className="market-empty flex flex-col items-center justify-center gap-3">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <p className="font-bold text-foreground">Actualizando datos</p>
+                        <p className="text-sm text-muted-foreground">Cargando cotizaciones y seguimiento...</p>
                     </div>
                 ) : !activeList ? (
-                    /* Estado vacío global: Sin listas creadas */
-                    <div className="rounded-3xl border border-dashed border-border/80 bg-card/40 p-12 text-center max-w-lg mx-auto">
-                        <div className="w-14 h-14 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mx-auto mb-4">
-                            <Bookmark className="w-7 h-7" />
-                        </div>
-                        <h3 className="text-lg font-black text-foreground">Comenzá tu seguimiento personal</h3>
-                        <p className="text-xs text-muted-foreground mt-1 mb-5 leading-relaxed">
+                    /* ESTADO VACIO GLOBAL */
+                    <div className="market-empty max-w-lg mx-auto flex flex-col items-center">
+                        <Bookmark size={36} className="text-primary mb-2" />
+                        <h3 className="text-xl font-bold text-foreground mb-2">Comenzá tu seguimiento</h3>
+                        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                             Creá tu primera lista de seguimiento para agrupar las acciones y CEDEARs que estás evaluando antes de invertir.
                         </p>
                         <Button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="rounded-2xl h-10 px-5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
+                            className="market-action bg-emerald-600 hover:bg-emerald-500 text-white gap-2"
                         >
-                            <Plus className="w-4 h-4" /> Crear mi primera lista
+                            <Plus size={16} /> Crear mi primera lista
                         </Button>
                     </div>
                 ) : activeTab === 'dashboard' ? (
-                    /* DASHBOARD VIEW */
                     activeListDetail?.items?.length > 0 ? (
                         <WatchlistDashboard
                             items={activeListDetail.items}
                             onItemClick={setSelectedItemForDrawer}
                         />
                     ) : (
-                        <div className="rounded-3xl border border-dashed border-border/80 bg-card/40 p-12 text-center max-w-md mx-auto">
-                            <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground mx-auto mb-3">
-                                <LayoutDashboard className="w-6 h-6" />
-                            </div>
-                            <h3 className="text-base font-bold text-foreground">Esta lista está vacía</h3>
-                            <p className="text-xs text-muted-foreground mt-1 mb-5">Agregá activos a tu lista para ver el dashboard con análisis y timeline.</p>
-                            <div className="flex justify-center gap-2">
-                                <Button size="sm" onClick={() => setIsImportModalOpen(true)} className="rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5">
-                                    <UploadCloud className="w-3.5 h-3.5" /> Importar activos
+                        <div className="market-empty max-w-lg mx-auto flex flex-col items-center">
+                            <LayoutDashboard size={36} className="text-muted-foreground mb-2" />
+                            <h3 className="text-lg font-bold text-foreground mb-2">Lista vacía</h3>
+                            <p className="text-sm text-muted-foreground mb-5">Agregá activos para ver el dashboard con análisis y timeline.</p>
+                            <div className="flex justify-center gap-2.5">
+                                <Button size="sm" onClick={() => setIsImportModalOpen(true)} className="market-action bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
+                                    <UploadCloud size={16} /> Importar activos
                                 </Button>
-                                <Button variant="outline" size="sm" onClick={() => navigate('/market')} className="rounded-xl text-xs font-bold">
+                                <Button variant="outline" size="sm" onClick={() => navigate('/market')} className="market-action">
                                     Explorar Mercado
                                 </Button>
                             </div>
                         </div>
                     )
                 ) : filteredItems.length === 0 ? (
-                    /* Estado vacío de la lista seleccionada */
-                    <div className="rounded-3xl border border-dashed border-border/80 bg-card/40 p-12 text-center max-w-md mx-auto">
-                        <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground mx-auto mb-3">
-                            <Search className="w-6 h-6" />
-                        </div>
-                        <h3 className="text-base font-bold text-foreground">
+                    /* LISTA VACIA / SIN RESULTADOS */
+                    <div className="market-empty max-w-lg mx-auto flex flex-col items-center">
+                        <Search size={36} className="text-muted-foreground mb-2" />
+                        <h3 className="text-lg font-bold text-foreground mb-2">
                             {searchQuery || statusFilter !== 'ALL' || portfolioFilter !== 'ALL'
-                                ? 'No se encontraron activos con estos filtros'
+                                ? 'Sin resultados para estos filtros'
                                 : 'Esta lista está vacía'}
                         </h3>
-                        <p className="text-xs text-muted-foreground mt-1 mb-5">
+                        <p className="text-sm text-muted-foreground mb-5">
                             {searchQuery || statusFilter !== 'ALL' || portfolioFilter !== 'ALL'
                                 ? 'Probá cambiando los términos de búsqueda o limpiando los filtros.'
-                                : 'Podés importar tickers en lote o buscar activos en Mercado para agregarlos.'}
+                                : 'Importá tickers en lote o buscá activos en Mercado.'}
                         </p>
                         {searchQuery || statusFilter !== 'ALL' || portfolioFilter !== 'ALL' ? (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                    setSearchQuery('');
-                                    setStatusFilter('ALL');
-                                    setPortfolioFilter('ALL');
-                                }}
-                                className="rounded-xl text-xs font-bold"
-                            >
-                                Limpiar filtros
+                            <Button variant="outline" size="sm" onClick={() => { setSearchQuery(''); setStatusFilter('ALL'); setPortfolioFilter('ALL'); }} className="market-action gap-2">
+                                <X size={16} /> Limpiar filtros
                             </Button>
                         ) : (
-                            <div className="flex justify-center gap-2">
-                                <Button
-                                    size="sm"
-                                    onClick={() => setIsImportModalOpen(true)}
-                                    className="rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
-                                >
-                                    <UploadCloud className="w-3.5 h-3.5" /> Importar activos
+                            <div className="flex justify-center gap-2.5">
+                                <Button size="sm" onClick={() => setIsImportModalOpen(true)} className="market-action bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
+                                    <UploadCloud size={16} /> Importar activos
                                 </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => navigate('/market')}
-                                    className="rounded-xl text-xs font-bold"
-                                >
+                                <Button variant="outline" size="sm" onClick={() => navigate('/market')} className="market-action">
                                     Explorar Mercado
                                 </Button>
                             </div>
                         )}
                     </div>
                 ) : viewMode === 'table' ? (
-                    /* ── VISTA DE TABLA INTERACTIVA (DESKTOP) ── */
-                    <div className="rounded-3xl border border-border/60 bg-card/70 backdrop-blur-md overflow-hidden shadow-xs">
+                    /* VISTA TABLA */
+                    <div className="rounded-lg border border-border bg-card overflow-hidden shadow-xs">
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs">
+                            <table className="w-full text-left">
                                 <thead>
-                                    <tr className="border-b border-border/60 bg-secondary/30 text-muted-foreground font-bold">
+                                    <tr className="border-b border-border bg-secondary/35 text-muted-foreground">
                                         <th className="p-4 w-10">
                                             <input
                                                 type="checkbox"
-                                                checked={
-                                                    selectedItemIds.length > 0 &&
-                                                    selectedItemIds.length === filteredItems.length
-                                                }
+                                                checked={selectedItemIds.length > 0 && selectedItemIds.length === filteredItems.length}
                                                 onChange={(e) => handleSelectAll(e.target.checked)}
-                                                className="rounded border-border/60 cursor-pointer"
+                                                className="rounded border-border cursor-pointer w-4 h-4"
                                             />
                                         </th>
-                                        <th className="p-4">Activo</th>
-                                        <th className="p-4">Precio Actual</th>
-                                        <th className="p-4">Variación</th>
-                                        <th className="p-4">Objetivo de Precio</th>
-                                        <th className="p-4">Distancia</th>
-                                        <th className="p-4">Alertas</th>
-                                        <th className="p-4">Próx. Balance</th>
-                                        <th className="p-4">Estado</th>
-                                        <th className="p-4 text-right">Acciones</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Activo</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Precio</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Variación</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Objetivo</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Distancia</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Alertas</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Balance</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Estado</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider text-right">Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border/40">
+                                <tbody className="divide-y divide-border">
                                     {filteredItems.map((item: any) => {
                                         const isSelected = selectedItemIds.includes(item.id);
                                         const distance = item.distancePct;
+                                        const statusCfg = getStatusConfig(item.personalStatus);
 
                                         return (
                                             <tr
                                                 key={item.id}
-                                                className={`hover:bg-secondary/20 transition-colors cursor-pointer ${isSelected ? 'bg-emerald-500/5' : ''
-                                                    }`}
+                                                className={`group hover:bg-secondary/30 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`}
                                                 onClick={() => setSelectedItemForDrawer(item)}
                                             >
                                                 <td className="p-4" onClick={(e) => e.stopPropagation()}>
@@ -627,134 +728,104 @@ export default function WatchlistPage() {
                                                         type="checkbox"
                                                         checked={isSelected}
                                                         onChange={() => handleToggleSelectItem(item.id)}
-                                                        className="rounded border-border/60 cursor-pointer"
+                                                        className="rounded border-border cursor-pointer w-4 h-4"
                                                     />
                                                 </td>
 
-                                                {/* Activo / Logo / Ticker */}
+                                                {/* Activo */}
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-3">
-                                                        <SymbolLogo symbol={item.symbol} size={32} />
+                                                        <SymbolLogo symbol={item.symbol} size={40} />
                                                         <div>
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="font-black text-foreground font-mono">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-lg font-bold text-foreground">
                                                                     {item.symbol}
                                                                 </span>
                                                                 {item.isInPortfolio && (
-                                                                    <span
-                                                                        className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                                                                        title="Activo en tu portafolio"
-                                                                    >
+                                                                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
                                                                         Lo tengo
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <span className="text-[11px] text-muted-foreground line-clamp-1">
+                                                            <span className="text-sm text-muted-foreground line-clamp-1">
                                                                 {item.name} · {item.market} ({item.currency})
                                                             </span>
                                                         </div>
                                                     </div>
                                                 </td>
 
-                                                {/* Precio actual */}
-                                                <td className="p-4 font-mono font-bold text-foreground">
-                                                    {item.currentPrice !== null
-                                                        ? `$${item.currentPrice.toLocaleString()}`
-                                                        : 'No disponible'}
-                                                </td>
-
-                                                {/* Variación diaria */}
+                                                {/* Precio */}
                                                 <td className="p-4">
-                                                    {item.changePercent !== null ? (
-                                                        <span
-                                                            className={`font-bold inline-flex items-center gap-0.5 ${item.changePercent >= 0
-                                                                    ? 'text-emerald-500'
-                                                                    : 'text-rose-500'
-                                                                }`}
-                                                        >
-                                                            {item.changePercent >= 0 ? '+' : ''}
-                                                            {item.changePercent.toFixed(2)}%
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">—</span>
-                                                    )}
+                                                    <span className="font-bold text-foreground text-lg font-mono">
+                                                        {item.currentPrice !== null
+                                                            ? `$${item.currentPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                                            : <span className="text-sm text-muted-foreground font-normal">N/D</span>}
+                                                    </span>
                                                 </td>
 
-                                                {/* Objetivo de precio */}
-                                                <td className="p-4 font-mono font-bold text-foreground">
+                                                {/* Variacion */}
+                                                <td className="p-4">
+                                                    <MarketChange value={item.changePercent} />
+                                                </td>
+
+                                                {/* Objetivo */}
+                                                <td className="p-4">
                                                     {item.targetPrice ? (
-                                                        <span>${item.targetPrice.toLocaleString()} {item.currency}</span>
-                                                    ) : (
-                                                        <span className="text-muted-foreground text-[11px] font-normal italic">
-                                                            Sin definir
+                                                        <span className="font-bold text-foreground text-base font-mono">
+                                                            ${item.targetPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground text-sm italic">Sin definir</span>
                                                     )}
                                                 </td>
 
-                                                {/* Distancia al objetivo */}
+                                                {/* Distancia */}
                                                 <td className="p-4">
                                                     {distance !== null ? (
-                                                        <span
-                                                            className={`inline-flex items-center gap-1 font-black px-2 py-0.5 rounded-full text-[11px] ${distance >= 0
-                                                                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                                                                    : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
-                                                                }`}
-                                                        >
-                                                            {distance >= 0 ? (
-                                                                <ArrowUpRight className="w-3 h-3" />
-                                                            ) : (
-                                                                <ArrowDownRight className="w-3 h-3" />
-                                                            )}
-                                                            {distance >= 0 ? '+' : ''}
-                                                            {distance.toFixed(1)}%
-                                                        </span>
+                                                        <MarketChange value={distance} suffix="%" />
                                                     ) : (
-                                                        <span className="text-muted-foreground">—</span>
+                                                        <span className="text-muted-foreground text-sm">—</span>
                                                     )}
                                                 </td>
 
                                                 {/* Alertas */}
                                                 <td className="p-4">
                                                     {item.hasActiveAlert ? (
-                                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                            <Bell className="w-3.5 h-3.5 fill-current" /> Activa
+                                                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-500">
+                                                            <Bell size={15} className="fill-current" /> Activa
                                                         </span>
                                                     ) : (
-                                                        <span className="text-[11px] text-muted-foreground">Inactiva</span>
+                                                        <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                                                            <BellOff size={15} /> Sin alerta
+                                                        </span>
                                                     )}
                                                 </td>
 
-                                                {/* Próximo balance */}
-                                                <td className="p-4 text-[11px] text-muted-foreground">
+                                                {/* Balance */}
+                                                <td className="p-4 text-sm text-muted-foreground">
                                                     {item.nextEarnings?.date ? (
-                                                        <span className="font-semibold text-foreground">
-                                                            {item.nextEarnings.date}
-                                                        </span>
-                                                    ) : (
-                                                        '—'
-                                                    )}
+                                                        <span className="font-semibold text-foreground">{item.nextEarnings.date}</span>
+                                                    ) : '—'}
                                                 </td>
 
-                                                {/* Estado personal */}
+                                                {/* Estado */}
                                                 <td className="p-4">
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-secondary text-foreground">
-                                                        {item.personalStatus === 'RESEARCHING' && 'Investigando'}
-                                                        {item.personalStatus === 'WAITING_PRICE' && 'Esperando precio'}
-                                                        {item.personalStatus === 'EARNINGS' && 'Siguiendo resultados'}
-                                                        {item.personalStatus === 'DISCARDED' && 'Descartada'}
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${statusCfg.color}`}>
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                                                        {statusCfg.label}
                                                     </span>
                                                 </td>
 
                                                 {/* Acciones */}
                                                 <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
+                                                    <button
+                                                        type="button"
                                                         onClick={() => setSelectedItemForDrawer(item)}
-                                                        className="h-8 px-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground"
+                                                        className="market-action inline-flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
                                                     >
-                                                        Detalles
-                                                    </Button>
+                                                        <span>Ver ficha</span>
+                                                        <ChevronRight size={16} />
+                                                    </button>
                                                 </td>
                                             </tr>
                                         );
@@ -762,108 +833,128 @@ export default function WatchlistPage() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Footer tabla */}
+                        <div className="border-t border-border bg-secondary/20 px-5 py-3 flex items-center justify-between">
+                            <span className="text-base text-muted-foreground">
+                                <span className="font-bold text-foreground">{filteredItems.length}</span> activos
+                                {filteredItems.length !== totalItems && ` de ${totalItems}`}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setIsImportModalOpen(true)}
+                                className="market-action flex items-center gap-1.5 text-sm font-semibold"
+                            >
+                                <Plus size={16} />
+                                <span>Agregar activo</span>
+                            </button>
+                        </div>
                     </div>
                 ) : (
-                    /* ── VISTA MÓVIL DE TARJETAS (CARDS) ── */
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    /* VISTA CARDS */
+                    <div className="market-grid">
                         {filteredItems.map((item: any) => {
                             const distance = item.distancePct;
+                            const statusCfg = getStatusConfig(item.personalStatus);
 
                             return (
-                                <div
+                                <MarketQuoteCard
                                     key={item.id}
-                                    onClick={() => setSelectedItemForDrawer(item)}
-                                    className="rounded-3xl border border-border/60 bg-card/80 backdrop-blur-md p-4 flex flex-col justify-between gap-3 shadow-xs hover:border-emerald-500/30 transition-all cursor-pointer"
+                                    symbol={item.symbol}
+                                    label={item.name || item.symbol}
+                                    value={
+                                        item.currentPrice !== null
+                                            ? `$${item.currentPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                            : 'N/D'
+                                    }
+                                    change={item.changePercent}
+                                    quoteLabel="Precio actual"
+                                    unit={item.currency || 'USD'}
+                                    footer={item.market}
+                                    footerRight={
+                                        <span
+                                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusCfg.color}`}
+                                        >
+                                            <span
+                                                className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`}
+                                            />
+                                            {statusCfg.label}
+                                        </span>
+                                    }
+                                    onSelect={() => setSelectedItemForDrawer(item)}
                                 >
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="flex items-center gap-2.5">
-                                            <SymbolLogo symbol={item.symbol} size={36} />
-                                            <div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-black text-foreground font-mono">
-                                                        {item.symbol}
+                                    <dl className="market-metrics">
+                                        <div>
+                                            <dt>Precio Objetivo</dt>
+                                            <dd>
+                                                {item.targetPrice
+                                                    ? `$${item.targetPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                                    : 'Sin definir'}
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt>Distancia al objetivo</dt>
+                                            <dd>
+                                                {distance !== null ? (
+                                                    <span
+                                                        className={
+                                                            distance >= 0
+                                                                ? 'text-emerald-500'
+                                                                : 'text-rose-500'
+                                                        }
+                                                    >
+                                                        {distance >= 0 ? '+' : ''}
+                                                        {distance.toFixed(1)}%
                                                     </span>
-                                                    {item.isInPortfolio && (
-                                                        <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                                                            Lo tengo
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <span className="text-xs text-muted-foreground line-clamp-1">
-                                                    {item.name}
-                                                </span>
-                                            </div>
+                                                ) : (
+                                                    '—'
+                                                )}
+                                            </dd>
                                         </div>
-
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary text-foreground">
-                                            {item.personalStatus === 'RESEARCHING' && 'Investigando'}
-                                            {item.personalStatus === 'WAITING_PRICE' && 'Esperando'}
-                                            {item.personalStatus === 'EARNINGS' && 'Resultados'}
-                                            {item.personalStatus === 'DISCARDED' && 'Descartada'}
-                                        </span>
-                                    </div>
-
-                                    {/* Métricas clave */}
-                                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary/30 p-2.5 text-xs">
                                         <div>
-                                            <span className="text-[10px] text-muted-foreground uppercase font-bold block">
-                                                Precio
-                                            </span>
-                                            <span className="font-mono font-bold text-foreground">
-                                                {item.currentPrice !== null ? `$${item.currentPrice}` : 'N/D'}
-                                            </span>
-                                            {item.changePercent !== null && (
-                                                <span
-                                                    className={`text-[10px] font-bold block ${item.changePercent >= 0 ? 'text-emerald-500' : 'text-rose-500'
-                                                        }`}
-                                                >
-                                                    {item.changePercent >= 0 ? '+' : ''}
-                                                    {item.changePercent.toFixed(2)}%
-                                                </span>
-                                            )}
+                                            <dt>Próx. Balance</dt>
+                                            <dd>{item.nextEarnings?.date || '—'}</dd>
                                         </div>
-
                                         <div>
-                                            <span className="text-[10px] text-muted-foreground uppercase font-bold block">
-                                                Objetivo
-                                            </span>
-                                            <span className="font-mono font-bold text-foreground">
-                                                {item.targetPrice ? `$${item.targetPrice}` : 'Sin definir'}
-                                            </span>
-                                            {distance !== null && (
-                                                <span
-                                                    className={`text-[10px] font-bold block ${distance >= 0 ? 'text-emerald-500' : 'text-rose-500'
-                                                        }`}
-                                                >
-                                                    {distance >= 0 ? '+' : ''}
-                                                    {distance.toFixed(1)}%
-                                                </span>
-                                            )}
+                                            <dt>Alertas</dt>
+                                            <dd>
+                                                {item.hasActiveAlert ? (
+                                                    <span className="inline-flex items-center gap-1 text-emerald-500">
+                                                        <Bell size={14} className="fill-current" />{' '}
+                                                        Activa
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-muted-foreground">
+                                                        Sin alerta
+                                                    </span>
+                                                )}
+                                            </dd>
                                         </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/40">
-                                        <span>
-                                            {item.nextEarnings?.date ? `Balance: ${item.nextEarnings.date}` : 'Sin balance próximo'}
-                                        </span>
-                                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                                            {item.notesCount > 0 ? `${item.notesCount} notas` : 'Ver ficha'}
-                                        </span>
-                                    </div>
-                                </div>
+                                    </dl>
+                                </MarketQuoteCard>
                             );
                         })}
+
+                        {/* Card para agregar activo */}
+                        <div
+                            onClick={() => setIsImportModalOpen(true)}
+                            className="market-card flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-primary hover:border-primary/50 cursor-pointer transition-all border-dashed min-h-[220px]"
+                        >
+                            <div className="w-12 h-12 rounded-full border border-dashed border-current flex items-center justify-center">
+                                <Plus size={22} />
+                            </div>
+                            <span className="font-bold text-base text-center">
+                                Agregar activo a la lista
+                            </span>
+                        </div>
                     </div>
                 )}
             </div>
 
-            {/* Modal: Crear / Editar Lista */}
+            {/* MODALES */}
             <CreateEditWatchlistModal
                 isOpen={isCreateModalOpen || Boolean(editingList)}
-                onClose={() => {
-                    setIsCreateModalOpen(false);
-                    setEditingList(null);
-                }}
+                onClose={() => { setIsCreateModalOpen(false); setEditingList(null); }}
                 watchlist={editingList}
                 onSuccess={(saved) => {
                     fetchWatchlists();
@@ -871,57 +962,39 @@ export default function WatchlistPage() {
                 }}
             />
 
-            {/* Modal: Eliminar Lista */}
             <DeleteWatchlistModal
                 watchlistId={deletingListId}
                 watchlistName={watchlists.find((w) => w.id === deletingListId)?.name}
                 isOpen={Boolean(deletingListId)}
                 onClose={() => setDeletingListId(null)}
-                onSuccess={() => {
-                    setDeletingListId(null);
-                    fetchWatchlists();
-                }}
+                onSuccess={() => { setDeletingListId(null); fetchWatchlists(); }}
             />
 
-            {/* Modal: Importar CSV / Tickers */}
             {activeListId && (
                 <ImportWatchlistModal
                     watchlistId={activeListId}
                     existingSymbols={activeListDetail?.items?.map((i: any) => i.symbol) || []}
                     isOpen={isImportModalOpen}
                     onClose={() => setIsImportModalOpen(false)}
-                    onSuccess={() => {
-                        fetchListDetail(activeListId);
-                        fetchWatchlists();
-                    }}
+                    onSuccess={() => { fetchListDetail(activeListId); fetchWatchlists(); }}
                 />
             )}
 
-            {/* Drawer: Ficha detallada de activo */}
             {activeListId && (
                 <WatchlistDetailDrawer
                     item={selectedItemForDrawer}
                     watchlistId={activeListId}
                     isOpen={Boolean(selectedItemForDrawer)}
                     onClose={() => setSelectedItemForDrawer(null)}
-                    onItemUpdated={() => {
-                        if (activeListId) fetchListDetail(activeListId);
-                    }}
+                    onItemUpdated={() => { if (activeListId) fetchListDetail(activeListId); }}
                 />
             )}
 
-            {/* Modal genérico: Agregar símbolo a listas (desde Ideas o enlaces) */}
             <AddToWatchlistModal
                 symbol={addModalSymbol}
                 isOpen={isAddModalOpen}
-                onClose={() => {
-                    setIsAddModalOpen(false);
-                    setAddModalSymbol('');
-                }}
-                onSuccess={() => {
-                    if (activeListId) fetchListDetail(activeListId);
-                    fetchWatchlists();
-                }}
+                onClose={() => { setIsAddModalOpen(false); setAddModalSymbol(''); }}
+                onSuccess={() => { if (activeListId) fetchListDetail(activeListId); fetchWatchlists(); }}
             />
         </div>
     );

@@ -83,6 +83,7 @@ function TradingViewChart({
 
         // Load TradingView script if not already loaded
         const loadWidget = () => {
+            if (disposed || !widgetContainer.isConnected) return;
             if (typeof (window as any).TradingView !== 'undefined') {
                 const widget = new (window as any).TradingView.widget({
                     container_id: widgetContainer.id,

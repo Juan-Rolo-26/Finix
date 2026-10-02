@@ -13,6 +13,7 @@ import { CalendarProviderService } from './services/calendar-provider.service';
 import { MarketImpactScoringService } from './services/market-impact-scoring.service';
 import { EarningsImpactScoringService } from './services/earnings-impact-scoring.service';
 import { hasEffectiveProAccess } from '../auth/pro-access';
+import { isLegacyEconomicTemplate, isLegacyEarningsTemplate } from './calendar-legacy-data';
 
 @Injectable()
 export class CalendarService {
@@ -96,6 +97,8 @@ export class CalendarService {
             ]);
         }
 
+        economicEvents = economicEvents.filter(event => !isLegacyEconomicTemplate(event));
+        earningsEvents = earningsEvents.filter(event => !isLegacyEarningsTemplate(event));
         const selectedCards: HomeCalendarEventCard[] = [];
 
         // 1. Top Earnings Candidate (threshold: earningsImpactScore >= 65)
@@ -224,6 +227,7 @@ export class CalendarService {
         user?: any;
     }): Promise<CalendarWeekResponse> {
         const isProUser = hasEffectiveProAccess(params.user);
+        const tickerKey = (ticker: string) => ticker.trim().toUpperCase().replace(/\./g, '-');
 
         const isAll = params.weekStart === 'ALL' || params.weekStart === 'all';
 
@@ -276,17 +280,46 @@ export class CalendarService {
             }),
         ]);
 
+        const excludedLegacyEvents = dbEconomic.filter(isLegacyEconomicTemplate).length;
+        dbEconomic = dbEconomic.filter(event => !isLegacyEconomicTemplate(event));
+        dbEarnings = dbEarnings.filter(event => !isLegacyEarningsTemplate(event));
+        let economicData: CalendarWeekResponse['economicData'];
+        if (!isAll && params.category !== 'EARNINGS' && params.category !== 'DIVIDEND') {
+            const countries = params.category === 'US' || params.category === 'AR'
+                ? [params.category] : ['US', 'AR'];
+            const liveEconomic = await this.providerService.getUpcomingEconomicEvents(mondayStr, sundayStr, countries);
+            economicData = {
+                ...this.providerService.getEconomicFeedStatus(mondayStr, sundayStr, countries),
+                excludedLegacyEvents,
+            };
+            const eventKey = (event: any) => JSON.stringify([
+                event.country, event.date, event.time || '', event.title.trim().toLowerCase(),
+            ]);
+            const merged = new Map<string, (typeof dbEconomic)[number]>(dbEconomic.map(event => [eventKey(event), event]));
+            for (const event of liveEconomic) {
+                if (params.importance && event.importance !== params.importance) continue;
+                const key = eventKey(event);
+                const previous = merged.get(key);
+                if (previous?.sourceType === 'MANUAL' || previous?.isManual) continue;
+                const availableFields = Object.fromEntries(Object.entries(event).filter(([, value]) => value !== undefined));
+                merged.set(key, { ...previous, ...availableFields } as any);
+            }
+            dbEconomic = [...merged.values()].sort((a, b) =>
+                a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
+        }
+
         if (params.category !== 'US' && params.category !== 'AR' && params.category !== 'DIVIDEND') {
             const tvEarnings = await this.providerService.fetchTradingViewSP500Earnings({ from: mondayStr, to: sundayStr });
-            const existingByKey = new Map<string, number>(dbEarnings.map((e, index) => [`${e.ticker}|${e.date}`, index]));
+            const existingByKey = new Map<string, number>(dbEarnings.map((e, index) => [`${tickerKey(e.ticker)}|${e.date}`, index]));
             for (const event of tvEarnings) {
-                const key = `${event.ticker}|${event.date}`;
+                const key = `${tickerKey(event.ticker)}|${event.date}`;
                 const index = existingByKey.get(key);
                 if (index === undefined) {
                     existingByKey.set(key, dbEarnings.length);
                     dbEarnings.push(event as any);
                 } else if (dbEarnings[index].sourceType !== 'MANUAL') {
-                    dbEarnings[index] = { ...dbEarnings[index], ...event } as any;
+                    const availableFields = Object.fromEntries(Object.entries(event).filter(([, value]) => value !== undefined));
+                    dbEarnings[index] = { ...dbEarnings[index], ...availableFields } as any;
                 }
             }
             dbEarnings.sort((a, b) => a.date.localeCompare(b.date) || b.earningsImpactScore - a.earningsImpactScore);
@@ -337,16 +370,15 @@ export class CalendarService {
                 if (!map.has(id)) map.set(id, event);
                 return map;
             }, new Map<string, T>()).values());
-        const tickerKey = (ticker: string) => ticker.trim().toUpperCase().replace(/\./g, '-');
         dbEarnings = uniqueEvents(dbEarnings, (e: { ticker: string; date: string }) => `${tickerKey(e.ticker)}|${e.date}`);
         const dividendDisplayDate = (d: any) =>
             d.paymentDate && (isAll || (d.paymentDate >= mondayStr && d.paymentDate <= sundayStr))
                 ? d.paymentDate : d.exDate;
         dbDividends.sort((a, b) =>
             (dividendDisplayDate(a) || '').localeCompare(dividendDisplayDate(b) || ''));
-        // Mostrar una sola card por activo. Como antes se ordenó por fecha visible,
-        // se conserva el evento más relevante de la semana y sus dos fechas.
-        dbDividends = uniqueEvents(dbDividends, d => tickerKey(d.ticker));
+        // Different distributions of the same company must remain visible.
+        dbDividends = uniqueEvents(dbDividends, d =>
+            `${tickerKey(d.ticker)}|${d.exDate || ''}|${d.paymentDate || ''}|${d.amount ?? ''}`);
 
         const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         const shortNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
@@ -356,7 +388,7 @@ export class CalendarService {
 
         // Función mapeadora de eventos económicos con sanitización PRO
         const mapEcoEvents = (rawEco: any[]): EconomicEventItem[] => rawEco.map(e => ({
-            id: e.id,
+            id: e.id || `economic-${e.country}-${e.date}-${e.time || ''}-${e.externalId || e.title}`,
             eventType: 'ECONOMIC',
             country: e.country,
             currency: e.currency || undefined,
@@ -370,20 +402,24 @@ export class CalendarService {
             timestampUtc: e.timestampUtc,
             timezone: e.timezone,
             previousValue: isProUser ? (e.previousValue || undefined) : undefined,
+            forecastValue: isProUser ? (e.forecastValue ?? undefined) : undefined,
             consensusValue: isProUser ? (e.consensusValue || undefined) : undefined,
             actualValue: isProUser ? (e.actualValue || undefined) : undefined,
+            unit: e.unit || undefined,
             surprise: isProUser ? (e.surprise ?? undefined) : undefined,
             surprisePercent: isProUser ? (e.surprisePercent ?? undefined) : undefined,
             expectedMarketEffect: isProUser ? (e.expectedMarketEffect || undefined) : undefined,
             affectedAssets: isProUser && e.affectedAssets ? this.parseAffectedAssets(e.affectedAssets) : undefined,
             source: isProUser ? (e.source || undefined) : undefined,
+            sourceName: isProUser ? (e.sourceName || undefined) : undefined,
+            sourceUrl: isProUser ? (e.sourceUrl || undefined) : undefined,
             sourceType: e.sourceType as any,
             isPublished: e.isPublished,
         }));
 
         // Función mapeadora de earnings con sanitización PRO
         const mapEarnEvents = (rawEarn: any[]): EarningsEventItem[] => rawEarn.map(e => ({
-            id: e.id,
+            id: e.id || `earnings-${tickerKey(e.ticker)}-${e.date}`,
             eventType: 'EARNINGS',
             ticker: e.ticker,
             companyName: e.companyName,
@@ -410,7 +446,7 @@ export class CalendarService {
 
         // Función mapeadora de dividendos del universo estadounidense.
         const mapDivEvents = (rawDiv: any[]): DividendEventItem[] => rawDiv.map(d => ({
-            id: d.id || `${d.ticker}-${d.paymentDate || d.exDate}`,
+            id: d.id || `dividend-${tickerKey(d.ticker)}-${d.exDate || ''}-${d.paymentDate || ''}-${d.amount ?? ''}`,
             eventType: 'DIVIDEND',
             ticker: d.ticker,
             companyName: d.companyName,
@@ -421,7 +457,7 @@ export class CalendarService {
             declarationDate: d.declarationDate || undefined,
             amount: d.amount != null ? Number(d.amount) : undefined,
             yield: d.yield != null ? Number(d.yield) : undefined,
-            frequency: d.frequency || 'Trimestral',
+            frequency: d.frequency || undefined,
             marketCap: d.marketCap ?? undefined,
             source: d.source || 'TradingView Official Scanner',
             sourceType: (d.sourceType || 'AUTOMATIC') as any,
@@ -498,6 +534,7 @@ export class CalendarService {
         return {
             weekRange: { from: rangeFrom, to: rangeTo },
             isProUser,
+            economicData,
             categories: counts,
             days,
         };
@@ -569,6 +606,12 @@ export class CalendarService {
 
             // 1. Obtener eventos normalizados desde los adaptadores
             const rawEvents = await this.providerService.getUpcomingEconomicEvents(from, to, ['US', 'AR']);
+            const economicStatus = this.providerService.getEconomicFeedStatus(from, to);
+            if (economicStatus.status !== 'READY') {
+                throw new Error(economicStatus.status === 'NOT_CONFIGURED'
+                    ? 'Economic calendar provider is not configured'
+                    : `Economic calendar provider unavailable${economicStatus.httpStatus ? ` (HTTP ${economicStatus.httpStatus})` : ''}`);
+            }
             eventsFound = rawEvents.length;
 
             for (const item of rawEvents) {

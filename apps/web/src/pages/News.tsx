@@ -185,19 +185,19 @@ export default function NewsPage() {
         <div className="min-h-screen bg-background w-full">
             <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-6 lg:py-8 space-y-6 lg:space-y-8">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                <div className="flex flex-col items-center justify-center text-center gap-4 max-w-2xl mx-auto">
+                    <div className="flex flex-col items-center text-center">
+                        <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight text-center">
                             Noticias
                         </h1>
-                        <p className="text-muted-foreground text-sm sm:text-base mt-1">
+                        <p className="text-muted-foreground text-sm sm:text-base mt-1 text-center">
                             Información financiera curada por nuestro equipo editorial
                         </p>
                     </div>
                     <button
                         onClick={() => selectedSlug && loadSlots(selectedSlug)}
                         disabled={slotsLoading}
-                        className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-secondary text-sm font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-secondary text-sm font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                     >
                         <RefreshCw className={`w-4 h-4 ${slotsLoading ? 'animate-spin' : ''}`} />
                         <span>Actualizar</span>

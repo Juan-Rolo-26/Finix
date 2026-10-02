@@ -47,7 +47,7 @@ export interface EconomicEventItem {
     impactScore?: number;
     date: string; // YYYY-MM-DD
     time?: string; // e.g. "10:30"
-    timestampUtc: Date;
+    timestampUtc?: Date;
     timezone: string;
     previousValue?: string;
     forecastValue?: string;
@@ -164,6 +164,11 @@ export interface CalendarWeekDay {
 }
 
 export interface CalendarWeekResponse {
+    economicData?: {
+        status: 'READY' | 'UNAVAILABLE' | 'NOT_CONFIGURED';
+        httpStatus?: number;
+        excludedLegacyEvents?: number;
+    };
     weekRange: {
         from: string;
         to: string;

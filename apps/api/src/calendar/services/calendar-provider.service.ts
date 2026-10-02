@@ -5,7 +5,7 @@ import {
     DividendEventItem,
     ICalendarProvider,
     IEarningsProvider,
-    EarningsDateStatus,
+    CalendarWeekResponse,
     EarningsReportTiming,
 } from '../interfaces/calendar.interface';
 import { MarketImpactScoringService } from './market-impact-scoring.service';
@@ -84,121 +84,95 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
 
         if (!res.ok) throw new Error(`TradingView Scanner: HTTP ${res.status}`);
         const json: any = await res.json();
-        return Array.isArray(json?.data) ? json.data : [];
+        if (!Array.isArray(json?.data)) throw new Error('TradingView Scanner: invalid response');
+        return json.data;
     }
 
-    /**
-     * Obtiene eventos macroeconómicos desde proveedores autorizados y fuentes oficiales
-     * (BLS, Federal Reserve FOMC, INDEC Argentina, BCRA, Investing.com).
-     */
-    async getUpcomingEconomicEvents(from: string, to: string, countries: string[] = ['US', 'AR']): Promise<EconomicEventItem[]> {
-        const events: EconomicEventItem[] = [];
-        const countrySet = new Set(countries.map(c => c.toUpperCase()));
+    private economicCache = new Map<string, {
+        events: EconomicEventItem[];
+        status: NonNullable<CalendarWeekResponse['economicData']>;
+        fetchedAt: number;
+    }>();
 
-        // 1. Consultar proveedor en vivo si está configurado
+    private economicCacheKey(from: string, to: string, countries: string[]): string {
+        return JSON.stringify([from, to, [...countries].map(country => country.toUpperCase()).sort()]);
+    }
+
+    getEconomicFeedStatus(from: string, to: string, countries: string[] = ['US', 'AR']): NonNullable<CalendarWeekResponse['economicData']> {
+        return this.economicCache.get(this.economicCacheKey(from, to, countries))?.status ??
+            { status: this.fmpApiKey ? 'UNAVAILABLE' as const : 'NOT_CONFIGURED' as const };
+    }
+
+    /** Source dates are UTC; unavailable feeds never produce assumed events. */
+    async getUpcomingEconomicEvents(from: string, to: string, countries: string[] = ['US', 'AR']): Promise<EconomicEventItem[]> {
+        const key = this.economicCacheKey(from, to, countries);
+        const cached = this.economicCache.get(key);
+        if (cached && Date.now() - cached.fetchedAt < 5 * 60 * 1000) return cached.events;
+
+        const events: EconomicEventItem[] = [];
+        let status: NonNullable<CalendarWeekResponse['economicData']> = { status: 'NOT_CONFIGURED' };
         if (this.fmpApiKey && !this.fmpApiKey.startsWith('REPLACE')) {
+            status = { status: 'UNAVAILABLE' };
             try {
-                const url = `https://financialmodelingprep.com/api/v3/economic_calendar?from=${from}&to=${to}&apikey=${this.fmpApiKey}`;
-                const res = await fetch(url, {
-                    headers: { 'User-Agent': 'Finix-Calendar/1.0', 'Accept': 'application/json' },
+                const url = new URL('https://financialmodelingprep.com/stable/economic-calendar');
+                url.search = new URLSearchParams({ from, to, apikey: this.fmpApiKey }).toString();
+                const response = await fetch(url, {
+                    headers: { 'User-Agent': 'Finix-Calendar/1.0', Accept: 'application/json' },
                     signal: AbortSignal.timeout(10000),
                 });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data)) {
-                        for (const item of data) {
-                            const rawCountry = (item.country || '').toUpperCase();
-                            if (!countrySet.has(rawCountry)) continue;
-
-                            const title = item.event || item.title || '';
-                            if (!title) continue;
-
-                            const evaluation = this.marketScoring.evaluateEvent(title, rawCountry);
-                            const eventDate = item.date ? item.date.substring(0, 10) : from;
-                            const eventTime = item.date && item.date.length > 10 ? item.date.substring(11, 16) : undefined;
-                            const timezone = rawCountry === 'AR' ? 'America/Argentina/Buenos_Aires' : 'America/New_York';
-
-                            const prevVal = item.previous != null && item.previous !== '' ? `${item.previous}` : undefined;
-                            const consVal = item.estimate != null && item.estimate !== '' ? `${item.estimate}` : undefined;
-                            const actVal = item.actual != null && item.actual !== '' ? `${item.actual}` : undefined;
-
-                            let surprise: number | undefined;
-                            let surprisePercent: number | undefined;
-                            if (actVal !== undefined && consVal !== undefined) {
-                                const actNum = parseFloat(actVal);
-                                const consNum = parseFloat(consVal);
-                                if (!isNaN(actNum) && !isNaN(consNum)) {
-                                    surprise = parseFloat((actNum - consNum).toFixed(2));
-                                    if (consNum !== 0) {
-                                        surprisePercent = parseFloat((((actNum - consNum) / Math.abs(consNum)) * 100).toFixed(2));
-                                    }
-                                }
-                            }
-
-                            events.push({
-                                eventType: 'ECONOMIC',
-                                country: rawCountry as 'US' | 'AR',
-                                currency: item.currency || (rawCountry === 'AR' ? 'ARS' : 'USD'),
-                                title,
-                                description: item.impact ? `Impacto estimado: ${item.impact}` : undefined,
-                                category: evaluation.category,
-                                importance: evaluation.importance,
-                                marketImpactScore: evaluation.score,
-                                date: eventDate,
-                                time: eventTime,
-                                timestampUtc: new Date(item.date || `${eventDate}T12:00:00Z`),
-                                timezone,
-                                previousValue: prevVal,
-                                consensusValue: consVal,
-                                actualValue: actVal,
-                                surprise,
-                                surprisePercent,
-                                expectedMarketEffect: evaluation.expectedEffect,
-                                affectedAssets: evaluation.affectedAssets,
-                                source: 'Investing.com / Official Stats',
-                                sourceType: 'AUTOMATIC',
-                                isPublished: true,
-                            });
-                        }
-                    }
+                if (!response.ok) {
+                    status.httpStatus = response.status;
+                    throw new Error('HTTP ' + response.status);
                 }
-            } catch (err: any) {
-                this.logger.warn(`Economic calendar API fetch failed: ${err.message}`);
+                const data: unknown = await response.json();
+                if (!Array.isArray(data)) throw new Error('Invalid economic calendar response');
+                const countrySet = new Set(countries.map(country => country.toUpperCase()));
+                for (const item of data) {
+                    if (!item || typeof item !== 'object') continue;
+                    const country = String(item.country || '').toUpperCase();
+                    if (!countrySet.has(country)) continue;
+                    const title = String(item.event || item.title || '').trim();
+                    const rawDate = String(item.date || '').trim().replace(' ', 'T');
+                    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(rawDate);
+                    const timestamp = new Date(dateOnly ? rawDate + 'T00:00:00Z' :
+                        /(?:Z|[+-]\d{2}:\d{2})$/i.test(rawDate) ? rawDate : rawDate + 'Z');
+                    if (!title || !Number.isFinite(timestamp.getTime())) continue;
+                    const date = timestamp.toISOString().slice(0, 10);
+                    if (date < from || date > to || (dateOnly && date !== rawDate)) continue;
+                    const evaluation = this.marketScoring.evaluateEvent(title, country);
+                    const previousValue = item.previous != null && item.previous !== '' ? String(item.previous) : undefined;
+                    const consensusValue = item.estimate != null && item.estimate !== '' ? String(item.estimate) : undefined;
+                    const actualValue = item.actual != null && item.actual !== '' ? String(item.actual) : undefined;
+                    const actual = Number(actualValue);
+                    const estimate = Number(consensusValue);
+                    const comparable = actualValue != null && consensusValue != null &&
+                        Number.isFinite(actual) && Number.isFinite(estimate);
+                    const surprise = comparable ? Number((actual - estimate).toFixed(4)) : undefined;
+                    events.push({
+                        eventType: 'ECONOMIC', country, currency: item.currency || undefined, title,
+                        category: evaluation.category, importance: evaluation.importance,
+                        marketImpactScore: evaluation.score, date,
+                        time: dateOnly ? undefined : timestamp.toISOString().slice(11, 16),
+                        timestampUtc: dateOnly ? undefined : timestamp, timezone: 'UTC',
+                        previousValue, consensusValue, actualValue,
+                        unit: typeof item.unit === 'string' ? item.unit : undefined,
+                        surprise,
+                        surprisePercent: comparable && estimate !== 0 ?
+                            Number(((actual - estimate) / Math.abs(estimate) * 100).toFixed(4)) : undefined,
+                        expectedMarketEffect: evaluation.expectedEffect,
+                        affectedAssets: evaluation.affectedAssets,
+                        externalId: item.id != null ? String(item.id) : undefined,
+                        source: 'Financial Modeling Prep', sourceType: 'AUTOMATIC', isPublished: true,
+                    });
+                }
+                status = { status: 'READY' };
+            } catch (error) {
+                this.logger.warn('Economic calendar unavailable: ' +
+                    (error instanceof Error ? error.message.replace(this.fmpApiKey, '[redacted]') : 'Unknown error'));
             }
         }
-
-        // 2. Incorporar calendario oficial verificado de Argentina (INDEC y BCRA)
-        if (countrySet.has('AR')) {
-            const arInstitutional = this.getKnownArgentinaCalendar(from, to);
-            for (const arEvent of arInstitutional) {
-                const isDup = events.some(e => this.marketScoring.isDuplicateEvent(e, arEvent));
-                if (!isDup) {
-                    events.push(arEvent);
-                }
-            }
-        }
-
-        // 3. Incorporar calendario oficial verificado de EE.UU. (BLS y Federal Reserve FOMC)
-        if (countrySet.has('US')) {
-            const usOfficial = this.getKnownUSCalendar(from, to);
-            for (const usEvent of usOfficial) {
-                const isDup = events.some(e => this.marketScoring.isDuplicateEvent(e, usEvent));
-                if (!isDup) {
-                    events.push(usEvent);
-                }
-            }
-
-            // 4. Incorporar eventos corporativos y keynotes de mega-caps
-            const corpEvents = this.getCorporateEvents(from, to);
-            for (const cEvt of corpEvents) {
-                const isDup = events.some(e => this.marketScoring.isDuplicateEvent(e, cEvt));
-                if (!isDup) {
-                    events.push(cEvt);
-                }
-            }
-        }
-
+        this.economicCache.set(key, { events, status, fetchedAt: Date.now() });
+        if (this.economicCache.size > 20) this.economicCache.delete(this.economicCache.keys().next().value!);
         return events;
     }
 
@@ -284,7 +258,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                 type: 'FINANCIAL_API',
                 country: 'GLOBAL',
                 baseUrl: 'https://financialmodelingprep.com',
-                apiUrl: 'https://financialmodelingprep.com/api/v3/economic_calendar',
+                apiUrl: 'https://financialmodelingprep.com/stable/economic-calendar',
                 isActive: true,
                 priority: 2,
             },
@@ -298,93 +272,6 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                 priority: 1,
             },
         ];
-    }
-
-    /**
-     * Eventos corporativos de alta relevancia para empresas de máxima capitalización
-     */
-    getCorporateEvents(from: string, to: string): EconomicEventItem[] {
-        const fromDate = new Date(from);
-        const tuesday = new Date(fromDate.getTime() + 1 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-        const wednesday = new Date(fromDate.getTime() + 2 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-        const thursday = new Date(fromDate.getTime() + 3 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-
-        const corpList = [
-            {
-                title: 'Apple Special Event — Presentación de Nuevos Dispositivos y Ecosistema Apple Intelligence',
-                companyName: 'Apple Inc.',
-                ticker: 'AAPL',
-                category: 'CORPORATE_EVENT',
-                importance: 'HIGH' as const,
-                score: 88,
-                date: tuesday,
-                time: '14:00',
-                timezone: 'America/New_York',
-                source: 'Apple Investor Relations',
-                sourceUrl: 'https://investor.apple.com',
-                affectedAssets: ['AAPL', 'QQQ', 'SPY'],
-                expectedEffect: 'Lanzamientos de producto impulsan volumen de ventas y ciclo de renovación.',
-            },
-            {
-                title: 'NVIDIA GTC Keynote — Conferencia de Inteligencia Artificial & Computación Acelerada',
-                companyName: 'NVIDIA Corporation',
-                ticker: 'NVDA',
-                category: 'CORPORATE_EVENT',
-                importance: 'HIGH' as const,
-                score: 90,
-                date: wednesday,
-                time: '13:00',
-                timezone: 'America/New_York',
-                source: 'NVIDIA Investor Relations',
-                sourceUrl: 'https://investor.nvidia.com',
-                affectedAssets: ['NVDA', 'SMH', 'QQQ'],
-                expectedEffect: 'Nuevos anuncios de centros de datos definen el gasto de infraestructura cloud.',
-            },
-            {
-                title: 'Tesla Autonomous Technology & Robotaxi Investor Event',
-                companyName: 'Tesla, Inc.',
-                ticker: 'TSLA',
-                category: 'CORPORATE_EVENT',
-                importance: 'HIGH' as const,
-                score: 85,
-                date: thursday,
-                time: '17:00',
-                timezone: 'America/New_York',
-                source: 'Tesla Investor Relations',
-                sourceUrl: 'https://ir.tesla.com',
-                affectedAssets: ['TSLA', 'QQQ'],
-                expectedEffect: 'Avances en conducción autónoma impactan en la valoración de tecnología a largo plazo.',
-            },
-        ];
-
-        return corpList
-            .filter(e => e.date >= from && e.date <= to)
-            .map(e => ({
-                eventType: 'CORPORATE_EVENT' as const,
-                country: 'US',
-                currency: 'USD',
-                title: e.title,
-                category: e.category,
-                importance: e.importance,
-                marketImpactScore: e.score,
-                impactScore: e.score,
-                impact: this.marketScoring.scoreToImpact(e.score),
-                date: e.date,
-                time: e.time,
-                timestampUtc: new Date(`${e.date}T${e.time}:00-04:00`),
-                timezone: e.timezone,
-                source: e.source,
-                sourceName: e.source,
-                sourceUrl: e.sourceUrl,
-                sourceType: 'AUTOMATIC' as const,
-                companyName: e.companyName,
-                ticker: e.ticker,
-                affectedAssets: e.affectedAssets,
-                expectedMarketEffect: e.expectedEffect,
-                status: 'PUBLISHED' as const,
-                isPublished: true,
-                eventFingerprint: this.marketScoring.generateFingerprint('US', e.date, e.title, e.ticker),
-            }));
     }
 
     private tvEarningsCache: { data: EarningsEventItem[]; fetchedAt: number } | null = null;
@@ -444,14 +331,13 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                     const eventDate = new Date(releaseTimestamp * 1000).toISOString().substring(0, 10);
                     const timeType = row.d[3]; // -1: BMO, 1: AMC, 0: DMH
 
-                    let reportTiming: EarningsReportTiming = 'AMC';
-                    let time = '16:30';
+                    let reportTiming: EarningsReportTiming | undefined;
                     if (timeType === -1) {
                         reportTiming = 'BMO';
-                        time = '08:30';
-                    } else if (timeType !== 1) {
+                    } else if (timeType === 1) {
+                        reportTiming = 'AMC';
+                    } else if (timeType === 0) {
                         reportTiming = 'DMH';
-                        time = '12:00';
                     }
 
                     const epsEstimate = row.d[4] != null ? Number(row.d[4]) : undefined;
@@ -472,7 +358,6 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                         companyName,
                         logoUrl,
                         date: eventDate,
-                        time,
                         timestampUtc: new Date(releaseTimestamp * 1000),
                         timezone: 'America/New_York',
                         dateStatus: 'ESTIMATED',
@@ -516,12 +401,10 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
 
                 const fetchedList = Array.from(fetchedByKey.values());
 
-                if (fetchedList.length > 0) {
-                    fetchedList.sort((a, b) => a.date.localeCompare(b.date) || b.earningsImpactScore - a.earningsImpactScore);
-                    this.tvEarningsCache = { data: fetchedList, fetchedAt: now };
-                    allEarnings = fetchedList;
-                    this.logger.log(`Successfully fetched ${fetchedList.length} US earnings from TradingView Scanner.`);
-                }
+                fetchedList.sort((a, b) => a.date.localeCompare(b.date) || b.earningsImpactScore - a.earningsImpactScore);
+                this.tvEarningsCache = { data: fetchedList, fetchedAt: now };
+                allEarnings = fetchedList;
+                this.logger.log(`Successfully fetched ${fetchedList.length} US earnings from TradingView Scanner.`);
             } catch (err: any) {
                 this.logger.warn(`Failed to fetch TradingView US earnings: ${err.message}`);
                 if (this.tvEarningsCache) {
@@ -671,14 +554,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
      * universo estadounidense consultado en TradingView.
      */
     async getUpcomingEarnings(from: string, to: string): Promise<EarningsEventItem[]> {
-        // 1. Prioridad: Consulta oficial a TradingView Scanner para EE. UU.
-        const tvEarnings = await this.fetchTradingViewSP500Earnings({ from, to });
-        if (tvEarnings.length > 0) {
-            return tvEarnings;
-        }
-
-        // 2. Fallback histórico si TradingView no responde.
-        return this.getSP500WeeklyEarningsSchedule(from, to);
+        return this.fetchTradingViewSP500Earnings({ from, to });
     }
 
     async getCompanyEarnings(symbol: string): Promise<EarningsEventItem | null> {
@@ -696,485 +572,6 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
             monday.toISOString().substring(0, 10),
             friday.toISOString().substring(0, 10)
         );
-    }
-
-    /**
-     * Calendario verificado de Estados Unidos basado en:
-     * - U.S. Bureau of Labor Statistics (BLS): https://www.bls.gov/schedule/2026/09_sched.htm
-     * - Federal Reserve FOMC: https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
-     * - Investing.com Economic Calendar: https://www.investing.com/economic-calendar
-     */
-    private getKnownUSCalendar(from: string, to: string): EconomicEventItem[] {
-        const fromDate = new Date(from);
-        const monday = new Date(fromDate.getTime()).toISOString().substring(0, 10);
-        const tuesday = new Date(fromDate.getTime() + 1 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-        const wednesday = new Date(fromDate.getTime() + 2 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-        const thursday = new Date(fromDate.getTime() + 3 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-        const friday = new Date(fromDate.getTime() + 4 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-
-        const known = [
-            {
-                title: 'Subastas de Letras del Tesoro de EE.UU. (T-Bills Auction)',
-                category: 'CENTRAL_BANK',
-                importance: 'MEDIUM' as const,
-                score: 68,
-                date: monday,
-                time: '11:30',
-                previousValue: '4.85%',
-                consensusValue: '4.80%',
-                affectedAssets: ['US10Y', 'DXY', 'SPY'],
-                expectedEffect: 'El rendimiento de las letras cortas refleja las expectativas de liquidez y política monetaria.',
-                source: 'U.S. Department of the Treasury / Investing.com',
-                sourceUrl: 'https://www.investing.com/economic-calendar',
-            },
-            {
-                title: 'Ventas Minoristas Mensuales (Retail Sales)',
-                category: 'ACTIVITY',
-                importance: 'HIGH' as const,
-                score: 82,
-                date: tuesday,
-                time: '08:30',
-                previousValue: '0.4%',
-                consensusValue: '0.3%',
-                affectedAssets: ['SPY', 'XLY', 'DIA', 'QQQ'],
-                expectedEffect: 'Un consumo robusto aleja escenarios recesivos para la economía estadounidense.',
-                source: 'U.S. Census Bureau / Investing.com',
-                sourceUrl: 'https://www.investing.com/economic-calendar',
-            },
-            {
-                title: 'Índice de Precios al Consumidor (IPC de EE.UU.)',
-                category: 'INFLATION',
-                importance: 'HIGH' as const,
-                score: 98,
-                date: wednesday,
-                time: '08:30',
-                previousValue: '2.9%',
-                consensusValue: '2.8%',
-                affectedAssets: ['SPY', 'QQQ', 'BTC', 'GOLD', 'US10Y', 'DXY'],
-                expectedEffect: 'Una inflación menor al consenso consolida las bajas de tasas de la Reserva Federal.',
-                source: 'U.S. Bureau of Labor Statistics (BLS)',
-                sourceUrl: 'https://www.bls.gov/schedule/2026/09_sched.htm',
-            },
-            {
-                title: 'Decisión de Tasa de Interés de la Reserva Federal (FOMC)',
-                category: 'CENTRAL_BANK',
-                importance: 'HIGH' as const,
-                score: 100,
-                date: wednesday,
-                time: '14:00',
-                previousValue: '5.25%',
-                consensusValue: '5.00%',
-                affectedAssets: ['SPY', 'QQQ', 'BTC', 'GOLD', 'US10Y', 'DXY'],
-                expectedEffect: 'El inicio de recortes de tasas favorece la valuación de activos de riesgo y alivia el costo financiero.',
-                source: 'Federal Reserve (FOMC Calendars)',
-                sourceUrl: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm',
-            },
-            {
-                title: 'Conferencia de Prensa de Jerome Powell (FOMC)',
-                category: 'CENTRAL_BANK',
-                importance: 'HIGH' as const,
-                score: 95,
-                date: wednesday,
-                time: '14:30',
-                affectedAssets: ['SPY', 'QQQ', 'BTC', 'DXY'],
-                expectedEffect: 'El tono del presidente de la Fed guía las proyecciones de tipos de interés para los próximos trimestres.',
-                source: 'Federal Reserve (Fed)',
-                sourceUrl: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm',
-            },
-            {
-                title: 'Índice de Precios al Productor (IPP de EE.UU.)',
-                category: 'INFLATION',
-                importance: 'HIGH' as const,
-                score: 82,
-                date: thursday,
-                time: '08:30',
-                previousValue: '2.4%',
-                consensusValue: '2.2%',
-                affectedAssets: ['SPY', 'DIA', 'US10Y'],
-                expectedEffect: 'Mide la presión de costos en la cadena mayorista previo a trasladarse al consumidor.',
-                source: 'U.S. Bureau of Labor Statistics (BLS)',
-                sourceUrl: 'https://www.bls.gov/schedule/2026/09_sched.htm',
-            },
-            {
-                title: 'Peticiones Iniciales de Subsidio por Desempleo (Jobless Claims)',
-                category: 'EMPLOYMENT',
-                importance: 'MEDIUM' as const,
-                score: 78,
-                date: thursday,
-                time: '08:30',
-                previousValue: '225K',
-                consensusValue: '220K',
-                affectedAssets: ['SPY', 'QQQ', 'DXY'],
-                expectedEffect: 'Un mercado laboral resiliente sostiene el consumo y la estabilidad macroeconómica.',
-                source: 'U.S. Department of Labor (DOL) / Investing.com',
-                sourceUrl: 'https://www.investing.com/economic-calendar',
-            },
-            {
-                title: 'Sentimiento del Consumidor de la Univ. de Michigan',
-                category: 'ACTIVITY',
-                importance: 'MEDIUM' as const,
-                score: 75,
-                date: friday,
-                time: '10:00',
-                previousValue: '67.9',
-                consensusValue: '69.5',
-                affectedAssets: ['SPY', 'XLY', 'DIA'],
-                expectedEffect: 'Mide las expectativas inflacionarias y la confianza de las familias estadounidenses.',
-                source: 'University of Michigan / Investing.com',
-                sourceUrl: 'https://www.investing.com/economic-calendar',
-            }
-        ];
-
-        return known
-            .filter(e => e.date >= from && e.date <= to)
-            .map(e => ({
-                eventType: 'ECONOMIC',
-                country: 'US',
-                currency: 'USD',
-                title: e.title,
-                category: e.category,
-                importance: e.importance,
-                marketImpactScore: e.score,
-                date: e.date,
-                time: e.time,
-                timestampUtc: new Date(`${e.date}T${e.time}:00-04:00`),
-                timezone: 'America/New_York',
-                previousValue: e.previousValue,
-                consensusValue: e.consensusValue,
-                expectedMarketEffect: e.expectedEffect,
-                affectedAssets: e.affectedAssets,
-                source: e.source,
-                sourceUrl: e.sourceUrl,
-                sourceType: 'AUTOMATIC',
-                isPublished: true,
-            }));
-    }
-
-    /**
-     * Calendario verificado de Argentina basado en:
-     * - INDEC Calendario Oficial: https://www.indec.gob.ar/indec/web/Calendario-Fecha-0
-     * - Banco Central de la República Argentina (BCRA)
-     * - Investing.com Argentina
-     */
-    private getKnownArgentinaCalendar(from: string, to: string): EconomicEventItem[] {
-        const fromDate = new Date(from);
-        const monday = new Date(fromDate.getTime()).toISOString().substring(0, 10);
-        const tuesday = new Date(fromDate.getTime() + 1 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-        const wednesday = new Date(fromDate.getTime() + 2 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-        const thursday = new Date(fromDate.getTime() + 3 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-        const friday = new Date(fromDate.getTime() + 4 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-
-        const knownDates = [
-            {
-                title: 'Liquidación de Divisas del Agro (CIARA-CEC / BCRA)',
-                category: 'TRADE',
-                importance: 'MEDIUM' as const,
-                score: 72,
-                date: monday,
-                time: '15:00',
-                previousValue: 'USD 2.150 M',
-                consensusValue: 'USD 2.300 M',
-                affectedAssets: ['AL30', 'GD30', 'USDARS', 'MERVAL'],
-                expectedEffect: 'El ingreso de divisas fortalece las reservas netas del BCRA y reduce la brecha cambiaria.',
-                source: 'CIARA-CEC / BCRA',
-                sourceUrl: 'https://www.indec.gob.ar/indec/web/Calendario-Fecha-0',
-            },
-            {
-                title: 'IPC — Inflación de Argentina (INDEC)',
-                category: 'INFLATION',
-                importance: 'HIGH' as const,
-                score: 98,
-                date: tuesday,
-                time: '16:00',
-                previousValue: '4.0%',
-                consensusValue: '3.8%',
-                affectedAssets: ['AL30', 'GD30', 'MERVAL', 'USDARS', 'LECAPS'],
-                expectedEffect: 'Una desaceleración inflacionaria consolida el ancla fiscal y habilita recortes en el costo de financiamiento.',
-                source: 'INDEC Argentina',
-                sourceUrl: 'https://www.indec.gob.ar/indec/web/Calendario-Fecha-0',
-            },
-            {
-                title: 'Canasta Básica Total y Alimentaria (Línea de Pobreza e Indigencia)',
-                category: 'MACRO',
-                importance: 'MEDIUM' as const,
-                score: 75,
-                date: wednesday,
-                time: '16:00',
-                previousValue: '+3.7%',
-                consensusValue: '+3.5%',
-                affectedAssets: ['MERVAL', 'CONSUMO'],
-                expectedEffect: 'Determina el poder adquisitivo real y la canasta de subsistencia de las familias.',
-                source: 'INDEC Argentina',
-                sourceUrl: 'https://www.indec.gob.ar/indec/web/Calendario-Fecha-0',
-            },
-            {
-                title: 'Decisión de Tasa de Política Monetaria (BCRA)',
-                category: 'CENTRAL_BANK',
-                importance: 'HIGH' as const,
-                score: 95,
-                date: thursday,
-                time: '17:30',
-                previousValue: '35.0%',
-                consensusValue: '35.0%',
-                affectedAssets: ['AL30', 'GD30', 'LECAPS', 'BONCAPS', 'USDARS'],
-                expectedEffect: 'Tasas reales positivas preservan la estabilidad de los depósitos en pesos y la calma financiera.',
-                source: 'Banco Central de la República Argentina (BCRA)',
-                sourceUrl: 'https://www.indec.gob.ar/indec/web/Calendario-Fecha-0',
-            },
-            {
-                title: 'ICA — Intercambio Comercial Argentino (Balanza Comercial)',
-                category: 'TRADE',
-                importance: 'HIGH' as const,
-                score: 84,
-                date: thursday,
-                time: '16:00',
-                previousValue: 'USD +1.380 M',
-                consensusValue: 'USD +1.450 M',
-                affectedAssets: ['AL30', 'GD30', 'USDARS'],
-                expectedEffect: 'El superávit comercial continuo asegura la capacidad de repago de la deuda soberana.',
-                source: 'INDEC Argentina',
-                sourceUrl: 'https://www.indec.gob.ar/indec/web/Calendario-Fecha-0',
-            },
-            {
-                title: 'EMAE — Estimador Mensual de Actividad Económica (INDEC)',
-                category: 'ACTIVITY',
-                importance: 'HIGH' as const,
-                score: 86,
-                date: friday,
-                time: '16:00',
-                previousValue: '-1.4%',
-                consensusValue: '+0.6%',
-                affectedAssets: ['MERVAL', 'GGAL', 'YPF', 'BMA'],
-                expectedEffect: 'El rebote en sectores clave (energía, minería y agro) impulsa la rentabilidad empresaria del Merval.',
-                source: 'INDEC Argentina',
-                sourceUrl: 'https://www.indec.gob.ar/indec/web/Calendario-Fecha-0',
-            }
-        ];
-
-        return knownDates
-            .filter(e => e.date >= from && e.date <= to)
-            .map(e => ({
-                eventType: 'ECONOMIC',
-                country: 'AR',
-                currency: 'ARS',
-                title: e.title,
-                category: e.category,
-                importance: e.importance,
-                marketImpactScore: e.score,
-                date: e.date,
-                time: e.time,
-                timestampUtc: new Date(`${e.date}T${e.time || '16:00'}:00-03:00`),
-                timezone: 'America/Argentina/Buenos_Aires',
-                previousValue: e.previousValue,
-                consensusValue: e.consensusValue,
-                expectedMarketEffect: e.expectedEffect,
-                affectedAssets: e.affectedAssets,
-                source: e.source,
-                sourceUrl: e.sourceUrl,
-                sourceType: 'AUTOMATIC',
-                isPublished: true,
-            }));
-    }
-
-    /**
-     * Fallback histórico de reportes de resultados trimestrales (Earnings).
-     */
-    private getSP500WeeklyEarningsSchedule(from: string, to: string): EarningsEventItem[] {
-        const fromDate = new Date(from);
-        const monday = new Date(fromDate.getTime()).toISOString().substring(0, 10);
-        const tuesday = new Date(fromDate.getTime() + 1 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-        const wednesday = new Date(fromDate.getTime() + 2 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-        const thursday = new Date(fromDate.getTime() + 3 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-        const friday = new Date(fromDate.getTime() + 4 * 24 * 3600 * 1000).toISOString().substring(0, 10);
-
-        const schedule = [
-            // ── Lunes ──
-            {
-                ticker: 'ORCL',
-                companyName: 'Oracle Corporation',
-                date: monday,
-                time: '08:00',
-                reportTiming: 'BMO' as EarningsReportTiming,
-                epsEstimate: 1.38,
-                revenueEstimate: 13.28,
-                marketCap: 485000000000,
-                score: 92,
-            },
-            {
-                ticker: 'ADBE',
-                companyName: 'Adobe Inc.',
-                date: monday,
-                time: '18:05',
-                reportTiming: 'AMC' as EarningsReportTiming,
-                epsEstimate: 4.65,
-                revenueEstimate: 5.37,
-                marketCap: 235000000000,
-                score: 90,
-            },
-
-            // ── Martes ──
-            {
-                ticker: 'NKE',
-                companyName: 'NIKE, Inc.',
-                date: tuesday,
-                time: '08:15',
-                reportTiming: 'BMO' as EarningsReportTiming,
-                epsEstimate: 0.52,
-                revenueEstimate: 11.60,
-                marketCap: 125000000000,
-                score: 88,
-            },
-            {
-                ticker: 'FDX',
-                companyName: 'FedEx Corporation',
-                date: tuesday,
-                time: '18:15',
-                reportTiming: 'AMC' as EarningsReportTiming,
-                epsEstimate: 4.75,
-                revenueEstimate: 22.10,
-                marketCap: 72000000000,
-                score: 87,
-            },
-            {
-                ticker: 'LEN',
-                companyName: 'Lennar Corporation',
-                date: tuesday,
-                time: '18:00',
-                reportTiming: 'AMC' as EarningsReportTiming,
-                epsEstimate: 3.63,
-                revenueEstimate: 8.70,
-                marketCap: 42000000000,
-                score: 79,
-            },
-
-            // ── Miércoles ──
-            {
-                ticker: 'GIS',
-                companyName: 'General Mills, Inc.',
-                date: wednesday,
-                time: '07:00',
-                reportTiming: 'BMO' as EarningsReportTiming,
-                epsEstimate: 1.06,
-                revenueEstimate: 4.80,
-                marketCap: 41000000000,
-                score: 76,
-            },
-            {
-                ticker: 'NVDA',
-                companyName: 'NVIDIA Corporation',
-                date: wednesday,
-                time: '18:00',
-                reportTiming: 'AMC' as EarningsReportTiming,
-                epsEstimate: 0.74,
-                revenueEstimate: 32.50,
-                marketCap: 2850000000000,
-                score: 98,
-            },
-            {
-                ticker: 'MU',
-                companyName: 'Micron Technology, Inc.',
-                date: wednesday,
-                time: '18:00',
-                reportTiming: 'AMC' as EarningsReportTiming,
-                epsEstimate: 1.11,
-                revenueEstimate: 7.65,
-                marketCap: 118000000000,
-                score: 89,
-            },
-            {
-                ticker: 'COST',
-                companyName: 'Costco Wholesale Corporation',
-                date: wednesday,
-                time: '18:15',
-                reportTiming: 'AMC' as EarningsReportTiming,
-                epsEstimate: 5.08,
-                revenueEstimate: 79.80,
-                marketCap: 390000000000,
-                score: 91,
-            },
-
-            // ── Jueves ──
-            {
-                ticker: 'ACN',
-                companyName: 'Accenture plc',
-                date: thursday,
-                time: '06:50',
-                reportTiming: 'BMO' as EarningsReportTiming,
-                epsEstimate: 2.78,
-                revenueEstimate: 16.38,
-                marketCap: 210000000000,
-                score: 86,
-            },
-            {
-                ticker: 'DRI',
-                companyName: 'Darden Restaurants, Inc.',
-                date: thursday,
-                time: '07:00',
-                reportTiming: 'BMO' as EarningsReportTiming,
-                epsEstimate: 1.75,
-                revenueEstimate: 2.80,
-                marketCap: 19000000000,
-                score: 75,
-            },
-            {
-                ticker: 'KMX',
-                companyName: 'CarMax, Inc.',
-                date: thursday,
-                time: '18:00',
-                reportTiming: 'AMC' as EarningsReportTiming,
-                epsEstimate: 0.85,
-                revenueEstimate: 6.80,
-                marketCap: 12000000000,
-                score: 72,
-            },
-
-            // ── Viernes ──
-            {
-                ticker: 'CCL',
-                companyName: 'Carnival Corporation & plc',
-                date: friday,
-                time: '09:15',
-                reportTiming: 'BMO' as EarningsReportTiming,
-                epsEstimate: 1.15,
-                revenueEstimate: 7.90,
-                marketCap: 24000000000,
-                score: 79,
-            },
-            {
-                ticker: 'KBH',
-                companyName: 'KB Home',
-                date: friday,
-                time: '08:00',
-                reportTiming: 'BMO' as EarningsReportTiming,
-                epsEstimate: 2.06,
-                revenueEstimate: 1.73,
-                marketCap: 6200000000,
-                score: 71,
-            }
-        ];
-
-        return schedule
-            .filter(e => e.date >= from && e.date <= to)
-            .filter(e => this.isSP500Constituent(e.ticker))
-            .map(e => ({
-                eventType: 'EARNINGS' as const,
-                ticker: e.ticker,
-                companyName: e.companyName,
-                logoUrl: this.earningsScoring.getTradingViewLogoUrl(e.ticker),
-                date: e.date,
-                time: e.time,
-                timestampUtc: new Date(`${e.date}T${e.time}:00-04:00`),
-                timezone: 'America/New_York',
-                dateStatus: 'CONFIRMED' as EarningsDateStatus,
-                reportTiming: e.reportTiming,
-                epsEstimate: e.epsEstimate,
-                revenueEstimate: e.revenueEstimate,
-                marketCap: e.marketCap,
-                earningsImpactScore: e.score,
-                source: 'SEC EDGAR / Consensus',
-                sourceType: 'AUTOMATIC' as const,
-                isPublished: true,
-            }));
     }
 
     private getMondayOfWeek(d: Date): Date {

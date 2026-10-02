@@ -2,58 +2,250 @@ import { useEffect, useState, useMemo } from 'react';
 import {
     Clock,
     Search,
+    SearchX,
     Sunrise,
     TrendingUp,
     Lock,
     Radio,
-    Flame,
+    Landmark,
     Activity,
     Layers,
     ArrowUpRight,
     ArrowDownRight,
+    ArrowRight,
+    Minus,
     RefreshCw,
     ShieldAlert,
-    CheckCircle2,
     Sparkles,
+    Coins,
+    X,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { SymbolLogo } from '@/components/SymbolLogo';
 import type { PremarketAsset, PremarketData } from './PreMarketSection';
+import {
+    resolvePremarketQuote,
+    type DisplayPremarketAsset,
+} from './premarket-quote';
+import './premarket.css';
 
 const CATEGORIES = [
-    { key: 'all', label: 'Todos los activos', icon: Layers },
-    { key: 'argentina', label: 'Argentina en Wall Street', icon: Flame },
-    { key: 'magnificent7', label: 'Las 7 Magníficas', icon: Sparkles },
-    { key: 'indices', label: 'Índices Globales', icon: Activity },
-    { key: 'commodities', label: 'Materias Primas', icon: TrendingUp },
-    { key: 'crypto', label: 'Criptomonedas', icon: Radio },
+    { key: 'all', label: 'Todos', title: 'Todos los activos', icon: Layers },
+    {
+        key: 'argentina',
+        label: 'Argentina',
+        title: 'Argentina en Wall Street',
+        icon: Landmark,
+    },
+    {
+        key: 'magnificent7',
+        label: '7 Magníficas',
+        title: 'Las 7 Magníficas',
+        icon: Sparkles,
+    },
+    {
+        key: 'indices',
+        label: 'Índices',
+        title: 'Índices globales',
+        icon: Activity,
+    },
+    {
+        key: 'commodities',
+        label: 'Commodities',
+        title: 'Materias primas',
+        icon: TrendingUp,
+    },
+    { key: 'crypto', label: 'Cripto', title: 'Criptomonedas', icon: Coins },
 ] as const;
 
-type CategoryKey = typeof CATEGORIES[number]['key'];
+type CategoryKey = (typeof CATEGORIES)[number]['key'];
+type CategorizedAsset = DisplayPremarketAsset & {
+    categoryKey: Exclude<CategoryKey, 'all'>;
+};
 
-function formatAssetPrice(a: PremarketAsset): string {
-    if (a.price == null || !Number.isFinite(a.price)) return 'Sin cotización';
-    if (a.format === 'percent') return `${a.price.toFixed(2)}%`;
-    return new Intl.NumberFormat('es-AR', {
-        ...(a.format === 'currency' ? { style: 'currency', currency: a.currency || 'USD' } : {}),
+const priceFormatters = {
+    ARS: new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS',
         maximumFractionDigits: 2,
-    }).format(a.price);
+    }),
+    USD: new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 2,
+    }),
+    number: new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 }),
+};
+const changeFormatter = new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    signDisplay: 'exceptZero',
+});
+const timeFormatter = new Intl.DateTimeFormat('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone: 'America/Argentina/Buenos_Aires',
+});
+const dateFormatter = new Intl.DateTimeFormat('es-AR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'America/Argentina/Buenos_Aires',
+});
+
+function hasQuote(asset: PremarketAsset): boolean {
+    return (
+        !asset.unavailable &&
+        asset.price != null &&
+        Number.isFinite(asset.price)
+    );
+}
+
+function formatPrice(a: PremarketAsset, price: number): string {
+    if (a.format === 'percent') return `${price.toFixed(2)}%`;
+    return priceFormatters[
+        a.format === 'currency' ? a.currency || 'USD' : 'number'
+    ].format(price);
 }
 
 function formatChange(change: number | null): string {
-    if (change == null || !Number.isFinite(change)) return '—';
-    const sign = change > 0 ? '+' : '';
-    return `${sign}${change.toFixed(2)}%`;
+    if (change == null || !Number.isFinite(change)) return 'Sin datos';
+    return `${changeFormatter.format(change)}%`;
+}
+
+function formatTime(value?: string): string {
+    if (!value || Number.isNaN(new Date(value).getTime()))
+        return 'Sin actualizar';
+    return timeFormatter.format(new Date(value));
+}
+
+function AssetCard({
+    asset,
+    onSelect,
+}: {
+    asset: CategorizedAsset;
+    onSelect?: (symbol: string) => void;
+}) {
+    const quoted = hasQuote(asset);
+    const change =
+        quoted && asset.change != null && Number.isFinite(asset.change)
+            ? asset.change
+            : null;
+    const tone =
+        change == null || change === 0
+            ? 'neutral'
+            : change > 0
+              ? 'positive'
+              : 'negative';
+    const ChangeIcon =
+        tone === 'positive'
+            ? ArrowUpRight
+            : tone === 'negative'
+              ? ArrowDownRight
+              : Minus;
+    const ticker = asset.symbol.split(':').pop() || asset.symbol;
+    const content = (
+        <>
+            <div className="market-quote-card__identity">
+                <SymbolLogo symbol={asset.symbol} size={48} />
+                <div className="market-quote-card__name">
+                    <span className="market-quote-card__symbol">{ticker}</span>
+                    <span
+                        className="market-quote-card__label"
+                        title={asset.label}
+                    >
+                        {asset.label}
+                    </span>
+                </div>
+                {onSelect && (
+                    <ArrowUpRight
+                        className="market-quote-card__open"
+                        size={18}
+                        aria-hidden="true"
+                    />
+                )}
+            </div>
+            <div className="market-quote-card__quote">
+                <span className="market-quote-card__quote-label">
+                    {asset.isPremarketQuote || asset.requiresPremarket
+                        ? 'Precio pre-market'
+                        : 'Precio de referencia'}
+                    {asset.format === 'currency' && (
+                        <span>{asset.currency || 'USD'}</span>
+                    )}
+                </span>
+                <div className="market-quote-card__numbers">
+                    <span
+                        className={`market-quote-card__price${quoted ? '' : ' market-quote-card__price--empty'}`}
+                    >
+                        {quoted
+                            ? formatPrice(asset, asset.price!)
+                            : 'Sin cotización'}
+                    </span>
+                    <span
+                        className={`market-change market-change--${tone}`}
+                    >
+                        <ChangeIcon size={15} aria-hidden="true" />
+                        {formatChange(change)}
+                    </span>
+                </div>
+            </div>
+            {(asset.isPremarketQuote || asset.requiresPremarket) &&
+                asset.regularPrice != null && (
+                    <div className="market-quote-card__regular">
+                        <span>Precio regular</span>
+                        <strong>
+                            {formatPrice(asset, asset.regularPrice)}
+                        </strong>
+                        {asset.regularChange != null && (
+                            <span>{formatChange(asset.regularChange)}</span>
+                        )}
+                    </div>
+                )}
+            <div className="market-quote-card__footer">
+                <span>
+                    <Clock size={13} aria-hidden="true" />{' '}
+                    {formatTime(asset.updatedAt)} ART
+                </span>
+                <span>
+                    {quoted
+                        ? asset.isPremarketQuote
+                            ? 'Pre-apertura'
+                            : 'Referencia'
+                        : asset.requiresPremarket
+                          ? 'Sin pre-market'
+                          : 'No disponible'}
+                </span>
+            </div>
+        </>
+    );
+
+    return onSelect ? (
+        <button
+            type="button"
+            className="market-quote-card"
+            onClick={() => onSelect(asset.symbol)}
+            aria-label={`Ver gráfico de ${asset.label} (${ticker})`}
+        >
+            {content}
+        </button>
+    ) : (
+        <article className="market-quote-card">{content}</article>
+    );
 }
 
 interface PremarketBriefProps {
     onSelectSymbol?: (symbol: string) => void;
 }
 
-export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) {
-    const [data, setData] = useState<(PremarketData & { scheduledSnapshot?: boolean }) | null>(null);
+export default function PremarketBrief({
+    onSelectSymbol,
+}: PremarketBriefProps) {
+    const [data, setData] = useState<PremarketData | null>(null);
     const [error, setError] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [query, setQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
     const [retry, setRetry] = useState(0);
@@ -62,18 +254,21 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
         const controller = new AbortController();
         const load = async () => {
             try {
-                const res = await apiFetch('/market/premarket', { signal: controller.signal });
+                const res = await apiFetch('/market/premarket', {
+                    signal: controller.signal,
+                });
                 if (!res.ok) throw new Error('Unavailable');
                 const next = await res.json();
                 if (!controller.signal.aborted) {
                     setData(next);
                     setError(false);
-                    setIsLoading(false);
                 }
             } catch {
+                if (!controller.signal.aborted) setError(true);
+            } finally {
                 if (!controller.signal.aborted) {
-                    setError(true);
                     setIsLoading(false);
+                    setIsRefreshing(false);
                 }
             }
         };
@@ -85,306 +280,363 @@ export default function PremarketBrief({ onSelectSymbol }: PremarketBriefProps) 
         };
     }, [retry]);
 
-    // Flatten all assets with category tag
     const allAssets = useMemo(() => {
         if (!data) return [];
-        const result: (PremarketAsset & { categoryKey: CategoryKey })[] = [];
-        const catKeys: (Exclude<CategoryKey, 'all'>)[] = ['argentina', 'magnificent7', 'indices', 'commodities', 'crypto'];
-
-        for (const cat of catKeys) {
-            const list = data[cat] || [];
-            for (const item of list) {
-                result.push({ ...item, categoryKey: cat });
-            }
-        }
-        return result;
+        return CATEGORIES.flatMap((category): CategorizedAsset[] =>
+            category.key === 'all'
+                ? []
+                : (data[category.key] || []).map((asset) => ({
+                      ...resolvePremarketQuote(asset),
+                      categoryKey: category.key,
+                  })),
+        );
     }, [data]);
 
-    // Filter by query and category
-    const filteredAssets = useMemo(() => {
+    const groups = useMemo(() => {
         const q = query.trim().toLowerCase();
-        return allAssets.filter((a) => {
-            const matchesCat = activeCategory === 'all' || a.categoryKey === activeCategory;
-            const matchesQuery = !q || `${a.label} ${a.symbol} ${a.description}`.toLowerCase().includes(q);
-            return matchesCat && matchesQuery;
-        });
+        return CATEGORIES.filter(
+            (category) =>
+                category.key !== 'all' &&
+                (activeCategory === 'all' || activeCategory === category.key),
+        )
+            .map((category) => ({
+                ...category,
+                assets: allAssets.filter(
+                    (asset) =>
+                        asset.categoryKey === category.key &&
+                        (!q ||
+                            `${asset.label} ${asset.symbol} ${asset.description}`
+                                .toLowerCase()
+                                .includes(q)),
+                ),
+            }))
+            .filter((group) => group.assets.length > 0);
     }, [allAssets, activeCategory, query]);
 
     const stats = useMemo(() => {
-        const total = allAssets.length;
-        const withQuote = allAssets.filter((a) => a.price != null).length;
-        const up = allAssets.filter((a) => a.change != null && a.change > 0).length;
-        const down = allAssets.filter((a) => a.change != null && a.change < 0).length;
-        return { total, withQuote, up, down };
+        const quoted = allAssets.filter(hasQuote);
+        return {
+            withQuote: quoted.length,
+            up: quoted.filter(
+                (asset) => asset.change != null && asset.change > 0,
+            ).length,
+            down: quoted.filter(
+                (asset) => asset.change != null && asset.change < 0,
+            ).length,
+        };
     }, [allAssets]);
 
-    const isFrozen = data?.isFrozenPremarket || data?.session?.status !== 'pre-market';
-    const sentiment = data?.session?.sentiment || 'neutral';
-    const sentimentScore = data?.session?.sentimentScore ?? 50;
-
-    const sentimentBadge = {
-        bullish: { label: 'Alcista', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30' },
-        bearish: { label: 'Bajista', color: 'text-rose-500 bg-rose-500/10 border-rose-500/30' },
-        cautious: { label: 'Cautela', color: 'text-amber-500 bg-amber-500/10 border-amber-500/30' },
-        neutral: { label: 'Neutral', color: 'text-blue-500 bg-blue-500/10 border-blue-500/30' },
+    const isFrozen = Boolean(
+        data &&
+        (data.isFrozenPremarket || data.session.status !== 'pre-market'),
+    );
+    const sentiment = data?.session.sentiment || 'neutral';
+    const sentimentScore = Math.min(
+        100,
+        Math.max(0, data?.session.sentimentScore ?? 50),
+    );
+    const sentimentLabel = {
+        bullish: 'Alcista',
+        bearish: 'Bajista',
+        cautious: 'Cautela',
+        neutral: 'Neutral',
     }[sentiment];
+    const refresh = () => {
+        setIsRefreshing(true);
+        setRetry((value) => value + 1);
+    };
 
     return (
-        <section className="w-full min-w-0 max-w-none space-y-5 pb-12">
-            {/* ─── Hero & Market Status Banner ─────────────────────────── */}
-            <header className="rounded-[28px] border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-7 shadow-sm">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
-                                <Sunrise className="w-3.5 h-3.5" /> Finix · Pre-Market
-                            </span>
-
-                            {isFrozen ? (
-                                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                                    <Lock className="w-3.5 h-3.5" /> Pre-Market Finalizado (10:30 hs)
-                                </span>
+        <section className="premarket" aria-label="Pre-Market">
+            <header className="premarket-header">
+                <div>
+                    <div className="premarket-eyebrow">
+                        <Sunrise size={17} aria-hidden="true" /> WALL STREET ·
+                        PRE-APERTURA
+                    </div>
+                    <div className="premarket-title-row">
+                        <h1>Pre-Market</h1>
+                        <span
+                            className={`premarket-status${!data ? '' : isFrozen ? ' premarket-status--frozen' : ' premarket-status--live'}`}
+                        >
+                            {!data ? (
+                                <Clock size={13} />
+                            ) : isFrozen ? (
+                                <Lock size={13} />
                             ) : (
-                                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 animate-pulse">
-                                    <Radio className="w-3.5 h-3.5" /> Sesión en Vivo
-                                </span>
+                                <Radio size={13} />
                             )}
-                        </div>
-
-                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
-                            Pre-Market
-                        </h1>
-
-                        <p className="max-w-2xl text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                            {isFrozen
-                                ? 'Últimos datos registrados antes de la apertura. El corte de referencia es a las 10:30 hs ART.'
-                                : 'Cotizaciones previas a la apertura de Wall Street, ADRs argentinos, índices y materias primas.'}
-                        </p>
+                            {!data
+                                ? isLoading
+                                    ? 'Sincronizando'
+                                    : 'Sin datos'
+                                : isFrozen
+                                  ? 'Corte guardado'
+                                  : 'En vivo'}
+                        </span>
                     </div>
-
-                    {/* Right schedule box */}
-                    <div className="flex items-center gap-4 bg-background/80 border border-border/60 rounded-2xl p-4 shrink-0 shadow-xs">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                            <Clock className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                                Corte de referencia
-                            </p>
-                            <p className="text-lg font-black text-foreground">
-                                10:30 <span className="text-xs font-semibold text-primary">hs ART</span>
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">
-                                {data?.updatedAt
-                                    ? `${isFrozen ? 'Corte:' : 'Actualizado:'} ${new Date(data.updatedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs`
-                                    : 'Sincronizando'}
-                            </p>
-                        </div>
-                    </div>
+                    <p className="premarket-header__date">
+                        {data &&
+                        !Number.isNaN(new Date(data.updatedAt).getTime())
+                            ? dateFormatter.format(new Date(data.updatedAt))
+                            : 'Cotizaciones de pre-apertura'}
+                    </p>
                 </div>
-
-                {/* ─── Macro Sentiment & KPI Row ───────────────────────── */}
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-3.5 pt-5 border-t border-border/50">
-                    {/* Sentiment Bar */}
-                    <div className="md:col-span-2 rounded-2xl border border-border/60 bg-background/60 p-4 flex flex-col justify-between">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
-                                <Activity className="w-4 h-4 text-primary" /> Clima Macro de Pre-Apertura
-                            </span>
-                            <span className={`text-xs font-extrabold px-2 py-0.5 rounded-md border ${sentimentBadge.color}`}>
-                                {sentimentBadge.label} ({sentimentScore}%)
-                            </span>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="w-full bg-muted/60 rounded-full h-2 overflow-hidden my-1.5">
-                            <div
-                                className={`h-full transition-all duration-500 rounded-full ${
-                                    sentiment === 'bullish'
-                                        ? 'bg-emerald-500'
-                                        : sentiment === 'bearish'
-                                        ? 'bg-rose-500'
-                                        : sentiment === 'cautious'
-                                        ? 'bg-amber-500'
-                                        : 'bg-blue-500'
-                                }`}
-                                style={{ width: `${Math.min(100, Math.max(10, sentimentScore))}%` }}
-                            />
-                        </div>
-
-                        <p className="text-xs text-muted-foreground font-medium line-clamp-1 mt-1">
-                            {data?.session?.sentimentSummary || 'Futuros y cotizaciones operando según expectativas.'}
-                        </p>
-                    </div>
-
-                    {/* Stat Up */}
-                    <div className="rounded-2xl border border-border/60 bg-background/60 p-4 flex items-center justify-between">
+                <div className="premarket-header__timing">
+                    <div className="premarket-cutoff">
+                        <Clock size={18} aria-hidden="true" />
                         <div>
-                            <p className="text-2xl font-black text-emerald-500 tabular-nums">{data ? stats.up : '—'}</p>
-                            <p className="text-xs font-bold text-muted-foreground mt-0.5">Activos en Alza</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                            <ArrowUpRight className="w-5 h-5" />
-                        </div>
-                    </div>
-
-                    {/* Stat Down */}
-                    <div className="rounded-2xl border border-border/60 bg-background/60 p-4 flex items-center justify-between">
-                        <div>
-                            <p className="text-2xl font-black text-rose-500 tabular-nums">{data ? stats.down : '—'}</p>
-                            <p className="text-xs font-bold text-muted-foreground mt-0.5">Activos en Baja</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500">
-                            <ArrowDownRight className="w-5 h-5" />
+                            <span>Corte de referencia</span>
+                            <strong>
+                                10:30 <small>ART</small>
+                            </strong>
                         </div>
                     </div>
+                    <span className="premarket-header__updated">
+                        {data
+                            ? `${isFrozen ? 'Registro' : 'Actualizado'} ${formatTime(data.updatedAt)} ART`
+                            : 'Esperando datos'}
+                    </span>
+                    <button
+                        type="button"
+                        className="premarket-icon-button"
+                        onClick={refresh}
+                        disabled={isLoading || isRefreshing}
+                        title="Actualizar cotizaciones"
+                        aria-label="Actualizar cotizaciones"
+                    >
+                        <RefreshCw
+                            size={17}
+                            className={
+                                isLoading || isRefreshing ? 'animate-spin' : ''
+                            }
+                        />
+                    </button>
                 </div>
             </header>
 
+            <div className="premarket-overview">
+                <div
+                    className={`premarket-sentiment premarket-sentiment--${sentiment}`}
+                >
+                    <div className="premarket-sentiment__heading">
+                        <span>
+                            <Activity size={16} /> Clima de mercado
+                        </span>
+                        <strong>
+                            {data ? sentimentLabel : 'Sin datos'}{' '}
+                            <span>{data ? `${sentimentScore}%` : ''}</span>
+                        </strong>
+                    </div>
+                    <meter
+                        className="sr-only"
+                        aria-label="Clima de mercado"
+                        min={0}
+                        max={100}
+                        value={data ? sentimentScore : 0}
+                        aria-valuetext={data ? sentimentLabel : 'Sin datos'}
+                    />
+                    <div
+                        className="premarket-sentiment__track"
+                        aria-hidden="true"
+                    >
+                        <span
+                            style={{
+                                width: data ? `${sentimentScore}%` : '0%',
+                            }}
+                        />
+                    </div>
+                    <p>
+                        {data?.session.sentimentSummary ||
+                            'Esperando el resumen de la sesión.'}
+                    </p>
+                </div>
+                <dl className="premarket-stats">
+                    <div>
+                        <dt>
+                            <ArrowUpRight size={16} /> En alza
+                        </dt>
+                        <dd className="premarket-positive">
+                            {data ? stats.up : '—'}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>
+                            <ArrowDownRight size={16} /> En baja
+                        </dt>
+                        <dd className="premarket-negative">
+                            {data ? stats.down : '—'}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>
+                            <Layers size={16} /> Cotizando
+                        </dt>
+                        <dd>
+                            {data ? stats.withQuote : '—'}
+                            <small> / {allAssets.length}</small>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
 
-            {/* ─── Controls: Search & Category Pills ───────────────────── */}
-            <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/60 p-3">
-                {/* Category Pills */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                    {CATEGORIES.map((cat) => {
-                        const Icon = cat.icon;
-                        const isSelected = activeCategory === cat.key;
-                        const count = cat.key === 'all' ? allAssets.length : allAssets.filter((a) => a.categoryKey === cat.key).length;
-
+            <div className="premarket-controls">
+                <div className="premarket-search">
+                    <Search size={18} aria-hidden="true" />
+                    <input
+                        type="search"
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        aria-label="Buscar activo o símbolo"
+                        placeholder="Buscar activo o símbolo..."
+                    />
+                    {query && (
+                        <button
+                            type="button"
+                            className="premarket-icon-button"
+                            onClick={() => setQuery('')}
+                            title="Limpiar búsqueda"
+                            aria-label="Limpiar búsqueda"
+                        >
+                            <X size={16} />
+                        </button>
+                    )}
+                </div>
+                <div
+                    className="premarket-filters"
+                    role="group"
+                    aria-label="Mercados"
+                >
+                    {CATEGORIES.map((category) => {
+                        const Icon = category.icon;
+                        const count =
+                            category.key === 'all'
+                                ? allAssets.length
+                                : allAssets.filter(
+                                      (asset) =>
+                                          asset.categoryKey === category.key,
+                                  ).length;
                         return (
                             <button
-                                key={cat.key}
+                                key={category.key}
                                 type="button"
-                                onClick={() => setActiveCategory(cat.key)}
-                                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                                    isSelected
-                                        ? 'bg-primary text-primary-foreground shadow-xs'
-                                        : 'bg-card hover:bg-muted/60 text-muted-foreground hover:text-foreground border border-border/50'
-                                }`}
+                                onClick={() => setActiveCategory(category.key)}
+                                aria-pressed={activeCategory === category.key}
+                                className="premarket-filter"
                             >
-                                <Icon className="w-3.5 h-3.5" />
-                                {cat.label}
-                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                                    {count}
-                                </span>
+                                <Icon size={15} aria-hidden="true" />
+                                {category.label}
+                                <span>{count}</span>
                             </button>
                         );
                     })}
                 </div>
-
-                {/* Search Input */}
-                <div className="relative w-full xl:max-w-xs shrink-0">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                        type="text"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Buscar activo o símbolo..."
-                        className="w-full bg-card border border-border/60 focus:border-primary rounded-xl pl-9 pr-3 py-2 text-xs outline-none transition-colors"
-                    />
-                </div>
             </div>
 
-            {/* ─── Error / Loading States ─────────────────────────────── */}
             {error && (
-                <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-xs flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-destructive">
-                        <ShieldAlert className="w-4 h-4" />
-                        <span>No se pudo sincronizar la última cotización del pre-market. Se conservan los datos previos.</span>
-                    </div>
+                <div className="premarket-error" role="alert">
+                    <ShieldAlert size={19} aria-hidden="true" />
+                    <p>
+                        {data
+                            ? 'No se pudo actualizar. Se conservan las cotizaciones anteriores.'
+                            : 'No se pudieron cargar las cotizaciones de pre-market.'}
+                    </p>
                     <button
                         type="button"
-                        onClick={() => setRetry((n) => n + 1)}
-                        className="font-bold underline hover:no-underline text-destructive"
+                        onClick={refresh}
+                        disabled={isRefreshing}
                     >
-                        Reintentar
+                        <RefreshCw size={15} /> Reintentar
                     </button>
                 </div>
             )}
 
             {isLoading && !data && (
-                <div className="py-20 text-center">
-                    <RefreshCw className="w-6 h-6 animate-spin text-primary mx-auto mb-3" />
-                    <p className="text-sm font-bold text-muted-foreground">Cargando cotizaciones oficiales de pre-apertura...</p>
+                <div
+                    className="premarket-loading"
+                    role="status"
+                    aria-label="Cargando cotizaciones"
+                >
+                    {Array.from({ length: 6 }, (_, index) => (
+                        <div
+                            key={index}
+                            className="premarket-skeleton animate-pulse"
+                        >
+                            <div />
+                            <span />
+                            <span />
+                            <span />
+                        </div>
+                    ))}
                 </div>
             )}
 
-            {/* ─── Compact assets grid ─────────────────────────────────── */}
-            {filteredAssets.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                    {filteredAssets.map((a) => {
-                        const isUp = a.change != null && a.change >= 0;
-                        const isNull = a.change == null;
-
-                        return (
-                            <button
-                                key={a.id}
-                                type="button"
-                                onClick={() => onSelectSymbol?.(a.symbol)}
-                                className="group flex min-h-[88px] w-full items-center gap-3.5 rounded-2xl border border-border/60 bg-card p-4 text-left transition-colors duration-200 hover:border-primary/40 hover:bg-card/90 hover:shadow-md"
-                            >
-                                <SymbolLogo symbol={a.symbol} size={40} className="shrink-0 rounded-xl" />
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="font-black text-base text-foreground truncate group-hover:text-primary transition-colors">
-                                            {a.symbol.split(':').pop() || a.symbol}
-                                        </span>
-                                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-primary">
-                                            Pre
-                                        </span>
-                                    </div>
-                                    <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">
-                                        {a.label}
-                                    </p>
-                                </div>
-                                <div className="shrink-0 text-right">
-                                    <p className="text-base font-black tabular-nums text-foreground">{formatAssetPrice(a)}</p>
-                                    <span
-                                        className={`mt-1 inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-black tabular-nums ${
-                                            isNull
-                                                ? 'bg-muted text-muted-foreground'
-                                                : isUp
-                                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                                        }`}
-                                    >
-                                        {isNull ? '—' : isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                                        {formatChange(a.change)}
+            <div className="premarket-groups">
+                {groups.map((group) => {
+                    const Icon = group.icon;
+                    return (
+                        <section
+                            key={group.key}
+                            className={`premarket-group premarket-group--${group.key}`}
+                            aria-label={group.title}
+                        >
+                            <div className="premarket-group__heading">
+                                <div>
+                                    <span className="premarket-group__icon">
+                                        <Icon size={18} aria-hidden="true" />
+                                    </span>
+                                    <h2>{group.title}</h2>
+                                    <span className="premarket-group__count">
+                                        {group.assets.length} {group.assets.length === 1 ? 'activo' : 'activos'}
                                     </span>
                                 </div>
-                            </button>
-                        );
-                    })}
+                                <span className="premarket-group__caption">
+                                    {isFrozen ? 'Último corte' : 'Pre-apertura'}
+                                    <ArrowRight size={14} aria-hidden="true" />
+                                </span>
+                            </div>
+                            <div className="premarket-grid">
+                                {group.assets.map((asset) => (
+                                    <AssetCard
+                                        key={asset.id}
+                                        asset={asset}
+                                        onSelect={onSelectSymbol}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    );
+                })}
+            </div>
+
+            {data && groups.length === 0 && (
+                <div className="premarket-empty">
+                    <SearchX size={30} aria-hidden="true" />
+                    <h2>No hay activos para esta búsqueda</h2>
+                    <p>
+                        {query
+                            ? `Sin resultados para “${query}”.`
+                            : 'No hay cotizaciones disponibles en esta categoría.'}
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setQuery('');
+                            setActiveCategory('all');
+                        }}
+                    >
+                        Restablecer filtros
+                    </button>
                 </div>
-            ) : (
-                data && (
-                    <div className="py-16 text-center rounded-2xl border border-dashed border-border bg-card/40">
-                        <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-50" />
-                        <p className="text-sm font-bold text-muted-foreground">
-                            No se encontraron activos para "{query}".
-                        </p>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setQuery('');
-                                setActiveCategory('all');
-                            }}
-                            className="mt-2 text-xs font-bold text-primary hover:underline"
-                        >
-                            Restablecer filtros
-                        </button>
-                    </div>
-                )
             )}
 
-            {/* Legal / Institutional note */}
-            <div className="rounded-2xl border border-border/40 bg-muted/20 p-4 text-[11.5px] text-muted-foreground leading-relaxed flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <footer className="premarket-note">
+                <Lock size={14} aria-hidden="true" />
                 <p>
-                    Las cotizaciones mostradas reflejan exclusivamente la sesión de pre-apertura previa al toque de campana (10:30 hs ART).
-                    Al abrir la rueda regular, Finix preserva intactas las últimas cotizaciones del pre-market para auditoría y consulta del usuario.
+                    El corte de pre-apertura se conserva al abrir la rueda
+                    regular. Horarios en Argentina (ART).
                 </p>
-            </div>
+            </footer>
         </section>
     );
 }

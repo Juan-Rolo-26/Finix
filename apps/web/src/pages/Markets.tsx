@@ -19,18 +19,24 @@ import {
     Building2,
     Sparkles,
     Clock,
-    Bookmark,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import TradingViewChart from '@/components/TradingViewChart';
-import TradingViewSymbolInfo from '@/components/TradingViewSymbolInfo';
-import MarketDashboard, { type MarketDashboardData } from '@/components/markets/MarketDashboard';
+import { SymbolLogo } from '@/components/SymbolLogo';
+import { MarketHeader } from '@/components/markets/MarketPrimitives';
+import MarketDashboard, {
+    type MarketDashboardData,
+} from '@/components/markets/MarketDashboard';
 import PreMarketSection from '@/components/markets/PreMarketSection';
 import MarketHeatmap from '@/components/markets/MarketHeatmap';
 import ValueCreationHeatmap from '@/components/markets/ValueCreationHeatmap';
@@ -45,7 +51,6 @@ interface MarketAsset {
     type: string;
     exchange?: string;
 }
-
 
 const DEFAULT_ASSET: MarketAsset = {
     symbol: 'NASDAQ:AAPL',
@@ -77,13 +82,25 @@ function inferType(symbol: string) {
     const clean = (symbol || '').trim().toUpperCase();
     const short = toShortSymbol(clean);
 
-    if (clean.includes('BINANCE') || clean.includes('CRYPTO') || short.endsWith('USDT')) {
+    if (
+        clean.includes('BINANCE') ||
+        clean.includes('CRYPTO') ||
+        short.endsWith('USDT')
+    ) {
         return 'crypto';
     }
-    if (clean.includes('OANDA') || clean.includes('OIL') || short.startsWith('XAU') || short.startsWith('XAG')) {
+    if (
+        clean.includes('OANDA') ||
+        clean.includes('OIL') ||
+        short.startsWith('XAU') ||
+        short.startsWith('XAG')
+    ) {
         return 'commodity';
     }
-    if (clean.includes('FX:') || (/^[A-Z]{6}$/.test(short) && short.endsWith('USD'))) {
+    if (
+        clean.includes('FX:') ||
+        (/^[A-Z]{6}$/.test(short) && short.endsWith('USD'))
+    ) {
         return 'forex';
     }
     if (['SPY', 'QQQ', 'VTI', 'GLD', 'VNQ'].includes(short)) {
@@ -104,10 +121,6 @@ function buildFallbackAsset(symbol: string): MarketAsset {
     };
 }
 
-
-
-
-
 export default function Markets() {
     const t = useTranslation();
     const { user } = useAuthStore();
@@ -115,7 +128,11 @@ export default function Markets() {
     const isPro = isProUser(user);
 
     const { theme } = usePreferencesStore();
-    const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
+    const isLight =
+        theme === 'light' ||
+        (theme === 'system' &&
+            typeof window !== 'undefined' &&
+            window.matchMedia('(prefers-color-scheme: light)').matches);
     const widgetTheme = isLight ? 'light' : 'dark';
 
     const [searchParams, setSearchParams] = useSearchParams();
@@ -124,13 +141,20 @@ export default function Markets() {
     const symbolParam = searchParams.get('symbol')?.trim() || '';
 
     const [selectedAsset, setSelectedAsset] = useState<MarketAsset | null>(
-        initialSymbolParam ? buildFallbackAsset(initialSymbolParam) : DEFAULT_ASSET
+        initialSymbolParam
+            ? buildFallbackAsset(initialSymbolParam)
+            : DEFAULT_ASSET,
     );
-    const [dashboardData, setDashboardData] = useState<MarketDashboardData | null>(null);
+    const [dashboardData, setDashboardData] =
+        useState<MarketDashboardData | null>(null);
     const [isDashboardLoading, setIsDashboardLoading] = useState(false);
 
     const [activeTab, setActiveTab] = useState(
-        initialSymbolParam ? 'chart' : searchParams.get('view') === 'value-creation' ? 'value-creation' : 'overview'
+        initialSymbolParam
+            ? 'chart'
+            : searchParams.get('view') === 'value-creation'
+              ? 'value-creation'
+              : 'overview',
     );
     const [chartInterval, setChartInterval] = useState('D');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -159,12 +183,12 @@ export default function Markets() {
         const normalized = rawSymbol.toUpperCase();
         const alreadyResolved = Boolean(
             selectedAsset &&
-            (
-                (normalized.includes(':') && selectedAsset.symbol.toUpperCase() === normalized) ||
+            ((normalized.includes(':') &&
+                selectedAsset.symbol.toUpperCase() === normalized) ||
                 (!normalized.includes(':') &&
                     selectedAsset.symbol.includes(':') &&
-                    toShortSymbol(selectedAsset.symbol).toUpperCase() === normalized)
-            )
+                    toShortSymbol(selectedAsset.symbol).toUpperCase() ===
+                        normalized)),
         );
 
         if (alreadyResolved) {
@@ -176,9 +200,12 @@ export default function Markets() {
 
         const resolveAsset = async () => {
             try {
-                const res = await apiFetch(`/market/search?query=${encodeURIComponent(normalized)}`, {
-                    signal: controller.signal,
-                });
+                const res = await apiFetch(
+                    `/market/search?query=${encodeURIComponent(normalized)}`,
+                    {
+                        signal: controller.signal,
+                    },
+                );
                 const data = res.ok ? await res.json() : [];
                 const options = Array.isArray(data) ? data : [];
                 const exactMatch = options.find((asset) => {
@@ -188,7 +215,11 @@ export default function Markets() {
                 });
 
                 if (!cancelled) {
-                    setSelectedAsset(exactMatch || options[0] || buildFallbackAsset(normalized));
+                    setSelectedAsset(
+                        exactMatch ||
+                            options[0] ||
+                            buildFallbackAsset(normalized),
+                    );
                 }
             } catch (error) {
                 if (!controller.signal.aborted && !cancelled) {
@@ -206,7 +237,9 @@ export default function Markets() {
         };
     }, [isPro, selectedAsset, symbolParam]);
 
-    const fetchDashboardRef = useRef<((showLoader: boolean) => Promise<void>) | null>(null);
+    const fetchDashboardRef = useRef<
+        ((showLoader: boolean) => Promise<void>) | null
+    >(null);
 
     useEffect(() => {
         if (!isPro) return;
@@ -223,9 +256,12 @@ export default function Markets() {
             currentController = controller;
 
             try {
-                const res = await apiFetch(`/market/dashboard?_t=${Date.now()}`, {
-                    signal: controller.signal,
-                });
+                const res = await apiFetch(
+                    `/market/dashboard?_t=${Date.now()}`,
+                    {
+                        signal: controller.signal,
+                    },
+                );
                 const data = res.ok ? await res.json() : null;
 
                 if (!controller.signal.aborted && !disposed) {
@@ -244,7 +280,10 @@ export default function Markets() {
 
         fetchDashboardRef.current = fetchDashboard;
         fetchDashboard(true);
-        const intervalId = window.setInterval(() => fetchDashboard(false), 45000);
+        const intervalId = window.setInterval(
+            () => fetchDashboard(false),
+            45000,
+        );
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
@@ -257,7 +296,10 @@ export default function Markets() {
             disposed = true;
             currentController?.abort();
             window.clearInterval(intervalId);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener(
+                'visibilitychange',
+                handleVisibilityChange,
+            );
         };
     }, [isPro]);
 
@@ -284,79 +326,54 @@ export default function Markets() {
 
     return (
         <div className="relative w-full overflow-hidden pb-20 markets-view">
-            <div className="absolute inset-x-0 top-0 -z-10 h-[360px] opacity-40 dark:opacity-100 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.08),transparent_70%)] pointer-events-none" />
-
-            <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-4 md:px-6 lg:px-8">
-                <div className="flex items-center justify-between max-w-6xl mx-auto w-full">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate('/mercado/seguimiento')}
-                        className="rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold gap-1.5 shadow-xs transition-all"
-                    >
-                        <Bookmark className="h-3.5 w-3.5" />
-                        Seguimiento
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 font-extrabold uppercase tracking-wider">
-                            PRO
-                        </span>
-                    </Button>
-                </div>
-
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="grid h-auto w-full max-w-6xl mx-auto mb-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 rounded-[24px] border border-border/40 bg-secondary/30 p-1.5 backdrop-blur-sm gap-1">
-                        <TabsTrigger
-                            value="overview"
-                            className="justify-center gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                        >
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+            <div className="market-shell">
+                <Tabs
+                    value={activeTab}
+                    onValueChange={setActiveTab}
+                    className="space-y-6"
+                >
+                    <TabsList className="market-tabs">
+                        <TabsTrigger value="overview" className="market-tab">
+                            <span className="market-tab-icon">
                                 <Activity className="h-3.5 w-3.5" />
                             </span>
-                            <span className="font-semibold text-sm">{t.markets.tabs.overview}</span>
+                            <span>{t.markets.tabs.overview}</span>
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="premarket"
-                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                        >
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+                        <TabsTrigger value="premarket" className="market-tab">
+                            <span className="market-tab-icon">
                                 <Clock className="h-3.5 w-3.5" />
                             </span>
-                            <span className="font-semibold text-sm">Pre-Market</span>
+                            <span>Pre-Market</span>
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="heatmap"
-                            className="justify-center gap-2 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                        >
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+                        <TabsTrigger value="heatmap" className="market-tab">
+                            <span className="market-tab-icon">
                                 <Flame className="h-3.5 w-3.5 fill-emerald-500/20 text-emerald-600 dark:text-emerald-400" />
                             </span>
-                            <span className="font-semibold text-sm">Mapa de Calor</span>
+                            <span>Mapa de Calor</span>
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="chart"
-                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                        >
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+                        <TabsTrigger value="chart" className="market-tab">
+                            <span className="market-tab-icon">
                                 <LineChart className="h-3.5 w-3.5" />
                             </span>
-                            <span className="font-semibold text-sm">{t.markets.tabs.chart}</span>
+                            <span>{t.markets.tabs.chart}</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="value-creation"
-                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                            className="market-tab"
                         >
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+                            <span className="market-tab-icon">
                                 <Building2 className="h-3.5 w-3.5" />
                             </span>
-                            <span className="font-semibold text-sm">Creación de valor</span>
+                            <span>Creación de valor</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="opportunities"
-                            className="justify-center gap-2.5 rounded-[18px] py-2.5 text-muted-foreground transition-all focus:ring-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                            className="market-tab"
                         >
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-violet-600 dark:text-violet-300 shrink-0 shadow-2xs">
+                            <span className="market-tab-icon">
                                 <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                             </span>
-                            <span className="font-semibold text-sm">Oportunidades</span>
+                            <span>Oportunidades</span>
                         </TabsTrigger>
                     </TabsList>
 
@@ -397,104 +414,131 @@ export default function Markets() {
                     </TabsContent>
 
                     <TabsContent value="opportunities" className="space-y-4">
-                        <OpportunityScreener onOpenAnalysis={(ticker) => navigate(`/analysis/${ticker.toLowerCase()}`)} />
+                        <OpportunityScreener
+                            onOpenAnalysis={(ticker) =>
+                                navigate(`/analysis/${ticker.toLowerCase()}`)
+                            }
+                        />
                     </TabsContent>
 
-                    <TabsContent value="chart" className="space-y-6">
-                        <Card className="rounded-[32px] border-border/60 bg-card/60 shadow-sm backdrop-blur-xl">
-                            <CardContent className="flex flex-col gap-4 p-5 md:p-6">
-                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 w-full">
-                                    <div className="flex-1 w-full relative z-10 mb-2">
-                                        <div className="w-full">
-                                            <TradingViewSymbolInfo symbol={selectedAsset?.symbol || 'NASDAQ:AAPL'} theme={widgetTheme} locale="es" />
-                                        </div>
-                                    </div>
-
-                                    <div className="shrink-0 pt-2 relative z-20">
-                                        <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
-                                            <DialogTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className="gap-2.5 h-11 bg-card/70 hover:bg-card border-border/70 hover:border-emerald-500/40 transition-all rounded-2xl shadow-sm px-4 group"
-                                                >
-                                                    <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
-                                                    <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-sm">Buscar Símbolo</span>
-                                                    <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-lg border border-border/80 bg-muted/60 px-2 py-0.5 text-[10px] font-mono text-muted-foreground shadow-xs">
-                                                        <span>⌘</span>K
-                                                    </kbd>
-                                                </Button>
-                                            </DialogTrigger>
-                                            <DialogContent className="sm:max-w-xl p-0 overflow-hidden border border-border/80 bg-card/95 backdrop-blur-2xl shadow-2xl shadow-emerald-950/20 rounded-[28px] gap-0 markets-view">
-                                                <MarketAssetSearch
-                                                    onSelect={(sym) => {
-                                                        setIsSearchOpen(false);
-                                                        handleOpenMarketSymbol(sym);
-                                                    }}
+                    <TabsContent value="chart" className="market-section">
+                        <section className="market-chart-header">
+                            <div className="market-chart-controls">
+                                <div className="w-full mb-3">
+                                    <MarketHeader
+                                        title={
+                                            selectedAsset?.name ||
+                                            'Gráfico'
+                                        }
+                                        eyebrow="ANÁLISIS TÉCNICO · FINIX"
+                                        icon={LineChart}
+                                        description={
+                                            <span className="flex items-center justify-center gap-2">
+                                                <SymbolLogo
+                                                    symbol={
+                                                        selectedAsset?.symbol ||
+                                                        'NASDAQ:AAPL'
+                                                    }
+                                                    size={24}
                                                 />
-                                            </DialogContent>
-                                        </Dialog>
-                                    </div>
+                                                {selectedAsset?.symbol ||
+                                                    'NASDAQ:AAPL'}
+                                            </span>
+                                        }
+                                        actions={
+                                            <Dialog
+                                                open={isSearchOpen}
+                                                onOpenChange={setIsSearchOpen}
+                                            >
+                                                <DialogTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        className="market-action"
+                                                    >
+                                                        <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                                                        <span>Buscar símbolo</span>
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="sm:max-w-xl p-0 overflow-hidden border border-border/80 bg-card/95 backdrop-blur-2xl shadow-2xl shadow-emerald-950/20 rounded-lg gap-0 markets-view">
+                                                    <MarketAssetSearch
+                                                        onSelect={(sym) => {
+                                                            setIsSearchOpen(false);
+                                                            handleOpenMarketSymbol(
+                                                                sym,
+                                                            );
+                                                        }}
+                                                    />
+                                                </DialogContent>
+                                            </Dialog>
+                                        }
+                                    />
                                 </div>
 
-                                <div className="h-px w-full bg-border/60" />
-
-                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center justify-between w-full flex-wrap gap-4 py-3.5 border-y border-border/60 mb-6">
                                     <div className="flex items-center gap-2.5">
-                                        <span className="relative flex h-2.5 w-2.5">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                                        </span>
-                                        <div>
-                                            <p className="text-sm font-bold text-foreground">
-                                                Gráfico TradingView en Tiempo Real
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                Herramientas de análisis técnico e indicadores avanzados
-                                            </p>
-                                        </div>
+                                        <LineChart size={18} className="text-emerald-500" />
+                                        <p className="text-base font-bold text-foreground">
+                                            TradingView
+                                        </p>
                                     </div>
 
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                        <div className="inline-flex items-center gap-1 p-1 bg-secondary/50 rounded-xl border border-border/60">
                                             {CHART_INTERVALS.map((interval) => (
                                                 <button
                                                     key={interval.value}
                                                     type="button"
-                                                    onClick={() => setChartInterval(interval.value)}
+                                                    onClick={() =>
+                                                        setChartInterval(
+                                                            interval.value,
+                                                        )
+                                                    }
+                                                    aria-pressed={
+                                                        chartInterval ===
+                                                        interval.value
+                                                    }
                                                     className={cn(
-                                                        'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all',
-                                                        chartInterval === interval.value
+                                                        'rounded-lg px-3 py-1.5 text-sm font-semibold transition-all',
+                                                        chartInterval ===
+                                                            interval.value
                                                             ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
-                                                            : 'border-border/60 bg-background/50 text-muted-foreground hover:border-emerald-500/50 hover:text-foreground'
+                                                            : 'text-muted-foreground hover:border-emerald-500/50 hover:text-foreground',
                                                     )}
                                                 >
                                                     {interval.label}
                                                 </button>
                                             ))}
                                         </div>
-                                        <div className="hidden sm:flex items-center gap-1.5 pl-2 border-l border-border/60">
-                                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+
+                                        <div className="flex items-center gap-2 pl-2 border-l border-border/60">
+                                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                 RSI (14)
                                             </span>
-                                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 border border-blue-500/30 px-2 py-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-500/10 border border-blue-500/30 px-2.5 py-1 text-xs font-bold text-blue-600 dark:text-blue-400">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                                                 MACD (12, 26, 9)
                                             </span>
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    document.getElementById('fundamental-panel')?.scrollIntoView({ behavior: 'smooth' });
+                                                    document
+                                                        .getElementById(
+                                                            'fundamental-panel',
+                                                        )
+                                                        ?.scrollIntoView({
+                                                            behavior: 'smooth',
+                                                        });
                                                 }}
-                                                className="inline-flex items-center gap-1 rounded-md border border-border/70 hover:border-emerald-500/50 bg-secondary/50 px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                                                className="inline-flex items-center gap-1 rounded-lg border border-border/70 hover:border-emerald-500/50 bg-secondary/50 px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
                                             >
                                                 Ver Fundamentales ↓
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </section>
 
                         {selectedAsset && (
                             <div className="w-full min-h-[420px] sm:min-h-[600px] lg:min-h-[760px]">
@@ -502,6 +546,7 @@ export default function Markets() {
                                     symbol={selectedAsset.symbol}
                                     interval={chartInterval}
                                     height={760}
+                                    className="market-chart"
                                     theme={widgetTheme}
                                 />
                             </div>
@@ -509,12 +554,12 @@ export default function Markets() {
 
                         {selectedAsset && (
                             <div id="fundamental-panel" className="scroll-mt-6">
-                                <AssetFundamentalPanel symbol={selectedAsset.symbol} />
+                                <AssetFundamentalPanel
+                                    symbol={selectedAsset.symbol}
+                                />
                             </div>
                         )}
                     </TabsContent>
-
-
                 </Tabs>
             </div>
         </div>
@@ -522,16 +567,61 @@ export default function Markets() {
 }
 
 const POPULAR_ASSETS = [
-    { symbol: 'NASDAQ:NVDA', name: 'NVIDIA Corporation', type: 'stock', exchange: 'NASDAQ' },
-    { symbol: 'NASDAQ:AAPL', name: 'Apple Inc.', type: 'stock', exchange: 'NASDAQ' },
-    { symbol: 'BYMA:GGAL', name: 'Grupo Financiero Galicia S.A.', type: 'dr', exchange: 'BYMA' },
-    { symbol: 'BYMA:YPFD', name: 'YPF Sociedad Anónima', type: 'stock', exchange: 'BYMA' },
-    { symbol: 'BYMA:MELI', name: 'MercadoLibre, Inc. CEDEAR', type: 'dr', exchange: 'BYMA' },
-    { symbol: 'BINANCE:BTCUSDT', name: 'Bitcoin / TetherUS', type: 'crypto', exchange: 'BINANCE' },
-    { symbol: 'BINANCE:ETHUSDT', name: 'Ethereum / TetherUS', type: 'crypto', exchange: 'BINANCE' },
-    { symbol: 'AMEX:SPY', name: 'SPDR S&P 500 ETF Trust', type: 'etf', exchange: 'AMEX' },
+    {
+        symbol: 'NASDAQ:NVDA',
+        name: 'NVIDIA Corporation',
+        type: 'stock',
+        exchange: 'NASDAQ',
+    },
+    {
+        symbol: 'NASDAQ:AAPL',
+        name: 'Apple Inc.',
+        type: 'stock',
+        exchange: 'NASDAQ',
+    },
+    {
+        symbol: 'BYMA:GGAL',
+        name: 'Grupo Financiero Galicia S.A.',
+        type: 'dr',
+        exchange: 'BYMA',
+    },
+    {
+        symbol: 'BYMA:YPFD',
+        name: 'YPF Sociedad Anónima',
+        type: 'stock',
+        exchange: 'BYMA',
+    },
+    {
+        symbol: 'BYMA:MELI',
+        name: 'MercadoLibre, Inc. CEDEAR',
+        type: 'dr',
+        exchange: 'BYMA',
+    },
+    {
+        symbol: 'BINANCE:BTCUSDT',
+        name: 'Bitcoin / TetherUS',
+        type: 'crypto',
+        exchange: 'BINANCE',
+    },
+    {
+        symbol: 'BINANCE:ETHUSDT',
+        name: 'Ethereum / TetherUS',
+        type: 'crypto',
+        exchange: 'BINANCE',
+    },
+    {
+        symbol: 'AMEX:SPY',
+        name: 'SPDR S&P 500 ETF Trust',
+        type: 'etf',
+        exchange: 'AMEX',
+    },
     { symbol: 'SP:SPX', name: 'S&P 500 Index', type: 'index', exchange: 'S&P' },
-    { symbol: 'NASDAQ:TSLA', name: 'Tesla, Inc.', type: 'stock', exchange: 'NASDAQ' },
+    {
+        symbol: 'NASDAQ:TSLA',
+        name: 'Tesla, Inc.',
+        type: 'stock',
+        exchange: 'NASDAQ',
+    },
 ];
 
 const FILTER_TAGS = [
@@ -548,41 +638,51 @@ function getAssetTypeBadge(type?: string) {
     if (t === 'stock') {
         return {
             label: 'STOCK',
-            className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+            className:
+                'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
             icon: TrendingUp,
-            iconClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+            iconClass:
+                'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
         };
     }
     if (t === 'dr') {
         return {
             label: 'CEDEAR / DR',
-            className: 'border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400',
+            className:
+                'border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400',
             icon: Globe,
-            iconClass: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+            iconClass:
+                'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
         };
     }
     if (t === 'crypto') {
         return {
             label: 'CRYPTO',
-            className: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+            className:
+                'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
             icon: Coins,
-            iconClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+            iconClass:
+                'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
         };
     }
     if (t === 'etf') {
         return {
             label: 'ETF',
-            className: 'border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400',
+            className:
+                'border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400',
             icon: BarChart3,
-            iconClass: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+            iconClass:
+                'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
         };
     }
     if (t === 'index') {
         return {
             label: 'ÍNDICE',
-            className: 'border-teal-500/30 bg-teal-500/10 text-teal-600 dark:text-teal-400',
+            className:
+                'border-teal-500/30 bg-teal-500/10 text-teal-600 dark:text-teal-400',
             icon: Activity,
-            iconClass: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
+            iconClass:
+                'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
         };
     }
     return {
@@ -608,7 +708,11 @@ function parseSymbol(symbolString: string, fallbackExchange?: string) {
     };
 }
 
-function MarketAssetSearch({ onSelect }: { onSelect: (symbol: string) => void }) {
+function MarketAssetSearch({
+    onSelect,
+}: {
+    onSelect: (symbol: string) => void;
+}) {
     const [query, setQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('all');
     const [results, setResults] = useState<any[]>([]);
@@ -641,7 +745,9 @@ function MarketAssetSearch({ onSelect }: { onSelect: (symbol: string) => void })
     }, [query]);
 
     // Filter items based on active category
-    const displayList = (query.trim().length >= 1 ? results : POPULAR_ASSETS).filter((item) => {
+    const displayList = (
+        query.trim().length >= 1 ? results : POPULAR_ASSETS
+    ).filter((item) => {
         if (activeFilter === 'all') return true;
         const itemType = (item.type || inferType(item.symbol)).toLowerCase();
         if (activeFilter === 'stock') return itemType === 'stock';
@@ -657,10 +763,14 @@ function MarketAssetSearch({ onSelect }: { onSelect: (symbol: string) => void })
 
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setSelectedIndex((prev) => (prev < displayList.length - 1 ? prev + 1 : 0));
+            setSelectedIndex((prev) =>
+                prev < displayList.length - 1 ? prev + 1 : 0,
+            );
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            setSelectedIndex((prev) => (prev > 0 ? prev - 1 : displayList.length - 1));
+            setSelectedIndex((prev) =>
+                prev > 0 ? prev - 1 : displayList.length - 1,
+            );
         } else if (e.key === 'Enter') {
             e.preventDefault();
             if (displayList[selectedIndex]) {
@@ -672,19 +782,20 @@ function MarketAssetSearch({ onSelect }: { onSelect: (symbol: string) => void })
     };
 
     return (
-        <div className="flex flex-col max-h-[85vh] w-full">
+        <div className="flex min-w-0 flex-col max-h-[85vh] w-full">
             {/* Header */}
             <div className="relative border-b border-border/50 px-6 pt-6 pb-4">
                 <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs">
                         <CandlestickChart className="h-5 w-5" />
                     </div>
-                    <div>
-                        <DialogTitle className="text-lg font-bold text-foreground tracking-tight">
+                    <div className="min-w-0">
+                        <DialogTitle className="text-[20px] font-bold text-foreground tracking-tight">
                             Buscar activo en TradingView
                         </DialogTitle>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                            Explora acciones globales, CEDEARs, cripto e índices para tu gráfico
+                        <p className="text-[14px] text-muted-foreground mt-0.5">
+                            Explora acciones globales, CEDEARs, cripto e índices
+                            para tu gráfico
                         </p>
                     </div>
                 </div>
@@ -707,7 +818,7 @@ function MarketAssetSearch({ onSelect }: { onSelect: (symbol: string) => void })
                         autoFocus
                         spellCheck={false}
                         autoComplete="off"
-                        className="w-full h-12 rounded-2xl border border-border/80 bg-secondary/30 dark:bg-secondary/20 pl-11 pr-11 text-sm font-medium text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-emerald-500/80 focus:bg-background focus:outline-none focus:ring-4 focus:ring-emerald-500/15"
+                        className="w-full h-12 rounded-2xl border border-border/80 bg-secondary/30 dark:bg-secondary/20 pl-11 pr-11 text-[16px] font-medium text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-emerald-500/80 focus:bg-background focus:outline-none focus:ring-4 focus:ring-emerald-500/15"
                     />
                     {loading ? (
                         <div className="absolute right-4 flex items-center">
@@ -740,10 +851,10 @@ function MarketAssetSearch({ onSelect }: { onSelect: (symbol: string) => void })
                             setSelectedIndex(0);
                         }}
                         className={cn(
-                            'px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 select-none',
+                            'px-3 py-1 text-[14px] font-semibold rounded-full transition-all shrink-0 select-none',
                             activeFilter === tag.id
                                 ? 'bg-emerald-600 dark:bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
-                                : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/40'
+                                : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/40',
                         )}
                     >
                         {tag.label}
@@ -752,38 +863,52 @@ function MarketAssetSearch({ onSelect }: { onSelect: (symbol: string) => void })
             </div>
 
             {/* Section label */}
-            <div className="px-6 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                {query.trim().length >= 1 ? 'Resultados de búsqueda' : 'Activos destacados'}
+            <div className="px-6 pt-2 pb-1 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {query.trim().length >= 1
+                    ? 'Resultados de búsqueda'
+                    : 'Activos destacados'}
             </div>
 
             {/* Results List */}
             <div className="max-h-[340px] overflow-y-auto px-4 py-1.5 space-y-1.5 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 pr-2">
-                {!loading && query.trim().length >= 1 && displayList.length === 0 && (
-                    <div className="py-8 px-4 text-center">
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground mb-3">
-                            <SearchX className="h-6 w-6" />
+                {!loading &&
+                    query.trim().length >= 1 &&
+                    displayList.length === 0 && (
+                        <div className="py-8 px-4 text-center">
+                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground mb-3">
+                                <SearchX className="h-6 w-6" />
+                            </div>
+                            <p className="text-[16px] font-semibold text-foreground">
+                                No se encontraron resultados para "{query}"
+                            </p>
+                            <p className="text-[14px] text-muted-foreground mt-1 max-w-sm mx-auto">
+                                Verifica que el ticker esté bien escrito o pulsa
+                                el botón para buscarlo directamente en
+                                TradingView.
+                            </p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-4 gap-2 rounded-xl border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                                onClick={() =>
+                                    onSelect(query.trim().toUpperCase())
+                                }
+                            >
+                                <span>
+                                    Cargar "{query.trim().toUpperCase()}" en el
+                                    gráfico
+                                </span>
+                                <ArrowUpRight className="h-3.5 w-3.5" />
+                            </Button>
                         </div>
-                        <p className="text-sm font-semibold text-foreground">
-                            No se encontraron resultados para "{query}"
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                            Verifica que el ticker esté bien escrito o pulsa el botón para buscarlo directamente en TradingView.
-                        </p>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-4 gap-2 rounded-xl border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-                            onClick={() => onSelect(query.trim().toUpperCase())}
-                        >
-                            <span>Cargar "{query.trim().toUpperCase()}" en el gráfico</span>
-                            <ArrowUpRight className="h-3.5 w-3.5" />
-                        </Button>
-                    </div>
-                )}
+                    )}
 
                 {displayList.map((r, index) => {
                     const badgeInfo = getAssetTypeBadge(r.type);
-                    const { exchange, ticker } = parseSymbol(r.symbol, r.exchange);
+                    const { exchange, ticker } = parseSymbol(
+                        r.symbol,
+                        r.exchange,
+                    );
                     const isSelected = index === selectedIndex;
                     const IconComponent = badgeInfo.icon;
 
@@ -797,39 +922,51 @@ function MarketAssetSearch({ onSelect }: { onSelect: (symbol: string) => void })
                                 'w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left group',
                                 isSelected
                                     ? 'bg-emerald-500/8 dark:bg-emerald-500/12 border-emerald-500/40 shadow-xs'
-                                    : 'bg-transparent border-transparent hover:bg-secondary/60 hover:border-border/60'
+                                    : 'bg-transparent border-transparent hover:bg-secondary/60 hover:border-border/60',
                             )}
                         >
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border', badgeInfo.iconClass)}>
+                                <div
+                                    className={cn(
+                                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border',
+                                        badgeInfo.iconClass,
+                                    )}
+                                >
                                     <IconComponent className="h-4 w-4" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-sm text-foreground tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="font-bold text-[16px] text-foreground tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                                             {ticker}
                                         </span>
                                         {exchange && (
-                                            <span className="rounded-md border border-border/70 bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono font-semibold uppercase text-muted-foreground">
+                                            <span className="rounded-md border border-border/70 bg-muted/60 px-1.5 py-0.5 text-[12px] font-mono font-semibold uppercase text-muted-foreground">
                                                 {exchange}
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-xs text-muted-foreground truncate mt-0.5">{r.name}</p>
+                                    <p className="text-[14px] text-muted-foreground truncate mt-0.5">
+                                        {r.name}
+                                    </p>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0 ml-3">
                                 <Badge
                                     variant="outline"
-                                    className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-lg border uppercase tracking-wider', badgeInfo.className)}
+                                    className={cn(
+                                        'text-[12px] font-semibold px-2 py-0.5 rounded-lg border uppercase tracking-wider',
+                                        badgeInfo.className,
+                                    )}
                                 >
                                     {badgeInfo.label}
                                 </Badge>
                                 <ArrowUpRight
                                     className={cn(
                                         'h-4 w-4 text-emerald-500 transition-all duration-150',
-                                        isSelected ? 'opacity-100 translate-x-0.5 -translate-y-0.5' : 'opacity-0 -translate-x-1 translate-y-1'
+                                        isSelected
+                                            ? 'opacity-100 translate-x-0.5 -translate-y-0.5'
+                                            : 'opacity-0 -translate-x-1 translate-y-1',
                                     )}
                                 />
                             </div>
@@ -839,22 +976,28 @@ function MarketAssetSearch({ onSelect }: { onSelect: (symbol: string) => void })
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-6 py-3 border-t border-border/50 bg-secondary/25 text-[11px] text-muted-foreground mt-2">
-                <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-t border-border/50 bg-secondary/25 text-[13px] text-muted-foreground mt-2">
+                <div className="flex flex-wrap items-center gap-3">
                     <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 rounded border border-border/70 bg-muted/70 font-mono text-[10px]">↑↓</kbd>
+                        <kbd className="px-1.5 py-0.5 rounded border border-border/70 bg-muted/70 font-mono text-[12px]">
+                            ↑↓
+                        </kbd>
                         Navegar
                     </span>
                     <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 rounded border border-border/70 bg-muted/70 font-mono text-[10px]">↵</kbd>
+                        <kbd className="px-1.5 py-0.5 rounded border border-border/70 bg-muted/70 font-mono text-[12px]">
+                            ↵
+                        </kbd>
                         Seleccionar
                     </span>
                     <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 rounded border border-border/70 bg-muted/70 font-mono text-[10px]">ESC</kbd>
+                        <kbd className="px-1.5 py-0.5 rounded border border-border/70 bg-muted/70 font-mono text-[12px]">
+                            ESC
+                        </kbd>
                         Cerrar
                     </span>
                 </div>
-                <div className="flex items-center gap-1 text-[10px] text-muted-foreground/80 font-medium">
+                <div className="flex items-center gap-1 text-[12px] text-muted-foreground/80 font-medium">
                     <Sparkles className="h-3 w-3 text-emerald-500" />
                     <span>TradingView</span>
                 </div>

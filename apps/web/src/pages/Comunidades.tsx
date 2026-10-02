@@ -844,10 +844,10 @@ export default function Comunidades() {
             {/* ── Header ── */}
             <div className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-0"
                 style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-3 mb-3 sm:mb-4">
-                    <div className="min-w-0 flex-1">
-                        <h1 className="text-xl sm:text-2xl font-black tracking-tight">Comunidades</h1>
-                        <p className="text-xs sm:text-[13px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <div className="flex flex-col items-center justify-center text-center gap-3 mb-4 max-w-xl mx-auto">
+                    <div className="min-w-0 text-center">
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-center">Comunidades</h1>
+                        <p className="text-xs sm:text-[13px] mt-0.5 text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>
                             Aprendé, compartí y conectate con inversores que piensan como vos.
                         </p>
                     </div>

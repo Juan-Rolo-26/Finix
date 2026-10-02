@@ -22,10 +22,8 @@ import {
     AreaChart,
     Calendar,
     Receipt,
-    Wallet,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
-import { financeAccess } from '@/features/finance/workspaceShared';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { hasCommunityAccess, useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
@@ -107,7 +105,7 @@ export function BottomNav() {
     const moreActive = ['/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', '/learn', '/profile', '/settings', '/notifications'].some(p => isActive(p));
 
     const moreLinks = [
-        ...(financeAccess(user) ? [{ label: 'Finanzas Personales', path: '/finanzas', icon: Wallet }] : []),
+        // ...(financeAccess(user) ? [{ label: 'Finanzas Personales', path: '/finanzas', icon: Wallet }] : []),
         { label: 'Mercado',   path: '/market',   icon: TrendingUp  },
         { label: 'Calendario', path: '/calendario', icon: Calendar },
         { label: 'Portafolio',path: '/portfolio', icon: Briefcase   },

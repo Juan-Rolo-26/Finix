@@ -1042,20 +1042,20 @@ export default function Analysis() {
 
         return (
             <div className="analysis-page w-full max-w-full py-10 px-4 sm:px-6 lg:px-8 xl:px-10 space-y-10 pb-28">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs sm:text-sm font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20 mb-3">
+                <div className="flex flex-col items-center justify-center text-center gap-6 max-w-4xl mx-auto">
+                    <div className="flex flex-col items-center text-center">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs sm:text-sm font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20 mb-3 mx-auto">
                             <Star className="w-4 h-4 fill-primary" /> Finix Pro Research
                         </div>
-                        <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-foreground">
+                        <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-foreground text-center">
                             Análisis Profundo de Acciones
                         </h1>
-                        <p className="text-lg sm:text-xl text-muted-foreground mt-3 max-w-2xl font-normal leading-relaxed">
+                        <p className="text-lg sm:text-xl text-muted-foreground mt-3 max-w-2xl font-normal leading-relaxed text-center mx-auto">
                             Informes cuantitativos y fundamentales estructurados por nuestro equipo de analistas.
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 max-w-md w-full">
+                    <div className="flex items-center gap-2 max-w-md w-full mx-auto">
                         <div className="relative flex-1">
                             <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                             <input

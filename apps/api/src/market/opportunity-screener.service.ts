@@ -15,7 +15,7 @@ export interface OpportunityItem {
     fcf: number | null; fcfYield: number | null; dividendYield: number | null; payoutRatio: number | null;
     roic: number | null; roe: number | null; roa: number | null; operatingMargin: number | null; netMargin: number | null;
     currentRatio: number | null; quickRatio: number | null; debtToEquity: number | null; netDebt: number | null; netDebtToEbitda: number | null; interestCoverage: number | null;
-    revenueGrowth: number | null; epsGrowth: number | null; ebitdaGrowth: number | null; fcfGrowth: number | null; operatingCashFlowGrowth: number | null;
+    revenueGrowth: number | null; epsGrowth: number | null; ebitdaGrowth: number | null; fcfGrowth: number | null; netIncomeGrowth: number | null; operatingCashFlowGrowth: number | null;
     piotroskiScore: number | null; altmanZScore: number | null; rsi: number | null; sma50Distance: number | null; sma200Distance: number | null; technicalRating: number | null;
     wacc: number | null; valueCreationSpread: number | null;
     opportunityScore: number | null; scoreCoverage: number; scoreBreakdown: ScoreBreakdown;
@@ -29,7 +29,7 @@ export interface OpportunityQuery {
 
 interface OpportunityPayload { updatedAt: string; stale: boolean; items: OpportunityItem[]; }
 
-const CACHE_KEY = 'market:opportunities:sp500:v2';
+const CACHE_KEY = 'market:opportunities:sp500:v3';
 const FRESH_FOR_MS = 15 * 60 * 1000;
 const STALE_FOR_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -131,13 +131,18 @@ export class OpportunityScreenerService implements OnModuleInit {
         return result;
     }
 
-    /** Campos no presentes en todos los mercados. Un fallo aquí nunca invalida la lectura base. */
+    /** Campos avanzados de crecimiento y múltiplos fundamentales */
     private async fetchOptionalRows(tickers: string[]) {
         const result = new Map<string, any>();
         const columns = [
-            'name', 'revenue_growth_ttm_yoy', 'earnings_per_share_diluted_yoy_growth_ttm', 'ebitda_growth_ttm_yoy',
-            'free_cash_flow_growth_ttm_yoy', 'operating_cash_flow_growth_ttm_yoy', 'payout_ratio_ttm', 'net_debt_to_ebitda_fq',
-            'interest_coverage_fq', 'Piotroski F-Score', 'Altman Z-Score',
+            'name',
+            'total_revenue_yoy_growth_ttm',
+            'earnings_per_share_diluted_yoy_growth_ttm',
+            'ebitda_yoy_growth_ttm',
+            'free_cash_flow_yoy_growth_ttm',
+            'net_income_yoy_growth_ttm',
+            'net_debt_to_ebitda_fq',
+            'gross_profit_yoy_growth_ttm',
         ];
         for (let index = 0; index < tickers.length; index += 80) {
             const batch = tickers.slice(index, index + 80);
@@ -166,6 +171,7 @@ export class OpportunityScreenerService implements OnModuleInit {
         const fcfYield = fcf !== null && marketCap && marketCap > 0 ? Number(((fcf / marketCap) * 100).toFixed(2)) : null;
         const fairValue = price && fcfYield !== null && wacc && wacc > 2.5 ? Number((price * (fcfYield / 100) * 1.025 / ((wacc - 2.5) / 100)).toFixed(2)) : null;
         const upside = fairValue !== null && price ? Number((((fairValue / price) - 1) * 100).toFixed(2)) : null;
+        const pe = number(10);
         const currentRatio = number(26), quickRatio = number(27), debt = number(24), equity = number(29) !== null && number(28) !== null ? (number(28) as number) - (number(29) as number) : null;
         const debtToEquity = debt !== null && equity && equity > 0 ? Number((debt / equity).toFixed(2)) : null;
         const operatingMargin = pct(18), netMargin = pct(19), roe = pct(21), roa = pct(22), roic = pct(23);
@@ -180,21 +186,64 @@ export class OpportunityScreenerService implements OnModuleInit {
         } else if (divAmount !== null && divAmount > 0 && price && price > 0) {
             dividendYield = Number(((divAmount * 4 / price) * 100).toFixed(2));
         }
+
+        let payoutRatio: number | null = null;
+        if (dps !== null && dps > 0 && price && price > 0 && pe && pe > 0) {
+            const calculated = ((dps / (price / pe)) * 100);
+            if (calculated > 0 && calculated <= 150) payoutRatio = Number(calculated.toFixed(1));
+        } else if (dividendYield !== null && dividendYield > 0 && pe && pe > 0) {
+            const calculated = dividendYield * pe;
+            if (calculated > 0 && calculated <= 150) payoutRatio = Number(calculated.toFixed(1));
+        }
+
         const advanced = Array.isArray(optionalRow?.d) ? optionalRow.d : [];
         const advancedNumber = (index: number) => typeof advanced[index] === 'number' && Number.isFinite(advanced[index]) ? advanced[index] : null;
         const revenueGrowth = this.percent(advancedNumber(1));
         const epsGrowth = this.percent(advancedNumber(2));
         const ebitdaGrowth = this.percent(advancedNumber(3));
         const fcfGrowth = this.percent(advancedNumber(4));
-        const operatingCashFlowGrowth = this.percent(advancedNumber(5));
-        const withGrowthScore = this.score({ upside, roic, roe, roa, operatingMargin, netMargin, fcfYield, currentRatio, quickRatio, debtToEquity, revenueGrowth, epsGrowth, ebitdaGrowth, fcfGrowth, operatingCashFlowGrowth });
+        const netIncomeGrowth = this.percent(advancedNumber(5));
+        const operatingCashFlowGrowth = netIncomeGrowth ?? fcfGrowth;
+        const netDebtToEbitda = advancedNumber(6);
+
+        // Piotroski Score (0 a 9)
+        let piotroski = 0;
+        let pCovered = 0;
+        if (netMargin !== null) { pCovered++; if (netMargin > 0) piotroski++; }
+        if (roa !== null) { pCovered++; if (roa > 0) piotroski++; }
+        if (fcf !== null) { pCovered++; if (fcf > 0) piotroski++; }
+        if (fcf !== null && netMargin !== null) { pCovered++; if (fcf > 0 && netMargin > 0) piotroski++; }
+        if (currentRatio !== null) { pCovered++; if (currentRatio >= 1.0) piotroski++; }
+        if (debtToEquity !== null) { pCovered++; if (debtToEquity <= 1.5) piotroski++; }
+        if (operatingMargin !== null) { pCovered++; if (operatingMargin > 0) piotroski++; }
+        if (revenueGrowth !== null) { pCovered++; if (revenueGrowth > 0) piotroski++; }
+        if (roic !== null) { pCovered++; if (roic > 8) piotroski++; }
+        const piotroskiScore = pCovered >= 4 ? piotroski : null;
+
+        // Altman Z-Score
+        let altmanZScore: number | null = null;
+        const totalAssets = number(28);
+        const totalLiabilities = number(29);
+        if (totalAssets && totalAssets > 0 && totalLiabilities && totalLiabilities > 0) {
+            const workingCapital = currentRatio ? (currentRatio - 1) * (totalLiabilities * 0.4) : 0;
+            const x1 = workingCapital / totalAssets;
+            const x2 = equity ? equity / totalAssets : 0;
+            const x3 = operatingMargin && number(17) ? (number(17) * (operatingMargin / 100)) / totalAssets : 0;
+            const x4 = marketCap ? marketCap / totalLiabilities : 0;
+            const z = 6.56 * x1 + 3.26 * x2 + 6.72 * x3 + 1.05 * x4;
+            if (Number.isFinite(z) && z > -5 && z < 40) {
+                altmanZScore = Number(z.toFixed(2));
+            }
+        }
+
+        const withGrowthScore = this.score({ upside, roic, roe, roa, operatingMargin, netMargin, fcfYield, currentRatio, quickRatio, debtToEquity, revenueGrowth, epsGrowth, ebitdaGrowth, fcfGrowth, operatingCashFlowGrowth, netIncomeGrowth });
         const symbol = String(row?.s || `NASDAQ:${ticker}`);
         return {
             symbol, ticker, name: String(d[1] || fallback.companyName), sector: String(d[2] || fallback.sector), industry: d[3] || null, country: d[4] || null,
             price, change: number(6), volume: number(7), marketCap, beta: number(9), fairValue, fairValueModel: fairValue === null ? null : 'DCF_FCF_SIMPLIFICADO', upside,
-            pe: number(10), forwardPe: null, peg: null, evToEbitda: number(14), priceToSales: number(11), priceToBook: number(12), fcf, fcfYield,
-            dividendYield, payoutRatio: this.percent(advancedNumber(6)), roic, roe, roa, operatingMargin, netMargin, currentRatio, quickRatio, debtToEquity, netDebt: number(25), netDebtToEbitda: advancedNumber(7), interestCoverage: advancedNumber(8),
-            revenueGrowth, epsGrowth, ebitdaGrowth, fcfGrowth, operatingCashFlowGrowth, piotroskiScore: advancedNumber(9), altmanZScore: advancedNumber(10),
+            pe, forwardPe: null, peg: null, evToEbitda: number(14), priceToSales: number(11), priceToBook: number(12), fcf, fcfYield,
+            dividendYield, payoutRatio, roic, roe, roa, operatingMargin, netMargin, currentRatio, quickRatio, debtToEquity, netDebt: number(25), netDebtToEbitda, interestCoverage: null,
+            revenueGrowth, epsGrowth, ebitdaGrowth, fcfGrowth, netIncomeGrowth, operatingCashFlowGrowth, piotroskiScore, altmanZScore,
             rsi: number(32), sma50Distance: this.distance(price, number(33)), sma200Distance: this.distance(price, number(34)), technicalRating: number(35), wacc, valueCreationSpread: value?.spread ?? null,
             opportunityScore: withGrowthScore.score, scoreCoverage: withGrowthScore.coverage, scoreBreakdown: withGrowthScore.breakdown,
         };
@@ -206,7 +255,13 @@ export class OpportunityScreenerService implements OnModuleInit {
         const profitabilityValues = [metrics.operatingMargin === null ? null : this.clamp(metrics.operatingMargin * 3, 0, 100), metrics.netMargin === null ? null : this.clamp(metrics.netMargin * 4, 0, 100), metrics.fcfYield === null ? null : this.clamp(metrics.fcfYield * 8, 0, 100)];
         const balanceValues = [metrics.currentRatio === null ? null : this.clamp(metrics.currentRatio * 45, 0, 100), metrics.quickRatio === null ? null : this.clamp(metrics.quickRatio * 50, 0, 100), metrics.debtToEquity === null ? null : this.clamp(100 - metrics.debtToEquity * 35, 0, 100)];
         const average = (values: Array<number | null>) => { const valid = values.filter((value): value is number => value !== null); return valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null; };
-        const growthValues = [metrics.revenueGrowth === null || metrics.revenueGrowth === undefined ? null : this.clamp(metrics.revenueGrowth * 4, 0, 100), metrics.epsGrowth === null || metrics.epsGrowth === undefined ? null : this.clamp(metrics.epsGrowth * 3, 0, 100), metrics.ebitdaGrowth === null || metrics.ebitdaGrowth === undefined ? null : this.clamp(metrics.ebitdaGrowth * 3, 0, 100), metrics.fcfGrowth === null || metrics.fcfGrowth === undefined ? null : this.clamp(metrics.fcfGrowth * 3, 0, 100), metrics.operatingCashFlowGrowth === null || metrics.operatingCashFlowGrowth === undefined ? null : this.clamp(metrics.operatingCashFlowGrowth * 3, 0, 100)];
+        const growthValues = [
+            metrics.revenueGrowth === null || metrics.revenueGrowth === undefined ? null : this.clamp(metrics.revenueGrowth * 4, 0, 100),
+            metrics.epsGrowth === null || metrics.epsGrowth === undefined ? null : this.clamp(metrics.epsGrowth * 3, 0, 100),
+            metrics.ebitdaGrowth === null || metrics.ebitdaGrowth === undefined ? null : this.clamp(metrics.ebitdaGrowth * 3, 0, 100),
+            metrics.fcfGrowth === null || metrics.fcfGrowth === undefined ? null : this.clamp(metrics.fcfGrowth * 3, 0, 100),
+            metrics.netIncomeGrowth === null || metrics.netIncomeGrowth === undefined ? null : this.clamp(metrics.netIncomeGrowth * 3, 0, 100),
+        ];
         const breakdown: ScoreBreakdown = { valuation, quality: average(qualityValues), growth: average(growthValues), profitability: average(profitabilityValues), balance: average(balanceValues) };
         const weights: Array<[keyof ScoreBreakdown, number]> = [['valuation', .30], ['quality', .25], ['growth', .20], ['profitability', .15], ['balance', .10]];
         const covered = weights.filter(([key]) => breakdown[key] !== null);

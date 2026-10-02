@@ -7,7 +7,6 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
 import { Loader2, ListPlus, Edit3 } from 'lucide-react';
 
@@ -158,25 +157,22 @@ export default function CreateEditWatchlistModal({
                         </div>
                     </div>
 
-                    <DialogFooter className="pt-3 gap-2">
-                        <Button
+                    <DialogFooter className="pt-4 flex flex-row items-center justify-end gap-2">
+                        <button
                             type="button"
-                            variant="ghost"
-                            size="sm"
                             onClick={onClose}
-                            className="rounded-xl text-xs font-bold text-muted-foreground"
+                            className="h-10 px-5 rounded-xl text-sm font-semibold text-muted-foreground border border-border/60 bg-secondary/40 hover:bg-secondary/70 hover:text-foreground transition-all active:scale-[0.98]"
                         >
                             Cancelar
-                        </Button>
-                        <Button
+                        </button>
+                        <button
                             type="submit"
-                            size="sm"
                             disabled={saving || !name.trim()}
-                            className="rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                            className="h-10 px-5 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 hover:shadow-emerald-500/30 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98]"
                         >
-                            {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                             {isEditing ? 'Guardar cambios' : 'Crear lista'}
-                        </Button>
+                        </button>
                     </DialogFooter>
                 </form>
             </DialogContent>

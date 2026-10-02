@@ -257,24 +257,24 @@ export default function ExplorePage() {
                     <div className="relative">
                         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.16),transparent_34%)]" />
                         <div className="relative flex flex-col gap-6 p-6 md:p-8">
-                            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                                <div className="max-w-3xl space-y-3">
+                            <div className="flex flex-col items-center justify-center text-center gap-5 max-w-3xl mx-auto">
+                                <div className="max-w-3xl space-y-3 flex flex-col items-center text-center">
                                     <Badge
                                         variant="outline"
-                                        className="w-fit border-primary/20 bg-primary/10 text-primary"
+                                        className="w-fit border-primary/20 bg-primary/10 text-primary mx-auto"
                                     >
                                         {showSaved ? 'Coleccion personal' : 'Actividad de mercado'}
                                     </Badge>
-                                    <div className="space-y-2">
-                                        <h1 className="text-3xl font-semibold tracking-tight">Explorar</h1>
-                                        <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
+                                    <div className="space-y-2 text-center">
+                                        <h1 className="text-3xl font-semibold tracking-tight text-center">Explorar</h1>
+                                        <p className="max-w-2xl text-sm text-muted-foreground md:text-base text-center mx-auto">
                                             Descubrí ideas, publicaciones, ediciones y gráficos con una superficie más amplia,
                                             limpia y profesional para navegar la actividad de Finix.
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex flex-wrap items-center justify-center gap-2">
                                     <Button
                                         variant={showSaved ? 'secondary' : 'outline'}
                                         onClick={() => setShowSaved(!showSaved)}

@@ -55,6 +55,50 @@ async function main() {
         assert.equal(visibleReport.id, 'stored-report');
         assert.equal(visibleReport.actualEps, 2, 'Live results must replace stale database values');
         assert.equal(visibleReport.epsEstimate, 1.6);
+        const upcomingWeek = await service.getWeekEvents({ weekStart: '2026-10-26', category: 'EARNINGS' });
+        const liveUpcoming = upcomingWeek.days.flatMap(day => day.earningsEvents).find(event => event.date === '2026-10-29');
+        assert.equal(liveUpcoming.id, 'earnings-AAPL-2026-10-29');
+        assert.equal(liveUpcoming.time, undefined, 'A timing category is not an exact release time');
+
+        const distributions = [
+            { ticker: 'AAPL', companyName: 'Apple', exDate: '2026-10-06', paymentDate: '2026-10-07', amount: 0 },
+            { ticker: 'AAPL', companyName: 'Apple', exDate: '2026-10-08', paymentDate: '2026-10-09', amount: 0.3 },
+        ];
+        const completeProvider = {
+            getUpcomingEconomicEvents: async () => [],
+            getEconomicFeedStatus: () => ({ status: 'READY' }),
+            fetchTradingViewSP500Earnings: async () => [{ ...reported, ticker: 'aapl', date: '2026-10-06', time: undefined }],
+            fetchTradingViewSP500Dividends: async () => distributions,
+        };
+        const completeService = new CalendarService({
+            marketCalendarEvent: { findMany: async () => [{ id: 'macro', country: 'AR', title: 'IPC', date: '2026-10-06', unit: '%', previousValue: '0', forecastValue: '1', source: 'Manual', sourceUrl: 'https://example.test' }] },
+            marketEarningsEvent: { findMany: async () => [{ ...reported, ticker: 'AAPL', id: 'existing', date: '2026-10-06', time: '18:00', actualEps: 0 }] },
+            marketDividendEvent: { findMany: async () => [{ ...distributions[0], id: 'existing-dividend' }, { ...distributions[0], ticker: 'aapl', id: 'duplicate' }] },
+        }, completeProvider, {}, { getTradingViewLogoUrl: () => '' });
+        const fullWeek = await completeService.getWeekEvents({ weekStart: '2026-10-05', category: 'ALL', user: { plan: 'PRO', subscriptionStatus: 'ACTIVE' } });
+        const fullEarnings = fullWeek.days.flatMap(day => day.earningsEvents);
+        const fullDividends = fullWeek.days.flatMap(day => day.dividendEvents);
+        assert.equal(fullEarnings.length, 1, 'Normalized tickers must merge live and stored results');
+        assert.equal(fullEarnings[0].id, 'existing');
+        assert.equal(fullEarnings[0].actualEps, 2);
+        assert.equal(fullEarnings[0].time, '18:00', 'Missing provider fields must not erase stored information');
+        assert.equal(fullDividends.length, 2, 'Distinct distributions of one company must not disappear');
+        assert.equal(fullWeek.categories.dividends, 2);
+        assert.equal(fullDividends[0].amount, 0);
+        assert.equal(fullDividends[0].id, 'existing-dividend');
+        assert.equal(fullDividends[1].id, 'dividend-AAPL-2026-10-08-2026-10-09-0.3');
+        assert.equal(new Set(fullDividends.map(event => event.id)).size, 2);
+        const macro = fullWeek.days.flatMap(day => day.economicEvents)[0];
+        assert.equal(macro.unit, '%');
+        assert.equal(macro.forecastValue, '1');
+        assert.equal(macro.previousValue, '0');
+        assert.equal(macro.sourceUrl, 'https://example.test');
+
+        global.fetch = async () => ({ ok: true, json: async () => ({ data: [] }) });
+        await provider.fetchTradingViewSP500Earnings({ forceRefresh: true });
+        assert.deepEqual(await provider.getUpcomingEarnings('2026-10-05', '2026-10-11'), [], 'An empty provider response must not produce invented earnings');
+        provider.fmpApiKey = '';
+        assert.deepEqual(await provider.getUpcomingEconomicEvents('2026-10-05', '2026-10-11'), [], 'No configured macro feed must not produce assumed events');
         let syncs = 0;
         provider.fetchTradingViewSP500Earnings = async () => { syncs++; await new Promise(resolve => setImmediate(resolve)); return []; };
         await Promise.all([service.refreshCorporateEvents('EARNINGS'), service.refreshCorporateEvents('EARNINGS')]);

@@ -1,11 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Building2, ChevronDown, HelpCircle, Filter, Gem, HeartPulse, Leaf, Loader2, RefreshCw, Search, Sparkles, TrendingUp, Bookmark } from 'lucide-react';
+import {
+    Building2,
+    ChevronDown,
+    HelpCircle,
+    Filter,
+    Gem,
+    HeartPulse,
+    Leaf,
+    Loader2,
+    RefreshCw,
+    Search,
+    Sparkles,
+    TrendingUp,
+    Bookmark,
+} from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import { cn } from '@/lib/utils';
-import { Card } from '@/components/ui/card';
+import { MarketChange, MarketHeader } from './MarketPrimitives';
 import { Button } from '@/components/ui/button';
 import { SymbolLogo } from '@/components/SymbolLogo';
 import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
+import './opportunities.css';
 
 type Category = 'ALL' | 'UNDERVALUED' | 'HEALTH' | 'GROWTH' | 'DIVIDEND';
 type Opportunity = any;
@@ -16,87 +30,275 @@ type OpportunityMetric = {
     tone?: (item: Opportunity) => MetricTone;
 };
 
-const format = (value: number | null | undefined, signed = false) => value === null || value === undefined ? '—' : `${signed && value > 0 ? '+' : ''}${value.toFixed(1)}%`;
-const money = (value: number | null | undefined) => value === null || value === undefined ? '—' : `$${value.toFixed(2)}`;
-const decimal = (value: number | null | undefined, digits = 1) => value === null || value === undefined ? '—' : value.toFixed(digits);
-const signedTone = (value: number | null | undefined): MetricTone => value === null || value === undefined ? 'default' : value >= 0 ? 'positive' : 'negative';
+const format = (value: number | null | undefined, signed = false) =>
+    value === null || value === undefined
+        ? '—'
+        : `${signed && value > 0 ? '+' : ''}${value.toFixed(1)}%`;
+const money = (value: number | null | undefined) =>
+    value === null || value === undefined
+        ? '—'
+        : `US$ ${value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const decimal = (value: number | null | undefined, digits = 1) =>
+    value === null || value === undefined ? '—' : value.toFixed(digits);
+const signedTone = (value: number | null | undefined): MetricTone =>
+    value === null || value === undefined
+        ? 'default'
+        : value >= 0
+          ? 'positive'
+          : 'negative';
 const scoreValue = (value: number | null | undefined) => decimal(value, 0);
 
-const categoryMeta: Record<Category, { label: string; icon: typeof Gem; description: string }> = {
-    ALL: { label: 'Todas', icon: Sparkles, description: 'El universo completo ordenado por score Finix' },
-    UNDERVALUED: { label: 'Infravaloradas', icon: Gem, description: 'Mayor diferencia entre valor estimado y precio' },
-    HEALTH: { label: 'Salud financiera', icon: HeartPulse, description: 'Balance, liquidez y calidad operativa' },
-    GROWTH: { label: 'Crecimiento', icon: TrendingUp, description: 'Crecimiento fundamental con cobertura disponible' },
-    DIVIDEND: { label: 'Dividendos', icon: Leaf, description: 'Empresas con rendimiento de dividendo' },
+const categoryMeta: Record<
+    Category,
+    { label: string; icon: typeof Gem; description: string }
+> = {
+    ALL: {
+        label: 'Todas',
+        icon: Sparkles,
+        description: 'El universo completo ordenado por score Finix',
+    },
+    UNDERVALUED: {
+        label: 'Infravaloradas',
+        icon: Gem,
+        description: 'Mayor diferencia entre valor estimado y precio',
+    },
+    HEALTH: {
+        label: 'Salud financiera',
+        icon: HeartPulse,
+        description: 'Balance, liquidez y calidad operativa',
+    },
+    GROWTH: {
+        label: 'Crecimiento',
+        icon: TrendingUp,
+        description: 'Crecimiento fundamental con cobertura disponible',
+    },
+    DIVIDEND: {
+        label: 'Dividendos',
+        icon: Leaf,
+        description: 'Empresas con rendimiento de dividendo',
+    },
 };
 
 const categoryMetrics: Record<Category, OpportunityMetric[]> = {
     ALL: [
-        { label: 'Score Finix', value: (item) => scoreValue(item.opportunityScore), tone: () => 'accent' },
-        { label: 'Potencial', value: (item) => format(item.upside, true), tone: (item) => signedTone(item.upside) },
-        { label: 'ROIC', value: (item) => format(item.roic), tone: (item) => signedTone(item.roic) },
-        { label: 'FCF yield', value: (item) => format(item.fcfYield), tone: (item) => signedTone(item.fcfYield) },
-        { label: 'Dividendo', value: (item) => format(item.dividendYield), tone: (item) => signedTone(item.dividendYield) },
+        {
+            label: 'Score Finix',
+            value: (item) => scoreValue(item.opportunityScore),
+            tone: () => 'accent',
+        },
+        {
+            label: 'Potencial',
+            value: (item) => format(item.upside, true),
+            tone: (item) => signedTone(item.upside),
+        },
+        {
+            label: 'ROIC',
+            value: (item) => format(item.roic),
+            tone: (item) => signedTone(item.roic),
+        },
+        {
+            label: 'FCF yield',
+            value: (item) => format(item.fcfYield),
+            tone: (item) => signedTone(item.fcfYield),
+        },
+        {
+            label: 'Dividendo',
+            value: (item) => format(item.dividendYield),
+            tone: (item) => signedTone(item.dividendYield),
+        },
     ],
     UNDERVALUED: [
-        { label: 'Potencial', value: (item) => format(item.upside, true), tone: (item) => signedTone(item.upside) },
+        {
+            label: 'Potencial',
+            value: (item) => format(item.upside, true),
+            tone: (item) => signedTone(item.upside),
+        },
         { label: 'Valor justo', value: (item) => money(item.fairValue) },
         { label: 'P/E', value: (item) => decimal(item.pe) },
-        { label: 'FCF yield', value: (item) => format(item.fcfYield), tone: (item) => signedTone(item.fcfYield) },
-        { label: 'Score Finix', value: (item) => scoreValue(item.opportunityScore), tone: () => 'accent' },
+        {
+            label: 'FCF yield',
+            value: (item) => format(item.fcfYield),
+            tone: (item) => signedTone(item.fcfYield),
+        },
+        {
+            label: 'Score Finix',
+            value: (item) => scoreValue(item.opportunityScore),
+            tone: () => 'accent',
+        },
     ],
     HEALTH: [
-        { label: 'Balance', value: (item) => scoreValue(item.scoreBreakdown?.balance), tone: () => 'accent' },
-        { label: 'ROIC', value: (item) => format(item.roic), tone: (item) => signedTone(item.roic) },
-        { label: 'ROE', value: (item) => format(item.roe), tone: (item) => signedTone(item.roe) },
-        { label: 'Margen neto', value: (item) => format(item.netMargin), tone: (item) => signedTone(item.netMargin) },
-        { label: 'Deuda/EBITDA', value: (item) => decimal(item.netDebtToEbitda) },
-        { label: 'Piotroski', value: (item) => scoreValue(item.piotroskiScore) },
+        {
+            label: 'Balance',
+            value: (item) => scoreValue(item.scoreBreakdown?.balance),
+            tone: () => 'accent',
+        },
+        {
+            label: 'ROIC',
+            value: (item) => format(item.roic),
+            tone: (item) => signedTone(item.roic),
+        },
+        {
+            label: 'ROE',
+            value: (item) => format(item.roe),
+            tone: (item) => signedTone(item.roe),
+        },
+        {
+            label: 'Margen neto',
+            value: (item) => format(item.netMargin),
+            tone: (item) => signedTone(item.netMargin),
+        },
+        {
+            label: 'Deuda/EBITDA',
+            value: (item) => decimal(item.netDebtToEbitda),
+        },
+        {
+            label: 'Piotroski',
+            value: (item) => scoreValue(item.piotroskiScore),
+        },
     ],
     GROWTH: [
-        { label: 'Ingresos', value: (item) => format(item.revenueGrowth, true), tone: (item) => signedTone(item.revenueGrowth) },
-        { label: 'EPS', value: (item) => format(item.epsGrowth, true), tone: (item) => signedTone(item.epsGrowth) },
-        { label: 'EBITDA', value: (item) => format(item.ebitdaGrowth, true), tone: (item) => signedTone(item.ebitdaGrowth) },
-        { label: 'FCF', value: (item) => format(item.fcfGrowth, true), tone: (item) => signedTone(item.fcfGrowth) },
-        { label: 'Flujo de caja', value: (item) => format(item.operatingCashFlowGrowth, true), tone: (item) => signedTone(item.operatingCashFlowGrowth) },
-        { label: 'Score Finix', value: (item) => scoreValue(item.opportunityScore), tone: () => 'accent' },
+        {
+            label: 'Ingresos',
+            value: (item) => format(item.revenueGrowth, true),
+            tone: (item) => signedTone(item.revenueGrowth),
+        },
+        {
+            label: 'EPS',
+            value: (item) => format(item.epsGrowth, true),
+            tone: (item) => signedTone(item.epsGrowth),
+        },
+        {
+            label: 'EBITDA',
+            value: (item) => format(item.ebitdaGrowth, true),
+            tone: (item) => signedTone(item.ebitdaGrowth),
+        },
+        {
+            label: 'FCF',
+            value: (item) => format(item.fcfGrowth, true),
+            tone: (item) => signedTone(item.fcfGrowth),
+        },
+        {
+            label: 'Flujo de caja',
+            value: (item) =>
+                format(
+                    item.operatingCashFlowGrowth ?? item.netIncomeGrowth,
+                    true,
+                ),
+            tone: (item) =>
+                signedTone(
+                    item.operatingCashFlowGrowth ?? item.netIncomeGrowth,
+                ),
+        },
+        {
+            label: 'Score Finix',
+            value: (item) => scoreValue(item.opportunityScore),
+            tone: () => 'accent',
+        },
     ],
     DIVIDEND: [
-        { label: 'Yield', value: (item) => format(item.dividendYield), tone: (item) => signedTone(item.dividendYield) },
-        { label: 'Payout', value: (item) => format(item.payoutRatio), tone: (item) => signedTone(item.payoutRatio) },
-        { label: 'FCF yield', value: (item) => format(item.fcfYield), tone: (item) => signedTone(item.fcfYield) },
-        { label: 'ROE', value: (item) => format(item.roe), tone: (item) => signedTone(item.roe) },
-        { label: 'Potencial', value: (item) => format(item.upside, true), tone: (item) => signedTone(item.upside) },
-        { label: 'Score Finix', value: (item) => scoreValue(item.opportunityScore), tone: () => 'accent' },
+        {
+            label: 'Yield',
+            value: (item) => format(item.dividendYield),
+            tone: (item) => signedTone(item.dividendYield),
+        },
+        {
+            label: 'Payout',
+            value: (item) => format(item.payoutRatio),
+            tone: (item) => signedTone(item.payoutRatio),
+        },
+        {
+            label: 'FCF yield',
+            value: (item) => format(item.fcfYield),
+            tone: (item) => signedTone(item.fcfYield),
+        },
+        {
+            label: 'ROE',
+            value: (item) => format(item.roe),
+            tone: (item) => signedTone(item.roe),
+        },
+        {
+            label: 'Potencial',
+            value: (item) => format(item.upside, true),
+            tone: (item) => signedTone(item.upside),
+        },
+        {
+            label: 'Score Finix',
+            value: (item) => scoreValue(item.opportunityScore),
+            tone: () => 'accent',
+        },
     ],
 };
 
-export default function OpportunityScreener({ onOpenAnalysis }: { onOpenAnalysis: (ticker: string) => void }) {
+export default function OpportunityScreener({
+    onOpenAnalysis,
+}: {
+    onOpenAnalysis: (ticker: string) => void;
+}) {
     const [category, setCategory] = useState<Category>('ALL');
     const [search, setSearch] = useState('');
     const [sector, setSector] = useState('ALL');
     const [advanced, setAdvanced] = useState(false);
-    const [filters, setFilters] = useState({ minMarketCap: '', maxPe: '', minRoic: '', minUpside: '', minDividendYield: '', minRevenueGrowth: '', minFcfGrowth: '', maxNetDebtToEbitda: '', minPiotroski: '', minAltman: '' });
+    const [filters, setFilters] = useState({
+        minMarketCap: '',
+        maxPe: '',
+        minRoic: '',
+        minUpside: '',
+        minDividendYield: '',
+        minRevenueGrowth: '',
+        minFcfGrowth: '',
+        maxNetDebtToEbitda: '',
+        minPiotroski: '',
+        minAltman: '',
+    });
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [watchlistSymbol, setWatchlistSymbol] = useState<string | null>(null);
-    const [watchlistName, setWatchlistName] = useState<string | undefined>(undefined);
+    const [watchlistName, setWatchlistName] = useState<string | undefined>(
+        undefined,
+    );
 
     const load = async (refresh = false) => {
         refresh ? setRefreshing(true) : setLoading(true);
-        const params = new URLSearchParams({ category, sector, query: search, sort: category === 'UNDERVALUED' ? 'upside' : category === 'DIVIDEND' ? 'dividend' : category === 'HEALTH' ? 'health' : category === 'GROWTH' ? 'growth' : 'score', limit: '150' });
+        const params = new URLSearchParams({
+            category,
+            sector,
+            query: search,
+            sort:
+                category === 'UNDERVALUED'
+                    ? 'upside'
+                    : category === 'DIVIDEND'
+                      ? 'dividend'
+                      : category === 'HEALTH'
+                        ? 'health'
+                        : category === 'GROWTH'
+                          ? 'growth'
+                          : 'score',
+            limit: '150',
+        });
         if (refresh) params.set('refresh', 'true');
-        Object.entries(filters).forEach(([key, value]) => { if (value !== '') params.set(key, value); });
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value !== '') params.set(key, value);
+        });
         if (!refresh) params.set('_t', String(Date.now()));
         try {
-            const response = await apiFetch(`/market/opportunities?${params.toString()}`);
+            const response = await apiFetch(
+                `/market/opportunities?${params.toString()}`,
+            );
             if (!response.ok) throw new Error();
             setData(await response.json());
         } catch {
-            setData((previous: any) => previous || { items: [], summary: {}, filters: { sectors: [] } });
+            setData(
+                (previous: any) =>
+                    previous || {
+                        items: [],
+                        summary: {},
+                        filters: { sectors: [] },
+                    },
+            );
         } finally {
-            setLoading(false); setRefreshing(false);
+            setLoading(false);
+            setRefreshing(false);
         }
     };
 
@@ -108,57 +310,168 @@ export default function OpportunityScreener({ onOpenAnalysis }: { onOpenAnalysis
     const items: Opportunity[] = data?.items || [];
     const scoreLabel = useMemo(() => data?.methodology?.score || '', [data]);
 
-    return <div className="space-y-5">
-        <Card className="overflow-hidden rounded-[30px] border-violet-500/25 bg-[radial-gradient(ellipse_at_top_left,rgba(139,92,246,0.17),transparent_48%),linear-gradient(135deg,hsl(var(--card)),hsl(var(--card)))] p-5 shadow-sm md:p-7">
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                <div className="max-w-3xl"><div className="mb-2 flex items-center gap-2 text-violet-600 dark:text-violet-300"><Sparkles className="h-5 w-5" /><span className="text-xs font-black uppercase tracking-[0.18em]">Screener cuantitativo Finix</span></div><h2 className="text-2xl font-black tracking-tight text-foreground md:text-3xl">Oportunidades</h2><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Descubrí empresas por valuación, calidad, crecimiento, flujo de caja, dividendos y balance. El <b className="text-foreground">Finix Opportunity Score</b> ordena datos disponibles; no es una recomendación de compra o venta.</p></div>
-                <Button variant="outline" onClick={() => load(true)} disabled={refreshing} className="h-10 gap-2 rounded-xl border-violet-500/30 bg-card/70 hover:bg-violet-500/10"><RefreshCw className={cn('h-4 w-4 text-violet-500', refreshing && 'animate-spin')} />Actualizar</Button>
+    const filterLabels: Record<keyof typeof filters, string> = {
+        minMarketCap: 'Capitalización mín. ($B)',
+        maxPe: 'P/E máximo',
+        minRoic: 'ROIC mínimo %',
+        minUpside: 'Potencial alcista mínimo %',
+        minDividendYield: 'Dividendo mín. %',
+        minRevenueGrowth: 'Ingresos mín. %',
+        minFcfGrowth: 'FCF mín. %',
+        maxNetDebtToEbitda: 'Deuda neta / EBITDA máx.',
+        minPiotroski: 'Piotroski mínimo',
+        minAltman: 'Altman Z mínimo',
+    };
+
+    return (
+        <section className="market-section">
+            <MarketHeader
+                title="Oportunidades"
+                eyebrow="SCREENER CUANTITATIVO · FINIX"
+                icon={Sparkles}
+                description="S&P 500 · Valuación, calidad, crecimiento y dividendos"
+                actions={
+                    <button
+                        type="button"
+                        className="market-icon-action"
+                        onClick={() => load(true)}
+                        disabled={refreshing}
+                        title="Actualizar oportunidades"
+                        aria-label="Actualizar oportunidades"
+                    >
+                        <RefreshCw
+                            size={17}
+                            className={refreshing ? 'animate-spin' : ''}
+                        />
+                    </button>
+                }
+            />
+            <div className="market-overview">
+                <Stat
+                    icon={Building2}
+                    label="Universo S&P 500"
+                    value={data?.summary?.totalCount ?? '—'}
+                />
+                <Stat
+                    icon={Sparkles}
+                    label="Con score Finix"
+                    value={data?.summary?.scoredCount ?? '—'}
+                />
+                <Stat
+                    icon={Gem}
+                    label="Potencial estimado ≥20%"
+                    value={data?.summary?.undervaluedCount ?? '—'}
+                />
+                <Stat
+                    icon={Leaf}
+                    label="Con dividendo"
+                    value={data?.summary?.dividendCount ?? '—'}
+                />
             </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Stat icon={Building2} label="Universo S&P 500" value={data?.summary?.totalCount ?? '—'} tone="neutral" /><Stat icon={Sparkles} label="Con puntuación de oportunidad" value={data?.summary?.scoredCount ?? '—'} tone="violet" /><Stat icon={Gem} label="Potencial alcista estimado ≥20%" value={data?.summary?.undervaluedCount ?? '—'} tone="emerald" /><Stat icon={Leaf} label="Con dividendo" value={data?.summary?.dividendCount ?? '—'} tone="amber" /></div>
-        </Card>
-
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{(Object.keys(categoryMeta) as Category[]).map((key) => { const meta = categoryMeta[key]; const Icon = meta.icon; return <button key={key} type="button" aria-pressed={category === key} onClick={() => setCategory(key)} className={cn('rounded-2xl border p-3 text-left transition-all', category === key ? 'border-violet-500 bg-violet-500/13 shadow-sm' : 'border-border/60 bg-card/60 hover:border-violet-500/40')}><div className="flex items-center gap-2"><Icon className={cn('h-4 w-4', category === key ? 'text-violet-500' : 'text-muted-foreground')} /><span className="text-sm font-black text-foreground">{meta.label}</span></div><p className="mt-1 text-[10px] leading-snug text-muted-foreground">{meta.description}</p></button>; })}</div>
-
-        <Card className="rounded-[24px] border-border/60 bg-card/70 p-3 shadow-sm"><div className="flex flex-col gap-3 xl:flex-row xl:items-center"><div className="relative min-w-0 flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar ticker o empresa…" className="h-10 w-full rounded-xl border border-border/60 bg-background/70 pl-9 pr-3 text-sm outline-none focus:border-violet-500" /></div><select value={sector} onChange={(event) => setSector(event.target.value)} className="h-10 rounded-xl border border-border/60 bg-background px-3 text-xs font-bold outline-none focus:border-violet-500"><option value="ALL">Todos los sectores</option>{(data?.filters?.sectors || []).map((item: string) => <option key={item}>{item}</option>)}</select><Button variant="outline" onClick={() => setAdvanced((value) => !value)} className="h-10 gap-2 rounded-xl"><Filter className="h-4 w-4" />Filtros avanzados<ChevronDown className={cn('h-3.5 w-3.5 transition-transform', advanced && 'rotate-180')} /></Button></div>
-            {advanced && <div className="mt-3 grid gap-2 border-t border-border/60 pt-3 sm:grid-cols-2 lg:grid-cols-5"><Field label="Capitalización mín. ($B)" value={filters.minMarketCap} onChange={(value: string) => setFilters({ ...filters, minMarketCap: value ? String(Number(value) * 1e9) : '' })} displayBillions /><Field label="P/E máximo" value={filters.maxPe} onChange={(value: string) => setFilters({ ...filters, maxPe: value })} /><Field label="ROIC mínimo %" value={filters.minRoic} onChange={(value: string) => setFilters({ ...filters, minRoic: value })} /><Field label="Potencial alcista mínimo %" value={filters.minUpside} onChange={(value: string) => setFilters({ ...filters, minUpside: value })} /><Field label="Rendimiento de dividendo mín. %" value={filters.minDividendYield} onChange={(value: string) => setFilters({ ...filters, minDividendYield: value })} /><Field label="Crecimiento de ingresos mín. %" value={filters.minRevenueGrowth} onChange={(value: string) => setFilters({ ...filters, minRevenueGrowth: value })} /><Field label="Crecimiento de FCF mín. %" value={filters.minFcfGrowth} onChange={(value: string) => setFilters({ ...filters, minFcfGrowth: value })} /><Field label="Deuda neta / EBITDA máx." value={filters.maxNetDebtToEbitda} onChange={(value: string) => setFilters({ ...filters, maxNetDebtToEbitda: value })} /><Field label="Piotroski mínimo" value={filters.minPiotroski} onChange={(value: string) => setFilters({ ...filters, minPiotroski: value })} /><Field label="Altman Z mínimo" value={filters.minAltman} onChange={(value: string) => setFilters({ ...filters, minAltman: value })} /></div>}
-        </Card>
-
-        {loading ? <div className="flex min-h-[360px] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-violet-500" /></div> : <>
-            {data?.stale && <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-200">Mostrando la última lectura válida mientras se recupera la fuente de mercado.</div>}
-            <p className="px-1 text-xs text-muted-foreground"><b className="text-foreground">{data?.summary?.matchingCount ?? 0}</b> empresas coinciden con los filtros. {scoreLabel}</p>
-            <div className="overflow-hidden rounded-[24px] border border-border/60 bg-card shadow-sm">
-                <div className="hidden overflow-x-auto lg:block">
-                    <table className="w-full min-w-[1160px] text-left text-xs">
-                        <thead className="border-b border-border/60 bg-muted/35 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                            <tr>
-                                <th className="px-4 py-3">Empresa</th>
-                                <th className="px-3 py-3">Precio</th>
-                                {categoryMetrics[category].map((metric) => <th key={metric.label} className="px-3 py-3">{metric.label}</th>)}
-                                <th className="px-3 py-3">Cobertura</th>
-                                <th className="px-3 py-3 text-right"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {items.map((item) => (
-                                <OpportunityRow
-                                    key={item.ticker}
-                                    item={item}
-                                    category={category}
-                                    onOpen={onOpenAnalysis}
-                                    onAddToWatchlist={(ticker, name) => {
-                                        setWatchlistSymbol(ticker);
-                                        setWatchlistName(name);
-                                    }}
+            <div
+                className="market-segments mb-5"
+                role="group"
+                aria-label="Tipo de oportunidad"
+            >
+                {(Object.keys(categoryMeta) as Category[]).map((key) => {
+                    const meta = categoryMeta[key];
+                    const Icon = meta.icon;
+                    return (
+                        <button
+                            key={key}
+                            type="button"
+                            aria-pressed={category === key}
+                            onClick={() => setCategory(key)}
+                            title={meta.description}
+                        >
+                            <Icon size={15} />
+                            {meta.label}
+                        </button>
+                    );
+                })}
+            </div>
+            <div className="market-toolbar">
+                <label className="market-search">
+                    <Search size={18} />
+                    <input
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        aria-label="Buscar empresa en oportunidades"
+                        placeholder="Buscar ticker o empresa..."
+                    />
+                </label>
+                <select
+                    className="market-control"
+                    value={sector}
+                    onChange={(event) => setSector(event.target.value)}
+                    aria-label="Sector de oportunidades"
+                >
+                    <option value="ALL">Todos los sectores</option>
+                    {(data?.filters?.sectors || []).map((value: string) => (
+                        <option key={value}>{value}</option>
+                    ))}
+                </select>
+                <Button
+                    variant="outline"
+                    onClick={() => setAdvanced((value) => !value)}
+                    aria-expanded={advanced}
+                    className="market-action"
+                >
+                    <Filter size={16} />
+                    Filtros avanzados
+                    <ChevronDown
+                        size={14}
+                        className={advanced ? 'rotate-180' : ''}
+                    />
+                </Button>
+                {advanced && (
+                    <div className="market-advanced">
+                        {(Object.keys(filters) as (keyof typeof filters)[]).map(
+                            (key) => (
+                                <Field
+                                    key={key}
+                                    label={filterLabels[key]}
+                                    value={filters[key]}
+                                    displayBillions={key === 'minMarketCap'}
+                                    onChange={(value: string) =>
+                                        setFilters((previous) => ({
+                                            ...previous,
+                                            [key]:
+                                                key === 'minMarketCap' && value
+                                                    ? String(
+                                                          Number(value) * 1e9,
+                                                      )
+                                                    : value,
+                                        }))
+                                    }
                                 />
-                            ))}
-                        </tbody>
-                    </table>
+                            ),
+                        )}
+                    </div>
+                )}
+            </div>
+            {loading ? (
+                <div className="market-empty" role="status">
+                    <Loader2
+                        size={24}
+                        className="animate-spin mx-auto text-primary"
+                    />
                 </div>
-                <div className="grid gap-3 p-3 lg:hidden">
-                    {items.map((item) => (
-                        <OpportunityCard
-                            key={item.ticker}
-                            item={item}
+            ) : (
+                <>
+                    {data?.stale && (
+                        <p className="market-note">
+                            Mostrando la última lectura válida mientras se
+                            recupera la fuente de mercado.
+                        </p>
+                    )}
+                    <p className="market-results">
+                        {data?.summary?.matchingCount ?? 0} empresas ·{' '}
+                        {scoreLabel}
+                    </p>
+                    {items.length > 0 && (
+                        <OpportunityTable
+                            items={items}
                             category={category}
                             onOpen={onOpenAnalysis}
                             onAddToWatchlist={(ticker, name) => {
@@ -166,56 +479,125 @@ export default function OpportunityScreener({ onOpenAnalysis }: { onOpenAnalysis
                                 setWatchlistName(name);
                             }}
                         />
-                    ))}
-                </div>
-                {!items.length && (
-                    <div className="p-16 text-center text-sm text-muted-foreground">
-                        No hay empresas con los criterios seleccionados. Probá flexibilizar un filtro.
-                    </div>
-                )}
-            </div>
-        </>}
-        <Card className="rounded-[22px] border-border/60 bg-card/70 p-4 text-xs text-muted-foreground">
-            <div className="flex gap-3">
-                <HelpCircle className="h-5 w-5 shrink-0 text-violet-500" />
-                <div>
-                    <b className="text-foreground">Transparencia del score</b>
-                    <p className="mt-1 leading-relaxed">
-                        Valuación 30%, calidad financiera 25%, crecimiento 20%, rentabilidad 15% y balance 10%. Las métricas no provistas se señalan como sin cobertura y no se inventan; la cobertura indica qué parte del score pudo calcularse.
-                    </p>
-                </div>
-            </div>
-        </Card>
-
-        {watchlistSymbol && (
-            <AddToWatchlistModal
-                isOpen={Boolean(watchlistSymbol)}
-                onClose={() => setWatchlistSymbol(null)}
-                symbol={watchlistSymbol}
-                name={watchlistName}
-            />
-        )}
-    </div>;
+                    )}
+                    {!items.length && (
+                        <div className="market-empty">
+                            No hay empresas con los criterios seleccionados.
+                            Probá flexibilizar un filtro.
+                        </div>
+                    )}
+                </>
+            )}
+            <footer className="market-note">
+                <HelpCircle size={16} />
+                <p>
+                    <b className="text-foreground">Transparencia del score.</b>{' '}
+                    Valuación 30%, calidad financiera 25%, crecimiento 20%,
+                    rentabilidad 15% y balance 10%. La cobertura indica qué
+                    parte del score pudo calcularse. Las métricas faltantes no
+                    se inventan. El score no es una recomendación de compra o
+                    venta.
+                </p>
+            </footer>
+            {watchlistSymbol && (
+                <AddToWatchlistModal
+                    isOpen={Boolean(watchlistSymbol)}
+                    onClose={() => setWatchlistSymbol(null)}
+                    symbol={watchlistSymbol}
+                    name={watchlistName}
+                />
+            )}
+        </section>
+    );
 }
 
-function Stat({ icon: Icon, label, value, tone }: any) {
+function Stat({
+    icon: Icon,
+    label,
+    value,
+}: {
+    icon: typeof Building2;
+    label: string;
+    value: string | number;
+}) {
     return (
-        <div className={cn('rounded-2xl border p-3.5', tone === 'emerald' ? 'border-emerald-500/25 bg-emerald-500/10' : tone === 'violet' ? 'border-violet-500/25 bg-violet-500/10' : tone === 'amber' ? 'border-amber-500/25 bg-amber-500/10' : 'border-border/60 bg-background/60')}>
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                <Icon className="h-3.5 w-3.5" />
+        <div className="market-stat">
+            <div className="market-stat__label">
+                <Icon size={15} />
                 {label}
             </div>
-            <p className="mt-1 text-2xl font-black text-foreground">{value}</p>
+            <p className="market-stat__value">{value}</p>
         </div>
     );
 }
 
-function Field({ label, value, onChange, displayBillions }: any) {
+function Field({
+    label,
+    value,
+    onChange,
+    displayBillions,
+}: {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    displayBillions?: boolean;
+}) {
     return (
-        <label className="block">
-            <span className="mb-1 block text-[10px] font-bold uppercase text-muted-foreground">{label}</span>
-            <input type="number" value={displayBillions && value ? Number(value) / 1e9 : value} onChange={(event) => onChange(event.target.value)} className="h-9 w-full rounded-lg border border-border/60 bg-background px-2 text-xs outline-none focus:border-violet-500" />
+        <label>
+            <span className="market-metric-label block mb-1">{label}</span>
+            <input
+                className="market-control w-full"
+                type="number"
+                value={displayBillions && value ? Number(value) / 1e9 : value}
+                onChange={(event) => onChange(event.target.value)}
+            />
         </label>
+    );
+}
+
+function OpportunityTable({
+    items,
+    category,
+    onOpen,
+    onAddToWatchlist,
+}: {
+    items: Opportunity[];
+    category: Category;
+    onOpen: (ticker: string) => void;
+    onAddToWatchlist: (ticker: string, name?: string) => void;
+}) {
+    return (
+        <div
+            className="opportunities-table-scroll"
+            role="region"
+            aria-label={`Empresas: ${categoryMeta[category].label}`}
+            tabIndex={0}
+        >
+            <table className="opportunities-table" aria-label={`Oportunidades: ${categoryMeta[category].label}`}>
+                <thead>
+                    <tr>
+                        <th scope="col">Empresa</th>
+                        <th scope="col">Precio / variación</th>
+                        {categoryMetrics[category].map((metric) => (
+                            <th scope="col" key={metric.label}>{metric.label}</th>
+                        ))}
+                        <th scope="col">Cobertura</th>
+                        <th scope="col"><span className="sr-only">Seguimiento</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {items.map((item) => (
+                        <OpportunityRow
+                            key={item.ticker}
+                            item={item}
+                            category={category}
+                            onOpen={onOpen}
+                            onAddToWatchlist={onAddToWatchlist}
+                        />
+                    ))}
+                </tbody>
+            </table>
+        </div>
     );
 }
 
@@ -223,105 +605,67 @@ function OpportunityRow({
     item,
     category,
     onOpen,
-    onAddToWatchlist
+    onAddToWatchlist,
 }: {
     item: Opportunity;
     category: Category;
     onOpen: (ticker: string) => void;
     onAddToWatchlist: (ticker: string, name?: string) => void;
 }) {
-    const metrics = categoryMetrics[category];
     return (
-        <tr onClick={() => onOpen(item.ticker)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-violet-500/5">
-            <td className="px-4 py-3">
-                <div className="flex items-center gap-2">
-                    <SymbolLogo symbol={item.symbol} size={28} />
-                    <div>
-                        <b className="text-sm text-foreground">{item.ticker}</b>
-                        <p className="max-w-[175px] truncate text-[10px] text-muted-foreground">{item.name}</p>
-                    </div>
-                </div>
-            </td>
-            <td className="px-3 py-3 font-bold text-foreground">
-                {money(item.price)}
-                <p className={cn('text-[10px]', (item.change || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{format(item.change, true)}</p>
-            </td>
-            {metrics.map((metric) => (
-                <td key={metric.label} className="px-3 py-3 font-bold text-foreground">
-                    <span className={cn(metricToneClass(metric.tone?.(item) || 'default'))}>{metric.value(item)}</span>
-                </td>
-            ))}
-            <td className="px-3 py-3 text-muted-foreground">{item.scoreCoverage ?? 0}%</td>
-            <td className="px-3 py-3 text-right">
+        <tr onClick={() => onOpen(item.ticker)}>
+            <th scope="row">
                 <button
                     type="button"
+                    className="opportunities-company"
+                    aria-label={`Ver análisis de ${item.name} (${item.ticker})`}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onOpen(item.ticker);
+                    }}
+                >
+                    <SymbolLogo symbol={item.symbol} size={36} />
+                    <span className="opportunities-company__name">
+                        <strong>{item.ticker}</strong>
+                        <span title={item.name}>{item.name}</span>
+                        <small>{item.sector || 'Sin sector'}</small>
+                    </span>
+                </button>
+            </th>
+            <td className="opportunities-price">
+                <strong>{money(item.price)}</strong>
+                <MarketChange value={item.change} />
+            </td>
+            {categoryMetrics[category].map((metric) => (
+                <td key={metric.label} className={metricToneClass(metric.tone?.(item) || 'default')}>
+                    {metric.value(item)}
+                </td>
+            ))}
+            <td className="opportunities-coverage">{item.scoreCoverage ?? 0}%</td>
+            <td>
+                <button
+                    type="button"
+                    className="market-icon-action"
                     title="Agregar a Seguimiento"
-                    onClick={(e) => {
-                        e.stopPropagation();
+                    aria-label={`Agregar ${item.ticker} a Seguimiento`}
+                    onClick={(event) => {
+                        event.stopPropagation();
                         onAddToWatchlist(item.ticker, item.name);
                     }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 text-muted-foreground hover:border-violet-500 hover:text-violet-500 hover:bg-violet-500/10 transition-all"
                 >
-                    <Bookmark className="h-4 w-4" />
+                    <Bookmark size={16} />
                 </button>
             </td>
         </tr>
     );
 }
 
-function OpportunityCard({
-    item,
-    category,
-    onOpen,
-    onAddToWatchlist
-}: {
-    item: Opportunity;
-    category: Category;
-    onOpen: (ticker: string) => void;
-    onAddToWatchlist: (ticker: string, name?: string) => void;
-}) {
-    const metrics = categoryMetrics[category];
-    const primaryMetric = metrics[0];
-    return (
-        <div className="rounded-2xl border border-border/60 bg-background/50 p-4 text-left transition-colors hover:border-violet-500/40">
-            <div className="flex items-center justify-between">
-                <div onClick={() => onOpen(item.ticker)} className="flex items-center gap-2 cursor-pointer">
-                    <SymbolLogo symbol={item.symbol} size={30} />
-                    <div>
-                        <b className="text-foreground">{item.ticker}</b>
-                        <p className="max-w-[190px] truncate text-[10px] text-muted-foreground">{item.name}</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        title="Agregar a Seguimiento"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onAddToWatchlist(item.ticker, item.name);
-                        }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 text-muted-foreground hover:border-violet-500 hover:text-violet-500 hover:bg-violet-500/10 transition-all"
-                    >
-                        <Bookmark className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="rounded-lg bg-violet-500/15 px-2 py-1 text-right text-violet-700 dark:text-violet-300">
-                        <span className="block text-[9px] font-bold uppercase tracking-wide">{primaryMetric.label}</span>
-                        <span className={cn('block text-sm font-black', metricToneClass(primaryMetric.tone?.(item) || 'accent'))}>{primaryMetric.value(item)}</span>
-                    </span>
-                </div>
-            </div>
-            <div onClick={() => onOpen(item.ticker)} className="mt-4 grid grid-cols-3 gap-2 text-xs cursor-pointer">
-                <Metric label="Precio" value={money(item.price)} />
-                {metrics.slice(1).map((metric) => <Metric key={metric.label} label={metric.label} value={metric.value(item)} tone={metric.tone?.(item)} />)}
-            </div>
-        </div>
-    );
-}
-
 function metricToneClass(tone: MetricTone) {
-    return tone === 'positive' ? 'text-emerald-500' : tone === 'negative' ? 'text-rose-500' : tone === 'accent' ? 'text-violet-700 dark:text-violet-300' : 'text-foreground';
-}
-
-function Metric({ label, value, tone = 'default' }: { label: string; value: string; tone?: MetricTone }) {
-    return <div><p className="text-[9px] font-bold uppercase text-muted-foreground">{label}</p><p className={cn('mt-0.5 font-black', metricToneClass(tone))}>{value}</p></div>;
+    return tone === 'positive'
+        ? 'text-emerald-500'
+        : tone === 'negative'
+          ? 'text-rose-500'
+          : tone === 'accent'
+            ? 'text-violet-700 dark:text-violet-300'
+            : 'text-foreground';
 }
