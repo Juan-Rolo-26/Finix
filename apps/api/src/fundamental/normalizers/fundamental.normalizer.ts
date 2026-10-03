@@ -1,3 +1,4 @@
+import { financialNumber, isCalendarDate, earningsSurprise } from '@finix/shared';
 import {
     DerivedFundamentalData,
     EarningsPoint,
@@ -31,18 +32,27 @@ export function defaultDerived(): DerivedFundamentalData {
     };
 }
 
+const statementFields = ['revenue', 'grossProfit', 'operatingIncome', 'netIncome', 'eps', 'ebitda',
+    'totalAssets', 'totalLiabilities', 'totalEquity', 'cashAndEquivalents', 'totalDebt',
+    'operatingCashFlow', 'capex', 'freeCashFlow'] as const;
+
 function normalizeStatementArray(values: StatementPoint[] | undefined): StatementPoint[] {
     if (!Array.isArray(values)) return [];
-    return values
-        .filter((item) => typeof item?.date === 'string' && item.date.length > 0)
-        .sort((a, b) => (a.date > b.date ? -1 : 1));
+    return values.filter(item => isCalendarDate(item?.date)).map(item => ({
+        ...item, ...Object.fromEntries(statementFields.map(field => [field, financialNumber(item[field]) ?? null])),
+    })).filter(item => statementFields.some(field => item[field] !== null))
+        .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 function normalizeEarnings(values: EarningsPoint[] | undefined): EarningsPoint[] {
     if (!Array.isArray(values)) return [];
-    return values
-        .filter((item) => typeof item?.date === 'string' && item.date.length > 0)
-        .sort((a, b) => (a.date > b.date ? -1 : 1));
+    return values.filter(item => isCalendarDate(item?.date)).map(item => ({
+        ...item,
+        actualEps: financialNumber(item.actualEps) ?? null,
+        estimatedEps: financialNumber(item.estimatedEps) ?? null,
+        surprisePct: earningsSurprise(item.actualEps, item.estimatedEps) ?? null,
+    })).filter(item => item.actualEps !== null || item.estimatedEps !== null)
+        .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 export function buildNormalizedResponse(params: {
@@ -63,7 +73,7 @@ export function buildNormalizedResponse(params: {
 }): FundamentalResponse {
     const metrics = {
         ...defaultMetrics(),
-        ...params.payload.metrics,
+        ...Object.fromEntries(Object.keys(defaultMetrics()).map(field => [field, financialNumber(params.payload.metrics[field]) ?? null])),
     };
 
     const statements = {

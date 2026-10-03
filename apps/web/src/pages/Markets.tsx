@@ -32,8 +32,7 @@ import {
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import TradingViewChart from '@/components/TradingViewChart';
-import { SymbolLogo } from '@/components/SymbolLogo';
-import { MarketHeader } from '@/components/markets/MarketPrimitives';
+import { MarketChartHeader } from '@/components/markets/MarketChartHeader';
 import MarketDashboard, {
     type MarketDashboardData,
 } from '@/components/markets/MarketDashboard';
@@ -423,58 +422,40 @@ export default function Markets() {
 
                     <TabsContent value="chart" className="market-section">
                         <section className="market-chart-header">
-                            <div className="market-chart-controls">
-                                <div className="w-full mb-3">
-                                    <MarketHeader
-                                        title={
-                                            selectedAsset?.name ||
-                                            'Gráfico'
-                                        }
-                                        eyebrow="ANÁLISIS TÉCNICO · FINIX"
-                                        icon={LineChart}
-                                        description={
-                                            <span className="flex items-center justify-center gap-2">
-                                                <SymbolLogo
-                                                    symbol={
-                                                        selectedAsset?.symbol ||
-                                                        'NASDAQ:AAPL'
-                                                    }
-                                                    size={24}
+                            <div className="market-chart-controls market-chart-controls--compact">
+                                <MarketChartHeader
+                                    title={selectedAsset?.name || 'Gráfico'}
+                                    symbol={selectedAsset?.symbol || 'NASDAQ:AAPL'}
+                                    exchange={selectedAsset?.exchange}
+                                    actions={
+                                        <Dialog
+                                            open={isSearchOpen}
+                                            onOpenChange={setIsSearchOpen}
+                                        >
+                                            <DialogTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    className="market-action"
+                                                >
+                                                    <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                                                    <span>Buscar símbolo</span>
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="sm:max-w-xl p-0 overflow-hidden border border-border/80 bg-card/95 backdrop-blur-2xl shadow-2xl shadow-emerald-950/20 rounded-lg gap-0 markets-view">
+                                                <MarketAssetSearch
+                                                    onSelect={(sym) => {
+                                                        setIsSearchOpen(false);
+                                                        handleOpenMarketSymbol(
+                                                            sym,
+                                                        );
+                                                    }}
                                                 />
-                                                {selectedAsset?.symbol ||
-                                                    'NASDAQ:AAPL'}
-                                            </span>
-                                        }
-                                        actions={
-                                            <Dialog
-                                                open={isSearchOpen}
-                                                onOpenChange={setIsSearchOpen}
-                                            >
-                                                <DialogTrigger asChild>
-                                                    <Button
-                                                        variant="outline"
-                                                        className="market-action"
-                                                    >
-                                                        <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
-                                                        <span>Buscar símbolo</span>
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <DialogContent className="sm:max-w-xl p-0 overflow-hidden border border-border/80 bg-card/95 backdrop-blur-2xl shadow-2xl shadow-emerald-950/20 rounded-lg gap-0 markets-view">
-                                                    <MarketAssetSearch
-                                                        onSelect={(sym) => {
-                                                            setIsSearchOpen(false);
-                                                            handleOpenMarketSymbol(
-                                                                sym,
-                                                            );
-                                                        }}
-                                                    />
-                                                </DialogContent>
-                                            </Dialog>
-                                        }
-                                    />
-                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                    }
+                                />
 
-                                <div className="flex items-center justify-between w-full flex-wrap gap-4 py-3.5 border-y border-border/60 mb-6">
+                                <div className="flex items-center justify-between w-full flex-wrap gap-4 py-3.5 border-b border-border/60 mb-4">
                                     <div className="flex items-center gap-2.5">
                                         <LineChart size={18} className="text-emerald-500" />
                                         <p className="text-base font-bold text-foreground">

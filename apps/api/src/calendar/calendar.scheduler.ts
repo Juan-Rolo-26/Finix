@@ -44,13 +44,9 @@ export class CalendarScheduler {
     }
 
     /**
-     * Sincronización vespertina tras el cierre del mercado para actualizar sorpresas de resultados y datos macro.
-     * Se ejecuta de lunes a viernes a las 17:30 ET.
+     * Sincronización económica cada hora, incluidos fines de semana.
      */
-    /**
-     * Sincronización periódica de eventos Macro y de Mercado (cada 2 horas en días hábiles).
-     */
-    @Cron('0 */2 * * 1-5', {
+    @Cron('0 * * * *', {
         timeZone: 'America/New_York',
     })
     async handlePeriodicMacroSync() {
@@ -95,13 +91,13 @@ export class CalendarScheduler {
     /**
      * Sincronización diaria de Lunes a Viernes a las 11:00 AM (Hora Argentina / Local).
      * Actualiza automáticamente los balances que ya reportaron: EPS real vs estimado,
-     * ingresos reales vs estimados, sorpresas y la reacción del mercado en la cotización.
+     * ingresos reales vs estimados y sorpresas del mismo período.
      */
     @Cron('0 11 * * 1-5', {
         timeZone: 'America/Argentina/Buenos_Aires',
     })
     async handleWeekday11AmReportedEarningsSync() {
-        this.logger.log('[CalendarScheduler] 11:00 AM Lunes a Viernes: Sincronizando balances reportados, sorpresas y reacción del mercado...');
+        this.logger.log('[CalendarScheduler] 11:00 AM Lunes a Viernes: Sincronizando balances reportados y sorpresas...');
         try {
             await this.calendarService.syncReportedEarningsResults();
             this.logger.log('[CalendarScheduler] Sincronización de balances 11:00 AM finalizada con éxito.');

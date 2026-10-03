@@ -442,25 +442,36 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                     onClick={() =>
                                         onSelectSymbol?.(item.symbol)
                                     }
-                                    title={item.name}
+                                    title={`${item.name} (${item.ticker})`}
                                 >
-                                    <strong>{item.ticker}</strong>
-                                    <span>{formatMoney(item.price)}</span>
-                                    <span>
-                                        {item.change1W > 0 ? '+' : ''}
-                                        {item.change1W.toFixed(2)}%
-                                    </span>
-                                    <span>
-                                        {activeMode === 'macd'
-                                            ? 'MACD ' + item.hist.toFixed(2)
-                                            : activeMode.toUpperCase() +
-                                              ' ' +
-                                              (activeMode === 'adx'
+                                    <div className="market-heatmap-tile__header">
+                                        <span className="market-heatmap-tile__symbol">
+                                            {item.ticker}
+                                        </span>
+                                        <span className="market-heatmap-tile__change">
+                                            {item.change1W > 0 ? '+' : ''}
+                                            {item.change1W.toFixed(2)}%
+                                        </span>
+                                    </div>
+                                    <div className="market-heatmap-tile__price">
+                                        {formatMoney(item.price)}
+                                    </div>
+                                    <div className="market-heatmap-tile__indicator">
+                                        <span>
+                                            {activeMode === 'macd'
+                                                ? 'MACD'
+                                                : activeMode.toUpperCase()}
+                                        </span>
+                                        <span>
+                                            {activeMode === 'macd'
+                                                ? item.hist.toFixed(2)
+                                                : activeMode === 'adx'
                                                   ? item.adx
                                                   : activeMode === 'stoch'
                                                     ? item.stoch
-                                                    : item.rsi)}
-                                    </span>
+                                                    : item.rsi}
+                                        </span>
+                                    </div>
                                 </button>
                             ))}
                         </div>

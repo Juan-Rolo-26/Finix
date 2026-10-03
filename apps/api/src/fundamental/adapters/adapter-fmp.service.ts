@@ -112,7 +112,7 @@ export class AdapterFMPService implements FundamentalProviderAdapter {
 
         const earnings: EarningsPoint[] = (Array.isArray(earningsRaw) ? earningsRaw : []).map((row: any) => ({
             date: String(row?.date || row?.fiscalDateEnding || ''),
-            actualEps: toNumber(row?.epsActual || row?.eps),
+            actualEps: toNumber(row?.epsActual ?? row?.eps),
             estimatedEps: toNumber(row?.epsEstimated),
             surprisePct: toNumber(row?.epsDifferencePercent || row?.surprisePercentage),
         }));

@@ -191,6 +191,163 @@
     background: hsl(var(--primary) / 0.09);
     color: hsl(var(--primary));
 }
+.market-dollar-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+}
+@container (min-width: 520px) {
+    .market-dollar-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@container (min-width: 1040px) {
+    .market-dollar-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+.dollar-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    border-radius: 14px;
+    border: 1px solid hsl(var(--border) / 0.85);
+    background: hsl(var(--card));
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.03);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.dollar-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.06);
+    border-color: hsl(var(--border));
+}
+.dollar-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+.dollar-card__identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.dollar-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+.dollar-card__titles {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.dollar-card__name {
+    font-size: 16.5px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: hsl(var(--foreground));
+    letter-spacing: -0.01em;
+}
+.dollar-card__subtitle {
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+.dollar-card__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-width: 1px;
+    border-style: solid;
+    flex-shrink: 0;
+}
+.dollar-card__rates {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    background: hsl(var(--muted) / 0.35);
+    border: 1px solid hsl(var(--border) / 0.6);
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+.dollar-card__rate-box {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.dollar-card__rate-box--sell {
+    text-align: right;
+}
+.dollar-card__divider {
+    width: 1px;
+    height: 30px;
+    background: hsl(var(--border) / 0.7);
+    margin-inline: 8px;
+}
+.dollar-card__rate-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: hsl(var(--muted-foreground));
+}
+.dollar-card__rate-label--sell {
+    color: hsl(var(--primary));
+}
+.dollar-card__rate-val {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+    color: hsl(var(--foreground) / 0.88);
+}
+.dollar-card__rate-val--sell {
+    color: hsl(var(--foreground));
+    font-weight: 800;
+}
+.dollar-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid hsl(var(--border) / 0.55);
+    font-size: 11.5px;
+    color: hsl(var(--muted-foreground));
+}
+.dollar-card__time {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+}
+.dollar-card__spread {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: hsl(var(--muted) / 0.6);
+    color: hsl(var(--muted-foreground));
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
 .market-quote-card__footer > span {
     min-width: 0;
     overflow-wrap: anywhere;
@@ -630,75 +787,267 @@
 }
 .market-heatmap-tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
-    gap: 10px;
-    padding: 16px;
-    border-radius: 8px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+    gap: 8px;
+    padding: 14px;
+    border-radius: 12px;
+    background: hsl(var(--card) / 0.5);
+    border: 1px solid hsl(var(--border) / 0.7);
 }
 .market-heatmap-tile {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    gap: 6px;
-    min-height: 136px;
-    padding: 14px 10px;
-    border-radius: 8px;
-    font-size: 15px;
-    border: 1.5px solid transparent;
+    justify-content: space-between;
+    text-align: left;
+    gap: 5px;
+    min-height: 102px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    border: 1px solid transparent;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
     transition:
-        transform 0.15s ease,
-        box-shadow 0.15s ease;
+        transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.16s ease;
 }
 .market-heatmap-tile:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    z-index: 2;
+}
+.market-heatmap-tile__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    width: 100%;
+}
+.market-heatmap-tile__symbol {
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+}
+.market-heatmap-tile__change {
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 2.5px 5.5px;
+    border-radius: 5px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+.market-heatmap-tile__price {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    margin-block: auto;
+}
+.market-heatmap-tile__indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.85;
 }
 .market-heatmap-tile strong {
-    font-size: 22px;
+    font-size: 15px;
     font-weight: 800;
     line-height: 1.1;
 }
+
+/* Light, soft pastel surfaces */
 .market-heatmap-tile--positive,
 .market-heatmap-tile--creates-value {
-    color: #ffffff !important;
-    background: #15803d !important;
-    border-color: #166534 !important;
+    background: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+    color: #064e3b !important;
 }
+.market-heatmap-tile--positive:hover,
+.market-heatmap-tile--creates-value:hover {
+    border-color: #34d399 !important;
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.15) !important;
+}
+.market-heatmap-tile--positive .market-heatmap-tile__symbol,
+.market-heatmap-tile--creates-value .market-heatmap-tile__symbol,
 .market-heatmap-tile--positive strong,
-.market-heatmap-tile--positive span,
-.market-heatmap-tile--creates-value strong,
-.market-heatmap-tile--creates-value span {
-    color: #ffffff !important;
+.market-heatmap-tile--creates-value strong {
+    color: #065f46 !important;
 }
+.market-heatmap-tile--positive .market-heatmap-tile__price,
+.market-heatmap-tile--creates-value .market-heatmap-tile__price {
+    color: #047857 !important;
+}
+.market-heatmap-tile--positive .market-heatmap-tile__change,
+.market-heatmap-tile--creates-value .market-heatmap-tile__change {
+    background: rgba(16, 185, 129, 0.18) !important;
+    color: #047857 !important;
+}
+.market-heatmap-tile--positive .market-heatmap-tile__indicator,
+.market-heatmap-tile--creates-value .market-heatmap-tile__indicator {
+    color: #059669 !important;
+}
+
 .market-heatmap-tile--negative,
 .market-heatmap-tile--destroys-value {
-    color: #ffffff !important;
-    background: #be123c !important;
-    border-color: #9f1239 !important;
+    background: #fff1f2 !important;
+    border-color: #fecdd3 !important;
+    color: #881337 !important;
 }
+.market-heatmap-tile--negative:hover,
+.market-heatmap-tile--destroys-value:hover {
+    border-color: #fb7185 !important;
+    box-shadow: 0 6px 18px rgba(244, 63, 94, 0.15) !important;
+}
+.market-heatmap-tile--negative .market-heatmap-tile__symbol,
+.market-heatmap-tile--destroys-value .market-heatmap-tile__symbol,
 .market-heatmap-tile--negative strong,
-.market-heatmap-tile--negative span,
-.market-heatmap-tile--destroys-value strong,
-.market-heatmap-tile--destroys-value span {
-    color: #ffffff !important;
+.market-heatmap-tile--destroys-value strong {
+    color: #9f1239 !important;
 }
+.market-heatmap-tile--negative .market-heatmap-tile__price,
+.market-heatmap-tile--destroys-value .market-heatmap-tile__price {
+    color: #be123c !important;
+}
+.market-heatmap-tile--negative .market-heatmap-tile__change,
+.market-heatmap-tile--destroys-value .market-heatmap-tile__change {
+    background: rgba(244, 63, 94, 0.15) !important;
+    color: #be123c !important;
+}
+.market-heatmap-tile--negative .market-heatmap-tile__indicator,
+.market-heatmap-tile--destroys-value .market-heatmap-tile__indicator {
+    color: #e11d48 !important;
+}
+
 .market-heatmap-tile--neutral,
 .market-heatmap-tile--equilibrium {
-    color: #0f172a !important;
-    background: #ffffff !important;
-    border: 1.5px solid #cbd5e1 !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #334155 !important;
 }
+.market-heatmap-tile--neutral:hover,
+.market-heatmap-tile--equilibrium:hover {
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+}
+.market-heatmap-tile--neutral .market-heatmap-tile__symbol,
+.market-heatmap-tile--equilibrium .market-heatmap-tile__symbol,
 .market-heatmap-tile--neutral strong,
-.market-heatmap-tile--neutral span,
-.market-heatmap-tile--equilibrium strong,
-.market-heatmap-tile--equilibrium span {
+.market-heatmap-tile--equilibrium strong {
     color: #0f172a !important;
+}
+.market-heatmap-tile--neutral .market-heatmap-tile__price,
+.market-heatmap-tile--equilibrium .market-heatmap-tile__price {
+    color: #475569 !important;
+}
+.market-heatmap-tile--neutral .market-heatmap-tile__change,
+.market-heatmap-tile--equilibrium .market-heatmap-tile__change {
+    background: rgba(148, 163, 184, 0.16) !important;
+    color: #475569 !important;
+}
+.market-heatmap-tile--neutral .market-heatmap-tile__indicator,
+.market-heatmap-tile--equilibrium .market-heatmap-tile__indicator {
+    color: #64748b !important;
+}
+
+/* Dark mode adjustments */
+.dark .market-heatmap-tile--positive,
+.dark .market-heatmap-tile--creates-value {
+    background: rgba(16, 185, 129, 0.12) !important;
+    border-color: rgba(16, 185, 129, 0.28) !important;
+    color: #6ee7b7 !important;
+}
+.dark .market-heatmap-tile--positive:hover,
+.dark .market-heatmap-tile--creates-value:hover {
+    border-color: rgba(52, 211, 153, 0.5) !important;
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.2) !important;
+}
+.dark .market-heatmap-tile--positive .market-heatmap-tile__symbol,
+.dark .market-heatmap-tile--creates-value .market-heatmap-tile__symbol,
+.dark .market-heatmap-tile--positive strong,
+.dark .market-heatmap-tile--creates-value strong {
+    color: #a7f3d0 !important;
+}
+.dark .market-heatmap-tile--positive .market-heatmap-tile__price,
+.dark .market-heatmap-tile--creates-value .market-heatmap-tile__price {
+    color: #6ee7b7 !important;
+}
+.dark .market-heatmap-tile--positive .market-heatmap-tile__change,
+.dark .market-heatmap-tile--creates-value .market-heatmap-tile__change {
+    background: rgba(16, 185, 129, 0.22) !important;
+    color: #6ee7b7 !important;
+}
+.dark .market-heatmap-tile--positive .market-heatmap-tile__indicator,
+.dark .market-heatmap-tile--creates-value .market-heatmap-tile__indicator {
+    color: #34d399 !important;
+}
+
+.dark .market-heatmap-tile--negative,
+.dark .market-heatmap-tile--destroys-value {
+    background: rgba(244, 63, 94, 0.12) !important;
+    border-color: rgba(244, 63, 94, 0.28) !important;
+    color: #fda4af !important;
+}
+.dark .market-heatmap-tile--negative:hover,
+.dark .market-heatmap-tile--destroys-value:hover {
+    border-color: rgba(251, 113, 133, 0.5) !important;
+    box-shadow: 0 6px 18px rgba(244, 63, 94, 0.2) !important;
+}
+.dark .market-heatmap-tile--negative .market-heatmap-tile__symbol,
+.dark .market-heatmap-tile--destroys-value .market-heatmap-tile__symbol,
+.dark .market-heatmap-tile--negative strong,
+.dark .market-heatmap-tile--destroys-value strong {
+    color: #fecdd3 !important;
+}
+.dark .market-heatmap-tile--negative .market-heatmap-tile__price,
+.dark .market-heatmap-tile--destroys-value .market-heatmap-tile__price {
+    color: #fda4af !important;
+}
+.dark .market-heatmap-tile--negative .market-heatmap-tile__change,
+.dark .market-heatmap-tile--destroys-value .market-heatmap-tile__change {
+    background: rgba(244, 63, 94, 0.22) !important;
+    color: #fda4af !important;
+}
+.dark .market-heatmap-tile--negative .market-heatmap-tile__indicator,
+.dark .market-heatmap-tile--destroys-value .market-heatmap-tile__indicator {
+    color: #fb7185 !important;
+}
+
+.dark .market-heatmap-tile--neutral,
+.dark .market-heatmap-tile--equilibrium {
+    background: rgba(148, 163, 184, 0.08) !important;
+    border-color: rgba(148, 163, 184, 0.2) !important;
+    color: #cbd5e1 !important;
+}
+.dark .market-heatmap-tile--neutral:hover,
+.dark .market-heatmap-tile--equilibrium:hover {
+    border-color: rgba(203, 213, 225, 0.4) !important;
+}
+.dark .market-heatmap-tile--neutral .market-heatmap-tile__symbol,
+.dark .market-heatmap-tile--equilibrium .market-heatmap-tile__symbol,
+.dark .market-heatmap-tile--neutral strong,
+.dark .market-heatmap-tile--equilibrium strong {
+    color: #f1f5f9 !important;
+}
+.dark .market-heatmap-tile--neutral .market-heatmap-tile__price,
+.dark .market-heatmap-tile--equilibrium .market-heatmap-tile__price {
+    color: #cbd5e1 !important;
+}
+.dark .market-heatmap-tile--neutral .market-heatmap-tile__change,
+.dark .market-heatmap-tile--equilibrium .market-heatmap-tile__change {
+    background: rgba(148, 163, 184, 0.18) !important;
+    color: #cbd5e1 !important;
+}
+.dark .market-heatmap-tile--neutral .market-heatmap-tile__indicator,
+.dark .market-heatmap-tile--equilibrium .market-heatmap-tile__indicator {
+    color: #94a3b8 !important;
 }
 .market-indicator-gauge {
     width: 100%;

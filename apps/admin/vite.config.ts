@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     resolve: {
       alias: {
+        "@finix/shared": path.resolve(__dirname, "../../packages/shared/src/index.ts"),
         "@": path.resolve(__dirname, "./src"),
       },
     },

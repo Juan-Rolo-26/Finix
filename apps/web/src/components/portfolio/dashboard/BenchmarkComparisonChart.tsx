@@ -18,8 +18,8 @@ interface BenchmarkComparisonChartProps {
     dataByRange: Record<TimeRange, ComparisonDatum[]>;
     selectedRange: TimeRange;
     onRangeChange?: (range: TimeRange) => void;
-    portfolioReturn?: number;
     hasHoldings?: boolean;
+    loading?: boolean;
     className?: string;
 }
 
@@ -138,6 +138,7 @@ export function BenchmarkComparisonChart({
     selectedRange,
     onRangeChange,
     hasHoldings = true,
+    loading = false,
     className,
 }: BenchmarkComparisonChartProps) {
     const rawId = useId();
@@ -162,7 +163,7 @@ export function BenchmarkComparisonChart({
         if (!hasHoldings) return [];
 
         return (dataByRange[activeRange] ?? []).filter((point) =>
-            Number.isFinite(point.portfolio) && point.portfolio > 0,
+            Number.isFinite(point.portfolio) && point.portfolio >= 0,
         );
     }, [dataByRange, activeRange, hasHoldings]);
 
@@ -174,7 +175,7 @@ export function BenchmarkComparisonChart({
         const pReturn = hasData ? ((lastPoint?.portfolio ?? 100) - 100) : 0;
         const spReturn = hasBenchmark ? ((lastPoint?.sp500 ?? 100) - 100) : null;
         const spread = hasBenchmark ? ((lastPoint?.portfolio ?? 100) - (lastPoint?.sp500 ?? 100)) : null;
-        const leader = isPortfolioInactive ? 'Sin posiciones' : !hasData ? 'Sin datos' : spread == null ? 'SPY no disponible' : (spread >= 0 ? 'Portafolio' : 'S&P 500');
+        const leader = isPortfolioInactive ? 'Sin posiciones' : !hasData ? 'Sin datos' : spread == null ? 'SPY no disponible' : (Math.abs(spread) < 0.05 ? 'Empate' : spread > 0 ? 'Portafolio' : 'S&P 500');
 
         return {
             portfolioReturn: Number.isFinite(pReturn) ? pReturn : 0,
@@ -211,7 +212,7 @@ export function BenchmarkComparisonChart({
     const metricCardClass = 'min-w-0 rounded-2xl border border-border/50 bg-background/70 px-4 py-3.5 shadow-xs backdrop-blur-md transition-all hover:border-border/80';
 
     return (
-        <div className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-lg flex flex-col justify-between text-center', className)}>
+        <div role="region" aria-label="Comparación del portafolio con S&P 500" aria-busy={loading} className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-lg flex flex-col justify-between text-center', className)}>
             {/* Header */}
             <div className="border-b border-border/40 px-6 py-6 sm:px-7 sm:py-7 text-center">
                 <div className="flex flex-col items-center justify-center gap-6 text-center">
@@ -231,11 +232,13 @@ export function BenchmarkComparisonChart({
                                 Portafolio vs S&P 500
                             </h3>
                             <p className="text-xs sm:text-sm text-muted-foreground/80 max-w-xl text-center mx-auto">
-                                {summary.isPortfolioInactive
+                                {loading
+                                    ? 'Cargando comparación con datos reales…'
+                                    : summary.isPortfolioInactive
                                     ? 'Agregá al menos un activo para activar la comparación contra el S&P 500 (SPY).'
                                     : !summary.hasData
                                         ? 'Todavía no hay suficientes mediciones reales para este período.'
-                                        : 'Rendimiento desde la primera medición. Aportes, retiros y compras no cuentan como ganancia.'}
+                                        : 'Rendimiento del período, descontando aportes y retiros. SPY refleja variación de precio, sin dividendos.'}
                             </p>
                         </div>
 
@@ -246,7 +249,7 @@ export function BenchmarkComparisonChart({
                                     <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_#10b981]" style={{ backgroundColor: PORTFOLIO_COLOR }} />
                                     Portafolio
                                     <span className={cn('font-bold tabular-nums', summary.portfolioReturn >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
-                                        {formatPercent(summary.portfolioReturn, 1, true)}
+                                        {summary.hasData ? formatPercent(summary.portfolioReturn, 1, true) : '—'}
                                     </span>
                                 </span>
                                 <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-foreground/90">
@@ -284,7 +287,7 @@ export function BenchmarkComparisonChart({
                     <div className="grid gap-3 sm:grid-cols-3 w-full">
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
                             <div className="flex items-center justify-center gap-1.5 text-muted-foreground w-full">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-center">Brecha (Alpha)</span>
+                                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-center">Diferencia de rendimiento</span>
                                 {!summary.hasBenchmark ? (
                                     <Target className="w-4 h-4 text-muted-foreground/60" />
                                 ) : isOutperforming ? (
@@ -320,7 +323,7 @@ export function BenchmarkComparisonChart({
                                 <HelpCircle className="w-4 h-4 text-muted-foreground/50" />
                             </div>
                             <p className="mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums text-foreground/90 text-center">
-                                100.0
+                                {summary.hasData ? '100.0' : '—'}
                             </p>
                             <p className="mt-1.5 text-[11px] text-muted-foreground font-medium text-center">
                                 Punto de partida comparativo
@@ -405,7 +408,7 @@ export function BenchmarkComparisonChart({
 
                         {/* S&P 500 Area & Stroke: solo si llegó una serie real */}
                         {summary.hasBenchmark && <Area
-                            type="monotone"
+                            type="linear"
                             dataKey="sp500"
                             stroke={SP500_COLOR}
                             strokeWidth={2.2}
@@ -420,7 +423,7 @@ export function BenchmarkComparisonChart({
 
                         {/* Portfolio Area & Stroke */}
                         <Area
-                            type="monotone"
+                            type="linear"
                             dataKey="portfolio"
                             stroke={PORTFOLIO_COLOR}
                             strokeWidth={2.8}
@@ -436,7 +439,7 @@ export function BenchmarkComparisonChart({
                 </div>
             ) : (
                 <div className="mx-4 my-4 flex min-h-[230px] items-center justify-center rounded-2xl border border-dashed border-border/50 bg-muted/20 px-6 text-center text-sm text-muted-foreground sm:min-h-[280px]">
-                    {summary.isPortfolioInactive ? 'Agregá una posición para activar la comparación.' : 'Todavía no hay datos reales suficientes para este período.'}
+                    {loading ? 'Cargando comparación con datos reales…' : summary.isPortfolioInactive ? 'Agregá una posición para activar la comparación.' : 'Todavía no hay datos reales suficientes para este período.'}
                 </div>
             )}
         </div>

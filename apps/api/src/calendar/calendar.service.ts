@@ -1,4 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { financialNumber, isCalendarDate, isVisibleEarnings, normalizeEarnings, earningsSurprise } from '@finix/shared';
 import { PrismaService } from '../prisma.service';
 import {
     HomeCalendarResponse,
@@ -98,7 +99,32 @@ export class CalendarService {
         }
 
         economicEvents = economicEvents.filter(event => !isLegacyEconomicTemplate(event));
-        earningsEvents = earningsEvents.filter(event => !isLegacyEarningsTemplate(event));
+        const [liveEconomic, liveEarnings] = await Promise.all([
+            this.providerService.getUpcomingEconomicEvents(mondayStr, fridayStr),
+            this.providerService.fetchTradingViewSP500Earnings({ from: mondayStr, to: fridayStr }),
+        ]);
+        const eventKey = (event: any) => JSON.stringify([event.country, event.date, event.time || '', event.title.trim().toLowerCase()]);
+        const merged = new Map<string, (typeof economicEvents)[number]>(economicEvents.map(event => [eventKey(event), event]));
+        for (const event of liveEconomic) {
+            const key = eventKey(event);
+            const previous = merged.get(key);
+            if (previous?.sourceType === 'MANUAL' || previous?.isManual) continue;
+            const availableFields = Object.fromEntries(Object.entries(event).filter(([, value]) => value !== undefined));
+            merged.set(key, { ...previous, ...availableFields, id: previous?.id || `economic-${event.externalId || key}` } as any);
+        }
+        economicEvents = [...merged.values()].sort((a, b) => b.marketImpactScore - a.marketImpactScore || a.date.localeCompare(b.date));
+        const earningsKey = (event: any) => `${event.ticker.trim().toUpperCase().replace(/\./g, '-')}|${event.date}`;
+        const mergedEarnings = new Map<string, (typeof earningsEvents)[number]>(
+            earningsEvents.filter(event => !isLegacyEarningsTemplate(event)).map(event => [earningsKey(event), event]));
+        for (const event of liveEarnings) {
+            const key = earningsKey(event);
+            const previous = mergedEarnings.get(key);
+            if (previous?.sourceType === 'MANUAL') continue;
+            const availableFields = Object.fromEntries(Object.entries(event).filter(([, value]) => value !== undefined));
+            mergedEarnings.set(key, { ...previous, ...availableFields, id: previous?.id || `earnings-${key}` } as any);
+        }
+        earningsEvents = [...mergedEarnings.values()].map(normalizeEarnings).filter(isVisibleEarnings)
+            .sort((a, b) => b.earningsImpactScore - a.earningsImpactScore || a.date.localeCompare(b.date));
         const selectedCards: HomeCalendarEventCard[] = [];
 
         // 1. Top Earnings Candidate (threshold: earningsImpactScore >= 65)
@@ -108,14 +134,14 @@ export class CalendarService {
                 ? 'Después del cierre'
                 : topEarnings.reportTiming === 'BMO'
                     ? 'Antes de la apertura'
-                    : 'Durante la rueda';
+                    : topEarnings.reportTiming === 'DMH' ? 'Durante la rueda' : 'Horario pendiente';
 
             selectedCards.push({
                 id: topEarnings.id,
                 type: 'EARNINGS',
                 ticker: topEarnings.ticker,
                 title: topEarnings.companyName,
-                subtitle: 'Presenta resultados',
+                subtitle: topEarnings.actualEps != null || topEarnings.actualRevenue != null ? 'Resultados publicados' : 'Presenta resultados',
                 date: topEarnings.date,
                 time: topEarnings.time || undefined,
                 dayLabel: this.getDayLabel(topEarnings.date),
@@ -125,6 +151,8 @@ export class CalendarService {
                 logoUrl: topEarnings.logoUrl || this.earningsScoring.getTradingViewLogoUrl(topEarnings.ticker),
                 epsEstimate: topEarnings.epsEstimate ?? undefined,
                 revenueEstimate: topEarnings.revenueEstimate ?? undefined,
+                actualEps: topEarnings.actualEps ?? undefined,
+                actualRevenue: topEarnings.actualRevenue ?? undefined,
                 dateStatus: topEarnings.dateStatus as any,
             });
         }
@@ -362,6 +390,11 @@ export class CalendarService {
             dbDividends.sort((a, b) => (a.paymentDate || a.exDate).localeCompare(b.paymentDate || b.exDate));
         }
 
+
+        dbEarnings = dbEarnings.map(normalizeEarnings).filter(isVisibleEarnings);
+        dbDividends = dbDividends.filter(event =>
+            event.ticker?.trim() && (isCalendarDate(event.exDate) || isCalendarDate(event.paymentDate)) &&
+            financialNumber(event.amount) !== undefined && financialNumber(event.amount)! >= 0);
 
         // Deduplicate stored records too, preserving the first (persisted) event.
         const uniqueEvents = <T,>(events: T[], key: (event: T) => string): T[] =>
@@ -817,10 +850,9 @@ export class CalendarService {
             let errors = 0;
 
             if (list.length > 0) {
-                // No se eliminan balances anteriores: conservan el resultado real y
-                // la primera reacción de mercado para poder revisar semanas pasadas.
+                // Preserve real historical results for prior weeks.
                 const uniqueItems = Array.from(new Map(
-                    list.map(item => [`${item.ticker.toUpperCase()}|${item.date}`, item]),
+                    list.map(normalizeEarnings).filter(isVisibleEarnings).map(item => [`${item.ticker.toUpperCase()}|${item.date}`, item]),
                 ).values());
                 const existing = await this.prisma.marketEarningsEvent.findMany({
                     where: {
@@ -851,6 +883,7 @@ export class CalendarService {
                         revenueSurprise: item.revenueSurprise,
                         marketCap: item.marketCap,
                         earningsImpactScore: item.earningsImpactScore,
+                        marketReaction: item.marketReaction ?? null,
                         source: 'TradingView Official Scanner',
                         isPublished: true,
                     };
@@ -909,11 +942,11 @@ export class CalendarService {
 
     /**
      * Sincroniza y actualiza los resultados reales de los balances ya reportados
-     * (EPS real, Ingresos reales, sorpresas y reacción del mercado en la cotización).
+     * (EPS real, ingresos reales y comparaciones con estimaciones del mismo período).
      * Se ejecuta automáticamente de Lunes a Viernes a las 11:00 AM hora local.
      */
     async syncReportedEarningsResults(): Promise<{ updated: number; errors: number }> {
-        this.logger.log('[CalendarService] Sincronizando balances reportados y reacción del mercado...');
+        this.logger.log('[CalendarService] Sincronizando balances reportados...');
         let updated = 0;
         let errors = 0;
 
@@ -935,6 +968,7 @@ export class CalendarService {
             // solamente el reporte más reciente elegible, nunca todo su historial.
             const eventsByTicker = new Map<string, typeof candidates[number]>();
             for (const event of candidates) {
+                if (event.sourceType === 'MANUAL') continue;
                 const isReported = event.date < todayStr
                     || (event.date === todayStr && event.reportTiming === 'BMO');
                 if (isReported && !eventsByTicker.has(event.ticker.toUpperCase())) {
@@ -969,10 +1003,8 @@ export class CalendarService {
                                 'earnings_per_share_forecast_fq',
                                 'revenue_fq',
                                 'revenue_forecast_fq',
-                                'revenue_surprise_percent_fq',
-                                'change',
-                                'close',
                                 'earnings_release_date',
+                                'change',
                             ],
                         }),
                         signal: AbortSignal.timeout(10000),
@@ -991,33 +1023,25 @@ export class CalendarService {
                         if (!event) continue;
                         // Never attach the previous quarter's numbers to an
                         // upcoming report just because its scheduled date passed.
-                        if (!row.d[8] || new Date(row.d[8] * 1000).toISOString().slice(0, 10) !== event.date) continue;
+                        const releaseEpoch = financialNumber(row.d[5]);
+                        const releaseDate = releaseEpoch !== undefined && releaseEpoch > 0 ? new Date(releaseEpoch * 1000) : null;
+                        if (!releaseDate || !Number.isFinite(releaseDate.getTime()) || releaseDate.toISOString().slice(0, 10) !== event.date) continue;
 
-                        const actualEps = row.d[1] != null ? Number(row.d[1]) : null;
-                        const forecastEps = row.d[2] != null ? Number(row.d[2]) : null;
-                        const actualRevenue = row.d[3] != null ? Number(row.d[3]) : null;
-                        const forecastRevenue = row.d[4] != null ? Number(row.d[4]) : null;
-                        const revSurprisePct = row.d[5] != null ? Number(row.d[5]) : null;
-                        const marketChange = row.d[6] != null ? Number(Number(row.d[6]).toFixed(2)) : null;
-
-                        let epsSurprise: number | null = null;
-                        if (actualEps != null && forecastEps != null && forecastEps !== 0) {
-                            epsSurprise = Number((((actualEps - forecastEps) / Math.abs(forecastEps)) * 100).toFixed(2));
-                        }
-
-                        let revenueSurprise: number | null = revSurprisePct != null ? Number(revSurprisePct.toFixed(2)) : null;
-                        if (revenueSurprise == null && actualRevenue != null && forecastRevenue != null && forecastRevenue !== 0) {
-                            revenueSurprise = Number((((actualRevenue - forecastRevenue) / Math.abs(forecastRevenue)) * 100).toFixed(2));
-                        }
-
+                        const actualEps = financialNumber(row.d[1]);
+                        const forecastEps = financialNumber(row.d[2]);
+                        const actualRevenue = financialNumber(row.d[3]);
+                        const forecastRevenue = financialNumber(row.d[4]);
+                        const marketReaction = financialNumber(row.d[6]);
+                        const epsSurprise = earningsSurprise(actualEps, forecastEps);
+                        const revenueSurprise = earningsSurprise(actualRevenue, forecastRevenue);
                         const updateData: any = {};
-                        if (actualEps != null) updateData.actualEps = actualEps;
-                        if (actualRevenue != null) updateData.actualRevenue = actualRevenue;
-                        if (epsSurprise != null) updateData.epsSurprise = epsSurprise;
-                        if (revenueSurprise != null) updateData.revenueSurprise = revenueSurprise;
-                        // Se conserva la primera reacción observada post-balance,
-                        // para que el historial no cambie cada día con la rueda actual.
-                        if (marketChange != null && event.marketReaction == null) updateData.marketReaction = marketChange;
+                        if (actualEps !== undefined) updateData.actualEps = actualEps;
+                        if (actualRevenue !== undefined) updateData.actualRevenue = actualRevenue;
+                        if (forecastEps !== undefined) updateData.epsEstimate = forecastEps;
+                        if (forecastRevenue !== undefined) updateData.revenueEstimate = forecastRevenue;
+                        if (actualEps !== undefined) updateData.epsSurprise = epsSurprise ?? null;
+                        if (actualRevenue !== undefined) updateData.revenueSurprise = revenueSurprise ?? null;
+                        if (marketReaction !== undefined) updateData.marketReaction = marketReaction;
 
                         if (Object.keys(updateData).length > 0) {
                             await this.prisma.marketEarningsEvent.update({
@@ -1258,17 +1282,13 @@ export class CalendarService {
                 ];
             }
 
-            const [items, total] = await Promise.all([
-                this.prisma.marketEarningsEvent.findMany({
-                    where,
-                    skip,
-                    take: limit,
-                    orderBy: [{ date: 'asc' }, { earningsImpactScore: 'desc' }],
-                }),
-                this.prisma.marketEarningsEvent.count({ where }),
-            ]);
-
-            return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+            const records = await this.prisma.marketEarningsEvent.findMany({
+                where, orderBy: [{ date: 'asc' }, { earningsImpactScore: 'desc' }],
+            });
+            const available = records.filter(event => !isLegacyEarningsTemplate(event))
+                .map(normalizeEarnings).filter(isVisibleEarnings);
+            const total = available.length;
+            return { items: available.slice(skip, skip + limit), total, page, limit, totalPages: Math.ceil(total / limit) };
         }
 
         // --- Economic / Market Calendar Filtering ---
@@ -1355,20 +1375,26 @@ export class CalendarService {
                 isSP500: this.providerService.isSP500Constituent(cleanTicker),
             });
 
+            const metrics = {
+                epsEstimate: financialNumber(dto.epsEstimate), revenueEstimate: financialNumber(dto.revenueEstimate),
+                actualEps: financialNumber(dto.actualEps), actualRevenue: financialNumber(dto.actualRevenue),
+            };
+            if (!isVisibleEarnings({ ...metrics, ticker: cleanTicker, date: dto.date })) {
+                throw new BadRequestException('El balance necesita una fecha válida y al menos una cifra de EPS o facturación.');
+            }
             return this.prisma.marketEarningsEvent.create({
                 data: {
                     ticker: cleanTicker,
                     companyName: dto.companyName || cleanTicker,
                     logoUrl: dto.logoUrl || this.earningsScoring.getTradingViewLogoUrl(cleanTicker),
                     date: dto.date,
-                    time: dto.time || '18:00',
-                    timestampUtc: new Date(`${dto.date}T${dto.time || '18:00'}:00Z`),
-                    timezone: 'America/New_York',
-                    dateStatus: dto.dateStatus || 'CONFIRMED',
-                    reportTiming: dto.reportTiming || 'AMC',
-                    epsEstimate: dto.epsEstimate ? parseFloat(dto.epsEstimate) : null,
-                    revenueEstimate: dto.revenueEstimate ? parseFloat(dto.revenueEstimate) : null,
-                    marketCap: dto.marketCap ? parseFloat(dto.marketCap) : null,
+                    time: dto.time || null,
+                    timestampUtc: new Date(`${dto.date}T${dto.time || '00:00'}:00Z`),
+                    timezone: 'UTC',
+                    dateStatus: dto.dateStatus || (metrics.actualEps !== undefined || metrics.actualRevenue !== undefined ? 'CONFIRMED' : 'ESTIMATED'),
+                    reportTiming: dto.reportTiming || null,
+                    ...metrics,
+                    marketCap: financialNumber(dto.marketCap) ?? null,
                     earningsImpactScore: score,
                     source: dto.source || 'Admin Manual',
                     sourceType: 'MANUAL',
@@ -1529,7 +1555,7 @@ export class CalendarService {
         const eco = await this.prisma.marketCalendarEvent.findUnique({ where: { id } });
         if (eco) return eco;
         const earn = await this.prisma.marketEarningsEvent.findUnique({ where: { id } });
-        if (earn) return earn;
+        if (earn && !isLegacyEarningsTemplate(earn) && isVisibleEarnings(earn)) return normalizeEarnings(earn);
         throw new NotFoundException('Evento no encontrado');
     }
 
@@ -1643,18 +1669,14 @@ export class CalendarService {
     }
 
     private getMondayOfWeek(d: Date): Date {
-        const date = new Date(d);
-        const day = date.getDay();
-        let diff: number;
-        if (day === 0) {
-            diff = date.getDate() + 1;
-        } else if (day === 6) {
-            diff = date.getDate() + 2;
-        } else {
-            diff = date.getDate() - day + 1;
-        }
-        date.setDate(diff);
-        date.setHours(0, 0, 0, 0);
+        // Use the same Argentina calendar date as the web, including weekends.
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit',
+        }).formatToParts(d);
+        const part = (type: string) => Number(parts.find(value => value.type === type)?.value);
+        const date = new Date(Date.UTC(part('year'), part('month') - 1, part('day')));
+        const day = date.getUTCDay();
+        date.setUTCDate(date.getUTCDate() + (day === 0 ? -6 : 1 - day));
         return date;
     }
 

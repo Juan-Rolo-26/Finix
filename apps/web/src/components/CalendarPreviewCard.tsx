@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, ChevronRight, Loader2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { formatFinancialAmount, hasEarningsData, normalizeEarnings } from '@finix/shared';
 import { AssetLogoImg } from '@/components/TopGainersCard';
 
 interface CalendarHomeItem {
@@ -20,6 +21,8 @@ interface CalendarHomeItem {
     logoUrl?: string;
     epsEstimate?: number;
     revenueEstimate?: number;
+    actualEps?: number;
+    actualRevenue?: number;
     previousValue?: string;
     consensusValue?: string;
     dateStatus?: 'CONFIRMED' | 'ESTIMATED';
@@ -40,7 +43,7 @@ export function CalendarPreviewCard() {
             })
             .then(data => {
                 if (isMounted) {
-                    setEvents(Array.isArray(data?.events) ? data.events : []);
+                    setEvents(Array.isArray(data?.events) ? data.events.map((event: CalendarHomeItem) => event.type === 'EARNINGS' ? normalizeEarnings(event) : event).filter((event: CalendarHomeItem) => event.type !== 'EARNINGS' || hasEarningsData(event)) : []);
                     setIsLoading(false);
                 }
             })
@@ -105,9 +108,9 @@ export function CalendarPreviewCard() {
                         const isHighImpact = evt.importance === 'HIGH' || evt.impactScore >= 80;
 
                         return (
-                            <div
+                            <Link
                                 key={evt.id}
-                                onClick={() => navigate('/calendario')}
+                                to="/calendario"
                                 className="p-3 pb-3.5 rounded-xl border border-border/40 bg-secondary/20 hover:bg-secondary/40 transition-all cursor-pointer group flex items-start gap-3"
                             >
                                 {/* Left Time/Day Box */}
@@ -116,7 +119,7 @@ export function CalendarPreviewCard() {
                                         {evt.dayLabel}
                                     </span>
                                     <span className="text-[12px] font-black text-foreground">
-                                        {evt.time || (isEarnings ? 'Cierre' : '--:--')}
+                                        {evt.time || (evt.timingLabel === 'Después del cierre' ? 'Cierre' : evt.timingLabel === 'Antes de la apertura' ? 'Apertura' : evt.timingLabel === 'Durante la rueda' ? 'Rueda' : 'Pendiente')}
                                     </span>
                                 </div>
 
@@ -167,8 +170,10 @@ export function CalendarPreviewCard() {
                                     {isEarnings ? (
                                         <p className="text-[11px] text-muted-foreground mt-0.5">
                                             {evt.timingLabel ? `${evt.timingLabel} · ` : ''}
-                                            {evt.epsEstimate != null ? `EPS est: $${evt.epsEstimate.toFixed(2)}` : 'Presenta resultados'}
-                                            {evt.revenueEstimate != null ? ` · Rev est: $${evt.revenueEstimate}B` : ''}
+                                            {[
+                                                evt.actualEps != null ? `EPS: $${evt.actualEps.toFixed(2)}` : evt.epsEstimate != null ? `EPS est.: $${evt.epsEstimate.toFixed(2)}` : '',
+                                                evt.actualRevenue != null ? `Facturación: ${formatFinancialAmount(evt.actualRevenue)}` : evt.revenueEstimate != null ? `Facturación est.: ${formatFinancialAmount(evt.revenueEstimate)}` : '',
+                                            ].filter(Boolean).join(' · ')}
                                         </p>
                                     ) : (
                                         (evt.consensusValue || evt.previousValue) ? (
@@ -185,7 +190,7 @@ export function CalendarPreviewCard() {
                                         )
                                     )}
                                 </div>
-                            </div>
+                            </Link>
                         );
                     })
                 )}

@@ -17,18 +17,20 @@ export function buildBenchmarkComparisonSeries({
     }
 
     const validSeries = apiSeries
+        .filter((point) => typeof point.returnPct === 'number' && Number.isFinite(point.returnPct))
         .map((point) => ({
             date: String(point.date || ''),
-            portfolio: Number(point.returnPct != null ? 100 + point.returnPct : point.portfolio ?? point.value),
+            portfolio: 100 + Number(point.returnPct),
             sp500: point.sp500 == null ? undefined : Number(point.sp500),
         }))
-        .filter((point) => point.date && Number.isFinite(point.portfolio) && point.portfolio > 0);
+        .filter((point) => point.date && Number.isFinite(point.portfolio) && point.portfolio >= 0);
 
     if (!validSeries.length) {
         return [];
     }
 
     const firstPortfolio = validSeries[0].portfolio;
+    if (firstPortfolio <= 0) return [];
     const firstSp500 = validSeries.find((point) => typeof point.sp500 === 'number' && Number.isFinite(point.sp500) && point.sp500 > 0)?.sp500;
 
     return validSeries.map((point) => ({

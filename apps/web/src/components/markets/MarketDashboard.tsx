@@ -1,5 +1,7 @@
+import { MarketDashboardGrid } from './MarketDashboardGrid';
 import {
     Activity,
+    Clock,
     Coins,
     DollarSign,
     Flame,
@@ -218,37 +220,134 @@ function AssetTile({
     );
 }
 
+interface DollarConfig {
+    name: string;
+    tag: string;
+    subtitle: string;
+    badgeStyle: string;
+    iconBg: string;
+    icon: typeof Landmark;
+}
+
+const DOLLAR_CONFIGS: Record<string, DollarConfig> = {
+    oficial: {
+        name: 'Dólar Oficial',
+        tag: 'BNA',
+        subtitle: 'Banco Nación · Minorista',
+        badgeStyle: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+        iconBg: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+        icon: Landmark,
+    },
+    blue: {
+        name: 'Dólar Blue',
+        tag: 'Libre',
+        subtitle: 'Mercado Paralelo',
+        badgeStyle: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+        iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        icon: Flame,
+    },
+    mep: {
+        name: 'Dólar MEP',
+        tag: 'Bolsa',
+        subtitle: 'Bono AL30 / GD30',
+        badgeStyle: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+        iconBg: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+        icon: TrendingUp,
+    },
+    ccl: {
+        name: 'Dólar CCL',
+        tag: 'Cable',
+        subtitle: 'Contado con Liquidación',
+        badgeStyle: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+        iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        icon: Globe2,
+    },
+    mayorista: {
+        name: 'Dólar Mayorista',
+        tag: 'Mayorista',
+        subtitle: 'Mercado mayorista · ARS',
+        badgeStyle: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+        iconBg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
+        icon: Landmark,
+    },
+    tarjeta: {
+        name: 'Dólar Tarjeta',
+        tag: 'Tarjeta',
+        subtitle: 'Referencia del proveedor · ARS',
+        badgeStyle: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+        iconBg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+        icon: DollarSign,
+    },
+};
+
+const defaultDollarConfig: DollarConfig = {
+    name: 'Dólar',
+    tag: 'Cotización',
+    subtitle: 'Tipo de cambio · ARS',
+    badgeStyle: 'bg-primary/10 text-primary border-primary/20',
+    iconBg: 'bg-primary/10 text-primary',
+    icon: DollarSign,
+};
+
 function DollarTile({ item }: { item: MarketDollarRate }) {
+    const key = (item.id || item.label || '').toLowerCase();
+    const config = DOLLAR_CONFIGS[key] || {
+        ...defaultDollarConfig,
+        name: `Dólar ${item.label}`,
+    };
+    const Icon = config.icon;
+    const spreadFormatted = new Intl.NumberFormat('es-AR', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 2,
+    }).format(item.spreadPct);
+
     return (
-        <article className="market-quote-card">
-            <div className="market-quote-card__identity">
-                <span className="market-dollar-icon">
-                    <DollarSign size={24} />
-                </span>
-                <div className="market-quote-card__name">
-                    <span className="market-quote-card__symbol">
-                        {item.label}
+        <article className="dollar-card">
+            <div className="dollar-card__header">
+                <div className="dollar-card__identity">
+                    <span className={`dollar-card__icon ${config.iconBg}`}>
+                        <Icon size={19} />
                     </span>
-                    <span className="market-quote-card__label">
-                        Tipo de cambio · ARS
+                    <div className="dollar-card__titles">
+                        <span className="dollar-card__name">
+                            {config.name}
+                        </span>
+                        <span className="dollar-card__subtitle">
+                            {config.subtitle}
+                        </span>
+                    </div>
+                </div>
+                <span className={`dollar-card__badge ${config.badgeStyle}`}>
+                    {config.tag}
+                </span>
+            </div>
+
+            <div className="dollar-card__rates">
+                <div className="dollar-card__rate-box">
+                    <span className="dollar-card__rate-label">Compra</span>
+                    <span className="dollar-card__rate-val">
+                        {formatCurrency(item.buy, 'ARS')}
+                    </span>
+                </div>
+                <div className="dollar-card__divider" />
+                <div className="dollar-card__rate-box dollar-card__rate-box--sell">
+                    <span className="dollar-card__rate-label dollar-card__rate-label--sell">
+                        Venta
+                    </span>
+                    <span className="dollar-card__rate-val dollar-card__rate-val--sell">
+                        {formatCurrency(item.sell, 'ARS')}
                     </span>
                 </div>
             </div>
-            <div className="market-quote-card__quote">
-                <span className="market-quote-card__quote-label">
-                    Venta<span>ARS</span>
+
+            <div className="dollar-card__footer">
+                <span className="dollar-card__time">
+                    <Clock size={12} className="opacity-60" />
+                    {formatRelativeTime(item.updatedAt)}
                 </span>
-                <span className="market-quote-card__price">
-                    {formatCurrency(item.sell, 'ARS')}
+                <span className="dollar-card__spread">
+                    Spread {spreadFormatted}%
                 </span>
-            </div>
-            <div className="market-quote-card__regular">
-                <span>Compra</span>
-                <strong>{formatCurrency(item.buy, 'ARS')}</strong>
-            </div>
-            <div className="market-quote-card__footer">
-                <span>{formatRelativeTime(item.updatedAt)}</span>
-                <span>Spread {formatChange(item.spreadPct)}</span>
             </div>
         </article>
     );
@@ -271,7 +370,7 @@ function SectionCard({
                 icon={meta.icon}
                 count={`${items.length} activos`}
             />
-            <div className="market-grid">
+            <MarketDashboardGrid>
                 {items.map((item) => (
                     <AssetTile
                         key={item.id}
@@ -279,7 +378,7 @@ function SectionCard({
                         onSelect={onSelectSymbol}
                     />
                 ))}
-            </div>
+            </MarketDashboardGrid>
             {!items.length && (
                 <p className="market-empty">Sin cotizaciones disponibles.</p>
             )}
@@ -296,8 +395,7 @@ export default function MarketDashboard({
     if (loading && !data)
         return (
             <div className="market-section">
-                <div
-                    className="market-grid"
+                <MarketDashboardGrid
                     role="status"
                     aria-label="Cargando mercado"
                 >
@@ -307,7 +405,7 @@ export default function MarketDashboard({
                             className="market-quote-card animate-pulse"
                         />
                     ))}
-                </div>
+                </MarketDashboardGrid>
             </div>
         );
     if (!data)
@@ -355,7 +453,7 @@ export default function MarketDashboard({
                 }
             />
             <div className="market-stack">
-                <div className="market-summary-grid">
+                <MarketDashboardGrid>
                     <article className="market-card">
                         <h2 className="market-card__title">
                             <Activity size={17} />
@@ -445,26 +543,28 @@ export default function MarketDashboard({
                             </p>
                         </article>
                     )}
-                </div>
-                <section>
-                    <MarketSectionTitle
-                        title="Dólar hoy"
-                        icon={DollarSign}
-                        count={`${data.dollars.length} referencias`}
-                    />
-                    <div className="market-grid">
-                        {data.dollars.map((item) => (
-                            <DollarTile key={item.id} item={item} />
-                        ))}
-                    </div>
-                </section>
+                </MarketDashboardGrid>
+                {data.dollars.length > 0 && (
+                    <section>
+                        <MarketSectionTitle
+                            title="Dólar hoy"
+                            icon={DollarSign}
+                            count={`${data.dollars.length} referencias`}
+                        />
+                        <MarketDashboardGrid>
+                            {data.dollars.map((item) => (
+                                <DollarTile key={item.id} item={item} />
+                            ))}
+                        </MarketDashboardGrid>
+                    </section>
+                )}
                 {data.leaders.gainers.length > 0 && (
                     <section>
                         <MarketSectionTitle
                             title="Mayores subas"
                             icon={TrendingUp}
                         />
-                        <div className="market-grid">
+                        <MarketDashboardGrid>
                             {data.leaders.gainers.slice(0, 4).map((item) => (
                                 <AssetTile
                                     key={item.id}
@@ -472,7 +572,7 @@ export default function MarketDashboard({
                                     onSelect={onSelectSymbol}
                                 />
                             ))}
-                        </div>
+                        </MarketDashboardGrid>
                     </section>
                 )}
                 {data.leaders.losers.length > 0 && (
@@ -481,7 +581,7 @@ export default function MarketDashboard({
                             title="Mayores bajas"
                             icon={TrendingDown}
                         />
-                        <div className="market-grid">
+                        <MarketDashboardGrid>
                             {data.leaders.losers.slice(0, 4).map((item) => (
                                 <AssetTile
                                     key={item.id}
@@ -489,7 +589,7 @@ export default function MarketDashboard({
                                     onSelect={onSelectSymbol}
                                 />
                             ))}
-                        </div>
+                        </MarketDashboardGrid>
                     </section>
                 )}
                 {(

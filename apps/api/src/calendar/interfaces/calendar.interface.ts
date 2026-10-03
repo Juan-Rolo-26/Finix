@@ -135,6 +135,8 @@ export interface HomeCalendarEventCard {
     logoUrl?: string;
     epsEstimate?: number;
     revenueEstimate?: number;
+    actualEps?: number;
+    actualRevenue?: number;
     dateStatus?: EarningsDateStatus;
     previousValue?: string;
     consensusValue?: string;
@@ -167,6 +169,8 @@ export interface CalendarWeekResponse {
     economicData?: {
         status: 'READY' | 'UNAVAILABLE' | 'NOT_CONFIGURED';
         httpStatus?: number;
+        source?: string;
+        updatedAt?: string;
         excludedLegacyEvents?: number;
     };
     weekRange: {

@@ -1,0 +1,40 @@
+.market-dashboard-grid {
+    --dashboard-columns: var(--dashboard-columns-1, 1);
+    --dashboard-gap: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--dashboard-gap);
+    min-width: 0;
+    width: 100%;
+}
+.market-dashboard-grid > * {
+    min-width: 0;
+    /* Balance row sizes and let a partial final row fill the available width. */
+    flex: 1 1 calc((100% + var(--dashboard-gap)) / var(--dashboard-columns) - var(--dashboard-gap) - 1px);
+}
+@container (min-width: 560px) {
+    .market-dashboard-grid {
+        --dashboard-columns: var(--dashboard-columns-2, 2);
+    }
+}
+@container (min-width: 860px) {
+    .market-dashboard-grid {
+        --dashboard-columns: var(--dashboard-columns-3, 3);
+    }
+}
+@container (min-width: 1160px) {
+    .market-dashboard-grid {
+        --dashboard-columns: var(--dashboard-columns-4, 4);
+    }
+}
+@container (min-width: 1460px) {
+    .market-dashboard-grid {
+        --dashboard-columns: var(--dashboard-columns-5, 5);
+    }
+}
+@container (min-width: 1760px) {
+    .market-dashboard-grid {
+        --dashboard-columns: var(--dashboard-columns-6, 6);
+    }
+}

@@ -33,7 +33,6 @@ import { cn } from '@/lib/utils';
 import {
     MarketHeader,
     MarketChange,
-    MarketQuoteCard,
 } from '@/components/markets/MarketPrimitives';
 import '@/components/markets/market.css';
 
@@ -48,30 +47,30 @@ import WatchlistDashboard from '@/components/watchlist/WatchlistDashboard';
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
     RESEARCHING: {
         label: 'Investigando',
-        color: 'bg-blue-500/15 text-blue-400 border border-blue-500/30',
-        dot: 'bg-blue-400',
+        color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20',
+        dot: 'bg-blue-500',
     },
     WAITING_PRICE: {
         label: 'Esperando precio',
-        color: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',
-        dot: 'bg-amber-400',
+        color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
+        dot: 'bg-amber-500',
     },
     EARNINGS: {
         label: 'Resultados',
-        color: 'bg-purple-500/15 text-purple-400 border border-purple-500/30',
-        dot: 'bg-purple-400',
+        color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20',
+        dot: 'bg-purple-500',
     },
     DISCARDED: {
         label: 'Descartada',
-        color: 'bg-rose-500/15 text-rose-400 border border-rose-500/30',
-        dot: 'bg-rose-400',
+        color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20',
+        dot: 'bg-rose-500',
     },
 };
 
 const getStatusConfig = (status: string) =>
     STATUS_CONFIG[status] ?? {
         label: status,
-        color: 'bg-secondary text-muted-foreground border border-border/40',
+        color: 'bg-muted/60 text-muted-foreground border border-border/40',
         dot: 'bg-muted-foreground',
     };
 
@@ -252,17 +251,17 @@ export default function WatchlistPage() {
                     icon={Bookmark}
                     description="Organizá y monitoreá activos bajo tus propias condiciones y alertas"
                     actions={
-                        <>
+                        <div className="flex flex-wrap items-center gap-2">
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setShowIdeasSection(!showIdeasSection)}
                                 className={cn(
-                                    'market-action flex items-center border border-border px-3.5 py-2 hover:bg-secondary/40',
+                                    'rounded-xl border-border/80 px-3.5 py-2 hover:bg-secondary/60 transition-all shadow-2xs',
                                     showIdeasSection && 'border-primary text-primary bg-primary/10',
                                 )}
                             >
-                                <Sparkles size={16} />
+                                <Sparkles size={15} />
                                 <span>{showIdeasSection ? 'Ocultar ideas' : 'Ideas para explorar'}</span>
                             </Button>
 
@@ -271,9 +270,9 @@ export default function WatchlistPage() {
                                 size="sm"
                                 disabled={!activeListId}
                                 onClick={() => setIsImportModalOpen(true)}
-                                className="market-action flex items-center border border-border px-3.5 py-2 hover:bg-secondary/40 disabled:opacity-40"
+                                className="rounded-xl border-border/80 px-3.5 py-2 hover:bg-secondary/60 transition-all shadow-2xs disabled:opacity-40"
                             >
-                                <UploadCloud size={16} />
+                                <UploadCloud size={15} />
                                 <span>Importar</span>
                             </Button>
 
@@ -282,38 +281,38 @@ export default function WatchlistPage() {
                                 size="sm"
                                 disabled={!activeListId}
                                 onClick={() => handleExport('csv')}
-                                className="market-action flex items-center border border-border px-3.5 py-2 hover:bg-secondary/40 disabled:opacity-40"
+                                className="rounded-xl border-border/80 px-3.5 py-2 hover:bg-secondary/60 transition-all shadow-2xs disabled:opacity-40"
                             >
-                                <Download size={16} />
+                                <Download size={15} />
                                 <span>Exportar</span>
                             </Button>
 
                             <Button
                                 size="sm"
                                 onClick={() => setIsCreateModalOpen(true)}
-                                className="market-action flex items-center bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2"
+                                className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-4 py-2 shadow-xs transition-all"
                             >
                                 <Plus size={16} />
                                 <span>Nueva lista</span>
                             </Button>
-                        </>
+                        </div>
                     }
                 />
 
                 {/* BANNER BIENVENIDA */}
                 {showOnboarding && (
-                    <div className="relative overflow-hidden rounded-lg border border-primary/25 bg-primary/5 p-4 mb-6">
+                    <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 mb-6 backdrop-blur-sm shadow-xs">
                         <button
                             type="button"
                             onClick={handleDismissOnboarding}
-                            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground p-1 rounded hover:bg-secondary/60 transition-colors"
+                            className="absolute top-3.5 right-3.5 text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-secondary/60 transition-colors"
                             aria-label="Cerrar aviso"
                         >
                             <X size={16} />
                         </button>
-                        <div className="flex items-start gap-3.5 max-w-4xl">
-                            <div className="w-9 h-9 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
-                                <Eye size={18} />
+                        <div className="flex items-start gap-4 max-w-4xl">
+                            <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary shrink-0 shadow-2xs">
+                                <Eye size={19} />
                             </div>
                             <div className="space-y-1">
                                 <h3 className="font-bold text-foreground text-base">
@@ -332,19 +331,21 @@ export default function WatchlistPage() {
 
                 {/* AVISO PLAN FREE */}
                 {!isPro && (
-                    <div className="flex items-center justify-between rounded-lg border border-amber-500/25 bg-amber-500/8 px-4 py-3 mb-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-500/25 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent px-5 py-3.5 mb-6 shadow-xs">
                         <div className="flex items-center gap-3">
-                            <Crown className="w-5 h-5 text-amber-500 shrink-0" />
-                            <span className="text-sm text-amber-300 font-medium">
+                            <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                                <Crown className="w-4 h-4 text-amber-500" />
+                            </div>
+                            <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">
                                 Plan Free — 1 lista y hasta 5 activos. Pasá a{' '}
-                                <span className="font-bold text-amber-400">Finix PRO</span> para listas ilimitadas,
+                                <span className="font-bold text-amber-600 dark:text-amber-400">Finix PRO</span> para listas ilimitadas,
                                 importación CSV y alertas avanzadas.
                             </span>
                         </div>
                         <Button
                             size="sm"
                             onClick={() => navigate('/settings/plan')}
-                            className="market-action h-9 px-4 font-bold bg-amber-500 hover:bg-amber-400 text-black shrink-0 ml-3"
+                            className="rounded-xl h-9 px-4 font-bold bg-amber-500 hover:bg-amber-400 text-black shrink-0 shadow-xs"
                         >
                             Pasar a PRO
                         </Button>
@@ -364,7 +365,7 @@ export default function WatchlistPage() {
                 )}
 
                 {/* SELECTOR DE LISTAS */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-2 mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3 mb-6">
                     {loadingLists ? (
                         <div className="flex items-center gap-2.5 py-2 text-muted-foreground text-sm">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -375,7 +376,7 @@ export default function WatchlistPage() {
                             No tenés listas de seguimiento creadas todavía.
                         </span>
                     ) : (
-                        <div className="market-segments" role="group" aria-label="Listas de seguimiento">
+                        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Listas de seguimiento">
                             {watchlists.map((wl) => {
                                 const isActive = wl.id === activeListId;
                                 return (
@@ -387,10 +388,20 @@ export default function WatchlistPage() {
                                             setSearchParams({ list: wl.id });
                                         }}
                                         aria-pressed={isActive}
-                                        className="flex items-center gap-2"
+                                        className={cn(
+                                            "flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-sm font-medium transition-all",
+                                            isActive
+                                                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                                                : "bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/50"
+                                        )}
                                     >
                                         <span>{wl.name}</span>
-                                        <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-semibold">
+                                        <span className={cn(
+                                            "text-xs px-2 py-0.5 rounded-full font-bold",
+                                            isActive
+                                                ? "bg-primary-foreground/20 text-primary-foreground"
+                                                : "bg-background/80 text-muted-foreground"
+                                        )}>
                                             {wl.itemCount}
                                         </span>
                                     </button>
@@ -400,34 +411,34 @@ export default function WatchlistPage() {
                     )}
 
                     {activeList && (
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
                             <button
                                 type="button"
                                 onClick={handleRefresh}
                                 disabled={isRefreshing}
-                                className="market-icon-action"
+                                className="w-9 h-9 rounded-xl border border-border/70 flex items-center justify-center hover:bg-secondary/80 transition-all text-muted-foreground hover:text-foreground"
                                 title="Actualizar cotizaciones"
                                 aria-label="Actualizar cotizaciones"
                             >
-                                <RefreshCw size={17} className={isRefreshing ? 'animate-spin text-primary' : ''} />
+                                <RefreshCw size={15} className={isRefreshing ? 'animate-spin text-primary' : ''} />
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setEditingList(activeList)}
-                                className="market-icon-action"
+                                className="w-9 h-9 rounded-xl border border-border/70 flex items-center justify-center hover:bg-secondary/80 transition-all text-muted-foreground hover:text-foreground"
                                 title="Editar lista"
                                 aria-label="Editar lista"
                             >
-                                <Edit3 size={17} />
+                                <Edit3 size={15} />
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setDeletingListId(activeList.id)}
-                                className="market-icon-action hover:text-rose-500 hover:border-rose-500/50"
+                                className="w-9 h-9 rounded-xl border border-border/70 flex items-center justify-center hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-500 transition-all text-muted-foreground"
                                 title="Eliminar lista"
                                 aria-label="Eliminar lista"
                             >
-                                <Trash2 size={17} />
+                                <Trash2 size={15} />
                             </button>
                         </div>
                     )}
@@ -435,34 +446,57 @@ export default function WatchlistPage() {
 
                 {/* STATS RAPIDAS */}
                 {activeList && totalItems > 0 && (
-                    <div className="market-overview">
-                        <div className="market-stat">
-                            <p className="market-stat__label">
-                                <List size={16} /> Activos
-                            </p>
-                            <p className="market-stat__value">{totalItems}</p>
-                            <p className="market-stat__detail">En esta lista</p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
+                        <div className="rounded-2xl border border-border/70 bg-card/70 backdrop-blur-sm p-4 hover:border-border hover:shadow-xs transition-all flex flex-col justify-between">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Activos</span>
+                                <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                    <List size={16} />
+                                </span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight tabular-nums">{totalItems}</span>
+                                <span className="text-xs text-muted-foreground">en esta lista</span>
+                            </div>
                         </div>
-                        <div className="market-stat">
-                            <p className="market-stat__label">
-                                <TrendingUp size={16} className="text-emerald-500" /> Al alza hoy
-                            </p>
-                            <p className="market-stat__value text-emerald-500">{gainersCount}</p>
-                            <p className="market-stat__detail">Variación positiva</p>
+
+                        <div className="rounded-2xl border border-border/70 bg-card/70 backdrop-blur-sm p-4 hover:border-border hover:shadow-xs transition-all flex flex-col justify-between">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Al alza hoy</span>
+                                <span className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                    <TrendingUp size={16} />
+                                </span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">{gainersCount}</span>
+                                <span className="text-xs text-muted-foreground">variación positiva</span>
+                            </div>
                         </div>
-                        <div className="market-stat">
-                            <p className="market-stat__label">
-                                <ArrowDownRight size={16} className="text-rose-500" /> A la baja
-                            </p>
-                            <p className="market-stat__value text-rose-500">{losersCount}</p>
-                            <p className="market-stat__detail">Variación negativa</p>
+
+                        <div className="rounded-2xl border border-border/70 bg-card/70 backdrop-blur-sm p-4 hover:border-border hover:shadow-xs transition-all flex flex-col justify-between">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">A la baja</span>
+                                <span className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                                    <ArrowDownRight size={16} />
+                                </span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight tabular-nums">{losersCount}</span>
+                                <span className="text-xs text-muted-foreground">variación negativa</span>
+                            </div>
                         </div>
-                        <div className="market-stat">
-                            <p className="market-stat__label">
-                                <Bell size={16} className="text-amber-500" /> Con alertas
-                            </p>
-                            <p className="market-stat__value text-amber-500">{withAlert}</p>
-                            <p className="market-stat__detail">Monitoreo activo</p>
+
+                        <div className="rounded-2xl border border-border/70 bg-card/70 backdrop-blur-sm p-4 hover:border-border hover:shadow-xs transition-all flex flex-col justify-between">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Alertas activas</span>
+                                <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                    <Bell size={16} />
+                                </span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 tracking-tight tabular-nums">{withAlert}</span>
+                                <span className="text-xs text-muted-foreground">monitoreo activo</span>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -470,39 +504,96 @@ export default function WatchlistPage() {
                 {/* TABS + TOOLBAR */}
                 {activeList && (
                     <div className="flex flex-col gap-4 mb-6">
-                        <div className="market-segments" role="tablist" aria-label="Vistas de seguimiento">
-                            <button
-                                type="button"
-                                role="tab"
-                                aria-selected={activeTab === 'dashboard'}
-                                aria-pressed={activeTab === 'dashboard'}
-                                onClick={() => setActiveTab('dashboard')}
-                            >
-                                <LayoutDashboard size={18} />
-                                <span>Dashboard</span>
-                            </button>
-                            <button
-                                type="button"
-                                role="tab"
-                                aria-selected={activeTab === 'list'}
-                                aria-pressed={activeTab === 'list'}
-                                onClick={() => setActiveTab('list')}
-                            >
-                                <List size={18} />
-                                <span>Lista de seguimiento</span>
-                            </button>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center p-1 bg-secondary/50 border border-border/60 rounded-xl" role="tablist" aria-label="Vistas de seguimiento">
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={activeTab === 'dashboard'}
+                                    aria-pressed={activeTab === 'dashboard'}
+                                    onClick={() => setActiveTab('dashboard')}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
+                                        activeTab === 'dashboard'
+                                            ? "bg-card text-foreground shadow-xs"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <LayoutDashboard size={16} />
+                                    <span>Dashboard</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={activeTab === 'list'}
+                                    aria-pressed={activeTab === 'list'}
+                                    onClick={() => setActiveTab('list')}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
+                                        activeTab === 'list'
+                                            ? "bg-card text-foreground shadow-xs"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <List size={16} />
+                                    <span>Lista de seguimiento</span>
+                                </button>
+                            </div>
+
+                            {activeTab === 'list' && (
+                                <div className="flex items-center p-1 bg-secondary/50 border border-border/60 rounded-xl" role="group" aria-label="Modo de vista">
+                                    <button
+                                        type="button"
+                                        className={cn(
+                                            "p-2 rounded-lg transition-all",
+                                            viewMode === 'table'
+                                                ? "bg-card text-foreground shadow-xs"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                        aria-pressed={viewMode === 'table'}
+                                        onClick={() => setViewMode('table')}
+                                        title="Vista tabla"
+                                    >
+                                        <TableIcon size={16} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={cn(
+                                            "p-2 rounded-lg transition-all",
+                                            viewMode === 'cards'
+                                                ? "bg-card text-foreground shadow-xs"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                        aria-pressed={viewMode === 'cards'}
+                                        onClick={() => setViewMode('cards')}
+                                        title="Vista tarjetas"
+                                    >
+                                        <LayoutGrid size={16} />
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {activeTab === 'list' && (
-                            <div className="market-toolbar">
-                                <div className="market-search">
-                                    <Search size={18} />
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="relative flex-1 min-w-[220px]">
+                                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                     <input
                                         type="text"
                                         placeholder="Buscar por ticker, nombre o tag..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full h-10 pl-10 pr-4 rounded-xl border border-border/70 bg-card/70 backdrop-blur-sm text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/60"
                                     />
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
                                 </div>
 
                                 <Button
@@ -510,15 +601,15 @@ export default function WatchlistPage() {
                                     size="sm"
                                     onClick={() => setShowFilters(!showFilters)}
                                     className={cn(
-                                        'market-action flex items-center border border-border px-3.5 py-2 hover:bg-secondary/40',
+                                        'h-10 px-3.5 rounded-xl border border-border/70 bg-card/70 hover:bg-secondary/60 flex items-center gap-2 text-sm font-medium transition-all shadow-2xs',
                                         (showFilters || statusFilter !== 'ALL' || portfolioFilter !== 'ALL') &&
-                                            'border-primary text-primary',
+                                            'border-primary text-primary bg-primary/5',
                                     )}
                                 >
-                                    <Filter size={16} />
+                                    <Filter size={15} />
                                     <span>Filtros</span>
                                     {(statusFilter !== 'ALL' || portfolioFilter !== 'ALL') && (
-                                        <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">
+                                        <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                                             {(statusFilter !== 'ALL' ? 1 : 0) +
                                                 (portfolioFilter !== 'ALL' ? 1 : 0)}
                                         </span>
@@ -526,8 +617,8 @@ export default function WatchlistPage() {
                                 </Button>
 
                                 {selectedItemIds.length > 0 && (
-                                    <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/30 rounded-md px-3 py-1.5">
-                                        <span className="text-sm font-bold text-rose-500">
+                                    <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/25 rounded-xl px-3 py-1.5 shadow-2xs">
+                                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
                                             {selectedItemIds.length} seleccionados
                                         </span>
                                         <Button
@@ -535,33 +626,12 @@ export default function WatchlistPage() {
                                             size="sm"
                                             disabled={bulkActionLoading}
                                             onClick={handleBulkDelete}
-                                            className="market-action h-8 px-2.5 rounded text-xs font-bold gap-1"
+                                            className="h-7 px-2.5 rounded-lg text-xs font-bold gap-1 shadow-xs"
                                         >
-                                            <Trash2 size={14} /> Quitar
+                                            <Trash2 size={13} /> Quitar
                                         </Button>
                                     </div>
                                 )}
-
-                                <div className="market-segments ml-auto" role="group" aria-label="Modo de vista">
-                                    <button
-                                        type="button"
-                                        className="market-segment-icon"
-                                        aria-pressed={viewMode === 'table'}
-                                        onClick={() => setViewMode('table')}
-                                        title="Vista tabla"
-                                    >
-                                        <TableIcon size={18} />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="market-segment-icon"
-                                        aria-pressed={viewMode === 'cards'}
-                                        onClick={() => setViewMode('cards')}
-                                        title="Vista tarjetas"
-                                    >
-                                        <LayoutGrid size={18} />
-                                    </button>
-                                </div>
                             </div>
                         )}
 
@@ -687,31 +757,31 @@ export default function WatchlistPage() {
                     </div>
                 ) : viewMode === 'table' ? (
                     /* VISTA TABLA */
-                    <div className="rounded-lg border border-border bg-card overflow-hidden shadow-xs">
+                    <div className="rounded-2xl border border-border/70 bg-card overflow-hidden shadow-xs">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>
-                                    <tr className="border-b border-border bg-secondary/35 text-muted-foreground">
+                                    <tr className="border-b border-border/60 bg-muted/30 text-muted-foreground">
                                         <th className="p-4 w-10">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedItemIds.length > 0 && selectedItemIds.length === filteredItems.length}
                                                 onChange={(e) => handleSelectAll(e.target.checked)}
-                                                className="rounded border-border cursor-pointer w-4 h-4"
+                                                className="rounded border-border/80 cursor-pointer w-4 h-4 accent-primary"
                                             />
                                         </th>
-                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Activo</th>
-                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Precio</th>
-                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Variación</th>
-                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Objetivo</th>
-                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Distancia</th>
-                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Alertas</th>
-                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Balance</th>
-                                        <th className="p-4 text-xs font-bold uppercase tracking-wider">Estado</th>
-                                        <th className="p-4 text-xs font-bold uppercase tracking-wider text-right">Acciones</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Activo</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Precio</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Variación</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Objetivo</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Distancia</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Alertas</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Balance</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Estado</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-right">Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border">
+                                <tbody className="divide-y divide-border/60">
                                     {filteredItems.map((item: any) => {
                                         const isSelected = selectedItemIds.includes(item.id);
                                         const distance = item.distancePct;
@@ -720,7 +790,7 @@ export default function WatchlistPage() {
                                         return (
                                             <tr
                                                 key={item.id}
-                                                className={`group hover:bg-secondary/30 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`}
+                                                className={`group hover:bg-muted/35 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`}
                                                 onClick={() => setSelectedItemForDrawer(item)}
                                             >
                                                 <td className="p-4" onClick={(e) => e.stopPropagation()}>
@@ -728,26 +798,26 @@ export default function WatchlistPage() {
                                                         type="checkbox"
                                                         checked={isSelected}
                                                         onChange={() => handleToggleSelectItem(item.id)}
-                                                        className="rounded border-border cursor-pointer w-4 h-4"
+                                                        className="rounded border-border/80 cursor-pointer w-4 h-4 accent-primary"
                                                     />
                                                 </td>
 
                                                 {/* Activo */}
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-3">
-                                                        <SymbolLogo symbol={item.symbol} size={40} />
+                                                        <SymbolLogo symbol={item.symbol} size={40} className="rounded-xl shrink-0" />
                                                         <div>
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-lg font-bold text-foreground">
+                                                                <span className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
                                                                     {item.symbol}
                                                                 </span>
                                                                 {item.isInPortfolio && (
-                                                                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
-                                                                        Lo tengo
+                                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                                        En cartera
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <span className="text-sm text-muted-foreground line-clamp-1">
+                                                            <span className="text-xs text-muted-foreground line-clamp-1">
                                                                 {item.name} · {item.market} ({item.currency})
                                                             </span>
                                                         </div>
@@ -756,7 +826,7 @@ export default function WatchlistPage() {
 
                                                 {/* Precio */}
                                                 <td className="p-4">
-                                                    <span className="font-bold text-foreground text-lg font-mono">
+                                                    <span className="font-bold text-foreground text-base font-mono tabular-nums">
                                                         {item.currentPrice !== null
                                                             ? `$${item.currentPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                                             : <span className="text-sm text-muted-foreground font-normal">N/D</span>}
@@ -771,11 +841,11 @@ export default function WatchlistPage() {
                                                 {/* Objetivo */}
                                                 <td className="p-4">
                                                     {item.targetPrice ? (
-                                                        <span className="font-bold text-foreground text-base font-mono">
+                                                        <span className="font-bold text-foreground text-sm font-mono tabular-nums">
                                                             ${item.targetPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-muted-foreground text-sm italic">Sin definir</span>
+                                                        <span className="text-muted-foreground/60 text-xs italic">Sin definir</span>
                                                     )}
                                                 </td>
 
@@ -784,25 +854,25 @@ export default function WatchlistPage() {
                                                     {distance !== null ? (
                                                         <MarketChange value={distance} suffix="%" />
                                                     ) : (
-                                                        <span className="text-muted-foreground text-sm">—</span>
+                                                        <span className="text-muted-foreground/60 text-sm">—</span>
                                                     )}
                                                 </td>
 
                                                 {/* Alertas */}
                                                 <td className="p-4">
                                                     {item.hasActiveAlert ? (
-                                                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-500">
-                                                            <Bell size={15} className="fill-current" /> Activa
+                                                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                                            <Bell size={14} className="fill-current" /> Activa
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                                                            <BellOff size={15} /> Sin alerta
+                                                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/60">
+                                                            <BellOff size={14} /> Sin alerta
                                                         </span>
                                                     )}
                                                 </td>
 
                                                 {/* Balance */}
-                                                <td className="p-4 text-sm text-muted-foreground">
+                                                <td className="p-4 text-xs text-muted-foreground">
                                                     {item.nextEarnings?.date ? (
                                                         <span className="font-semibold text-foreground">{item.nextEarnings.date}</span>
                                                     ) : '—'}
@@ -821,10 +891,10 @@ export default function WatchlistPage() {
                                                     <button
                                                         type="button"
                                                         onClick={() => setSelectedItemForDrawer(item)}
-                                                        className="market-action inline-flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
+                                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground group-hover:text-primary hover:bg-secondary/60 transition-all"
                                                     >
                                                         <span>Ver ficha</span>
-                                                        <ChevronRight size={16} />
+                                                        <ChevronRight size={14} />
                                                     </button>
                                                 </td>
                                             </tr>
@@ -835,118 +905,150 @@ export default function WatchlistPage() {
                         </div>
 
                         {/* Footer tabla */}
-                        <div className="border-t border-border bg-secondary/20 px-5 py-3 flex items-center justify-between">
-                            <span className="text-base text-muted-foreground">
+                        <div className="border-t border-border/60 bg-muted/20 px-5 py-3.5 flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">
                                 <span className="font-bold text-foreground">{filteredItems.length}</span> activos
                                 {filteredItems.length !== totalItems && ` de ${totalItems}`}
                             </span>
                             <button
                                 type="button"
                                 onClick={() => setIsImportModalOpen(true)}
-                                className="market-action flex items-center gap-1.5 text-sm font-semibold"
+                                className="flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
                             >
-                                <Plus size={16} />
+                                <Plus size={15} />
                                 <span>Agregar activo</span>
                             </button>
                         </div>
                     </div>
                 ) : (
                     /* VISTA CARDS */
-                    <div className="market-grid">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {filteredItems.map((item: any) => {
                             const distance = item.distancePct;
                             const statusCfg = getStatusConfig(item.personalStatus);
 
                             return (
-                                <MarketQuoteCard
+                                <article
                                     key={item.id}
-                                    symbol={item.symbol}
-                                    label={item.name || item.symbol}
-                                    value={
-                                        item.currentPrice !== null
-                                            ? `$${item.currentPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                            : 'N/D'
-                                    }
-                                    change={item.changePercent}
-                                    quoteLabel="Precio actual"
-                                    unit={item.currency || 'USD'}
-                                    footer={item.market}
-                                    footerRight={
+                                    onClick={() => setSelectedItemForDrawer(item)}
+                                    className="group relative flex flex-col justify-between p-5 rounded-2xl border border-border/75 bg-card hover:border-primary/40 hover:shadow-md transition-all duration-200 cursor-pointer min-h-[220px]"
+                                >
+                                    {/* Header: Logo, Ticker, Name, Status Pill */}
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <SymbolLogo symbol={item.symbol} size={40} className="rounded-xl shrink-0" />
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-extrabold text-lg text-foreground tracking-tight group-hover:text-primary transition-colors">
+                                                        {item.symbol}
+                                                    </span>
+                                                    {item.isInPortfolio && (
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                            En cartera
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground truncate" title={item.name}>
+                                                    {item.name || item.symbol}
+                                                </p>
+                                            </div>
+                                        </div>
                                         <span
-                                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusCfg.color}`}
+                                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 ${statusCfg.color}`}
                                         >
-                                            <span
-                                                className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`}
-                                            />
+                                            <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
                                             {statusCfg.label}
                                         </span>
-                                    }
-                                    onSelect={() => setSelectedItemForDrawer(item)}
-                                >
-                                    <dl className="market-metrics">
+                                    </div>
+
+                                    {/* Price & Change section */}
+                                    <div className="my-3 py-2.5 px-3 rounded-xl bg-muted/40 border border-border/40 flex items-center justify-between">
                                         <div>
-                                            <dt>Precio Objetivo</dt>
-                                            <dd>
+                                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
+                                                Precio actual
+                                            </span>
+                                            <span className="text-xl font-bold font-mono text-foreground tabular-nums">
+                                                {item.currentPrice !== null
+                                                    ? `$${item.currentPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                                    : 'N/D'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <MarketChange value={item.changePercent} />
+                                        </div>
+                                    </div>
+
+                                    {/* Metrics: Target & Distance */}
+                                    <div className="grid grid-cols-2 gap-2 text-xs py-1">
+                                        <div className="flex flex-col">
+                                            <span className="text-muted-foreground font-medium">Precio Objetivo</span>
+                                            <span className="font-semibold text-foreground font-mono tabular-nums">
                                                 {item.targetPrice
                                                     ? `$${item.targetPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                                    : 'Sin definir'}
-                                            </dd>
+                                                    : <span className="text-muted-foreground/60 italic font-normal">Sin definir</span>}
+                                            </span>
                                         </div>
-                                        <div>
-                                            <dt>Distancia al objetivo</dt>
-                                            <dd>
+                                        <div className="flex flex-col text-right">
+                                            <span className="text-muted-foreground font-medium">Distancia</span>
+                                            <span className="font-semibold tabular-nums">
                                                 {distance !== null ? (
-                                                    <span
-                                                        className={
-                                                            distance >= 0
-                                                                ? 'text-emerald-500'
-                                                                : 'text-rose-500'
-                                                        }
-                                                    >
-                                                        {distance >= 0 ? '+' : ''}
-                                                        {distance.toFixed(1)}%
+                                                    <span className={distance >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}>
+                                                        {distance >= 0 ? '+' : ''}{distance.toFixed(1)}%
                                                     </span>
                                                 ) : (
-                                                    '—'
+                                                    <span className="text-muted-foreground/60 font-normal">—</span>
                                                 )}
-                                            </dd>
+                                            </span>
                                         </div>
-                                        <div>
-                                            <dt>Próx. Balance</dt>
-                                            <dd>{item.nextEarnings?.date || '—'}</dd>
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div className="pt-3 mt-1 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-mono">
+                                                {item.market || 'ACC'}
+                                            </span>
+                                            {item.nextEarnings?.date && (
+                                                <span className="text-[11px] truncate">
+                                                    Bal: {item.nextEarnings.date}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div>
-                                            <dt>Alertas</dt>
-                                            <dd>
-                                                {item.hasActiveAlert ? (
-                                                    <span className="inline-flex items-center gap-1 text-emerald-500">
-                                                        <Bell size={14} className="fill-current" />{' '}
-                                                        Activa
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-muted-foreground">
-                                                        Sin alerta
-                                                    </span>
-                                                )}
-                                            </dd>
+                                        <div className="flex items-center gap-2">
+                                            {item.hasActiveAlert ? (
+                                                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium text-[11px]">
+                                                    <Bell size={12} className="fill-current" /> Alerta
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 text-muted-foreground/60 text-[11px]">
+                                                    <BellOff size={12} />
+                                                </span>
+                                            )}
+                                            <ChevronRight size={14} className="text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                                         </div>
-                                    </dl>
-                                </MarketQuoteCard>
+                                    </div>
+                                </article>
                             );
                         })}
 
                         {/* Card para agregar activo */}
-                        <div
+                        <button
+                            type="button"
                             onClick={() => setIsImportModalOpen(true)}
-                            className="market-card flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-primary hover:border-primary/50 cursor-pointer transition-all border-dashed min-h-[220px]"
+                            className="group rounded-2xl border-2 border-dashed border-border/70 hover:border-primary/50 bg-card/40 hover:bg-card/80 flex flex-col items-center justify-center gap-3 p-6 text-muted-foreground hover:text-primary cursor-pointer transition-all duration-200 min-h-[220px]"
                         >
-                            <div className="w-12 h-12 rounded-full border border-dashed border-current flex items-center justify-center">
-                                <Plus size={22} />
+                            <div className="w-12 h-12 rounded-2xl bg-secondary group-hover:bg-primary/10 group-hover:text-primary flex items-center justify-center transition-all duration-200 shadow-2xs">
+                                <Plus size={22} className="group-hover:scale-110 transition-transform" />
                             </div>
-                            <span className="font-bold text-base text-center">
-                                Agregar activo a la lista
-                            </span>
-                        </div>
+                            <div className="text-center">
+                                <span className="font-bold text-sm text-foreground block">
+                                    Agregar activo
+                                </span>
+                                <span className="text-xs text-muted-foreground mt-0.5 block">
+                                    Sumá acciones o CEDEARs a esta lista
+                                </span>
+                            </div>
+                        </button>
                     </div>
                 )}
             </div>

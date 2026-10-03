@@ -949,14 +949,6 @@ export class MarketService {
             return this.dollarRatesCache.data;
         }
 
-        const fallbackUpdatedAt = new Date().toISOString();
-        const fallback = [
-            { id: 'oficial', label: 'Oficial', buy: 1385, sell: 1435, spreadPct: 3.61, updatedAt: fallbackUpdatedAt },
-            { id: 'blue', label: 'Blue', buy: 1395, sell: 1415, spreadPct: 1.43, updatedAt: fallbackUpdatedAt },
-            { id: 'mep', label: 'MEP', buy: 1435.5, sell: 1439.5, spreadPct: 0.28, updatedAt: fallbackUpdatedAt },
-            { id: 'ccl', label: 'CCL', buy: 1475.7, sell: 1478.7, spreadPct: 0.20, updatedAt: fallbackUpdatedAt },
-        ];
-
         try {
             const response = await fetch('https://dolarapi.com/v1/dolares', {
                 headers: {
@@ -979,15 +971,27 @@ export class MarketService {
                 const item = data.find((entry: any) => String(entry?.casa || '').toLowerCase() === house);
                 if (!item) return null;
 
-                const buy = Number(item.compra ?? 0);
-                const sell = Number(item.venta ?? 0);
+                const parsePrice = (value: unknown): number => {
+                    if (typeof value !== 'number' && (typeof value !== 'string' || !value.trim())) {
+                        return NaN;
+                    }
+                    return Number(value);
+                };
+                const buy = parsePrice(item.compra);
+                const sell = parsePrice(item.venta);
+                const updatedAt = item.fechaActualizacion;
+                if (!Number.isFinite(buy) || buy <= 0 || !Number.isFinite(sell) || sell <= 0
+                    || typeof updatedAt !== 'string' || !Number.isFinite(Date.parse(updatedAt))
+                    || (item.moneda && item.moneda !== 'USD')) {
+                    return null;
+                }
                 return {
                     id: house === 'bolsa' ? 'mep' : house === 'contadoconliqui' ? 'ccl' : house,
                     label,
                     buy,
                     sell,
-                    spreadPct: buy > 0 ? ((sell - buy) / buy) * 100 : 0,
-                    updatedAt: String(item.fechaActualizacion || fallbackUpdatedAt),
+                    spreadPct: ((sell - buy) / buy) * 100,
+                    updatedAt,
                 };
             };
 
@@ -996,17 +1000,18 @@ export class MarketService {
                 mapRate('blue', 'Blue'),
                 mapRate('bolsa', 'MEP'),
                 mapRate('contadoconliqui', 'CCL'),
+                mapRate('mayorista', 'Mayorista'),
+                mapRate('tarjeta', 'Tarjeta'),
             ].filter((item): item is MarketDollarRate => item !== null);
 
-            const finalRates = rates.length > 0 ? rates : fallback;
-            this.dollarRatesCache = { data: finalRates, timestamp: now };
-            return finalRates;
+            this.dollarRatesCache = { data: rates, timestamp: now };
+            return rates;
         } catch (error) {
             console.error('[MarketService] Dollar rates failed:', error);
             if (this.dollarRatesCache?.data) {
                 return this.dollarRatesCache.data;
             }
-            return fallback;
+            return [];
         }
     }
 

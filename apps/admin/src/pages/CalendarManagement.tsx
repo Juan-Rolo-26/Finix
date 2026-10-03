@@ -25,6 +25,7 @@ import {
     HelpCircle,
 } from 'lucide-react';
 import { adminFetch } from '../lib/api';
+import { formatFinancialAmount, isVisibleEarnings, normalizeEarnings } from '@finix/shared';
 
 interface CalendarEvent {
     id: string;
@@ -134,7 +135,7 @@ export default function CalendarManagement() {
     const [macroCustomDate, setMacroCustomDate] = useState<string>(todayStr);
     const [macroSearch, setMacroSearch] = useState<string>('');
 
-    // Filtros específicos para Resultados S&P 500 (Preservados tal cual)
+    // Filtros específicos para Resultados EE. UU. (Preservados tal cual)
     const [earningsPeriod, setEarningsPeriod] = useState<'TODAY' | 'WEEK' | 'MONTH' | 'ALL' | 'CUSTOM'>('TODAY');
     const [selectedDate, setSelectedDate] = useState<string>(todayStr);
     const [earningsSearch, setEarningsSearch] = useState<string>('');
@@ -176,13 +177,13 @@ export default function CalendarManagement() {
         status: 'PUBLISHED',
     });
 
-    // Formulario de Earnings (Preservado para S&P 500)
+    // Formulario de Earnings (Preservado para EE. UU.)
     const [earningsForm, setEarningsForm] = useState({
         ticker: '',
         companyName: '',
         date: todayStr,
-        time: '16:30',
-        reportTiming: 'AMC',
+        time: '',
+        reportTiming: '',
         epsEstimate: '',
         revenueEstimate: '',
         earningsImpactScore: 85,
@@ -204,7 +205,14 @@ export default function CalendarManagement() {
 
             if (earningsRes.ok) {
                 const earnData = await earningsRes.json();
-                setEarnings(earnData.items || []);
+                const allItems = [...(earnData.items || [])];
+                for (let page = 2; page <= (earnData.totalPages || 1); page++) {
+                    const response = await adminFetch(`/calendar/admin/events?type=EARNINGS&limit=500&page=${page}`);
+                    if (!response.ok) throw new Error('No se pudieron cargar todos los balances');
+                    const nextPage = await response.json();
+                    allItems.push(...(nextPage.items || []));
+                }
+                setEarnings(allItems.map(normalizeEarnings).filter(isVisibleEarnings));
             }
 
             if (sourcesRes.ok) {
@@ -249,7 +257,7 @@ export default function CalendarManagement() {
         }
     };
 
-    // Sincronizar Todo (Macro + Balances S&P 500)
+    // Sincronizar Todo (Macro + Balances EE. UU.)
     const triggerSyncAll = async () => {
         setIsSyncingAll(true);
         setFeedback(null);
@@ -338,7 +346,7 @@ export default function CalendarManagement() {
         }
     };
 
-    // Sincronización directa con TradingView Scanner para S&P 500 (Preservada)
+    // Sincronización directa con TradingView Scanner para EE. UU. (Preservada)
     const triggerTradingViewSync = async () => {
         setIsSyncingTV(true);
         setFeedback(null);
@@ -351,7 +359,7 @@ export default function CalendarManagement() {
                 const data = await res.json();
                 setFeedback({
                     type: 'success',
-                    message: `Balances S&P 500 sincronizados con TradingView Scanner (${data.eventsProcessed} empresas actualizadas)`,
+                    message: `Balances EE. UU. sincronizados con TradingView Scanner (${data.eventsProcessed} empresas actualizadas)`,
                 });
                 await loadData();
             } else {
@@ -448,13 +456,6 @@ export default function CalendarManagement() {
     };
 
     // Formateadores de moneda y cifras
-    const formatRevenue = (val?: number) => {
-        if (val == null) return '—';
-        if (val >= 1e9) return `$${(val / 1e9).toFixed(2)} B`;
-        if (val >= 1e6) return `$${(val / 1e6).toFixed(1)} M`;
-        return `$${val.toLocaleString()}`;
-    };
-
     const formatMarketCap = (val?: number) => {
         if (val == null) return '—';
         if (val >= 1e12) return `$${(val / 1e12).toFixed(2)} T`;
@@ -493,7 +494,7 @@ export default function CalendarManagement() {
         };
     };
 
-    // Filtrado dinámico de Balances S&P 500 (Preservado)
+    // Filtrado dinámico de Balances EE. UU. (Preservado)
     const filteredEarnings = useMemo(() => {
         return earnings.filter((item) => {
             if (earningsSearch.trim()) {
@@ -645,7 +646,7 @@ export default function CalendarManagement() {
                         Gestión de Calendario
                     </h1>
                     <p className="text-sm text-muted-foreground mt-1">
-                        Agregador institucional de eventos de mercado, política monetaria y balances del S&P 500.
+                        Agregador institucional de eventos de mercado, política monetaria y balances del EE. UU..
                     </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -692,7 +693,7 @@ export default function CalendarManagement() {
                             className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold flex items-center gap-2 hover:opacity-90 shadow-md transition-all disabled:opacity-50"
                         >
                             <RefreshCw className={`w-4 h-4 ${isSyncingTV ? 'animate-spin' : ''}`} />
-                            {isSyncingTV ? 'Sincronizando...' : 'Sincronizar S&P 500 (TradingView)'}
+                            {isSyncingTV ? 'Sincronizando...' : 'Sincronizar EE. UU. (TradingView)'}
                         </button>
                     )}
                 </div>
@@ -772,7 +773,7 @@ export default function CalendarManagement() {
                     }`}
                 >
                     <Building2 className="w-4 h-4" />
-                    Balances S&P 500 (TradingView) ({earnings.length})
+                    Balances EE. UU. (TradingView) ({earnings.length})
                 </button>
             </div>
 
@@ -1184,7 +1185,7 @@ export default function CalendarManagement() {
             )}
 
             {/* ========================================================================= */}
-            {/* TAB EARNINGS S&P 500 (PRESERVADO INTACTO Y TOTALMENTE FUNCIONAL)           */}
+            {/* TAB EARNINGS EE. UU. (PRESERVADO INTACTO Y TOTALMENTE FUNCIONAL)           */}
             {/* ========================================================================= */}
             {activeTab === 'EARNINGS' && (
                 <div className="space-y-4">
@@ -1312,13 +1313,13 @@ export default function CalendarManagement() {
                             </div>
                             <div className="space-y-1">
                                 <h3 className="font-bold text-base text-foreground">
-                                    No hay empresas del S&P 500 con balances en esta selección
+                                    No hay empresas del EE. UU. con balances en esta selección
                                 </h3>
                                 <p className="text-xs text-muted-foreground max-w-md mx-auto">
                                     {earningsPeriod === 'TODAY'
-                                        ? `Hoy (${todayStr}) no hay reportes de resultados programados para empresas del S&P 500 según TradingView Scanner.`
+                                        ? `Hoy (${todayStr}) no hay reportes de resultados programados para empresas del EE. UU. según TradingView Scanner.`
                                         : earningsPeriod === 'CUSTOM'
-                                            ? `Para la fecha ${selectedDate} no se registran presentaciones de balances del S&P 500.`
+                                            ? `Para la fecha ${selectedDate} no se registran presentaciones de balances del EE. UU..`
                                             : 'No se encontraron resultados con los filtros aplicados.'}
                                 </p>
                             </div>
@@ -1343,11 +1344,11 @@ export default function CalendarManagement() {
                                 <table className="w-full text-left border-collapse text-sm">
                                     <thead>
                                         <tr className="border-b border-border/60 bg-muted/50 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                                            <th className="p-4">Empresa (S&P 500)</th>
+                                            <th className="p-4">Empresa (EE. UU.)</th>
                                             <th className="p-4">Fecha Reporte</th>
                                             <th className="p-4">Horario / Sesión</th>
-                                            <th className="p-4">EPS Est. (TV)</th>
-                                            <th className="p-4">Facturación Est.</th>
+                                            <th className="p-4">EPS publicado / estimado</th>
+                                            <th className="p-4">Facturación publicada / estimada</th>
                                             <th className="p-4">Market Cap</th>
                                             <th className="p-4">Impacto</th>
                                             <th className="p-4 text-right">Acciones</th>
@@ -1356,7 +1357,7 @@ export default function CalendarManagement() {
                                     <tbody className="divide-y divide-border/40">
                                         {filteredEarnings.map((e) => {
                                             const isToday = e.date === todayStr;
-                                            const timing = e.reportTiming || 'AMC';
+                                            const timing = e.reportTiming;
 
                                             return (
                                                 <tr key={e.id} className="hover:bg-muted/40 transition-colors">
@@ -1381,7 +1382,7 @@ export default function CalendarManagement() {
                                                                 <div className="flex items-center gap-1.5">
                                                                     <span className="font-bold text-foreground text-sm">{e.ticker}</span>
                                                                     <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
-                                                                        S&P 500
+                                                                        EE. UU.
                                                                     </span>
                                                                 </div>
                                                                 <span className="text-xs text-muted-foreground block truncate max-w-[200px]" title={e.companyName}>
@@ -1408,28 +1409,32 @@ export default function CalendarManagement() {
                                                         {timing === 'BMO' ? (
                                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                                                                 <Sun className="w-3.5 h-3.5" />
-                                                                Antes de Apertura (08:30)
+                                                                Antes de la apertura
                                                             </span>
                                                         ) : timing === 'AMC' ? (
                                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
                                                                 <Moon className="w-3.5 h-3.5" />
-                                                                Tras el Cierre (16:30)
+                                                                Después del cierre
+                                                            </span>
+                                                        ) : timing === 'DMH' ? (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold bg-muted text-muted-foreground">
+                                                                Durante la rueda
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold bg-muted text-muted-foreground">
-                                                                Durante la Rueda
-                                                            </span>
+                                                            <span className="text-xs text-muted-foreground">Horario pendiente</span>
                                                         )}
                                                     </td>
 
                                                     {/* EPS Estimado */}
                                                     <td className="p-4 font-mono text-xs font-bold text-foreground">
-                                                        {e.epsEstimate != null ? `$${e.epsEstimate.toFixed(2)}` : '—'}
+                                                        {e.actualEps != null ? `$${e.actualEps.toFixed(2)}` : e.epsEstimate != null ? `$${e.epsEstimate.toFixed(2)}` : ''}
+                                                        {(e.actualEps != null || e.epsEstimate != null) && <span className="block text-[10px] text-muted-foreground">{e.actualEps != null ? 'Publicado' : 'Estimado'}</span>}
                                                     </td>
 
                                                     {/* Facturación */}
                                                     <td className="p-4 font-mono text-xs text-foreground">
-                                                        {formatRevenue(e.revenueEstimate)}
+                                                        {formatFinancialAmount(e.actualRevenue ?? e.revenueEstimate)}
+                                                        {(e.actualRevenue != null || e.revenueEstimate != null) && <span className="block text-[10px] text-muted-foreground">{e.actualRevenue != null ? 'Publicado' : 'Estimado'}</span>}
                                                     </td>
 
                                                     {/* Market Cap */}
@@ -1883,7 +1888,7 @@ export default function CalendarManagement() {
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
-                                Balances S&P 500
+                                Balances EE. UU.
                             </button>
                         </div>
 
@@ -2064,7 +2069,7 @@ export default function CalendarManagement() {
                                 <>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <label className="block text-xs font-medium text-muted-foreground mb-1">Ticker (S&P 500)</label>
+                                            <label className="block text-xs font-medium text-muted-foreground mb-1">Ticker (EE. UU.)</label>
                                             <input
                                                 type="text"
                                                 required
@@ -2082,6 +2087,7 @@ export default function CalendarManagement() {
                                                 className="w-full p-2.5 bg-background border border-input rounded-xl text-foreground text-xs"
                                             >
                                                 <option value="AMC">🌙 Tras el Cierre (AMC)</option>
+                                                <option value="">Horario pendiente</option>
                                                 <option value="BMO">☀️ Antes de Apertura (BMO)</option>
                                             </select>
                                         </div>

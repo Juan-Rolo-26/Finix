@@ -1301,7 +1301,7 @@ const PortfolioPage = () => {
         {displayPortfolio && (
           <div className="space-y-6">
             {/* ── Dashboard charts (Performance + Allocation) */}
-            {displayPortfolio.assets.length > 0 ? (
+            {displayPortfolio.assets.length > 0 || movements.length > 0 ? (
               <ErrorBoundary fallbackTitle="Panel de rendimiento temporalmente inaccesible">
                 <PortfolioDashboard
                   portfolioId={displayPortfolio.id}

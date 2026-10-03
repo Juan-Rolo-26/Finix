@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { financialNumber } from '@finix/shared';
 import {
     Activity,
     Building2,
@@ -20,7 +21,7 @@ function number(value: number | null | undefined, digits = 2) {
     if (
         value === null ||
         value === undefined ||
-        !Number.isFinite(Number(value))
+        financialNumber(value) === undefined
     )
         return '—';
     return new Intl.NumberFormat('es-AR', {
@@ -28,35 +29,39 @@ function number(value: number | null | undefined, digits = 2) {
     }).format(Number(value));
 }
 
-function money(value: number | null | undefined) {
+function money(value: number | null | undefined, currency: string | null = 'USD') {
     if (
         value === null ||
         value === undefined ||
-        !Number.isFinite(Number(value))
+        financialNumber(value) === undefined
     )
         return '—';
+    if (!currency || !/^[A-Z]{3}$/.test(currency)) return number(value);
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD',
+        currency,
+        currencyDisplay: currency === 'USD' ? 'symbol' : 'code',
         maximumFractionDigits: 2,
     }).format(Number(value));
 }
 
-function compactMoney(value: number | null | undefined) {
+function compactMoney(value: number | null | undefined, currency: string | null = 'USD') {
     if (
         value === null ||
         value === undefined ||
-        !Number.isFinite(Number(value))
+        financialNumber(value) === undefined
     )
         return '—';
+    const prefix = currency === 'USD' ? '$' : currency && /^[A-Z]{3}$/.test(currency) ? currency + ' ' : '';
     const absolute = Math.abs(Number(value));
-    if (absolute >= 1e12) return `$${(Number(value) / 1e12).toFixed(2)}T`;
-    if (absolute >= 1e9) return `$${(Number(value) / 1e9).toFixed(2)}B`;
-    if (absolute >= 1e6) return `$${(Number(value) / 1e6).toFixed(2)}M`;
-    return money(value);
+    if (absolute >= 1e12) return `${prefix}${(Number(value) / 1e12).toFixed(2)}T`;
+    if (absolute >= 1e9) return `${prefix}${(Number(value) / 1e9).toFixed(2)}B`;
+    if (absolute >= 1e6) return `${prefix}${(Number(value) / 1e6).toFixed(2)}M`;
+    return money(value, currency);
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
+    if (!value || value === '—' || value === '—%') return null;
     return (
         <div className="market-fundamental-metric">
             <p className="market-metric-label">
@@ -75,6 +80,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
     const [news, setNews] = useState<any[]>([]);
     const [candles, setCandles] = useState<any[]>([]);
     const [isAddToWatchlistOpen, setIsAddToWatchlistOpen] = useState(false);
+    const activeRequest = useRef<AbortController | null>(null);
     const ticker = useMemo(
         () =>
             symbol
@@ -88,7 +94,10 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
         ? symbol.split(':')[0].toUpperCase()
         : 'NASDAQ';
 
-    const load = async (force = false) => {
+    const load = useCallback(async (force = false) => {
+        activeRequest.current?.abort();
+        const request = new AbortController();
+        activeRequest.current = request;
         force ? setRefreshing(true) : setLoading(true);
         setError('');
         try {
@@ -102,44 +111,37 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                 [
                     apiFetch(
                         `/fundamental/${encodeURIComponent(ticker)}?${query.toString()}`,
-                    ),
+                        { signal: request.signal },
+                    ).catch(() => null),
                     apiFetch(
                         `/market/news?symbol=${encodeURIComponent(ticker)}`,
-                    ),
+                        { signal: request.signal },
+                    ).catch(() => null),
                     apiFetch(
                         `/market/candles?symbol=${encodeURIComponent(symbol)}&interval=1d&range=6mo`,
-                    ),
+                        { signal: request.signal },
+                    ).catch(() => null),
                 ],
             );
-            if (response.ok) {
-                setData(await response.json());
+            if (request.signal.aborted) return;
+            if (response?.ok) {
+                const fundamentalData = await response.json();
+                if (request.signal.aborted) return;
+                setData(fundamentalData);
             } else {
-                setData({
-                    instrument: { name: ticker, exchange },
-                    metrics: {},
-                    derived: {},
-                    statements: {},
-                    quality: {
-                        coverage: 0,
-                        warnings: [
-                            'El proveedor fundamental está temporalmente no disponible.',
-                        ],
-                    },
-                    source: {
-                        providersTried: [],
-                        errors: [{ message: `HTTP ${response.status}` }],
-                    },
-                });
+                if (!force) setData(null);
                 setError(
                     'Los fundamentales están temporalmente en actualización. El gráfico y los datos de mercado siguen disponibles.',
                 );
             }
-            if (newsResponse.ok) {
+            if (newsResponse?.ok) {
                 const newsData = await newsResponse.json();
+                if (request.signal.aborted) return;
                 setNews(Array.isArray(newsData) ? newsData.slice(0, 5) : []);
             }
-            if (candlesResponse.ok) {
+            if (candlesResponse?.ok) {
                 const candleData = await candlesResponse.json();
+                if (request.signal.aborted) return;
                 const rawCandles = Array.isArray(candleData)
                     ? candleData
                     : Array.isArray(candleData?.candles)
@@ -150,24 +152,31 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                 setCandles(
                     rawCandles
                         .filter((item: any) =>
-                            Number.isFinite(Number(item.close)),
+                            financialNumber(item.close) !== undefined && Number(item.close) > 0,
                         )
                         .slice(-180),
                 );
             }
         } catch (err: any) {
+            if (request.signal.aborted) return;
             setError(
                 err?.message || 'No se pudo cargar la información del activo',
             );
         } finally {
-            setLoading(false);
-            setRefreshing(false);
+            if (!request.signal.aborted) {
+                setLoading(false);
+                setRefreshing(false);
+            }
         }
-    };
+    }, [ticker, symbol]);
 
     useEffect(() => {
+        setData(null);
+        setNews([]);
+        setCandles([]);
         void load();
-    }, [symbol]);
+        return () => activeRequest.current?.abort();
+    }, [load]);
 
     if (loading)
         return (
@@ -184,7 +193,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
             <Card className="rounded-lg border-border/60 bg-card/60">
                 <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
                     <p className="text-[16px] text-muted-foreground">
-                        Cargando información fundamental…
+                        {error || 'No hay información financiera disponible para este activo.'}
                     </p>
                     <Button variant="outline" onClick={() => void load(true)}>
                         <RefreshCw className="mr-2 h-4 w-4" /> Actualizar
@@ -197,6 +206,11 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
     const latestIncome = data.statements?.incomeStatement?.[0] || {};
     const latestBalance = data.statements?.balanceSheet?.[0] || {};
     const latestCash = data.statements?.cashFlow?.[0] || {};
+    const hasValues = (values: unknown[]) => values.some(value => financialNumber(value) !== undefined);
+    const hasMetrics = hasValues([metrics.marketCap, metrics.enterpriseValue, metrics.peRatio, metrics.roe, metrics.roic, metrics.debtToEquity]);
+    const hasIncome = hasValues([latestIncome.revenue, latestIncome.netIncome, latestIncome.ebitda, latestIncome.eps]);
+    const hasBalance = hasValues([latestBalance.totalAssets, latestBalance.totalLiabilities, latestBalance.cashAndEquivalents, latestBalance.totalDebt]);
+    const hasCash = hasValues([latestCash.operatingCashFlow, metrics.freeCashFlow, latestCash.freeCashFlow, metrics.netMargin, metrics.revenueGrowthCagr]);
     const source =
         data.source?.providersTried?.join(', ') ||
         'Alpha Vantage / fallback Finix';
@@ -266,7 +280,8 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-5 p-5">
-                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
+                    {!hasMetrics && !hasIncome && !hasBalance && !hasCash && <p className="text-muted-foreground">No hay información financiera disponible para este activo.</p>}
+                    {hasMetrics && <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
                         <Metric
                             label="Capitalización"
                             value={compactMoney(metrics.marketCap)}
@@ -296,88 +311,91 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                             label="Deuda / patrimonio"
                             value={number(metrics.debtToEquity)}
                         />
-                    </div>
+                    </div>}
 
-                    <div className="grid gap-4 lg:grid-cols-3">
-                        <Card className="market-financial-band">
+                    {(hasIncome || hasBalance || hasCash) && <div className="grid gap-4 lg:grid-cols-3">
+                        {hasIncome && <Card className="market-financial-band">
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-[16px]">
                                     <Building2 className="h-4 w-4 text-emerald-500" />{' '}
                                     Estado de resultados
                                 </CardTitle>
+                                <p className="text-xs text-muted-foreground">{latestIncome.date || ''}{latestIncome.date ? ' · ' : ''}{latestIncome.currency || 'Moneda no informada'}</p>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-2 text-[14px]">
                                 <Metric
                                     label="Ingresos"
-                                    value={compactMoney(latestIncome.revenue)}
+                                    value={compactMoney(latestIncome.revenue, latestIncome.currency ?? null)}
                                 />
                                 <Metric
                                     label="Resultado neto"
-                                    value={compactMoney(latestIncome.netIncome)}
+                                    value={compactMoney(latestIncome.netIncome, latestIncome.currency ?? null)}
                                 />
                                 <Metric
                                     label="EBITDA"
-                                    value={compactMoney(latestIncome.ebitda)}
+                                    value={compactMoney(latestIncome.ebitda, latestIncome.currency ?? null)}
                                 />
                                 <Metric
                                     label="EPS"
-                                    value={money(latestIncome.eps)}
+                                    value={money(latestIncome.eps, latestIncome.currency ?? null)}
                                 />
                             </CardContent>
-                        </Card>
-                        <Card className="market-financial-band">
+                        </Card>}
+                        {hasBalance && <Card className="market-financial-band">
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-[16px]">
                                     <Wallet className="h-4 w-4 text-emerald-500" />{' '}
                                     Balance
                                 </CardTitle>
+                                <p className="text-xs text-muted-foreground">{latestBalance.date || ''}{latestBalance.date ? ' · ' : ''}{latestBalance.currency || 'Moneda no informada'}</p>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-2 text-[14px]">
                                 <Metric
                                     label="Activos"
                                     value={compactMoney(
-                                        latestBalance.totalAssets,
+                                        latestBalance.totalAssets, latestBalance.currency ?? null,
                                     )}
                                 />
                                 <Metric
                                     label="Pasivos"
                                     value={compactMoney(
-                                        latestBalance.totalLiabilities,
+                                        latestBalance.totalLiabilities, latestBalance.currency ?? null,
                                     )}
                                 />
                                 <Metric
                                     label="Caja"
                                     value={compactMoney(
-                                        latestBalance.cashAndEquivalents,
+                                        latestBalance.cashAndEquivalents, latestBalance.currency ?? null,
                                     )}
                                 />
                                 <Metric
                                     label="Deuda"
                                     value={compactMoney(
-                                        latestBalance.totalDebt,
+                                        latestBalance.totalDebt, latestBalance.currency ?? null,
                                     )}
                                 />
                             </CardContent>
-                        </Card>
-                        <Card className="market-financial-band">
+                        </Card>}
+                        {hasCash && <Card className="market-financial-band">
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-[16px]">
                                     <Activity className="h-4 w-4 text-emerald-500" />{' '}
                                     Flujo y calidad
                                 </CardTitle>
+                                <p className="text-xs text-muted-foreground">{latestCash.date || ''}{latestCash.date ? ' · ' : ''}{latestCash.currency || 'Moneda no informada'}</p>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-2 text-[14px]">
                                 <Metric
                                     label="Flujo operativo"
                                     value={compactMoney(
-                                        latestCash.operatingCashFlow,
+                                        latestCash.operatingCashFlow, latestCash.currency ?? null,
                                     )}
                                 />
                                 <Metric
                                     label="Free cash flow"
                                     value={compactMoney(
                                         metrics.freeCashFlow ??
-                                            latestCash.freeCashFlow,
+                                            latestCash.freeCashFlow, latestCash.currency ?? null,
                                     )}
                                 />
                                 <Metric
@@ -397,8 +415,8 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                     }
                                 />
                             </CardContent>
-                        </Card>
-                    </div>
+                        </Card>}
+                    </div>}
 
                     <div className="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
                         <Card className="market-financial-band">

@@ -1,0 +1,107 @@
+.markets-view .market-chart-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 22px 24px;
+    margin-bottom: 12px;
+    border: 1px solid hsl(var(--border) / 0.8);
+    border-radius: 14px;
+    background: linear-gradient(110deg, hsl(var(--primary) / 0.035), transparent 65%), hsl(var(--card));
+    box-shadow: 0 2px 8px hsl(var(--foreground) / 0.025);
+    text-align: left;
+}
+.markets-view .market-chart-heading__content {
+    min-width: 0;
+}
+.markets-view .market-chart-heading__eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 14px;
+    color: hsl(var(--muted-foreground));
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.markets-view .market-chart-heading__eyebrow svg {
+    flex-shrink: 0;
+    color: hsl(var(--primary));
+}
+.markets-view .market-chart-heading__identity {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+.markets-view .market-chart-heading__text {
+    min-width: 0;
+}
+.markets-view .market-chart-heading h1 {
+    margin: 0;
+    color: hsl(var(--foreground));
+    font-size: clamp(24px, 2.5vw, 32px);
+    line-height: 1.2;
+    font-weight: 750;
+    letter-spacing: -0.035em;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+}
+.markets-view .market-chart-heading__metadata {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 9px;
+}
+.markets-view .market-chart-heading__ticker {
+    padding: 3px 8px;
+    border: 1px solid hsl(var(--primary) / 0.15);
+    border-radius: 6px;
+    background: hsl(var(--primary) / 0.065);
+    color: hsl(var(--primary));
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.markets-view .market-chart-heading__exchange {
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+    font-weight: 550;
+}
+.markets-view .market-chart-heading__actions {
+    flex-shrink: 0;
+}
+.markets-view .market-chart-heading__actions .market-action {
+    min-height: 44px;
+    padding-inline: 16px;
+    border-radius: 9px;
+    border-color: hsl(var(--primary) / 0.2);
+    background: hsl(var(--background));
+    font-size: 13px;
+    transition: background 0.15s, border-color 0.15s;
+}
+.markets-view .market-chart-heading__actions .market-action:hover {
+    border-color: hsl(var(--primary) / 0.4);
+    background: hsl(var(--primary) / 0.055);
+}
+.markets-view .market-chart-controls--compact {
+    padding-bottom: 0;
+}
+@container (max-width: 599px) {
+    .markets-view .market-chart-heading {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 18px;
+        padding: 18px;
+    }
+    .markets-view .market-chart-heading__actions .market-action {
+        width: 100%;
+    }
+    .markets-view .market-chart-heading__eyebrow {
+        margin-bottom: 12px;
+        font-size: 10px;
+    }
+}

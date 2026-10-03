@@ -1,8 +1,8 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowDownRight, ArrowUpRight, Layers3, Target, WalletCards } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { apiFetch } from '@/lib/api';
+import { usePortfolioHistory } from './usePortfolioHistory';
 import { resolveAssetInfo } from '@/lib/tradingview';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { AssetPerformanceChart } from './AssetPerformanceChart';
@@ -96,13 +96,6 @@ function normalizeComparisonSeries(
         });
         return acc;
     }, {} as Record<TimeRange, ComparisonDatum[]>);
-}
-
-function createEmptySeriesByRange() {
-    return TIME_RANGES.reduce((acc, range) => {
-        acc[range] = [];
-        return acc;
-    }, {} as Record<TimeRange, PortfolioValuePoint[]>);
 }
 
 function inferSector(asset: DashboardAsset) {
@@ -279,112 +272,21 @@ export function PortfolioDashboard({
     className,
 }: PortfolioDashboardProps) {
     const [selectedRange, setSelectedRange] = useState<TimeRange>('ALL');
-    const [liveHistory, setLiveHistory] = useState<Record<TimeRange, PortfolioValuePoint[]>>(() => createEmptySeriesByRange());
-    const [liveComparison, setLiveComparison] = useState<Record<TimeRange, ComparisonDatum[]>>(() =>
-        TIME_RANGES.reduce((acc, range) => {
-            acc[range] = [];
-            return acc;
-        }, {} as Record<TimeRange, ComparisonDatum[]>),
-    );
-    const [historyNotice, setHistoryNotice] = useState<string | null>(null);
-
-    useEffect(() => {
-        const hasHoldings = (metrics?.cantidadActivos ?? assets.length) > 0;
-        if (!portfolioId || !hasHoldings) {
-            setLiveHistory(createEmptySeriesByRange());
-            setLiveComparison(TIME_RANGES.reduce((acc, range) => {
-                acc[range] = [];
-                return acc;
-            }, {} as Record<TimeRange, ComparisonDatum[]>));
-            setHistoryNotice(null);
-            return;
-        }
-        let isMounted = true;
-        setLiveHistory((prev) => ({ ...prev, [selectedRange]: [] }));
-        setLiveComparison((prev) => ({ ...prev, [selectedRange]: [] }));
-
-        Promise.all([
-            apiFetch(`/portfolios/${portfolioId}/performance?range=${selectedRange}&currency=${encodeURIComponent(currency)}`),
-            apiFetch(`/portfolios/${portfolioId}/benchmarks?range=${selectedRange}&benchmarks=sp500&currency=${encodeURIComponent(currency)}`),
-        ])
-            .then(async ([performanceResponse, benchmarkResponse]) => {
-                const performance = performanceResponse.ok ? await performanceResponse.json() : null;
-                const benchmark = benchmarkResponse.ok ? await benchmarkResponse.json() : null;
-                return { performance, benchmark };
-            })
-            .then(({ performance, benchmark }) => {
-                if (!isMounted) return;
-
-                const performanceSeries = Array.isArray(performance?.series)
-                    ? performance.series
-                        .map((point: any) => ({
-                            date: String(point.date || ''),
-                            portfolio: Number(point.value),
-                            returnPct: Number(point.returnPct),
-                        }))
-                        .filter((point: PortfolioValuePoint) => point.date && Number.isFinite(point.portfolio) && point.portfolio > 0)
-                    : [];
-
-                const comparisonSeries = Array.isArray(benchmark?.series)
-                    ? benchmark.series
-                        .map((point: any) => ({
-                            date: String(point.date || ''),
-                            portfolio: Number(point.portfolio),
-                            sp500: point.sp500 == null ? undefined : Number(point.sp500),
-                        }))
-                        .filter((point: ComparisonDatum) => point.date && Number.isFinite(point.portfolio) && point.portfolio > 0)
-                    : [];
-
-                setLiveHistory((prev) => ({ ...prev, [selectedRange]: performanceSeries }));
-                setLiveComparison((prev) => ({ ...prev, [selectedRange]: comparisonSeries }));
-
-                const distinctPerformanceDates = new Set(performanceSeries.map((point: PortfolioValuePoint) => point.date)).size;
-                if (performance?.message && (performanceSeries.length < 2 || distinctPerformanceDates < 2)) {
-                    setHistoryNotice(performance.message);
-                } else if (benchmark?.benchmarkAvailable === false && performance?.startDate) {
-                    const startLabel = new Date(performance.startDate).toLocaleDateString('es-AR', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                    }).replace('.', '');
-                    setHistoryNotice(`Mediciones desde ${startLabel}. El SPY no devolvió datos reales para este período.`);
-                } else if (selectedRange === 'ALL' && performance?.startDate) {
-                    const startLabel = new Date(performance.startDate).toLocaleDateString('es-AR', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                    }).replace('.', '');
-                    setHistoryNotice(`Mediciones desde la primera operación registrada: ${startLabel}.`);
-                } else {
-                    setHistoryNotice(null);
-                }
-            })
-            .catch(() => {
-                if (!isMounted) return;
-                setHistoryNotice('No se pudo cargar el historial real. Probá actualizar la vista.');
-            });
-
-        return () => {
-            isMounted = false;
-        };
-    }, [assets.length, currency, metrics?.cantidadActivos, portfolioId, selectedRange]);
+    const revision = JSON.stringify([
+        assets.map(asset => [asset.ticker, asset.cantidad, asset.ppc]),
+        movements.map(movement => [movement.fecha, movement.total, movement.tipoMovimiento]),
+    ]);
+    const { history, comparison, notice: historyNotice, loading: historyLoading } = usePortfolioHistory(portfolioId, currency, selectedRange, revision);
+    const hasHistory = assets.length > 0 || movements.length > 0 || history.length > 0;
 
     const resolvedData = useMemo(() => {
-        const hasHoldings = (metrics?.cantidadActivos ?? assets.length) > 0;
         const base = resolveData({ metrics, assets, movements, data });
-        const historyForRange = liveHistory[selectedRange];
-        if (hasHoldings && historyForRange && historyForRange.length > 0) {
-            base.portfolioValueByRange[selectedRange] = historyForRange;
-        }
-        const comparisonForRange = liveComparison[selectedRange];
-        base.comparisonByRange[selectedRange] = hasHoldings && comparisonForRange.length > 0
-            ? comparisonForRange
-            : buildBenchmarkComparisonSeries({
-                apiSeries: hasHoldings ? historyForRange : [],
-                hasHoldings,
-            });
-        return base;
-    }, [metrics, assets, movements, data, liveHistory, liveComparison, selectedRange]);
+        return {
+            ...base,
+            portfolioValueByRange: { ...base.portfolioValueByRange, [selectedRange]: history.length ? history : base.portfolioValueByRange[selectedRange] },
+            comparisonByRange: { ...base.comparisonByRange, [selectedRange]: comparison },
+        };
+    }, [metrics, assets, movements, data, history, comparison, selectedRange]);
 
     const summary = useMemo(() => {
         const activePortfolioSeries = resolvedData.portfolioValueByRange[selectedRange] ?? [];
@@ -393,14 +295,10 @@ export function PortfolioDashboard({
         const lastPoint = activePortfolioSeries[activePortfolioSeries.length - 1];
         const lastComparison = activeComparisonSeries[activeComparisonSeries.length - 1];
         const absoluteChange = firstPoint && lastPoint ? lastPoint.portfolio - firstPoint.portfolio : 0;
-        const rangeReturn = typeof lastPoint?.returnPct === 'number' && Number.isFinite(lastPoint.returnPct)
-            ? lastPoint.returnPct
-            : lastComparison
-                ? lastComparison.portfolio - 100
-                : firstPoint && lastPoint && firstPoint.portfolio > 0
-                    ? (absoluteChange / firstPoint.portfolio) * 100
-                    : 0;
-        const isPortfolioEmpty = (metrics?.cantidadActivos ?? assets.length) === 0;
+        const rangeReturn = lastComparison
+            ? lastComparison.portfolio - 100
+            : null;
+        const isPortfolioEmpty = !hasHistory;
         const benchmarkSpread = isPortfolioEmpty || typeof lastComparison?.sp500 !== 'number'
             ? null
             : lastComparison.portfolio - lastComparison.sp500;
@@ -409,7 +307,7 @@ export function PortfolioDashboard({
             currentValue: metrics?.valorActual ?? lastPoint?.portfolio ?? 0,
             costBasis: metrics?.capitalInvertido ?? assets.reduce((sum, asset) => sum + asset.montoInvertido, 0),
             totalGain: metrics?.gananciaTotal ?? absoluteChange,
-            totalReturn: metrics?.variacionPorcentual ?? rangeReturn,
+            totalReturn: rangeReturn,
             rangeReturn,
             benchmarkSpread,
             benchmarkAvailable: !isPortfolioEmpty && typeof lastComparison?.sp500 === 'number',
@@ -418,19 +316,19 @@ export function PortfolioDashboard({
             topWinner: resolvedData.assetPerformance[0],
             isPortfolioEmpty,
         };
-    }, [assets, metrics, resolvedData, selectedRange]);
+    }, [assets, metrics, resolvedData, selectedRange, hasHistory]);
 
     const summaryCards = [
         {
-            label: 'Retorno total',
-            value: summary.isPortfolioEmpty ? '0.0%' : formatPercent(summary.totalReturn, 1, true),
-            sublabel: summary.isPortfolioEmpty ? 'Sin movimientos aún' : `${TIME_RANGE_LABELS[selectedRange]} · ${formatPercent(summary.rangeReturn, 1, true)}`,
-            positive: summary.totalReturn >= 0,
-            icon: summary.totalReturn >= 0 ? ArrowUpRight : ArrowDownRight,
+            label: 'Retorno del período',
+            value: summary.totalReturn == null ? '—' : formatPercent(summary.totalReturn, 1, true),
+            sublabel: summary.totalReturn == null ? 'Sin historial suficiente' : `${TIME_RANGE_LABELS[selectedRange]} · Aportes y retiros descontados`,
+            positive: (summary.totalReturn ?? 0) >= 0,
+            icon: (summary.totalReturn ?? 0) >= 0 ? ArrowUpRight : ArrowDownRight,
         },
         {
             label: 'Ventaja vs S&P 500',
-            value: summary.isPortfolioEmpty || !summary.benchmarkAvailable ? '—' : formatPercent(summary.benchmarkSpread ?? 0, 1, true),
+            value: summary.isPortfolioEmpty || !summary.benchmarkAvailable ? '—' : `${(summary.benchmarkSpread ?? 0) >= 0 ? '+' : ''}${summary.benchmarkSpread?.toFixed(1)} pts`,
             sublabel: summary.isPortfolioEmpty
                 ? 'Sin posiciones cargadas'
                 : !summary.benchmarkAvailable
@@ -533,8 +431,8 @@ export function PortfolioDashboard({
                         dataByRange={resolvedData.comparisonByRange}
                         selectedRange={selectedRange}
                         onRangeChange={setSelectedRange}
-                        portfolioReturn={summary.totalReturn}
-                        hasHoldings={!summary.isPortfolioEmpty}
+                        hasHoldings={hasHistory}
+                        loading={historyLoading}
                     />
                 </ErrorBoundary>
             </div>

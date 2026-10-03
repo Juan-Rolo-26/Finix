@@ -85,6 +85,70 @@ async function main() {
         const home = await service.getHomeEvents();
         assert.ok(home.events.every(event => !['template', 'template-earnings'].includes(event.id)));
 
+        const tvProvider = new CalendarProviderService(new MarketImpactScoringService(), {}, {});
+        tvProvider.fmpApiKey = '';
+        let tvRequests = 0;
+        const tvPayload = { status: 'ok', result: [
+            { id: 'tv-us', date: '2026-10-02T12:30:00.000Z', country: 'US', title: 'Non Farm Payrolls', previous: 0, forecast: 1, actual: 2, unit: 'K' },
+            { id: 'tv-ar', date: '2026-10-01T20:00:00.000Z', country: 'AR', title: 'Tax Revenue', previous: null, forecast: null, actual: 0, source_url: 'https://www.indec.gob.ar' },
+            { date: '2026-10-02T12:30:00.000Z', country: 'BR', title: 'Other country' },
+            { date: '2026-10-08T12:30:00.000Z', country: 'US', title: 'Outside range' },
+            null,
+        ] };
+        global.fetch = async url => {
+            tvRequests++;
+            assert.equal(url.hostname, 'economic-calendar.tradingview.com');
+            assert.equal(url.searchParams.get('from'), '2026-09-28T00:00:00.000Z');
+            assert.equal(url.searchParams.get('to'), '2026-10-04T23:59:59.999Z');
+            assert.equal(url.searchParams.get('countries'), 'US,AR');
+            return { ok: true, json: async () => tvPayload };
+        };
+        const [tvEvents, sharedEvents] = await Promise.all([
+            tvProvider.getUpcomingEconomicEvents('2026-09-28', '2026-10-04'),
+            tvProvider.getUpcomingEconomicEvents('2026-09-28', '2026-10-04'),
+        ]);
+        assert.equal(tvRequests, 1, 'Concurrent readers share one source request');
+        assert.deepEqual(tvEvents, sharedEvents);
+        assert.equal(tvEvents.length, 2, 'Fallback filters country and date range');
+        assert.equal(tvEvents[0].consensusValue, '1');
+        assert.equal(tvEvents[0].time, '12:30');
+        assert.equal(tvEvents[0].surprise, 1);
+        assert.equal(tvEvents[1].actualValue, '0');
+        assert.equal(tvEvents[1].sourceUrl, 'https://www.indec.gob.ar');
+        assert.equal(tvProvider.getEconomicFeedStatus('2026-09-28', '2026-10-04').status, 'READY');
+
+        const backupProvider = new CalendarProviderService(new MarketImpactScoringService(), {}, {});
+        backupProvider.fmpApiKey = 'test-secret';
+        let backupRequests = 0;
+        global.fetch = async url => {
+            backupRequests++;
+            return url.hostname === 'financialmodelingprep.com'
+                ? { ok: false, status: 402 }
+                : { ok: true, json: async () => tvPayload };
+        };
+        assert.equal((await backupProvider.getUpcomingEconomicEvents('2026-09-28', '2026-10-04')).length, 2);
+        assert.equal(backupRequests, 2, 'Denied FMP access must fall back to TradingView');
+        assert.equal(backupProvider.getEconomicFeedStatus('2026-09-28', '2026-10-04').source, 'TradingView Economic Calendar');
+
+        const cacheKey = tvProvider.economicCacheKey('2026-09-28', '2026-10-04', ['US', 'AR']);
+        tvProvider.economicCache.get(cacheKey).fetchedAt = 0;
+        global.fetch = async () => ({ ok: false, status: 503 });
+        assert.deepEqual(await tvProvider.getUpcomingEconomicEvents('2026-09-28', '2026-10-04'), tvEvents, 'Retain verified source data through outages');
+        assert.equal(tvProvider.getEconomicFeedStatus('2026-09-28', '2026-10-04').status, 'UNAVAILABLE');
+        tvProvider.economicCache.get(cacheKey).fetchedAt = Date.now() - 61000;
+        global.fetch = async () => ({ ok: true, json: async () => tvPayload });
+        await tvProvider.getUpcomingEconomicEvents('2026-09-28', '2026-10-04');
+        assert.equal(tvProvider.getEconomicFeedStatus('2026-09-28', '2026-10-04').status, 'READY', 'Failed sources retry after one minute');
+
+        for (const [instant, expected] of [
+            ['2026-10-03T15:00:00Z', '2026-09-28'],
+            ['2026-10-04T15:00:00Z', '2026-09-28'],
+            ['2026-10-05T01:00:00Z', '2026-09-28'],
+            ['2026-10-05T03:00:00Z', '2026-10-05'],
+        ]) {
+            assert.equal(service.getMondayOfWeek(new Date(instant)).toISOString().slice(0, 10), expected, 'Week boundaries must use Argentina dates');
+        }
+
         global.fetch = async () => ({ ok: false, status: 402 });
         assert.deepEqual(await provider.getUpcomingEconomicEvents('2026-10-05', '2026-10-11'), []);
         assert.deepEqual(provider.getEconomicFeedStatus('2026-10-05', '2026-10-11'), { status: 'UNAVAILABLE', httpStatus: 402 });
@@ -99,7 +163,7 @@ async function main() {
         const sync = await service.syncMacroData('2026-09-28', '2026-10-04');
         assert.equal(sync.success, false, 'Source failures must not be reported as successful synchronization');
         assert.equal(syncLog.status, 'FAILED');
-        console.log('Calendar data quality checks passed: legacy protection, real source merge, UTC times, zero values, cache and 402 status.');
+        console.log('Calendar data quality checks passed: legacy protection, real source merge, UTC times, zero values, cache, fallback, source recovery, weekend dates and 402 status.');
     } finally {
         global.fetch = originalFetch;
         if (originalTimezone === undefined) delete process.env.TZ;

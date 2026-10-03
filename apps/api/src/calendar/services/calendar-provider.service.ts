@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { financialNumber, isCalendarDate, isVisibleEarnings, normalizeEarnings } from '@finix/shared';
 import {
     EconomicEventItem,
     EarningsEventItem,
@@ -93,6 +94,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
         status: NonNullable<CalendarWeekResponse['economicData']>;
         fetchedAt: number;
     }>();
+    private economicRequests = new Map<string, Promise<EconomicEventItem[]>>();
 
     private economicCacheKey(from: string, to: string, countries: string[]): string {
         return JSON.stringify([from, to, [...countries].map(country => country.toUpperCase()).sort()]);
@@ -100,79 +102,133 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
 
     getEconomicFeedStatus(from: string, to: string, countries: string[] = ['US', 'AR']): NonNullable<CalendarWeekResponse['economicData']> {
         return this.economicCache.get(this.economicCacheKey(from, to, countries))?.status ??
-            { status: this.fmpApiKey ? 'UNAVAILABLE' as const : 'NOT_CONFIGURED' as const };
+            { status: 'UNAVAILABLE' as const };
     }
 
-    /** Source dates are UTC; unavailable feeds never produce assumed events. */
+    /** Share requests and retain verified data if both sources temporarily fail. */
     async getUpcomingEconomicEvents(from: string, to: string, countries: string[] = ['US', 'AR']): Promise<EconomicEventItem[]> {
         const key = this.economicCacheKey(from, to, countries);
         const cached = this.economicCache.get(key);
-        if (cached && Date.now() - cached.fetchedAt < 5 * 60 * 1000) return cached.events;
+        const ttl = cached?.status.status === 'READY' ? 5 * 60 * 1000 : 60 * 1000;
+        if (cached && Date.now() - cached.fetchedAt < ttl) return cached.events;
+        const pending = this.economicRequests.get(key);
+        if (pending) return pending;
+        const request = this.loadEconomicEvents(from, to, countries, key)
+            .finally(() => this.economicRequests.delete(key));
+        this.economicRequests.set(key, request);
+        return request;
+    }
 
-        const events: EconomicEventItem[] = [];
-        let status: NonNullable<CalendarWeekResponse['economicData']> = { status: 'NOT_CONFIGURED' };
+    private async loadEconomicEvents(from: string, to: string, countries: string[], key: string): Promise<EconomicEventItem[]> {
+        let status: NonNullable<CalendarWeekResponse['economicData']> = { status: 'UNAVAILABLE' };
+        const sources: { name: string; url: URL; tradingView?: boolean }[] = [];
         if (this.fmpApiKey && !this.fmpApiKey.startsWith('REPLACE')) {
-            status = { status: 'UNAVAILABLE' };
+            const url = new URL('https://financialmodelingprep.com/stable/economic-calendar');
+            url.search = new URLSearchParams({ from, to, apikey: this.fmpApiKey }).toString();
+            sources.push({ name: 'Financial Modeling Prep', url });
+        }
+        const url = new URL('https://economic-calendar.tradingview.com/events');
+        url.search = new URLSearchParams({
+            from: from + 'T00:00:00.000Z', to: to + 'T23:59:59.999Z',
+            countries: countries.map(country => country.toUpperCase()).join(','),
+        }).toString();
+        sources.push({ name: 'TradingView Economic Calendar', url, tradingView: true });
+
+        for (const source of sources) {
             try {
-                const url = new URL('https://financialmodelingprep.com/stable/economic-calendar');
-                url.search = new URLSearchParams({ from, to, apikey: this.fmpApiKey }).toString();
-                const response = await fetch(url, {
-                    headers: { 'User-Agent': 'Finix-Calendar/1.0', Accept: 'application/json' },
+                const response = await fetch(source.url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (compatible; Finix-Calendar/1.0)',
+                        Accept: 'application/json', Origin: 'https://www.tradingview.com',
+                    },
                     signal: AbortSignal.timeout(10000),
                 });
                 if (!response.ok) {
-                    status.httpStatus = response.status;
+                    status = { status: 'UNAVAILABLE', httpStatus: response.status };
                     throw new Error('HTTP ' + response.status);
                 }
-                const data: unknown = await response.json();
-                if (!Array.isArray(data)) throw new Error('Invalid economic calendar response');
-                const countrySet = new Set(countries.map(country => country.toUpperCase()));
-                for (const item of data) {
-                    if (!item || typeof item !== 'object') continue;
-                    const country = String(item.country || '').toUpperCase();
-                    if (!countrySet.has(country)) continue;
-                    const title = String(item.event || item.title || '').trim();
-                    const rawDate = String(item.date || '').trim().replace(' ', 'T');
-                    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(rawDate);
-                    const timestamp = new Date(dateOnly ? rawDate + 'T00:00:00Z' :
-                        /(?:Z|[+-]\d{2}:\d{2})$/i.test(rawDate) ? rawDate : rawDate + 'Z');
-                    if (!title || !Number.isFinite(timestamp.getTime())) continue;
-                    const date = timestamp.toISOString().slice(0, 10);
-                    if (date < from || date > to || (dateOnly && date !== rawDate)) continue;
-                    const evaluation = this.marketScoring.evaluateEvent(title, country);
-                    const previousValue = item.previous != null && item.previous !== '' ? String(item.previous) : undefined;
-                    const consensusValue = item.estimate != null && item.estimate !== '' ? String(item.estimate) : undefined;
-                    const actualValue = item.actual != null && item.actual !== '' ? String(item.actual) : undefined;
-                    const actual = Number(actualValue);
-                    const estimate = Number(consensusValue);
-                    const comparable = actualValue != null && consensusValue != null &&
-                        Number.isFinite(actual) && Number.isFinite(estimate);
-                    const surprise = comparable ? Number((actual - estimate).toFixed(4)) : undefined;
-                    events.push({
-                        eventType: 'ECONOMIC', country, currency: item.currency || undefined, title,
-                        category: evaluation.category, importance: evaluation.importance,
-                        marketImpactScore: evaluation.score, date,
-                        time: dateOnly ? undefined : timestamp.toISOString().slice(11, 16),
-                        timestampUtc: dateOnly ? undefined : timestamp, timezone: 'UTC',
-                        previousValue, consensusValue, actualValue,
-                        unit: typeof item.unit === 'string' ? item.unit : undefined,
-                        surprise,
-                        surprisePercent: comparable && estimate !== 0 ?
-                            Number(((actual - estimate) / Math.abs(estimate) * 100).toFixed(4)) : undefined,
-                        expectedMarketEffect: evaluation.expectedEffect,
-                        affectedAssets: evaluation.affectedAssets,
-                        externalId: item.id != null ? String(item.id) : undefined,
-                        source: 'Financial Modeling Prep', sourceType: 'AUTOMATIC', isPublished: true,
-                    });
+                const payload: any = await response.json();
+                let data: any[];
+                if (source.tradingView) {
+                    if (payload?.status !== 'ok' || !Array.isArray(payload.result)) {
+                        throw new Error('Invalid economic calendar response');
+                    }
+                    data = payload.result.map((item: any) => item && ({
+                        ...item, event: item.title, estimate: item.forecast,
+                        sourceUrl: item.source_url, description: item.comment,
+                    }));
+                } else {
+                    if (!Array.isArray(payload)) throw new Error('Invalid economic calendar response');
+                    data = payload;
                 }
-                status = { status: 'READY' };
+                const events = this.normalizeEconomicEvents(data, from, to, countries, source.name);
+                status = { status: 'READY', source: source.name, updatedAt: new Date().toISOString() };
+                this.economicCache.set(key, { events, status, fetchedAt: Date.now() });
+                this.trimEconomicCache();
+                return events;
             } catch (error) {
-                this.logger.warn('Economic calendar unavailable: ' +
-                    (error instanceof Error ? error.message.replace(this.fmpApiKey, '[redacted]') : 'Unknown error'));
+                const message = error instanceof Error ? error.message : 'Unknown error';
+                this.logger.warn(source.name + ' economic calendar unavailable: ' +
+                    (this.fmpApiKey ? message.replaceAll(this.fmpApiKey, '[redacted]') : message));
             }
         }
+        const previous = this.economicCache.get(key);
+        const events = previous?.events ?? [];
+        if (previous?.status.updatedAt) status.updatedAt = previous.status.updatedAt;
+        if (previous?.status.source) status.source = previous.status.source;
         this.economicCache.set(key, { events, status, fetchedAt: Date.now() });
+        this.trimEconomicCache();
+        return events;
+    }
+
+    private trimEconomicCache(): void {
         if (this.economicCache.size > 20) this.economicCache.delete(this.economicCache.keys().next().value!);
+    }
+
+    /** Source dates are UTC; unavailable feeds never produce assumed events. */
+    private normalizeEconomicEvents(data: any[], from: string, to: string, countries: string[], sourceName: string): EconomicEventItem[] {
+        const events: EconomicEventItem[] = [];
+        const countrySet = new Set(countries.map(country => country.toUpperCase()));
+        for (const item of data) {
+            if (!item || typeof item !== 'object') continue;
+            const country = String(item.country || '').toUpperCase();
+            if (!countrySet.has(country)) continue;
+            const title = String(item.event || item.title || '').trim();
+            const rawDate = String(item.date || '').trim().replace(' ', 'T');
+            const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(rawDate);
+            const timestamp = new Date(dateOnly ? rawDate + 'T00:00:00Z' :
+                /(?:Z|[+-]\d{2}:\d{2})$/i.test(rawDate) ? rawDate : rawDate + 'Z');
+            if (!title || !Number.isFinite(timestamp.getTime())) continue;
+            const date = timestamp.toISOString().slice(0, 10);
+            if (date < from || date > to || (dateOnly && date !== rawDate)) continue;
+            const evaluation = this.marketScoring.evaluateEvent(title, country);
+            const previousValue = item.previous != null && item.previous !== '' ? String(item.previous) : undefined;
+            const consensusValue = item.estimate != null && item.estimate !== '' ? String(item.estimate) : undefined;
+            const actualValue = item.actual != null && item.actual !== '' ? String(item.actual) : undefined;
+            const actual = Number(actualValue);
+            const estimate = Number(consensusValue);
+            const comparable = actualValue != null && consensusValue != null &&
+                Number.isFinite(actual) && Number.isFinite(estimate);
+            const surprise = comparable ? Number((actual - estimate).toFixed(4)) : undefined;
+            events.push({
+                eventType: 'ECONOMIC', country, currency: item.currency || undefined, title,
+                category: evaluation.category, importance: evaluation.importance,
+                marketImpactScore: evaluation.score, date,
+                time: dateOnly ? undefined : timestamp.toISOString().slice(11, 16),
+                timestampUtc: dateOnly ? undefined : timestamp, timezone: 'UTC',
+                previousValue, consensusValue, actualValue,
+                unit: typeof item.unit === 'string' ? item.unit : undefined,
+                surprise,
+                surprisePercent: comparable && estimate !== 0 ?
+                    Number(((actual - estimate) / Math.abs(estimate) * 100).toFixed(4)) : undefined,
+                expectedMarketEffect: evaluation.expectedEffect,
+                affectedAssets: evaluation.affectedAssets,
+                externalId: item.id != null ? String(item.id) : undefined,
+                source: sourceName, sourceName, sourceUrl: item.sourceUrl || undefined,
+                description: item.description || undefined,
+                sourceType: 'AUTOMATIC', isPublished: true,
+            });
+        }
         return events;
     }
 
@@ -309,92 +365,66 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                     'earnings_per_share_forecast_fq',
                     'revenue_fq',
                     'revenue_forecast_fq',
+                    'change',
                 ]);
                 const fetchedByKey = new Map<string, EarningsEventItem>();
                 const addEvent = (event: EarningsEventItem) => {
-                    const key = `${event.ticker}|${event.date}`;
+                    event = normalizeEarnings(event);
+                    if (!isVisibleEarnings(event)) return;
+                    const key = `${event.ticker.replace(/\./g, '-')}|${event.date}`;
                     const previous = fetchedByKey.get(key);
                     if (!previous || event.dateStatus === 'CONFIRMED') {
                         fetchedByKey.set(key, previous ? { ...previous, ...event } : event);
                     }
                 };
 
+                const releaseDate = (value: unknown): Date | undefined => {
+                    const epoch = financialNumber(value);
+                    if (epoch === undefined || epoch <= 0) return undefined;
+                    const date = new Date(epoch * 1000);
+                    return Number.isFinite(date.getTime()) && isCalendarDate(date.toISOString().slice(0, 10)) ? date : undefined;
+                };
                 for (const row of rows) {
-                    if (!row?.d || (!row.d[2] && !row.d[8])) continue;
-
+                    if (!Array.isArray(row?.d)) continue;
+                    const nextDate = releaseDate(row.d[2]);
+                    const reportedDate = releaseDate(row.d[8]);
+                    if (!nextDate && !reportedDate) continue;
                     const ticker = String(row.d[0] || row.s?.split(':').pop() || '').toUpperCase().trim();
                     if (!ticker) continue;
-
-                    const companyName = row.d[1] || ticker;
-                    const releaseTimestamp = Number(row.d[2] || row.d[8]); // segundos epoch
-                    if (!Number.isFinite(releaseTimestamp)) continue;
-                    const eventDate = new Date(releaseTimestamp * 1000).toISOString().substring(0, 10);
-                    const timeType = row.d[3]; // -1: BMO, 1: AMC, 0: DMH
-
-                    let reportTiming: EarningsReportTiming | undefined;
-                    if (timeType === -1) {
-                        reportTiming = 'BMO';
-                    } else if (timeType === 1) {
-                        reportTiming = 'AMC';
-                    } else if (timeType === 0) {
-                        reportTiming = 'DMH';
-                    }
-
-                    const epsEstimate = row.d[4] != null ? Number(row.d[4]) : undefined;
-                    const revenueEstimate = row.d[5] != null ? Number(row.d[5]) : undefined;
-                    const marketCap = row.d[6] != null ? Number(row.d[6]) : undefined;
+                    const marketCap = financialNumber(row.d[6]);
                     const logoid = row.d[7];
-                    const logoUrl = logoid
-                        ? `https://s3-symbol-logo.tradingview.com/${logoid}--big.svg`
-                        : this.earningsScoring.getTradingViewLogoUrl(ticker);
-                    const score = this.earningsScoring.calculateEarningsImpactScore({
-                        ticker,
-                        marketCap,
-                        isSP500: this.isSP500Constituent(ticker),
-                    });
-                    const upcoming: EarningsEventItem = {
-                        eventType: 'EARNINGS',
-                        ticker,
-                        companyName,
-                        logoUrl,
-                        date: eventDate,
-                        timestampUtc: new Date(releaseTimestamp * 1000),
-                        timezone: 'America/New_York',
-                        dateStatus: 'ESTIMATED',
-                        reportTiming,
-                        epsEstimate,
-                        revenueEstimate,
-                        marketCap,
-                        earningsImpactScore: score,
+                    const marketReaction = financialNumber(row.d[13]);
+                    const common = {
+                        eventType: 'EARNINGS' as const, ticker,
+                        companyName: String(row.d[1] || ticker),
+                        logoUrl: logoid ? `https://s3-symbol-logo.tradingview.com/${logoid}--big.svg`
+                            : this.earningsScoring.getTradingViewLogoUrl(ticker),
+                        marketCap, timezone: 'America/New_York',
+                        earningsImpactScore: this.earningsScoring.calculateEarningsImpactScore({
+                            ticker, marketCap, isSP500: this.isSP500Constituent(ticker),
+                        }),
                         source: 'TradingView Official Scanner (NASDAQ/NYSE/AMEX)',
-                        sourceType: 'AUTOMATIC',
-                        isPublished: true,
+                        sourceType: 'AUTOMATIC' as const, isPublished: true,
                     };
-                    if (row.d[2]) addEvent(upcoming);
-
-                    if (row.d[8]) {
-                        const actualTimestamp = Number(row.d[8]);
-                        if (!Number.isFinite(actualTimestamp)) continue;
-                        const actualEps = row.d[9] == null ? undefined : Number(row.d[9]);
-                        const reportedEpsEstimate = row.d[10] == null ? undefined : Number(row.d[10]);
-                        const actualRevenue = row.d[11] == null ? undefined : Number(row.d[11]);
-                        const reportedRevenueEstimate = row.d[12] == null ? undefined : Number(row.d[12]);
-                        const surprise = (actual?: number, estimate?: number) =>
-                            actual != null && estimate != null && estimate !== 0
-                                ? (actual - estimate) / Math.abs(estimate) * 100 : undefined;
+                    if (nextDate) {
+                        const timeType = financialNumber(row.d[3]);
+                        const reportTiming: EarningsReportTiming | undefined = timeType === -1 ? 'BMO'
+                            : timeType === 1 ? 'AMC' : timeType === 0 ? 'DMH' : undefined;
                         addEvent({
-                            ...upcoming,
-                            date: new Date(actualTimestamp * 1000).toISOString().slice(0, 10),
-                            timestampUtc: new Date(actualTimestamp * 1000),
-                            time: undefined,
-                            reportTiming: undefined,
+                            ...common, date: nextDate.toISOString().slice(0, 10), timestampUtc: nextDate,
+                            dateStatus: 'ESTIMATED', reportTiming,
+                            epsEstimate: financialNumber(row.d[4]),
+                            revenueEstimate: financialNumber(row.d[5]),
+                            marketReaction,
+                        });
+                    }
+                    if (reportedDate) {
+                        addEvent({
+                            ...common, date: reportedDate.toISOString().slice(0, 10), timestampUtc: reportedDate,
                             dateStatus: 'CONFIRMED',
-                            actualEps,
-                            epsEstimate: reportedEpsEstimate,
-                            actualRevenue,
-                            revenueEstimate: reportedRevenueEstimate,
-                            epsSurprise: surprise(actualEps, reportedEpsEstimate),
-                            revenueSurprise: surprise(actualRevenue, reportedRevenueEstimate),
+                            actualEps: financialNumber(row.d[9]), epsEstimate: financialNumber(row.d[10]),
+                            actualRevenue: financialNumber(row.d[11]), revenueEstimate: financialNumber(row.d[12]),
+                            marketReaction,
                         });
                     }
                 }
@@ -481,7 +511,8 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
 
                     const companyName = row.d[1] || ticker;
                     const yieldVal = row.d[3] != null ? Number(row.d[3]) : undefined;
-                    const amount = row.d[4] != null ? Number(row.d[4]) : undefined;
+                    const amount = financialNumber(row.d[4]);
+                    if (amount === undefined || amount < 0) continue;
                     const exTimestamp = Number(row.d[5]); // epoch seconds
                     const payTimestamp = Number(row.d[6]); // epoch seconds
                     const marketCap = row.d[7] != null ? Number(row.d[7]) : undefined;
@@ -516,16 +547,14 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
 
                 const fetchedList = Array.from(fetchedByKey.values());
 
-                if (fetchedList.length > 0) {
-                    fetchedList.sort((a, b) => {
-                        const dateA = a.paymentDate || a.exDate;
-                        const dateB = b.paymentDate || b.exDate;
-                        return dateA.localeCompare(dateB) || ((b.marketCap || 0) - (a.marketCap || 0));
-                    });
-                    this.tvDividendsCache = { data: fetchedList, fetchedAt: now };
-                    allDividends = fetchedList;
-                    this.logger.log(`Successfully fetched ${fetchedList.length} S&P 500 dividends from TradingView Scanner.`);
-                }
+                fetchedList.sort((a, b) => {
+                    const dateA = a.paymentDate || a.exDate;
+                    const dateB = b.paymentDate || b.exDate;
+                    return dateA.localeCompare(dateB) || ((b.marketCap || 0) - (a.marketCap || 0));
+                });
+                this.tvDividendsCache = { data: fetchedList, fetchedAt: now };
+                allDividends = fetchedList;
+                this.logger.log(`Successfully fetched ${fetchedList.length} S&P 500 dividends from TradingView Scanner.`);
             } catch (err: any) {
                 this.logger.warn(`Failed to fetch TradingView S&P 500 dividends: ${err.message}`);
                 if (this.tvDividendsCache) {

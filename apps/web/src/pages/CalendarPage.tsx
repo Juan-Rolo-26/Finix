@@ -16,8 +16,10 @@ import {
     XCircle,
     RefreshCw,
     ListFilter,
+    Minus,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { formatFinancialAmount, financialNumber, isVisibleEarnings, normalizeEarnings } from '@finix/shared';
 import { useAuthStore, isProUser } from '@/stores/authStore';
 import { ProGate } from '@/components/ProGate';
 import { AssetLogoImg } from '@/components/TopGainersCard';
@@ -108,6 +110,8 @@ interface CalendarWeekData {
     economicData?: {
         status: 'READY' | 'UNAVAILABLE' | 'NOT_CONFIGURED';
         httpStatus?: number;
+        source?: string;
+        updatedAt?: string;
         excludedLegacyEvents?: number;
     };
     weekRange: { from: string; to: string };
@@ -130,7 +134,7 @@ function getEarningsOutcome(earn: EarningsEvent): EarningsOutcome {
     const surprises = [earn.epsSurprise, earn.revenueSurprise].filter(
         (value): value is number => value != null,
     );
-    if (surprises.length === 0) {
+    if (surprises.length !== 2) {
         return earn.actualEps != null || earn.actualRevenue != null ? 'INFORMADO' : 'PENDIENTE';
     }
     if (surprises.every((value) => value >= 0)) return 'VICTORIOSO';
@@ -173,16 +177,45 @@ function sortEarnings(events: EarningsEvent[], sort: EarningsSort): EarningsEven
     });
 }
 
+const calendarDateFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit',
+});
+
+function EarningsMetric({ label, actual, estimate, surprise, amount = false }: {
+    label: string; actual?: number; estimate?: number; surprise?: number; amount?: boolean;
+}) {
+    const value = actual ?? estimate;
+    if (value === undefined) return null;
+    const format = amount ? formatFinancialAmount : (number: number) => '$' + number.toFixed(2);
+    const tone = surprise === undefined ? '' : surprise >= 0 ? 'calendar-positive' : 'calendar-negative';
+    return (
+        <div>
+            <dt>{label}{actual === undefined ? amount ? ' estimada' : ' estimado' : ''}</dt>
+            <dd className={'calendar-metric-primary ' + tone}>{format(value)}</dd>
+            {actual !== undefined && estimate !== undefined && (
+                <dd className="calendar-metric-detail">Est. {format(estimate)}</dd>
+            )}
+            {actual !== undefined && surprise !== undefined && (
+                <dd className={'calendar-metric-detail ' + tone}>
+                    {surprise >= 0 ? '+' : ''}{surprise.toFixed(1)}% vs. est.
+                </dd>
+            )}
+        </div>
+    );
+}
+
 // Helper: Get monday of a week offset from today
 function getWeekStartForOffset(offsetWeeks: number): string {
-    const today = new Date();
-    const day = today.getDay();
+    const parts = calendarDateFormatter.formatToParts(new Date());
+    const part = (type: string) => Number(parts.find(value => value.type === type)?.value);
+    const today = new Date(Date.UTC(part('year'), part('month') - 1, part('day')));
+    const day = today.getUTCDay();
     const diffToMonday = day === 0 ? -6 : 1 - day;
     const monday = new Date(today);
-    monday.setDate(today.getDate() + diffToMonday + offsetWeeks * 7);
-    const year = monday.getFullYear();
-    const month = String(monday.getMonth() + 1).padStart(2, '0');
-    const date = String(monday.getDate()).padStart(2, '0');
+    monday.setUTCDate(today.getUTCDate() + diffToMonday + offsetWeeks * 7);
+    const year = monday.getUTCFullYear();
+    const month = String(monday.getUTCMonth() + 1).padStart(2, '0');
+    const date = String(monday.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${date}`;
 }
 
@@ -209,6 +242,7 @@ export default function CalendarPage() {
     const [calendarData, setCalendarData] = useState<CalendarWeekData | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isError, setIsError] = useState<boolean>(false);
+    const [refreshFailed, setRefreshFailed] = useState(false);
     const activeRequest = useRef<AbortController | null>(null);
 
     // Detección automática del timezone local del usuario
@@ -236,11 +270,12 @@ export default function CalendarPage() {
         return userTimezone.split('/').pop()?.replace(/_/g, ' ') || 'Local';
     }, [userTimezone]);
 
-    const loadCalendar = useCallback(async () => {
+    const loadCalendar = useCallback(async (background = false) => {
+        if (background && activeRequest.current) return;
         activeRequest.current?.abort();
         const request = new AbortController();
         activeRequest.current = request;
-        setIsLoading(true);
+        if (!background) setIsLoading(true);
         setIsError(false);
         try {
             // One complete week keeps all sections and their counters consistent.
@@ -250,21 +285,48 @@ export default function CalendarPage() {
             });
             const res = await apiFetch('/calendar/week?' + queryParams.toString(), {
                 signal: request.signal,
+                cache: 'no-store',
             });
             if (!res.ok) throw new Error('Error loading calendar');
             const data: CalendarWeekData = await res.json();
-            if (!request.signal.aborted) setCalendarData(data);
+            data.days = data.days.map(day => ({
+                ...day,
+                earningsEvents: day.earningsEvents.map(normalizeEarnings).filter(isVisibleEarnings),
+                dividendEvents: day.dividendEvents.filter(event => financialNumber(event.amount) !== undefined),
+            }));
+            if (!request.signal.aborted) {
+                setCalendarData(data);
+                setRefreshFailed(false);
+            }
         } catch {
-            if (!request.signal.aborted) setIsError(true);
+            if (!request.signal.aborted) {
+                if (background) setRefreshFailed(true);
+                else setIsError(true);
+            }
         } finally {
             if (!request.signal.aborted) setIsLoading(false);
+            if (activeRequest.current === request) activeRequest.current = null;
         }
     }, [weekOffset]);
 
     useEffect(() => {
         if (!isPro) return;
         void loadCalendar();
-        return () => activeRequest.current?.abort();
+        const refresh = () => {
+            if (document.visibilityState === 'visible') void loadCalendar(true);
+        };
+        const interval = window.setInterval(refresh, 5 * 60 * 1000);
+        document.addEventListener('visibilitychange', refresh);
+        window.addEventListener('focus', refresh);
+        window.addEventListener('online', refresh);
+        return () => {
+            window.clearInterval(interval);
+            document.removeEventListener('visibilitychange', refresh);
+            window.removeEventListener('focus', refresh);
+            window.removeEventListener('online', refresh);
+            activeRequest.current?.abort();
+            activeRequest.current = null;
+        };
     }, [isPro, loadCalendar]);
 
     if (!isPro) {
@@ -301,18 +363,6 @@ export default function CalendarPage() {
         } catch {
             return timeStr || 'Durante el día';
         }
-    };
-
-    // Formateador de facturación / beneficios (soporta números en crudo de TradingView)
-    const formatRevenue = (rev?: number | string | null) => {
-        if (rev == null) return 'N/D';
-        const num = typeof rev === 'string' ? parseFloat(rev) : rev;
-        if (isNaN(num)) return 'N/D';
-        if (Math.abs(num) >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
-        if (Math.abs(num) >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-        if (Math.abs(num) >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-        if (Math.abs(num) >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
-        return `$${num.toFixed(2)}`;
     };
 
     // Formateador de capitalización de mercado
@@ -562,6 +612,12 @@ export default function CalendarPage() {
                     </div>
                 )}
 
+                {!isLoading && !isError && refreshFailed && (
+                    <div className="calendar-context mb-6" role="status">
+                        <Info size={17} />
+                        <p>No se pudo actualizar el calendario. Se conservan los últimos eventos y se reintentará automáticamente.</p>
+                    </div>
+                )}
                 {!isLoading && !isError && economicUnavailable && visibleDays.length > 0 && (
                     <div className="calendar-context mb-6" role="status">
                         <Info size={17} />
@@ -777,18 +833,6 @@ export default function CalendarPage() {
                                                   : outcome === 'MIXTO'
                                                     ? 'amber'
                                                     : 'blue';
-                                        const epsTone =
-                                            earn.epsSurprise == null
-                                                ? ''
-                                                : earn.epsSurprise >= 0
-                                                  ? 'calendar-positive'
-                                                  : 'calendar-negative';
-                                        const revenueTone =
-                                            earn.revenueSurprise == null
-                                                ? ''
-                                                : earn.revenueSurprise >= 0
-                                                  ? 'calendar-positive'
-                                                  : 'calendar-negative';
                                         return (
                                             <article
                                                 key={earn.id}
@@ -854,102 +898,10 @@ export default function CalendarPage() {
                                                     </div>
                                                 )}
                                                 <dl className="calendar-metrics calendar-earnings-metrics">
-                                                    <div>
-                                                        <dt>
-                                                            {reported
-                                                                ? 'Ganancias EPS'
-                                                                : 'EPS estimado'}
-                                                        </dt>
-                                                        <dd
-                                                            className={
-                                                                'calendar-metric-primary ' + epsTone
-                                                            }
-                                                        >
-                                                            {reported
-                                                                ? earn.actualEps != null
-                                                                    ? '$' +
-                                                                      earn.actualEps.toFixed(2)
-                                                                    : 'N/D'
-                                                                : earn.epsEstimate != null
-                                                                  ? '$' +
-                                                                    earn.epsEstimate.toFixed(2)
-                                                                  : 'N/D'}
-                                                        </dd>
-                                                        {reported && (
-                                                            <>
-                                                                <dd className="calendar-metric-detail">
-                                                                    Est.{' '}
-                                                                    {earn.epsEstimate != null
-                                                                        ? '$' +
-                                                                          earn.epsEstimate.toFixed(
-                                                                              2,
-                                                                          )
-                                                                        : 'N/D'}
-                                                                </dd>
-                                                                <dd
-                                                                    className={
-                                                                        'calendar-metric-detail ' +
-                                                                        epsTone
-                                                                    }
-                                                                >
-                                                                    {earn.epsSurprise != null
-                                                                        ? (earn.epsSurprise >= 0
-                                                                              ? '+'
-                                                                              : '') +
-                                                                          earn.epsSurprise.toFixed(
-                                                                              1,
-                                                                          ) +
-                                                                          '% vs. est.'
-                                                                        : 'Sin comparación'}
-                                                                </dd>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <dt>
-                                                            {reported
-                                                                ? 'Facturación'
-                                                                : 'Facturación est.'}
-                                                        </dt>
-                                                        <dd
-                                                            className={
-                                                                'calendar-metric-primary ' +
-                                                                revenueTone
-                                                            }
-                                                        >
-                                                            {formatRevenue(
-                                                                reported
-                                                                    ? earn.actualRevenue
-                                                                    : earn.revenueEstimate,
-                                                            )}
-                                                        </dd>
-                                                        {reported && (
-                                                            <>
-                                                                <dd className="calendar-metric-detail">
-                                                                    Est.{' '}
-                                                                    {formatRevenue(
-                                                                        earn.revenueEstimate,
-                                                                    )}
-                                                                </dd>
-                                                                <dd
-                                                                    className={
-                                                                        'calendar-metric-detail ' +
-                                                                        revenueTone
-                                                                    }
-                                                                >
-                                                                    {earn.revenueSurprise != null
-                                                                        ? (earn.revenueSurprise >= 0
-                                                                              ? '+'
-                                                                              : '') +
-                                                                          earn.revenueSurprise.toFixed(
-                                                                              1,
-                                                                          ) +
-                                                                          '% vs. est.'
-                                                                        : 'Sin comparación'}
-                                                                </dd>
-                                                            </>
-                                                        )}
-                                                    </div>
+                                                    <EarningsMetric label="EPS" actual={earn.actualEps}
+                                                        estimate={earn.epsEstimate} surprise={earn.epsSurprise} />
+                                                    <EarningsMetric label="Facturación" actual={earn.actualRevenue}
+                                                        estimate={earn.revenueEstimate} surprise={earn.revenueSurprise} amount />
                                                 </dl>
                                                 <div className="calendar-card-footer">
                                                     {earn.marketCap ? (
@@ -959,14 +911,22 @@ export default function CalendarPage() {
                                                     ) : (
                                                         <span>EE. UU.</span>
                                                     )}
-                                                    {earn.marketReaction != null && (
-                                                        <span className="calendar-reaction">
-                                                            <span>Reacción</span>
+                                                    <span className="calendar-reaction">
+                                                        <span>Reacción</span>
+                                                        {earn.marketReaction != null ? (
                                                             <MarketChange
                                                                 value={earn.marketReaction}
                                                             />
-                                                        </span>
-                                                    )}
+                                                        ) : (
+                                                            <span
+                                                                className="market-change market-change--neutral"
+                                                                title={reported ? 'Sin variación registrada' : 'Reacción disponible tras el reporte'}
+                                                            >
+                                                                <Minus size={15} aria-hidden="true" />
+                                                                <span>{reported ? '0,00%' : 'Pendiente'}</span>
+                                                            </span>
+                                                        )}
+                                                    </span>
                                                 </div>
                                             </article>
                                         );
@@ -1011,7 +971,7 @@ export default function CalendarPage() {
                                                               dividend.amount
                                                                   .toFixed(4)
                                                                   .replace(/\.?0+$/, '')
-                                                            : 'N/D'}
+                                                            : ''}
                                                     </span>
                                                     {dividend.yield != null && (
                                                         <span className="calendar-badge calendar-badge--positive">
@@ -1022,22 +982,22 @@ export default function CalendarPage() {
                                                 </div>
                                             </div>
                                             <div className="calendar-card-footer calendar-dividend-dates">
-                                                <span>
+                                                {dividend.exDate && <span>
                                                     <span>Ex-dividendo</span>
                                                     <strong>
                                                         {dividend.exDate
                                                             ? formatDateLabel(dividend.exDate)
-                                                            : 'Sin anunciar'}
+                                                            : ''}
                                                     </strong>
-                                                </span>
-                                                <span>
+                                                </span>}
+                                                {dividend.paymentDate && <span>
                                                     <span>Fecha de pago</span>
                                                     <strong>
                                                         {dividend.paymentDate
                                                             ? formatDateLabel(dividend.paymentDate)
-                                                            : 'Sin anunciar'}
+                                                            : ''}
                                                     </strong>
-                                                </span>
+                                                </span>}
                                             </div>
                                         </article>
                                     ))}

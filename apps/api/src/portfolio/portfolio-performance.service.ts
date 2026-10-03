@@ -17,6 +17,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { MarketService } from '../market/market.service';
 import { getCedearDefinition } from '../market/cedear.data';
+import { buildPerformanceCashLedger } from './performance-cash-ledger';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -74,14 +75,29 @@ export class PortfolioPerformanceService {
         return String(t || '').trim().toUpperCase();
     }
 
+    private assetTicker(asset: any) {
+        const ticker = this.normalizeTicker(asset?.ticker || '');
+        return asset?.type === 'CEDEAR' && !/^(BCBA|BYMA):/.test(ticker)
+            ? `BCBA:${ticker.replace(/^[A-Z]+:/, '')}`
+            : ticker;
+    }
+
+    private cedearForTicker(ticker: string) {
+        // A US share and its Argentine certificate can share the same ticker.
+        // Only local certificates require the CEDEAR ratio.
+        return /^(BCBA|BYMA):/.test(ticker)
+            ? getCedearDefinition(ticker.replace(/^(BCBA|BYMA):/, ''))
+            : undefined;
+    }
+
     private async getLiveQuoteMap(holdings: any[]) {
         const symbols = new Set<string>();
         for (const h of holdings) {
-            const t = this.normalizeTicker(h?.asset?.ticker || '');
+            const t = this.assetTicker(h?.asset);
             if (!t) continue;
 
             const cleanTicker = t.replace(/^(BCBA|BYMA|NASDAQ|NYSE|AMEX):/i, '').toUpperCase();
-            const cedear = getCedearDefinition(t) || getCedearDefinition(cleanTicker);
+            const cedear = this.cedearForTicker(t);
             const isCedear = h?.asset?.type === 'CEDEAR' || t.startsWith('BCBA:') || Boolean(cedear);
 
             symbols.add(t);
@@ -102,7 +118,7 @@ export class PortfolioPerformanceService {
             if (!q.inputSymbol) continue;
             const key = this.normalizeTicker(q.inputSymbol);
             map.set(key, q);
-            if (key.includes(':')) {
+            if (key.includes(':') && !/^(BCBA|BYMA):/.test(key)) {
                 const short = key.split(':')[1];
                 if (short && !map.has(short)) map.set(short, q);
             }
@@ -110,10 +126,10 @@ export class PortfolioPerformanceService {
         return map;
     }
 
-    private async getCclRate() {
+    private async getCclRate(strict = false) {
         const ccl = await this.marketService.getDolarCcl().catch(() => null);
-        const rate = Number(ccl?.venta || ccl?.compra || 1590);
-        return Number.isFinite(rate) && rate > 0 ? rate : 1590;
+        const rate = Number(ccl?.venta || ccl?.compra || (strict ? NaN : 1590));
+        return Number.isFinite(rate) && rate > 0 ? rate : (strict ? NaN : 1590);
     }
 
     private isUsdCurrency(currency: string) {
@@ -144,22 +160,25 @@ export class PortfolioPerformanceService {
         currency: string,
         cclRate: number,
         fallbackPrice?: number,
+        underlyingOnly = false,
     ) {
         const normalized = this.normalizeTicker(ticker);
         const cleanTicker = normalized.replace(/^(BCBA|BYMA|NASDAQ|NYSE|AMEX):/i, '').toUpperCase();
-        const cedear = getCedearDefinition(normalized) || getCedearDefinition(cleanTicker);
+        const cedear = this.cedearForTicker(normalized);
 
         if (cedear && cedear.ratio > 0) {
             const localQuote = this.getQuote(quoteMap, [
                 `BCBA:${cedear.ticker}`,
                 `BYMA:${cedear.ticker}`,
-                cedear.ticker,
                 normalized,
             ]);
             const underlyingQuote = this.getQuote(quoteMap, [
-                cedear.underlyingTicker,
                 `${cedear.underlyingExchange}:${cedear.underlyingTicker}`,
+                cedear.underlyingTicker,
             ]);
+
+            if (underlyingOnly) return underlyingQuote
+                ? this.convertCurrencyAmount(Number(underlyingQuote.price) / cedear.ratio, 'USD', currency, cclRate) : 0;
 
             if (this.isUsdCurrency(currency)) {
                 if (underlyingQuote) return Number(underlyingQuote.price) / cedear.ratio;
@@ -171,7 +190,8 @@ export class PortfolioPerformanceService {
         }
 
         const quote = this.getQuote(quoteMap, [normalized, cleanTicker]);
-        return quote ? Number(quote.price) : (Number.isFinite(Number(fallbackPrice)) ? Number(fallbackPrice) : 0);
+        const sourceCurrency = /^(BCBA|BYMA):/.test(normalized) ? 'ARS' : 'USD';
+        return this.convertCurrencyAmount(quote ? Number(quote.price) : (Number.isFinite(Number(fallbackPrice)) ? Number(fallbackPrice) : 0), sourceCurrency, currency, cclRate);
     }
 
     private getMarketHistoryRange(range: string) {
@@ -183,6 +203,8 @@ export class PortfolioPerformanceService {
             case '6M':
             case 'YTD': return '1y';
             case '1Y': return '2y';
+            case '3Y': return '5y';
+            case '5Y':
             case 'ALL': return 'max';
             default: return '1y';
         }
@@ -192,23 +214,37 @@ export class PortfolioPerformanceService {
         return range === '1D' ? '1h' : '1d';
     }
 
-    private async getHistoricalPriceMaps(tickers: string[], range: string) {
+    private candleAvailabilityTime(time: number, ticker: string, range: string, asOf: Date) {
+        const clean = ticker.replace(/^[A-Z]+:/, '').replace(/-USD$/, '').toUpperCase();
+        const crypto = /^(BTC|ETH|SOL|BNB|XRP|ADA|DOGE|AVAX|DOT|LINK|MATIC|NEAR|LTC|ATOM)(USDT|USD)?$/.test(clean) || clean.endsWith('USDT');
+        // Providers timestamp bars at their OPEN. Historical closes become
+        // usable after the bar finishes; an in-progress bar is known only at
+        // the current observation, never retrospectively.
+        // US regular session: 09:30–16:00 ET; crypto daily bars span 24h.
+        const duration = range === '1D' ? 3600 : crypto ? 86400 : 6.5 * 3600;
+        const observedAt = asOf.getTime() / 1000;
+        return time <= observedAt ? Math.min(time + duration, observedAt) : time + duration;
+    }
+
+    private async getHistoricalPriceMaps(tickers: string[], range: string, asOf = new Date()) {
         const uniqueTickers = Array.from(new Set(tickers.map((ticker) => this.normalizeTicker(ticker)).filter(Boolean)));
         const yahooRange = this.getMarketHistoryRange(range);
         const interval = this.getMarketHistoryInterval(range);
         const histories = await Promise.all(
             uniqueTickers.map(async (ticker) => {
                 const cleanTicker = ticker.replace(/^(BCBA|BYMA|NASDAQ|NYSE|AMEX):/i, '').toUpperCase();
-                const cedear = getCedearDefinition(ticker) || getCedearDefinition(cleanTicker);
+                const cedear = this.cedearForTicker(ticker);
                 // Yahoo returns the US underlying for a CEDEAR ticker. Keep the
                 // map keyed by the portfolio ticker so valuation can convert it
                 // back to local ARS using the CEDEAR ratio and CCL.
+                if (/^(BCBA|BYMA):/.test(ticker) && !cedear) return [ticker, [] as Array<{ time: number; close: number }>] as const;
                 const sourceTicker = cedear?.underlyingTicker || ticker;
                 const response = await this.marketService.getCandles(sourceTicker, interval, yahooRange).catch(() => ({ candles: [] }));
                 const candles = Array.isArray(response.candles)
                     ? response.candles
-                        .map((c) => ({ time: Number(c.time), close: Number(c.close) }))
+                        .map((c) => ({ time: this.candleAvailabilityTime(Number(c.time), sourceTicker, range, asOf), close: Number(c.close) }))
                         .filter((c) => Number.isFinite(c.time) && Number.isFinite(c.close) && c.close > 0)
+                        .sort((a, b) => a.time - b.time)
                     : [];
                 return [ticker, candles] as const;
             }),
@@ -229,8 +265,8 @@ export class PortfolioPerformanceService {
         const historicalPrice = this.getHistoricalPriceAtDate(historicalPriceMaps?.get(normalized), cutoff);
         if (!historicalPrice) return null;
 
-        const cedear = getCedearDefinition(normalized) || getCedearDefinition(cleanTicker);
-        if (!cedear || cedear.ratio <= 0) return historicalPrice;
+        const cedear = this.cedearForTicker(normalized);
+        if (!cedear || cedear.ratio <= 0) return this.convertCurrencyAmount(historicalPrice, /^(BCBA|BYMA):/.test(normalized) ? 'ARS' : 'USD', currency, cclRate);
 
         return this.isUsdCurrency(currency)
             ? historicalPrice / cedear.ratio
@@ -244,18 +280,20 @@ export class PortfolioPerformanceService {
         if (!candles?.length) return null;
 
         const cutoffSeconds = cutoff.getTime() / 1000;
-        let latest: number | null = null;
-        let firstAfter: number | null = null;
-
-        for (const candle of candles) {
-            if (candle.time <= cutoffSeconds) {
-                latest = candle.close;
-            } else if (firstAfter == null) {
-                firstAfter = candle.close;
-            }
+        let left = 0;
+        let right = candles.length - 1;
+        let latest = -1;
+        while (left <= right) {
+            const middle = Math.floor((left + right) / 2);
+            if (candles[middle].time <= cutoffSeconds) {
+                latest = middle;
+                left = middle + 1;
+            } else right = middle - 1;
         }
-
-        return latest ?? firstAfter;
+        const candle = latest >= 0 ? candles[latest] : null;
+        // Carry the last close over weekends/holidays, but never turn missing
+        // weeks of market data into a fabricated flat return.
+        return candle && cutoffSeconds - candle.time <= 7 * 86400 ? candle.close : null;
     }
 
     // ── Date range helpers ──────────────────────────────────────────────────────
@@ -289,7 +327,7 @@ export class PortfolioPerformanceService {
 
         for (const tx of transactions) {
             if (new Date(tx.date) > cutoff) break;
-            const ticker = this.normalizeTicker(tx.asset?.ticker || 'CASH');
+            const ticker = this.assetTicker(tx.asset) || 'CASH';
             const qty = Number(tx.quantity || 0);
             const price = Number(tx.pricePerUnit || 0);
             const fee = Number(tx.fee || 0);
@@ -316,97 +354,54 @@ export class PortfolioPerformanceService {
         cutoff?: Date,
         currency = 'USD',
         cclRate = 1590,
+        strictHistory = false,
+        currentPoint = false,
+        executionPrices?: Map<string, number>,
     ): number {
         let total = 0;
         for (const [ticker, h] of holdings.entries()) {
             if (h.qty <= 0) continue;
-            const isCurrentPoint = cutoff && (Date.now() - cutoff.getTime()) <= 2 * 86400000;
-            const historicalPrice = cutoff && !isCurrentPoint
+            const executionPrice = executionPrices?.get(ticker);
+            if (executionPrice != null) { total += h.qty * executionPrice; continue; }
+            const historicalPrice = cutoff
                 ? this.getHistoricalHoldingPrice(ticker, historicalPriceMaps, cutoff, currency, cclRate)
                 : null;
-            const price = historicalPrice ?? this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, h.lastPrice);
+            const livePrice = currentPoint
+                ? this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, undefined, strictHistory)
+                : 0;
+            if (strictHistory && historicalPrice == null && !(currentPoint && livePrice > 0)) return NaN;
+            const price = currentPoint && livePrice > 0 ? livePrice
+                : historicalPrice ?? this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, h.lastPrice);
             total += h.qty * price;
         }
         return total;
     }
 
     private computeInvestedCapital(transactions: any[], cutoff: Date, currency = 'USD', cclRate = 1590): number {
-        const holdings = this.computeHoldingsAtDate(transactions, cutoff);
-        let invested = 0;
-        for (const [ticker, h] of holdings.entries()) {
-            if (h.qty <= 0) continue;
-            const cleanTicker = ticker.replace(/^(BCBA|BYMA):/i, '');
-            const cedear = getCedearDefinition(ticker) || getCedearDefinition(cleanTicker);
-            const value = h.qty * h.wac;
-            invested += cedear && this.isUsdCurrency(currency) ? value / cclRate : value;
-        }
-        return invested;
+        const converted = transactions.map((tx) => ({
+            ...tx,
+            pricePerUnit: this.convertCurrencyAmount(Number(tx.pricePerUnit || 0), tx.currency || 'USD', currency, cclRate),
+            fee: this.convertCurrencyAmount(Number(tx.fee || 0), tx.currency || 'USD', currency, cclRate),
+        }));
+        return [...this.computeHoldingsAtDate(converted, cutoff).values()]
+            .reduce((total, holding) => total + holding.qty * holding.wac, 0);
     }
 
     // ── Cash balance helpers ────────────────────────────────────────────────────
 
     private computeCashAtDate(transactions: any[], cutoff: Date, currency = 'USD', cclRate = 1590): number {
         let cash = 0;
-        for (const tx of transactions) {
-            if (new Date(tx.date) > cutoff) break;
-            const txCurrency = String(tx.currency || 'USD').trim().toUpperCase();
-            const total = this.convertCurrencyAmount(Number(tx.total || 0), txCurrency, currency, cclRate);
-            const fee = this.convertCurrencyAmount(Number(tx.fee || 0), txCurrency, currency, cclRate);
-            if (tx.type === 'BUY') cash -= total + fee;
-            else if (tx.type === 'SELL') cash += total - fee;
-            else if (tx.type === 'DIVIDEND') cash += total;
-            else if (tx.type === 'DEPOSIT') cash += total;
-            else if (tx.type === 'WITHDRAW') cash -= total;
-            else if (tx.type === 'FEE') cash -= total;
+        for (const event of buildPerformanceCashLedger(transactions)) {
+            if (event.date > cutoff) break;
+            cash += this.convertCurrencyAmount(event.cashDelta, event.currency, currency, cclRate);
         }
-        return Math.max(0, cash);
-    }
-
-    /**
-     * External capital must not be treated as portfolio performance. BUY/SELL
-     * operations are internal transfers between cash and assets, while only
-     * DEPOSIT/WITHDRAW change the capital supplied by the investor.
-     *
-     * The weighted flow is used for the period return so a deposit made at the
-     * beginning of a period does not dilute the return in the same way as one
-     * made at the end of it.
-     */
-    private computeExternalFlowBetweenDates(
-        transactions: any[],
-        from: Date,
-        to: Date,
-        currency = 'USD',
-        cclRate = 1590,
-    ) {
-        const intervalMs = to.getTime() - from.getTime();
-        let netFlow = 0;
-        let weightedFlow = 0;
-
-        for (const tx of transactions) {
-            const transactionDate = new Date(tx.date);
-            if (transactionDate <= from || transactionDate > to) continue;
-            if (tx.type !== 'DEPOSIT' && tx.type !== 'WITHDRAW') continue;
-
-            const txCurrency = String(tx.currency || 'USD').trim().toUpperCase();
-            const amount = this.convertCurrencyAmount(Number(tx.total || 0), txCurrency, currency, cclRate);
-            if (!Number.isFinite(amount) || amount === 0) continue;
-
-            const signedFlow = tx.type === 'DEPOSIT' ? amount : -amount;
-            netFlow += signedFlow;
-
-            if (intervalMs > 0) {
-                const remainingWeight = Math.min(1, Math.max(0, (to.getTime() - transactionDate.getTime()) / intervalMs));
-                weightedFlow += signedFlow * remainingWeight;
-            }
-        }
-
-        return { netFlow, weightedFlow };
+        return cash;
     }
 
     private holdingsFromPortfolio(portfolioHoldings: any[]) {
         const holdings = new Map<string, { qty: number; wac: number; lastPrice: number }>();
         for (const holding of portfolioHoldings ?? []) {
-            const ticker = this.normalizeTicker(holding?.asset?.ticker || '');
+            const ticker = this.assetTicker(holding?.asset);
             const qty = Number(holding?.quantity || 0);
             if (!ticker || qty <= 0) continue;
             const averageCost = Number(holding?.averageCost || 0);
@@ -459,7 +454,7 @@ export class PortfolioPerformanceService {
             ? this.computeInvestedCapital(txs, now, currency, cclRate)
             : Array.from(currentHoldings.entries()).reduce((sum, [ticker, holding]) => {
                 const cleanTicker = ticker.replace(/^(BCBA|BYMA):/i, '');
-                const cedear = getCedearDefinition(ticker) || getCedearDefinition(cleanTicker);
+                const cedear = this.cedearForTicker(ticker);
                 const value = holding.qty * holding.wac;
                 return sum + (cedear && this.isUsdCurrency(currency) ? value / cclRate : value);
             }, 0);
@@ -530,11 +525,23 @@ export class PortfolioPerformanceService {
 
         if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
 
-        const txs = portfolio.transactions;
+        const now = new Date();
+        const txs = portfolio.transactions.filter((tx) => new Date(tx.date) <= now);
+        const needsConversion = txs.some(tx => this.isUsdCurrency(tx.currency || 'USD') !== this.isUsdCurrency(currency))
+            || [...portfolio.holdings, ...txs].some(item => item.asset &&
+                this.isUsdCurrency(currency) !== (!/^(BCBA|BYMA):/.test(this.assetTicker(item.asset)) || Boolean(this.cedearForTicker(this.assetTicker(item.asset)))));
         const [quoteMap, cclRate] = await Promise.all([
-            this.getLiveQuoteMap(portfolio.holdings),
-            this.getCclRate(),
+            this.getLiveQuoteMap([...portfolio.holdings, ...txs]),
+            needsConversion ? this.getCclRate(true) : Promise.resolve(1),
         ]);
+        if (!Number.isFinite(cclRate)) {
+            return { range, currency, series: [], markers: [], insufficientData: true,
+                message: 'No hay cotización CCL disponible para convertir las monedas de la cartera.' };
+        }
+        const valuationNotices: string[] = [range === '1D' ? 'Historial con cierres horarios y precios de operaciones registradas.' : 'Historial con cierres diarios y precios de operaciones registradas; no reconstruye cada cotización intradiaria.'];
+        if (txs.some(tx => this.cedearForTicker(this.assetTicker(tx.asset)))) valuationNotices.push('Los CEDEAR se comparan mediante el precio del subyacente y su ratio; no incluye cambios de prima local.');
+        if (needsConversion) valuationNotices.push('La conversión de monedas usa el CCL actual; no mide la variación histórica del tipo de cambio.');
+        const valuationMessage = valuationNotices.join(' ') || undefined;
         if (!txs.length) {
             const holdings = this.holdingsFromPortfolio(portfolio.holdings);
             const value = this.computeValueFromHoldings(holdings, quoteMap, undefined, undefined, currency, cclRate);
@@ -544,43 +551,55 @@ export class PortfolioPerformanceService {
             return { range, currency, series, markers: [], insufficientData: true, message: 'Sin operaciones registradas.' };
         }
 
-        const firstAssetTransaction = txs.find((tx) =>
-            Boolean(tx.asset?.ticker) && (tx.type === 'BUY' || tx.type === 'SELL'),
-        );
-        const firstTxDate = new Date((firstAssetTransaction ?? txs[0]).date);
-        const now = new Date();
-
-        const { start, daysBack } = this.resolveRange(range, firstTxDate);
+        const firstTxDate = new Date(txs[0].date);
+        const { start: requestedStart } = this.resolveRange(range, firstTxDate);
+        const start = new Date(Math.max(requestedStart.getTime(), firstTxDate.getTime()));
         const historicalPriceMaps = await this.getHistoricalPriceMaps(
-            txs.map((tx) => tx.asset?.ticker || ''),
-            range,
+            txs.map((tx) => this.assetTicker(tx.asset)), range, now,
         );
 
-        // Determine step count
-        let stepCount: number;
-        if (daysBack <= 1) stepCount = 48;
-        else if (daysBack <= 7) stepCount = 7;
-        else if (daysBack <= 30) stepCount = 30;
-        else if (daysBack <= 90) stepCount = 45;
-        else if (daysBack <= 180) stepCount = 60;
-        else if (daysBack <= 365) stepCount = 52;
-        else stepCount = Math.min(daysBack, 60);
-
-        const stepMs = (now.getTime() - start.getTime()) / Math.max(1, stepCount - 1);
+        // Daily (hourly for 1D) valuations and every operation share exact
+        // timestamps with SPY. Never substitute today's price for a past day.
+        const stepMs = range === '1D' ? 3600000 : 86400000;
+        const timestamps = new Set<number>([start.getTime(), now.getTime()]);
+        for (let time = start.getTime() + stepMs; time < now.getTime(); time += stepMs) timestamps.add(time);
+        for (const tx of txs) {
+            const time = new Date(tx.date).getTime();
+            if (time >= start.getTime()) timestamps.add(time);
+        }
+        const replayedHoldings = this.computeHoldingsAtDate(txs, now);
+        const currentHoldings = this.holdingsFromPortfolio(portfolio.holdings);
+        const tickers = new Set([...replayedHoldings.keys(), ...currentHoldings.keys()]);
+        if ([...tickers].some((ticker) => Math.abs((replayedHoldings.get(ticker)?.qty ?? 0) - (currentHoldings.get(ticker)?.qty ?? 0)) > 1e-6)) {
+            return { range, currency, series: [], markers: [], insufficientData: true,
+                message: 'Faltan operaciones en el historial para reconstruir el rendimiento de esta cartera.' };
+        }
+        const cashLedger = buildPerformanceCashLedger(txs).map(event => ({
+            ...event,
+            cashDelta: this.convertCurrencyAmount(event.cashDelta, event.currency, currency, cclRate),
+            externalFlow: this.convertCurrencyAmount(event.externalFlow, event.currency, currency, cclRate),
+        }));
+        const cashAt = (date: Date, inclusive: boolean) => cashLedger.reduce((total, event) =>
+            total + ((inclusive ? event.date <= date : event.date < date) ? event.cashDelta : 0), 0);
         const series: PerformancePoint[] = [];
-        let previousPointDate: Date | null = null;
         let cumulativeReturnFactor = 1;
+        let previousValue = 0;
 
-        for (let i = 0; i < stepCount; i++) {
-            const pointDate = new Date(start.getTime() + i * stepMs);
-            if (pointDate > now) break;
-
-            const dateStr = range === '1D'
-                ? pointDate.toISOString()
-                : pointDate.toISOString().slice(0, 10);
+        for (const timestamp of [...timestamps].sort((a, b) => a - b)) {
+            const pointDate = new Date(timestamp);
+            const dateStr = pointDate.toISOString();
             const pastTx = txs.filter((tx) => new Date(tx.date) <= pointDate);
             if (!pastTx.length) continue;
 
+            const executionPrices = new Map<string, number>();
+            if (timestamp !== now.getTime()) {
+                for (const tx of pastTx) {
+                    if (new Date(tx.date).getTime() !== timestamp || !tx.asset || !['BUY', 'SELL'].includes(tx.type)) continue;
+                    const price = Number(tx.pricePerUnit);
+                    if (Number.isFinite(price) && price > 0) executionPrices.set(this.assetTicker(tx.asset),
+                        this.convertCurrencyAmount(price, tx.currency || 'USD', currency, cclRate));
+                }
+            }
             const holdings = this.computeHoldingsAtDate(pastTx, pointDate);
             const assetsValue = this.computeValueFromHoldings(
                 holdings,
@@ -589,34 +608,49 @@ export class PortfolioPerformanceService {
                 pointDate,
                 currency,
                 cclRate,
+                true,
+                timestamp === now.getTime(),
+                executionPrices,
             );
-            const cashValue = this.computeCashAtDate(pastTx, pointDate, currency, cclRate);
+            if (!Number.isFinite(assetsValue)) {
+                return { range, currency, startDate: start.toISOString(), series: [], markers: [], insufficientData: true,
+                    message: 'No hay precios históricos suficientes para calcular un rendimiento fiable en este período.' };
+            }
+            const cashValue = cashAt(pointDate, true);
             const value = assetsValue + cashValue;
             const invested = this.computeInvestedCapital(pastTx, pointDate, currency, cclRate);
 
             const pnl = value - invested;
 
-            // Link period returns after removing only external capital flows.
-            // Purchases and sales are already neutral because cash and holdings
-            // are valued together in `value`.
+            // Value immediately before each operation as well as after it.
+            // Link market and operation returns separately, so contributions
+            // cannot dilute earlier gains or amplify trade gains and fees.
+            // https://www.gipsstandards.org/standards/gips-standards-for-firms/gips-standards-handbook-for-firms/
             const prevPoint = series[series.length - 1];
             let returnPct = 0;
             let dailyReturn: number | undefined;
-            if (prevPoint && previousPointDate) {
-                const { netFlow, weightedFlow } = this.computeExternalFlowBetweenDates(
-                    txs,
-                    previousPointDate,
-                    pointDate,
-                    currency,
-                    cclRate,
+            if (prevPoint) {
+                const beforeTx = pastTx.filter(tx => new Date(tx.date) < pointDate);
+                const beforeAssetsValue = this.computeValueFromHoldings(
+                    this.computeHoldingsAtDate(beforeTx, pointDate), quoteMap, historicalPriceMaps,
+                    pointDate, currency, cclRate, true, timestamp === now.getTime(), executionPrices,
                 );
-                const periodBase = prevPoint.value + weightedFlow;
-                const periodGain = value - prevPoint.value - netFlow;
-                const periodReturn = Math.abs(periodBase) > 1e-6 ? (periodGain / periodBase) * 100 : 0;
-
-                cumulativeReturnFactor *= Math.max(0, 1 + (Number.isFinite(periodReturn) ? periodReturn : 0) / 100);
+                if (!Number.isFinite(beforeAssetsValue)) {
+                    return { range, currency, startDate: start.toISOString(), series: [], markers: [], insufficientData: true,
+                        message: 'No hay precios históricos suficientes para calcular un rendimiento fiable en este período.' };
+                }
+                const beforeValue = beforeAssetsValue + cashAt(pointDate, false);
+                const flows = cashLedger.filter(event => event.date.getTime() === timestamp);
+                const netFlow = flows.reduce((total, event) => total + event.externalFlow, 0);
+                const contributions = flows.reduce((total, event) => total + Math.max(0, event.externalFlow), 0);
+                const marketFactor = previousValue > 1e-6 ? Math.max(0, beforeValue / previousValue) : 1;
+                const operationBase = beforeValue + contributions;
+                const operationGain = value - beforeValue - netFlow;
+                const operationFactor = operationBase > 1e-6 ? Math.max(0, 1 + operationGain / operationBase) : 1;
+                const periodFactor = marketFactor * operationFactor;
+                cumulativeReturnFactor *= periodFactor;
                 returnPct = (cumulativeReturnFactor - 1) * 100;
-                dailyReturn = Number.isFinite(periodReturn) ? periodReturn : undefined;
+                dailyReturn = (periodFactor - 1) * 100;
             }
 
             series.push({
@@ -627,7 +661,7 @@ export class PortfolioPerformanceService {
                 invested: Number(invested.toFixed(2)),
                 dailyReturn: dailyReturn !== undefined ? Number(dailyReturn.toFixed(4)) : undefined,
             });
-            previousPointDate = pointDate;
+            previousValue = value;
         }
 
         // Build markers for significant operations
@@ -646,7 +680,8 @@ export class PortfolioPerformanceService {
             return {
                 range,
                 currency,
-                startDate: firstTxDate.toISOString(),
+                startDate: start.toISOString(),
+                valuationMessage,
                 series,
                 markers,
                 insufficientData: true,
@@ -654,7 +689,7 @@ export class PortfolioPerformanceService {
             };
         }
 
-        return { range, currency, startDate: firstTxDate.toISOString(), series, markers, insufficientData: false };
+        return { range, currency, startDate: start.toISOString(), valuationMessage, series, markers, insufficientData: false };
     }
 
     // ── 3. Allocation ───────────────────────────────────────────────────────────
@@ -677,7 +712,7 @@ export class PortfolioPerformanceService {
 
         for (const h of portfolio.holdings) {
             const qty = Number(h.quantity || 0);
-            const ticker = this.normalizeTicker(h.asset?.ticker || '');
+            const ticker = this.assetTicker(h.asset);
             const price = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, Number(h.averageCost || 0));
             const value = qty * price;
             if (value <= 0) continue;
@@ -741,7 +776,7 @@ export class PortfolioPerformanceService {
         ]);
         const totalPortfolioValue = portfolio.holdings.reduce((sum, h) => {
             const qty = Number(h.quantity || 0);
-            const ticker = this.normalizeTicker(h.asset?.ticker || '');
+            const ticker = this.assetTicker(h.asset);
             const price = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, Number(h.averageCost || 0));
             return sum + qty * price;
         }, 0);
@@ -749,10 +784,10 @@ export class PortfolioPerformanceService {
         return portfolio.holdings.map((h) => {
             const qty = Number(h.quantity || 0);
             const wac = Number(h.averageCost || 0);
-            const ticker = this.normalizeTicker(h.asset?.ticker || '');
+            const ticker = this.assetTicker(h.asset);
             const currentPrice = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, wac);
             const currentValue = qty * currentPrice;
-            const costBasis = qty * wac / (this.isUsdCurrency(currency) && Boolean(getCedearDefinition(ticker.replace(/^(BCBA|BYMA):/i, ''))) ? cclRate : 1);
+            const costBasis = this.convertCurrencyAmount(qty * wac, h.asset?.currency || (this.cedearForTicker(ticker) ? 'ARS' : 'USD'), currency, cclRate);
             const pnlUsd = currentValue - costBasis;
             const returnPct = costBasis > 0 ? (pnlUsd / costBasis) * 100 : 0;
             const weight = totalPortfolioValue > 0 ? (currentValue / totalPortfolioValue) * 100 : 0;
@@ -1026,7 +1061,7 @@ export class PortfolioPerformanceService {
         // Estimated yield (total dividends / current portfolio value, annualized)
         const quoteMap = await this.getLiveQuoteMap(portfolio.holdings);
         const portfolioValue = portfolio.holdings.reduce((s, h) => {
-            const ticker = this.normalizeTicker(h.asset?.ticker || '');
+            const ticker = this.assetTicker(h.asset);
             const price = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, Number(h.averageCost || 0));
             return s + Number(h.quantity || 0) * price;
         }, 0);
@@ -1077,7 +1112,7 @@ export class PortfolioPerformanceService {
 
         // Portfolio total value for weights
         const totalValue = portfolio.holdings.reduce((sum, h) => {
-            const ticker = this.normalizeTicker(h.asset?.ticker || '');
+            const ticker = this.assetTicker(h.asset);
             const price = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, Number(h.averageCost || 0));
             return sum + Number(h.quantity || 0) * price;
         }, 0);
@@ -1085,12 +1120,12 @@ export class PortfolioPerformanceService {
         const assets = portfolio.holdings.map((h) => {
             const qty = Number(h.quantity || 0);
             const wac = Number(h.averageCost || 0);
-            const ticker = this.normalizeTicker(h.asset?.ticker || '');
+            const ticker = this.assetTicker(h.asset);
             const currentPrice = this.resolveHoldingPrice(ticker, quoteMap, currency, cclRate, wac);
             const currentValue = qty * currentPrice;
             const cleanTicker = ticker.replace(/^(BCBA|BYMA):/i, '');
-            const cedear = getCedearDefinition(ticker) || getCedearDefinition(cleanTicker);
-            const costBasis = qty * wac / (cedear && this.isUsdCurrency(currency) ? cclRate : 1);
+            const cedear = this.cedearForTicker(ticker);
+            const costBasis = this.convertCurrencyAmount(qty * wac, h.asset?.currency || (cedear ? 'ARS' : 'USD'), currency, cclRate);
             const returnPct = costBasis > 0 ? ((currentValue - costBasis) / costBasis) * 100 : 0;
             const weight = totalValue > 0 ? (currentValue / totalValue) * 100 : 0;
 
@@ -1139,17 +1174,6 @@ export class PortfolioPerformanceService {
     // ── 9. Benchmarks ───────────────────────────────────────────────────────────
 
     async getBenchmarks(portfolioId: string, userId: string, range = '1Y', benchmarks = ['sp500'], currency = 'USD') {
-        await this.assertOwner(portfolioId, userId);
-
-        const portfolio = await this.prisma.portfolio.findUnique({
-            where: { id: portfolioId },
-            include: {
-                transactions: { include: { asset: true }, orderBy: { date: 'asc' } },
-            },
-        });
-
-        if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
-
         const perfData = await this.getPerformance(portfolioId, userId, range, currency);
         const returns: Record<string, number> = {};
         const portSeries = perfData.series;
@@ -1166,25 +1190,15 @@ export class PortfolioPerformanceService {
             ? await this.marketService.getCandles('SPY', this.getMarketHistoryInterval(range), this.getMarketHistoryRange(range)).catch(() => ({ candles: [] }))
             : { candles: [] };
         const sp500Candles = (sp500Response.candles ?? [])
-            .map((c) => ({ time: Number(c.time), close: Number(c.close) }))
+            .map((c) => ({ time: this.candleAvailabilityTime(Number(c.time), 'SPY', range, new Date(portSeries[portSeries.length - 1]?.date || Date.now())), close: Number(c.close) }))
             .filter((c) => Number.isFinite(c.time) && Number.isFinite(c.close) && c.close > 0)
             .sort((a, b) => a.time - b.time);
 
-        const candleAtDate = (date: string) => {
-            const target = new Date(date.includes('T') ? date : `${date}T00:00:00Z`).getTime() / 1000;
-            let latest: number | null = null;
-            let firstAfter: number | null = null;
-
-            for (const candle of sp500Candles) {
-                if (candle.time <= target) latest = candle.close;
-                else if (firstAfter == null) firstAfter = candle.close;
-            }
-
-            return latest ?? firstAfter;
-        };
+        const candleAtDate = (date: string) => this.getHistoricalPriceAtDate(sp500Candles, new Date(date));
 
         const firstSp500Close = portfolioBase100.length > 0 ? candleAtDate(portfolioBase100[0].date) : null;
-        const benchmarkAvailable = typeof firstSp500Close === 'number' && firstSp500Close > 0;
+        const lastSp500Close = portfolioBase100.length > 0 ? candleAtDate(portfolioBase100[portfolioBase100.length - 1].date) : null;
+        const benchmarkAvailable = typeof firstSp500Close === 'number' && firstSp500Close > 0 && lastSp500Close != null;
 
         const series = portfolioBase100.map((pt) => {
             const sp500Close = benchmarkAvailable ? candleAtDate(pt.date) : null;
@@ -1210,6 +1224,7 @@ export class PortfolioPerformanceService {
         return {
             range,
             startDate: perfData.startDate,
+            performance: perfData,
             benchmarkAvailable,
             series,
             benchmarks,

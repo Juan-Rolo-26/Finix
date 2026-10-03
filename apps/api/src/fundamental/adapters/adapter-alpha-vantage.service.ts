@@ -117,9 +117,9 @@ export class AdapterAlphaVantageService implements FundamentalProviderAdapter {
             totalEquity: toNumber(row?.totalShareholderEquity),
             cashAndEquivalents: toNumber(row?.cashAndCashEquivalentsAtCarryingValue),
             totalDebt:
-                toNumber(row?.shortLongTermDebtTotal) ||
-                toNumber(row?.longTermDebt) ||
-                toNumber(row?.shortTermDebt),
+                toNumber(row?.shortLongTermDebtTotal) ??
+                (toNumber(row?.longTermDebt) !== null && toNumber(row?.shortTermDebt) !== null
+                    ? toNumber(row?.longTermDebt)! + toNumber(row?.shortTermDebt)! : null),
         }));
 
         const cashFlow: StatementPoint[] = cashReports.map((row: any) => ({

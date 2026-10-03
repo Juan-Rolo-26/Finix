@@ -81,7 +81,7 @@ async function main() {
         assert.equal(fullEarnings.length, 1, 'Normalized tickers must merge live and stored results');
         assert.equal(fullEarnings[0].id, 'existing');
         assert.equal(fullEarnings[0].actualEps, 2);
-        assert.equal(fullEarnings[0].time, '18:00', 'Missing provider fields must not erase stored information');
+        assert.equal(fullEarnings[0].time, undefined, 'Scanner records must not expose previously assumed release times');
         assert.equal(fullDividends.length, 2, 'Distinct distributions of one company must not disappear');
         assert.equal(fullWeek.categories.dividends, 2);
         assert.equal(fullDividends[0].amount, 0);
@@ -94,11 +94,101 @@ async function main() {
         assert.equal(macro.previousValue, '0');
         assert.equal(macro.sourceUrl, 'https://example.test');
 
+        const qualityRows = [
+            { ...values, name: 'EMPTY', earnings_per_share_forecast_next_fq: null, revenue_forecast_next_fq: null, earnings_per_share_fq: null, earnings_per_share_forecast_fq: null, revenue_fq: null, revenue_forecast_fq: null },
+            { ...values, name: 'BAD', earnings_per_share_forecast_next_fq: '', revenue_forecast_next_fq: 'unknown', earnings_per_share_fq: '', earnings_per_share_forecast_fq: null, revenue_fq: 'Infinity', revenue_forecast_fq: null },
+            { ...values, name: 'ZERO', earnings_per_share_forecast_next_fq: 0, revenue_forecast_next_fq: null, earnings_release_date: null },
+            { ...values, name: 'LOSS', earnings_release_next_date: null, earnings_per_share_fq: -1, earnings_per_share_forecast_fq: -2, revenue_fq: null, revenue_forecast_fq: null },
+            { ...values, name: 'PARTIAL', earnings_per_share_forecast_next_fq: null, revenue_forecast_next_fq: 10e6, earnings_release_date: null, earnings_release_next_time: '' },
+            { ...values, name: 'BADDATE', earnings_release_next_date: 1e300, earnings_release_date: 'invalid' },
+        ];
+        global.fetch = async (_url, init) => {
+            const { columns } = JSON.parse(init.body);
+            return { ok: true, json: async () => ({ data: qualityRows.map(row => ({ d: columns.map(column => row[column] ?? null) })) }) };
+        };
+        const qualityEvents = await provider.fetchTradingViewSP500Earnings({ forceRefresh: true });
+        assert.deepEqual(qualityEvents.map(event => event.ticker).sort(), ['LOSS', 'PARTIAL', 'ZERO']);
+        assert.equal(qualityEvents.find(event => event.ticker === 'ZERO').epsEstimate, 0);
+        assert.equal(qualityEvents.find(event => event.ticker === 'LOSS').epsSurprise, 50);
+        assert.equal(qualityEvents.find(event => event.ticker === 'PARTIAL').reportTiming, undefined);
+
+        const storedRows = [
+            { ...reported, id: 'empty', ticker: 'EMPTY', actualEps: null, actualRevenue: null, epsEstimate: null, revenueEstimate: null },
+            { ...reported, id: 'zero', ticker: 'ZERO', actualEps: 0, actualRevenue: null, epsEstimate: null, revenueEstimate: null, epsSurprise: 99 },
+            { ...reported, id: 'partial', ticker: 'PARTIAL', actualEps: null, actualRevenue: null, epsEstimate: null, revenueEstimate: 10e6 },
+        ];
+        const qualityService = new CalendarService({ marketCalendarEvent: { findUnique: async () => null }, marketEarningsEvent: {
+            count: async () => 100,
+            findMany: async () => storedRows,
+            findUnique: async () => storedRows[0],
+        } }, {
+            fetchTradingViewSP500Earnings: async () => [],
+            fetchTradingViewSP500Dividends: async () => [],
+        }, {}, { getTradingViewLogoUrl: () => '' });
+        const qualityWeek = await qualityService.getWeekEvents({ weekStart: '2026-07-27', category: 'EARNINGS' });
+        assert.equal(qualityWeek.categories.earnings, 2, 'Counts exclude balances without financial information');
+        assert.equal(qualityWeek.days.flatMap(day => day.earningsEvents).find(event => event.id === 'zero').epsSurprise, undefined);
+        qualityService.providerService.getUpcomingEconomicEvents = async () => [];
+        qualityService.prisma.marketCalendarEvent.findMany = async () => [];
+        const qualityHome = await qualityService.getHomeEvents();
+        assert.ok(qualityHome.events.every(event => event.id !== 'empty'));
+        assert.equal(qualityHome.events[0].actualEps, 0, 'Home uses the same available financial information');
+        assert.equal(qualityHome.events[0].timingLabel, 'Horario pendiente');
+
+        const adminPage1 = await qualityService.getAdminEvents({ type: 'EARNINGS', page: 1, limit: 1 });
+        const adminPage2 = await qualityService.getAdminEvents({ type: 'EARNINGS', page: 2, limit: 1 });
+        assert.equal(adminPage1.total, 2);
+        assert.equal(adminPage1.totalPages, 2);
+        assert.equal(adminPage1.items[0].id, 'zero');
+        assert.equal(adminPage2.items[0].id, 'partial', 'Pagination must apply after suppressing unavailable balances');
+        await assert.rejects(qualityService.getEventById('empty'), error => error.getStatus() === 404);
+
+        let manualData;
+        const manualService = new CalendarService({ marketEarningsEvent: { create: async ({ data }) => { manualData = data; return data; } } },
+            { isSP500Constituent: () => false }, {}, { calculateEarningsImpactScore: () => 50, getTradingViewLogoUrl: () => '' });
+        await assert.rejects(manualService.createAdminManualEvent({ type: 'EARNINGS', ticker: 'ABC', date: '2026-10-02', epsEstimate: '' }));
+        await manualService.createAdminManualEvent({ type: 'EARNINGS', ticker: 'ABC', date: '2026-10-02', epsEstimate: 0 });
+        assert.equal(manualData.epsEstimate, 0);
+        assert.equal(manualData.time, null);
+        assert.equal(manualData.reportTiming, null);
+
         global.fetch = async () => ({ ok: true, json: async () => ({ data: [] }) });
         await provider.fetchTradingViewSP500Earnings({ forceRefresh: true });
         assert.deepEqual(await provider.getUpcomingEarnings('2026-10-05', '2026-10-11'), [], 'An empty provider response must not produce invented earnings');
+        assert.deepEqual(await provider.fetchTradingViewSP500Dividends({ forceRefresh: true }), []);
+        assert.deepEqual(await provider.fetchTradingViewSP500Dividends(), [], 'Successful empty results must clear old dividend cache');
         provider.fmpApiKey = '';
         assert.deepEqual(await provider.getUpcomingEconomicEvents('2026-10-05', '2026-10-11'), [], 'No configured macro feed must not produce assumed events');
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        const oldDate = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10);
+        const updates = [];
+        const resultService = new CalendarService({ marketEarningsEvent: {
+            findMany: async () => [
+                { id: 'latest', ticker: 'AAPL', date: yesterday, sourceType: 'AUTOMATIC', epsEstimate: 99 },
+                { id: 'old', ticker: 'AAPL', date: oldDate, sourceType: 'AUTOMATIC' },
+                { id: 'mismatched', ticker: 'BAD', date: yesterday, sourceType: 'AUTOMATIC' },
+                { id: 'manual', ticker: 'MANUAL', date: yesterday, sourceType: 'MANUAL' },
+            ],
+            update: async record => { updates.push(record); return record; },
+        } }, {}, {}, {});
+        global.fetch = async (_url, init) => {
+            const { columns } = JSON.parse(init.body);
+            const rows = [
+                { name: 'AAPL', earnings_release_date: epoch(yesterday), earnings_per_share_fq: 0, earnings_per_share_forecast_fq: 1, revenue_fq: 0, revenue_forecast_fq: 10, change: 99 },
+                { name: 'BAD', earnings_release_date: epoch(oldDate), earnings_per_share_fq: 2 },
+                { name: 'MANUAL', earnings_release_date: epoch(yesterday), earnings_per_share_fq: 5 },
+            ];
+            return { ok: true, json: async () => ({ data: rows.map(row => ({ d: columns.map(column => row[column] ?? null) })) }) };
+        };
+        const resultSync = await resultService.syncReportedEarningsResults();
+        assert.equal(resultSync.updated, 1, 'Only the matching latest automatic report is updated');
+        assert.equal(updates[0].where.id, 'latest');
+        assert.equal(updates[0].data.actualEps, 0);
+        assert.equal(updates[0].data.epsEstimate, 1);
+        assert.equal(updates[0].data.epsSurprise, -100);
+        assert.equal(updates[0].data.revenueSurprise, -100);
+        assert.equal(updates[0].data.marketReaction, undefined, 'A daily quote is not a measured earnings reaction');
+
         let syncs = 0;
         provider.fetchTradingViewSP500Earnings = async () => { syncs++; await new Promise(resolve => setImmediate(resolve)); return []; };
         await Promise.all([service.refreshCorporateEvents('EARNINGS'), service.refreshCorporateEvents('EARNINGS')]);

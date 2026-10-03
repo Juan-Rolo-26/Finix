@@ -109,3 +109,5 @@ export type CreatePostDto = z.infer<typeof CreatePostSchema>;
 export type CreatePortfolioDto = z.infer<typeof CreatePortfolioSchema>;
 export type CreateAssetDto = z.infer<typeof CreateAssetSchema>;
 export type CreateMovementDto = z.infer<typeof CreateMovementSchema>;
+
+export * from './financial-data';
