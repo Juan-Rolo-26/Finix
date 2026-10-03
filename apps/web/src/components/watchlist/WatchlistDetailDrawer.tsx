@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
+import TradingViewChart from '@/components/TradingViewChart';
+import { watchlistChartSymbol } from './watchlistData';
 import SymbolLogo from '@/components/SymbolLogo';
 import {
     Target,
@@ -37,7 +39,12 @@ const STATUS_OPTIONS = [
     { key: 'DISCARDED', label: 'Descartada', color: 'border-zinc-500/40 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400' },
 ];
 
-export default function WatchlistDetailDrawer({
+export default function WatchlistDetailDrawer(props: WatchlistDetailDrawerProps) {
+    if (!props.isOpen || !props.item) return null;
+    return <WatchlistItemDetails key={`${props.watchlistId}:${props.item.id}`} {...props} />;
+}
+
+function WatchlistItemDetails({
     item,
     watchlistId,
     isOpen,
@@ -47,13 +54,15 @@ export default function WatchlistDetailDrawer({
     const navigate = useNavigate();
 
     // Estado editable del activo
-    const [targetPrice, setTargetPrice] = useState<string>('');
-    const [personalStatus, setPersonalStatus] = useState<string>('RESEARCHING');
-    const [reason, setReason] = useState<string>('');
+    const [chartInterval, setChartInterval] = useState('D');
+    const [targetDirection, setTargetDirection] = useState<'ABOVE' | 'BELOW'>(() => item.targetDirection === 'ABOVE' ? 'ABOVE' : 'BELOW');
+    const [targetPrice, setTargetPrice] = useState<string>(() => item.targetPrice != null ? String(item.targetPrice) : '');
+    const [personalStatus, setPersonalStatus] = useState<string>(() => item.personalStatus || 'RESEARCHING');
+    const [reason, setReason] = useState<string>(() => item.reason || '');
     const [tagInput, setTagInput] = useState<string>('');
-    const [tags, setTags] = useState<string[]>([]);
-    const [alertEnabled, setAlertEnabled] = useState<boolean>(false);
-    const [alertChannel, setAlertChannel] = useState<'EMAIL' | 'PUSH' | 'ALL'>('EMAIL');
+    const [tags, setTags] = useState<string[]>(() => item.tags || []);
+    const [alertEnabled, setAlertEnabled] = useState<boolean>(() => Boolean(item.hasActiveAlert));
+    const [alertChannel, setAlertChannel] = useState<'EMAIL' | 'PUSH' | 'ALL'>(() => item.activeAlert?.notificationChannel || 'EMAIL');
 
     // Notas privadas
     const [notes, setNotes] = useState<any[]>([]);
@@ -69,30 +78,19 @@ export default function WatchlistDetailDrawer({
     const [savedSuccess, setSavedSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (item) {
-            setTargetPrice(item.targetPrice ? String(item.targetPrice) : '');
-            setPersonalStatus(item.personalStatus || 'RESEARCHING');
-            setReason(item.reason || '');
-            setTags(item.tags || []);
-            setNotes(item.notes || []);
-            setAlertEnabled(Boolean(item.hasActiveAlert));
-            setSavedSuccess(false);
-            setError(null);
+    useEffect(() => { setNotes(item?.notes || []); }, [item?.id, item?.notes]);
 
-            // Cargar posts comunitarios relacionados
-            setLoadingPosts(true);
-            apiFetch(`/watchlist/posts/${item.symbol}`)
-                .then(async (res) => {
-                    if (res.ok) {
-                        const data = await res.json();
-                        setCommunityPosts(data.posts || []);
-                    }
-                })
-                .catch(() => {})
-                .finally(() => setLoadingPosts(false));
-        }
-    }, [item]);
+    useEffect(() => {
+        if (!item?.symbol || !isOpen) return;
+        const controller = new AbortController();
+        setCommunityPosts([]);
+        setLoadingPosts(true);
+        apiFetch(`/watchlist/posts/${encodeURIComponent(item.symbol)}`, { signal: controller.signal })
+            .then(async response => { if (response.ok) { const data = await response.json(); if (!controller.signal.aborted) setCommunityPosts(data.posts || []); } })
+            .catch(() => {})
+            .finally(() => { if (!controller.signal.aborted) setLoadingPosts(false); });
+        return () => controller.abort();
+    }, [item?.symbol, isOpen]);
 
     if (!isOpen || !item) return null;
 
@@ -121,6 +119,10 @@ export default function WatchlistDetailDrawer({
     };
 
     const handleSaveItemChanges = async () => {
+        if ((targetNum !== null && (!Number.isFinite(targetNum) || targetNum <= 0)) || (alertEnabled && targetNum === null)) {
+            setError('Ingresá un objetivo de precio mayor que cero para activar la alerta.');
+            return;
+        }
         setSaving(true);
         setError(null);
 
@@ -130,7 +132,7 @@ export default function WatchlistDetailDrawer({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     targetPrice: targetNum,
-                    targetDirection: isAbove ? 'ABOVE' : 'BELOW',
+                    targetDirection,
                     personalStatus,
                     reason,
                     tags: tags.join(','),
@@ -166,14 +168,15 @@ export default function WatchlistDetailDrawer({
                 body: JSON.stringify({ content: newNoteContent.trim() }),
             });
 
+            if (!res.ok) throw new Error('No se pudo guardar la nota.');
             if (res.ok) {
                 const createdNote = await res.json();
                 setNotes([createdNote, ...notes]);
                 setNewNoteContent('');
                 onItemUpdated();
             }
-        } catch {
-            // best effort
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'No se pudo guardar la nota.');
         } finally {
             setAddingNote(false);
         }
@@ -184,22 +187,20 @@ export default function WatchlistDetailDrawer({
             const res = await apiFetch(`/watchlist/notes/${noteId}`, {
                 method: 'DELETE',
             });
+            if (!res.ok) throw new Error('No se pudo eliminar la nota.');
             if (res.ok) {
                 setNotes(notes.filter((n) => n.id !== noteId));
                 onItemUpdated();
             }
-        } catch {
-            // best effort
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'No se pudo eliminar la nota.');
         }
     };
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200">
             {/* Backdrop */}
-            <div
-                className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
-                onClick={onClose}
-            />
+            <button type="button" aria-label="Cerrar ficha" className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
             {/* Slide-over panel */}
             <div className="relative z-50 w-full sm:max-w-xl h-full bg-card border-l border-border/60 shadow-2xl overflow-y-auto flex flex-col">
@@ -228,7 +229,7 @@ export default function WatchlistDetailDrawer({
                                 size="sm"
                                 onClick={() => {
                                     onClose();
-                                    navigate(`/market/${item.symbol}`);
+                                    navigate(`/market?symbol=${encodeURIComponent(watchlistChartSymbol(item))}`);
                                 }}
                                 className="rounded-xl text-xs font-bold gap-1.5 h-8 border-border/60"
                             >
@@ -237,6 +238,7 @@ export default function WatchlistDetailDrawer({
                             <button
                                 type="button"
                                 onClick={onClose}
+                                aria-label="Cerrar ficha del activo"
                                 className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                             >
                                 <X className="w-5 h-5" />
@@ -356,7 +358,24 @@ export default function WatchlistDetailDrawer({
                         </div>
                     </div>
 
+                    <section className="space-y-3" aria-label={`Gráfico de ${item.symbol}`}>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h3 className="text-sm font-bold">Gráfico del activo</h3>
+                            <div className="flex gap-1">
+                                {[['15', '15m'], ['60', '1H'], ['240', '4H'], ['D', '1D'], ['W', '1S']].map(([value, label]) =>
+                                    <button key={value} type="button" aria-pressed={chartInterval === value} onClick={() => setChartInterval(value)} className={`rounded px-2 py-1 text-xs ${chartInterval === value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{label}</button>)}
+                            </div>
+                        </div>
+                        <TradingViewChart symbol={watchlistChartSymbol(item)} interval={chartInterval} height={360} allowSymbolChange={false} />
+                    </section>
                     {/* Objetivo de precio y alertas */}
+                    <label className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                        Condición del objetivo
+                        <select aria-label="Condición del objetivo" value={targetDirection} onChange={event => setTargetDirection(event.target.value as 'ABOVE' | 'BELOW')} className="rounded-lg border border-border bg-background p-2 text-foreground">
+                            <option value="BELOW">Precio menor al objetivo</option>
+                            <option value="ABOVE">Precio mayor al objetivo</option>
+                        </select>
+                    </label>
                     <div className="rounded-2xl border border-border/60 bg-secondary/20 p-4 space-y-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-foreground font-bold text-xs">
@@ -388,6 +407,7 @@ export default function WatchlistDetailDrawer({
                                     type="number"
                                     step="any"
                                     placeholder="Ej. 185.50"
+                                    aria-label="Precio objetivo"
                                     value={targetPrice}
                                     onChange={(e) => setTargetPrice(e.target.value)}
                                     className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 text-xs font-bold text-foreground outline-none focus:border-emerald-500 transition-colors"
@@ -408,11 +428,12 @@ export default function WatchlistDetailDrawer({
                                             }`}
                                     >
                                         <Bell className="w-3.5 h-3.5" />
-                                        <span>{alertEnabled ? 'Alerta activa' : 'Activar alerta'}</span>
+                                        <span>{alertEnabled ? 'Alerta habilitada' : 'Activar alerta'}</span>
                                     </button>
 
                                     {alertEnabled && (
                                         <select
+                                            aria-label="Canal de la alerta"
                                             value={alertChannel}
                                             onChange={(e: any) => setAlertChannel(e.target.value)}
                                             className="h-full rounded-xl border border-border/60 bg-background px-2 text-xs font-bold text-foreground outline-none"

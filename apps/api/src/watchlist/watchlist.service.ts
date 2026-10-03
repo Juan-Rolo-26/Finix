@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma.service';
 import { MarketService } from '../market/market.service';
 import { AlertsService } from '../alerts/alerts.service';
+import { resolveMarketIdentity } from '../market/market-symbol';
 import { getCedearDefinition } from '../market/cedear.data';
 import { WATCHLIST_CONFIG } from './watchlist.config';
 import { isFreeAccessEnabled } from '../access/free-access';
@@ -219,7 +220,7 @@ export class WatchlistService {
         if (!watchlist) throw new NotFoundException('Lista de seguimiento no encontrada.');
 
         // 1. Obtener símbolos y pedir cotizaciones en vivo en lote
-        const symbols = watchlist.items.map((item) => item.symbol);
+        const symbols = watchlist.items.map((item) => resolveMarketIdentity(item.symbol, item.market).symbol);
         let quotesMap = new Map<string, any>();
 
         if (symbols.length > 0) {
@@ -227,7 +228,6 @@ export class WatchlistService {
                 const quotes = await this.marketService.getQuotes(symbols);
                 quotes.forEach((q) => {
                     quotesMap.set(q.inputSymbol?.toUpperCase(), q);
-                    quotesMap.set(q.symbol?.toUpperCase(), q);
                 });
             } catch (err: any) {
                 this.logger.warn(`Error al obtener cotizaciones para lista ${id}: ${err.message}`);
@@ -261,24 +261,21 @@ export class WatchlistService {
         const alerts = await this.prisma.marketAlert.findMany({
             where: {
                 userId,
-                ticker: { in: symbols },
+                ticker: { in: [...symbols, ...watchlist.items.map(item => item.symbol)] },
             },
             orderBy: { createdAt: 'desc' },
         });
 
-        const alertsMap = new Map<string, any[]>();
-        alerts.forEach((a) => {
-            const list = alertsMap.get(a.ticker.toUpperCase()) || [];
-            list.push(a);
-            alertsMap.set(a.ticker.toUpperCase(), list);
-        });
-
         // 4. Próximos balances / resultados (Earnings) desde el Calendario
+        const earningsSymbols = watchlist.items.map(item => {
+            const identity = resolveMarketIdentity(item.symbol, item.market);
+            return identity.cedear?.underlyingTicker || (!identity.crypto && ['STOCK', 'CEDEAR'].includes(identity.assetType) ? identity.ticker : null);
+        }).filter((symbol): symbol is string => Boolean(symbol));
         const now = new Date();
         const in45Days = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
         const upcomingEvents = await this.prisma.marketCalendarEvent.findMany({
             where: {
-                ticker: { in: symbols },
+                ticker: { in: earningsSymbols },
                 eventType: 'EARNINGS',
                 timestampUtc: { gte: now, lte: in45Days },
             },
@@ -299,12 +296,13 @@ export class WatchlistService {
 
         // 5. Enriquecer cada ítem
         const enrichedItems = watchlist.items.map((item) => {
-            const symUpper = item.symbol.toUpperCase();
+            const identity = resolveMarketIdentity(item.symbol, item.market);
+            const symUpper = identity.symbol;
             const quote = quotesMap.get(symUpper) || null;
-            const cedearDef = getCedearDefinition(item.symbol);
+            const cedearDef = identity.cedear;
 
-            const currentPrice = quote?.price ?? null;
-            const changePercent = quote?.change ?? null;
+            const currentPrice = !quote?.unavailable && Number.isFinite(quote?.price) && quote.price > 0 ? quote.price : null;
+            const changePercent = currentPrice !== null && Number.isFinite(quote?.change) ? quote.change : null;
             const premarketPrice = quote?.premarketPrice ?? null;
             const premarketChange = quote?.premarketChange ?? null;
             const updatedAt = quote?.updatedAt ?? null;
@@ -324,15 +322,16 @@ export class WatchlistService {
             const isInPortfolio = Boolean(holdingInfo);
 
             // Alertas
-            const itemAlerts = alertsMap.get(symUpper) || [];
-            const activeAlert = itemAlerts.find((a) => a.status === 'ACTIVE') || null;
+            const activeAlert = alerts.find(alert => alert.id === item.alertId && alert.status === 'ACTIVE') || null;
 
             // Próximo balance
-            const nextEarnings = earningsMap.get(symUpper) || null;
+            const earningsSymbol = cedearDef?.underlyingTicker || (!identity.crypto && identity.assetType === 'STOCK' ? identity.ticker : '');
+            const nextEarnings = earningsMap.get(earningsSymbol) || null;
 
             return {
                 id: item.id,
                 symbol: item.symbol,
+                chartSymbol: identity.exchange ? identity.symbol : quote?.symbol || (getCedearDefinition(identity.ticker) ? `${getCedearDefinition(identity.ticker)!.underlyingExchange}:${identity.ticker}` : identity.symbol),
                 name: item.name || cedearDef?.name || item.symbol,
                 market: item.market || (cedearDef ? 'BCBA' : 'US'),
                 currency: item.currency || (cedearDef ? 'ARS' : 'USD'),
@@ -407,22 +406,23 @@ export class WatchlistService {
             });
         }
 
-        const symUpper = dto.symbol.trim().toUpperCase();
+        const identity = resolveMarketIdentity(dto.symbol, dto.market);
+        const symUpper = identity.symbol;
 
         // Evitar duplicados dentro de la misma lista
-        const existingItem = watchlist.items.find((i) => i.symbol.toUpperCase() === symUpper);
+        const existingItem = watchlist.items.find(item => resolveMarketIdentity(item.symbol, item.market).symbol === symUpper);
         if (existingItem) {
             throw new BadRequestException(`El activo "${symUpper}" ya se encuentra en esta lista de seguimiento.`);
         }
 
         // Obtener cotización de referencia en el momento de agregado
         let addedPrice: number | null = null;
-        let detectedCurrency = dto.currency || 'USD';
-        let detectedMarket = dto.market || 'US';
-        let detectedType = dto.assetType || 'STOCK';
+        let detectedCurrency = dto.currency || identity.currency;
+        let detectedMarket = dto.market || identity.market;
+        let detectedType = dto.assetType || identity.assetType;
         let detectedName = dto.name;
 
-        const cedearDef = getCedearDefinition(symUpper);
+        const cedearDef = identity.cedear;
         if (cedearDef) {
             detectedCurrency = 'ARS';
             detectedMarket = 'BCBA';
@@ -493,6 +493,10 @@ export class WatchlistService {
 
         if (!item) throw new NotFoundException('Activo de seguimiento no encontrado.');
 
+        const requestedTarget = dto.targetPrice !== undefined ? dto.targetPrice : item.targetPrice;
+        if ((requestedTarget !== null && (!Number.isFinite(requestedTarget) || requestedTarget <= 0)) || (dto.alertEnabled && requestedTarget === null)) {
+            throw new BadRequestException('Definí un precio objetivo mayor que cero.');
+        }
         const updated = await this.prisma.watchlistItem.update({
             where: { id: itemId },
             data: {
@@ -505,26 +509,23 @@ export class WatchlistService {
             },
         });
 
-        // Sincronizar alerta si el usuario lo activó
-        if (dto.alertEnabled && dto.targetPrice) {
-            try {
-                const condition = dto.targetDirection === 'BELOW' ? 'LESS_THAN' : 'GREATER_THAN';
-                const alert = await this.alertsService.createAlert(userId, {
-                    ticker: item.symbol,
-                    name: item.name || item.symbol,
-                    alertType: 'PRICE_TARGET',
-                    targetValue: dto.targetPrice,
-                    condition,
-                    notificationChannel: dto.alertChannel || 'EMAIL',
+        if (dto.alertEnabled !== undefined || dto.targetPrice !== undefined || dto.targetDirection !== undefined || dto.alertChannel !== undefined) {
+            const target = dto.targetPrice !== undefined ? dto.targetPrice : item.targetPrice;
+            const direction = dto.targetDirection || item.targetDirection || 'BELOW';
+            if (item.alertId) {
+                const enabled = dto.alertEnabled !== false && target !== null;
+                await this.alertsService.updateAlert(userId, item.alertId, {
+                    ...(target !== null && { targetValue: target }),
+                    condition: direction === 'BELOW' ? 'LESS_THAN' : 'GREATER_THAN',
+                    ...(dto.alertChannel && { notificationChannel: dto.alertChannel }),
+                    ...(dto.alertEnabled !== undefined || target === null ? { status: enabled ? 'ACTIVE' : 'DISABLED' } : {}),
                 });
-                if (alert?.id) {
-                    await this.prisma.watchlistItem.update({
-                        where: { id: itemId },
-                        data: { alertId: alert.id },
-                    });
-                }
-            } catch (err: any) {
-                this.logger.warn(`Error al sincronizar alerta para ${item.symbol}: ${err.message}`);
+            } else if (dto.alertEnabled && target) {
+                const alert = await this.alertsService.createAlert(userId, {
+                    ticker: item.symbol, name: item.name || item.symbol, alertType: 'PRICE_TARGET', targetValue: target,
+                    condition: direction === 'BELOW' ? 'LESS_THAN' : 'GREATER_THAN', notificationChannel: dto.alertChannel || 'EMAIL',
+                });
+                await this.prisma.watchlistItem.update({ where: { id: itemId }, data: { alertId: alert.id } });
             }
         }
 
@@ -585,41 +586,17 @@ export class WatchlistService {
     // ── 11. RESOLUCIÓN DE SÍMBOLOS AMBIGUOS (Ej: AAPL US vs BYMA CEDEAR) ──
     async resolveSymbols(symbols: string[]) {
         const results = symbols.map((raw) => {
-            const trimmed = raw.trim().toUpperCase();
+            const identity = resolveMarketIdentity(raw);
             const candidates: any[] = [];
-
-            // 1. Verificar si es CEDEAR
-            const cedearDef = getCedearDefinition(trimmed);
-            if (cedearDef) {
-                candidates.push({
-                    symbol: trimmed.startsWith('BCBA:') ? trimmed : `BCBA:${trimmed}`,
-                    name: cedearDef.name,
-                    market: 'BCBA',
-                    currency: 'ARS',
-                    assetType: 'CEDEAR',
-                    ratio: cedearDef.ratio,
-                    underlying: cedearDef.underlyingTicker,
-                    isCedear: true,
-                });
+            const ambiguousCedear = !identity.exchange && !identity.crypto ? getCedearDefinition(identity.ticker) : null;
+            if (ambiguousCedear) {
+                candidates.push({ symbol: `BCBA:${identity.ticker}`, name: ambiguousCedear.name, market: 'BCBA', currency: 'ARS', assetType: 'CEDEAR',
+                    ratio: ambiguousCedear.ratio, underlying: ambiguousCedear.underlyingTicker, isCedear: true });
             }
-
-            // 2. Opción US estándar
-            const cleanUS = trimmed.replace(/^(BCBA:|BYMA:)/, '');
-            candidates.push({
-                symbol: cleanUS,
-                name: cedearDef?.name || cleanUS,
-                market: 'US (NASDAQ/NYSE)',
-                currency: 'USD',
-                assetType: 'STOCK',
-                isCedear: false,
-            });
-
-            return {
-                input: raw,
-                clean: trimmed,
-                hasAmbiguity: candidates.length > 1,
-                candidates,
-            };
+            candidates.push({ symbol: ambiguousCedear ? `${ambiguousCedear.underlyingExchange}:${identity.ticker}` : identity.symbol,
+                name: identity.cedear?.name || ambiguousCedear?.name || identity.ticker, market: identity.market, currency: identity.currency,
+                assetType: identity.assetType, isCedear: Boolean(identity.cedear) });
+            return { input: raw, clean: identity.symbol, hasAmbiguity: candidates.length > 1, candidates };
         });
 
         return { items: results };
@@ -645,8 +622,13 @@ export class WatchlistService {
 
         if (!watchlist) throw new NotFoundException('Lista de seguimiento no encontrada.');
 
-        const existingSymbols = new Set(watchlist.items.map((i) => i.symbol.toUpperCase()));
-        const toAdd = dto.items.filter((item) => !existingSymbols.has(item.symbol.trim().toUpperCase()));
+        const existingSymbols = new Set(watchlist.items.map(item => resolveMarketIdentity(item.symbol, item.market).symbol));
+        const toAdd = dto.items.filter(item => {
+            const symbol = resolveMarketIdentity(item.symbol, item.market).symbol;
+            if (existingSymbols.has(symbol)) return false;
+            existingSymbols.add(symbol);
+            return true;
+        });
 
         if (watchlist.items.length + toAdd.length > limits.maxItemsPerList) {
             throw new ForbiddenException({
@@ -659,17 +641,18 @@ export class WatchlistService {
         const createdItems: any[] = [];
 
         for (const item of toAdd) {
-            const symUpper = item.symbol.trim().toUpperCase();
-            const cedearDef = getCedearDefinition(symUpper);
+            const identity = resolveMarketIdentity(item.symbol, item.market);
+            const symUpper = identity.symbol;
+            const cedearDef = identity.cedear;
 
             const created = await this.prisma.watchlistItem.create({
                 data: {
                     watchlistId,
                     symbol: symUpper,
                     name: item.name || cedearDef?.name || symUpper,
-                    market: item.market || (cedearDef ? 'BCBA' : 'US'),
-                    currency: cedearDef ? 'ARS' : 'USD',
-                    assetType: cedearDef ? 'CEDEAR' : 'STOCK',
+                    market: item.market || identity.market,
+                    currency: identity.currency,
+                    assetType: identity.assetType,
                     sector: cedearDef?.sector || null,
                     targetPrice: item.targetPrice || null,
                     personalStatus: item.personalStatus || 'RESEARCHING',

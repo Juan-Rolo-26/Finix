@@ -19,7 +19,7 @@ import {
     Minus,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import { formatFinancialAmount, financialNumber, isVisibleEarnings, normalizeEarnings } from '@finix/shared';
+import { formatFinancialAmount, financialNumber, isVisibleEarnings, normalizeEarnings, formatEconomicEventDescription } from '@finix/shared';
 import { useAuthStore, isProUser } from '@/stores/authStore';
 import { ProGate } from '@/components/ProGate';
 import { AssetLogoImg } from '@/components/TopGainersCard';
@@ -720,9 +720,9 @@ export default function CalendarPage() {
                                                               : event.country}
                                                     </span>
                                                     <h3>{event.title}</h3>
-                                                    {event.description && (
-                                                        <p>{event.description}</p>
-                                                    )}
+                                                    <p className="calendar-event-description">
+                                                        {formatEconomicEventDescription(event.title, event.description, event.country)}
+                                                    </p>
                                                 </div>
                                                 {(event.actualValue != null ||
                                                     (event.consensusValue ?? event.forecastValue) !=

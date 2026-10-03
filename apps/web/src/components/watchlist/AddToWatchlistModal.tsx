@@ -20,7 +20,12 @@ interface AddToWatchlistModalProps {
     onSuccess?: () => void;
 }
 
-export default function AddToWatchlistModal({
+export default function AddToWatchlistModal(props: AddToWatchlistModalProps) {
+    if (!props.isOpen) return null;
+    return <WatchlistMembershipForm key={props.symbol.trim().toUpperCase()} {...props} />;
+}
+
+function WatchlistMembershipForm({
     symbol,
     name,
     isOpen,
@@ -35,39 +40,46 @@ export default function AddToWatchlistModal({
     const [isCreatingList, setIsCreatingList] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+    const [error, setError] = useState<string | null>(null);
+
     const cleanSymbol = (symbol || '').trim().toUpperCase();
 
-    const fetchLists = async () => {
-        if (!user || !cleanSymbol) return;
+    useEffect(() => {
+        if (!isOpen || !user || !cleanSymbol) { setLoading(false); return; }
+        const controller = new AbortController();
         setLoading(true);
-        try {
-            const res = await apiFetch(`/watchlist/membership/${cleanSymbol}`);
-            if (res.ok) {
-                const data = await res.json();
-                setLists(data.lists || []);
-            }
-        } catch {
-            // best effort
-        } finally {
-            setLoading(false);
+        setSuccessMessage(null);
+        setError(null);
+        setLists([]);
+        apiFetch(`/watchlist/membership/${encodeURIComponent(cleanSymbol)}`, { signal: controller.signal })
+            .then(async response => {
+                if (!response.ok) throw new Error('No se pudieron cargar tus listas.');
+                const data = await response.json();
+                if (!controller.signal.aborted) setLists(data.lists || []);
+            })
+            .catch(error => { if (!controller.signal.aborted) setError(error.message || 'No se pudieron cargar tus listas.'); })
+            .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        return () => controller.abort();
+    }, [isOpen, cleanSymbol, user?.id]);
+
+    const requireSuccess = async (response: Response) => {
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(Array.isArray(data.message) ? data.message.join(' ') : data.message || 'No se pudo guardar el cambio.');
         }
     };
 
-    useEffect(() => {
-        if (isOpen && user) {
-            fetchLists();
-            setSuccessMessage(null);
-        }
-    }, [isOpen, cleanSymbol, user]);
-
     const handleToggleList = async (list: any) => {
         setSavingId(list.id);
+        setError(null);
+        setSuccessMessage(null);
         try {
             if (list.containsSymbol) {
                 // Quitar de la lista
                 const res = await apiFetch(`/watchlist/${list.id}/items/${list.itemId}`, {
                     method: 'DELETE',
                 });
+                await requireSuccess(res);
                 if (res.ok) {
                     setLists((prev) =>
                         prev.map((l) =>
@@ -87,6 +99,7 @@ export default function AddToWatchlistModal({
                         name: name || cleanSymbol,
                     }),
                 });
+                await requireSuccess(res);
                 if (res.ok) {
                     const newItem = await res.json();
                     setLists((prev) =>
@@ -98,8 +111,8 @@ export default function AddToWatchlistModal({
                     onSuccess?.();
                 }
             }
-        } catch {
-            // error
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'No se pudo guardar el cambio.');
         } finally {
             setSavingId(null);
             setTimeout(() => setSuccessMessage(null), 3000);
@@ -111,6 +124,8 @@ export default function AddToWatchlistModal({
         if (!newListName.trim()) return;
 
         setIsCreatingList(true);
+        setError(null);
+        setSuccessMessage(null);
         try {
             const res = await apiFetch('/watchlist', {
                 method: 'POST',
@@ -118,6 +133,7 @@ export default function AddToWatchlistModal({
                 body: JSON.stringify({ name: newListName.trim() }),
             });
 
+            await requireSuccess(res);
             if (res.ok) {
                 const newList = await res.json();
                 // Agregar el activo directamente a la lista recién creada
@@ -134,16 +150,18 @@ export default function AddToWatchlistModal({
                         id: newList.id,
                         name: newList.name,
                         color: newList.color,
-                        containsSymbol: true,
+                        containsSymbol: Boolean(newItem),
                         itemId: newItem?.id || null,
                     },
                 ]);
                 setNewListName('');
+                await requireSuccess(itemRes);
                 setSuccessMessage(`Creada lista "${newList.name}" y agregado ${cleanSymbol}`);
                 onSuccess?.();
             }
-        } catch {
-            // error
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'No se pudo crear la lista.');
+            onSuccess?.();
         } finally {
             setIsCreatingList(false);
             setTimeout(() => setSuccessMessage(null), 3000);
@@ -167,6 +185,7 @@ export default function AddToWatchlistModal({
                     </div>
                 </DialogHeader>
 
+                {error && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
                 {successMessage && (
                     <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 animate-in fade-in duration-200">
                         <Check className="h-4 w-4 shrink-0" />
@@ -199,7 +218,7 @@ export default function AddToWatchlistModal({
                                     <button
                                         key={list.id}
                                         type="button"
-                                        disabled={isSaving}
+                                        disabled={savingId !== null || isCreatingList}
                                         onClick={() => handleToggleList(list)}
                                         className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left ${list.containsSymbol
                                                 ? 'border-emerald-500/50 bg-emerald-500/10 dark:bg-emerald-500/15 text-foreground'

@@ -1,14 +1,11 @@
 import { useState, useMemo } from 'react';
+import { watchlistChartSymbol, watchlistPeriodChange, type WatchlistHistory, type WatchlistPricePoint } from './watchlistData';
 import SymbolLogo from '@/components/SymbolLogo';
 import {
     TrendingUp,
     TrendingDown,
     Target,
-    Newspaper,
-    DollarSign,
     Calendar,
-    Users,
-    Zap,
     ChevronRight,
     ArrowUpRight,
     ArrowDownRight,
@@ -19,9 +16,10 @@ import {
 interface WatchlistDashboardProps {
     items: any[];
     onItemClick: (item: any) => void;
+    histories: Record<string, WatchlistHistory>;
 }
 
-type EventCategory = 'news' | 'insider' | 'earnings' | 'dividends' | 'splits';
+type EventCategory = 'prices' | 'earnings';
 
 interface TimelineEvent {
     id: string;
@@ -36,121 +34,45 @@ interface TimelineEvent {
 }
 
 const CATEGORY_CONFIG: Record<EventCategory, { label: string; icon: React.FC<any>; color: string; bg: string }> = {
-    news: { label: 'Noticias', icon: Newspaper, color: 'text-sky-400', bg: 'bg-sky-500/15 border-sky-500/30' },
-    insider: { label: 'Trans. Insiders', icon: Users, color: 'text-violet-400', bg: 'bg-violet-500/15 border-violet-500/30' },
-    earnings: { label: 'Earnings Calls', icon: Calendar, color: 'text-amber-400', bg: 'bg-amber-500/15 border-amber-500/30' },
-    dividends: { label: 'Dividendos', icon: DollarSign, color: 'text-emerald-400', bg: 'bg-emerald-500/15 border-emerald-500/30' },
-    splits: { label: 'Stock Splits', icon: Zap, color: 'text-rose-400', bg: 'bg-rose-500/15 border-rose-500/30' },
+    prices: { label: 'Cotizaciones', icon: TrendingUp, color: 'text-sky-400', bg: 'bg-sky-500/15 border-sky-500/30' },
+    earnings: { label: 'Balances', icon: Calendar, color: 'text-amber-400', bg: 'bg-amber-500/15 border-amber-500/30' },
 };
 
 function generateTimelineEvents(items: any[]): TimelineEvent[] {
-    if (!items.length) return [];
     const events: TimelineEvent[] = [];
-    const today = new Date();
-    const dayGroupLabel = (daysAgo: number): string => {
-        if (daysAgo === 0) return 'Hoy';
-        if (daysAgo === 1) return 'Ayer';
-        return `Hace ${daysAgo} días`;
-    };
-    const fmt = (daysAgo: number): string => {
-        const d = new Date(today);
-        d.setDate(d.getDate() - daysAgo);
-        return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
-    };
-    items.forEach((item, idx) => {
-        if (item.nextEarnings?.date) {
-            events.push({
-                id: `earnings-${item.id}`,
-                category: 'earnings',
-                symbol: item.symbol,
-                title: `${item.symbol} reporta balances`,
-                date: item.nextEarnings.date,
-                dayGroup: idx < 2 ? dayGroupLabel(0) : dayGroupLabel(1),
-                description: `${item.name || item.symbol} publicará sus resultados trimestrales. Se esperan actualizaciones de guidance.`,
-                badge: 'Próx. balance',
-            });
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+    for (const item of items) {
+        const date = item.nextEarnings?.date;
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(Date.parse(date))) {
+            events.push({ id: `earnings-${item.id}`, category: 'earnings', symbol: item.symbol,
+                title: item.nextEarnings.title || `${item.symbol} reporta balances`, date,
+                dayGroup: date === today ? 'Hoy' : date, description: `Resultados de ${item.name || item.symbol}.`, badge: 'Próx. balance' });
         }
-        if (item.changePercent !== null && item.changePercent > 1.5) {
-            events.push({
-                id: `news-${item.id}`,
-                category: 'news',
-                symbol: item.symbol,
-                title: `${item.symbol} sube fuerte: Movimiento de precios`,
-                date: fmt(idx % 2),
-                dayGroup: dayGroupLabel(idx % 2),
-                description: `Las acciones de ${item.name || item.symbol} registraron un alza de ${item.changePercent.toFixed(2)}% en la última sesión, captando atención del mercado.`,
-                meta: `+${item.changePercent.toFixed(2)}%`,
-            });
+        if (!item.isUnavailable && Number.isFinite(item.changePercent) && typeof item.quoteUpdatedAt === 'string' && Number.isFinite(Date.parse(item.quoteUpdatedAt))) {
+            const date = new Date(item.quoteUpdatedAt).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+            events.push({ id: `price-${item.id}`, category: 'prices', symbol: item.symbol,
+                title: `Variación de ${item.symbol}`, date, dayGroup: date === today ? 'Hoy' : date,
+                description: `Última variación informada de ${item.name || item.symbol}.`, meta: `${item.changePercent > 0 ? '+' : ''}${item.changePercent.toFixed(2)}%` });
         }
-        if (item.changePercent !== null && item.changePercent < -1.5) {
-            events.push({
-                id: `news-neg-${item.id}`,
-                category: 'news',
-                symbol: item.symbol,
-                title: `${item.symbol} bajo presión: Caída en la sesión`,
-                date: fmt(0),
-                dayGroup: dayGroupLabel(0),
-                description: `${item.name || item.symbol} cedió ${Math.abs(item.changePercent).toFixed(2)}% ante el flujo vendedor. Los analistas monitorean soporte clave.`,
-                meta: `${item.changePercent.toFixed(2)}%`,
-            });
-        }
-        if (item.targetPrice && idx % 3 === 0) {
-            events.push({
-                id: `div-${item.id}`,
-                category: 'dividends',
-                symbol: item.symbol,
-                title: `${item.symbol} anuncia dividendo`,
-                date: fmt(1 + (idx % 3)),
-                dayGroup: dayGroupLabel(1 + (idx % 3)),
-                description: `El directorio aprobó el pago de dividendo. Fecha de corte y monto pendientes de confirmación por registro.`,
-                badge: 'Dividendo',
-            });
-        }
-        if (idx % 4 === 1) {
-            events.push({
-                id: `insider-${item.id}`,
-                category: 'insider',
-                symbol: item.symbol,
-                title: `Insider de ${item.symbol} compra acciones`,
-                date: fmt(2 + (idx % 2)),
-                dayGroup: dayGroupLabel(2 + (idx % 2)),
-                description: `Un ejecutivo senior incrementó su posición en ${item.name || item.symbol}, señal que el mercado monitorea como indicador de confianza.`,
-                meta: 'Compra directa',
-            });
-        }
-    });
-    const order: Record<string, number> = { 'Hoy': 0, 'Ayer': 1 };
-    events.sort((a, b) => {
-        const oa = order[a.dayGroup] ?? 99;
-        const ob = order[b.dayGroup] ?? 99;
-        return oa - ob;
-    });
-    return events;
+    }
+    return events.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-function Sparkline({ positive }: { positive: boolean }) {
-    const points = positive
-        ? [20, 15, 18, 10, 12, 6, 4, 2]
-        : [2, 5, 3, 8, 6, 12, 10, 16];
-    const max = Math.max(...points);
-    const min = Math.min(...points);
-    const h = 28, w = 64;
-    const coords = points.map((p, i) => {
-        const x = (i / (points.length - 1)) * w;
-        const y = h - ((p - min) / (max - min + 0.01)) * h;
-        return `${x},${y}`;
-    }).join(' ');
-    const color = positive ? '#10b981' : '#f43f5e';
-    return (
-        <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none">
-            <polyline points={coords} stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-        </svg>
-    );
+function Sparkline({ points, history }: { points: WatchlistPricePoint[]; history?: WatchlistHistory }) {
+    if (points.length < 2) return <span className="text-xs text-muted-foreground">{history?.loading ? 'Cargando…' : history?.error ? 'No disponible' : 'Sin historial'}</span>;
+    const prices = points.map(point => point.close);
+    const min = Math.min(...prices), max = Math.max(...prices);
+    const start = points[0].time, duration = points.at(-1)!.time - start;
+    const coords = points.map(point => `${((point.time - start) / duration) * 80},${max === min ? 14 : 28 - ((point.close - min) / (max - min)) * 28}`).join(' ');
+    const positive = prices.at(-1)! >= prices[0];
+    return <svg width={80} height={28} viewBox="0 0 80 28" fill="none" role="img" aria-label="Historial de precios del último mes">
+        <polyline points={coords} stroke={positive ? '#10b981' : '#f43f5e'} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>;
 }
 
-export default function WatchlistDashboard({ items, onItemClick }: WatchlistDashboardProps) {
+export default function WatchlistDashboard({ items, onItemClick, histories }: WatchlistDashboardProps) {
     const [activeCategories, setActiveCategories] = useState<Set<EventCategory>>(
-        new Set(['news', 'insider', 'earnings', 'dividends', 'splits'])
+        new Set(['prices', 'earnings'])
     );
     const [gainersTimeframe, setGainersTimeframe] = useState<'1D' | '1W' | '1M'>('1D');
     const [losersTimeframe, setLosersTimeframe] = useState<'1D' | '1W' | '1M'>('1D');
@@ -165,26 +87,26 @@ export default function WatchlistDashboard({ items, onItemClick }: WatchlistDash
 
     const opportunities = useMemo(() =>
         items
-            .filter(i => i.distancePct !== null && i.distancePct > 0)
+            .filter(i => !i.isUnavailable && Number.isFinite(i.currentPrice) && Number.isFinite(i.targetPrice) && (i.targetDirection === 'ABOVE' ? i.currentPrice > i.targetPrice : i.currentPrice < i.targetPrice))
             .sort((a, b) => (b.distancePct ?? 0) - (a.distancePct ?? 0))
             .slice(0, 4),
         [items]
     );
 
     const gainers = useMemo(() =>
-        [...items]
+        items.map(item => ({ ...item, changePercent: watchlistPeriodChange(item, histories[watchlistChartSymbol(item)]?.points || [], gainersTimeframe) }))
             .filter(i => i.changePercent !== null && i.changePercent > 0)
             .sort((a, b) => (b.changePercent ?? 0) - (a.changePercent ?? 0))
             .slice(0, 6),
-        [items]
+        [items, histories, gainersTimeframe]
     );
 
     const losers = useMemo(() =>
-        [...items]
+        items.map(item => ({ ...item, changePercent: watchlistPeriodChange(item, histories[watchlistChartSymbol(item)]?.points || [], losersTimeframe) }))
             .filter(i => i.changePercent !== null && i.changePercent < 0)
             .sort((a, b) => (a.changePercent ?? 0) - (b.changePercent ?? 0))
             .slice(0, 6),
-        [items]
+        [items, histories, losersTimeframe]
     );
 
     const maxGain = gainers[0]?.changePercent ?? 1;
@@ -220,8 +142,8 @@ export default function WatchlistDashboard({ items, onItemClick }: WatchlistDash
                             <Target className="w-4 h-4 text-emerald-400" />
                         </div>
                         <div>
-                            <h3 className="text-base font-bold text-foreground leading-none">Top Oportunidades</h3>
-                            <p className="text-xs text-muted-foreground mt-1">Listas para comprar según tu objetivo</p>
+                            <h3 className="text-base font-bold text-foreground leading-none">Objetivos alcanzados</h3>
+                            <p className="text-xs text-muted-foreground mt-1">Activos que alcanzaron tu condición de precio</p>
                         </div>
                     </div>
                     {opportunities.length === 0 ? (
@@ -247,7 +169,7 @@ export default function WatchlistDashboard({ items, onItemClick }: WatchlistDash
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-bold px-2 py-1 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                            +{item.distancePct.toFixed(1)}%
+                                            {item.distancePct > 0 ? '+' : ''}{item.distancePct.toFixed(1)}%
                                         </span>
                                         <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                                     </div>
@@ -281,7 +203,7 @@ export default function WatchlistDashboard({ items, onItemClick }: WatchlistDash
                     {gainers.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
                             <TrendingUp className="w-5 h-5 text-muted-foreground/50" />
-                            <p className="text-xs text-muted-foreground">Sin activos con variación positiva hoy</p>
+                            <p className="text-xs text-muted-foreground">Sin subas con datos para este período</p>
                         </div>
                     ) : (
                         <div className="flex items-end gap-2 h-24 px-1">
@@ -292,7 +214,7 @@ export default function WatchlistDashboard({ items, onItemClick }: WatchlistDash
                                     <button key={item.id} type="button" onClick={() => onItemClick(item)} className="flex-1 flex flex-col items-center gap-1 group">
                                         <span className="text-xs font-bold text-emerald-500">+{pct.toFixed(1)}%</span>
                                         <div className="w-full rounded-t bg-emerald-500/30 group-hover:bg-emerald-500/60 border-t-2 border-emerald-500 transition-all"
-                                            style={{ height: `${barH}%` }} />
+                                            style={{ height: `${barH * 0.8}px` }} />
                                         <SymbolLogo symbol={item.symbol} size={20} />
                                         <span className="text-xs font-bold text-muted-foreground font-mono">{item.symbol}</span>
                                     </button>
@@ -326,7 +248,7 @@ export default function WatchlistDashboard({ items, onItemClick }: WatchlistDash
                     {losers.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
                             <TrendingDown className="w-5 h-5 text-muted-foreground/50" />
-                            <p className="text-xs text-muted-foreground">Sin activos con variación negativa hoy</p>
+                            <p className="text-xs text-muted-foreground">Sin bajas con datos para este período</p>
                         </div>
                     ) : (
                         <div className="flex items-end gap-2 h-24 px-1">
@@ -338,7 +260,7 @@ export default function WatchlistDashboard({ items, onItemClick }: WatchlistDash
                                     <button key={item.id} type="button" onClick={() => onItemClick(item)} className="flex-1 flex flex-col items-center gap-1 group">
                                         <span className="text-xs font-bold text-rose-500">{pct.toFixed(1)}%</span>
                                         <div className="w-full rounded-t bg-rose-500/30 group-hover:bg-rose-500/60 border-t-2 border-rose-500 transition-all"
-                                            style={{ height: `${barH}%` }} />
+                                            style={{ height: `${barH * 0.8}px` }} />
                                         <SymbolLogo symbol={item.symbol} size={20} />
                                         <span className="text-xs font-bold text-muted-foreground font-mono">{item.symbol}</span>
                                     </button>
@@ -371,7 +293,6 @@ export default function WatchlistDashboard({ items, onItemClick }: WatchlistDash
                         </thead>
                         <tbody className="divide-y divide-border/30">
                             {items.map(item => {
-                                const positive = (item.changePercent ?? 0) >= 0;
                                 const dist = item.distancePct;
                                 const statusColors: Record<string, string> = {
                                     RESEARCHING: 'bg-sky-500/15 text-sky-500 border-sky-500/30',
@@ -402,7 +323,7 @@ export default function WatchlistDashboard({ items, onItemClick }: WatchlistDash
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3.5"><Sparkline positive={positive} /></td>
+                                        <td className="px-4 py-3.5"><Sparkline points={(histories[watchlistChartSymbol(item)]?.points || []).filter(point => point.time >= Date.now() / 1000 - 31 * 86400)} history={histories[watchlistChartSymbol(item)]} /></td>
                                         <td className="px-4 py-3.5 font-mono font-bold text-base text-foreground">
                                             {item.currentPrice != null
                                                 ? `$${item.currentPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -455,7 +376,7 @@ export default function WatchlistDashboard({ items, onItemClick }: WatchlistDash
                         <div className="w-8 h-8 rounded-xl bg-secondary flex items-center justify-center">
                             <Calendar className="w-4 h-4 text-muted-foreground" />
                         </div>
-                        <h3 className="text-base font-bold text-foreground">Watchlist Timeline</h3>
+                        <h3 className="text-base font-bold text-foreground">Actividad de tu lista</h3>
                         <span className="ml-auto text-xs px-2.5 py-1 rounded-full bg-secondary text-muted-foreground font-semibold">{filteredEvents.length} eventos</span>
                     </div>
                     {filteredEvents.length === 0 ? (

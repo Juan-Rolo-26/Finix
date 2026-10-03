@@ -111,3 +111,4 @@ export type CreateAssetDto = z.infer<typeof CreateAssetSchema>;
 export type CreateMovementDto = z.infer<typeof CreateMovementSchema>;
 
 export * from './financial-data';
+export * from './economic-descriptions';

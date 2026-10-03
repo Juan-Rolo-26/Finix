@@ -261,6 +261,18 @@
     font-size: 15px;
     color: hsl(var(--muted-foreground));
 }
+.calendar-event-description {
+    margin-top: 8px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: hsl(var(--muted-foreground));
+    display: -webkit-box;
+    -webkit-line-clamp: 7;
+    line-clamp: 7;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 .calendar-company {
     display: flex;
     align-items: center;

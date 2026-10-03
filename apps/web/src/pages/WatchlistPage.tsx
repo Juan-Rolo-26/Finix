@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiFetch } from '@/lib/api';
 import { useAuthStore, isProUser } from '@/stores/authStore';
@@ -42,6 +42,7 @@ import DeleteWatchlistModal from '@/components/watchlist/DeleteWatchlistModal';
 import ImportWatchlistModal from '@/components/watchlist/ImportWatchlistModal';
 import WatchlistDetailDrawer from '@/components/watchlist/WatchlistDetailDrawer';
 import WatchlistIdeasSection from '@/components/watchlist/WatchlistIdeasSection';
+import { useWatchlistHistory } from '@/components/watchlist/useWatchlistHistory';
 import WatchlistDashboard from '@/components/watchlist/WatchlistDashboard';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
@@ -109,65 +110,97 @@ export default function WatchlistPage() {
     const [bulkActionLoading, setBulkActionLoading] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const fetchWatchlists = async () => {
-        if (!user) return;
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [historyRevision, setHistoryRevision] = useState(0);
+    const activeListIdRef = useRef(activeListId);
+    useEffect(() => { activeListIdRef.current = activeListId; }, [activeListId]);
+    const detailController = useRef<AbortController | null>(null);
+    const listsController = useRef<AbortController | null>(null);
+    const histories = useWatchlistHistory(activeListDetail?.id === activeListId ? activeListDetail.items || [] : [], historyRevision);
+
+    useEffect(() => {
+        const requestedId = searchParams.get('list');
+        if (requestedId && watchlists.some(list => list.id === requestedId)) setActiveListId(requestedId);
+    }, [searchParams, watchlists]);
+
+    const fetchWatchlists = useCallback(async () => {
+        if (!user?.id) { setLoadingLists(false); return; }
+        listsController.current?.abort();
+        const controller = new AbortController();
+        listsController.current = controller;
         setLoadingLists(true);
         try {
-            const res = await apiFetch('/watchlist');
-            if (res.ok) {
-                const data = await res.json();
-                setWatchlists(data.watchlists || []);
-                if (data.watchlists?.length > 0) {
-                    const paramListId = searchParams.get('list');
-                    const found = data.watchlists.find((w: any) => w.id === paramListId);
-                    setActiveListId(found ? found.id : data.watchlists[0].id);
-                } else {
-                    setActiveListId(null);
-                    setActiveListDetail(null);
-                }
-            }
-        } catch {
-            // best effort
+            const res = await apiFetch('/watchlist', { signal: controller.signal });
+            if (!res.ok) throw new Error('No se pudieron cargar tus listas.');
+            const data = await res.json();
+            if (controller.signal.aborted) return;
+            const lists = data.watchlists || [];
+            setWatchlists(lists);
+            const preferred = activeListIdRef.current || new URLSearchParams(window.location.search).get('list');
+            const next = lists.find((list: any) => list.id === preferred)?.id || lists[0]?.id || null;
+            setActiveListId(next);
+            if (!next) setActiveListDetail(null);
+            setLoadError(null);
+        } catch (error) {
+            if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : 'No se pudieron cargar tus listas.');
         } finally {
-            setLoadingLists(false);
+            if (!controller.signal.aborted) setLoadingLists(false);
         }
-    };
+    }, [user?.id]);
 
     useEffect(() => {
-        fetchWatchlists();
-    }, [user]);
+        setWatchlists([]);
+        setActiveListDetail(null);
+        setActiveListId(null);
+        activeListIdRef.current = null;
+        setSelectedItemForDrawer(null);
+        void fetchWatchlists();
+        return () => { listsController.current?.abort(); detailController.current?.abort(); };
+    }, [user?.id, fetchWatchlists]);
 
-    const fetchListDetail = async (listId: string) => {
-        setLoadingDetail(true);
+    const fetchListDetail = useCallback(async (listId: string, showLoader = false) => {
+        if (!user?.id || activeListIdRef.current !== listId) return;
+        detailController.current?.abort();
+        const controller = new AbortController();
+        detailController.current = controller;
+        if (showLoader) setLoadingDetail(true);
         try {
-            const res = await apiFetch(`/watchlist/${listId}`);
-            if (res.ok) {
-                const data = await res.json();
-                setActiveListDetail(data);
-                if (selectedItemForDrawer) {
-                    const updated = data.items?.find((i: any) => i.id === selectedItemForDrawer.id);
-                    if (updated) setSelectedItemForDrawer(updated);
-                }
-            }
-        } catch {
-            // best effort
+            const res = await apiFetch(`/watchlist/${listId}`, { signal: controller.signal });
+            if (!res.ok) throw new Error('No se pudo actualizar la lista. Volvé a intentarlo.');
+            const data = await res.json();
+            if (controller.signal.aborted || activeListIdRef.current !== listId) return;
+            setActiveListDetail(data);
+            setSelectedItemForDrawer((previous: any) => previous ? data.items?.find((item: any) => item.id === previous.id) || null : null);
+            setSelectedItemIds(previous => previous.filter(id => data.items?.some((item: any) => item.id === id)));
+            setLoadError(null);
+        } catch (error) {
+            if (!controller.signal.aborted && activeListIdRef.current === listId) setLoadError(error instanceof Error ? error.message : 'No se pudo actualizar la lista.');
         } finally {
-            setLoadingDetail(false);
+            if (!controller.signal.aborted && activeListIdRef.current === listId) setLoadingDetail(false);
         }
-    };
+    }, [user?.id]);
 
     useEffect(() => {
-        if (activeListId) {
-            fetchListDetail(activeListId);
-            setSelectedItemIds([]);
-        }
-    }, [activeListId]);
+        setActiveListDetail(null);
+        setSelectedItemForDrawer(null);
+        setSelectedItemIds([]);
+        if (!activeListId) { setLoadingDetail(false); return; }
+        void fetchListDetail(activeListId, true);
+        const refresh = () => { if (document.visibilityState !== 'hidden') void fetchListDetail(activeListId); };
+        const timer = window.setInterval(refresh, 45000);
+        window.addEventListener('focus', refresh);
+        window.addEventListener('online', refresh);
+        document.addEventListener('visibilitychange', refresh);
+        return () => { detailController.current?.abort(); window.clearInterval(timer); window.removeEventListener('focus', refresh); window.removeEventListener('online', refresh); document.removeEventListener('visibilitychange', refresh); };
+    }, [activeListId, fetchListDetail]);
 
     const handleRefresh = async () => {
-        if (!activeListId) return;
         setIsRefreshing(true);
-        await fetchListDetail(activeListId);
-        setIsRefreshing(false);
+        try {
+            if (activeListId) await fetchListDetail(activeListId);
+            else await fetchWatchlists();
+            setHistoryRevision(previous => previous + 1);
+        } finally { setIsRefreshing(false); }
     };
 
     const handleDismissOnboarding = () => {
@@ -175,14 +208,23 @@ export default function WatchlistPage() {
         localStorage.setItem('finix_watchlist_onboarding_dismissed', 'true');
     };
 
-    const handleExport = (format: 'csv' | 'json') => {
+    const handleExport = async (format: 'csv' | 'json') => {
         if (!activeListId) return;
-        window.open(`/api/watchlist/${activeListId}/export?format=${format}`, '_blank');
+        try {
+            const res = await apiFetch(`/watchlist/${activeListId}/export?format=${format}`);
+            if (!res.ok) throw new Error('No se pudo exportar la lista.');
+            const url = URL.createObjectURL(await res.blob());
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `seguimiento.${format}`;
+            link.click();
+            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (error) { setLoadError(error instanceof Error ? error.message : 'No se pudo exportar la lista.'); }
     };
 
     const handleSelectAll = (checked: boolean) => {
         if (checked && activeListDetail?.items) {
-            setSelectedItemIds(activeListDetail.items.map((i: any) => i.id));
+            setSelectedItemIds(filteredItems.map((i: any) => i.id));
         } else {
             setSelectedItemIds([]);
         }
@@ -201,12 +243,14 @@ export default function WatchlistPage() {
         setBulkActionLoading(true);
         try {
             for (const itemId of selectedItemIds) {
-                await apiFetch(`/watchlist/${activeListId}/items/${itemId}`, { method: 'DELETE' });
+                const res = await apiFetch(`/watchlist/${activeListId}/items/${itemId}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('No se pudieron eliminar todos los activos seleccionados.');
             }
             setSelectedItemIds([]);
             fetchListDetail(activeListId);
-        } catch {
-            // best effort
+        } catch (error) {
+            await fetchListDetail(activeListId);
+            setLoadError(error instanceof Error ? error.message : 'No se pudo eliminar la selección.');
         } finally {
             setBulkActionLoading(false);
         }
@@ -237,7 +281,7 @@ export default function WatchlistPage() {
 
     // Stats rapidas
     const totalItems = activeListDetail?.items?.length ?? 0;
-    const gainersCount = activeListDetail?.items?.filter((i: any) => (i.changePercent ?? 0) >= 0).length ?? 0;
+    const gainersCount = activeListDetail?.items?.filter((i: any) => Number.isFinite(i.changePercent) && i.changePercent > 0).length ?? 0;
     const losersCount = totalItems - gainersCount;
     const withAlert = activeListDetail?.items?.filter((i: any) => i.hasActiveAlert).length ?? 0;
 
@@ -683,6 +727,9 @@ export default function WatchlistPage() {
                     </div>
                 )}
 
+                {loadError && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+                    <span>{loadError}</span><Button variant="outline" size="sm" onClick={handleRefresh}>Reintentar</Button>
+                </div>}
                 {/* CONTENIDO PRINCIPAL */}
                 {loadingDetail ? (
                     <div className="market-empty flex flex-col items-center justify-center gap-3">
@@ -709,6 +756,7 @@ export default function WatchlistPage() {
                     activeListDetail?.items?.length > 0 ? (
                         <WatchlistDashboard
                             items={activeListDetail.items}
+                            histories={histories}
                             onItemClick={setSelectedItemForDrawer}
                         />
                     ) : (
@@ -765,7 +813,7 @@ export default function WatchlistPage() {
                                         <th className="p-4 w-10">
                                             <input
                                                 type="checkbox"
-                                                checked={selectedItemIds.length > 0 && selectedItemIds.length === filteredItems.length}
+                                                checked={filteredItems.length > 0 && filteredItems.every((item: any) => selectedItemIds.includes(item.id))}
                                                 onChange={(e) => handleSelectAll(e.target.checked)}
                                                 className="rounded border-border/80 cursor-pointer w-4 h-4 accent-primary"
                                             />
@@ -827,7 +875,7 @@ export default function WatchlistPage() {
                                                 {/* Precio */}
                                                 <td className="p-4">
                                                     <span className="font-bold text-foreground text-base font-mono tabular-nums">
-                                                        {item.currentPrice !== null
+                                                        {Number.isFinite(item.currentPrice)
                                                             ? `$${item.currentPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                                             : <span className="text-sm text-muted-foreground font-normal">N/D</span>}
                                                     </span>
@@ -968,7 +1016,7 @@ export default function WatchlistPage() {
                                                 Precio actual
                                             </span>
                                             <span className="text-xl font-bold font-mono text-foreground tabular-nums">
-                                                {item.currentPrice !== null
+                                                {Number.isFinite(item.currentPrice)
                                                     ? `$${item.currentPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                                     : 'N/D'}
                                             </span>
@@ -1060,7 +1108,7 @@ export default function WatchlistPage() {
                 watchlist={editingList}
                 onSuccess={(saved) => {
                     fetchWatchlists();
-                    if (!editingList) setActiveListId(saved.id);
+                    if (!editingList) { setActiveListId(saved.id); setSearchParams({ list: saved.id }); }
                 }}
             />
 

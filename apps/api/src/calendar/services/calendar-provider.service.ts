@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { financialNumber, isCalendarDate, isVisibleEarnings, normalizeEarnings } from '@finix/shared';
+import { financialNumber, isCalendarDate, isVisibleEarnings, normalizeEarnings, formatEconomicEventDescription } from '@finix/shared';
 import {
     EconomicEventItem,
     EarningsEventItem,
@@ -225,7 +225,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                 affectedAssets: evaluation.affectedAssets,
                 externalId: item.id != null ? String(item.id) : undefined,
                 source: sourceName, sourceName, sourceUrl: item.sourceUrl || undefined,
-                description: item.description || undefined,
+                description: formatEconomicEventDescription(title, item.description, country),
                 sourceType: 'AUTOMATIC', isPublished: true,
             });
         }

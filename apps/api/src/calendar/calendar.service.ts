@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { financialNumber, isCalendarDate, isVisibleEarnings, normalizeEarnings, earningsSurprise } from '@finix/shared';
+import { financialNumber, isCalendarDate, isVisibleEarnings, normalizeEarnings, earningsSurprise, formatEconomicEventDescription } from '@finix/shared';
 import { PrismaService } from '../prisma.service';
 import {
     HomeCalendarResponse,
@@ -426,7 +426,7 @@ export class CalendarService {
             country: e.country,
             currency: e.currency || undefined,
             title: e.title,
-            description: isProUser ? (e.description || undefined) : undefined,
+            description: formatEconomicEventDescription(e.title, e.description, e.country),
             category: e.category,
             importance: e.importance as any,
             marketImpactScore: e.marketImpactScore,

@@ -1,3 +1,4 @@
+import { resolveMarketIdentity } from './market-symbol';
 import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { mkdir, readFile, writeFile, rename } from 'fs/promises';
@@ -2907,61 +2908,64 @@ export class MarketService {
         interval: string;
         candles: Array<{ time: number; open: number; high: number; low: number; close: number; volume?: number }>;
     }> {
-        const cleaned = (rawSymbol || 'AAPL')
-            .toUpperCase()
-            .replace(/^(NASDAQ|NYSE|AMEX|BCBA|BYMA|BINANCE|CRYPTO|INDEX):/, '')
-            .replace(/\.BA$/, '')
-            .trim();
-
-        const cacheKey = `${cleaned}:${interval}:${range}`;
+        const identity = resolveMarketIdentity(rawSymbol);
+        const cleaned = identity.symbol;
+        const normalizedInterval = interval === '1M' ? '1mo' : ({ D: '1d', W: '1wk', '15': '15m', '60': '1h', '240': '4h' }[interval] || interval.toLowerCase()).replace(/^1w$/, '1wk');
+        const allowedIntervals = ['1m', '2m', '5m', '15m', '30m', '60m', '1h', '4h', '1d', '5d', '1wk', '1mo'];
+        const allowedRanges = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max'];
+        if (!cleaned || !allowedIntervals.includes(normalizedInterval) || !allowedRanges.includes(range)) {
+            return { symbol: cleaned, interval, candles: [] };
+        }
+        const cacheKey = `${cleaned}:${normalizedInterval}:${range}`;
         const cached = this.candleCache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < 30000) {
+        if (cached && Date.now() - cached.timestamp < 60000) {
             return { symbol: cleaned, interval, candles: cached.data };
         }
-
         let candles: Array<{ time: number; open: number; high: number; low: number; close: number; volume?: number }> = [];
-
-        const isCrypto = /^(BTC|ETH|SOL|BNB|XRP|ADA|DOGE|AVAX|DOT|LINK|MATIC|NEAR|LTC|ATOM)(USDT|USD)?$/.test(cleaned) ||
-            cleaned.endsWith('USDT') || cleaned.endsWith('BTC');
+        const isCrypto = identity.crypto;
+        let usedYahoo = false;
 
         if (isCrypto) {
             try {
-                const pair = cleaned.endsWith('USDT') ? cleaned : `${cleaned.replace(/USD$/, '')}USDT`;
-                const binanceInterval = interval.toLowerCase().includes('h') ? '1h' : (interval.toLowerCase().includes('w') ? '1w' : '1d');
-                const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair}&interval=${binanceInterval}&limit=350`, {
-                    signal: AbortSignal.timeout(5000),
-                });
-                if (res.ok) {
+                const pair = identity.binancePair;
+                const binanceInterval = normalizedInterval === '1wk' ? '1w' : normalizedInterval === '1mo' ? '1M' : normalizedInterval === '60m' ? '1h' : normalizedInterval;
+                const now = Date.now();
+                const days: Record<string, number> = { '1d': 1, '5d': 5, '1mo': 31, '3mo': 93, '6mo': 186, '1y': 366, '2y': 732, '5y': 1830, '10y': 3660, max: 7300 };
+                let startTime = range === 'ytd' ? Date.UTC(new Date().getUTCFullYear(), 0, 1) : now - days[range] * 86400000;
+                for (let page = 0; page < 10 && startTime < now; page++) {
+                    const params = new URLSearchParams({ symbol: pair!, interval: binanceInterval, limit: '1000', startTime: String(startTime), endTime: String(now) });
+                    const res = await fetch(`https://api.binance.com/api/v3/klines?${params}`, { signal: AbortSignal.timeout(5000) });
+                    if (!res.ok) break;
                     const rawKlines = await res.json();
-                    if (Array.isArray(rawKlines)) {
-                        candles = rawKlines.map((k: any) => ({
-                            time: Math.floor(Number(k[0]) / 1000), // seconds
-                            open: parseFloat(k[1]),
-                            high: parseFloat(k[2]),
-                            low: parseFloat(k[3]),
-                            close: parseFloat(k[4]),
-                            volume: parseFloat(k[5]),
-                        })).filter(c => Number.isFinite(c.close) && c.close > 0);
-                    }
+                    if (!Array.isArray(rawKlines) || !rawKlines.length) break;
+                    candles.push(...rawKlines.map((k: any) => ({ time: Math.floor(Number(k[0]) / 1000), open: Number(k[1]), high: Number(k[2]), low: Number(k[3]), close: Number(k[4]), volume: Number(k[5]) })));
+                    const nextTime = Number(rawKlines.at(-1)?.[0]) + 1;
+                    if (!Number.isFinite(nextTime) || nextTime <= startTime || rawKlines.length < 1000) break;
+                    startTime = nextTime;
                 }
             } catch (err) {
                 console.warn(`[MarketService] Binance klines failed for ${cleaned}:`, (err as any)?.message);
             }
         }
 
-        if (candles.length === 0) {
+        if (candles.length === 0 && identity.yahooSymbol) {
+            usedYahoo = true;
             try {
-                const yahooInterval = interval.toLowerCase().includes('h') ? '1h' : (interval.toLowerCase().includes('w') ? '1wk' : '1d');
-                const yahooRange = range || '1y';
-                const ticker = cleaned.includes('-') ? cleaned : cleaned.replace(/\./g, '-');
-                const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${yahooInterval}&range=${yahooRange}`;
-                const res = await fetch(url, {
+                const yahooInterval = normalizedInterval === '4h' ? '1h' : normalizedInterval;
+                const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(identity.yahooSymbol!)}?interval=${yahooInterval}&range=${range}`;
+                const requestOptions = {
                     headers: {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                         'Accept': 'application/json',
                     },
                     signal: AbortSignal.timeout(6000),
-                });
+                };
+                let res = await fetch(url, requestOptions).catch(() => null);
+                if (!res || res.status === 429 || res.status >= 500) {
+                    res = await fetch(url.replace('query1.finance.yahoo.com', 'query2.finance.yahoo.com'), {
+                        ...requestOptions, signal: AbortSignal.timeout(6000),
+                    });
+                }
 
                 if (res.ok) {
                     const payload = await res.json();
@@ -2978,12 +2982,12 @@ export class MarketService {
                             const c = quotes.close?.[i];
                             const v = quotes.volume?.[i];
 
-                            if (t && Number.isFinite(c) && c > 0) {
+                            if (Number.isFinite(t) && [o, h, l, c].every(value => Number.isFinite(value) && value > 0)) {
                                 candles.push({
                                     time: t,
-                                    open: Number.isFinite(o) ? o : c,
-                                    high: Number.isFinite(h) ? h : c,
-                                    low: Number.isFinite(l) ? l : c,
+                                    open: o,
+                                    high: h,
+                                    low: l,
                                     close: c,
                                     volume: Number.isFinite(v) ? v : 0,
                                 });
@@ -2996,15 +3000,20 @@ export class MarketService {
             }
         }
 
-        // Never present generated prices as real market data.
-        if (candles.length === 0) {
-            return { symbol: cleaned, interval, candles: [] };
+        candles = candles.filter(candle => Number.isFinite(candle.time) && candle.time > 0 && candle.time <= Date.now() / 1000
+            && [candle.open, candle.high, candle.low, candle.close].every(value => Number.isFinite(value) && value > 0)
+            && candle.high >= Math.max(candle.open, candle.close, candle.low) && candle.low <= Math.min(candle.open, candle.close));
+        candles = [...new Map(candles.map(candle => [candle.time, candle])).values()].sort((a, b) => a.time - b.time);
+        if (usedYahoo && normalizedInterval === '4h') {
+            const aggregated = new Map<number, typeof candles[number]>();
+            for (const candle of candles) {
+                const time = Math.floor(candle.time / 14400) * 14400;
+                const prior = aggregated.get(time);
+                aggregated.set(time, prior ? { ...prior, high: Math.max(prior.high, candle.high), low: Math.min(prior.low, candle.low), close: candle.close, volume: (prior.volume || 0) + (candle.volume || 0) } : { ...candle, time });
+            }
+            candles = [...aggregated.values()];
         }
-
-        // Ordenar cronológicamente
-        candles.sort((a, b) => a.time - b.time);
-
-        // Guardar en caché
+        if (this.candleCache.size >= 500) this.candleCache.delete(this.candleCache.keys().next().value!);
         this.candleCache.set(cacheKey, { data: candles, timestamp: Date.now() });
 
         return {
