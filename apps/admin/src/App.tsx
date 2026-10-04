@@ -1,21 +1,21 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import UsersList from './pages/UsersList';
-import AdminLayout from './layouts/AdminLayout';
-import PostsList from './pages/PostsList';
-import ReportsList from './pages/ReportsList';
-import AuditLogs from './pages/AuditLogs';
-import NewsManagement from './pages/NewsManagement';
-import VerificationsManagement from './pages/VerificationsManagement';
-import Statistics from './pages/Statistics';
-import CommunitiesManagement from './pages/CommunitiesManagement';
-import ProUsersManagement from './pages/ProUsersManagement';
-import AnalysisManagement from './pages/AnalysisManagement';
-import MarketRankingsManagement from './pages/MarketRankingsManagement';
-import CalendarManagement from './pages/CalendarManagement';
-import EmailMarketing from './pages/EmailMarketing';
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const UsersList = lazy(() => import('./pages/UsersList'));
+const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
+const PostsList = lazy(() => import('./pages/PostsList'));
+const ReportsList = lazy(() => import('./pages/ReportsList'));
+const AuditLogs = lazy(() => import('./pages/AuditLogs'));
+const NewsManagement = lazy(() => import('./pages/NewsManagement'));
+const VerificationsManagement = lazy(() => import('./pages/VerificationsManagement'));
+const Statistics = lazy(() => import('./pages/Statistics'));
+const CommunitiesManagement = lazy(() => import('./pages/CommunitiesManagement'));
+const ProUsersManagement = lazy(() => import('./pages/ProUsersManagement'));
+const AnalysisManagement = lazy(() => import('./pages/AnalysisManagement'));
+const MarketRankingsManagement = lazy(() => import('./pages/MarketRankingsManagement'));
+const CalendarManagement = lazy(() => import('./pages/CalendarManagement'));
+const EmailMarketing = lazy(() => import('./pages/EmailMarketing'));
 import { adminFetch, readAdminErrorMessage } from './lib/api';
 
 const RequireAdminAuth = ({ children }: { children: JSX.Element }) => {
@@ -87,7 +87,7 @@ const RequireAdminAuth = ({ children }: { children: JSX.Element }) => {
 
 export default function App() {
     return (
-        <Routes>
+        <Suspense fallback={<div className="min-h-screen bg-[#09090b] grid place-items-center text-zinc-400" role="status">Cargando administración…</div>}><Routes>
             <Route path="/login" element={<Login />} />
 
             <Route element={<RequireAdminAuth><AdminLayout /></RequireAdminAuth>}>
@@ -110,6 +110,6 @@ export default function App() {
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
+        </Routes></Suspense>
     );
 }

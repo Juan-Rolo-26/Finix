@@ -1,0 +1,10 @@
+{
+  "checkedAtUTC": "2026-10-04T08:12:44Z",
+  "status": 200,
+  "elapsedMs": 434,
+  "data": {
+    "status": "ok",
+    "commit": "4a1625dbd101d9b4908cf5d58f3ece94ce44bbcd",
+    "environment": "production"
+  }
+}

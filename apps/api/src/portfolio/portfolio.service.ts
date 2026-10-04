@@ -1318,20 +1318,7 @@ export class PortfolioService {
         }
 
         if (filters?.ticker) {
-            const ticker = String(filters.ticker).trim().toUpperCase();
-            const assets = await this.prisma.asset.findMany({
-                where: {
-                    ticker: {
-                        contains: ticker,
-                    }
-                },
-                select: { id: true },
-            });
-            const assetIds = assets.map((asset) => asset.id);
-            if (assetIds.length === 0) {
-                return [];
-            }
-            where.assetId = { in: assetIds };
+            where.asset = { ticker: { contains: String(filters.ticker).trim().toUpperCase() } };
         }
 
         if (filters?.fechaDesde || filters?.fechaHasta) {
@@ -1340,18 +1327,22 @@ export class PortfolioService {
             if (filters.fechaHasta) where.date.lte = filters.fechaHasta;
         }
 
+        const limit = Math.min(100, Math.max(1, Math.floor(Number(filters?.limit) || 50)));
         const transactions = await this.prisma.transaction.findMany({
-            where,
-            include: { asset: true },
-            orderBy: { date: 'desc' },
+            where, include: { asset: true }, take: limit + 1,
+            orderBy: [{ date: 'desc' }, { id: 'desc' }],
+            ...(filters?.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
         });
-
-        return transactions.map((transaction) => this.toLegacyMovement(transaction));
+        const hasMore = transactions.length > limit;
+        const rows = transactions.slice(0, limit);
+        const movements = rows.map(transaction => this.toLegacyMovement(transaction));
+        return filters?.pagination ? { movements, hasMore, nextCursor: hasMore ? rows.at(-1)!.id : null } : movements;
     }
 
-    async getPublicPortfolioMovements(portfolioId: string) {
-        const portfolio = await this.getPublicPortfolioRecord(portfolioId, true);
-        return (portfolio.transactions ?? []).map((transaction) => this.toLegacyMovement(transaction));
+    async getPublicPortfolioMovements(portfolioId: string, filters?: any) {
+        // Validate public visibility on every page, without downloading the ledger.
+        const portfolio = await this.getPublicPortfolioRecord(portfolioId);
+        return this.getPortfolioMovements(portfolioId, portfolio.userId, filters);
     }
 
     // ==================== WATCHLISTS ====================

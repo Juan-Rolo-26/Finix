@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { lazy, Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore, isProUser } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
@@ -60,8 +60,8 @@ import { apiFetch } from "@/lib/api";
 import { useTranslation } from "@/i18n";
 import { cn } from "@/lib/utils";
 
-import { AddTransactionModal } from "@/components/portfolio/AddTransactionModal";
-import { PortfolioAdvancedMetrics } from "@/components/portfolio/AdvancedDiversification";
+const AddTransactionModal = lazy(() => import("@/components/portfolio/AddTransactionModal").then(module => ({ default: module.AddTransactionModal })));
+const PortfolioAdvancedMetrics = lazy(() => import("@/components/portfolio/AdvancedDiversification").then(module => ({ default: module.PortfolioAdvancedMetrics })));
 import { PortfolioDashboard } from "@/components/portfolio/dashboard/PortfolioDashboard";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { usePortfolioDetails } from "@/hooks/usePortfolioDetails";
@@ -648,7 +648,7 @@ const PortfolioPage = () => {
 
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
-  const { metrics, movements } = usePortfolioDetails<PortfolioMetrics, Movement>(selectedPortfolio);
+  const { metrics, movements, hasMoreMovements, loadMoreMovements, isLoadingMore, movementError } = usePortfolioDetails<PortfolioMetrics, Movement>(selectedPortfolio);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isInitialLoadRef = useRef(true);
@@ -968,10 +968,33 @@ const PortfolioPage = () => {
     [displayMovements, activityFilter]
   );
 
-  const exportMovementsCSV = () => {
-    if (!filteredMovements.length) return;
+  const exportController = useRef<AbortController | null>(null);
+  const [isExporting, setExporting] = useState(false);
+  useEffect(() => {
+    return () => { exportController.current?.abort(); exportController.current = null; };
+  }, [selectedPortfolio?.id]);
+  const exportMovementsCSV = async () => {
+    if (!selectedPortfolio || exportController.current) return;
+    const controller = new AbortController();
+    exportController.current = controller;
+    setExporting(true);
+    try {
+    const all: Movement[] = [];
+    let cursor: string | null = null;
+    const cursors = new Set<string>();
+    do {
+      const response = await apiFetch(`/portfolios/${selectedPortfolio.id}/movements?limit=100&pagination=true${activityFilter !== 'all' ? `&tipoMovimiento=${encodeURIComponent(activityFilter)}` : ''}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { signal: controller.signal });
+      if (!response.ok) throw new Error('No se pudo exportar el historial.');
+      const data = await response.json();
+      const batch: Movement[] = Array.isArray(data) ? data : data.movements ?? [];
+      all.push(...batch.map(mv => ({ ...mv, precio: mv.precio * conversionRate, total: mv.total * conversionRate })));
+      cursor = data.nextCursor ?? null;
+      if (cursor && cursors.has(cursor)) throw new Error('La paginación del historial no avanzó.');
+      if (cursor) cursors.add(cursor);
+    } while (cursor && !controller.signal.aborted);
+    if (controller.signal.aborted) return;
     const headers = ["Fecha", "Tipo", "Ticker", "Clase", "Cantidad", "Precio", "Total", "Moneda"];
-    const rows = filteredMovements.map(m => [
+    const rows = all.map(m => [
       `"${new Date(m.fecha).toLocaleDateString("es-AR")}"`,
       `"${m.tipoMovimiento}"`,
       `"${m.ticker}"`,
@@ -989,6 +1012,11 @@ const PortfolioPage = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    } catch (error) {
+      if (!controller.signal.aborted) setErrorMessage(error instanceof Error ? error.message : 'No se pudo exportar el historial.');
+    } finally {
+      if (exportController.current === controller) { exportController.current = null; setExporting(false); }
+    }
   };
 
   const handleShare = () => {
@@ -1485,7 +1513,8 @@ const PortfolioPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={exportMovementsCSV}
+                        onClick={() => void exportMovementsCSV()}
+                        disabled={isExporting}
                         title="Descargar historial de movimientos en CSV"
                         className="h-7.5 px-2.5 text-xs gap-1.5 rounded-lg ml-1 border-border/60 hover:border-primary/40 cursor-pointer shadow-2xs"
                       >
@@ -1496,6 +1525,7 @@ const PortfolioPage = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
+                  {movementError && <p role="alert" className="text-sm text-destructive">{movementError}</p>}
                   {filteredMovements.length === 0 ? (
                     <div className="flex flex-col items-center py-10 text-center gap-2">
                       <BarChart3 className="w-8 h-8 text-muted-foreground/40" />
@@ -1503,12 +1533,12 @@ const PortfolioPage = () => {
                     </div>
                   ) : (
                     <div className="space-y-0.5">
-                      {filteredMovements.slice(0, 12).map((mv) => (
+                      {filteredMovements.map((mv) => (
                         <MovementRow key={mv.id} movement={mv} currency={currency} />
                       ))}
-                      {filteredMovements.length > 12 && (
-                        <button className="w-full flex items-center justify-center gap-1.5 py-3 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                          Ver más <ChevronRight className="w-3.5 h-3.5" />
+                      {hasMoreMovements && (
+                        <button onClick={() => void loadMoreMovements()} disabled={isLoadingMore} className="w-full flex items-center justify-center gap-1.5 py-3 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50">
+                          {isLoadingMore ? "Cargando…" : "Ver más"} <ChevronRight className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
@@ -1659,7 +1689,7 @@ const PortfolioPage = () => {
                   className="overflow-hidden"
                 >
                   <ErrorBoundary fallbackTitle="Análisis de diversificación temporalmente inaccesible">
-                    <PortfolioAdvancedMetrics metrics={displayMetrics} assets={displayPortfolio.assets} currency={currency} />
+                    <Suspense fallback={<div className="h-64 animate-pulse bg-muted/30" role="status" aria-label="Cargando métricas" />}><PortfolioAdvancedMetrics metrics={displayMetrics} assets={displayPortfolio.assets} currency={currency} /></Suspense>
                   </ErrorBoundary>
                 </motion.div>
               )}
@@ -1668,8 +1698,8 @@ const PortfolioPage = () => {
         )}
 
         {/* ── AddTransaction Modal ─────────────────────────────────────────────── */}
-        {displayPortfolio && (
-          <AddTransactionModal
+        {displayPortfolio && addAssetOpen && (
+          <Suspense fallback={null}><AddTransactionModal
             open={addAssetOpen}
             onOpenChange={setAddAssetOpen}
             portfolioId={displayPortfolio.id}
@@ -1677,7 +1707,7 @@ const PortfolioPage = () => {
             initialSymbol={modalInitialSymbol}
             portfolioAssets={displayPortfolio.assets}
             onSuccess={() => { void loadPortfolios(displayPortfolio.id); notifyPortfolioUpdate(displayPortfolio.id); }}
-          />
+          /></Suspense>
         )}
         </div>
       </ErrorBoundary>

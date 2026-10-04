@@ -1,3 +1,4 @@
+import { TtlCache } from '../common/ttl-cache';
 /**
  * portfolio-performance.service.ts
  *
@@ -512,9 +513,16 @@ export class PortfolioPerformanceService {
 
     // ── 2. Performance series ───────────────────────────────────────────────────
 
+    private readonly performanceRequests = new TtlCache<any>(50);
     async getPerformance(portfolioId: string, userId: string, range = '1M', currency = 'USD') {
         await this.assertOwner(portfolioId, userId);
+        // Share simultaneous metrics/benchmark work only. Authorization is checked
+        // for every caller and no completed private valuation is kept after a write.
+        return this.performanceRequests.getOrLoad(JSON.stringify([portfolioId, userId, range, currency]), 0,
+            () => this.loadPerformance(portfolioId, range, currency));
+    }
 
+    private async loadPerformance(portfolioId: string, range: string, currency: string) {
         const portfolio = await this.prisma.portfolio.findUnique({
             where: { id: portfolioId },
             include: {

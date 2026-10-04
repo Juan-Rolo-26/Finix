@@ -174,7 +174,7 @@ export default function ResetPassword() {
                     {/* Header */}
                     <div className="flex flex-col items-center text-center gap-3">
                         <Link to="/" className="flex items-center gap-2 mb-1 group">
-                            <img src="/logo.png" alt="Finix" className="h-10 w-10 object-contain drop-shadow-[0_0_12px_rgba(34,197,94,0.4)] transition-transform group-hover:scale-105" />
+                            <img src="/logo-small.webp" alt="Finix" className="h-10 w-10 object-contain drop-shadow-[0_0_12px_rgba(34,197,94,0.4)] transition-transform group-hover:scale-105" />
                             <span className="text-xl font-heading font-extrabold text-foreground tracking-tight">Finix</span>
                         </Link>
 

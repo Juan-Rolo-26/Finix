@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuthStore, isProUser } from '@/stores/authStore';
 import { ProGate } from '@/components/ProGate';
@@ -31,16 +31,16 @@ import {
 } from '@/components/ui/dialog';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import TradingViewChart from '@/components/TradingViewChart';
+const TradingViewChart = lazy(() => import('@/components/TradingViewChart'));
 import { MarketChartHeader } from '@/components/markets/MarketChartHeader';
 import MarketDashboard, {
     type MarketDashboardData,
 } from '@/components/markets/MarketDashboard';
-import PreMarketSection from '@/components/markets/PreMarketSection';
-import MarketHeatmap from '@/components/markets/MarketHeatmap';
-import ValueCreationHeatmap from '@/components/markets/ValueCreationHeatmap';
-import OpportunityScreener from '@/components/markets/OpportunityScreener';
-import AssetFundamentalPanel from '@/components/markets/AssetFundamentalPanel';
+const PreMarketSection = lazy(() => import('@/components/markets/PreMarketSection'));
+const MarketHeatmap = lazy(() => import('@/components/markets/MarketHeatmap'));
+const ValueCreationHeatmap = lazy(() => import('@/components/markets/ValueCreationHeatmap'));
+const OpportunityScreener = lazy(() => import('@/components/markets/OpportunityScreener'));
+const AssetFundamentalPanel = lazy(() => import('@/components/markets/AssetFundamentalPanel'));
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import { useTranslation } from '@/i18n';
 
@@ -262,6 +262,13 @@ export default function Markets() {
                     },
                 );
                 const data = res.ok ? await res.json() : null;
+                if (data && (!data.pulse || !data.sections
+                    || !Array.isArray(data.dollars) || !Array.isArray(data.community)
+                    || !Array.isArray(data.leaders?.gainers) || !Array.isArray(data.leaders?.losers)
+                    || !['argentina', 'global', 'crypto', 'commodities', 'indicators']
+                        .every(section => Array.isArray(data.sections[section])))) {
+                    throw new Error('El tablero de mercado recibió una respuesta incompleta.');
+                }
 
                 if (!controller.signal.aborted && !disposed) {
                     setDashboardData(data);
@@ -376,7 +383,7 @@ export default function Markets() {
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="overview" className="space-y-4">
+                    <Suspense fallback={<div className="market-section min-h-[320px] animate-pulse bg-muted/30" role="status" aria-label="Cargando sección de mercado" />}><TabsContent value="overview" className="space-y-4">
                         <MarketDashboard
                             data={dashboardData}
                             loading={isDashboardLoading}
@@ -540,7 +547,7 @@ export default function Markets() {
                                 />
                             </div>
                         )}
-                    </TabsContent>
+                    </TabsContent></Suspense>
                 </Tabs>
             </div>
         </div>

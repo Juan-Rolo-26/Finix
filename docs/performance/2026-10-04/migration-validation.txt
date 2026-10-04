@@ -1,0 +1,27 @@
+Prisma schema loaded from ../../../tmp/finix-performance/migration-validation/schema.prisma
+Datasource "db": PostgreSQL database "finix_perf_migrations", schema "public" at "127.0.0.1:55439"
+
+3 migrations found in prisma/migrations
+
+Applying migration `00000000000000_baseline`
+Applying migration `20261004010000_public_ranking_index`
+Applying migration `20261004010100_incoming_follows_index`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 00000000000000_baseline/
+    └─ migration.sql
+  └─ 20261004010000_public_ranking_index/
+    └─ migration.sql
+  └─ 20261004010100_incoming_follows_index/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+Prisma schema loaded from ../../../tmp/finix-performance/migration-validation/schema.prisma
+Datasource "db": PostgreSQL database "finix_perf_migrations", schema "public" at "127.0.0.1:55439"
+
+3 migrations found in prisma/migrations
+
+
+No pending migrations to apply.

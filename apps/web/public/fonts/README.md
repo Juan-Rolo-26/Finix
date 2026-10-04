@@ -1,0 +1,1 @@
+Inter variable Latin, downloaded from Google Fonts on 2026-10-04. Normal and italic weights 100–900, optical size 14–32. SIL OFL 1.1: see OFL-Inter.txt. Filenames include a content SHA-256 prefix for immutable caching. Regenerate both CSS and preload when updating fonts.

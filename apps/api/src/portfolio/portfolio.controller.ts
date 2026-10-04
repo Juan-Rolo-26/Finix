@@ -99,8 +99,8 @@ export class PortfolioController {
     }
 
     @Get('public/portfolio/:id/movements')
-    async getPublicPortfolioMovements(@Param('id') id: string) {
-        return this.portfolioService.getPublicPortfolioMovements(id);
+    async getPublicPortfolioMovements(@Param('id') id: string, @Query('limit') limit?: string, @Query('cursor') cursor?: string, @Query('pagination') pagination?: string) {
+        return this.portfolioService.getPublicPortfolioMovements(id, { limit, cursor, pagination: pagination === 'true' });
     }
 
     @UseGuards(JwtAuthGuard)
@@ -199,9 +199,12 @@ export class PortfolioController {
         @Query('ticker') ticker?: string,
         @Query('fechaDesde') fechaDesde?: string,
         @Query('fechaHasta') fechaHasta?: string,
+        @Query('limit') limit?: string,
+        @Query('cursor') cursor?: string,
+        @Query('pagination') pagination?: string,
     ) {
         const userId = this.resolveUserId(req);
-        const filters = {
+        const filters = { limit, cursor, pagination: pagination === 'true',
             tipoMovimiento,
             ticker,
             fechaDesde: fechaDesde ? new Date(fechaDesde) : undefined,

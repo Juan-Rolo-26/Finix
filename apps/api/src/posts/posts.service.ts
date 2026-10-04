@@ -4,6 +4,7 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
+import { TtlCache } from '../common/ttl-cache';
 import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma.service';
@@ -113,7 +114,7 @@ function enrichComment(comment: any, userId: string | undefined, repliesByParent
 
 @Injectable()
 export class PostsService {
-    private feedCache = new Map<string, { data: any; timestamp: number }>();
+    private feedCache = new TtlCache<any>(300);
     private readonly FEED_CACHE_TTL = 15000; // 15s
 
     public clearFeedCache() {
@@ -344,82 +345,74 @@ export class PostsService {
         },
     ) {
         const cacheKey = `${userId || 'anon'}:${opts.sort || 'general'}:${opts.limit || 20}:${opts.cursor || ''}:${opts.type || ''}`;
-        const cached = this.feedCache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < this.FEED_CACHE_TTL) {
-            return cached.data;
-        }
+        return this.feedCache.getOrLoad(cacheKey, this.FEED_CACHE_TTL, async () => {
+            const limit = Math.min(50, Math.max(1, Math.floor(Number(opts.limit) || 20)));
+            const sort = opts.sort ?? 'general';
 
-        const limit = Math.min(opts.limit ?? 20, 50);
-        const sort = opts.sort ?? 'general';
-
-        let followingIds: string[] = [];
-        if (sort === 'following' && userId) {
-            const follows = await this.prisma.follow.findMany({
-                where: { followerId: userId },
-                select: { followingId: true },
-            });
-            followingIds = follows.map((f) => f.followingId);
-        }
-
-        const where: any = { parentId: null, visibility: 'VISIBLE', deletedAt: null }; // Main feed shows only top-level posts initially
-        if (sort === 'following') {
-            where.authorId = { in: followingIds };
-        } else if (sort === 'finix_oficial') {
-            // Keep the legacy username visible while the official account uses
-            // the public handle @finixarg.
-            where.author = { username: { in: ['finixarg', 'finix_oficial'] } };
-        }
-        if (opts.type) {
-            const t = opts.type.toLowerCase().trim();
-            if (t === 'post') {
-                where.type = { in: ['post', 'opinion', 'analysis', 'education', 'news', 'question'] };
-            } else if (t === 'chart') {
-                where.OR = [
-                    { type: 'chart' },
-                    { assetSymbol: { not: null } },
-                    { tickers: { not: '' } },
-                ];
-            } else if (t === 'image') {
-                where.OR = [
-                    { type: 'image' },
-                    { media: { some: { mediaType: 'image' } } },
-                ];
-            } else if (t === 'reel') {
-                where.OR = [
-                    { type: 'reel' },
-                    { media: { some: { mediaType: 'video' } } },
-                ];
-            } else {
-                where.type = opts.type;
+            const where: any = { parentId: null, communityId: null, visibility: 'VISIBLE', deletedAt: null }; // Community posts have their own permission-checked feed.
+            if (sort === 'following') {
+                where.author = userId ? { followedBy: { some: { followerId: userId } } } : { id: '__anonymous__' };
+            } else if (sort === 'finix_oficial') {
+                // Keep the legacy username visible while the official account uses
+                // the public handle @finixarg.
+                where.author = { username: { in: ['finixarg', 'finix_oficial'] } };
             }
-        }
+            if (opts.type) {
+                const t = opts.type.toLowerCase().trim();
+                if (t === 'post') {
+                    where.type = { in: ['post', 'opinion', 'analysis', 'education', 'news', 'question'] };
+                } else if (t === 'chart') {
+                    where.OR = [
+                        { type: 'chart' },
+                        { assetSymbol: { not: null } },
+                        { tickers: { not: '' } },
+                    ];
+                } else if (t === 'image') {
+                    where.OR = [
+                        { type: 'image' },
+                        { media: { some: { mediaType: 'image' } } },
+                    ];
+                } else if (t === 'reel') {
+                    where.OR = [
+                        { type: 'reel' },
+                        { media: { some: { mediaType: 'video' } } },
+                    ];
+                } else {
+                    where.type = opts.type;
+                }
+            }
 
-        const orderBy: any =
-            sort === 'popular' || sort === 'trending'
-                ? [{ likes: { _count: 'desc' } }, { createdAt: 'desc' }]
-                : { createdAt: 'desc' };
+            const orderBy: any =
+                sort === 'popular' || sort === 'trending'
+                    ? [{ likes: { _count: 'desc' } }, { createdAt: 'desc' }, { id: 'desc' }]
+                    : [{ createdAt: 'desc' }, { id: 'desc' }];
 
-        const posts = await this.prisma.post.findMany({
-            where,
-            take: limit + 1,
-            ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
-            orderBy,
-            include: POST_INCLUDE(userId),
+            const posts = await this.prisma.post.findMany({
+                where,
+                take: limit + 1,
+                ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
+                orderBy,
+                include: {
+                    ...POST_INCLUDE(userId),
+                    // Frozen drawing JSON belongs to the detail/editor, not a feed card.
+                    chartAnalysisVersion: { select: { id: true, analysisId: true, versionNumber: true, createdAt: true,
+                        analysis: { select: { id: true, title: true, symbol: true, exchange: true, timeframe: true, userId: true } },
+                    } },
+                },
+            });
+
+            const hasMore = posts.length > limit;
+            const items = hasMore ? posts.slice(0, limit) : posts;
+            const nextCursor = hasMore ? items[items.length - 1].id : null;
+
+            const result = {
+                posts: items.map((p) => enrichPost(p, userId)),
+                nextCursor,
+                hasMore,
+            };
+
+            return result;
         });
-
-        const hasMore = posts.length > limit;
-        const items = hasMore ? posts.slice(0, limit) : posts;
-        const nextCursor = hasMore ? items[items.length - 1].id : null;
-
-        const result = {
-            posts: items.map((p) => enrichPost(p, userId)),
-            nextCursor,
-            hasMore,
-        };
-
-        this.feedCache.set(cacheKey, { data: result, timestamp: Date.now() });
-
-        return result;
     }
 
     // ── GET ONE ───────────────────────────────────────────────────────────────

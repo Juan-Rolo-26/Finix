@@ -1,0 +1,91 @@
+Web production build
+dist/assets/generateCategoricalChart-8hUGM2CI.js   374.35 kB │ gzip: 103.58 kB
+✓ built in 15.65s
+
+API production build
+> nest build
+
+
+Admin production build
+dist/assets/index-VyQPobxx.js                     175.42 kB │ gzip: 57.76 kB
+✓ built in 3.57s
+
+Node tests (68/68)
+  type: 'test'
+  ...
+1..68
+# tests 68
+# suites 0
+# pass 68
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7952.490682
+
+Financial integration/ledger (21/21)
+  type: 'test'
+  ...
+1..9
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15625.455751
+
+Performance hooks/browser and logout
+{"cursorPages":true,"accountIsolation":true,"abortedRequestsDoNotRetry":true,"sharedCounters":true,"hiddenTabsIdle":true,"initialFailureRetry":true,"revokedDataCleared":true,"cleanup":true,"logoutDuringProviderOutage":true}
+
+Free/paid access browser
+Browser checks passed: free prices, paused checkout, basic-account access, paid-mode restoration, no runtime errors.
+
+News category coverage browser
+News browser checks passed: all 15 categories, 5 cards each, race protection, automatic refresh, outage retention, focus/online, empty recovery, mobile and cleanup.
+
+News images/mobile browser
+News browser checks passed: all five layouts load a photo on desktop and mobile, including missing/broken images and an unavailable image provider.
+
+Watchlist and charts browser
+{"realSparklines":true,"weeklyMonthlyReturns":true,"allAssetCharts":true,"refreshPreservesDrafts":true,"correctMarketRoute":true,"authenticatedExport":true,"lateResponsesIgnored":true,"outageRecovery":true,"mobile":true,"addErrorsVisible":true}
+
+Portfolio benchmark browser
+Portfolio benchmark: ranges, refresh, operations, cash-only history, failure recovery, zero return index and stale responses verified.
+
+Portfolio summary browser
+Portfolio summary and page: real allocations, monthly returns, larger typography, privacy, operations, auto refresh, outages, stale requests and mobile widths verified.
+
+Calendar auto refresh browser
+Calendar browser checks passed: timer refresh, Monday rollover, selected week, focus, online, outage recovery, valid earnings, partial reports, statement currency, empty statements and cleanup.
+
+Calendar Spanish browser
+Spanish calendar browser checks passed: raw and localized API data, complete titles/descriptions, source labels, mobile, values and home preview.
+
+Admin routes and session guard
+PASS: admin dashboard, lazy email/users routes, 401 login redirect and 403 denial, no runtime errors or sends.
+
+Prisma schema
+Prisma schema loaded from apps/api/prisma/schema.prisma
+The schema at apps/api/prisma/schema.prisma is valid 🚀
+
+Nginx production-validation.log
+nginx: the configuration file /tmp/finix-performance/nginx/nginx.conf syntax is ok
+nginx: configuration file /tmp/finix-performance/nginx/nginx.conf test is successful
+
+
+Nginx docker-validation.log
+nginx: the configuration file /tmp/finix-performance/nginx/docker-nginx.conf syntax is ok
+nginx: configuration file /tmp/finix-performance/nginx/docker-nginx.conf test is successful
+
+
+React Doctor: full selected-file scan 39 -> 56, 27 -> 1 diagnostics marked error. Remaining shared-listener cleanup is implemented and verified by browser unmount test; not suppressed.
+Production deployment and migration: NOT RUN. Runtime of currently deployed baseline verified production.
+Old email-editor.browser.cjs: fails at obsolete button label; focused current admin routes test passes.
+
+Final web build after route recovery/prefetch corrections: PASS
+Production navigation: 7 routes cold/warm, Sidebar hidden-frame count 39 before / 0 after; no unexpected render errors.
+Recovery probe: malformed market response stays local; catalog render failure clears on moving to portfolio: PASS
+Final targeted React Doctor: 3 selected files, 83 points, 8 warnings, 0 errors.
+Production news-demo interception: disabled; browser proves legacy /news reads reach its backend fixture.

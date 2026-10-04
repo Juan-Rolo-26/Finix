@@ -1,3 +1,5 @@
+import { useCursorFeed } from '@/hooks/useCursorFeed';
+import { useAuthStore } from '@/stores/authStore';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { formatCurrency } from '../lib/utils';
@@ -164,28 +166,6 @@ function SideCard({ title, icon, iconColor, iconBg, to, toLabel, children, index
     );
 }
 
-/* ── Feed Memory Cache for Instant Loading ──────────────────────── */
-const feedMemoryCache: Record<string, any[]> = {};
-
-function getCachedFeed(tab: string) {
-    if (feedMemoryCache[tab] && feedMemoryCache[tab].length > 0) {
-        return feedMemoryCache[tab];
-    }
-    if (typeof window !== 'undefined') {
-        try {
-            const raw = sessionStorage.getItem(`finix_cached_feed_${tab}`);
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    feedMemoryCache[tab] = parsed;
-                    return parsed;
-                }
-            }
-        } catch {}
-    }
-    return [];
-}
-
 /* ── Dynamic News Headlines Card ────────────────────────────────── */
 interface HeadlineItem {
     id: string;
@@ -317,15 +297,9 @@ export default function Dashboard() {
     const [isHeadlinesLoading, setIsHeadlinesLoading] = useState<boolean>(true);
 
     const [activeTab, setActiveTab] = useState<FeedTab>('general');
-    const [posts, setPosts] = useState<any[]>(() => getCachedFeed('general'));
-    const [isFeedLoading, setIsFeedLoading] = useState<boolean>(() => getCachedFeed('general').length === 0);
-
-    // Map UI tabs to backend sort values
-    const tabToSort: Record<FeedTab, string> = {
-        general: 'general',
-        following: 'following',
-        finix_oficial: 'finix_oficial',
-    };
+    const owner = useAuthStore(state => state.user?.id);
+    const feed = useCursorFeed(owner, activeTab);
+    const { posts, isLoading: isFeedLoading } = feed;
 
     const fetchTopGainers = () => {
         setIsGainersLoading(true);
@@ -390,41 +364,6 @@ export default function Dashboard() {
         fetchHeadlines();
     }, []);
 
-    // Fetch posts when tab changes with instant cache and background revalidation
-    useEffect(() => {
-        let isMounted = true;
-        const sort = tabToSort[activeTab];
-        const cached = getCachedFeed(activeTab);
-
-        if (cached.length > 0) {
-            setPosts(cached);
-            setIsFeedLoading(false);
-        } else {
-            setPosts([]);
-            setIsFeedLoading(true);
-        }
-
-        apiFetch(`/posts/feed?sort=${sort}&limit=20`)
-            .then(r => r.json())
-            .then(data => {
-                if (!isMounted) return;
-                const list = Array.isArray(data) ? data : (data?.posts ?? []);
-                setPosts(list);
-                feedMemoryCache[activeTab] = list;
-                try {
-                    sessionStorage.setItem(`finix_cached_feed_${activeTab}`, JSON.stringify(list));
-                } catch {}
-            })
-            .catch(() => {
-                if (!isMounted) return;
-                if (cached.length === 0) setPosts([]);
-            })
-            .finally(() => {
-                if (isMounted) setIsFeedLoading(false);
-            });
-
-        return () => { isMounted = false; };
-    }, [activeTab]);
 
 
     return (
@@ -442,7 +381,7 @@ export default function Dashboard() {
 
                     {/* Top stories */}
                     <ErrorBoundary fallbackTitle="Historias no disponibles temporalmente">
-                        <StoriesRail />
+                        <StoriesRail key={owner || "anon"} />
                     </ErrorBoundary>
 
                     {/* Main Feed Container */}
@@ -463,26 +402,17 @@ export default function Dashboard() {
                                 <ErrorBoundary
                                     fallbackTitle="Error al cargar el feed de publicaciones"
                                     fallbackMessage="Ocurrió un error inesperado al mostrar las publicaciones. Podés reintentar para restablecer la vista."
-                                    onReset={() => {
-                                        try {
-                                            sessionStorage.removeItem(`finix_cached_feed_${activeTab}`);
-                                            feedMemoryCache[activeTab] = [];
-                                        } catch {}
-                                        window.location.reload();
-                                    }}
+                                    onReset={() => window.location.reload()}
                                 >
                                     <SocialFeed
                                         initialPosts={posts}
                                         isLoading={isFeedLoading}
-                                        onPostCreated={(newPost) => {
-                                            const next = [newPost, ...posts];
-                                            setPosts(next);
-                                            feedMemoryCache[activeTab] = next;
-                                            try {
-                                                sessionStorage.setItem(`finix_cached_feed_${activeTab}`, JSON.stringify(next));
-                                            } catch {}
-                                        }}
+                                        onPostCreated={feed.prepend}
                                     />
+                                    <div ref={feed.sentinel} className="flex justify-center py-4">
+                                        {feed.error && <span role="alert" className="text-sm text-destructive mr-3">{feed.error}</span>}
+                                        {(feed.hasMore || feed.error) && <button type="button" disabled={feed.isLoadingMore} onClick={() => feed.error && !feed.hasMore ? feed.retry() : void feed.loadMore()} className="text-sm font-semibold text-primary disabled:opacity-50">{feed.isLoadingMore ? 'Cargando…' : feed.error ? 'Reintentar' : 'Cargar más publicaciones'}</button>}
+                                    </div>
                                 </ErrorBoundary>
                             </motion.div>
                         </AnimatePresence>

@@ -106,6 +106,7 @@ export class MercadoPagoService {
     async cancelPreapproval(preapprovalId: string) {
         if (!this.isConfigured()) throw new BadRequestException('Mercado Pago no está configurado.');
         const response = await fetch(`https://api.mercadopago.com/preapproval/${encodeURIComponent(preapprovalId)}`, {
+            signal: AbortSignal.timeout(15000),
             method: 'PUT',
             headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'cancelled' }),
@@ -155,6 +156,7 @@ export class MercadoPagoService {
             });
             try {
                 const response = await fetch('https://api.mercadopago.com/preapproval', {
+                    signal: AbortSignal.timeout(15000),
                     method: 'POST',
                     headers: {
                         Authorization: `Bearer ${this.accessToken}`,
@@ -239,6 +241,7 @@ export class MercadoPagoService {
 
         try {
             const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+                signal: AbortSignal.timeout(15000),
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${this.accessToken}`,
@@ -289,7 +292,7 @@ export class MercadoPagoService {
             auto_return: 'approved',
             notification_url: this.notificationUrl,
         };
-        const response = await fetch('https://api.mercadopago.com/checkout/preferences', { method: 'POST', headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const response = await fetch('https://api.mercadopago.com/checkout/preferences', { signal: AbortSignal.timeout(15000), method: 'POST', headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (!response.ok) throw new BadRequestException('Mercado Pago no pudo crear el checkout de la comunidad.');
         const data = await response.json();
         const checkoutUrl = this.environment === 'sandbox'
@@ -338,6 +341,7 @@ export class MercadoPagoService {
     private async processPreapproval(preapprovalId: string) {
         if (!this.isConfigured()) return;
         const response = await fetch(`https://api.mercadopago.com/preapproval/${encodeURIComponent(preapprovalId)}`, {
+            signal: AbortSignal.timeout(15000),
             headers: { Authorization: `Bearer ${this.accessToken}` },
         });
         if (!response.ok) {
@@ -376,6 +380,7 @@ export class MercadoPagoService {
 
         try {
             const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+                signal: AbortSignal.timeout(15000),
                 headers: {
                     Authorization: `Bearer ${this.accessToken}`,
                 },
@@ -604,6 +609,7 @@ export class MercadoPagoService {
 
         try {
             const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+                signal: AbortSignal.timeout(15000),
                 headers: {
                     Authorization: `Bearer ${this.accessToken}`,
                 },

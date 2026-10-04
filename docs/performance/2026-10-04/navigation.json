@@ -1,0 +1,216 @@
+{
+  "conditions": "Desktop1365x900, same synthetic API, catalog empty, market provider503; 7 routes cold then warm; shell times include deliberate200ms stabilization. RAF samples detect whether the persistent Sidebar is hidden; no field-data latency claim.",
+  "before": {
+    "conditions": "Production SPA, same local synthetic API and desktop viewport. shellMs includes a deliberate 200ms stabilization wait; measures shell/error/empty state, not complete financial data.",
+    "results": [
+      {
+        "phase": "coldCode",
+        "path": "/market",
+        "hiddenFrames": 9,
+        "shellMs": 298.96144900000013,
+        "heading": "Resumen\nPre-Market\nMapa de Calor\nGr\u00e1fico\nCreaci\u00f3n de valor\nOportunidades\n\nNo pudimos cargar las cotizaciones."
+      },
+      {
+        "phase": "coldCode",
+        "path": "/portfolio",
+        "hiddenFrames": 8,
+        "shellMs": 242.58313899999985,
+        "heading": "Mi Portfolio\n\nVALOR TOTAL\n\nUS$\u00a00,00\nVisible\nCompartir\nActualizar\nCrear Portfolio\nCre\u00e1 tu portfolio\n\nConfigur\u00e1 tu portfolio principal para empezar a organizar y "
+      },
+      {
+        "phase": "coldCode",
+        "path": "/news",
+        "hiddenFrames": 2,
+        "shellMs": 224.69667200000004,
+        "heading": "Noticias\n\nInformaci\u00f3n financiera curada por nuestro equipo editorial\n\nActualizar"
+      },
+      {
+        "phase": "coldCode",
+        "path": "/analysis",
+        "hiddenFrames": 4,
+        "shellMs": 228.4346959999998,
+        "heading": "FINIX PRO RESEARCH\nAn\u00e1lisis Profundo de Acciones\n\nInformes cuantitativos y fundamentales estructurados por nuestro equipo de analistas.\n\nNUEVA HERRAMIENTA FUNDA"
+      },
+      {
+        "phase": "coldCode",
+        "path": "/calendario",
+        "hiddenFrames": 6,
+        "shellMs": 225.10222699999986,
+        "heading": "AGENDA \u00b7 FINIX\nCalendario de mercado\nEconom\u00eda, balances de EE. UU. y dividendos del S&P 500.\nHora local: UTC\nSemana actual\nGeneral\nBalances\nDividendos\nTodos\nEst"
+      },
+      {
+        "phase": "coldCode",
+        "path": "/comunidades",
+        "hiddenFrames": 8,
+        "shellMs": 222.97754799999984,
+        "heading": "Comunidades\n\nAprend\u00e9, compart\u00ed y conectate con inversores que piensan como vos.\n\nCrear comunidad\nTodo\nAcciones\nCripto\nBonos\nFinanzas\nMacro\nTrading\nEducaci\u00f3n\nTec"
+      },
+      {
+        "phase": "coldCode",
+        "path": "/market/seguimiento",
+        "hiddenFrames": 2,
+        "shellMs": 221.43995099999984,
+        "heading": "PORTAFOLIO & MERCADOS \u00b7 FINIX\nSeguimiento\nOrganiz\u00e1 y monitore\u00e1 activos bajo tus propias condiciones y alertas\nIdeas para explorar\nImportar\nExportar\nNueva lista\n"
+      },
+      {
+        "phase": "warmCode",
+        "path": "/market",
+        "hiddenFrames": 0,
+        "shellMs": 230.904673,
+        "heading": "Resumen\nPre-Market\nMapa de Calor\nGr\u00e1fico\nCreaci\u00f3n de valor\nOportunidades\n\nNo pudimos cargar las cotizaciones."
+      },
+      {
+        "phase": "warmCode",
+        "path": "/portfolio",
+        "hiddenFrames": 0,
+        "shellMs": 282.03383699999995,
+        "heading": "Mi Portfolio\n\nVALOR TOTAL\n\nUS$\u00a00,00\nVisible\nCompartir\nActualizar\nCrear Portfolio\nCre\u00e1 tu portfolio\n\nConfigur\u00e1 tu portfolio principal para empezar a organizar y "
+      },
+      {
+        "phase": "warmCode",
+        "path": "/news",
+        "hiddenFrames": 0,
+        "shellMs": 222.8372949999998,
+        "heading": "Noticias\n\nInformaci\u00f3n financiera curada por nuestro equipo editorial\n\nActualizar"
+      },
+      {
+        "phase": "warmCode",
+        "path": "/analysis",
+        "hiddenFrames": 0,
+        "shellMs": 227.41145700000015,
+        "heading": "FINIX PRO RESEARCH\nAn\u00e1lisis Profundo de Acciones\n\nInformes cuantitativos y fundamentales estructurados por nuestro equipo de analistas.\n\nNUEVA HERRAMIENTA FUNDA"
+      },
+      {
+        "phase": "warmCode",
+        "path": "/calendario",
+        "hiddenFrames": 0,
+        "shellMs": 229.85536700000011,
+        "heading": "AGENDA \u00b7 FINIX\nCalendario de mercado\nEconom\u00eda, balances de EE. UU. y dividendos del S&P 500.\nHora local: UTC\nSemana actual\nGeneral\nBalances\nDividendos\nTodos\nEst"
+      },
+      {
+        "phase": "warmCode",
+        "path": "/comunidades",
+        "hiddenFrames": 0,
+        "shellMs": 232.09281699999974,
+        "heading": "Comunidades\n\nAprend\u00e9, compart\u00ed y conectate con inversores que piensan como vos.\n\nCrear comunidad\nTodo\nAcciones\nCripto\nBonos\nFinanzas\nMacro\nTrading\nEducaci\u00f3n\nTec"
+      },
+      {
+        "phase": "warmCode",
+        "path": "/market/seguimiento",
+        "hiddenFrames": 0,
+        "shellMs": 258.4015929999996,
+        "heading": "PORTAFOLIO & MERCADOS \u00b7 FINIX\nSeguimiento\nOrganiz\u00e1 y monitore\u00e1 activos bajo tus propias condiciones y alertas\nIdeas para explorar\nImportar\nExportar\nNueva lista\n"
+      }
+    ],
+    "errors": []
+  },
+  "after": {
+    "conditions": "Production SPA, same local synthetic API and desktop viewport. shellMs includes a deliberate 200ms stabilization wait; measures shell/error/empty state, not complete financial data.",
+    "results": [
+      {
+        "phase": "coldCode",
+        "path": "/market",
+        "hiddenFrames": 0,
+        "shellMs": 377.909437,
+        "heading": "Resumen\nPre-Market\nMapa de Calor\nGr\u00e1fico\nCreaci\u00f3n de valor\nOportunidades\n\nNo pudimos cargar las cotizaciones."
+      },
+      {
+        "phase": "coldCode",
+        "path": "/portfolio",
+        "hiddenFrames": 0,
+        "shellMs": 400.50893099999985,
+        "heading": "Mi Portfolio\n\nVALOR TOTAL\n\nUS$\u00a00,00\nVisible\nCompartir\nActualizar\nCrear Portfolio\nCre\u00e1 tu portfolio\n\nConfigur\u00e1 tu portfolio principal para empezar a organizar y "
+      },
+      {
+        "phase": "coldCode",
+        "path": "/news",
+        "hiddenFrames": 0,
+        "shellMs": 238.91740099999993,
+        "heading": "Noticias\n\nInformaci\u00f3n financiera curada por nuestro equipo editorial\n\nActualizar"
+      },
+      {
+        "phase": "coldCode",
+        "path": "/analysis",
+        "hiddenFrames": 0,
+        "shellMs": 258.9392929999999,
+        "heading": "FINIX PRO RESEARCH\nAn\u00e1lisis Profundo de Acciones\n\nInformes cuantitativos y fundamentales estructurados por nuestro equipo de analistas.\n\nNUEVA HERRAMIENTA FUNDA"
+      },
+      {
+        "phase": "coldCode",
+        "path": "/calendario",
+        "hiddenFrames": 0,
+        "shellMs": 243.7944809999999,
+        "heading": "AGENDA \u00b7 FINIX\nCalendario de mercado\nEconom\u00eda, balances de EE. UU. y dividendos del S&P 500.\nHora local: UTC\nSemana actual\nGeneral\nBalances\nDividendos\nTodos\nEst"
+      },
+      {
+        "phase": "coldCode",
+        "path": "/comunidades",
+        "hiddenFrames": 0,
+        "shellMs": 247.71285400000033,
+        "heading": "Comunidades\n\nAprend\u00e9, compart\u00ed y conectate con inversores que piensan como vos.\n\nCrear comunidad\nTodo\nAcciones\nCripto\nBonos\nFinanzas\nMacro\nTrading\nEducaci\u00f3n\nTec"
+      },
+      {
+        "phase": "coldCode",
+        "path": "/market/seguimiento",
+        "hiddenFrames": 0,
+        "shellMs": 242.70266100000026,
+        "heading": "PORTAFOLIO & MERCADOS \u00b7 FINIX\nSeguimiento\nOrganiz\u00e1 y monitore\u00e1 activos bajo tus propias condiciones y alertas\nIdeas para explorar\nImportar\nExportar\nNueva lista\n"
+      },
+      {
+        "phase": "warmCode",
+        "path": "/market",
+        "hiddenFrames": 0,
+        "shellMs": 232.3674249999999,
+        "heading": "Resumen\nPre-Market\nMapa de Calor\nGr\u00e1fico\nCreaci\u00f3n de valor\nOportunidades\n\nNo pudimos cargar las cotizaciones."
+      },
+      {
+        "phase": "warmCode",
+        "path": "/portfolio",
+        "hiddenFrames": 0,
+        "shellMs": 275.23360900000034,
+        "heading": "Mi Portfolio\n\nVALOR TOTAL\n\nUS$\u00a00,00\nVisible\nCompartir\nActualizar\nCrear Portfolio\nCre\u00e1 tu portfolio\n\nConfigur\u00e1 tu portfolio principal para empezar a organizar y "
+      },
+      {
+        "phase": "warmCode",
+        "path": "/news",
+        "hiddenFrames": 0,
+        "shellMs": 223.89163599999983,
+        "heading": "Noticias\n\nInformaci\u00f3n financiera curada por nuestro equipo editorial\n\nActualizar"
+      },
+      {
+        "phase": "warmCode",
+        "path": "/analysis",
+        "hiddenFrames": 0,
+        "shellMs": 222.99769399999968,
+        "heading": "FINIX PRO RESEARCH\nAn\u00e1lisis Profundo de Acciones\n\nInformes cuantitativos y fundamentales estructurados por nuestro equipo de analistas.\n\nNUEVA HERRAMIENTA FUNDA"
+      },
+      {
+        "phase": "warmCode",
+        "path": "/calendario",
+        "hiddenFrames": 0,
+        "shellMs": 230.08022100000017,
+        "heading": "AGENDA \u00b7 FINIX\nCalendario de mercado\nEconom\u00eda, balances de EE. UU. y dividendos del S&P 500.\nHora local: UTC\nSemana actual\nGeneral\nBalances\nDividendos\nTodos\nEst"
+      },
+      {
+        "phase": "warmCode",
+        "path": "/comunidades",
+        "hiddenFrames": 0,
+        "shellMs": 231.56515299999955,
+        "heading": "Comunidades\n\nAprend\u00e9, compart\u00ed y conectate con inversores que piensan como vos.\n\nCrear comunidad\nTodo\nAcciones\nCripto\nBonos\nFinanzas\nMacro\nTrading\nEducaci\u00f3n\nTec"
+      },
+      {
+        "phase": "warmCode",
+        "path": "/market/seguimiento",
+        "hiddenFrames": 0,
+        "shellMs": 248.1002870000002,
+        "heading": "PORTAFOLIO & MERCADOS \u00b7 FINIX\nSeguimiento\nOrganiz\u00e1 y monitore\u00e1 activos bajo tus propias condiciones y alertas\nIdeas para explorar\nImportar\nExportar\nNueva lista\n"
+      }
+    ],
+    "errors": []
+  },
+  "recoveryVerification": {
+    "malformedMarketResponse": true,
+    "routeResetAfterCatalogFailure": true,
+    "uncaughtErrors": []
+  }
+}

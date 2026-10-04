@@ -150,7 +150,7 @@ export default function InstallBanner() {
                 >
                     <div className="relative shrink-0 w-10 h-10 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center shadow-xs">
                         <img
-                            src="/logo.png"
+                            src="/logo-small.webp"
                             alt="Finix"
                             className="w-6 h-6 object-contain"
                             onError={(e) => {

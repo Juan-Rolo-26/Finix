@@ -76,54 +76,38 @@ export class CommunitiesService {
         };
     }
 
-    private async enrichWithMembership(community: any, userId?: string) {
-        if (!userId) {
-            return {
-                ...community,
-                isMember: false,
-                membership: null,
-                tierLevel: 0,
-                canManage: false,
-                canModerate: false,
-                isOwner: false,
+    private async enrichMemberships(communities: any[], userId?: string, actor?: any) {
+        if (!communities.length) return [];
+        const user = actor ?? (userId ? await this.prisma.user.findUnique({
+            where: { id: userId }, select: { role: true },
+        }) : null);
+        const admin = this.permissions.isPlatformAdmin(user);
+        const memberIds = userId && !admin
+            ? communities.filter(c => c.creatorId !== userId).map(c => c.id) : [];
+        const memberships = memberIds.length ? await this.prisma.communityMember.findMany({
+            where: { userId, communityId: { in: memberIds } }, include: { plan: true },
+        }) : [];
+        const byCommunity = new Map(memberships.map(m => [m.communityId, m]));
+        return communities.map(community => {
+            const isOwner = Boolean(userId && community.creatorId === userId);
+            if (userId && (isOwner || admin)) return {
+                ...community, isMember: true, membership: { role: isOwner ? 'OWNER' : 'ADMIN' },
+                tierLevel: 999, canManage: true, canModerate: true, isOwner,
             };
-        }
-
-        const isOwner = community.creatorId === userId;
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { role: true },
-        });
-        const isPlatformAdmin = this.permissions.isPlatformAdmin(user);
-
-        if (isOwner || isPlatformAdmin) {
+            const membership = byCommunity.get(community.id) ?? null;
+            const active = Boolean(userId && this.isMembershipActive(membership));
+            const role = active ? membership?.role : null;
             return {
-                ...community,
-                isMember: true,
-                membership: { role: isOwner ? 'OWNER' : 'ADMIN' },
-                tierLevel: 999,
-                canManage: true,
-                canModerate: true,
-                isOwner,
+                ...community, isMember: active, membership,
+                tierLevel: active ? (isFreeAccessEnabled() ? Number.MAX_SAFE_INTEGER : membership?.plan?.tierLevel ?? 0) : 0,
+                canManage: role === 'OWNER' || role === 'ADMIN',
+                canModerate: role === 'OWNER' || role === 'ADMIN' || role === 'MODERATOR', isOwner: false,
             };
-        }
-
-        const membership = await this.prisma.communityMember.findUnique({
-            where: { communityId_userId: { communityId: community.id, userId } },
-            include: { plan: true },
         });
-        const active = this.isMembershipActive(membership);
-        const role = active ? (membership?.role || 'MEMBER') : null;
+    }
 
-        return {
-            ...community,
-            isMember: active,
-            membership,
-            tierLevel: active ? (isFreeAccessEnabled() ? Number.MAX_SAFE_INTEGER : membership?.plan?.tierLevel ?? 0) : 0,
-            canManage: role === 'OWNER' || role === 'ADMIN',
-            canModerate: role === 'OWNER' || role === 'ADMIN' || role === 'MODERATOR',
-            isOwner: false,
-        };
+    private async enrichWithMembership(community: any, userId?: string, actor?: any) {
+        return (await this.enrichMemberships([community], userId, actor))[0];
     }
 
     // ─── Discovery ────────────────────────────────────────────────────────────
@@ -132,7 +116,7 @@ export class CommunitiesService {
         if (!userId) {
             throw new ForbiddenException('Debes tener una suscripción PRO activa para acceder a Comunidades.');
         }
-        await this.permissions.assertCanViewCommunities(userId);
+        const actor = await this.permissions.assertCanViewCommunities(userId);
 
         const {
             category,
@@ -145,7 +129,7 @@ export class CommunitiesService {
         } = query;
 
         const effectiveLimit = Math.min(Math.max(Number(limit) || 20, 1), 50);
-        const effectiveOffset = offset ? Number(offset) : (Math.max(Number(page) || 1, 1) - 1) * effectiveLimit;
+        const effectiveOffset = Math.max(0, Math.floor(offset ? Number(offset) || 0 : (Math.max(Number(page) || 1, 1) - 1) * effectiveLimit));
 
         const where: Prisma.CommunityWhereInput = {
             status: 'PUBLISHED',
@@ -184,29 +168,19 @@ export class CommunitiesService {
             orderBy = [{ isFeatured: 'desc' }, { popularityScore: 'desc' }];
         }
 
-        const [communities, total] = await Promise.all([
-            this.prisma.community.findMany({
-                where,
-                orderBy,
-                take: effectiveLimit,
-                skip: effectiveOffset,
-                include: this.communityInclude(userId),
-            }),
-            this.prisma.community.count({ where }),
-        ]);
-
-        const enriched = await Promise.all(
-            communities.map(c => this.enrichWithMembership(c, userId))
-        );
-
-        return enriched;
+        const communities = await this.prisma.community.findMany({
+            where, orderBy, take: effectiveLimit, skip: effectiveOffset,
+            include: this.communityInclude(userId),
+        });
+        // The API returns an array; a count that nobody consumes adds a round trip.
+        return this.enrichMemberships(communities, userId, actor);
     }
 
     async findOne(idOrSlug: string, userId?: string) {
         if (!userId) {
             throw new ForbiddenException('Debes tener una suscripción PRO activa para acceder a Comunidades.');
         }
-        await this.permissions.assertCanViewCommunities(userId);
+        const actor = await this.permissions.assertCanViewCommunities(userId);
 
         // Try finding by ID first, then by slug
         const community = await this.prisma.community.findFirst({
@@ -220,19 +194,19 @@ export class CommunitiesService {
         });
 
         if (!community) throw new NotFoundException('Comunidad no encontrada');
-        return this.enrichWithMembership(community, userId);
+        return this.enrichWithMembership(community, userId, actor);
     }
 
     // ─── My Communities ───────────────────────────────────────────────────────
 
     async getMyCommunities(userId: string) {
-        await this.permissions.assertCanViewCommunities(userId);
+        const actor = await this.permissions.assertCanViewCommunities(userId);
         const communities = await this.prisma.community.findMany({
             where: { creatorId: userId },
             include: this.communityInclude(userId),
             orderBy: { createdAt: 'desc' },
         });
-        return Promise.all(communities.map(c => this.enrichWithMembership(c, userId)));
+        return this.enrichMemberships(communities, userId, actor);
     }
 
     async getJoinedCommunities(userId: string) {

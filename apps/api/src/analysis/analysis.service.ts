@@ -176,6 +176,7 @@ export class AnalysisService {
         for (const endpoint of endpoints) {
             try {
                 const res = await fetch(endpoint, {
+                    signal: AbortSignal.timeout(6000),
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

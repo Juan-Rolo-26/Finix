@@ -197,12 +197,16 @@ export class NewsSyncService {
         await this.prepareDefaults();
         if (this.running) return;
         const categories = await this.prisma.newsCategory.findMany({ where: { isActive: true } });
-        const incomplete: string[] = [];
-        for (const category of categories) {
-            await this.slotsService.fillEmptySlots(category.id, category.slug);
-            const empty = await this.prisma.newsSlot.count({ where: { categoryId: category.id, isActive: true, articleId: null } });
-            if (empty) incomplete.push(category.id);
-        }
+        const emptyGroups = await this.prisma.newsSlot.groupBy({
+            by: ['categoryId'], where: { isActive: true, articleId: null }, _count: { _all: true },
+        });
+        const emptyIds = new Set(emptyGroups.map(group => group.categoryId));
+        const sparse = categories.filter(category => emptyIds.has(category.id));
+        for (const category of sparse) await this.slotsService.fillEmptySlots(category.id, category.slug);
+        const remaining = sparse.length ? await this.prisma.newsSlot.groupBy({
+            by: ['categoryId'], where: { categoryId: { in: sparse.map(category => category.id) }, isActive: true, articleId: null }, _count: { _all: true },
+        }) : [];
+        const incomplete = remaining.map(group => group.categoryId);
         if (incomplete.length) await this.syncFrequency('MANUAL', incomplete);
     }
 
@@ -292,6 +296,7 @@ export class NewsSyncService {
             return await this.performSyncFrequency(frequency, categoryIds, sourceId);
         } finally {
             this.running = false;
+            this.slotsService.invalidatePublicCache();
         }
     }
 

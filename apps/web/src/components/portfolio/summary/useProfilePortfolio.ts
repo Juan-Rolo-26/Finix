@@ -41,7 +41,7 @@ export function useProfilePortfolio(userId: string, own: boolean, visible: boole
                 if (chosen) {
                     const [metricsResponse, movementsResponse] = await Promise.all([
                         apiFetch(`${prefix}/${chosen.id}/metrics`, { signal: controller.signal, cache: 'no-store' }),
-                        apiFetch(`${prefix}/${chosen.id}/movements`, { signal: controller.signal, cache: 'no-store' }),
+                        apiFetch(`${prefix}/${chosen.id}/movements?limit=6`, { signal: controller.signal, cache: 'no-store' }),
                     ]);
                     if (!metricsResponse.ok || !movementsResponse.ok) throw new Error(String(!metricsResponse.ok ? metricsResponse.status : movementsResponse.status));
                     metrics = await metricsResponse.json();

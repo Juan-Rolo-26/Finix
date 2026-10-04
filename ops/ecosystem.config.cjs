@@ -14,8 +14,11 @@ module.exports = {
             cwd: path.join(rootDir, 'apps/api'),
 
             // ── Instances ────────────────────────────────────────────────────
-            instances: 2,        // 2 workers — adjust based on CPU cores
-            exec_mode: 'cluster',
+            // Socket.IO rooms, caches and scheduled jobs are process-local. Running
+            // multiple workers currently duplicates jobs and can lose broadcasts.
+            // Enable a shared adapter/job locking before enabling cluster mode.
+            instances: 1,
+            exec_mode: 'fork',
 
             // ── Env ──────────────────────────────────────────────────────────
             env_production: {

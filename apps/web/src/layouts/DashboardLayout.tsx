@@ -1,11 +1,13 @@
+import { prefetchRoute } from '@/lib/routePrefetch';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { BottomNav, FinanceMobileNav } from '../components/BottomNav';
 import { MobileTopBar } from '../components/MobileTopBar';
-import { GlobalSearch } from '../components/GlobalSearch';
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { usePreferencesStore } from '../stores/preferencesStore';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+
+const GlobalSearch = lazy(() => import('../components/GlobalSearch').then(module => ({ default: module.GlobalSearch })));
 
 export default function DashboardLayout() {
     const location = useLocation();
@@ -34,7 +36,13 @@ export default function DashboardLayout() {
     }, []);
 
     return (
-        <div className="min-h-screen w-full max-w-[100vw] overflow-x-clip bg-background text-foreground flex">
+        <div onPointerOver={event => {
+            const link = (event.target as Element).closest<HTMLAnchorElement>('a[href]');
+            if (link?.origin === window.location.origin) prefetchRoute(link.pathname);
+        }} onFocus={event => {
+            const link = (event.target as Element).closest<HTMLAnchorElement>('a[href]');
+            if (link?.origin === window.location.origin) prefetchRoute(link.pathname);
+        }} className="min-h-screen w-full max-w-[100vw] overflow-x-clip bg-background text-foreground flex">
             {/* Sidebar — desktop only */}
             <Sidebar />
 
@@ -58,12 +66,9 @@ export default function DashboardLayout() {
                 <div className="hidden lg:block flex-shrink-0" style={{ width: 0, minWidth: collapsed ? '72px' : '276px', display: 'none' }} />
                 <main
                     className={`flex-1 min-w-0 flex flex-col w-full max-w-full overflow-x-clip ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-[276px]'}`}
-                    style={{
-                        transition: 'padding-left 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
-                    }}
                 >
-                    <ErrorBoundary fallbackTitle="Error al cargar la página" fallbackMessage="Ocurrió un error inesperado al renderizar esta sección. Podés reintentar para recargar los datos.">
-                        <Outlet />
+                    <ErrorBoundary key={location.pathname} fallbackTitle="Error al cargar la página" fallbackMessage="Ocurrió un error inesperado al renderizar esta sección. Podés reintentar para recargar los datos.">
+                        <Suspense fallback={<div className="m-6 h-64 rounded-2xl bg-muted/30 animate-pulse" role="status" aria-label="Cargando sección" />}><Outlet /></Suspense>
                     </ErrorBoundary>
                 </main>
             </div>
@@ -72,7 +77,7 @@ export default function DashboardLayout() {
             {isFinance
                 ? <FinanceMobileNav location={location} navigate={navigate} />
                 : <BottomNav />}
-            <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+            {isSearchOpen && <Suspense fallback={null}><GlobalSearch isOpen onClose={() => setIsSearchOpen(false)} /></Suspense>}
         </div>
     );
 }

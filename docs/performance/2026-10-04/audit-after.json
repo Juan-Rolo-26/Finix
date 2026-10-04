@@ -1,0 +1,6931 @@
+{
+  "caution": "Static candidates, not all violations. Includes server-internal full ledgers and tests; permission helpers and dynamic query construction require manual review.",
+  "summary": {
+    "queryCalls": 500,
+    "loopSites": 9,
+    "unboundedFindMany": 93,
+    "fetchWithoutExplicitSignal": 2,
+    "controllerRoutes": 402
+  },
+  "findings": [
+    {
+      "file": "apps/api/src/access/access-control.service.ts",
+      "line": 14,
+      "method": "requirePro",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/access/access-control.service.ts",
+      "line": 40,
+      "method": "limitFreePortfolio",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/access/access-control.service.ts",
+      "line": 62,
+      "method": "limitFreePortfolio",
+      "query": "this.prisma.portfolio.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/access/access-control.service.ts",
+      "line": 74,
+      "method": "requirePaidCommunityAccess",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/access/access-control.service.ts",
+      "line": 91,
+      "method": "requirePaidCommunityAccess",
+      "query": "this.prisma.communityMember.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/access/access-control.service.ts",
+      "line": 119,
+      "method": "requireCreator",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/access/access-control.service.ts",
+      "line": 159,
+      "method": "requirePlan",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.service.ts",
+      "line": 154,
+      "method": "login",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.service.ts",
+      "line": 280,
+      "method": "verifyEmail",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.service.ts",
+      "line": 368,
+      "method": "verifyTwoFactor",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.service.ts",
+      "line": 444,
+      "method": "resendCode",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.service.ts",
+      "line": 488,
+      "method": "setupNewTotp",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.service.ts",
+      "line": 526,
+      "method": "refreshSession",
+      "query": "this.prisma.adminSession.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.service.ts",
+      "line": 543,
+      "method": "refreshSession",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.service.ts",
+      "line": 601,
+      "method": "getMe",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.service.ts",
+      "line": 819,
+      "method": "registerFailedUserAttempt",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin-management.service.ts",
+      "line": 17,
+      "method": "deletePostPermanently",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin-management.service.ts",
+      "line": 46,
+      "method": "deleteUserPermanently",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 148,
+      "method": "getKPIs",
+      "query": "this.prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 149,
+      "method": "getKPIs",
+      "query": "this.prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 150,
+      "method": "getKPIs",
+      "query": "this.prisma.post.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 151,
+      "method": "getKPIs",
+      "query": "this.prisma.report.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 201,
+      "method": "getAdminNews",
+      "query": "this.prisma.news.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 339,
+      "method": "getVerifications",
+      "query": "this.prisma.financialAdvisorVerification.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 427,
+      "method": "getDetailedStatistics",
+      "query": "this.prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 428,
+      "method": "getDetailedStatistics",
+      "query": "this.prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 429,
+      "method": "getDetailedStatistics",
+      "query": "this.prisma.post.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 430,
+      "method": "getDetailedStatistics",
+      "query": "this.prisma.community.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 431,
+      "method": "getDetailedStatistics",
+      "query": "this.prisma.finixRevenue.aggregate",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 432,
+      "method": "getDetailedStatistics",
+      "query": "this.prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 456,
+      "method": "getCommunities",
+      "query": "this.prisma.community.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 470,
+      "method": "getCommunities",
+      "query": "this.prisma.community.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 478,
+      "method": "getCommunity",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 519,
+      "method": "getProUsers",
+      "query": "this.prisma.user.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 550,
+      "method": "getProUsers",
+      "query": "this.prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 581,
+      "method": "getUsers",
+      "query": "this.prisma.user.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 604,
+      "method": "getUsers",
+      "query": "this.prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 684,
+      "method": "deleteUser",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 733,
+      "method": "getPosts",
+      "query": "this.prisma.post.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 751,
+      "method": "getPosts",
+      "query": "this.prisma.post.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 799,
+      "method": "deletePost",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 829,
+      "method": "getReports",
+      "query": "this.prisma.report.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 850,
+      "method": "getReports",
+      "query": "this.prisma.post.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 872,
+      "method": "getReports",
+      "query": "this.prisma.user.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 890,
+      "method": "getReports",
+      "query": "this.prisma.comment.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 988,
+      "method": "getAuditLogs",
+      "query": "this.prisma.adminAuditLog.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 999,
+      "method": "getAuditLogs",
+      "query": "this.prisma.adminAuditLog.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.guard.ts",
+      "line": 52,
+      "method": "canActivate",
+      "query": "this.prisma.adminSession.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/admin.guard.ts",
+      "line": 60,
+      "method": "canActivate",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 26,
+      "method": "dashboard",
+      "query": "this.prisma.proEmailCampaign.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 27,
+      "method": "dashboard",
+      "query": "this.prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 28,
+      "method": "dashboard",
+      "query": "this.prisma.emailCampaignRecipient.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 29,
+      "method": "dashboard",
+      "query": "this.prisma.emailCampaignRecipient.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 30,
+      "method": "dashboard",
+      "query": "(this.prisma as any).marketAlert?.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 40,
+      "method": "getCampaignDetail",
+      "query": "this.prisma.proEmailCampaign.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 69,
+      "method": "getAnalysisDetailsForEmail",
+      "query": "this.prisma.assetAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 74,
+      "method": "templates",
+      "query": "this.prisma.emailTemplate.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 79,
+      "method": "prepare",
+      "query": "this.prisma.assetAnalysis.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 99,
+      "method": "createCampaign",
+      "query": "this.prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 131,
+      "method": "tick",
+      "query": "this.prisma.proEmailCampaign.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 138,
+      "method": "processBatch",
+      "query": "this.prisma.proEmailCampaign.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 141,
+      "method": "processBatch",
+      "query": "this.prisma.user.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 150,
+      "method": "processBatch",
+      "query": "this.prisma.emailCampaignRecipient.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 159,
+      "method": "processBatch",
+      "query": "this.prisma.user.findFirst",
+      "loop": true,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 174,
+      "method": "processBatch",
+      "query": "this.prisma.emailCampaignRecipient.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 175,
+      "method": "processBatch",
+      "query": "this.prisma.emailCampaignRecipient.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 176,
+      "method": "processBatch",
+      "query": "this.prisma.emailCampaignRecipient.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 177,
+      "method": "processBatch",
+      "query": "this.prisma.emailCampaignRecipient.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/pro-email-campaign.service.ts",
+      "line": 38,
+      "method": "getSummary",
+      "query": "prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/admin/pro-email-campaign.service.ts",
+      "line": 39,
+      "method": "getSummary",
+      "query": "prisma.proEmailCampaign.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/admin/pro-email-campaign.service.ts",
+      "line": 51,
+      "method": "sendCampaign",
+      "query": "prisma.user.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.controller.ts",
+      "line": 19,
+      "method": "resolveUserId",
+      "query": "(this.prisma as any).user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.service.ts",
+      "line": 72,
+      "method": "createAlert",
+      "query": "(this.prisma as any).asset.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.service.ts",
+      "line": 91,
+      "method": "createAlert",
+      "query": "(this.prisma as any).marketAlert.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.service.ts",
+      "line": 107,
+      "method": "createAlert",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 92,
+      "method": "getPublicList",
+      "query": "this.prisma.assetAnalysis.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 608,
+      "method": "getAnalysisBySlugOrTicker",
+      "query": "this.prisma.assetAnalysis.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 690,
+      "method": "getAdminList",
+      "query": "this.prisma.assetAnalysis.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 701,
+      "method": "getAdminById",
+      "query": "this.prisma.assetAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 741,
+      "method": "createAnalysis",
+      "query": "this.prisma.assetAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 757,
+      "method": "createAnalysis",
+      "query": "this.prisma.assetAnalysis.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 801,
+      "method": "updateAnalysis",
+      "query": "this.prisma.assetAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 810,
+      "method": "updateAnalysis",
+      "query": "this.prisma.assetAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 841,
+      "method": "updateStatus",
+      "query": "this.prisma.assetAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 1353,
+      "method": "seedAppleSample",
+      "query": "this.prisma.assetAnalysis.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 117,
+      "method": "resolveUsername",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 129,
+      "method": "resolveUsername",
+      "query": "this.prisma.user.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 264,
+      "method": "createPersistentSession",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 299,
+      "method": "requestRegisterCode",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 367,
+      "method": "resendRegisterCode",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 397,
+      "method": "verifyRegisterCode",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 439,
+      "method": "login",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 473,
+      "method": "requestLoginCode",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 514,
+      "method": "verifyLoginCode",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 550,
+      "method": "refreshSession",
+      "query": "this.prisma.userSession.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 563,
+      "method": "refreshSession",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 608,
+      "method": "requestPasswordResetCode",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 637,
+      "method": "resetPasswordWithCode",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 671,
+      "method": "syncUser",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 676,
+      "method": "syncUser",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 739,
+      "method": "getProfile",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/auth/jwt.strategy.ts",
+      "line": 195,
+      "method": "validate",
+      "query": "this.prisma.userSession.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/auth/jwt.strategy.ts",
+      "line": 204,
+      "method": "validate",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/auth/jwt.strategy.ts",
+      "line": 240,
+      "method": "validate",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/auth/jwt.strategy.ts",
+      "line": 259,
+      "method": "validate",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 22,
+      "method": "getPaymentOverview",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 31,
+      "method": "getPaymentOverview",
+      "query": "this.prisma.subscription.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 35,
+      "method": "getPaymentOverview",
+      "query": "this.prisma.creatorBalance.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 96,
+      "method": "getPaymentHistory",
+      "query": "this.prisma.communityPayment.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 127,
+      "method": "cancelProSubscription",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 138,
+      "method": "cancelProSubscription",
+      "query": "this.prisma.subscription.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 173,
+      "method": "cancelProSubscription",
+      "query": "this.prisma.subscription.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 187,
+      "method": "cancelProSubscription",
+      "query": "this.prisma.subscription.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 202,
+      "method": "cancelProSubscription",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 224,
+      "method": "refreshUserEntitlements",
+      "query": "this.prisma.subscription.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 244,
+      "method": "expireEndedPlans",
+      "query": "this.prisma.subscription.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 261,
+      "method": "getCreatorSummary",
+      "query": "this.prisma.community.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 291,
+      "method": "getCreatorSummary",
+      "query": "this.prisma.communityPayment.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 409,
+      "method": "requestPayout",
+      "query": "this.prisma.creatorBalance.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 456,
+      "method": "listPayouts",
+      "query": "this.prisma.creatorBalance.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 465,
+      "method": "listPayouts",
+      "query": "this.prisma.payout.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 482,
+      "method": "getAdminSettings",
+      "query": "this.prisma.platformSetting.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 533,
+      "method": "getCommissionRate",
+      "query": "this.prisma.platformSetting.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 71,
+      "method": "loadHomeEvents",
+      "query": "this.prisma.marketCalendarEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 81,
+      "method": "loadHomeEvents",
+      "query": "this.prisma.marketEarningsEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 97,
+      "method": "loadHomeEvents",
+      "query": "this.prisma.marketCalendarEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 101,
+      "method": "loadHomeEvents",
+      "query": "this.prisma.marketEarningsEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 310,
+      "method": "getWeekEvents",
+      "query": "this.prisma.marketCalendarEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 314,
+      "method": "getWeekEvents",
+      "query": "this.prisma.marketEarningsEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 377,
+      "method": "getWeekEvents",
+      "query": "(this.prisma as any).marketDividendEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 683,
+      "method": "syncMacroData",
+      "query": "this.prisma.marketCalendarEvent.findFirst",
+      "loop": true,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 866,
+      "method": "syncTradingViewEarnings",
+      "query": "this.prisma.marketEarningsEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 969,
+      "method": "syncReportedEarningsResults",
+      "query": "this.prisma.marketEarningsEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1213,
+      "method": "getAdminOverview",
+      "query": "this.prisma.marketCalendarEvent.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1214,
+      "method": "getAdminOverview",
+      "query": "this.prisma.marketCalendarEvent.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1215,
+      "method": "getAdminOverview",
+      "query": "this.prisma.marketCalendarEvent.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1216,
+      "method": "getAdminOverview",
+      "query": "this.prisma.marketCalendarEvent.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1256,
+      "method": "getAdminEvents",
+      "query": "this.prisma.marketEarningsEvent.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1291,
+      "method": "getAdminEvents",
+      "query": "this.prisma.marketEarningsEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1359,
+      "method": "getAdminEvents",
+      "query": "this.prisma.marketCalendarEvent.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1369,
+      "method": "getAdminEvents",
+      "query": "this.prisma.marketCalendarEvent.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1479,
+      "method": "writeUpdateAdminEvent",
+      "query": "this.prisma.marketCalendarEvent.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1509,
+      "method": "writeUpdateAdminEvent",
+      "query": "this.prisma.marketEarningsEvent.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1569,
+      "method": "getSyncLogs",
+      "query": "this.prisma.calendarSyncLog.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1576,
+      "method": "getEventById",
+      "query": "this.prisma.marketCalendarEvent.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1578,
+      "method": "getEventById",
+      "query": "this.prisma.marketEarningsEvent.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1657,
+      "method": "getPublicEvents",
+      "query": "this.prisma.marketCalendarEvent.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1667,
+      "method": "getPublicEvents",
+      "query": "this.prisma.marketCalendarEvent.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.service.ts",
+      "line": 80,
+      "method": "findAllUser",
+      "query": "this.prisma.chartAnalysis.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.service.ts",
+      "line": 96,
+      "method": "findOne",
+      "query": "this.prisma.chartAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.service.ts",
+      "line": 130,
+      "method": "update",
+      "query": "this.prisma.chartAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.service.ts",
+      "line": 164,
+      "method": "delete",
+      "query": "this.prisma.chartAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.service.ts",
+      "line": 181,
+      "method": "createVersion",
+      "query": "this.prisma.chartAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.service.ts",
+      "line": 211,
+      "method": "getVersion",
+      "query": "this.prisma.chartAnalysisVersion.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.service.ts",
+      "line": 243,
+      "method": "fork",
+      "query": "this.prisma.chartAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 81,
+      "method": "enrichMemberships",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 87,
+      "method": "enrichMemberships",
+      "query": "this.prisma.communityMember.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 171,
+      "method": "findAll",
+      "query": "this.prisma.community.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 186,
+      "method": "findOne",
+      "query": "this.prisma.community.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 204,
+      "method": "getMyCommunities",
+      "query": "this.prisma.community.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 214,
+      "method": "getJoinedCommunities",
+      "query": "this.prisma.communityMember.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 246,
+      "method": "create",
+      "query": "this.prisma.community.findUnique",
+      "loop": true,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 315,
+      "method": "create",
+      "query": "this.prisma.communityPlan.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 336,
+      "method": "create",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 385,
+      "method": "update",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 432,
+      "method": "listSections",
+      "query": "this.prisma.communitySection.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 444,
+      "method": "createSection",
+      "query": "this.prisma.communitySection.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 535,
+      "method": "listPosts",
+      "query": "this.prisma.post.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 647,
+      "method": "deletePost",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 687,
+      "method": "getMembers",
+      "query": "this.prisma.communityMember.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 702,
+      "method": "getMembers",
+      "query": "this.prisma.communityMember.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 711,
+      "method": "manageMemberRole",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 728,
+      "method": "removeMember",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 746,
+      "method": "joinFree",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 759,
+      "method": "joinFree",
+      "query": "this.prisma.communityMember.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 809,
+      "method": "leave",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 829,
+      "method": "createCheckoutSession",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 858,
+      "method": "processCardPayment",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 936,
+      "method": "processCardPayment",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1091,
+      "method": "createJoinRequest",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1094,
+      "method": "createJoinRequest",
+      "query": "this.prisma.communityMember.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1111,
+      "method": "listJoinRequests",
+      "query": "this.prisma.communityJoinRequest.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1123,
+      "method": "reviewJoinRequest",
+      "query": "this.prisma.communityJoinRequest.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1134,
+      "method": "reviewJoinRequest",
+      "query": "this.prisma.communityPlan.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1182,
+      "method": "getInvite",
+      "query": "this.prisma.communityInvite.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1210,
+      "method": "acceptInvite",
+      "query": "this.prisma.communityPlan.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1256,
+      "method": "listReports",
+      "query": "this.prisma.communityReport.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1268,
+      "method": "resolveReport",
+      "query": "this.prisma.communityReport.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1326,
+      "method": "listResources",
+      "query": "this.prisma.communityResource.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1366,
+      "method": "listEvents",
+      "query": "this.prisma.communityEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1417,
+      "method": "getAnalytics",
+      "query": "this.prisma.communityMember.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1420,
+      "method": "getAnalytics",
+      "query": "this.prisma.communityMember.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1428,
+      "method": "getAnalytics",
+      "query": "this.prisma.communityMember.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1434,
+      "method": "getAnalytics",
+      "query": "this.prisma.communityMember.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1440,
+      "method": "getAnalytics",
+      "query": "this.prisma.post.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1443,
+      "method": "getAnalytics",
+      "query": "this.prisma.communityPayment.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1453,
+      "method": "getAnalytics",
+      "query": "this.prisma.communityMember.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1457,
+      "method": "getAnalytics",
+      "query": "this.prisma.communityPlan.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1461,
+      "method": "getAnalytics",
+      "query": "this.prisma.communityAuditLog.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1511,
+      "method": "getFinancials",
+      "query": "this.prisma.communityPayment.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1519,
+      "method": "getFinancials",
+      "query": "(this.prisma.community as any).findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1584,
+      "method": "setFeatured",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 72,
+      "method": "assertCanViewCommunities",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 96,
+      "method": "assertCanCreateCommunity",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 125,
+      "method": "getMemberRole",
+      "query": "this.prisma.communityMember.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 135,
+      "method": "assertCanManageCommunity",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 143,
+      "method": "assertCanManageCommunity",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 159,
+      "method": "assertCanEditCommunity",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 167,
+      "method": "assertCanEditCommunity",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 178,
+      "method": "assertCanModerateCommunity",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 186,
+      "method": "assertCanModerateCommunity",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 202,
+      "method": "assertCanManagePayments",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 210,
+      "method": "assertCanManagePayments",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 225,
+      "method": "canAccessCommunity",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 249,
+      "method": "canAccessCommunity",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/communities/community-permissions.service.ts",
+      "line": 257,
+      "method": "canAccessCommunity",
+      "query": "this.prisma.communityMember.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/guards/creator.guard.ts",
+      "line": 19,
+      "method": "canActivate",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.controller.ts",
+      "line": 42,
+      "method": "findAll",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.controller.ts",
+      "line": 57,
+      "method": "updateStatus",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.service.ts",
+      "line": 15,
+      "method": "create",
+      "query": "this.prisma.creatorApplication.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.service.ts",
+      "line": 52,
+      "method": "create",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.service.ts",
+      "line": 80,
+      "method": "findAll",
+      "query": "this.prisma.creatorApplication.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.service.ts",
+      "line": 97,
+      "method": "findMyApplication",
+      "query": "this.prisma.creatorApplication.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.service.ts",
+      "line": 103,
+      "method": "updateStatus",
+      "query": "this.prisma.creatorApplication.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/finance.integration.spec.ts",
+      "line": 40,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/finance/finance.integration.spec.ts",
+      "line": 54,
+      "query": "prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/finance.integration.spec.ts",
+      "line": 106,
+      "query": "prisma.post.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/finance.integration.spec.ts",
+      "line": 131,
+      "query": "prisma.notification.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/finance.integration.spec.ts",
+      "line": 133,
+      "query": "prisma.notification.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 33,
+      "method": "preferences",
+      "query": "this.prisma.personalFinancePreferences.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 44,
+      "method": "list",
+      "query": "this.model(this.prisma, resource).findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 50,
+      "method": "getSnapshot",
+      "query": "this.model(this.prisma, resource).findMany",
+      "loop": true,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 175,
+      "method": "previewImport",
+      "query": "this.prisma.personalFinanceTransaction.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 229,
+      "method": "remind",
+      "query": "this.prisma.personalFinancePreferences.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 238,
+      "method": "remind",
+      "query": "this.prisma.notification.findFirst",
+      "loop": true,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/fundamental/services/fundamental-cache.service.ts",
+      "line": 46,
+      "method": "get",
+      "query": "this.prisma.fundamentalSnapshot.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 54,
+      "method": "getChannels",
+      "query": "this.prisma.hubChannel.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 75,
+      "method": "getMessages",
+      "query": "this.prisma.hubMessage.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 87,
+      "method": "sendMessage",
+      "query": "this.prisma.hubChannel.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 101,
+      "method": "deleteMessage",
+      "query": "this.prisma.hubMessage.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 110,
+      "method": "getPosts",
+      "query": "this.prisma.hubPost.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 125,
+      "method": "getAllPosts",
+      "query": "this.prisma.hubPost.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 141,
+      "method": "createPost",
+      "query": "this.prisma.hubChannel.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 158,
+      "method": "deletePost",
+      "query": "this.prisma.hubPost.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 167,
+      "method": "getComments",
+      "query": "this.prisma.hubComment.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 175,
+      "method": "addComment",
+      "query": "this.prisma.hubPost.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 184,
+      "method": "deleteComment",
+      "query": "this.prisma.hubComment.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 194,
+      "method": "getEvents",
+      "query": "this.prisma.hubEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 223,
+      "method": "getResources",
+      "query": "this.prisma.hubResource.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 244,
+      "method": "getAdminStats",
+      "query": "this.prisma.hubMessage.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 245,
+      "method": "getAdminStats",
+      "query": "this.prisma.hubPost.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 246,
+      "method": "getAdminStats",
+      "query": "this.prisma.hubComment.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 247,
+      "method": "getAdminStats",
+      "query": "this.prisma.hubChannel.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 248,
+      "method": "getAdminStats",
+      "query": "this.prisma.hubResource.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 249,
+      "method": "getAdminStats",
+      "query": "this.prisma.hubEvent.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 250,
+      "method": "getAdminStats",
+      "query": "this.prisma.user.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 257,
+      "method": "getAdminMembers",
+      "query": "this.prisma.user.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "line": 21,
+      "method": "getDailyAnalysis",
+      "query": "this.prisma.assetAnalysis.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/market/market.service.ts",
+      "line": 1056,
+      "method": "getCommunityTrends",
+      "query": "this.prisma.post.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/market/market.service.ts",
+      "line": 2998,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/market/opportunity-screener.service.ts",
+      "line": 100,
+      "method": "getUniverse",
+      "query": "this.prisma.sP500Asset.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/market/opportunity-screener.service.ts",
+      "line": 294,
+      "method": "readPersisted",
+      "query": "this.prisma.fundamentalSnapshot.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/market/value-creation.service.ts",
+      "line": 124,
+      "method": "getUniverse",
+      "query": "this.prisma.sP500Asset.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/market/value-creation.service.ts",
+      "line": 272,
+      "method": "readPersisted",
+      "query": "this.prisma.fundamentalSnapshot.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/market-ranking/services/market-ranking.service.ts",
+      "line": 103,
+      "method": "executeDailyRanking",
+      "query": "this.prisma.sP500Asset.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/market-ranking/services/market-ranking.service.ts",
+      "line": 110,
+      "method": "executeDailyRanking",
+      "query": "this.prisma.sP500Asset.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/market-ranking/services/market-ranking.service.ts",
+      "line": 291,
+      "method": "findLatestCompleteTopFive",
+      "query": "this.prisma.dailyMarketRanking.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/market-ranking/services/market-ranking.service.ts",
+      "line": 344,
+      "method": "getTopRankings",
+      "query": "this.prisma.dailyMarketRanking.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/market-ranking/services/market-ranking.service.ts",
+      "line": 429,
+      "method": "getRankingsList",
+      "query": "this.prisma.dailyMarketRanking.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/market-ranking/services/market-ranking.service.ts",
+      "line": 437,
+      "method": "getRankingsList",
+      "query": "this.prisma.dailyMarketRanking.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/market-ranking/services/market-ranking.service.ts",
+      "line": 452,
+      "method": "getRankingsList",
+      "query": "this.prisma.dailyMarketRanking.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/market-ranking/services/market-ranking.service.ts",
+      "line": 513,
+      "method": "getAdminOverview",
+      "query": "this.prisma.marketRankingExecutionLog.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/market-ranking/services/market-ranking.service.ts",
+      "line": 517,
+      "method": "getAdminOverview",
+      "query": "this.prisma.sP500Asset.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 125,
+      "method": "createPreference",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 136,
+      "method": "createPreference",
+      "query": "this.prisma.subscription.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 280,
+      "method": "createCommunityPreference",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 282,
+      "method": "createCommunityPreference",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 352,
+      "method": "processPreapproval",
+      "query": "this.prisma.subscription.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 354,
+      "method": "processPreapproval",
+      "query": "this.prisma.subscription.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 404,
+      "method": "processPayment",
+      "query": "this.prisma.subscription.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 406,
+      "method": "processPayment",
+      "query": "this.prisma.subscription.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 446,
+      "method": "applyCommunityPayment",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 447,
+      "method": "applyCommunityPayment",
+      "query": "this.prisma.communityPlan.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 451,
+      "method": "applyCommunityPayment",
+      "query": "this.prisma.platformSetting.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 457,
+      "method": "applyCommunityPayment",
+      "query": "this.prisma.communityPayment.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 458,
+      "method": "applyCommunityPayment",
+      "query": "this.prisma.communityMember.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 489,
+      "method": "refreshUserEntitlements",
+      "query": "this.prisma.subscription.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 511,
+      "method": "applyUserPlan",
+      "query": "this.prisma.subscription.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 517,
+      "method": "applyUserPlan",
+      "query": "this.prisma.subscription.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 643,
+      "method": "getRecurringStatus",
+      "query": "this.prisma.subscription.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 651,
+      "method": "getRecurringStatus",
+      "query": "this.prisma.subscription.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 664,
+      "method": "reconcileRecurringSubscriptions",
+      "query": "this.prisma.subscription.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 114,
+      "method": "getOrCreateConversation",
+      "query": "this.prisma.conversation.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 147,
+      "method": "createGroupConversation",
+      "query": "this.prisma.user.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 198,
+      "method": "getConversations",
+      "query": "this.prisma.conversation.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 223,
+      "method": "getMessages",
+      "query": "this.prisma.directMessage.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 309,
+      "method": "updateMessage",
+      "query": "this.prisma.directMessage.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 372,
+      "method": "getUnreadCount",
+      "query": "this.prisma.conversationParticipant.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 394,
+      "method": "searchUsers",
+      "query": "this.prisma.user.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 416,
+      "method": "getConversationParticipantIds",
+      "query": "this.prisma.conversationParticipant.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 435,
+      "method": "getConversationForMember",
+      "query": "this.prisma.conversation.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 453,
+      "method": "countUnreadMessages",
+      "query": "this.prisma.directMessage.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 539,
+      "method": "prepareAttachment",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 569,
+      "method": "prepareAttachment",
+      "query": "this.prisma.story.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 83,
+      "method": "loadPublicCategories",
+      "query": "this.prisma.newsCategory.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 106,
+      "method": "loadPublicHeadlines",
+      "query": "this.prisma.newsSlot.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 182,
+      "method": "loadPublicCategorySlots",
+      "query": "this.prisma.newsCategory.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 186,
+      "method": "loadPublicCategorySlots",
+      "query": "this.prisma.newsSlot.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 316,
+      "method": "registerClick",
+      "query": "this.prisma.newsSlot.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 328,
+      "method": "getAdminCategories",
+      "query": "this.prisma.newsCategory.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 371,
+      "method": "getAdminCategorySlots",
+      "query": "this.prisma.newsCategory.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 375,
+      "method": "getAdminCategorySlots",
+      "query": "this.prisma.newsSlot.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 395,
+      "method": "getSlotHistory",
+      "query": "this.prisma.newsSlotHistory.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 413,
+      "method": "writeReplaceAutomaticSlots",
+      "query": "this.prisma.newsCategory.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 420,
+      "method": "writeReplaceAutomaticSlots",
+      "query": "this.prisma.newsSlot.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 459,
+      "method": "writeFillEmptySlots",
+      "query": "this.prisma.newsSlot.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 464,
+      "method": "writeFillEmptySlots",
+      "query": "this.prisma.newsArticle.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 524,
+      "method": "writeAssignArticleToSlot",
+      "query": "this.prisma.newsSlot.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 604,
+      "method": "writePublishSlot",
+      "query": "this.prisma.newsSlot.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 624,
+      "method": "writeUnpublishSlot",
+      "query": "this.prisma.newsSlot.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 643,
+      "method": "writeToggleSlotActive",
+      "query": "this.prisma.newsSlot.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 684,
+      "method": "ensureSlotsExist",
+      "query": "this.prisma.newsSlot.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 703,
+      "method": "ensureArticlePhoto",
+      "query": "this.prisma.newsCategory.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 199,
+      "method": "recoverCategoryCoverage",
+      "query": "this.prisma.newsCategory.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 200,
+      "method": "recoverCategoryCoverage",
+      "query": "this.prisma.newsSlot.groupBy",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 206,
+      "method": "recoverCategoryCoverage",
+      "query": "this.prisma.newsSlot.groupBy",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 242,
+      "method": "dispatchFrequencyIfDue",
+      "query": "this.prisma.newsCategory.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 269,
+      "method": "runManual",
+      "query": "this.prisma.newsCategory.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 275,
+      "method": "runManual",
+      "query": "this.prisma.newsSource.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 305,
+      "method": "performSyncFrequency",
+      "query": "this.prisma.newsCategory.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 315,
+      "method": "performSyncFrequency",
+      "query": "this.prisma.newsSource.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 319,
+      "method": "performSyncFrequency",
+      "query": "this.prisma.newsSource.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 440,
+      "method": "getOverview",
+      "query": "this.prisma.newsCategory.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 441,
+      "method": "getOverview",
+      "query": "this.prisma.newsSource.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 445,
+      "method": "getOverview",
+      "query": "this.prisma.newsSyncLog.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 475,
+      "method": "updateCategorySchedule",
+      "query": "this.prisma.newsCategory.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 504,
+      "method": "getSources",
+      "query": "this.prisma.newsSource.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 511,
+      "method": "updateSource",
+      "query": "this.prisma.newsSource.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 549,
+      "method": "createSource",
+      "query": "this.prisma.newsCategory.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 577,
+      "method": "updateSourceCategoryPolicy",
+      "query": "this.prisma.newsSource.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 578,
+      "method": "updateSourceCategoryPolicy",
+      "query": "this.prisma.newsCategory.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 654,
+      "method": "ensureDefaults",
+      "query": "this.prisma.newsSource.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 777,
+      "method": "findArticlesWithPhotos",
+      "query": "this.prisma.newsArticle.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 783,
+      "method": "findArticlesWithPhotos",
+      "query": "this.prisma.newsArticle.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 799,
+      "method": "persistArticles",
+      "query": "this.prisma.newsArticle.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 824,
+      "method": "persistArticles",
+      "query": "this.prisma.newsArticle.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 96,
+      "method": "getNews",
+      "query": "this.prisma.newsCategory.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 105,
+      "method": "getNews",
+      "query": "this.prisma.newsSource.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 119,
+      "method": "getNews",
+      "query": "this.prisma.news.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 145,
+      "method": "getNewsByTicker",
+      "query": "this.prisma.news.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 174,
+      "method": "getNewsByCategory",
+      "query": "this.prisma.newsCategory.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 182,
+      "method": "getNewsByCategory",
+      "query": "this.prisma.news.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 208,
+      "method": "getTrendingNews",
+      "query": "this.prisma.news.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 231,
+      "method": "getCategories",
+      "query": "this.prisma.newsCategory.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 242,
+      "method": "getSources",
+      "query": "this.prisma.newsSource.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 263,
+      "method": "getNewsStats",
+      "query": "this.prisma.news.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 264,
+      "method": "getNewsStats",
+      "query": "this.prisma.news.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 271,
+      "method": "getNewsStats",
+      "query": "this.prisma.news.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 272,
+      "method": "getNewsStats",
+      "query": "this.prisma.news.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 273,
+      "method": "getNewsStats",
+      "query": "this.prisma.news.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 300,
+      "method": "fetchAndStoreNews",
+      "query": "this.prisma.news.findMany",
+      "loop": true,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 305,
+      "method": "fetchAndStoreNews",
+      "query": "this.prisma.newsCategory.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 431,
+      "method": "addManualNews",
+      "query": "this.prisma.newsCategory.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 485,
+      "method": "categorizeNews",
+      "query": "this.prisma.newsCategory.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 515,
+      "method": "getOrCreateSource",
+      "query": "this.prisma.newsSource.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.service.ts",
+      "line": 65,
+      "method": "checkPreferences",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.service.ts",
+      "line": 107,
+      "method": "createNotification",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.service.ts",
+      "line": 166,
+      "method": "getNotifications",
+      "query": "this.prisma.notification.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.service.ts",
+      "line": 209,
+      "method": "countUnread",
+      "query": "this.prisma.notification.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.service.ts",
+      "line": 236,
+      "method": "deleteNotification",
+      "query": "this.prisma.notification.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.service.ts",
+      "line": 247,
+      "method": "getPreferences",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/notifications/push.service.ts",
+      "line": 26,
+      "method": "subscribe",
+      "query": "this.prisma.pushSubscription.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/notifications/push.service.ts",
+      "line": 27,
+      "method": "subscribe",
+      "query": "this.prisma.pushSubscription.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/notifications/push.service.ts",
+      "line": 38,
+      "method": "status",
+      "query": "this.prisma.pushSubscription.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/notifications/push.service.ts",
+      "line": 49,
+      "method": "deliver",
+      "query": "this.prisma.pushSubscription.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/notifications/push.service.ts",
+      "line": 54,
+      "method": "deliver",
+      "query": "this.prisma.notification.findFirst",
+      "loop": true,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio-performance.service.ts",
+      "line": 66,
+      "method": "assertOwner",
+      "query": "this.prisma.portfolio.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio-performance.service.ts",
+      "line": 427,
+      "method": "getSummary",
+      "query": "this.prisma.portfolio.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio-performance.service.ts",
+      "line": 526,
+      "method": "loadPerformance",
+      "query": "this.prisma.portfolio.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio-performance.service.ts",
+      "line": 708,
+      "method": "getAllocation",
+      "query": "this.prisma.portfolio.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio-performance.service.ts",
+      "line": 774,
+      "method": "getAssetPnL",
+      "query": "this.prisma.portfolio.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio-performance.service.ts",
+      "line": 849,
+      "method": "getDrawdown",
+      "query": "this.prisma.portfolio.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio-performance.service.ts",
+      "line": 948,
+      "method": "getDividends",
+      "query": "this.prisma.portfolio.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio-performance.service.ts",
+      "line": 1045,
+      "method": "getRisk",
+      "query": "this.prisma.portfolio.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 65,
+      "method": "assertPortfolioOwner",
+      "query": "this.prisma.portfolio.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 654,
+      "method": "getUserPortfolios",
+      "query": "this.prisma.portfolio.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 673,
+      "method": "canExposePortfoliosPublicly",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 691,
+      "method": "getVisiblePublicPortfolioRecords",
+      "query": "this.prisma.portfolio.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 733,
+      "method": "getPortfolioById",
+      "query": "this.prisma.portfolio.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 751,
+      "method": "getPublicPortfolioRecord",
+      "query": "this.prisma.portfolio.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 991,
+      "method": "getPortfolioHistory",
+      "query": "this.prisma.portfolio.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1152,
+      "method": "getPortfolioAssets",
+      "query": "this.prisma.holding.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1166,
+      "method": "deleteAsset",
+      "query": "this.prisma.holding.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1285,
+      "method": "getPortfolioMetrics",
+      "query": "this.prisma.portfolio.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1331,
+      "method": "getPortfolioMovements",
+      "query": "this.prisma.transaction.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1351,
+      "method": "getWatchlists",
+      "query": "this.prisma.watchlist.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1367,
+      "method": "updateWatchlist",
+      "query": "this.prisma.watchlist.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1379,
+      "method": "deleteWatchlist",
+      "query": "this.prisma.watchlist.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 131,
+      "method": "getActorUsername",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 144,
+      "method": "loadCommentRepliesMap",
+      "query": "this.prisma.comment.findMany",
+      "loop": true,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 176,
+      "method": "collectCommentThreadLevels",
+      "query": "this.prisma.comment.findMany",
+      "loop": true,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 225,
+      "method": "createPost",
+      "query": "this.prisma.chartAnalysis.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 279,
+      "method": "createPost",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 298,
+      "method": "createPost",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 390,
+      "method": "getFeed",
+      "query": "this.prisma.post.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 421,
+      "method": "getPostById",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 462,
+      "method": "updatePost",
+      "query": "this.prisma.post.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 488,
+      "method": "deletePost",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 504,
+      "method": "toggleLike",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 513,
+      "method": "toggleLike",
+      "query": "this.prisma.like.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 542,
+      "method": "addComment",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 557,
+      "method": "addComment",
+      "query": "this.prisma.comment.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 610,
+      "method": "getComments",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 614,
+      "method": "getComments",
+      "query": "this.prisma.comment.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 621,
+      "method": "getComments",
+      "query": "this.prisma.comment.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 639,
+      "method": "deleteComment",
+      "query": "this.prisma.comment.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 663,
+      "method": "toggleCommentLike",
+      "query": "this.prisma.comment.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 673,
+      "method": "toggleCommentLike",
+      "query": "this.prisma.commentLike.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 700,
+      "method": "toggleRepost",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 709,
+      "method": "toggleRepost",
+      "query": "this.prisma.repost.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 742,
+      "method": "toggleSave",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 767,
+      "method": "getSavedPosts",
+      "query": "this.prisma.save.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 787,
+      "method": "reportPost",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 801,
+      "method": "getUserPosts",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 804,
+      "method": "getUserPosts",
+      "query": "this.prisma.post.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 826,
+      "method": "getAllPosts",
+      "query": "this.prisma.post.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 833,
+      "method": "getAllPosts",
+      "query": "this.prisma.post.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/reports/reports.service.ts",
+      "line": 21,
+      "method": "createReport",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/reports/reports.service.ts",
+      "line": 24,
+      "method": "createReport",
+      "query": "this.prisma.post.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/reports/reports.service.ts",
+      "line": 27,
+      "method": "createReport",
+      "query": "this.prisma.directMessage.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/reports/reports.service.ts",
+      "line": 41,
+      "method": "createReport",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/reports/reports.service.ts",
+      "line": 66,
+      "method": "getReports",
+      "query": "this.prisma.report.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/seed-communities.ts",
+      "line": 7,
+      "query": "prisma.user.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/settings/settings.service.ts",
+      "line": 23,
+      "method": "getSettings",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/settings/settings.service.ts",
+      "line": 160,
+      "method": "updatePreferences",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/settings/settings.service.ts",
+      "line": 223,
+      "method": "updateOnboarding",
+      "query": "this.prisma.portfolio.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/settings/settings.service.ts",
+      "line": 265,
+      "method": "getVerification",
+      "query": "this.prisma.financialAdvisorVerification.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/settings/settings.service.ts",
+      "line": 276,
+      "method": "submitVerification",
+      "query": "this.prisma.financialAdvisorVerification.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/settings/settings.service.ts",
+      "line": 320,
+      "method": "deleteAccount",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/stories/stories.service.ts",
+      "line": 122,
+      "method": "getFeed",
+      "query": "this.prisma.follow.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stories/stories.service.ts",
+      "line": 130,
+      "method": "getFeed",
+      "query": "this.prisma.story.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/stories/stories.service.ts",
+      "line": 187,
+      "method": "markViewed",
+      "query": "this.prisma.story.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stories/stories.service.ts",
+      "line": 220,
+      "method": "deleteStory",
+      "query": "this.prisma.story.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stories/stories.service.ts",
+      "line": 241,
+      "method": "likeStory",
+      "query": "this.prisma.story.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 37,
+      "method": "createSubscription",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 111,
+      "method": "createBillingPortal",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 153,
+      "method": "cancelCommunitySubscription",
+      "query": "this.prisma.communityMember.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 165,
+      "method": "cancelSubscription",
+      "query": "this.prisma.subscription.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 207,
+      "method": "createCommunityPayment",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 211,
+      "method": "createCommunityPayment",
+      "query": "this.prisma.community.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 215,
+      "method": "createCommunityPayment",
+      "query": "this.prisma.communityPlan.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 230,
+      "method": "createCommunityPayment",
+      "query": "this.prisma.communityMember.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 241,
+      "method": "createCommunityPayment",
+      "query": "this.prisma.communityMember.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 314,
+      "method": "listInvoices",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 365,
+      "method": "handleWebhook",
+      "query": "this.prisma.paymentLog.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 545,
+      "method": "applyInvoicePaymentSucceeded",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 596,
+      "method": "applyInvoicePaymentSucceeded",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 704,
+      "method": "activateCommunityMembership",
+      "query": "this.prisma.communityPayment.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 760,
+      "method": "getOrCreateCustomer",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 793,
+      "method": "getCommissionRate",
+      "query": "this.prisma.platformSetting.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 826,
+      "method": "getPlanMonthlyPrice",
+      "query": "this.prisma.platformSetting.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 895,
+      "method": "updateUserPlanFromSubscription",
+      "query": "this.prisma.subscription.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 449,
+      "method": "getCurrentUserProfile",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 481,
+      "method": "getUserProfile",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 492,
+      "method": "getUserProfile",
+      "query": "this.prisma.follow.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 692,
+      "method": "changePassword",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 716,
+      "method": "getUserStats",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 753,
+      "method": "getUserConnections",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 761,
+      "method": "getUserConnections",
+      "query": "this.prisma.follow.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 790,
+      "method": "getUserConnections",
+      "query": "this.prisma.follow.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 792,
+      "method": "getUserConnections",
+      "query": "this.prisma.follow.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 799,
+      "method": "getUserConnections",
+      "query": "this.prisma.follow.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 810,
+      "method": "getUserConnections",
+      "query": "this.prisma.follow.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 830,
+      "method": "calculatePortfolioStats",
+      "query": "this.prisma.portfolio.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 889,
+      "method": "getTopTraders",
+      "query": "this.prisma.user.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 929,
+      "method": "searchUsers",
+      "query": "this.prisma.user.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 958,
+      "method": "toggleFollow",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 971,
+      "method": "toggleFollow",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 992,
+      "method": "toggleFollow",
+      "query": "this.prisma.follow.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 37,
+      "method": "getUserPlan",
+      "query": "this.prisma.user.findUnique",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 61,
+      "method": "getWatchlists",
+      "query": "this.prisma.watchlist.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 105,
+      "method": "createWatchlist",
+      "query": "this.prisma.watchlist.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 135,
+      "method": "updateWatchlist",
+      "query": "this.prisma.watchlist.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 154,
+      "method": "getDeleteImpact",
+      "query": "this.prisma.watchlist.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 172,
+      "method": "getDeleteImpact",
+      "query": "this.prisma.marketAlert.count",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 192,
+      "method": "deleteWatchlist",
+      "query": "this.prisma.watchlist.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 206,
+      "method": "getWatchlistDetail",
+      "query": "this.prisma.watchlist.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 238,
+      "method": "getWatchlistDetail",
+      "query": "this.prisma.holding.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 261,
+      "method": "getWatchlistDetail",
+      "query": "this.prisma.marketAlert.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 276,
+      "method": "getWatchlistDetail",
+      "query": "this.prisma.marketCalendarEvent.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 394,
+      "method": "addItem",
+      "query": "this.prisma.watchlist.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 490,
+      "method": "updateItem",
+      "query": "this.prisma.watchlistItem.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 537,
+      "method": "removeItem",
+      "query": "this.prisma.watchlistItem.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 552,
+      "method": "addNote",
+      "query": "this.prisma.watchlistItem.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 576,
+      "method": "deleteNote",
+      "query": "this.prisma.watchlistNote.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 618,
+      "method": "batchImport",
+      "query": "this.prisma.watchlist.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 727,
+      "method": "moveCopyItem",
+      "query": "this.prisma.watchlistItem.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 737,
+      "method": "moveCopyItem",
+      "query": "this.prisma.watchlist.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 796,
+      "method": "getIdeas",
+      "query": "this.prisma.watchlistFollowedIdea.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 904,
+      "method": "toggleFollowIdea",
+      "query": "this.prisma.watchlistFollowedIdea.findFirst",
+      "loop": false,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 922,
+      "method": "getUserListsForSymbol",
+      "query": "this.prisma.watchlist.findMany",
+      "loop": false,
+      "unbounded": true,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 950,
+      "method": "getPublicCommunityPosts",
+      "query": "this.prisma.post.findMany",
+      "loop": false,
+      "unbounded": false,
+      "select": true
+    }
+  ],
+  "routes": [
+    {
+      "file": "apps/api/src/admin/admin-auth.controller.ts",
+      "method": "login",
+      "verb": "POST",
+      "path": "/admin/auth/login"
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.controller.ts",
+      "method": "verifyEmail",
+      "verb": "POST",
+      "path": "/admin/auth/verify-email"
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.controller.ts",
+      "method": "verifyTwoFactor",
+      "verb": "POST",
+      "path": "/admin/auth/verify-2fa"
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.controller.ts",
+      "method": "resendCode",
+      "verb": "POST",
+      "path": "/admin/auth/resend-code"
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.controller.ts",
+      "method": "setupTotp",
+      "verb": "POST",
+      "path": "/admin/auth/setup-totp"
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.controller.ts",
+      "method": "refresh",
+      "verb": "POST",
+      "path": "/admin/auth/refresh"
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.controller.ts",
+      "method": "logout",
+      "verb": "POST",
+      "path": "/admin/auth/logout"
+    },
+    {
+      "file": "apps/api/src/admin/admin-auth.controller.ts",
+      "method": "me",
+      "verb": "GET",
+      "path": "/admin/auth/me"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getEmailMarketingDashboard",
+      "verb": "GET",
+      "path": "/admin/email-marketing/dashboard"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getEmailTemplates",
+      "verb": "GET",
+      "path": "/admin/email-marketing/templates"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "previewEmail",
+      "verb": "POST",
+      "path": "/admin/email-marketing/preview"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "testEmail",
+      "verb": "POST",
+      "path": "/admin/email-marketing/test"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "uploadEmailImage",
+      "verb": "POST",
+      "path": "/admin/email-marketing/media"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "createEmailMarketingCampaign",
+      "verb": "POST",
+      "path": "/admin/email-marketing/campaigns"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "processEmailMarketingCampaign",
+      "verb": "POST",
+      "path": "/admin/email-marketing/campaigns/:id/process"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getEmailCampaignDetail",
+      "verb": "GET",
+      "path": "/admin/email-marketing/campaigns/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "retryEmailCampaign",
+      "verb": "POST",
+      "path": "/admin/email-marketing/campaigns/:id/retry"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getAnalysisDetailsForEmail",
+      "verb": "GET",
+      "path": "/admin/email-marketing/analysis-details/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getKPIs",
+      "verb": "GET",
+      "path": "/admin/kpis"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getProEmailSummary",
+      "verb": "GET",
+      "path": "/admin/pro-email/summary"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "sendProEmailCampaign",
+      "verb": "POST",
+      "path": "/admin/pro-email/campaigns"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getAdminNews",
+      "verb": "GET",
+      "path": "/admin/news"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "addManualNews",
+      "verb": "POST",
+      "path": "/admin/news/scrape"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "deleteManualNews",
+      "verb": "DELETE",
+      "path": "/admin/news/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getAnalyses",
+      "verb": "GET",
+      "path": "/admin/analysis"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "fetchTradingViewData",
+      "verb": "GET",
+      "path": "/admin/analysis/tradingview/fetch"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "fetchValueCreationData",
+      "verb": "GET",
+      "path": "/admin/analysis/value-creation/fetch"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "uploadAnalysisSnapshot",
+      "verb": "POST",
+      "path": "/admin/analysis/upload-snapshot"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getAnalysisById",
+      "verb": "GET",
+      "path": "/admin/analysis/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "createAnalysis",
+      "verb": "POST",
+      "path": "/admin/analysis"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "updateAnalysis",
+      "verb": "PATCH",
+      "path": "/admin/analysis/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "updateAnalysisStatus",
+      "verb": "PATCH",
+      "path": "/admin/analysis/:id/status"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "deleteAnalysis",
+      "verb": "DELETE",
+      "path": "/admin/analysis/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "seedSampleAnalysis",
+      "verb": "POST",
+      "path": "/admin/analysis/seed-sample"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getVerifications",
+      "verb": "GET",
+      "path": "/admin/verifications"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "updateVerificationStatus",
+      "verb": "PATCH",
+      "path": "/admin/verifications/:id/status"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getDetailedStatistics",
+      "verb": "GET",
+      "path": "/admin/statistics"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getCommunities",
+      "verb": "GET",
+      "path": "/admin/communities"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getCommunity",
+      "verb": "GET",
+      "path": "/admin/communities/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "updateCommunityStatus",
+      "verb": "PATCH",
+      "path": "/admin/communities/:id/status"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "featureCommunity",
+      "verb": "PATCH",
+      "path": "/admin/communities/:id/feature"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "deleteCommunity",
+      "verb": "DELETE",
+      "path": "/admin/communities/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getProUsers",
+      "verb": "GET",
+      "path": "/admin/pro-users"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getUsers",
+      "verb": "GET",
+      "path": "/admin/users"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "updateUser",
+      "verb": "PATCH",
+      "path": "/admin/users/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "deleteUser",
+      "verb": "DELETE",
+      "path": "/admin/users/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getPosts",
+      "verb": "GET",
+      "path": "/admin/posts"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "updatePost",
+      "verb": "PATCH",
+      "path": "/admin/posts/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "deletePost",
+      "verb": "DELETE",
+      "path": "/admin/posts/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getReports",
+      "verb": "GET",
+      "path": "/admin/reports"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "resolveReport",
+      "verb": "PATCH",
+      "path": "/admin/reports/:id"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "method": "getAuditLogs",
+      "verb": "GET",
+      "path": "/admin/audit-logs"
+    },
+    {
+      "file": "apps/api/src/admin/email-preferences.controller.ts",
+      "method": "confirm",
+      "verb": "GET",
+      "path": "/email-preferences/unsubscribe"
+    },
+    {
+      "file": "apps/api/src/admin/email-preferences.controller.ts",
+      "method": "unsubscribe",
+      "verb": "POST",
+      "path": "/email-preferences/unsubscribe"
+    },
+    {
+      "file": "apps/api/src/ai/ai.controller.ts",
+      "method": "generateFundamentalAnalysis",
+      "verb": "POST",
+      "path": "/ai/fundamental-analysis"
+    },
+    {
+      "file": "apps/api/src/ai/ai.controller.ts",
+      "method": "analyzeWebQuery",
+      "verb": "POST",
+      "path": "/ai/web-analysis"
+    },
+    {
+      "file": "apps/api/src/ai/ai.controller.ts",
+      "method": "analyzeAssetWithWebContext",
+      "verb": "POST",
+      "path": "/ai/asset-web-context"
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.controller.ts",
+      "method": "getAlerts",
+      "verb": "GET",
+      "path": "/alerts"
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.controller.ts",
+      "method": "createAlert",
+      "verb": "POST",
+      "path": "/alerts"
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.controller.ts",
+      "method": "getAdminOverview",
+      "verb": "GET",
+      "path": "/alerts/admin/overview"
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.controller.ts",
+      "method": "triggerCheck",
+      "verb": "POST",
+      "path": "/alerts/check"
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.controller.ts",
+      "method": "getAlert",
+      "verb": "GET",
+      "path": "/alerts/:id"
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.controller.ts",
+      "method": "updateAlert",
+      "verb": "PATCH",
+      "path": "/alerts/:id"
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.controller.ts",
+      "method": "toggleAlert",
+      "verb": "PATCH",
+      "path": "/alerts/:id/toggle"
+    },
+    {
+      "file": "apps/api/src/alerts/alerts.controller.ts",
+      "method": "deleteAlert",
+      "verb": "DELETE",
+      "path": "/alerts/:id"
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.controller.ts",
+      "method": "getPublicList",
+      "verb": "GET",
+      "path": "/analysis"
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.controller.ts",
+      "method": "fetchTradingView",
+      "verb": "GET",
+      "path": "/analysis/tradingview/fetch"
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.controller.ts",
+      "method": "getAnalysis",
+      "verb": "GET",
+      "path": "/analysis/:slugOrTicker"
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.controller.ts",
+      "method": "seedSample",
+      "verb": "POST",
+      "path": "/analysis/sample/seed"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "requestRegisterCode",
+      "verb": "POST",
+      "path": "/auth/register/request-code"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "resendRegisterCode",
+      "verb": "POST",
+      "path": "/auth/register/resend-code"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "verifyRegisterCode",
+      "verb": "POST",
+      "path": "/auth/register/verify-code"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "login",
+      "verb": "POST",
+      "path": "/auth/login"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "requestLoginCode",
+      "verb": "POST",
+      "path": "/auth/login/request-code"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "verifyLoginCode",
+      "verb": "POST",
+      "path": "/auth/login/verify-code"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "refresh",
+      "verb": "POST",
+      "path": "/auth/refresh"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "logout",
+      "verb": "POST",
+      "path": "/auth/logout"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "requestPasswordResetCode",
+      "verb": "POST",
+      "path": "/auth/forgot/request-code"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "resetPasswordWithCode",
+      "verb": "POST",
+      "path": "/auth/forgot/reset"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "syncUser",
+      "verb": "POST",
+      "path": "/auth/sync-user"
+    },
+    {
+      "file": "apps/api/src/auth/auth.controller.ts",
+      "method": "getProfile",
+      "verb": "GET",
+      "path": "/auth/me"
+    },
+    {
+      "file": "apps/api/src/billing/billing.controller.ts",
+      "method": "getOverview",
+      "verb": "GET",
+      "path": "/billing/overview"
+    },
+    {
+      "file": "apps/api/src/billing/billing.controller.ts",
+      "method": "getHistory",
+      "verb": "GET",
+      "path": "/billing/history"
+    },
+    {
+      "file": "apps/api/src/billing/billing.controller.ts",
+      "method": "cancelSubscription",
+      "verb": "POST",
+      "path": "/billing/subscription/cancel"
+    },
+    {
+      "file": "apps/api/src/billing/billing.controller.ts",
+      "method": "getCreatorSummary",
+      "verb": "GET",
+      "path": "/billing/creator/summary"
+    },
+    {
+      "file": "apps/api/src/billing/billing.controller.ts",
+      "method": "settlePendingBalance",
+      "verb": "POST",
+      "path": "/billing/creator/settle"
+    },
+    {
+      "file": "apps/api/src/billing/billing.controller.ts",
+      "method": "requestPayout",
+      "verb": "POST",
+      "path": "/billing/creator/payout"
+    },
+    {
+      "file": "apps/api/src/billing/billing.controller.ts",
+      "method": "listPayouts",
+      "verb": "GET",
+      "path": "/billing/creator/payouts"
+    },
+    {
+      "file": "apps/api/src/billing/billing.controller.ts",
+      "method": "getAdminSettings",
+      "verb": "GET",
+      "path": "/billing/admin/settings"
+    },
+    {
+      "file": "apps/api/src/billing/billing.controller.ts",
+      "method": "updateCommission",
+      "verb": "POST",
+      "path": "/billing/admin/commission"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getHomeCalendar",
+      "verb": "GET",
+      "path": "/calendar/home"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getWeekCalendar",
+      "verb": "GET",
+      "path": "/calendar/week"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getEconomicEvents",
+      "verb": "GET",
+      "path": "/calendar/economic"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getEarningsEvents",
+      "verb": "GET",
+      "path": "/calendar/earnings"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getDividendEvents",
+      "verb": "GET",
+      "path": "/calendar/dividends"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getPublicEvents",
+      "verb": "GET",
+      "path": "/calendar/events"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getEventById",
+      "verb": "GET",
+      "path": "/calendar/events/:id"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getTodayEvents",
+      "verb": "GET",
+      "path": "/calendar/today"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getUpcomingEvents",
+      "verb": "GET",
+      "path": "/calendar/upcoming"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getPublicSources",
+      "verb": "GET",
+      "path": "/calendar/sources"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getAdminOverview",
+      "verb": "GET",
+      "path": "/calendar/admin/overview"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getAdminEvents",
+      "verb": "GET",
+      "path": "/calendar/admin/events"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "createAdminEvent",
+      "verb": "POST",
+      "path": "/calendar/admin/events"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "updateAdminEvent",
+      "verb": "PATCH",
+      "path": "/calendar/admin/events/:id"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "deleteAdminEvent",
+      "verb": "DELETE",
+      "path": "/calendar/admin/events/:id"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getAdminSources",
+      "verb": "GET",
+      "path": "/calendar/admin/sources"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "createSource",
+      "verb": "POST",
+      "path": "/calendar/admin/sources"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "toggleSourceActive",
+      "verb": "PATCH",
+      "path": "/calendar/admin/sources/:id"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "getAdminLogs",
+      "verb": "GET",
+      "path": "/calendar/admin/logs"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "triggerSync",
+      "verb": "POST",
+      "path": "/calendar/admin/sync"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "triggerSyncMacro",
+      "verb": "POST",
+      "path": "/calendar/admin/sync-macro"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "triggerSyncAll",
+      "verb": "POST",
+      "path": "/calendar/admin/sync-all"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "triggerSyncSource",
+      "verb": "POST",
+      "path": "/calendar/admin/sync-source/:sourceId"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "syncTradingViewEarnings",
+      "verb": "POST",
+      "path": "/calendar/admin/sync-tradingview-earnings"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.controller.ts",
+      "method": "syncReportedEarnings",
+      "verb": "POST",
+      "path": "/calendar/admin/sync-reported-earnings"
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.controller.ts",
+      "method": "create",
+      "verb": "POST",
+      "path": "/chart-analysis"
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.controller.ts",
+      "method": "findAllUser",
+      "verb": "GET",
+      "path": "/chart-analysis"
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.controller.ts",
+      "method": "getVersion",
+      "verb": "GET",
+      "path": "/chart-analysis/version/:versionId"
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.controller.ts",
+      "method": "findOne",
+      "verb": "GET",
+      "path": "/chart-analysis/:id"
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.controller.ts",
+      "method": "update",
+      "verb": "PUT",
+      "path": "/chart-analysis/:id"
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.controller.ts",
+      "method": "delete",
+      "verb": "DELETE",
+      "path": "/chart-analysis/:id"
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.controller.ts",
+      "method": "createVersion",
+      "verb": "POST",
+      "path": "/chart-analysis/:id/version"
+    },
+    {
+      "file": "apps/api/src/chart-analysis/chart-analysis.controller.ts",
+      "method": "fork",
+      "verb": "POST",
+      "path": "/chart-analysis/:id/fork"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "findAll",
+      "verb": "GET",
+      "path": "/communities"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "myCommunities",
+      "verb": "GET",
+      "path": "/communities/me/created"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "myJoinedCommunities",
+      "verb": "GET",
+      "path": "/communities/me/joined"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "getInvite",
+      "verb": "GET",
+      "path": "/communities/invites/:code"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "acceptInvite",
+      "verb": "POST",
+      "path": "/communities/invites/:code/accept"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "findOne",
+      "verb": "GET",
+      "path": "/communities/:id"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "create",
+      "verb": "POST",
+      "path": "/communities"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "update",
+      "verb": "PATCH",
+      "path": "/communities/:id"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "remove",
+      "verb": "DELETE",
+      "path": "/communities/:id"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "listSections",
+      "verb": "GET",
+      "path": "/communities/:id/sections"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "createSection",
+      "verb": "POST",
+      "path": "/communities/:id/sections"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "reorderSections",
+      "verb": "POST",
+      "path": "/communities/:id/sections/reorder"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "updateSection",
+      "verb": "PATCH",
+      "path": "/communities/:id/sections/:sectionId"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "deleteSection",
+      "verb": "DELETE",
+      "path": "/communities/:id/sections/:sectionId"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "join",
+      "verb": "POST",
+      "path": "/communities/:id/join"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "leave",
+      "verb": "DELETE",
+      "path": "/communities/:id/leave"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "getMembers",
+      "verb": "GET",
+      "path": "/communities/:id/members"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "manageMemberRole",
+      "verb": "PATCH",
+      "path": "/communities/:id/members/:userId/role"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "removeMember",
+      "verb": "DELETE",
+      "path": "/communities/:id/members/:userId"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "createCheckout",
+      "verb": "POST",
+      "path": "/communities/:id/checkout"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "payWithCard",
+      "verb": "POST",
+      "path": "/communities/:id/pay-card"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "cancelSubscription",
+      "verb": "POST",
+      "path": "/communities/:id/cancel-subscription"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "listPosts",
+      "verb": "GET",
+      "path": "/communities/:id/posts"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "createPost",
+      "verb": "POST",
+      "path": "/communities/:id/posts"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "pinPost",
+      "verb": "PATCH",
+      "path": "/communities/:id/posts/:postId/pin"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "deletePost",
+      "verb": "DELETE",
+      "path": "/communities/:id/posts/:postId"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "createReport",
+      "verb": "POST",
+      "path": "/communities/:id/reports"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "listReports",
+      "verb": "GET",
+      "path": "/communities/:id/reports"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "resolveReport",
+      "verb": "PATCH",
+      "path": "/communities/:id/reports/:reportId"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "createJoinRequest",
+      "verb": "POST",
+      "path": "/communities/:id/join-requests"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "listJoinRequests",
+      "verb": "GET",
+      "path": "/communities/:id/join-requests"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "reviewJoinRequest",
+      "verb": "PATCH",
+      "path": "/communities/:id/join-requests/:requestId"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "createInvite",
+      "verb": "POST",
+      "path": "/communities/:id/invites"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "createPlan",
+      "verb": "POST",
+      "path": "/communities/:id/plans"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "deletePlan",
+      "verb": "DELETE",
+      "path": "/communities/:id/plans/:planId"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "listResources",
+      "verb": "GET",
+      "path": "/communities/:id/resources"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "createResource",
+      "verb": "POST",
+      "path": "/communities/:id/resources"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "deleteResource",
+      "verb": "DELETE",
+      "path": "/communities/:id/resources/:resourceId"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "listEvents",
+      "verb": "GET",
+      "path": "/communities/:id/events"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "createEvent",
+      "verb": "POST",
+      "path": "/communities/:id/events"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "deleteEvent",
+      "verb": "DELETE",
+      "path": "/communities/:id/events/:eventId"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "getAnalytics",
+      "verb": "GET",
+      "path": "/communities/:id/analytics"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "getFinancials",
+      "verb": "GET",
+      "path": "/communities/:id/finances"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "updatePaymentGateway",
+      "verb": "PATCH",
+      "path": "/communities/:id/payment-gateway"
+    },
+    {
+      "file": "apps/api/src/communities/communities.controller.ts",
+      "method": "setFeatured",
+      "verb": "PATCH",
+      "path": "/communities/:id/featured"
+    },
+    {
+      "file": "apps/api/src/contact/contact.controller.ts",
+      "method": "create",
+      "verb": "POST",
+      "path": "/contact"
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.controller.ts",
+      "method": "apply",
+      "verb": "POST",
+      "path": "/creator-application"
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.controller.ts",
+      "method": "getMyApplication",
+      "verb": "GET",
+      "path": "/creator-application/my"
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.controller.ts",
+      "method": "findAll",
+      "verb": "GET",
+      "path": "/creator-application"
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.controller.ts",
+      "method": "updateStatus",
+      "verb": "PUT",
+      "path": "/creator-application/:id/status"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.controller.ts",
+      "method": "snapshot",
+      "verb": "GET",
+      "path": "/personal-finance/snapshot"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.controller.ts",
+      "method": "preferences",
+      "verb": "POST",
+      "path": "/personal-finance/preferences"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.controller.ts",
+      "method": "preview",
+      "verb": "POST",
+      "path": "/personal-finance/import/preview"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.controller.ts",
+      "method": "import",
+      "verb": "POST",
+      "path": "/personal-finance/import/confirm"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.controller.ts",
+      "method": "export",
+      "verb": "GET",
+      "path": "/personal-finance/export"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.controller.ts",
+      "method": "erase",
+      "verb": "POST",
+      "path": "/personal-finance/erase"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.controller.ts",
+      "method": "contribute",
+      "verb": "POST",
+      "path": "/personal-finance/goals/:id/contributions"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.controller.ts",
+      "method": "list",
+      "verb": "GET",
+      "path": "/personal-finance/:resource"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.controller.ts",
+      "method": "create",
+      "verb": "POST",
+      "path": "/personal-finance/:resource"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.controller.ts",
+      "method": "update",
+      "verb": "PATCH",
+      "path": "/personal-finance/:resource/:id"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.controller.ts",
+      "method": "remove",
+      "verb": "DELETE",
+      "path": "/personal-finance/:resource/:id"
+    },
+    {
+      "file": "apps/api/src/fundamental/controllers/fundamental.controller.ts",
+      "method": "getProviders",
+      "verb": "GET",
+      "path": "/fundamental/providers"
+    },
+    {
+      "file": "apps/api/src/fundamental/controllers/fundamental.controller.ts",
+      "method": "search",
+      "verb": "GET",
+      "path": "/fundamental/search"
+    },
+    {
+      "file": "apps/api/src/fundamental/controllers/fundamental.controller.ts",
+      "method": "getFundamentals",
+      "verb": "GET",
+      "path": "/fundamental/:ticker"
+    },
+    {
+      "file": "apps/api/src/fundamental/controllers/fundamental.controller.ts",
+      "method": "refreshFundamentals",
+      "verb": "POST",
+      "path": "/fundamental/:ticker/refresh"
+    },
+    {
+      "file": "apps/api/src/health/health.controller.ts",
+      "method": "check",
+      "verb": "GET",
+      "path": "/health"
+    },
+    {
+      "file": "apps/api/src/health/health.controller.ts",
+      "method": "checkDb",
+      "verb": "GET",
+      "path": "/health/db"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "getChannels",
+      "verb": "GET",
+      "path": "/hub/channels"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "createChannel",
+      "verb": "POST",
+      "path": "/hub/channels"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "updateChannel",
+      "verb": "PATCH",
+      "path": "/hub/channels/:id"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "deleteChannel",
+      "verb": "DELETE",
+      "path": "/hub/channels/:id"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "seedChannels",
+      "verb": "POST",
+      "path": "/hub/seed"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "getMessages",
+      "verb": "GET",
+      "path": "/hub/channels/:id/messages"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "sendMessage",
+      "verb": "POST",
+      "path": "/hub/channels/:id/messages"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "pinMessage",
+      "verb": "PATCH",
+      "path": "/hub/messages/:id/pin"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "deleteMessage",
+      "verb": "DELETE",
+      "path": "/hub/messages/:id"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "getAllPosts",
+      "verb": "GET",
+      "path": "/hub/posts"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "getPosts",
+      "verb": "GET",
+      "path": "/hub/channels/:id/posts"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "createPost",
+      "verb": "POST",
+      "path": "/hub/channels/:id/posts"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "pinPost",
+      "verb": "PATCH",
+      "path": "/hub/posts/:id/pin"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "deletePost",
+      "verb": "DELETE",
+      "path": "/hub/posts/:id"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "getComments",
+      "verb": "GET",
+      "path": "/hub/posts/:id/comments"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "addComment",
+      "verb": "POST",
+      "path": "/hub/posts/:id/comments"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "deleteComment",
+      "verb": "DELETE",
+      "path": "/hub/comments/:id"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "getEvents",
+      "verb": "GET",
+      "path": "/hub/events"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "createEvent",
+      "verb": "POST",
+      "path": "/hub/events"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "deleteEvent",
+      "verb": "DELETE",
+      "path": "/hub/events/:id"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "getResources",
+      "verb": "GET",
+      "path": "/hub/resources"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "createResource",
+      "verb": "POST",
+      "path": "/hub/resources"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "deleteResource",
+      "verb": "DELETE",
+      "path": "/hub/resources/:id"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "getAdminStats",
+      "verb": "GET",
+      "path": "/hub/admin/stats"
+    },
+    {
+      "file": "apps/api/src/hub/hub.controller.ts",
+      "method": "getAdminMembers",
+      "verb": "GET",
+      "path": "/hub/admin/members"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getDailyAnalysis",
+      "verb": "GET",
+      "path": "/market/analysis/daily"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getTickers",
+      "verb": "GET",
+      "path": "/market/tickers"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getDashboard",
+      "verb": "GET",
+      "path": "/market/dashboard"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getPremarket",
+      "verb": "GET",
+      "path": "/market/premarket"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "search",
+      "verb": "GET",
+      "path": "/market/search"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "quotes",
+      "verb": "GET",
+      "path": "/market/quotes"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "quote",
+      "verb": "GET",
+      "path": "/market/quote"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getFinvizHeatmap",
+      "verb": "GET",
+      "path": "/market/finviz/heatmap"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getSP500TechnicalHeatmap",
+      "verb": "GET",
+      "path": "/market/heatmap/sp500"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getSP500ValueCreation",
+      "verb": "GET",
+      "path": "/market/value-creation/sp500"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getOpportunities",
+      "verb": "GET",
+      "path": "/market/opportunities"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getDolarMep",
+      "verb": "GET",
+      "path": "/market/dolar/mep"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getDolarCcl",
+      "verb": "GET",
+      "path": "/market/dolar/ccl"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getDolarRates",
+      "verb": "GET",
+      "path": "/market/dolar/rates"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getCedears",
+      "verb": "GET",
+      "path": "/market/cedears"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getCedearDetail",
+      "verb": "GET",
+      "path": "/market/cedears/:symbol"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getNews",
+      "verb": "GET",
+      "path": "/market/news"
+    },
+    {
+      "file": "apps/api/src/market/market.controller.ts",
+      "method": "getCandles",
+      "verb": "GET",
+      "path": "/market/candles"
+    },
+    {
+      "file": "apps/api/src/market-ranking/market-ranking.controller.ts",
+      "method": "getTopGainers",
+      "verb": "GET",
+      "path": "/market/rankings/top-gainers"
+    },
+    {
+      "file": "apps/api/src/market-ranking/market-ranking.controller.ts",
+      "method": "getTopLosers",
+      "verb": "GET",
+      "path": "/market/rankings/top-losers"
+    },
+    {
+      "file": "apps/api/src/market-ranking/market-ranking.controller.ts",
+      "method": "getRankings",
+      "verb": "GET",
+      "path": "/market/rankings"
+    },
+    {
+      "file": "apps/api/src/market-ranking/market-ranking.controller.ts",
+      "method": "getAdminOverview",
+      "verb": "GET",
+      "path": "/market/rankings/admin/overview"
+    },
+    {
+      "file": "apps/api/src/market-ranking/market-ranking.controller.ts",
+      "method": "triggerManualRanking",
+      "verb": "POST",
+      "path": "/market/rankings/admin/trigger"
+    },
+    {
+      "file": "apps/api/src/market-ranking/market-ranking.controller.ts",
+      "method": "triggerSyncUniverse",
+      "verb": "POST",
+      "path": "/market/rankings/admin/sync-universe"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.controller.ts",
+      "method": "createProCheckout",
+      "verb": "POST",
+      "path": "/mercadopago/checkout/pro"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.controller.ts",
+      "method": "createCreatorCheckout",
+      "verb": "POST",
+      "path": "/mercadopago/checkout/creator"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.controller.ts",
+      "method": "handleWebhook",
+      "verb": "POST",
+      "path": "/mercadopago/webhook"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.controller.ts",
+      "method": "getStatus",
+      "verb": "GET",
+      "path": "/mercadopago/status/:paymentId"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.controller.ts",
+      "method": "getConfig",
+      "verb": "GET",
+      "path": "/mercadopago/config"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.controller.ts",
+      "method": "recurringStatus",
+      "verb": "GET",
+      "path": "/mercadopago/subscription-status"
+    },
+    {
+      "file": "apps/api/src/messages/messages.controller.ts",
+      "method": "getConversations",
+      "verb": "GET",
+      "path": "/messages/conversations"
+    },
+    {
+      "file": "apps/api/src/messages/messages.controller.ts",
+      "method": "createOrGetConversation",
+      "verb": "POST",
+      "path": "/messages/conversations"
+    },
+    {
+      "file": "apps/api/src/messages/messages.controller.ts",
+      "method": "updateConversation",
+      "verb": "PATCH",
+      "path": "/messages/conversations/:id"
+    },
+    {
+      "file": "apps/api/src/messages/messages.controller.ts",
+      "method": "getMessages",
+      "verb": "GET",
+      "path": "/messages/conversations/:id/messages"
+    },
+    {
+      "file": "apps/api/src/messages/messages.controller.ts",
+      "method": "sendMessage",
+      "verb": "POST",
+      "path": "/messages/conversations/:id/messages"
+    },
+    {
+      "file": "apps/api/src/messages/messages.controller.ts",
+      "method": "updateMessage",
+      "verb": "PATCH",
+      "path": "/messages/conversations/:conversationId/messages/:messageId"
+    },
+    {
+      "file": "apps/api/src/messages/messages.controller.ts",
+      "method": "markAsRead",
+      "verb": "POST",
+      "path": "/messages/conversations/:id/read"
+    },
+    {
+      "file": "apps/api/src/messages/messages.controller.ts",
+      "method": "getUnreadCount",
+      "verb": "GET",
+      "path": "/messages/unread-count"
+    },
+    {
+      "file": "apps/api/src/messages/messages.controller.ts",
+      "method": "searchUsers",
+      "verb": "GET",
+      "path": "/messages/search-users"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "getCategories",
+      "verb": "GET",
+      "path": "/news/slots/categories"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "getHeadlines",
+      "verb": "GET",
+      "path": "/news/slots/headlines"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "getCategorySlots",
+      "verb": "GET",
+      "path": "/news/slots/category/:slug"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "registerClick",
+      "verb": "POST",
+      "path": "/news/slots/:slotId/click"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "getAutomationOverview",
+      "verb": "GET",
+      "path": "/admin/news/slots/automation/overview"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "runAutomation",
+      "verb": "POST",
+      "path": "/admin/news/slots/automation/run"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "updateAutomationCategory",
+      "verb": "PATCH",
+      "path": "/admin/news/slots/automation/categories/:id"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "getAutomationSources",
+      "verb": "GET",
+      "path": "/admin/news/slots/automation/sources"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "createAutomationSource",
+      "verb": "POST",
+      "path": "/admin/news/slots/automation/sources"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "updateAutomationSource",
+      "verb": "PATCH",
+      "path": "/admin/news/slots/automation/sources/:id"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "updateSourceCategoryPolicy",
+      "verb": "PATCH",
+      "path": "/admin/news/slots/automation/sources/:sourceId/categories/:categoryId"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "getAdminCategories",
+      "verb": "GET",
+      "path": "/admin/news/slots/categories"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "createCategory",
+      "verb": "POST",
+      "path": "/admin/news/slots/categories"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "updateCategory",
+      "verb": "PATCH",
+      "path": "/admin/news/slots/categories/:id"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "getAdminCategorySlots",
+      "verb": "GET",
+      "path": "/admin/news/slots/category/:slug"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "scrapePreview",
+      "verb": "POST",
+      "path": "/admin/news/slots/scrape-preview"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "assignArticle",
+      "verb": "PATCH",
+      "path": "/admin/news/slots/:slotId"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "publishSlot",
+      "verb": "POST",
+      "path": "/admin/news/slots/:slotId/publish"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "unpublishSlot",
+      "verb": "POST",
+      "path": "/admin/news/slots/:slotId/unpublish"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "toggleSlotActive",
+      "verb": "PATCH",
+      "path": "/admin/news/slots/:slotId/toggle-active"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "getSlotHistory",
+      "verb": "GET",
+      "path": "/admin/news/slots/:slotId/history"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.controller.ts",
+      "method": "seed",
+      "verb": "POST",
+      "path": "/admin/news/slots/seed"
+    },
+    {
+      "file": "apps/api/src/news/news.controller.ts",
+      "method": "getNews",
+      "verb": "GET",
+      "path": "/news"
+    },
+    {
+      "file": "apps/api/src/news/news.controller.ts",
+      "method": "getNewsByTicker",
+      "verb": "GET",
+      "path": "/news/ticker/:ticker"
+    },
+    {
+      "file": "apps/api/src/news/news.controller.ts",
+      "method": "getCategories",
+      "verb": "GET",
+      "path": "/news/categories"
+    },
+    {
+      "file": "apps/api/src/news/news.controller.ts",
+      "method": "getSources",
+      "verb": "GET",
+      "path": "/news/sources"
+    },
+    {
+      "file": "apps/api/src/news/news.controller.ts",
+      "method": "getTrending",
+      "verb": "GET",
+      "path": "/news/trending"
+    },
+    {
+      "file": "apps/api/src/news/news.controller.ts",
+      "method": "getNewsByCategory",
+      "verb": "GET",
+      "path": "/news/category/:slug"
+    },
+    {
+      "file": "apps/api/src/news/news.controller.ts",
+      "method": "triggerFetch",
+      "verb": "POST",
+      "path": "/news/fetch"
+    },
+    {
+      "file": "apps/api/src/news/news.controller.ts",
+      "method": "getStats",
+      "verb": "GET",
+      "path": "/news/stats"
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.controller.ts",
+      "method": "getNotifications",
+      "verb": "GET",
+      "path": "/notifications"
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.controller.ts",
+      "method": "getUnreadCount",
+      "verb": "GET",
+      "path": "/notifications/unread-count"
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.controller.ts",
+      "method": "markAsRead",
+      "verb": "PATCH",
+      "path": "/notifications/:id/read"
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.controller.ts",
+      "method": "markAllAsRead",
+      "verb": "PATCH",
+      "path": "/notifications/read-all"
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.controller.ts",
+      "method": "deleteNotification",
+      "verb": "DELETE",
+      "path": "/notifications/:id"
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.controller.ts",
+      "method": "getPreferences",
+      "verb": "GET",
+      "path": "/notifications/preferences"
+    },
+    {
+      "file": "apps/api/src/notifications/notifications.controller.ts",
+      "method": "updatePreferences",
+      "verb": "PATCH",
+      "path": "/notifications/preferences"
+    },
+    {
+      "file": "apps/api/src/notifications/push.controller.ts",
+      "method": "config",
+      "verb": "GET",
+      "path": "/notifications/push/config"
+    },
+    {
+      "file": "apps/api/src/notifications/push.controller.ts",
+      "method": "status",
+      "verb": "POST",
+      "path": "/notifications/push/status"
+    },
+    {
+      "file": "apps/api/src/notifications/push.controller.ts",
+      "method": "subscribe",
+      "verb": "POST",
+      "path": "/notifications/push/subscribe"
+    },
+    {
+      "file": "apps/api/src/notifications/push.controller.ts",
+      "method": "unsubscribe",
+      "verb": "POST",
+      "path": "/notifications/push/unsubscribe"
+    },
+    {
+      "file": "apps/api/src/notifications/push.controller.ts",
+      "method": "test",
+      "verb": "POST",
+      "path": "/notifications/push/test"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getWatchlists",
+      "verb": "GET",
+      "path": "/portfolios/watchlists"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "createWatchlist",
+      "verb": "POST",
+      "path": "/portfolios/watchlists"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "updateWatchlist",
+      "verb": "PATCH",
+      "path": "/portfolios/watchlists/:id"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "deleteWatchlist",
+      "verb": "DELETE",
+      "path": "/portfolios/watchlists/:id"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "createPortfolio",
+      "verb": "POST",
+      "path": "/portfolios"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getUserPortfolios",
+      "verb": "GET",
+      "path": "/portfolios"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPublicPortfolios",
+      "verb": "GET",
+      "path": "/portfolios/public/:userId"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPublicPortfolioMetrics",
+      "verb": "GET",
+      "path": "/portfolios/public/portfolio/:id/metrics"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPublicPortfolioMovements",
+      "verb": "GET",
+      "path": "/portfolios/public/portfolio/:id/movements"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioById",
+      "verb": "GET",
+      "path": "/portfolios/:id"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioMetrics",
+      "verb": "GET",
+      "path": "/portfolios/:id/metrics"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioHistory",
+      "verb": "GET",
+      "path": "/portfolios/:id/history"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "updatePortfolio",
+      "verb": "PUT",
+      "path": "/portfolios/:id"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "deletePortfolio",
+      "verb": "DELETE",
+      "path": "/portfolios/:id"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "addAsset",
+      "verb": "POST",
+      "path": "/portfolios/:id/assets"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioAssets",
+      "verb": "GET",
+      "path": "/portfolios/:id/assets"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "updateAsset",
+      "verb": "PUT",
+      "path": "/portfolios/assets/:assetId"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "deleteAsset",
+      "verb": "DELETE",
+      "path": "/portfolios/assets/:assetId"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioMovements",
+      "verb": "GET",
+      "path": "/portfolios/:id/movements"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "createTransaction",
+      "verb": "POST",
+      "path": "/portfolios/:id/transactions"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioSummary",
+      "verb": "GET",
+      "path": "/portfolios/:id/summary"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioPerformance",
+      "verb": "GET",
+      "path": "/portfolios/:id/performance"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioAllocation",
+      "verb": "GET",
+      "path": "/portfolios/:id/allocation"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getAssetPnL",
+      "verb": "GET",
+      "path": "/portfolios/:id/asset-pnl"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioReturns",
+      "verb": "GET",
+      "path": "/portfolios/:id/returns"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioDrawdown",
+      "verb": "GET",
+      "path": "/portfolios/:id/drawdown"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioDividends",
+      "verb": "GET",
+      "path": "/portfolios/:id/dividends"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioRisk",
+      "verb": "GET",
+      "path": "/portfolios/:id/risk"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.controller.ts",
+      "method": "getPortfolioBenchmarks",
+      "verb": "GET",
+      "path": "/portfolios/:id/benchmarks"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "getFeed",
+      "verb": "GET",
+      "path": "/posts/feed"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "getSaved",
+      "verb": "GET",
+      "path": "/posts/saved"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "getUserPosts",
+      "verb": "GET",
+      "path": "/posts/user/:username"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "proxyImage",
+      "verb": "GET",
+      "path": "/posts/proxy-image"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "uploadMedia",
+      "verb": "POST",
+      "path": "/posts/upload-media"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "createPost",
+      "verb": "POST",
+      "path": "/posts"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "getPost",
+      "verb": "GET",
+      "path": "/posts/:id"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "updatePost",
+      "verb": "PATCH",
+      "path": "/posts/:id"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "deletePost",
+      "verb": "DELETE",
+      "path": "/posts/:id"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "toggleLike",
+      "verb": "POST",
+      "path": "/posts/:id/like"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "getComments",
+      "verb": "GET",
+      "path": "/posts/:id/comments"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "addComment",
+      "verb": "POST",
+      "path": "/posts/:id/comment"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "deleteComment",
+      "verb": "DELETE",
+      "path": "/posts/comment/:commentId"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "toggleCommentLike",
+      "verb": "POST",
+      "path": "/posts/comment/:commentId/like"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "toggleRepost",
+      "verb": "POST",
+      "path": "/posts/:id/repost"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "toggleSave",
+      "verb": "POST",
+      "path": "/posts/:id/save"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "reportPost",
+      "verb": "POST",
+      "path": "/posts/:id/report"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "method": "getAllPosts",
+      "verb": "GET",
+      "path": "/posts"
+    },
+    {
+      "file": "apps/api/src/reports/reports.controller.ts",
+      "method": "createReport",
+      "verb": "POST",
+      "path": "/reports"
+    },
+    {
+      "file": "apps/api/src/settings/settings.controller.ts",
+      "method": "getSettings",
+      "verb": "GET",
+      "path": "/me/settings"
+    },
+    {
+      "file": "apps/api/src/settings/settings.controller.ts",
+      "method": "updatePrivacy",
+      "verb": "PATCH",
+      "path": "/me/privacy"
+    },
+    {
+      "file": "apps/api/src/settings/settings.controller.ts",
+      "method": "updatePreferences",
+      "verb": "PATCH",
+      "path": "/me/preferences"
+    },
+    {
+      "file": "apps/api/src/settings/settings.controller.ts",
+      "method": "updateOnboarding",
+      "verb": "PATCH",
+      "path": "/me/onboarding"
+    },
+    {
+      "file": "apps/api/src/settings/settings.controller.ts",
+      "method": "logoutAll",
+      "verb": "POST",
+      "path": "/me/logout-all"
+    },
+    {
+      "file": "apps/api/src/settings/settings.controller.ts",
+      "method": "deleteAccount",
+      "verb": "DELETE",
+      "path": "/me/account"
+    },
+    {
+      "file": "apps/api/src/settings/settings.controller.ts",
+      "method": "getVerification",
+      "verb": "GET",
+      "path": "/me/verification"
+    },
+    {
+      "file": "apps/api/src/settings/settings.controller.ts",
+      "method": "submitVerification",
+      "verb": "POST",
+      "path": "/me/verification"
+    },
+    {
+      "file": "apps/api/src/settings/settings.controller.ts",
+      "method": "uploadAvatar",
+      "verb": "POST",
+      "path": "/me/avatar"
+    },
+    {
+      "file": "apps/api/src/settings/settings.controller.ts",
+      "method": "uploadBanner",
+      "verb": "POST",
+      "path": "/me/banner"
+    },
+    {
+      "file": "apps/api/src/stories/stories.controller.ts",
+      "method": "getFeed",
+      "verb": "GET",
+      "path": "/stories/feed"
+    },
+    {
+      "file": "apps/api/src/stories/stories.controller.ts",
+      "method": "createStory",
+      "verb": "POST",
+      "path": "/stories"
+    },
+    {
+      "file": "apps/api/src/stories/stories.controller.ts",
+      "method": "markViewed",
+      "verb": "POST",
+      "path": "/stories/:id/view"
+    },
+    {
+      "file": "apps/api/src/stories/stories.controller.ts",
+      "method": "deleteStory",
+      "verb": "DELETE",
+      "path": "/stories/:id"
+    },
+    {
+      "file": "apps/api/src/stories/stories.controller.ts",
+      "method": "likeStory",
+      "verb": "POST",
+      "path": "/stories/:id/like"
+    },
+    {
+      "file": "apps/api/src/stories/stories.controller.ts",
+      "method": "unlikeStory",
+      "verb": "DELETE",
+      "path": "/stories/:id/like"
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.controller.ts",
+      "method": "getConfig",
+      "verb": "GET",
+      "path": "/stripe/config"
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.controller.ts",
+      "method": "checkoutStatus",
+      "verb": "GET",
+      "path": "/stripe/checkout/:sessionId/status"
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.controller.ts",
+      "method": "handleWebhook",
+      "verb": "POST",
+      "path": "/stripe/webhook"
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.controller.ts",
+      "method": "createProSubscription",
+      "verb": "POST",
+      "path": "/stripe/subscriptions/pro/checkout"
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.controller.ts",
+      "method": "createCreatorSubscription",
+      "verb": "POST",
+      "path": "/stripe/subscriptions/creator/checkout"
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.controller.ts",
+      "method": "cancelProSubscription",
+      "verb": "POST",
+      "path": "/stripe/subscriptions/pro/cancel"
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.controller.ts",
+      "method": "createCommunityPayment",
+      "verb": "POST",
+      "path": "/stripe/communities/:communityId/checkout"
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.controller.ts",
+      "method": "listMyInvoices",
+      "verb": "GET",
+      "path": "/stripe/invoices/me"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "getMyProfile",
+      "verb": "GET",
+      "path": "/users/me"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "updateProfile",
+      "verb": "PATCH",
+      "path": "/users/me"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "changePassword",
+      "verb": "PATCH",
+      "path": "/users/me/password"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "updatePortfolioVisibility",
+      "verb": "PATCH",
+      "path": "/users/me/portfolio-visibility"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "updatePreferences",
+      "verb": "PATCH",
+      "path": "/users/me/preferences"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "updatePrivacy",
+      "verb": "PATCH",
+      "path": "/users/me/privacy"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "getRecommendedUsers",
+      "verb": "GET",
+      "path": "/users/recommendations"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "getUserRanking",
+      "verb": "GET",
+      "path": "/users/ranking"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "getRankingLeaderboard",
+      "verb": "GET",
+      "path": "/users/ranking/leaderboard"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "searchUsers",
+      "verb": "GET",
+      "path": "/users/search"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "toggleFollowPost",
+      "verb": "POST",
+      "path": "/users/:username/follow"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "toggleFollow",
+      "verb": "PATCH",
+      "path": "/users/:username/follow"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "getFollowers",
+      "verb": "GET",
+      "path": "/users/:username/followers"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "getFollowing",
+      "verb": "GET",
+      "path": "/users/:username/following"
+    },
+    {
+      "file": "apps/api/src/user/user.controller.ts",
+      "method": "getUserProfile",
+      "verb": "GET",
+      "path": "/users/:username"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "getWatchlists",
+      "verb": "GET",
+      "path": "/watchlist"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "createWatchlist",
+      "verb": "POST",
+      "path": "/watchlist"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "getIdeas",
+      "verb": "GET",
+      "path": "/watchlist/ideas"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "toggleFollowIdea",
+      "verb": "POST",
+      "path": "/watchlist/ideas/follow"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "resolveSymbols",
+      "verb": "POST",
+      "path": "/watchlist/resolve-symbols"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "getUserListsForSymbol",
+      "verb": "GET",
+      "path": "/watchlist/membership/:symbol"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "getPublicCommunityPosts",
+      "verb": "GET",
+      "path": "/watchlist/posts/:symbol"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "moveCopyItem",
+      "verb": "POST",
+      "path": "/watchlist/move-copy"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "getWatchlistDetail",
+      "verb": "GET",
+      "path": "/watchlist/:id"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "getDeleteImpact",
+      "verb": "GET",
+      "path": "/watchlist/:id/delete-impact"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "updateWatchlist",
+      "verb": "PATCH",
+      "path": "/watchlist/:id"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "deleteWatchlist",
+      "verb": "DELETE",
+      "path": "/watchlist/:id"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "addItem",
+      "verb": "POST",
+      "path": "/watchlist/:id/items"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "batchImport",
+      "verb": "POST",
+      "path": "/watchlist/:id/batch-import"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "exportWatchlist",
+      "verb": "GET",
+      "path": "/watchlist/:id/export"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "updateItem",
+      "verb": "PATCH",
+      "path": "/watchlist/:id/items/:itemId"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "removeItem",
+      "verb": "DELETE",
+      "path": "/watchlist/:id/items/:itemId"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "addNote",
+      "verb": "POST",
+      "path": "/watchlist/items/:itemId/notes"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.controller.ts",
+      "method": "deleteNote",
+      "verb": "DELETE",
+      "path": "/watchlist/notes/:noteId"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,10 +10,10 @@ import {
     Bookmark, MessageCircle, BarChart2,
 } from 'lucide-react';
 import CreatePostWidget from './CreatePostWidget';
-import TradingViewWidget from './TradingViewWidget';
-import CommentsPanel from './posts/CommentsPanel';
-import ReportModal from './ReportModal';
-import DeletePostModal from './DeletePostModal';
+const TradingViewWidget = lazy(() => import('./TradingViewWidget'));
+const CommentsPanel = lazy(() => import('./posts/CommentsPanel'));
+const ReportModal = lazy(() => import('./ReportModal'));
+const DeletePostModal = lazy(() => import('./DeletePostModal'));
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -215,7 +215,10 @@ export default function SocialFeed({ initialPosts, isLoading = false, onPostCrea
 
 /* ── FeedItem ─────────────────────────────────────────────────── */
 function FeedItem({ post }: { post: Post }) {
-    if (!post) return null;
+    return post ? <FeedItemContent post={post} /> : null;
+}
+
+function FeedItemContent({ post }: { post: Post }) {
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const authorUsername = post.author?.username || 'Usuario';
@@ -478,7 +481,7 @@ function FeedItem({ post }: { post: Post }) {
                                 />
                             ) : (
                                 <div className="h-[460px] sm:h-[500px] min-h-[460px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
-                                    <TradingViewWidget symbol={tvSymbol} height={500} />
+                                    <Suspense fallback={<div className="h-[500px] animate-pulse bg-muted" role="status" aria-label="Cargando gráfico" />}><TradingViewWidget symbol={tvSymbol} height={500} /></Suspense>
                                 </div>
                             )}
                         </div>
@@ -488,7 +491,8 @@ function FeedItem({ post }: { post: Post }) {
                                 <div className="rounded-xl overflow-hidden" style={{ border: '1px solid hsl(var(--border) / 0.25)' }}>
                                     <img
                                         src={resolveMediaUrl(mediaUrl)}
-                                        alt="Post attachment"
+                                        alt="Archivo de la publicación"
+                                        loading="lazy" decoding="async"
                                         className="w-full h-auto max-h-[400px] object-cover"
                                         onError={(e) => {
                                             (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
@@ -499,7 +503,7 @@ function FeedItem({ post }: { post: Post }) {
 
                             {!mediaUrl && tvSymbol && (
                                 <div className="h-[460px] sm:h-[500px] min-h-[460px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
-                                    <TradingViewWidget symbol={tvSymbol} height={500} />
+                                    <Suspense fallback={<div className="h-[500px] animate-pulse bg-muted" role="status" aria-label="Cargando gráfico" />}><TradingViewWidget symbol={tvSymbol} height={500} /></Suspense>
                                 </div>
                             )}
                         </>
@@ -592,9 +596,9 @@ function FeedItem({ post }: { post: Post }) {
             <AnimatePresence>
                 {showQuoteBox && (
                     <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
+                        initial={{ opacity: 0, scaleY: 0.98 }}
+                        animate={{ opacity: 1, scaleY: 1 }}
+                        exit={{ opacity: 0, scaleY: 0.98 }}
                         className="border-t overflow-hidden"
                         style={{ borderColor: 'hsl(var(--border) / 0.3)', background: 'hsl(var(--secondary) / 0.25)' }}
                     >
@@ -626,32 +630,32 @@ function FeedItem({ post }: { post: Post }) {
 
             {/* ── Comments panel ─── */}
             {showComments && (
-                <CommentsPanel
+                <Suspense fallback={<div role="status" className="p-4">Cargando comentarios…</div>}><CommentsPanel
                     postId={post.id}
                     currentUserId={user?.id}
                     onCountChange={setCommentsCount}
-                />
+                /></Suspense>
             )}
 
             {/* ── Report modal ─── */}
             <AnimatePresence>
                 {showReportModal && (
-                    <ReportModal
+                    <Suspense fallback={null}><ReportModal
                         isOpen={showReportModal}
                         onClose={() => setShowReportModal(false)}
                         targetType="POST"
                         targetId={post.id}
                         targetPreview={post.content}
-                    />
+                    /></Suspense>
                 )}
             </AnimatePresence>
 
-            <DeletePostModal
+            {showDeleteModal && <Suspense fallback={null}><DeletePostModal
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
                 onConfirm={confirmDelete}
                 isDeleting={isDeleting}
-            />
+            /></Suspense>}
         </article>
     );
 }

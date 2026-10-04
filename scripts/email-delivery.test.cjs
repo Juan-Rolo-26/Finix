@@ -28,10 +28,11 @@ before(async () => {
     await db.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public');
     const dir = mkdtempSync(join(tmpdir(), 'finix-schema-test-'));
     try {
-        const oldSchema = execFileSync('git', ['show', 'HEAD:apps/api/prisma/schema.prisma'], { encoding: 'utf8' });
+        // HEAD already includes the email migration. Build the disposable fixture
+        // from the current schema rather than applying the same DDL twice.
+        const oldSchema = readFileSync('apps/api/prisma/schema.prisma', 'utf8');
         writeFileSync(join(dir, 'schema.prisma'), oldSchema);
         execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'db', 'push', '--schema', join(dir, 'schema.prisma'), '--skip-generate'], { env: process.env, stdio: 'pipe' });
-        await db.query(readFileSync('apps/api/prisma/migrations/20260921170000_email_delivery_push/migration.sql', 'utf8'));
     } finally { rmSync(dir, { recursive: true }); await db.end(); }
     const user = (name, extra = {}) => prisma.user.create({ data: { email: name + '@example.test', username: name, ...extra } });
     admin = await user('email-test-admin', { role: 'ADMIN' });
@@ -132,7 +133,7 @@ test('push worker delivers persistent notifications and removes expired devices'
 
 test('image decoder rejects executable uploads and reencodes PNG', async () => {
     await assert.rejects(service.upload(admin.id, Buffer.from('<svg><script>alert(1)</script></svg>')));
-    const sharp = require('sharp');
+    const sharp = require('node:module').createRequire(join(__dirname, '../apps/api/package.json'))('sharp');
     const bytes = await sharp({ create: { width: 32, height: 32, channels: 3, background: '#008855' } }).png().toBuffer();
     const media = await service.upload(admin.id, bytes);
     assert.equal(media.mimeType, 'image/png');

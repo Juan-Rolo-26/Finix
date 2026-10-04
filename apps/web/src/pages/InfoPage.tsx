@@ -521,7 +521,7 @@ export default function InfoPage() {
 
             <div className="flex justify-center lg:justify-end">
               <div className="finix-marketing-panel inline-flex items-center gap-3 rounded-[26px] border border-border/50 px-5 py-3 shadow-sm">
-                <img src="/logo.png" alt="Finix" className="h-7 w-7 object-contain" />
+                <img src="/logo-small.webp" alt="Finix" className="h-7 w-7 object-contain" />
                 <div className="leading-tight">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                     Finanzas sociales

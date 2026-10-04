@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Bell, Sun, Moon, Plus } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
-import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '../lib/mediaUrl';
 
 const PRIMARY = 'hsl(var(--primary))';
@@ -14,31 +13,11 @@ export function MobileTopBar() {
     const { user } = useAuthStore();
     const { theme, setTheme } = usePreferencesStore();
 
-    const [unreadNotifs, setUnreadNotifs] = useState(0);
+    const [unreadNotifs] = useUnreadCount('notifications');
 
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
 
     const isMessages = location.pathname.startsWith('/messages');
-    useEffect(() => {
-        if (isMessages) return;
-        let mounted = true;
-        const loadUnreadCount = async () => {
-            try {
-                const res = await apiFetch('/notifications/unread-count');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (mounted) setUnreadNotifs(data.count ?? 0);
-                }
-            } catch { }
-        };
-        loadUnreadCount();
-        const iv = setInterval(loadUnreadCount, 30_000);
-        return () => {
-            mounted = false;
-            clearInterval(iv);
-        };
-    }, [isMessages]);
-
     // Messages has its own integrated header — render nothing there.
     if (isMessages) return null;
 
@@ -55,7 +34,7 @@ export function MobileTopBar() {
             {/* Logo */}
             <div className="flex items-center gap-2.5" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
                 <img
-                    src="/logo.png"
+                    src="/logo-small.webp"
                     alt="Finix"
                     className="h-8 w-8 object-contain flex-shrink-0"
                 />

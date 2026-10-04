@@ -399,7 +399,7 @@ export default function AuthPage() {
                             >
                                 <div className="relative">
                                     <div className="absolute -inset-3 rounded-2xl bg-primary/20 blur-xl" />
-                                    <img src="/logo.png" alt="Finix" className="relative h-16 w-16 object-contain drop-shadow-[0_0_20px_rgba(34,197,94,0.5)]" />
+                                    <img src="/logo-small.webp" alt="Finix" className="relative h-16 w-16 object-contain drop-shadow-[0_0_20px_rgba(34,197,94,0.5)]" />
                                 </div>
                                 <div>
                                     <h1 className="text-4xl font-heading font-extrabold text-foreground tracking-tight">Finix</h1>
@@ -458,7 +458,7 @@ export default function AuthPage() {
 
                     <div className="flex flex-col justify-center items-center p-6 lg:p-12 relative min-h-screen lg:min-h-0">
                         <div className="lg:hidden flex items-center gap-3 mb-10">
-                            <img src="/logo.png" alt="Finix" className="h-12 w-12 object-contain" />
+                            <img src="/logo-small.webp" alt="Finix" className="h-12 w-12 object-contain" />
                             <span className="text-2xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">Finix</span>
                         </div>
 

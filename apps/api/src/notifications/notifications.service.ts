@@ -151,7 +151,7 @@ export class NotificationsService {
     }
 
     async getNotifications(userId: string, query: { unreadOnly?: boolean; limit?: number; cursor?: string; category?: string }) {
-        const limit = query.limit ? Math.min(query.limit, 50) : 20;
+        const limit = Math.min(50, Math.max(1, Math.floor(Number(query.limit) || 20)));
 
         let whereClause: any = { userId };
 
@@ -165,7 +165,7 @@ export class NotificationsService {
 
         const notifications = await this.prisma.notification.findMany({
             where: whereClause,
-            orderBy: { createdAt: 'desc' },
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             take: limit + 1, // one extra for pagination
             ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
             include: {
@@ -177,8 +177,8 @@ export class NotificationsService {
 
         let nextCursor: string | undefined = undefined;
         if (notifications.length > limit) {
-            const nextItem = notifications.pop();
-            nextCursor = nextItem!.id;
+            notifications.pop();
+            nextCursor = notifications[notifications.length - 1].id;
         }
 
         const formatted = notifications.map(n => ({

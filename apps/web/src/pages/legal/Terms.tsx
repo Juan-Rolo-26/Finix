@@ -139,7 +139,7 @@ export default function Terms() {
                     </button>
                     <Link to="/dashboard" className="flex items-center gap-3 group cursor-pointer">
                         <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border border-black/20 dark:border-white/30 bg-white dark:bg-zinc-900 shadow-2xs transition-transform group-hover:scale-105">
-                            <img src="/logo.png" alt="Finix" className="h-5 w-5 object-contain" />
+                            <img src="/logo-small.webp" alt="Finix" className="h-5 w-5 object-contain" />
                         </div>
                         <span className="font-heading font-black text-xl tracking-tight text-foreground">Finix</span>
                     </Link>

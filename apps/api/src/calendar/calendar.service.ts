@@ -1,3 +1,4 @@
+import { TtlCache } from '../common/ttl-cache';
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { financialNumber, isCalendarDate, isVisibleEarnings, normalizeEarnings, earningsSurprise, formatEconomicEventDescription, formatEconomicEventTitle, formatEconomicEventSource, localizeEconomicEvent } from '@finix/shared';
 import { PrismaService } from '../prisma.service';
@@ -56,7 +57,13 @@ export class CalendarService {
      *
      * Si no existe un evento en alguna categoría, se oculta esa categoría (sin inventar datos).
      */
+    private readonly homeCache = new TtlCache<HomeCalendarResponse>(2);
     async getHomeEvents(): Promise<HomeCalendarResponse> {
+        const { mondayStr, fridayStr } = this.getCurrentWeekBounds();
+        return this.homeCache.getOrLoad(`${mondayStr}:${fridayStr}`, 15000, () => this.loadHomeEvents());
+    }
+
+    private async loadHomeEvents(): Promise<HomeCalendarResponse> {
         const { mondayStr, fridayStr } = this.getCurrentWeekBounds();
 
         // Check if we have events in DB for the week
@@ -1366,6 +1373,11 @@ export class CalendarService {
     }
 
     async createAdminManualEvent(dto: any) {
+        try { return await this.writeCreateAdminManualEvent(dto); }
+        finally { this.homeCache.clear(); }
+    }
+
+    private async writeCreateAdminManualEvent(dto: any) {
         if (dto.type === 'EARNINGS' || dto.eventType === 'EARNINGS') {
             const cleanTicker = (dto.ticker || '').toUpperCase().replace(/\./g, '-').trim();
             const score = dto.earningsImpactScore ?? this.earningsScoring.calculateEarningsImpactScore({
@@ -1459,6 +1471,11 @@ export class CalendarService {
     }
 
     async updateAdminEvent(id: string, dto: any) {
+        try { return await this.writeUpdateAdminEvent(id, dto); }
+        finally { this.homeCache.clear(); }
+    }
+
+    private async writeUpdateAdminEvent(id: string, dto: any) {
         const eco = await this.prisma.marketCalendarEvent.findUnique({ where: { id } });
         if (eco) {
             const dataToUpdate: any = { ...dto };
@@ -1501,6 +1518,11 @@ export class CalendarService {
     }
 
     async deleteAdminEvent(id: string) {
+        try { return await this.writeDeleteAdminEvent(id); }
+        finally { this.homeCache.clear(); }
+    }
+
+    private async writeDeleteAdminEvent(id: string) {
         try {
             await this.prisma.marketCalendarEvent.delete({ where: { id } });
             return { success: true };

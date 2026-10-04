@@ -294,6 +294,17 @@ export class NewsService {
             const rawNews = await this.newsFetcher.fetchAllNews();
             console.log(`[NewsService] Fetched ${rawNews.length} raw news items`);
 
+            const hashes = rawNews.map(item => crypto.createHash('md5').update(item.url).digest('hex'));
+            const existingHashes = new Set<string>();
+            for (let offset = 0; offset < hashes.length; offset += 500) {
+                const existing = await this.prisma.news.findMany({
+                    where: { urlHash: { in: hashes.slice(offset, offset + 500) } }, select: { urlHash: true },
+                });
+                existing.forEach(item => existingHashes.add(item.urlHash));
+            }
+            const categories = await this.prisma.newsCategory.findMany();
+            const sources = new Map<string, any>();
+
             let processed = 0;
             let skipped = 0;
 
@@ -305,15 +316,7 @@ export class NewsService {
                         .update(item.url)
                         .digest('hex');
 
-                    // Check if already exists
-                    const existing = await this.prisma.news.findUnique({
-                        where: { urlHash },
-                    });
-
-                    if (existing) {
-                        skipped++;
-                        continue;
-                    }
+                    if (existingHashes.has(urlHash)) { skipped++; continue; }
 
                     // Translate if needed
                     let titleEs = item.title;
@@ -337,11 +340,12 @@ export class NewsService {
                     // Determine category
                     const category = await this.categorizeNews(
                         titleEs || item.title,
-                        summaryEs || item.summary
+                        summaryEs || item.summary, categories
                     );
 
                     // Get or create source
-                    const source = await this.getOrCreateSource(item.source);
+                    const source = sources.get(item.source) ?? await this.getOrCreateSource(item.source);
+                    sources.set(item.source, source);
                     const suppliedImage = normalizeSourceImage(item.imageUrl, item.url);
                     const imageUrl = resolveNewsImage(item.title, category?.slug, isIllustrativeNewsImage(suppliedImage) ? undefined : suppliedImage);
 
@@ -372,6 +376,7 @@ export class NewsService {
                         },
                     });
 
+                    existingHashes.add(urlHash);
                     processed++;
 
                     // Rate limiting: wait between items
@@ -474,10 +479,10 @@ export class NewsService {
     /**
      * Categorize news based on content
      */
-    private async categorizeNews(title: string, summary: string): Promise<any> {
+    private async categorizeNews(title: string, summary: string, knownCategories?: any[]): Promise<any> {
         const text = `${title} ${summary}`.toLowerCase();
 
-        const categories = await this.prisma.newsCategory.findMany();
+        const categories = knownCategories ?? await this.prisma.newsCategory.findMany();
 
         // Category keywords — order matters (first match wins)
         const categoryMap: Record<string, string[]> = {

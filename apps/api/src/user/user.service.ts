@@ -1,3 +1,4 @@
+import { TtlCache } from '../common/ttl-cache';
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
@@ -664,6 +665,8 @@ export class UserService {
                 data: filteredData,
                 select: this.getProfileSelect(),
             });
+            this.searchCache.clear();
+            this.topTradersCache = null;
             return this.normalizeUserMedia(updated);
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -915,15 +918,13 @@ export class UserService {
         return result;
     }
 
-    private searchCache = new Map<string, { data: any[]; fetchedAt: number }>();
+    private searchCache = new TtlCache<any[]>(200);
 
     async searchUsers(query: string) {
         if (!query || query.length < 2) return [];
         const cacheKey = query.toLowerCase();
-        const cached = this.searchCache.get(cacheKey);
-        if (cached && Date.now() - cached.fetchedAt < 60_000) {
-            return cached.data;
-        }
+        const cached = this.searchCache.peek(cacheKey);
+        if (cached) return cached;
 
         const users = await this.prisma.user.findMany({
             where: {
@@ -948,7 +949,7 @@ export class UserService {
         });
 
         const formatted = users.map((user) => this.normalizeUserMedia(user));
-        this.searchCache.set(cacheKey, { data: formatted, fetchedAt: Date.now() });
+        this.searchCache.set(cacheKey, formatted, 60000);
         return formatted;
     }
 

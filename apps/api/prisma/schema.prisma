@@ -191,6 +191,7 @@ model User {
   // Market Alerts
   alerts MarketAlert[]
 
+  @@index([isProfilePublic, showStats, totalReturn(sort: Desc)], map: "User_public_ranking_idx")
   @@index([username])
   @@index([createdAt])
 }
@@ -217,6 +218,7 @@ model Follow {
   following   User   @relation("following", fields: [followingId], references: [id])
 
   @@id([followerId, followingId])
+  @@index([followingId, followerId], map: "Follow_following_follower_idx")
 }
 
 model Post {

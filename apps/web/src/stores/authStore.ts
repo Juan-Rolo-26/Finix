@@ -1,9 +1,27 @@
 import { create } from 'zustand';
 import { User } from '@finix/shared';
-import { supabase } from '@/lib/supabase';
+
 import { apiFetch, getAccessToken, refreshAccessToken, setAccessToken } from '@/lib/api';
 import { usePreferencesStore } from './preferencesStore';
 import { isFreeAccessEnabled } from './platformAccessStore';
+let providerPromise: Promise<typeof import('@/lib/supabase')> | null = null;
+function getProvider() {
+    providerPromise ??= import('@/lib/supabase').then(module => {
+        const { supabase } = module;
+        supabase.auth.onAuthStateChange((event, session) => {
+            if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && session) {
+                const hasFinixRefreshToken = typeof window !== 'undefined' && Boolean(localStorage.getItem('refreshToken'));
+                if (!hasFinixRefreshToken) {
+                    persistToken(session.access_token);
+                    useAuthStore.setState({ token: session.access_token });
+                }
+            }
+        });
+        return module;
+    }).catch(error => { providerPromise = null; throw error; });
+    return providerPromise;
+}
+
 interface AuthState {
     token: string | null;
     user: User | null;
@@ -283,11 +301,16 @@ export const useAuthStore = create<AuthState>((set) => ({
         } catch {
             // The local session is still cleared if the API is temporarily unavailable.
         }
-        await supabase.auth.signOut();
-        persistToken(null);
-        persistRefreshToken(null);
-        persistUser(null);
-        set({ token: null, user: null });
+        try {
+            await (await getProvider()).supabase.auth.signOut();
+        } catch {
+            // A missing OAuth chunk or provider outage must not retain Finix credentials.
+        } finally {
+            persistToken(null);
+            persistRefreshToken(null);
+            persistUser(null);
+            set({ token: null, user: null });
+        }
     },
 
     syncFromSession: async (): Promise<User | null> => {
@@ -299,8 +322,11 @@ export const useAuthStore = create<AuthState>((set) => ({
             const persistedUser = enhanceUser(JSON.parse(localStorage.getItem('user') || 'null')) as User | null;
             let session = null;
             try {
-                const result = await supabase.auth.getSession();
-                session = result.data.session;
+                // Native Finix sessions do not need the OAuth SDK to restore /auth/me.
+                if (!isFinixApiToken(existingToken)) {
+                    const result = await (await getProvider()).supabase.auth.getSession();
+                    session = result.data.session;
+                }
             } catch {
                 // The independent Finix session can still be restored by its cookie.
             }
@@ -357,7 +383,7 @@ export const useAuthStore = create<AuthState>((set) => ({
                         username = pendingUsername;
                         localStorage.removeItem('pendingUsername');
                         try {
-                            await supabase.auth.updateUser({ data: { username } });
+                            await (await getProvider()).supabase.auth.updateUser({ data: { username } });
                         } catch {
                             // Ignore metadata error if Supabase throws.
                         }
@@ -421,12 +447,3 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 // Supabase is only a bootstrap identity provider. Never overwrite an issued
 // Finix API token; private backend endpoints use its persistent session id.
-supabase.auth.onAuthStateChange((event, session) => {
-    if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && session) {
-        const hasFinixRefreshToken = typeof window !== 'undefined' && Boolean(localStorage.getItem('refreshToken'));
-        if (!hasFinixRefreshToken) {
-            persistToken(session.access_token);
-            useAuthStore.setState({ token: session.access_token });
-        }
-    }
-});

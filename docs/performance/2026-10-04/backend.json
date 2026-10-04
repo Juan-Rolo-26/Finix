@@ -1,0 +1,206 @@
+{
+  "baselineRevision": "4a1625db",
+  "conditions": "Deterministic fixtures: DB-operation delay 5ms, pool size 4; upstream quotes 30ms. Counts are Prisma calls, not SQL statements.",
+  "before": {
+    "communities": {
+      "dataset": "fixture-20-communities",
+      "prismaOperations": 43,
+      "elapsedMs": 65.81894699999975,
+      "resultCount": 20
+    },
+    "quotes": {
+      "dataset": "fixture-30-concurrent-quote-requests",
+      "externalCalls": 31,
+      "coldMs": 31.432397000000037,
+      "warmMs": 30.2543569999998
+    }
+  },
+  "after": {
+    "communities": {
+      "dataset": "fixture-20-communities",
+      "prismaOperations": 3,
+      "elapsedMs": 16.6865829999997,
+      "resultCount": 20
+    },
+    "quotes": {
+      "dataset": "fixture-30-concurrent-quote-requests",
+      "externalCalls": 1,
+      "coldMs": 31.414100999999846,
+      "warmMs": 0.05625499999996464
+    }
+  },
+  "database": [
+    {
+      "phase": "before",
+      "name": "news-etfs-cold",
+      "elapsedMs": 4139.643883,
+      "sqlCount": 18,
+      "sqlDurationMs": 4120,
+      "operations": [
+        {
+          "model": "NewsCategory",
+          "action": "findUnique",
+          "elapsedMs": 873.7470090000006
+        },
+        {
+          "model": "NewsSlot",
+          "action": "count",
+          "elapsedMs": 879.7214510000003
+        },
+        {
+          "model": "NewsSlot",
+          "action": "findMany",
+          "elapsedMs": 834.8138439999993
+        },
+        {
+          "model": "NewsSlot",
+          "action": "findMany",
+          "elapsedMs": 1549.0584900000003
+        }
+      ],
+      "resultCount": 5,
+      "payloadBytes": 7773
+    },
+    {
+      "phase": "before",
+      "name": "news-etfs-warm",
+      "elapsedMs": 5079.1557410000005,
+      "sqlCount": 18,
+      "sqlDurationMs": 5062,
+      "operations": [
+        {
+          "model": "NewsCategory",
+          "action": "findUnique",
+          "elapsedMs": 1399.1691599999995
+        },
+        {
+          "model": "NewsSlot",
+          "action": "count",
+          "elapsedMs": 831.2956200000008
+        },
+        {
+          "model": "NewsSlot",
+          "action": "findMany",
+          "elapsedMs": 834.6679199999999
+        },
+        {
+          "model": "NewsSlot",
+          "action": "findMany",
+          "elapsedMs": 2013.1784150000003
+        }
+      ],
+      "resultCount": 5,
+      "payloadBytes": 7773
+    },
+    {
+      "phase": "before",
+      "name": "feed-recent-20",
+      "elapsedMs": 2342.6016750000017,
+      "sqlCount": 8,
+      "sqlDurationMs": 2332,
+      "operations": [
+        {
+          "model": "Post",
+          "action": "findMany",
+          "elapsedMs": 2341.264813
+        }
+      ],
+      "resultCount": 6,
+      "payloadBytes": 8561
+    },
+    {
+      "phase": "before",
+      "name": "communities-admin-20",
+      "elapsedMs": 4023.2905690000007,
+      "sqlCount": 12,
+      "sqlDurationMs": 3434,
+      "operations": [
+        {
+          "model": "User",
+          "action": "findUnique",
+          "elapsedMs": 842.9201869999997
+        },
+        {
+          "model": "Community",
+          "action": "count",
+          "elapsedMs": 965.5660219999991
+        },
+        {
+          "model": "Community",
+          "action": "findMany",
+          "elapsedMs": 3179.227587999998
+        }
+      ],
+      "resultCount": 0,
+      "payloadBytes": 2
+    },
+    {
+      "phase": "after",
+      "name": "news-etfs-cold",
+      "elapsedMs": 2539.1401670000014,
+      "sqlCount": 10,
+      "sqlDurationMs": 2529,
+      "operations": [
+        {
+          "model": "NewsCategory",
+          "action": "findUnique",
+          "elapsedMs": 918.2056030000022
+        },
+        {
+          "model": "NewsSlot",
+          "action": "findMany",
+          "elapsedMs": 1620.0940240000018
+        }
+      ],
+      "resultCount": 5,
+      "payloadBytes": 7773
+    },
+    {
+      "phase": "after",
+      "name": "news-etfs-warm",
+      "elapsedMs": 0.01368200000069919,
+      "sqlCount": 0,
+      "sqlDurationMs": 0,
+      "operations": [],
+      "resultCount": 5,
+      "payloadBytes": 7773
+    },
+    {
+      "phase": "after",
+      "name": "feed-recent-20",
+      "elapsedMs": 2336.142014000001,
+      "sqlCount": 8,
+      "sqlDurationMs": 2328,
+      "operations": [
+        {
+          "model": "Post",
+          "action": "findMany",
+          "elapsedMs": 2335.5453420000013
+        }
+      ],
+      "resultCount": 6,
+      "payloadBytes": 8561
+    },
+    {
+      "phase": "after",
+      "name": "communities-admin-20",
+      "elapsedMs": 1787.0386999999973,
+      "sqlCount": 8,
+      "sqlDurationMs": 1777,
+      "operations": [
+        {
+          "model": "User",
+          "action": "findUnique",
+          "elapsedMs": 897.9508629999982
+        },
+        {
+          "model": "Community",
+          "action": "findMany",
+          "elapsedMs": 887.2930339999984
+        }
+      ],
+      "resultCount": 0,
+      "payloadBytes": 2
+    }
+  ]
+}

@@ -1586,7 +1586,7 @@ export default function MessagesPage() {
                                                 boxShadow: '0 0 14px hsl(158 100% 45% / 0.35)',
                                             }}
                                         >
-                                            <img src="/logo.png" alt="Finix" className="w-5 h-5 object-contain" />
+                                            <img src="/logo-small.webp" alt="Finix" className="w-5 h-5 object-contain" />
                                         </div>
                                         <div>
                                             <h1 className="text-[17px] font-black tracking-tight" style={{ color: textPrimary }}>

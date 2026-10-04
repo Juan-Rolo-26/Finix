@@ -51,6 +51,12 @@ export class MarketController {
         return this.marketService.searchSymbols(query);
     }
 
+    @Get('quotes')
+    quotes(@Query('symbols') symbols = '') {
+        // Bounded public batch: one upstream scan instead of a request per card.
+        return this.marketService.getQuotes([...new Set(symbols.split(',').map(value => value.trim()).filter(Boolean))].slice(0, 100));
+    }
+
     @Get('quote')
     quote(@Query() q: any) {
         const symbol = q.symbol || '';

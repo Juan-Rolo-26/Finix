@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Shield, LayoutDashboard, Users, FileText, AlertTriangle, LogOut, Menu, ScrollText, Newspaper, BadgeCheck, Sun, Moon, BarChart, Globe, Star, BarChart2, TrendingUp, Calendar, Mail } from 'lucide-react';
 import { adminFetch } from '../lib/api';
@@ -117,7 +117,7 @@ export default function AdminLayout() {
             {/* Main content */}
             <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
                 <div className="flex-1 min-w-0 w-full p-4 sm:p-6 md:p-8 xl:p-10 container mx-auto max-w-7xl animate-in fade-in duration-500">
-                    <Outlet />
+                    <Suspense fallback={<div className="min-h-[320px] animate-pulse bg-muted/30 rounded-xl" role="status" aria-label="Cargando sección" />}><Outlet /></Suspense>
                 </div>
             </main>
         </div>

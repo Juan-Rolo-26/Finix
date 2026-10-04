@@ -13,7 +13,7 @@ function slotService(article = null, foundPhoto = undefined) {
     const writes = [];
     const lookedUp = [];
     const slot = { id: 'slot', categoryId: 'markets', articleId: article?.id ?? null, article };
-    const service = Object.create(NewsSlotsService.prototype);
+    const service = new NewsSlotsService({}, {});
     service.prisma = {
         newsCategory: { findUnique: async () => ({ slug: 'markets' }) },
         newsSlot: { findUnique: async () => slot, update: async args => { writes.push(args); return args.data; } },

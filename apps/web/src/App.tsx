@@ -1,10 +1,10 @@
 import { useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { hasCommunityAccess, hasCommunityCreatorAccess, useAuthStore } from './stores/authStore';
 import { usePreferencesStore } from './stores/preferencesStore';
-import DashboardLayout from './layouts/DashboardLayout';
+const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'));
 import InstallBanner from './components/InstallBanner';
-import CookieConsent from './components/CookieConsent';
+const CookieConsent = lazy(() => import('./components/CookieConsent'));
 import { usePlatformAccessStore } from './stores/platformAccessStore';
 
 // ─── Lazy Loaded Pages ────────────────────────────────────────────────────────
@@ -85,7 +85,10 @@ function ThemeApplier() {
 
 function RequireOnboarding({ children }: { children: React.ReactNode }) {
     const { token, user } = useAuthStore();
+    const accessLoaded = usePlatformAccessStore(state => state.loaded);
+    const location = useLocation();
     if (!token && !user) return <Navigate to="/" replace />;
+    if (!accessLoaded && location.pathname !== '/dashboard') return <div className="min-h-screen grid place-items-center" role="status">Cargando Finix…</div>;
     // Guard removed: users who skipped onboarding can use the app and edit from profile
     return <>{children}</>;
 }
@@ -109,7 +112,7 @@ function RequireCommunityAccess({
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-    const { loaded: accessLoaded, load: loadAccess } = usePlatformAccessStore();
+    const loadAccess = usePlatformAccessStore(state => state.load);
     const { token, user, syncFromSession } = useAuthStore();
 
     // Restore the Finix session on app load. Auth token ownership and provider
@@ -119,13 +122,11 @@ export default function App() {
         syncFromSession();
     }, [loadAccess, syncFromSession]);
 
-    // Resolve the server's launch mode before mounting pages with plan gates.
-    if (!accessLoaded) return <div className="min-h-screen grid place-items-center" role="status">Cargando Finix…</div>;
 
     return (
         <>
             <InstallBanner />
-            <CookieConsent />
+            <Suspense fallback={null}><CookieConsent /></Suspense>
             <ThemeApplier />
             <Suspense
                 fallback={

@@ -52,7 +52,7 @@ test('A URL saved long ago in another category is reused without violating globa
 });
 
 test('Unassigned cards recover distinct published stories while editorial drafts and inactive cards remain intact', async () => {
-    const service = Object.create(NewsSlotsService.prototype);
+    const service = new NewsSlotsService({}, {});
     const slots = [
         { id: 'first', articleId: null, isActive: true },
         { id: 'second', articleId: null, isActive: true },
@@ -86,7 +86,7 @@ test('Unassigned cards recover distinct published stories while editorial drafts
 
 test('Source outages and partial feeds retain prior stories without duplicates or editorial overrides', async () => {
     for (const incoming of [[], ['c'], ['new', 'c']]) {
-        const service = Object.create(NewsSlotsService.prototype);
+        const service = new NewsSlotsService({}, {});
         service.ensureSlotsExist = async () => {};
         const slots = ['a', 'b', 'c'].map(id => ({ id, articleId: id, isActive: true, article: { id, sourceId: 'automatic', isActive: true, isPublished: true, status: 'PUBLISHED' } }));
         slots.push({ id: 'manual', articleId: 'manual', isActive: true, article: { sourceId: null } });
@@ -110,6 +110,7 @@ test('A database failure releases the sync lock so subsequent runs can recover',
     service.running = false;
     service.defaultsReady = Promise.resolve();
     let attempts = 0;
+    service.slotsService = { invalidatePublicCache: () => {} };
     service.performSyncFrequency = async () => { attempts++; throw new Error('Database unavailable'); };
     await assert.rejects(service.syncFrequency('MANUAL'));
     await assert.rejects(service.syncFrequency('MANUAL'));
@@ -127,8 +128,9 @@ test('Source setup retries after a temporary database failure and shares concurr
 });
 
 test('An echoed English title is not cached as Spanish and unavailable translations do not expose English descriptions', async () => {
-    const service = Object.create(NewsSlotsService.prototype);
+    const service = new NewsSlotsService({}, {});
     const { NewsTranslationService } = require('../apps/api/dist/news/news-translation.service');
+    service.translations = new Map();
     service.translator = new NewsTranslationService();
     service.translator.translateBatch = async texts => texts;
     const writes = [];
@@ -147,7 +149,7 @@ test('Startup and recurring recovery fill stored stories before fetching only in
     service.defaultsReady = Promise.resolve();
     service.prisma = {
         newsCategory: { findMany: async () => [{ id: 'etfs', slug: 'etfs' }, { id: 'real-estate', slug: 'real-estate' }] },
-        newsSlot: { count: async args => args.where.categoryId === 'real-estate' ? 5 : 0 },
+        newsSlot: { groupBy: async args => args.where.categoryId ? [{ categoryId: 'real-estate', _count: { _all: 5 } }] : [{ categoryId: 'etfs', _count: { _all: 1 } }, { categoryId: 'real-estate', _count: { _all: 5 } }] },
     };
     service.slotsService = { fillEmptySlots: async id => repaired.push(id) };
     service.syncFrequency = async (...args) => runs.push(args);

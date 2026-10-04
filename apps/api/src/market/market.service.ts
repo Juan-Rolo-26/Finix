@@ -1,3 +1,4 @@
+import { TtlCache } from '../common/ttl-cache';
 import { resolveMarketIdentity } from './market-symbol';
 import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
@@ -139,7 +140,7 @@ export interface MarketDashboardPayload {
 export class MarketService {
     private finvizBaseCache: { data: FinvizBaseNode; fetchedAt: number } | null = null;
     private finvizHeatmapCache = new Map<string, { data: unknown; fetchedAt: number }>();
-    private searchCache = new Map<string, { data: any[]; fetchedAt: number }>();
+    private searchCache = new TtlCache<any[]>(300);
     private marketNewsCache: { data: NewsItem[]; fetchedAt: number } | null = null;
     private readonly finvizBaseTtlMs = 6 * 60 * 60 * 1000;
     private readonly finvizHeatmapTtlMs = 60 * 1000;
@@ -944,7 +945,12 @@ export class MarketService {
 
     private dollarRatesCache: { data: MarketDollarRate[]; timestamp: number } | null = null;
 
+    private readonly dollarRequestCache = new TtlCache<MarketDollarRate[]>(1);
     async getDollarRates(): Promise<MarketDollarRate[]> {
+        return this.dollarRequestCache.getOrLoad('rates', 0, () => this.loadDollarRates());
+    }
+
+    private async loadDollarRates(): Promise<MarketDollarRate[]> {
         const now = Date.now();
         if (this.dollarRatesCache && now - this.dollarRatesCache.timestamp < 60000) {
             return this.dollarRatesCache.data;
@@ -1552,6 +1558,7 @@ export class MarketService {
         try {
             // Fetch real top gainers of the day (Large Cap US stocks)
             const response = await fetch('https://scanner.tradingview.com/america/scan', {
+                signal: AbortSignal.timeout(6000),
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1596,6 +1603,7 @@ export class MarketService {
 
         try {
             const response = await fetch('https://scanner.tradingview.com/america/scan', {
+                signal: AbortSignal.timeout(6000),
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1872,10 +1880,8 @@ export class MarketService {
 
         // Try TradingView as backup (with timeout and error handling)
         const cacheKey = qLower;
-        const cached = this.searchCache.get(cacheKey);
-        if (cached && Date.now() - cached.fetchedAt < 24 * 60 * 60 * 1000) {
-            return cached.data;
-        }
+        const cached = this.searchCache.peek(cacheKey);
+        if (cached) return cached;
 
         let tvResults: any[] = [];
         try {
@@ -1942,12 +1948,12 @@ export class MarketService {
         if (deduped.length > 0) {
             console.log(`[MarketService] Returning ${deduped.length} symbol results`);
             const answer = deduped.slice(0, 30);
-            this.searchCache.set(cacheKey, { data: answer, fetchedAt: Date.now() });
+            this.searchCache.set(cacheKey, answer, 24 * 60 * 60 * 1000);
             return answer;
         }
 
         console.log('[MarketService] Returning empty results');
-        this.searchCache.set(cacheKey, { data: directSymbolResult, fetchedAt: Date.now() });
+        this.searchCache.set(cacheKey, directSymbolResult, 24 * 60 * 60 * 1000);
         return directSymbolResult;
     }
 
@@ -2071,7 +2077,31 @@ export class MarketService {
         return quoteMap;
     }
 
+    private readonly quoteCache = new TtlCache<MarketQuote>(2000);
+    private readonly pendingQuotes = new Map<string, Promise<MarketQuote>>();
+    private readonly historyCache = new TtlCache<any>(200);
+
     async getQuotes(symbols: string[]): Promise<MarketQuote[]> {
+        const inputs = symbols.map(symbol => this.normalizeQuoteInputSymbol(symbol)).filter(Boolean);
+        const missing = [...new Set(inputs)].filter(input => !this.quoteCache.peek(input) && !this.pendingQuotes.has(input));
+        if (missing.length) {
+            const batch = this.loadQuotes(missing);
+            missing.forEach((input, index) => {
+                const pending = batch.then(quotes => {
+                    const quote = quotes[index];
+                    // Keep the original observation time; outages are not fresh prices.
+                    this.quoteCache.set(input, quote, quote.unavailable ? 2000 : 15000);
+                    return quote;
+                }).finally(() => {
+                    if (this.pendingQuotes.get(input) === pending) this.pendingQuotes.delete(input);
+                });
+                this.pendingQuotes.set(input, pending);
+            });
+        }
+        return Promise.all(inputs.map(input => this.quoteCache.peek(input) ?? this.pendingQuotes.get(input)!));
+    }
+
+    private async loadQuotes(symbols: string[]): Promise<MarketQuote[]> {
         const normalizedInputs = symbols
             .map((symbol) => this.normalizeQuoteInputSymbol(symbol))
             .filter(Boolean);
@@ -2111,7 +2141,6 @@ export class MarketService {
     }
 
     async getQuote(symbol: string): Promise<MarketQuote> {
-        console.log(`[MarketService] Getting quote for: ${symbol}`);
         const normalizedInput = this.normalizeQuoteInputSymbol(symbol);
 
         if (!normalizedInput) {
@@ -2220,6 +2249,7 @@ export class MarketService {
     private async discoverFinvizBaseScriptPath() {
         try {
             const response = await fetch('https://finviz.com/map.ashx?t=sec', {
+                signal: AbortSignal.timeout(6000),
                 headers: {
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -2247,6 +2277,7 @@ export class MarketService {
         const scriptPath = await this.discoverFinvizBaseScriptPath();
         const baseScriptUrl = `https://finviz.com${scriptPath}`;
         const response = await fetch(baseScriptUrl, {
+                signal: AbortSignal.timeout(6000),
             headers: {
                 'Accept': 'application/javascript,text/javascript,*/*',
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -2366,6 +2397,7 @@ export class MarketService {
             const perfResponse = await fetch(
                 `https://finviz.com/api/map_perf.ashx?t=sec&st=${encodeURIComponent(normalizedSubtype)}`,
                 {
+                    signal: AbortSignal.timeout(6000),
                     headers: {
                         'Accept': 'application/json,text/plain,*/*',
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -2901,9 +2933,14 @@ export class MarketService {
         }
     }
 
-    private candleCache = new Map<string, { data: any[]; timestamp: number }>();
+    private candleCache = new TtlCache<any[]>(200);
 
-    async getCandles(rawSymbol: string, interval: string = '1d', range: string = '1y'): Promise<{
+    async getCandles(rawSymbol: string, interval = '1d', range = '1y') {
+        return this.historyCache.getOrLoad(`${rawSymbol.trim().toUpperCase()}:${interval}:${range}`, 60000,
+            () => this.loadCandles(rawSymbol, interval, range), result => result.candles.length > 0);
+    }
+
+    private async loadCandles(rawSymbol: string, interval: string = '1d', range: string = '1y'): Promise<{
         symbol: string;
         interval: string;
         candles: Array<{ time: number; open: number; high: number; low: number; close: number; volume?: number }>;
@@ -2917,10 +2954,8 @@ export class MarketService {
             return { symbol: cleaned, interval, candles: [] };
         }
         const cacheKey = `${cleaned}:${normalizedInterval}:${range}`;
-        const cached = this.candleCache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < 60000) {
-            return { symbol: cleaned, interval, candles: cached.data };
-        }
+        const cached = this.candleCache.peek(cacheKey);
+        if (cached) return { symbol: cleaned, interval, candles: cached };
         let candles: Array<{ time: number; open: number; high: number; low: number; close: number; volume?: number }> = [];
         const isCrypto = identity.crypto;
         let usedYahoo = false;
@@ -3013,8 +3048,7 @@ export class MarketService {
             }
             candles = [...aggregated.values()];
         }
-        if (this.candleCache.size >= 500) this.candleCache.delete(this.candleCache.keys().next().value!);
-        this.candleCache.set(cacheKey, { data: candles, timestamp: Date.now() });
+        this.candleCache.set(cacheKey, candles, 60000);
 
         return {
             symbol: cleaned,

@@ -1,3 +1,4 @@
+import { TtlCache } from '../common/ttl-cache';
 import {
     Injectable,
     BadRequestException,
@@ -55,17 +56,30 @@ export interface AssignArticleDto {
 @Injectable()
 export class NewsSlotsService {
     private readonly logger = new Logger(NewsSlotsService.name);
+    private readonly repairCache = new TtlCache<void>(50);
+    private readonly translations = new Map<string, Promise<any>>();
+    private readonly publicCategories = new TtlCache<any>(1);
+    private readonly publicSlots = new TtlCache<any>(40);
+    private readonly publicHeadlines = new TtlCache<any[]>(20);
+
+    invalidatePublicCache() {
+        this.publicCategories.clear();
+        this.publicSlots.clear();
+        this.publicHeadlines.clear();
+    }
 
     constructor(
         private readonly prisma: PrismaService,
         private readonly translator: NewsTranslationService,
-    ) {
-        this.seedCategoriesAndSlots().catch((err) =>
-            this.logger.warn('Seed warning: ' + err?.message),
-        );
-    }
+    ) { }
+    // NewsSyncService.prepareDefaults owns startup seeding and retries. Avoid
+    // starting a second set of category/slot writes in this constructor.
 
     async getPublicCategories() {
+        return this.publicCategories.getOrLoad('categories', 60000, () => this.loadPublicCategories());
+    }
+
+    private async loadPublicCategories() {
         return this.prisma.newsCategory.findMany({
             where: { isActive: true },
             orderBy: { displayOrder: 'asc' },
@@ -83,6 +97,12 @@ export class NewsSlotsService {
     }
 
     async getPublicHeadlines(limit = 6) {
+        limit = Math.min(20, Math.max(1, Math.floor(Number(limit) || 6)));
+        return this.publicHeadlines.getOrLoad(String(limit), 15000, () => this.loadPublicHeadlines(limit));
+    }
+
+    private async loadPublicHeadlines(limit = 6) {
+        limit = Math.min(20, Math.max(1, Math.floor(Number(limit) || 6)));
         const slots = await this.prisma.newsSlot.findMany({
             where: {
                 isActive: true,
@@ -155,14 +175,15 @@ export class NewsSlotsService {
 
 
     async getPublicCategorySlots(slug: string) {
+        return this.publicSlots.getOrLoad(slug, 15000, () => this.loadPublicCategorySlots(slug));
+    }
+
+    private async loadPublicCategorySlots(slug: string) {
         const category = await this.prisma.newsCategory.findUnique({ where: { slug } });
         if (!category || !category.isActive) {
             throw new NotFoundException(`Categoría "${slug}" no encontrada`);
         }
-        await this.ensureSlotsExist(category.id, category.slug);
-        await this.fillEmptySlots(category.id, category.slug);
-
-        const slots = await this.prisma.newsSlot.findMany({
+        const loadSlots = () => this.prisma.newsSlot.findMany({
             where: { categoryId: category.id },
             orderBy: { position: 'asc' },
             include: {
@@ -187,6 +208,17 @@ export class NewsSlotsService {
                 },
             },
         });
+
+        let slots = await loadSlots();
+        // Reads of a populated category do not perform maintenance queries or writes.
+        // Sparse categories still recover immediately, with one repair per category.
+        if (slots.length < SLOT_COUNT || slots.some(slot => slot.isActive && (!slot.article?.isPublished || !slot.article?.isActive || slot.article.status !== 'PUBLISHED'))) {
+            await this.repairCache.getOrLoad(category.id, 0, async () => {
+                await this.ensureSlotsExist(category.id, category.slug);
+                await this.fillEmptySlots(category.id, category.slug);
+            });
+            slots = await loadSlots();
+        }
 
         return {
             category: {
@@ -213,7 +245,17 @@ export class NewsSlotsService {
         };
     }
 
-    private async toSpanishArticle(article: any) {
+    private toSpanishArticle(article: any): Promise<any> {
+        if (!article) return Promise.resolve(article);
+        const key = JSON.stringify([article.id, article.title, article.description, article.titleEs, article.descriptionEs, article.translationAttemptedAt]);
+        const pending = this.translations.get(key);
+        if (pending) return pending;
+        const result = this.translateArticle(article).finally(() => this.translations.delete(key));
+        this.translations.set(key, result);
+        return result;
+    }
+
+    private async translateArticle(article: any) {
         if (!article) return article;
 
         const sourceLanguage = article.source?.language || undefined;
@@ -298,12 +340,30 @@ export class NewsSlotsService {
         image?: string;
         displayOrder?: number;
     }) {
+        try { return await this.writeCreateCategory(data); }
+        finally { this.invalidatePublicCache(); }
+    }
+
+    private async writeCreateCategory(data: {
+        name: string;
+        slug: string;
+        description?: string;
+        color?: string;
+        icon?: string;
+        image?: string;
+        displayOrder?: number;
+    }) {
         const category = await this.prisma.newsCategory.create({ data });
         await this.ensureSlotsExist(category.id, category.slug);
         return category;
     }
 
     async updateCategory(id: string, data: any) {
+        try { return await this.writeUpdateCategory(id, data); }
+        finally { this.invalidatePublicCache(); }
+    }
+
+    private async writeUpdateCategory(id: string, data: any) {
         return this.prisma.newsCategory.update({ where: { id }, data });
     }
 
@@ -345,6 +405,11 @@ export class NewsSlotsService {
 
     /** Replace the public slots with the best automatic articles for a category. */
     async replaceAutomaticSlots(categoryId: string, articleIds: string[]) {
+        try { return await this.writeReplaceAutomaticSlots(categoryId, articleIds); }
+        finally { this.invalidatePublicCache(); }
+    }
+
+    private async writeReplaceAutomaticSlots(categoryId: string, articleIds: string[]) {
         const category = await this.prisma.newsCategory.findUnique({
             where: { id: categoryId },
             select: { slug: true },
@@ -386,6 +451,11 @@ export class NewsSlotsService {
 
     /** Restore unassigned cards from published stories, including relevant coverage in other categories. */
     async fillEmptySlots(categoryId: string, slug: string) {
+        try { return await this.writeFillEmptySlots(categoryId, slug); }
+        finally { this.invalidatePublicCache(); }
+    }
+
+    private async writeFillEmptySlots(categoryId: string, slug: string) {
         const slots = await this.prisma.newsSlot.findMany({ where: { categoryId }, orderBy: { position: 'asc' } });
         const empty = slots.filter(slot => slot.isActive && !slot.articleId);
         if (!empty.length) return;
@@ -444,6 +514,11 @@ export class NewsSlotsService {
     }
 
     async assignArticleToSlot(slotId: string, data: AssignArticleDto, adminId?: string) {
+        try { return await this.writeAssignArticleToSlot(slotId, data, adminId); }
+        finally { this.invalidatePublicCache(); }
+    }
+
+    private async writeAssignArticleToSlot(slotId: string, data: AssignArticleDto, adminId?: string) {
         this.validateUrl(data.url);
 
         const slot = await this.prisma.newsSlot.findUnique({
@@ -521,6 +596,11 @@ export class NewsSlotsService {
     }
 
     async publishSlot(slotId: string) {
+        try { return await this.writePublishSlot(slotId); }
+        finally { this.invalidatePublicCache(); }
+    }
+
+    private async writePublishSlot(slotId: string) {
         const slot = await this.prisma.newsSlot.findUnique({
             where: { id: slotId },
             include: { article: true },
@@ -536,6 +616,11 @@ export class NewsSlotsService {
     }
 
     async unpublishSlot(slotId: string) {
+        try { return await this.writeUnpublishSlot(slotId); }
+        finally { this.invalidatePublicCache(); }
+    }
+
+    private async writeUnpublishSlot(slotId: string) {
         const slot = await this.prisma.newsSlot.findUnique({
             where: { id: slotId },
             include: { article: true },
@@ -550,6 +635,11 @@ export class NewsSlotsService {
     }
 
     async toggleSlotActive(slotId: string) {
+        try { return await this.writeToggleSlotActive(slotId); }
+        finally { this.invalidatePublicCache(); }
+    }
+
+    private async writeToggleSlotActive(slotId: string) {
         const slot = await this.prisma.newsSlot.findUnique({ where: { id: slotId } });
         if (!slot) throw new NotFoundException('Slot no encontrado');
         return this.prisma.newsSlot.update({
@@ -559,6 +649,11 @@ export class NewsSlotsService {
     }
 
     async seedCategoriesAndSlots() {
+        try { return await this.writeSeedCategoriesAndSlots(); }
+        finally { this.invalidatePublicCache(); }
+    }
+
+    private async writeSeedCategoriesAndSlots() {
         for (const cat of DEFAULT_NEWS_CATEGORIES) {
             try {
                 const category = await this.prisma.newsCategory.upsert({

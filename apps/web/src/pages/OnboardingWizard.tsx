@@ -84,9 +84,9 @@ const ProgressBar = ({ current, total }: { current: number; total: number }) => 
         </div>
         <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
             <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-400"
-                initial={{ width: 0 }}
-                animate={{ width: `${((current + 1) / total) * 100}%` }}
+                className="h-full w-full origin-left rounded-full bg-gradient-to-r from-primary to-emerald-400"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: (current + 1) / total }}
                 transition={{ duration: 0.4, ease: 'easeOut' }}
             />
         </div>
@@ -111,7 +111,7 @@ const StepWelcome = ({ username }: { username: string }) => (
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
             className="mx-auto w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-emerald-400/20 border border-primary/30 flex items-center justify-center"
         >
-            <img src="/logo.png" alt="Finix" className="w-14 h-14 object-contain drop-shadow-[0_0_12px_rgba(34,197,94,0.5)]" />
+            <img src="/logo-small.webp" alt="Finix" className="w-14 h-14 object-contain drop-shadow-[0_0_12px_rgba(34,197,94,0.5)]" />
         </motion.div>
 
         <div className="space-y-3">
@@ -455,7 +455,7 @@ export default function OnboardingWizard() {
                                 <p className="text-xs text-muted-foreground">Configuración de cuenta</p>
                             </div>
                             <div className="ml-auto">
-                                <img src="/logo.png" alt="Finix" className="h-7 w-7 object-contain opacity-60" />
+                                <img src="/logo-small.webp" alt="Finix" className="h-7 w-7 object-contain opacity-60" />
                             </div>
                         </div>
                         <ProgressBar current={currentStep} total={STEPS.length} />

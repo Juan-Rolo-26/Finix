@@ -1,3 +1,4 @@
+import { readFileHeader } from '../uploads/read-file-header';
 import {
     BadRequestException,
     Controller,
@@ -19,7 +20,7 @@ import { diskStorage } from 'multer';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { extname } from 'path';
-import { readFileSync, unlinkSync } from 'fs';
+import { unlinkSync } from 'fs';
 import { AdminGuard } from './admin.guard';
 import { PrismaService } from '../prisma.service';
 import {
@@ -55,8 +56,8 @@ type AdminRequest = Request & {
 const ANALYSIS_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_ANALYSIS_IMAGE_BYTES = 15 * 1024 * 1024;
 
-function hasExpectedAnalysisImageSignature(path: string, mimeType: string) {
-    const header = readFileSync(path).subarray(0, 16);
+async function hasExpectedAnalysisImageSignature(path: string, mimeType: string) {
+    const header = await readFileHeader(path);
     if (mimeType === 'image/jpeg') return header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
     if (mimeType === 'image/png') return header.subarray(0, 8).toString('hex') === '89504e470d0a1a0a';
     if (mimeType === 'image/gif') return header.subarray(0, 6).toString('ascii') === 'GIF87a' || header.subarray(0, 6).toString('ascii') === 'GIF89a';
@@ -270,10 +271,10 @@ export class AdminController {
             },
         }),
     )
-    uploadAnalysisSnapshot(@UploadedFile() file: Express.Multer.File) {
+    async uploadAnalysisSnapshot(@UploadedFile() file: Express.Multer.File) {
         if (!file) throw new BadRequestException('No se recibió ninguna captura');
 
-        if (!hasExpectedAnalysisImageSignature(file.path, file.mimetype)) {
+        if (!await hasExpectedAnalysisImageSignature(file.path, file.mimetype)) {
             try { unlinkSync(file.path); } catch { /* best effort cleanup */ }
             throw new BadRequestException('El contenido de la captura no coincide con su tipo declarado');
         }

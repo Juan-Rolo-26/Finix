@@ -1,0 +1,187 @@
+{
+  "date": "2026-10-04",
+  "baselineRevision": "4a1625db",
+  "frontendConditions": "Same host and synthetic API; 45 text posts, first20, native JWT fixture; API40ms and platform config250ms. 3 independent runs per build. Lighthouse12.8.2 mobile simulated throttling; browser load desktop1365x900 without throttling; INP desktop CPUx4 via web-vitals4.2.4. No production before/after claim.",
+  "lighthouse": {
+    "before": {
+      "runs": [
+        {
+          "score": 57.99999999999999,
+          "fcpMs": 2471.2142000000003,
+          "lcpMs": 11431.515200000002,
+          "cls": 0,
+          "tbtMs": 526
+        },
+        {
+          "score": 67.0,
+          "fcpMs": 2411.8648000000003,
+          "lcpMs": 11789.452299999997,
+          "cls": 0,
+          "tbtMs": 252
+        },
+        {
+          "score": 66.0,
+          "fcpMs": 2421.1926,
+          "lcpMs": 11798.883225000001,
+          "cls": 0,
+          "tbtMs": 280
+        }
+      ],
+      "median": {
+        "score": 66.0,
+        "fcpMs": 2421.1926,
+        "lcpMs": 11789.452299999997,
+        "cls": 0,
+        "tbtMs": 280
+      }
+    },
+    "after": {
+      "runs": [
+        {
+          "score": 76.0,
+          "fcpMs": 2534.72915,
+          "lcpMs": 4318.4583,
+          "cls": 0,
+          "tbtMs": 286.5
+        },
+        {
+          "score": 72.0,
+          "fcpMs": 2543.6919749999997,
+          "lcpMs": 4301.8839499999995,
+          "cls": 0,
+          "tbtMs": 413
+        },
+        {
+          "score": 79.0,
+          "fcpMs": 2475.6508000000003,
+          "lcpMs": 4189.801600000001,
+          "cls": 0,
+          "tbtMs": 214.4999999999999
+        }
+      ],
+      "median": {
+        "score": 76.0,
+        "fcpMs": 2534.72915,
+        "lcpMs": 4301.8839499999995,
+        "cls": 0,
+        "tbtMs": 286.5
+      }
+    }
+  },
+  "initialLoad": {
+    "before": {
+      "runs": [
+        {
+          "readyMs": 1162.297006,
+          "lcpMs": 1464,
+          "cls": 0,
+          "fcpMs": 324,
+          "ttfbMs": 1.1000000014901161,
+          "requests": 54,
+          "javascriptRequests": 32,
+          "javascriptGzipBytes": 275633,
+          "runtimeErrors": []
+        },
+        {
+          "readyMs": 1206.468582,
+          "lcpMs": 1532,
+          "cls": 0,
+          "fcpMs": 368,
+          "ttfbMs": 1,
+          "requests": 54,
+          "javascriptRequests": 32,
+          "javascriptGzipBytes": 275633,
+          "runtimeErrors": []
+        },
+        {
+          "readyMs": 1108.906719,
+          "lcpMs": 1436,
+          "cls": 0,
+          "fcpMs": 264,
+          "ttfbMs": 0.7999999970197678,
+          "requests": 53,
+          "javascriptRequests": 32,
+          "javascriptGzipBytes": 275633,
+          "runtimeErrors": []
+        }
+      ],
+      "median": {
+        "readyMs": 1162.297006,
+        "lcpMs": 1464,
+        "cls": 0,
+        "fcpMs": 324,
+        "ttfbMs": 1,
+        "requests": 54,
+        "javascriptRequests": 32,
+        "javascriptGzipBytes": 275633
+      }
+    },
+    "after": {
+      "runs": [
+        {
+          "readyMs": 483.27074400000004,
+          "lcpMs": 984,
+          "cls": 0,
+          "fcpMs": 264,
+          "ttfbMs": 1,
+          "requests": 37,
+          "javascriptRequests": 20,
+          "javascriptGzipBytes": 199929,
+          "runtimeErrors": []
+        },
+        {
+          "readyMs": 473.1360300000001,
+          "lcpMs": 984,
+          "cls": 0.0012630251311569992,
+          "fcpMs": 276,
+          "ttfbMs": 1,
+          "requests": 36,
+          "javascriptRequests": 20,
+          "javascriptGzipBytes": 199929,
+          "runtimeErrors": []
+        },
+        {
+          "readyMs": 483.03025100000013,
+          "lcpMs": 972,
+          "cls": 0.0012630251311569992,
+          "fcpMs": 268,
+          "ttfbMs": 0.9000000059604645,
+          "requests": 36,
+          "javascriptRequests": 20,
+          "javascriptGzipBytes": 199929,
+          "runtimeErrors": []
+        }
+      ],
+      "median": {
+        "readyMs": 483.03025100000013,
+        "lcpMs": 984,
+        "cls": 0.0012630251311569992,
+        "fcpMs": 268,
+        "ttfbMs": 1,
+        "requests": 36,
+        "javascriptRequests": 20,
+        "javascriptGzipBytes": 199929
+      }
+    }
+  },
+  "inp": {
+    "before": {
+      "runsMs": [
+        2728,
+        2848,
+        2776
+      ],
+      "medianMs": 2776,
+      "conditions": "3 independent desktop Chromium sessions, CPU x4, 12 theme/sidebar clicks plus global search typing, web-vitals4.2.4; laboratory INP, not field/RUM."
+    },
+    "after": {
+      "runsMs": [
+        584,
+        512,
+        472
+      ],
+      "medianMs": 512,
+      "conditions": "3 independent desktop Chromium sessions, CPU x4, 12 theme/sidebar clicks plus global search typing, web-vitals4.2.4; laboratory INP, not field/RUM."
+    }
+  }
+}

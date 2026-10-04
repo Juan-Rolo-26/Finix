@@ -1,3 +1,4 @@
+import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import type { ComponentType } from 'react';
@@ -178,9 +179,10 @@ export function Sidebar() {
     const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const { theme, setTheme, sidebarCollapsed: collapsed, toggleSidebar: setCollapsed } = usePreferencesStore();
     const [hov, setHov] = useState<string | null>(null);
-    const [unreadMsgs, setUnreadMsgs] = useState(0);
-    const [unreadNotifs, setUnreadNotifs] = useState(0);
-    const [pinnedAssets, setPinnedAssets] = useState<PinnedAsset[]>([]);
+    const [unreadMsgs, setUnreadMsgs] = useUnreadCount('messages');
+    const [unreadNotifs, setUnreadNotifs] = useUnreadCount('notifications');
+    const [pinnedState, setPinnedState] = useState<{ owner?: string; items: PinnedAsset[] }>({ items: [] });
+    const pinnedAssets = pinnedState.owner === user?.id ? pinnedState.items : [];
 
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -255,69 +257,44 @@ export function Sidebar() {
         setIsNotifsOpen(false);
     };
 
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const res = await apiFetch('/notifications/unread-count');
-                if (res.ok) { const d = await res.json(); setUnreadNotifs(d.count ?? 0); }
-            } catch { }
-        };
-        load();
-        const iv = setInterval(load, 10_000);
-        return () => clearInterval(iv);
-    }, []);
+
 
     /* ── Poll unread messages ─────────────────────────────────── */
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const res = await apiFetch('/messages/unread-count');
-                if (res.ok) { const d = await res.json(); setUnreadMsgs(d.count ?? 0); }
-            } catch { }
-        };
-        load();
-        const iv = setInterval(load, 30_000);
-        return () => clearInterval(iv);
-    }, []);
+
 
     useEffect(() => {
         if (location.pathname === '/messages') setUnreadMsgs(0);
-    }, [location.pathname]);
+    }, [location.pathname, setUnreadMsgs]);
 
     /* ── Fetch pinned assets ──────────────────────────────────── */
     useEffect(() => {
-        if (collapsed) return;
+        if (collapsed || !window.matchMedia('(min-width: 1024px)').matches) return;
+        const controller = new AbortController();
+        const setPinnedAssets = (items: PinnedAsset[]) => setPinnedState({ owner: user?.id, items });
+        let inFlight = false;
         const load = async () => {
+            if (document.hidden || inFlight || controller.signal.aborted) return;
+            inFlight = true;
             try {
-                const res = await apiFetch('/portfolios/watchlists');
+                const res = await apiFetch('/portfolios/watchlists', { signal: controller.signal });
                 if (!res.ok) return;
-                const d = await res.json();
-                const pinned = d.find((w: any) => w.name === '__pinned__');
-                if (pinned?.tickers) {
-                    const tcks = (Array.isArray(pinned.tickers) ? pinned.tickers : pinned.tickers.split(',')).filter(Boolean).slice(0, 3);
-                    const quotes = await Promise.all(tcks.map(async (t: string) => {
-                        try {
-                            const qRes = await apiFetch(`/market/quote?symbol=${t}`);
-                            if (qRes.ok) {
-                                const q = await qRes.json();
-                                return {
-                                    ticker: t,
-                                    change: q.change ?? q.regularMarketChange ?? 0,
-                                    changePercent: q.changePercent ?? q.regularMarketChangePercent ?? 0,
-                                    price: q.price ?? q.regularMarketPrice ?? 0,
-                                };
-                            }
-                        } catch { }
-                        return null;
-                    }));
-                    setPinnedAssets(quotes.filter(Boolean) as PinnedAsset[]);
-                }
-            } catch { }
+                const data = await res.json();
+                const pinned = Array.isArray(data) ? data.find((list: any) => list.name === '__pinned__') : null;
+                if (!pinned?.tickers) { if (!controller.signal.aborted) setPinnedAssets([]); return; }
+                const tickers = (Array.isArray(pinned.tickers) ? pinned.tickers : pinned.tickers.split(',')).filter(Boolean).slice(0, 3);
+                const response = await apiFetch(`/market/quotes?symbols=${encodeURIComponent(tickers.join(','))}`, { signal: controller.signal });
+                if (!response.ok) return;
+                const quotes = await response.json();
+                if (!controller.signal.aborted && Array.isArray(quotes)) setPinnedAssets(quotes
+                    .filter((quote: any) => !quote.unavailable && Number.isFinite(quote.price))
+                    .map((quote: any) => ({ ticker: quote.inputSymbol, price: quote.price, change: quote.change ?? 0, changePercent: quote.change ?? 0 })));
+            } catch { /* Keep the last successful quotes during a short outage. */ }
+            finally { inFlight = false; }
         };
-        load();
-        const iv = setInterval(load, 60_000);
-        return () => clearInterval(iv);
-    }, [collapsed]);
+        void load();
+        const timer = window.setInterval(() => void load(), 60000);
+        return () => { controller.abort(); window.clearInterval(timer); };
+    }, [collapsed, user?.id]);
 
     const isActive = (p: string) =>
         location.pathname === p ||
@@ -372,14 +349,13 @@ export function Sidebar() {
     return (
         <motion.aside
             initial={{ x: -12, opacity: 0 }}
-            animate={{ x: 0, opacity: 1, width: sidebarWidth }}
+            animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="fixed left-0 top-0 bottom-0 z-40 hidden lg:flex h-screen flex-col"
             style={{
                 width: sidebarWidth,
                 background: 'hsl(var(--sidebar-bg))',
                 borderRight: '1px solid hsl(var(--sidebar-border))',
-                transition: 'width 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
         >
             {/* Subtle top glow */}
@@ -394,7 +370,7 @@ export function Sidebar() {
                     className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer border border-black/30 dark:border-white/35 bg-white dark:bg-zinc-900 shadow-2xs transition-transform hover:scale-105"
                     onClick={() => navigate('/dashboard')}
                 >
-                    <img src="/logo.png" alt="Finix" className="h-5 w-5 object-contain" />
+                    <img src="/logo-small.webp" alt="Finix" className="h-5 w-5 object-contain" />
                 </div>
 
                 {!collapsed && (

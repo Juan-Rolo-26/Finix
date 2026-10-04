@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { useAuthStore } from '@/stores/authStore';
-import { StoryComposerModal } from './StoryComposerModal';
-import { StoryViewerModal } from './StoryViewerModal';
+const StoryComposerModal = lazy(() => import('./StoryComposerModal').then(module => ({ default: module.StoryComposerModal })));
+const StoryViewerModal = lazy(() => import('./StoryViewerModal').then(module => ({ default: module.StoryViewerModal })));
 import type { StoryAuthor, StoryGroup, StoryItem } from './storyTypes';
 
 function buildOwnGroup(story: StoryItem, currentUser: StoryAuthor) {
@@ -21,8 +21,11 @@ export function StoriesRail() {
     const [groups, setGroups] = useState<StoryGroup[]>(() => {
         if (typeof window !== 'undefined') {
             try {
-                const cached = sessionStorage.getItem('finix_cached_stories');
-                if (cached) return JSON.parse(cached);
+                const cached = sessionStorage.getItem(`finix_cached_stories_${currentUser?.id || 'anon'}`);
+                if (cached) {
+                    const entry = JSON.parse(cached);
+                    if (Date.now() - entry.fetchedAt < 30000 && Array.isArray(entry.groups)) return entry.groups;
+                }
             } catch {}
         }
         return [];
@@ -30,7 +33,7 @@ export function StoriesRail() {
     const [isLoading, setIsLoading] = useState(() => {
         if (typeof window !== 'undefined') {
             try {
-                return !sessionStorage.getItem('finix_cached_stories');
+                return !sessionStorage.getItem(`finix_cached_stories_${currentUser?.id || 'anon'}`);
             } catch {}
         }
         return true;
@@ -40,22 +43,21 @@ export function StoriesRail() {
 
     useEffect(() => {
         let isMounted = true;
+        const controller = new AbortController();
         const loadStories = async () => {
             try {
-                const res = await apiFetch('/stories/feed');
+                const res = await apiFetch('/stories/feed', { signal: controller.signal });
                 if (!res.ok) throw new Error();
                 const data = await res.json();
                 const nextGroups = Array.isArray(data?.groups) ? data.groups : [];
                 if (isMounted) {
                     setGroups(nextGroups);
                     try {
-                        sessionStorage.setItem('finix_cached_stories', JSON.stringify(nextGroups));
+                        sessionStorage.setItem(`finix_cached_stories_${currentUser?.id || 'anon'}`, JSON.stringify({ groups: nextGroups, fetchedAt: Date.now() }));
                     } catch {}
                 }
             } catch {
-                if (isMounted && groups.length === 0) {
-                    setGroups([]);
-                }
+                // Preserve the last successful groups through a short outage.
             } finally {
                 if (isMounted) {
                     setIsLoading(false);
@@ -64,8 +66,8 @@ export function StoriesRail() {
         };
 
         void loadStories();
-        return () => { isMounted = false; };
-    }, []);
+        return () => { isMounted = false; controller.abort(); };
+    }, [currentUser?.id]);
 
     const currentUserStory = useMemo(() => {
         if (!currentUser) return null;
@@ -171,7 +173,7 @@ export function StoriesRail() {
                                             }`}>
                                             <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-background bg-card">
                                                 {group.author?.avatarUrl ? (
-                                                    <img src={resolveMediaUrl(group.author.avatarUrl)} alt={authorUsername} className="h-full w-full object-cover" />
+                                                    <img src={resolveMediaUrl(group.author.avatarUrl)} alt={authorUsername} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                                                 ) : (
                                                     <span className="text-xl font-bold uppercase text-foreground">{authorInitial}</span>
                                                 )}
@@ -207,7 +209,7 @@ export function StoriesRail() {
                 </div>
             </div>
 
-            <StoryComposerModal
+            {composerOpen && <Suspense fallback={null}><StoryComposerModal
                 open={composerOpen}
                 onOpenChange={setComposerOpen}
                 onCreated={handleStoryCreated}
@@ -219,15 +221,15 @@ export function StoriesRail() {
                     bio: currentUser.bio,
                     title: (currentUser as any).title,
                 } : null}
-            />
+            /></Suspense>}
 
-            <StoryViewerModal
+            {viewerGroupIndex !== null && <Suspense fallback={null}><StoryViewerModal
                 groups={groups}
                 activeGroupIndex={viewerGroupIndex}
                 currentUserId={currentUser?.id}
                 onClose={() => setViewerGroupIndex(null)}
                 onGroupsChange={setGroups}
-            />
+            /></Suspense>}
         </>
     );
 }

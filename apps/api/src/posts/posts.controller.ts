@@ -1,3 +1,4 @@
+import { readFileHeader } from '../uploads/read-file-header';
 import {
     Controller,
     Get,
@@ -17,7 +18,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
-import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import { Response } from 'express';
 import { PostsService } from './posts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -34,8 +35,8 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
 const MAX_DOC_BYTES = 15 * 1024 * 1024; // 15 MB
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100 MB
 
-function hasExpectedMediaSignature(path: string, mimeType: string) {
-    const header = readFileSync(path).subarray(0, 16);
+async function hasExpectedMediaSignature(path: string, mimeType: string) {
+    const header = await readFileHeader(path);
     if (mimeType === 'image/jpeg') return header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
     if (mimeType === 'image/png') return header.subarray(0, 8).toString('hex') === '89504e470d0a1a0a';
     if (mimeType === 'image/gif') return header.subarray(0, 6).toString('ascii') === 'GIF87a' || header.subarray(0, 6).toString('ascii') === 'GIF89a';
@@ -133,6 +134,7 @@ export class PostsController {
 
         try {
             const response = await fetch(url, {
+                signal: AbortSignal.timeout(8000),
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (compatible; Finix/1.0)',
                     'Referer': 'https://www.tradingview.com/',
@@ -177,11 +179,11 @@ export class PostsController {
             },
         }),
     )
-    uploadMedia(@UploadedFiles() files: Express.Multer.File[]) {
+    async uploadMedia(@UploadedFiles() files: Express.Multer.File[]) {
         if (!files || files.length === 0) throw new BadRequestException('No se recibieron archivos');
 
         for (const file of files) {
-            if (!hasExpectedMediaSignature(file.path, file.mimetype)) {
+            if (!await hasExpectedMediaSignature(file.path, file.mimetype)) {
                 try { unlinkSync(file.path); } catch { /* best effort cleanup */ }
                 throw new BadRequestException('El contenido del archivo no coincide con su tipo declarado');
             }

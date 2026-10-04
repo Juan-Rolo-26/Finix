@@ -1,0 +1,638 @@
+{
+  "queryCalls": 501,
+  "queriesInsideLoops": [
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 159,
+      "method": "processBatch",
+      "query": "this.prisma.user.findFirst",
+      "loop": true,
+      "unbounded": false,
+      "select": true
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 676,
+      "method": "syncMacroData",
+      "query": "this.prisma.marketCalendarEvent.findFirst",
+      "loop": true,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 272,
+      "method": "create",
+      "query": "this.prisma.community.findUnique",
+      "loop": true,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 50,
+      "method": "getSnapshot",
+      "query": "this.model(this.prisma, resource).findMany",
+      "loop": true,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 238,
+      "method": "remind",
+      "query": "this.prisma.notification.findFirst",
+      "loop": true,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 203,
+      "method": "recoverCategoryCoverage",
+      "query": "this.prisma.newsSlot.count",
+      "loop": true,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 309,
+      "method": "fetchAndStoreNews",
+      "query": "this.prisma.news.findUnique",
+      "loop": true,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/notifications/push.service.ts",
+      "line": 54,
+      "method": "deliver",
+      "query": "this.prisma.notification.findFirst",
+      "loop": true,
+      "unbounded": false,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 143,
+      "method": "loadCommentRepliesMap",
+      "query": "this.prisma.comment.findMany",
+      "loop": true,
+      "unbounded": true,
+      "select": false
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 175,
+      "method": "collectCommentThreadLevels",
+      "query": "this.prisma.comment.findMany",
+      "loop": true,
+      "unbounded": true,
+      "select": true
+    }
+  ],
+  "unboundedQueries": [
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 849,
+      "method": "getReports"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 871,
+      "method": "getReports"
+    },
+    {
+      "file": "apps/api/src/admin/admin.controller.ts",
+      "line": 889,
+      "method": "getReports"
+    },
+    {
+      "file": "apps/api/src/admin/email-marketing.service.ts",
+      "line": 74,
+      "method": "templates"
+    },
+    {
+      "file": "apps/api/src/admin/pro-email-campaign.service.ts",
+      "line": 51,
+      "method": "sendCampaign"
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 92,
+      "method": "getPublicList"
+    },
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 689,
+      "method": "getAdminList"
+    },
+    {
+      "file": "apps/api/src/auth/auth.service.ts",
+      "line": 129,
+      "method": "resolveUsername"
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 30,
+      "method": "getPaymentOverview"
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 224,
+      "method": "refreshUserEntitlements"
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 244,
+      "method": "expireEndedPlans"
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 261,
+      "method": "getCreatorSummary"
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 291,
+      "method": "getCreatorSummary"
+    },
+    {
+      "file": "apps/api/src/billing/billing.service.ts",
+      "line": 482,
+      "method": "getAdminSettings"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 63,
+      "method": "getHomeEvents"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 73,
+      "method": "getHomeEvents"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 89,
+      "method": "getHomeEvents"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 93,
+      "method": "getHomeEvents"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 303,
+      "method": "getWeekEvents"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 307,
+      "method": "getWeekEvents"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 370,
+      "method": "getWeekEvents"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 859,
+      "method": "syncTradingViewEarnings"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 962,
+      "method": "syncReportedEarningsResults"
+    },
+    {
+      "file": "apps/api/src/calendar/calendar.service.ts",
+      "line": 1284,
+      "method": "getAdminEvents"
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 230,
+      "method": "getMyCommunities"
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 240,
+      "method": "getJoinedCommunities"
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 458,
+      "method": "listSections"
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1137,
+      "method": "listJoinRequests"
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1282,
+      "method": "listReports"
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1352,
+      "method": "listResources"
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1392,
+      "method": "listEvents"
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1468,
+      "method": "getAnalytics"
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1478,
+      "method": "getAnalytics"
+    },
+    {
+      "file": "apps/api/src/communities/communities.service.ts",
+      "line": 1482,
+      "method": "getAnalytics"
+    },
+    {
+      "file": "apps/api/src/creator-application/creator-application.service.ts",
+      "line": 80,
+      "method": "findAll"
+    },
+    {
+      "file": "apps/api/src/finance/finance.integration.spec.ts",
+      "line": 131
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 44,
+      "method": "list"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 50,
+      "method": "getSnapshot"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 175,
+      "method": "previewImport"
+    },
+    {
+      "file": "apps/api/src/finance/workspace.service.ts",
+      "line": 229,
+      "method": "remind"
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 54,
+      "method": "getChannels"
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 167,
+      "method": "getComments"
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 194,
+      "method": "getEvents"
+    },
+    {
+      "file": "apps/api/src/hub/hub.service.ts",
+      "line": 223,
+      "method": "getResources"
+    },
+    {
+      "file": "apps/api/src/market/opportunity-screener.service.ts",
+      "line": 100,
+      "method": "getUniverse"
+    },
+    {
+      "file": "apps/api/src/market/value-creation.service.ts",
+      "line": 124,
+      "method": "getUniverse"
+    },
+    {
+      "file": "apps/api/src/market-ranking/services/market-ranking.service.ts",
+      "line": 103,
+      "method": "executeDailyRanking"
+    },
+    {
+      "file": "apps/api/src/market-ranking/services/market-ranking.service.ts",
+      "line": 110,
+      "method": "executeDailyRanking"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 484,
+      "method": "refreshUserEntitlements"
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 147,
+      "method": "createGroupConversation"
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 198,
+      "method": "getConversations"
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 372,
+      "method": "getUnreadCount"
+    },
+    {
+      "file": "apps/api/src/messages/messages.service.ts",
+      "line": 416,
+      "method": "getConversationParticipantIds"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 69,
+      "method": "getPublicCategories"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 165,
+      "method": "getPublicCategorySlots"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 286,
+      "method": "getAdminCategories"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 355,
+      "method": "replaceAutomaticSlots"
+    },
+    {
+      "file": "apps/api/src/news/news-slots.service.ts",
+      "line": 389,
+      "method": "fillEmptySlots"
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 199,
+      "method": "recoverCategoryCoverage"
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 238,
+      "method": "dispatchFrequencyIfDue"
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 300,
+      "method": "performSyncFrequency"
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 310,
+      "method": "performSyncFrequency"
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 314,
+      "method": "performSyncFrequency"
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 434,
+      "method": "getOverview"
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 435,
+      "method": "getOverview"
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 499,
+      "method": "getSources"
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 544,
+      "method": "createSource"
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 649,
+      "method": "ensureDefaults"
+    },
+    {
+      "file": "apps/api/src/news/news-sync.service.ts",
+      "line": 819,
+      "method": "persistArticles"
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 231,
+      "method": "getCategories"
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 242,
+      "method": "getSources"
+    },
+    {
+      "file": "apps/api/src/news/news.service.ts",
+      "line": 480,
+      "method": "categorizeNews"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 654,
+      "method": "getUserPortfolios"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 691,
+      "method": "getVisiblePublicPortfolioRecords"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1152,
+      "method": "getPortfolioAssets"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1166,
+      "method": "deleteAsset"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1322,
+      "method": "getPortfolioMovements"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1343,
+      "method": "getPortfolioMovements"
+    },
+    {
+      "file": "apps/api/src/portfolio/portfolio.service.ts",
+      "line": 1360,
+      "method": "getWatchlists"
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 143,
+      "method": "loadCommentRepliesMap"
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 175,
+      "method": "collectCommentThreadLevels"
+    },
+    {
+      "file": "apps/api/src/posts/posts.service.ts",
+      "line": 357,
+      "method": "getFeed"
+    },
+    {
+      "file": "apps/api/src/reports/reports.service.ts",
+      "line": 66,
+      "method": "getReports"
+    },
+    {
+      "file": "apps/api/src/stories/stories.service.ts",
+      "line": 122,
+      "method": "getFeed"
+    },
+    {
+      "file": "apps/api/src/stripe/stripe.service.ts",
+      "line": 895,
+      "method": "updateUserPlanFromSubscription"
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 807,
+      "method": "getUserConnections"
+    },
+    {
+      "file": "apps/api/src/user/user.service.ts",
+      "line": 827,
+      "method": "calculatePortfolioStats"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 61,
+      "method": "getWatchlists"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 238,
+      "method": "getWatchlistDetail"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 261,
+      "method": "getWatchlistDetail"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 276,
+      "method": "getWatchlistDetail"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 796,
+      "method": "getIdeas"
+    },
+    {
+      "file": "apps/api/src/watchlist/watchlist.service.ts",
+      "line": 922,
+      "method": "getUserListsForSymbol"
+    }
+  ],
+  "externalCallsWithoutTimeout": [
+    {
+      "file": "apps/api/src/analysis/analysis.service.ts",
+      "line": 178,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/finance/finance.integration.spec.ts",
+      "line": 40,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/market/market.service.ts",
+      "line": 1554,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/market/market.service.ts",
+      "line": 2222,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/market/market.service.ts",
+      "line": 2249,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/market/market.service.ts",
+      "line": 2366,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/market/market.service.ts",
+      "line": 2963,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 108,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 157,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 241,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 292,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 340,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 378,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/mercadopago/mercadopago.service.ts",
+      "line": 606,
+      "query": "fetch without explicit signal"
+    },
+    {
+      "file": "apps/api/src/posts/posts.controller.ts",
+      "line": 135,
+      "query": "fetch without explicit signal"
+    }
+  ]
+}

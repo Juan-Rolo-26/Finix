@@ -1,13 +1,15 @@
-const defaultBases = Array.from(
-    new Set(
-        [
-            '/api',
-            import.meta.env.VITE_API_URL,
-            typeof window !== 'undefined' ? `${window.location.origin}/api` : null,
-            import.meta.env.DEV ? 'http://localhost:3010/api' : null,
-        ].filter(Boolean)
-    )
-) as string[];
+const candidates = ['/api', import.meta.env.VITE_API_URL, import.meta.env.DEV ? 'http://localhost:3010/api' : null].filter(Boolean) as string[];
+const defaultBases = Array.from(new Map(candidates.map(base => [typeof window === 'undefined' ? base : new URL(base, window.location.origin).href, base])).values());
+
+async function fetchWithDeadline(url: string, init?: RequestInit) {
+    const controller = new AbortController();
+    const abort = () => controller.abort(init?.signal?.reason);
+    if (init?.signal?.aborted) abort();
+    else init?.signal?.addEventListener('abort', abort, { once: true });
+    const timeout = window.setTimeout(() => controller.abort(new DOMException('La solicitud tardó demasiado.', 'TimeoutError')), init?.body instanceof FormData ? 120000 : 25000);
+    try { return await fetch(url, { ...init, signal: controller.signal }); }
+    finally { window.clearTimeout(timeout); init?.signal?.removeEventListener('abort', abort); }
+}
 
 let activeBase = defaultBases[0];
 let runtimeAccessToken: string | null = (typeof window !== 'undefined')
@@ -81,6 +83,7 @@ const tryRefreshSession = async (base: string) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(refreshToken ? { refreshToken } : {}),
                 cache: 'no-store',
+                signal: AbortSignal.timeout(10000),
             });
             if (!response.ok) return false;
             return persistRefreshedSession(await response.json().catch(() => null));
@@ -103,7 +106,7 @@ export const refreshAccessToken = () => tryRefreshSession(activeBase ?? defaultB
 
 export const apiUrl = (path: string) => buildUrl(activeBase ?? '', path);
 
-import { handleMockNews } from './mockNews';
+
 
 // Limpieza de mocks legacy del navegador
 if (typeof window !== 'undefined') {
@@ -113,7 +116,10 @@ if (typeof window !== 'undefined') {
 
 export const apiFetch = async (path: string, init?: RequestInit) => {
     // Portfolios, Users y Market van 100% al backend NestJS sin interceptores de mocks
-    if (path.startsWith('/news')) {
+    // Demo articles must never replace real backend responses in production.
+    if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_DATA === 'true'
+        && path.startsWith('/news') && !path.startsWith('/news/slots')) {
+        const { handleMockNews } = await import('./mockNews');
         const newsResponse = await handleMockNews(path, init);
         if (newsResponse) return newsResponse;
     }
@@ -159,8 +165,9 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
     for (const base of candidates) {
         let response: Response;
         try {
-            response = await fetch(buildUrl(base, path), withAuth(init));
+            response = await fetchWithDeadline(buildUrl(base, path), withAuth(init));
         } catch (error) {
+            if (init?.signal?.aborted) throw error;
             lastError = error;
             continue;
         }
@@ -170,7 +177,7 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
             if (didRefresh) {
                 activeBase = base;
                 try {
-                    response = await fetch(buildUrl(base, path), withAuth(init, getAccessToken()));
+                    response = await fetchWithDeadline(buildUrl(base, path), withAuth(init, getAccessToken()));
                 } catch (error) {
                     lastError = error;
                     continue;
@@ -215,5 +222,5 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
     if (lastError) {
         throw lastError;
     }
-    return fetch(buildUrl(defaultBases[0], path), withAuth(init));
+    return fetchWithDeadline(buildUrl(defaultBases[0], path), withAuth(init));
 };

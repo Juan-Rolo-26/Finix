@@ -1,3 +1,4 @@
+import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
@@ -23,7 +24,6 @@ import {
     Calendar,
     Receipt,
 } from 'lucide-react';
-import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { hasCommunityAccess, useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
@@ -70,7 +70,7 @@ export function BottomNav() {
     const { logout, user } = useAuthStore();
     const { theme, setTheme } = usePreferencesStore();
 
-    const [unreadMsgs, setUnreadMsgs] = useState(0);
+    const [unreadMsgs, setUnreadMsgs] = useUnreadCount('messages');
     const [isMoreOpen, setIsMoreOpen] = useState(false);
 
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
@@ -79,21 +79,11 @@ export function BottomNav() {
         : mainTabs.filter((tab) => tab.path !== '/comunidades');
 
     /* poll unread */
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const res = await apiFetch('/messages/unread-count');
-                if (res.ok) { const d = await res.json(); setUnreadMsgs(d.count ?? 0); }
-            } catch { }
-        };
-        load();
-        const iv = setInterval(load, 30_000);
-        return () => clearInterval(iv);
-    }, []);
+
 
     useEffect(() => {
         if (location.pathname === '/messages') setUnreadMsgs(0);
-    }, [location.pathname]);
+    }, [location.pathname, setUnreadMsgs]);
 
     /* close panel on route change */
     useEffect(() => { setIsMoreOpen(false); }, [location.pathname]);
