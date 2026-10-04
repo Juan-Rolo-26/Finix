@@ -26,8 +26,8 @@ export const CHART_TOOLTIP_STYLE: React.CSSProperties = {
 };
 
 export const CHART_AXIS_TICK = {
-    fill: 'rgba(100, 116, 139, 0.92)',
-    fontSize: 12,
+    fill: 'hsl(var(--muted-foreground))',
+    fontSize: 13,
 };
 
 const DASHBOARD_CURRENCY_FORMATTERS = {

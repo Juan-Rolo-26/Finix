@@ -16,10 +16,9 @@ import {
     XCircle,
     RefreshCw,
     ListFilter,
-    Minus,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import { formatFinancialAmount, financialNumber, isVisibleEarnings, normalizeEarnings, formatEconomicEventDescription } from '@finix/shared';
+import { formatFinancialAmount, financialNumber, isVisibleEarnings, normalizeEarnings, formatEconomicEventDescription, formatEconomicEventTitle, formatEconomicEventSource } from '@finix/shared';
 import { useAuthStore, isProUser } from '@/stores/authStore';
 import { ProGate } from '@/components/ProGate';
 import { AssetLogoImg } from '@/components/TopGainersCard';
@@ -719,7 +718,7 @@ export default function CalendarPage() {
                                                               ? 'Estados Unidos'
                                                               : event.country}
                                                     </span>
-                                                    <h3>{event.title}</h3>
+                                                    <h3>{formatEconomicEventTitle(event.title, event.country)}</h3>
                                                     <p className="calendar-event-description">
                                                         {formatEconomicEventDescription(event.title, event.description, event.country)}
                                                     </p>
@@ -806,7 +805,7 @@ export default function CalendarPage() {
                                                 )}
                                                 {event.source && (
                                                     <div className="calendar-card-footer">
-                                                        <span>Fuente: {event.source}</span>
+                                                        <span>Fuente: {formatEconomicEventSource(event.source)}</span>
                                                     </div>
                                                 )}
                                             </article>
@@ -911,22 +910,10 @@ export default function CalendarPage() {
                                                     ) : (
                                                         <span>EE. UU.</span>
                                                     )}
-                                                    <span className="calendar-reaction">
+                                                    {earn.marketReaction != null && <span className="calendar-reaction">
                                                         <span>Reacción</span>
-                                                        {earn.marketReaction != null ? (
-                                                            <MarketChange
-                                                                value={earn.marketReaction}
-                                                            />
-                                                        ) : (
-                                                            <span
-                                                                className="market-change market-change--neutral"
-                                                                title={reported ? 'Sin variación registrada' : 'Reacción disponible tras el reporte'}
-                                                            >
-                                                                <Minus size={15} aria-hidden="true" />
-                                                                <span>{reported ? '0,00%' : 'Pendiente'}</span>
-                                                            </span>
-                                                        )}
-                                                    </span>
+                                                        <MarketChange value={earn.marketReaction} />
+                                                    </span>}
                                                 </div>
                                             </article>
                                         );

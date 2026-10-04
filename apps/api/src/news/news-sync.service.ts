@@ -14,9 +14,9 @@ import { isIllustrativeNewsImage, NEWS_ILLUSTRATION_URLS, resolveNewsImage } fro
 import {
     DEFAULT_NEWS_CATEGORIES,
     DEFAULT_NEWS_SOURCES,
-    NEWS_CATEGORY_KEYWORDS,
     NEWS_TIME_ZONE,
     NewsUpdateFrequency,
+    newsCategoryMatchCount,
 } from './news-catalog';
 
 const SOURCE_RETRIES = 2;
@@ -168,15 +168,42 @@ export class NewsSyncService {
     private readonly logger = new Logger(NewsSyncService.name);
     private running = false;
     private readonly circuit = new Map<string, { failures: number; openUntil: number }>();
+    private defaultsReady?: Promise<void>;
 
     constructor(
         private readonly prisma: PrismaService,
         private readonly fetcher: NewsFetcherService,
         private readonly slotsService: NewsSlotsService,
     ) {
-        this.ensureDefaults().catch((error) =>
+        void this.prepareDefaults().catch((error) =>
             this.logger.warn(`No se pudieron preparar los defaults de Noticias: ${error?.message}`),
         );
+    }
+
+    private prepareDefaults() {
+        this.defaultsReady ??= this.ensureDefaults().catch(error => {
+            this.defaultsReady = undefined;
+            throw error;
+        });
+        return this.defaultsReady;
+    }
+
+    onApplicationBootstrap() {
+        void this.recoverCategoryCoverage().catch(error => this.logger.warn(`Recuperación de noticias: ${error?.message}`));
+    }
+
+    @Cron('*/5 * * * *', { name: 'news-coverage-recovery', timeZone: NEWS_TIME_ZONE })
+    async recoverCategoryCoverage() {
+        await this.prepareDefaults();
+        if (this.running) return;
+        const categories = await this.prisma.newsCategory.findMany({ where: { isActive: true } });
+        const incomplete: string[] = [];
+        for (const category of categories) {
+            await this.slotsService.fillEmptySlots(category.id, category.slug);
+            const empty = await this.prisma.newsSlot.count({ where: { categoryId: category.id, isActive: true, articleId: null } });
+            if (empty) incomplete.push(category.id);
+        }
+        if (incomplete.length) await this.syncFrequency('MANUAL', incomplete);
     }
 
     /** Independent daily job. The minute tick makes its hour editable in Admin. */
@@ -261,6 +288,15 @@ export class NewsSyncService {
     ) {
         if (this.running) return { status: 'SKIPPED', reason: 'Ya hay una sincronización en curso' };
         this.running = true;
+        try {
+            return await this.performSyncFrequency(frequency, categoryIds, sourceId);
+        } finally {
+            this.running = false;
+        }
+    }
+
+    private async performSyncFrequency(frequency: NewsUpdateFrequency, categoryIds?: string[], sourceId?: string) {
+        await this.prepareDefaults();
         const categories = await this.prisma.newsCategory.findMany({
             where: {
                 isActive: true,
@@ -299,7 +335,10 @@ export class NewsSyncService {
         const categoryMap = new Map(categories.map((category) => [category.id, category]));
 
         try {
-            for (const source of sources) {
+            let nextSource = 0;
+            await Promise.all(Array.from({ length: Math.min(3, sources.length) }, async () => {
+              while (nextSource < sources.length) {
+                const source = sources[nextSource++];
                 if (this.isCircuitOpen(source.id)) {
                     failedSources.push(`${source.name}: circuito abierto`);
                     continue;
@@ -327,7 +366,8 @@ export class NewsSyncService {
                 }
                 // Small global pacing prevents bursts against RSS providers.
                 await new Promise((resolve) => setTimeout(resolve, SOURCE_RATE_LIMIT_DELAY_MS));
-            }
+              }
+            }));
 
             const result = await this.persistArticles(collected, categories);
             articlesCreated = result.created;
@@ -337,6 +377,7 @@ export class NewsSyncService {
             for (const category of categories) {
                 const topArticles = await this.findArticlesWithPhotos(category.id);
                 await this.slotsService.replaceAutomaticSlots(category.id, topArticles.map((article) => article.id));
+                await this.slotsService.fillEmptySlots(category.id, category.slug);
                 await this.prisma.newsCategory.update({
                     where: { id: category.id },
                     data: {
@@ -385,13 +426,11 @@ export class NewsSyncService {
             }).catch(() => undefined);
             this.logger.error(`Sincronización ${frequency} fallida: ${message}`);
             return { id: log.id, status: 'FAILED', errorMessage: message, failedSources };
-        } finally {
-            this.running = false;
         }
     }
 
     async getOverview() {
-        await this.ensureDefaults();
+        await this.prepareDefaults();
         const [categories, sources, logs] = await Promise.all([
             this.prisma.newsCategory.findMany({ orderBy: { displayOrder: 'asc' } }),
             this.prisma.newsSource.findMany({
@@ -607,25 +646,25 @@ export class NewsSyncService {
             }
         }
 
+        const knownSources = await this.prisma.newsSource.findMany({ include: { categoryLinks: true } });
         for (const definition of DEFAULT_NEWS_SOURCES) {
-            const existing = await this.prisma.newsSource.findUnique({ where: { name: definition.name } }) ||
-                (definition.legacyNames?.length
-                    ? await this.prisma.newsSource.findFirst({ where: { name: { in: definition.legacyNames } } })
-                    : null);
+            const existing = knownSources.find(source => source.name === definition.name) ||
+                knownSources.find(source => definition.legacyNames?.includes(source.name));
+            const missingFields = existing ? Object.fromEntries(Object.entries({
+                name: definition.name,
+                apiType: existing.apiType || 'rss',
+                baseUrl: existing.baseUrl || definition.baseUrl,
+                apiUrl: existing.apiUrl || definition.apiUrl,
+                url: existing.url || definition.baseUrl,
+                rssUrl: existing.rssUrl || definition.rssUrl,
+            }).filter(([key, value]) => value !== undefined && value !== existing[key])) : {};
             const source = existing
-                ? await this.prisma.newsSource.update({
+                ? Object.keys(missingFields).length ? await this.prisma.newsSource.update({
                     where: { id: existing.id },
                     // Existing values are administrator-owned. Defaults only fill
                     // the fields missing on legacy sources.
-                    data: {
-                        name: existing.name === definition.name ? undefined : definition.name,
-                        apiType: existing.apiType || 'rss',
-                        baseUrl: existing.baseUrl || definition.baseUrl,
-                        apiUrl: existing.apiUrl || definition.apiUrl,
-                        url: existing.url || definition.baseUrl,
-                        rssUrl: existing.rssUrl || definition.rssUrl,
-                    },
-                })
+                    data: missingFields,
+                }) : existing
                 : await this.prisma.newsSource.create({
                     data: {
                         name: definition.name,
@@ -649,12 +688,12 @@ export class NewsSyncService {
                     reliabilityScore: definition.reliabilityScore,
                     isActive: true,
                 };
-                const existingLink = await this.prisma.newsSourceCategory.findUnique({
-                    where: { sourceId_categoryId: { sourceId: source.id, categoryId: category.id } },
-                });
+                const existingLink = existing?.categoryLinks.find(link => link.categoryId === category.id);
                 if (!existingLink) {
-                    await this.prisma.newsSourceCategory.create({
-                        data: {
+                    await this.prisma.newsSourceCategory.upsert({
+                        where: { sourceId_categoryId: { sourceId: source.id, categoryId: category.id } },
+                        update: {},
+                        create: {
                             sourceId: source.id,
                             categoryId: category.id,
                             priority: policy.priority,
@@ -702,6 +741,7 @@ export class NewsSyncService {
 
     private classify(item: RawNewsItem, source: any, categoryMap: Map<string, any>) {
         const links = (source.categoryLinks || [])
+            .filter((link: any) => link.isActive !== false)
             // Only classify into categories participating in this run. This
             // keeps DAILY and WEEKLY completely independent even when a source
             // feeds both groups.
@@ -711,10 +751,7 @@ export class NewsSyncService {
         const text = normalizeNewsTitle(`${item.title} ${item.summary} ${item.content}`);
         const scored = links.map((category: any) => ({
             category,
-            score: (NEWS_CATEGORY_KEYWORDS[category.slug] || []).reduce(
-                (total, keyword) => total + (text.includes(normalizeNewsTitle(keyword)) ? 1 : 0),
-                0,
-            ),
+            score: newsCategoryMatchCount(category.slug, text),
         })).sort((a: any, b: any) => b.score - a.score);
         return scored[0]?.category || links[0];
     }
@@ -722,13 +759,13 @@ export class NewsSyncService {
     private async findArticlesWithPhotos(categoryId: string) {
         const options = {
             where: {
-                categoryId,
+                OR: [{ categoryId }, { slots: { some: { categoryId, isActive: true } } }],
                 isActive: true,
                 isPublished: true,
                 status: 'PUBLISHED' as const,
                 AND: [{ imageUrl: { not: null } }, { imageUrl: { not: '' } }],
             },
-            orderBy: [{ relevanceScore: 'desc' as const }, { publishedAt: 'desc' as const }],
+            orderBy: [{ publishedAt: 'desc' as const }, { relevanceScore: 'desc' as const }],
             select: { id: true },
         };
         // Prefer another news story with its own photo before using illustrations.
@@ -777,7 +814,16 @@ export class NewsSyncService {
             },
             take: 1500,
         });
-        const candidates = [...recent];
+        // URL uniqueness is global: an older story or one stored in another
+        // category must be reused rather than aborting the complete import.
+        const exact = collected.length ? await this.prisma.newsArticle.findMany({
+            where: { OR: [
+                { url: { in: collected.map(record => record.item.url) } },
+                { canonicalUrl: { in: collected.map(record => normalizeNewsUrl(record.item.url)) } },
+            ] },
+            select: { id: true, url: true, canonicalUrl: true, title: true, normalizedTitle: true, eventFingerprint: true, categoryId: true, relevanceScore: true, publishedAt: true, imageUrl: true, customImage: true },
+        }) : [];
+        const candidates = [...new Map([...exact, ...recent].map(article => [article.id, article])).values()];
 
         const ordered = [...collected].sort((first, second) =>
             (this.sourceCategoryPolicy(second.source, second.category.id).priority + this.sourceCategoryPolicy(second.source, second.category.id).reliabilityScore) -

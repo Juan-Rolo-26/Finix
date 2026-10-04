@@ -76,6 +76,8 @@ async function main() {
         assert.equal(macro.length, 2);
         assert.equal(macro.find(event => event.id === 'manual-macro').actualValue, '9');
         assert.ok(macro.every(event => event.id !== 'template' && event.id));
+        assert.equal(macro.find(event => event.id === 'manual-macro').title, 'Índice de precios al consumidor (IPC)');
+        assert.equal(live[0].title, 'Consumer Price Index', 'Provider identity must stay unchanged');
         assert.equal(week.economicData.excludedLegacyEvents, 1);
         assert.equal(earnings.length, 1);
         assert.equal(earnings[0].id, 'manual-earnings');
@@ -84,6 +86,25 @@ async function main() {
         assert.equal(week.categories.ar, 1);
         const home = await service.getHomeEvents();
         assert.ok(home.events.every(event => !['template', 'template-earnings'].includes(event.id)));
+        assert.equal(home.events.find(event => event.country === 'US').title, 'Índice de precios al consumidor (IPC)');
+
+        const storedEnglish = { ...manualMacro, title: 'MBA Mortgage Refinance Index', description: 'The MBA Weekly Mortgage Application Survey is a comprehensive overview.', source: 'TradingView Economic Calendar' };
+        const storedCompany = { id: 'company', eventType: 'EARNINGS', title: 'Apple Inc.', description: 'Company filing' };
+        const repository = {
+            findMany: async () => [storedEnglish, storedCompany], count: async () => 2,
+            findUnique: async ({ where }) => where.id === storedEnglish.id ? storedEnglish : storedCompany,
+        };
+        const localizedService = new CalendarService({ marketCalendarEvent: repository }, {}, {}, {});
+        for (const result of [await localizedService.getPublicEvents({}), await localizedService.getAdminEvents({})]) {
+            assert.equal(result.items[0].title, 'Índice de refinanciación hipotecaria (MBA)');
+            assert.match(result.items[0].description, /solicitudes de refinanciación/);
+            assert.equal(result.items[0].source, 'Calendario económico de TradingView');
+            assert.equal(result.items[0].actualValue, '9');
+            assert.deepEqual(result.items[1], storedCompany, 'Earnings company names must stay intact');
+        }
+        assert.equal((await localizedService.getEventById(storedEnglish.id)).title, 'Índice de refinanciación hipotecaria (MBA)');
+        assert.deepEqual(await localizedService.getEventById(storedCompany.id), storedCompany);
+        assert.match(storedEnglish.description, /^The MBA/, 'Read paths must not mutate stored text');
 
         const tvProvider = new CalendarProviderService(new MarketImpactScoringService(), {}, {});
         tvProvider.fmpApiKey = '';

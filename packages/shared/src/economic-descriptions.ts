@@ -50,7 +50,7 @@ const INDICATOR_RULES: IndicatorRule[] = [
     },
     {
         pattern: /ism/i,
-        description: 'Índice del Institute for Supply Management que evalúa compras, empleo y nuevos pedidos. Sobre 50 puntos refleja expansión del sector.',
+        description: 'Índice del Instituto de Gestión del Abastecimiento (ISM) que evalúa compras, empleo y nuevos pedidos. Sobre 50 puntos refleja expansión del sector.',
     },
     {
         pattern: /s&p global.*(manufacturing|manuf).*pmi/i,
@@ -106,7 +106,7 @@ const INDICATOR_RULES: IndicatorRule[] = [
     // --- Inflación & Precios ---
     {
         pattern: /core cpi|ipc subyacente/i,
-        description: 'Índice de Precios al Consumidor excluyendo alimentos frescos y energía volátil. Muestra la tendencia de fondo de la inflación minorista en EE. UU.',
+        description: 'Índice de Precios al Consumidor excluyendo alimentos y energía. Muestra la tendencia de fondo de la inflación minorista en EE. UU.',
     },
     {
         pattern: /cpi|consumer price index|ipc|inflación/i,
@@ -142,7 +142,7 @@ const INDICATOR_RULES: IndicatorRule[] = [
     // --- Consumo & Confianza ---
     {
         pattern: /retail sales|ventas minoristas/i,
-        description: 'Mide el gasto total de los consumidores en tiendas físicas y plataformas online. El consumo representa cerca del 70% de la economía de EE. UU.',
+        description: 'Mide el gasto total de los consumidores en tiendas físicas y plataformas digitales. El consumo representa cerca del 70% de la economía de EE. UU.',
     },
     {
         pattern: /michigan.*(sentiment|consumer|expectations)/i,
@@ -274,103 +274,222 @@ const INDICATOR_RULES: IndicatorRule[] = [
     },
 ];
 
-/**
- * Traduce o sintetiza un párrafo en inglés a un texto conciso en español de máximo ~7 renglones.
- */
-function translateAndCondenseEnglish(text: string): string {
-    let clean = text
-        .replace(/\s+/g, ' ')
-        .trim();
+/** Reviewed names match the complete indicator, never partial English sentences. */
+const EVENT_NAMES: Array<[RegExp, string, string?]> = [
+    [/MBA Mortgage Refinance Index/i, 'Índice de refinanciación hipotecaria (MBA)', 'Mide el volumen semanal de solicitudes de refinanciación hipotecaria en Estados Unidos, según la encuesta de la MBA.'],
+    [/MBA Mortgage Market Index/i, 'Índice del mercado hipotecario (MBA)', 'Mide el volumen de solicitudes de préstamos hipotecarios para compra y refinanciación de viviendas en Estados Unidos.'],
+    [/MBA Mortgage Applications/i, 'Solicitudes de hipotecas (MBA)', 'Variación semanal de las solicitudes de préstamos hipotecarios para compra y refinanciación de viviendas en Estados Unidos.'],
+    [/MBA Purchase Index/i, 'Índice de solicitudes de hipotecas para compra (MBA)', 'Mide el volumen semanal de solicitudes de préstamos hipotecarios destinados a la compra de viviendas.'],
+    [/MBA 30-Year Mortgage Rate/i, 'Tasa hipotecaria a 30 años (MBA)', 'Tasa de interés de las hipotecas a 30 años informada en la encuesta semanal de la MBA.'],
+    [/(15|30)-Year Mortgage Rate/i, 'Tasa hipotecaria', 'Tasa de interés informada para préstamos hipotecarios del plazo indicado.'],
+    [/ADP Employment Change Weekly/i, 'Variación semanal del empleo privado (ADP)', 'Estimación semanal de la variación del empleo privado en Estados Unidos elaborada por ADP.'],
+    [/ADP Employment Change/i, 'Variación del empleo privado (ADP)', 'Variación mensual del empleo privado en Estados Unidos estimada por ADP.'],
+    [/GDP Sales/i, 'Ventas finales de la producción interna', 'Mide la producción interna vendida a compradores finales, excluyendo la variación de inventarios del PIB.'],
+    [/GDP Price Index/i, 'Índice de precios del PIB', 'Mide la variación de los precios de los bienes y servicios incluidos en el producto interno bruto.'],
+    [/GDP Growth Rate|Gross Domestic Product|GDP/i, 'Crecimiento del PIB'],
+    [/Goods Trade Balance/i, 'Balanza comercial de bienes', 'Diferencia entre las exportaciones y las importaciones de bienes. Un saldo positivo indica superávit y uno negativo, déficit.'],
+    [/Balance of Trade|Trade Balance/i, 'Balanza comercial', 'Diferencia entre el valor de las exportaciones y las importaciones informadas por la fuente.'],
+    [/Current Account/i, 'Cuenta corriente', 'Registra operaciones con el exterior de bienes, servicios, ingresos y transferencias corrientes.'],
+    [/Exports/i, 'Exportaciones', 'Valor de las ventas de bienes o servicios al exterior informadas por la fuente.'],
+    [/Imports/i, 'Importaciones', 'Valor de las compras de bienes o servicios al exterior informadas por la fuente.'],
+    [/Core PCE Price Index|Core PCE Prices/i, 'Índice de precios del consumo personal subyacente (PCE)'],
+    [/PCE Price Index|PCE Prices/i, 'Índice de precios del consumo personal (PCE)'],
+    [/Core CPI|Core Consumer Price Index/i, 'Índice de precios al consumidor subyacente (IPC)'],
+    [/CPI|Consumer Price Index|Inflation Rate/i, 'Índice de precios al consumidor (IPC)'],
+    [/Core PPI/i, 'Índice de precios al productor subyacente (IPP)'],
+    [/PPI|Producer Price Index/i, 'Índice de precios al productor (IPP)'],
+    [/Import Price Index/i, 'Índice de precios de importación'],
+    [/Export Price Index/i, 'Índice de precios de exportación'],
+    [/Corporate Profits/i, 'Ganancias empresariales', 'Resultados agregados de las empresas correspondientes al período informado.'],
+    [/Real Consumer Spending/i, 'Gasto real de los consumidores', 'Mide el gasto de consumo ajustado para descontar el efecto de la variación de precios.'],
+    [/Real Personal Spending/i, 'Gasto personal real', 'Mide el gasto de los hogares ajustado por la variación de precios.'],
+    [/Personal Spending/i, 'Gasto personal'],
+    [/Personal Income/i, 'Ingresos personales'],
+    [/Consumer Credit Change/i, 'Variación del crédito al consumidor', 'Mide el cambio en el crédito concedido a los consumidores durante el período informado.'],
+    [/Consumer Inflation Expectations/i, 'Expectativas de inflación de los consumidores', 'Inflación que los consumidores esperan para el período consultado en la encuesta.'],
+    [/CB Consumer Confidence|Consumer Confidence/i, 'Confianza del consumidor'],
+    [/Michigan 5 Year Inflation Expectations/i, 'Expectativas de inflación a 5 años de Michigan'],
+    [/Michigan Inflation Expectations/i, 'Expectativas de inflación de Michigan'],
+    [/Michigan Consumer Expectations/i, 'Expectativas del consumidor de Michigan'],
+    [/Michigan Consumer Sentiment/i, 'Confianza del consumidor de Michigan'],
+    [/Michigan Current Conditions/i, 'Condiciones actuales del consumidor de Michigan'],
+    [/RCM\/TIPP Economic Optimism Index/i, 'Índice de optimismo económico (RCM/TIPP)', 'Encuesta sobre la percepción de las condiciones económicas y las perspectivas de los consumidores.'],
+    [/Retail Sales/i, 'Ventas minoristas'],
+    [/Redbook/i, 'Ventas minoristas de Redbook', 'Variación de las ventas de una muestra de comercios minoristas relevada por Redbook.'],
+    [/Retail Inventories Ex Autos/i, 'Inventarios minoristas sin vehículos', 'Mide las existencias de los comercios minoristas excluyendo los vehículos.'],
+    [/Wholesale Inventories/i, 'Inventarios mayoristas', 'Mide las existencias de bienes de los comercios mayoristas.'],
+    [/Total Vehicle Sales/i, 'Ventas totales de vehículos', 'Cantidad de vehículos vendidos durante el período informado.'],
+    [/Used Car Prices/i, 'Precios de vehículos usados', 'Mide la evolución de los precios de los vehículos usados.'],
+    [/Nonfarm Payrolls Private|Non Farm Payrolls Private/i, 'Empleo privado no agrícola'],
+    [/Nonfarm Payrolls|Non Farm Payrolls|Non-Farm Employment/i, 'Empleo no agrícola'],
+    [/Manufacturing Payrolls/i, 'Empleo manufacturero', 'Cantidad de puestos de trabajo en el sector manufacturero.'],
+    [/Government Payrolls/i, 'Empleo público', 'Cantidad de puestos de trabajo en el sector público.'],
+    [/U-6 Unemployment Rate/i, 'Tasa ampliada de desempleo (U-6)', 'Incluye personas desempleadas, personas con vinculación marginal al mercado laboral y quienes trabajan a tiempo parcial por razones económicas.'],
+    [/Unemployment Rate/i, 'Tasa de desempleo'],
+    [/Participation Rate|Labor Force Participation/i, 'Tasa de participación laboral', 'Porcentaje de la población de referencia que trabaja o busca empleo.'],
+    [/Average Hourly Earnings/i, 'Salarios medios por hora'],
+    [/Average Weekly Hours/i, 'Horas semanales promedio', 'Promedio de horas trabajadas por semana durante el período informado.'],
+    [/Challenger Job Cuts/i, 'Despidos anunciados (Challenger)', 'Cantidad de recortes de empleo anunciados por empresas en el informe de Challenger.'],
+    [/Jobless Claims 4-week Average/i, 'Promedio de solicitudes de desempleo de 4 semanas'],
+    [/Initial Jobless Claims/i, 'Solicitudes iniciales de desempleo'],
+    [/Continuing Jobless Claims|Continuing Claims/i, 'Solicitudes continuas de desempleo'],
+    [/JOLTs Job Openings|Job Openings/i, 'Puestos de trabajo vacantes (JOLTS)'],
+    [/JOLTs Job Quits/i, 'Renuncias laborales (JOLTS)', 'Cantidad de trabajadores que dejan voluntariamente sus empleos, según la encuesta JOLTS.'],
+    [/Dallas Fed Services Revenues Index/i, 'Índice de ingresos de servicios de Dallas', 'Encuesta de la Reserva Federal de Dallas sobre la evolución de los ingresos del sector de servicios.'],
+    [/Dallas Fed Services Index/i, 'Índice de servicios de Dallas'],
+    [/Dallas Fed Manufacturing Index/i, 'Índice manufacturero de Dallas'],
+    [/Empire State Manufacturing Index|NY Fed Manufacturing Index/i, 'Índice manufacturero de Nueva York'],
+    [/Philadelphia Fed Manufacturing Index|Philly Fed Manufacturing Index/i, 'Índice manufacturero de Filadelfia'],
+    [/Richmond Fed Manufacturing Index/i, 'Índice manufacturero de Richmond'],
+    [/Kansas City Fed Manufacturing Index/i, 'Índice manufacturero de Kansas City'],
+    [/Chicago PMI/i, 'Índice de gestores de compras de Chicago (PMI)'],
+    [/ISM Manufacturing Employment/i, 'Empleo manufacturero (ISM)', 'Componente de empleo de la encuesta manufacturera del ISM.'],
+    [/ISM Manufacturing New Orders/i, 'Nuevos pedidos manufactureros (ISM)', 'Componente de nuevos pedidos de la encuesta manufacturera del ISM.'],
+    [/ISM Manufacturing Prices/i, 'Precios manufactureros (ISM)', 'Componente de precios de la encuesta manufacturera del ISM.'],
+    [/ISM Manufacturing PMI/i, 'Índice de gestores de compras manufactureros (ISM)'],
+    [/ISM Services Business Activity/i, 'Actividad empresarial de servicios (ISM)', 'Componente de actividad empresarial de la encuesta de servicios del ISM.'],
+    [/ISM Services Employment/i, 'Empleo en servicios (ISM)', 'Componente de empleo de la encuesta de servicios del ISM.'],
+    [/ISM Services New Orders/i, 'Nuevos pedidos de servicios (ISM)', 'Componente de nuevos pedidos de la encuesta de servicios del ISM.'],
+    [/ISM Services Prices/i, 'Precios de servicios (ISM)', 'Componente de precios de la encuesta de servicios del ISM.'],
+    [/ISM Services PMI|ISM Non-Manufacturing PMI/i, 'Índice de gestores de compras de servicios (ISM)'],
+    [/S&P Global Composite PMI/i, 'Índice compuesto de gestores de compras (S&P Global)'],
+    [/S&P Global Manufacturing PMI/i, 'Índice de gestores de compras manufactureros (S&P Global)'],
+    [/S&P Global Services PMI/i, 'Índice de gestores de compras de servicios (S&P Global)'],
+    [/LMI Logistics Managers Index/i, 'Índice de gestores de logística (LMI)', 'Encuesta sobre las condiciones de la actividad logística, transporte y almacenamiento.'],
+    [/Industrial Production/i, 'Producción industrial', 'Mide la evolución de la producción del sector industrial durante el período informado.'],
+    [/Factory Orders ex Transportation/i, 'Pedidos industriales sin transporte', 'Mide los nuevos pedidos de la industria excluyendo el sector de transporte.'],
+    [/Factory Orders/i, 'Pedidos industriales', 'Mide los nuevos pedidos recibidos por la industria.'],
+    [/Durable Goods Orders/i, 'Pedidos de bienes duraderos'],
+    [/Construction Spending/i, 'Gasto en construcción', 'Valor del gasto en obras de construcción durante el período informado.'],
+    [/Building Permits/i, 'Permisos de construcción'],
+    [/Housing Starts/i, 'Inicio de construcción de viviendas'],
+    [/Existing Home Sales/i, 'Ventas de viviendas existentes'],
+    [/New Home Sales/i, 'Ventas de viviendas nuevas'],
+    [/Pending Home Sales/i, 'Ventas pendientes de viviendas', 'Mide contratos firmados para la compra de viviendas cuya operación todavía no se completó.'],
+    [/S&P\/Case-Shiller Home Price/i, 'Precios de viviendas (S&P/Case-Shiller)'],
+    [/House Price Index|Home Price Index/i, 'Índice de precios de viviendas'],
+    [/Fed Balance Sheet/i, 'Balance de la Reserva Federal', 'Informa los activos y pasivos del balance de la Reserva Federal.'],
+    [/FOMC Minutes/i, 'Minutas de la Reserva Federal'],
+    [/Fed Interest Rate Decision|FOMC Rate Decision/i, 'Decisión de tasas de la Reserva Federal'],
+    [/Beige Book/i, 'Libro Beige de la Reserva Federal'],
+    [/Fed ([A-Za-z -]+) Speech|Fed ([A-Za-z -]+) Speaks/i, 'Discurso de la Reserva Federal', 'Intervención de un funcionario de la Reserva Federal sobre economía y política monetaria.'],
+    [/NY Fed Bill Purchases 1 to 4 months/i, 'Compras de letras de la Reserva Federal de Nueva York a 1–4 meses', 'Operaciones de compra de letras del Tesoro con vencimientos de 1 a 4 meses.'],
+    [/NY Fed Bill Purchases 4 to 12 months/i, 'Compras de letras de la Reserva Federal de Nueva York a 4–12 meses', 'Operaciones de compra de letras del Tesoro con vencimientos de 4 a 12 meses.'],
+    [/\d+-(Week|Month) Bill Auction/i, 'Subasta de letras del Tesoro'],
+    [/\d+-Year (Note|Bond) Auction/i, 'Subasta de bonos del Tesoro'],
+    [/TIPS Auction/i, 'Subasta de bonos protegidos contra la inflación (TIPS)'],
+    [/API Crude Oil Stock Change/i, 'Variación de inventarios de petróleo (API)', 'Variación semanal de los inventarios de petróleo informada por el Instituto Americano del Petróleo (API).'],
+    [/EIA Crude Oil Imports Change/i, 'Variación de importaciones de petróleo (EIA)', 'Cambio semanal en las importaciones de petróleo informado por la EIA.'],
+    [/EIA Cushing Crude Oil Stocks Change/i, 'Variación de inventarios de petróleo en Cushing (EIA)', 'Cambio semanal en las existencias de petróleo del centro de almacenamiento de Cushing.'],
+    [/EIA Crude Oil Stocks Change|Crude Oil Inventories/i, 'Variación de inventarios de petróleo (EIA)'],
+    [/EIA Distillate Fuel Production Change/i, 'Variación de producción de combustibles destilados (EIA)', 'Cambio semanal en la producción de combustibles destilados informado por la EIA.'],
+    [/EIA Distillate Stocks Change/i, 'Variación de inventarios de combustibles destilados (EIA)', 'Cambio semanal en las existencias de combustibles destilados informado por la EIA.'],
+    [/EIA Gasoline Production Change/i, 'Variación de producción de nafta (EIA)', 'Cambio semanal en la producción de nafta informado por la EIA.'],
+    [/EIA Gasoline Stocks Change/i, 'Variación de inventarios de nafta (EIA)', 'Cambio semanal en las existencias de nafta informado por la EIA.'],
+    [/EIA Heating Oil Stocks Change/i, 'Variación de inventarios de combustible para calefacción (EIA)', 'Cambio semanal en las existencias de combustible para calefacción informado por la EIA.'],
+    [/EIA Natural Gas Stocks Change|Natural Gas Storage/i, 'Variación de inventarios de gas natural (EIA)'],
+    [/EIA Refinery Crude Runs Change/i, 'Variación del petróleo procesado en refinerías (EIA)', 'Cambio semanal en el volumen de petróleo que procesan las refinerías.'],
+    [/Baker Hughes Oil Rig Count/i, 'Cantidad de equipos petroleros activos (Baker Hughes)', 'Cantidad de equipos de perforación petrolera activos relevada por Baker Hughes.'],
+    [/Baker Hughes Total Rigs Count/i, 'Cantidad total de equipos de perforación activos (Baker Hughes)', 'Cantidad de equipos de perforación activos relevada por Baker Hughes.'],
+    [/Quarterly Grain Stocks - Corn/i, 'Inventarios trimestrales de maíz', 'Existencias de maíz informadas en el relevamiento trimestral.'],
+    [/Quarterly Grain Stocks - Soy/i, 'Inventarios trimestrales de soja', 'Existencias de soja informadas en el relevamiento trimestral.'],
+    [/Quarterly Grain Stocks - Wheat/i, 'Inventarios trimestrales de trigo', 'Existencias de trigo informadas en el relevamiento trimestral.'],
+    [/WASDE Report/i, 'Informe de oferta y demanda agrícola (WASDE)', 'Informe sobre las estimaciones de oferta y demanda de productos agrícolas.'],
+    [/Tax Revenue/i, 'Recaudación tributaria', 'Ingresos recaudados por el Estado mediante impuestos.'],
+];
 
-    // Reemplazos de frases comunes de TradingView / FMP
-    const replacements: [RegExp, string][] = [
-        [/the\s+([a-z\s]+)\s+measures the performance of/gi, 'Mide el desempeño de'],
-        [/the\s+([a-z\s]+)\s+measures the/gi, 'Mide la'],
-        [/measures the change in/gi, 'Mide la variación en'],
-        [/tracks variables such as output, employment, orders and prices/gi, 'Evalúa variables clave como producción, empleo, pedidos y costos'],
-        [/a reading above 0 indicates an expansion.*?below 0 represents a contraction.*?while 0 indicates no change/gi, 'Valores sobre 0 indican expansión y bajo 0 contracción'],
-        [/a reading above 50 indicates expansion.*?below 50 indicates contraction/gi, 'Registros sobre 50 marcan expansión del sector y bajo 50 contracción'],
-        [/a reading above 0 indicates.*?below 0 indicates.*/gi, 'Valores sobre 0 reflejan crecimiento y bajo 0 retroceso'],
-        [/compared to the previous month/gi, 'respecto al mes anterior'],
-        [/the index is derived from a survey of/gi, 'Surge de un relevamiento a'],
-        [/business executives/gi, 'directivos de empresas'],
-        [/factory activity/gi, 'actividad fabril'],
-        [/manufacturing output/gi, 'producción manufacturera'],
-        [/first as an exporter/gi, 'primer exportador'],
-        [/in the state of/gi, 'en el estado de'],
-        [/united states|u\.s\./gi, 'EE. UU.'],
-    ];
-
-    for (const [pattern, rep] of replacements) {
-        clean = clean.replace(pattern, rep);
+const normalizeWords = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().match(/[a-z]+/g) || [];
+const extraSpanishWords = 'publicacion informacion economica economia argentino argentina estadounidense estados unidos mundial internacional oficial privado privada indice indices cambio cambios prestamos prestamo hipotecario hipotecaria hipotecas refinanciacion refinanciaciones solicitudes compra compras venta ventas datos dato disponible disponibles detalle consultar consulta consulte mensual trimestral semanal anual definitiva definitivo final finales preliminar preliminares avanzada avance anticipado ajustado ajustada estacionalmente sin con del al los las el la un una unos unas y o de en a por para que se es son sus sobre entre esta este estas estos hay no solo cada mes meses semana semanas ano anos respecto anterior anteriores periodo periodos variacion crecimiento actividad produccion inventarios empleos empleo importacion exportacion importaciones exportaciones industria producto interno bruto condiciones actual actuales proxima proximo presenta resultados manufacturero manufacturera servicios subyacente informacion programado programada pendiente pendientes informe informes manual revisado revisada esperada esperado financiera financiero fuente fuentes calendario economico economicos publicados publicadas datos tasa tasas balanza comercio mercaderias balance banco central consumidor consumidores precios inflacion deflactor argentina indec bcra adp mba ism fomc pmi pce ipc ipp pib eia api jolts lmi wasde tips rcm tipp eps bps ee uu s p global conference board institute supply management redbook case shiller baker hughes';
+// Unknown prose is never passed through. Only reviewed Spanish vocabulary and proper names are displayable.
+const reviewedWords = new Set(normalizeWords([
+    extraSpanishWords + ' evento eventos actualizado actualizada interanual Barkin Bowman Collins Goolsbee Kashkari Logan Musalem Schmid Williams Powell Waller Barr Daly Bostic Hammack Miran Cook Jefferson Kugler Harker enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre',
+    ...INDICATOR_RULES.map(rule => rule.description),
+    ...EVENT_NAMES.flatMap(([, title, description]) => [title, description || '']),
+].join(' ')));
+function isReviewedSpanish(text: string): boolean {
+    const words = normalizeWords(text);
+    return words.length > 0 && words.every(word => reviewedWords.has(word))
+        && /\b(de|del|la|el|los|las|en|por|para|sin|con|y|al|no|evento|informe|indice|tasa|variacion|produccion|exportaciones|importaciones|recaudacion|ventas|ingresos|empleo|horas|cuenta|salarios|despidos|renuncias|pedidos|actividad|precios|balanza|inventarios)\b/i.test(normalizeWords(text).join(' '));
+}
+function concise(text: string): string {
+    const clean = text.replace(/\s+/g, ' ').trim();
+    return clean.length <= 280 ? clean : clean.slice(0, 277).replace(/[,;.\s]+$/, '') + '…';
+}
+function indicatorName(raw: string) {
+    const title = (raw || '').replace(/\s+/g, ' ').trim();
+    for (const [pattern, spanish, description] of EVENT_NAMES) {
+        const match = title.match(pattern);
+        if (!match || match.index !== 0) continue;
+        const tail = title.slice(match[0].length).trim();
+        if (!/^(?:(?:MoM|YoY|QoQ|WoW|Final|Prel|Preliminary|Adv|Advance|Flash|SA|NSA|\((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\))\s*)*$/i.test(tail)) continue;
+        return { spanish, description, matched: match[0], tail };
     }
-
-    // Si aún tiene mucho inglés residual o es muy largo, recortamos a las primeras 2-3 oraciones
-    const sentences = clean.split(/(?<=[.?!])\s+/).filter(Boolean);
-    if (sentences.length > 2) {
-        clean = sentences.slice(0, 2).join(' ');
-    }
-
-    // Límite de caracteres estricto para no superar 7 renglones (unos 280 caracteres aprox.)
-    if (clean.length > 280) {
-        clean = clean.slice(0, 277).replace(/[,;.\s]+$/, '') + '...';
-    }
-
-    return clean;
+    return null;
 }
 
-/**
- * Retorna una descripción concisa en español (máx. 7 renglones) para cualquier evento del calendario.
- */
-export function formatEconomicEventDescription(
-    title: string,
-    rawDescription?: string,
-    country?: string,
-): string {
-    const cleanTitle = (title || '').trim();
+/** A complete translated name; unknown foreign names have a Spanish display fallback. */
+export function formatEconomicEventTitle(rawTitle: string, country?: string): string {
+    const title = (rawTitle || '').replace(/\s+/g, ' ').trim();
+    if (isReviewedSpanish(title)) return title;
+    const name = indicatorName(title);
+    if (!name) return country?.toUpperCase() === 'AR' ? 'Publicación económica de Argentina' : 'Publicación económica';
+    let spanish = name.spanish;
+    const maturity = name.matched.match(/^(\d+)-(Week|Month|Year)/i);
+    if (maturity) {
+        const units: Record<string, string> = { week: 'semanas', month: 'meses', year: 'años' };
+        spanish += ` a ${maturity[1]} ${units[maturity[2].toLowerCase()]}`;
+    }
+    const speech = name.matched.match(/^Fed ([A-Za-z -]+) (?:Speech|Speaks)$/i);
+    if (speech && /^(Barkin|Bowman|Collins|Goolsbee|Kashkari|Logan|Musalem|Schmid|Williams|Powell|Waller|Barr|Daly|Bostic|Hammack|Miran|Cook|Jefferson|Kugler|Harker)$/i.test(speech[1])) spanish += `: ${speech[1]}`;
+    const qualifiers: string[] = [];
+    if (/\bMoM\b/i.test(name.tail)) qualifiers.push('variación mensual');
+    if (/\bYoY\b/i.test(name.tail)) qualifiers.push('variación interanual');
+    if (/\bQoQ\b/i.test(name.tail)) qualifiers.push('variación trimestral');
+    if (/\bWoW\b/i.test(name.tail)) qualifiers.push('variación semanal');
+    if (/\bFinal\b/i.test(name.tail)) qualifiers.push('dato definitivo');
+    if (/\bPrel(?:iminary)?\b/i.test(name.tail)) qualifiers.push('dato preliminar');
+    if (/\bAdv(?:ance)?\b/i.test(name.tail)) qualifiers.push('estimación preliminar');
+    if (/\bFlash\b/i.test(name.tail)) qualifiers.push('estimación inicial');
+    if (/\bNSA\b/i.test(name.tail)) qualifiers.push('sin ajuste estacional');
+    else if (/\bSA\b/i.test(name.tail)) qualifiers.push('ajustado estacionalmente');
+    const period = name.tail.match(/\(([A-Za-z]{3})\)/);
+    if (period) {
+        const months: Record<string, string> = { jan: 'enero', feb: 'febrero', mar: 'marzo', apr: 'abril', may: 'mayo', jun: 'junio', jul: 'julio', aug: 'agosto', sep: 'septiembre', oct: 'octubre', nov: 'noviembre', dec: 'diciembre' };
+        qualifiers.push(`período: ${months[period[1].toLowerCase()]}`);
+    }
+    return qualifiers.length ? `${spanish} · ${qualifiers.join(' · ')}` : spanish;
+}
 
-    // 1. Buscar coincidencia en el diccionario de reglas especializadas
+/** No word-by-word replacement: reviewed explanations or a neutral Spanish fallback. */
+export function formatEconomicEventDescription(title: string, rawDescription?: string, country?: string): string {
+    const name = indicatorName(title);
+    if (name?.description) return concise(name.description);
+    if (country?.toUpperCase() === 'AR' && /consumer price|inflation|\bcpi\b|\bipc\b|inflación/i.test(title)) {
+        return 'Mide la variación de los precios de una canasta de bienes y servicios consumidos por los hogares en Argentina.';
+    }
+    if (rawDescription && isReviewedSpanish(rawDescription)) return concise(rawDescription);
+    // The existing catalog contains reviewed explanations for common indicators.
+    const localizedTitle = name?.spanish || title;
     for (const rule of INDICATOR_RULES) {
-        if (rule.pattern.test(cleanTitle)) {
-            return rule.description;
-        }
+        if (rule.pattern.test(title) || rule.pattern.test(localizedTitle)) return concise(rule.description);
     }
+    if (country?.toUpperCase() === 'AR') return 'Publicación de información económica de Argentina. Consultá la fuente para conocer el detalle del indicador.';
+    return 'Publicación de información económica. Consultá la fuente para conocer el detalle del indicador.';
+}
 
-    // 2. Si vino descripción previa
-    if (rawDescription && rawDescription.trim().length > 0) {
-        const desc = rawDescription.trim();
-        // Verificar si contiene texto en inglés para adaptarlo
-        const isEnglish = /\b(the|measures|indicates|expansion|contraction|survey|index|report|rate|month|year)\b/i.test(desc);
-        if (isEnglish) {
-            // Revisar si la descripción misma menciona el indicador
-            for (const rule of INDICATOR_RULES) {
-                if (rule.pattern.test(desc)) {
-                    return rule.description;
-                }
-            }
-            return translateAndCondenseEnglish(desc);
-        }
+/** Provider brands remain intact; generic source labels are displayed in Spanish. */
+export function formatEconomicEventSource(source?: string): string {
+    return (source || '').replace(/TradingView Economic Calendar/gi, 'Calendario económico de TradingView')
+        .replace(/Admin Manual/gi, 'Carga manual').replace(/U\.S\. Bureau of Labor Statistics(?: \(BLS\))?/gi, 'Oficina de Estadísticas Laborales de EE. UU. (BLS)');
+}
 
-        // Si ya está en español, asegurar que no supere 7 renglones
-        if (desc.length > 280) {
-            return desc.slice(0, 277).replace(/[,;.\s]+$/, '') + '...';
-        }
-        return desc;
-    }
-
-    // 3. Fallback inteligente según país y palabras clave en el título
-    const cleanCountry = (country || 'US').toUpperCase();
-    if (cleanCountry === 'AR') {
-        return `Indicador oficial de la economía argentina. Aporta datos sobre el nivel de actividad, precios o política monetaria nacional.`;
-    }
-
-    if (/auction|subasta/i.test(cleanTitle)) {
-        return `Subasta de títulos de deuda del Tesoro de EE. UU. Determina el rendimiento de corte y refleja la demanda del mercado de bonos.`;
-    }
-
-    if (/index|índice|pmi/i.test(cleanTitle)) {
-        return `Indicador macroeconómico de coyuntura en EE. UU. Refleja el dinamismo operativo y las expectativas de los agentes económicos.`;
-    }
-
-    return `Indicador económico de EE. UU. con relevancia para la evaluación de la actividad, inflación y perspectivas de tasas de interés.`;
+/** Localize at read time so persisted provider identity, scoring and numeric data stay intact. */
+export function localizeEconomicEvent<T extends { title: string; description?: string | null; country?: string | null; source?: string | null; sourceName?: string | null }>(event: T): T {
+    return {
+        ...event,
+        title: formatEconomicEventTitle(event.title, event.country || undefined),
+        description: formatEconomicEventDescription(event.title, event.description || undefined, event.country || undefined),
+        ...(event.source && { source: formatEconomicEventSource(event.source) }),
+        ...(event.sourceName && { sourceName: formatEconomicEventSource(event.sourceName) }),
+    };
 }

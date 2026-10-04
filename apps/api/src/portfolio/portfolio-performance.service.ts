@@ -808,87 +808,29 @@ export class PortfolioPerformanceService {
     // ── 5. Monthly returns ──────────────────────────────────────────────────────
 
     async getReturns(portfolioId: string, userId: string, currency = 'USD') {
-        await this.assertOwner(portfolioId, userId);
-
-        const portfolio = await this.prisma.portfolio.findUnique({
-            where: { id: portfolioId },
-            include: {
-                holdings: { include: { asset: true } },
-                transactions: { include: { asset: true }, orderBy: { date: 'asc' } },
-                cashAccounts: true,
-            },
-        });
-
-        if (!portfolio) throw new NotFoundException('Portafolio no encontrado');
-
-        const [quoteMap, cclRate] = await Promise.all([
-            this.getLiveQuoteMap(portfolio.holdings),
-            this.getCclRate(),
-        ]);
-        const txs = portfolio.transactions;
-
-        if (!txs.length) return [];
-
-        const firstDate = new Date(txs[0].date);
-        const now = new Date();
-
-        // Build all months from first transaction to today
-        const allMonths: Array<{ year: number; month: number; label: string; monthKey: string }> = [];
-        const cursor = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
-
-        while (cursor <= now) {
-            allMonths.push({
-                year: cursor.getFullYear(),
-                month: cursor.getMonth() + 1,
-                label: MONTH_LABELS_ES[cursor.getMonth()],
-                monthKey: `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`,
-            });
-            cursor.setMonth(cursor.getMonth() + 1);
+        // Use the same historical closes and flow-adjusted returns as the
+        // portfolio/benchmark curves, never today's quote for a past month.
+        const performance = await this.getPerformance(portfolioId, userId, 'ALL', currency);
+        if (performance.insufficientData) return [];
+        const months = new Map<string, { factor: number; observations: number; hasBalance: boolean }>();
+        const movementMonths = new Set((performance.markers ?? []).map(marker => marker.date.slice(0, 7)));
+        for (const point of performance.series) {
+            const key = point.date.slice(0, 7);
+            const month = months.get(key) ?? { factor: 1, observations: 0, hasBalance: false };
+            month.hasBalance ||= point.value > 1e-6;
+            if ('dailyReturn' in point && typeof point.dailyReturn === 'number' && Number.isFinite(point.dailyReturn)) {
+                month.factor *= Math.max(0, 1 + point.dailyReturn / 100);
+                month.observations += 1;
+            }
+            months.set(key, month);
         }
-
-        const results = [];
-
-        for (const m of allMonths) {
-            const monthStart = new Date(m.year, m.month - 1, 1);
-            const monthEnd = new Date(m.year, m.month, 0, 23, 59, 59);
-
-            const startTxs = txs.filter((tx) => new Date(tx.date) < monthStart);
-            const endTxs = txs.filter((tx) => new Date(tx.date) <= monthEnd);
-
-            const startHoldings = this.computeHoldingsAtDate(startTxs, monthStart);
-            const endHoldings = this.computeHoldingsAtDate(endTxs, monthEnd);
-
-            const startValue = this.computeValueFromHoldings(startHoldings, quoteMap, undefined, undefined, currency, cclRate)
-                + this.computeCashAtDate(startTxs, monthStart, currency, cclRate);
-            const endValue = this.computeValueFromHoldings(endHoldings, quoteMap, undefined, undefined, currency, cclRate)
-                + this.computeCashAtDate(endTxs, monthEnd, currency, cclRate);
-
-            // Net external flows during this month (deposits/withdraws only)
-            const monthFlows = txs
-                .filter((tx) => {
-                    const d = new Date(tx.date);
-                    return d >= monthStart && d <= monthEnd && (tx.type === 'DEPOSIT' || tx.type === 'WITHDRAW');
-                })
-                .reduce((sum, tx) => {
-                    const rawAmount = Number(tx.total || 0);
-                    const amount = this.convertCurrencyAmount(rawAmount, tx.currency || 'USD', currency, cclRate);
-                    return sum + (tx.type === 'DEPOSIT' ? amount : -amount);
-                }, 0);
-
-            // TWR for this month
-            const denominator = startValue + monthFlows * 0.5; // mid-month weighting
-            const rawReturn = denominator > 1e-6 ? ((endValue - startValue - monthFlows) / denominator) * 100 : 0;
-
-            results.push({
-                monthKey: m.monthKey,
-                label: m.label,
-                year: m.year,
-                month: m.month,
-                value: Number((Number.isFinite(rawReturn) ? rawReturn : 0).toFixed(4)),
+        return [...months.entries()]
+            .filter(([key, month]) => month.observations > 0 && (month.hasBalance || movementMonths.has(key) || Math.abs(month.factor - 1) > 1e-8))
+            .map(([monthKey, month]) => {
+                const [year, monthNumber] = monthKey.split('-').map(Number);
+                return { monthKey, label: MONTH_LABELS_ES[monthNumber - 1], year, month: monthNumber,
+                    value: Number(((month.factor - 1) * 100).toFixed(4)) };
             });
-        }
-
-        return results;
     }
 
     // ── 6. Drawdown ─────────────────────────────────────────────────────────────

@@ -129,11 +129,11 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
     };
 
     return (
-        <Card className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 shadow-lg overflow-hidden flex flex-col justify-between', className)}>
+        <Card className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 shadow-sm overflow-hidden flex flex-col', className)}>
             <CardHeader className="px-4 py-5 sm:px-6 sm:py-6 border-b border-border/40 text-center">
                 <div className="flex flex-col items-center justify-center gap-4 text-center">
                     <div className="flex flex-col items-center text-center">
-                        <CardTitle className="text-xl font-bold tracking-tight flex items-center justify-center gap-2.5 text-center">
+                        <CardTitle className="text-2xl font-bold tracking-tight flex items-center justify-center gap-2.5 text-center">
                             <BarChart3 className="w-5 h-5 text-primary" />
                             Rendimiento por Activo
                         </CardTitle>
@@ -145,8 +145,8 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                     {/* Selector de modo de vista */}
                     <div className="flex max-w-full items-center justify-center gap-1 overflow-x-auto p-1 rounded-xl bg-secondary/50 border border-border/40">
                         <button
-                            onClick={() => setViewMode('PERFORMANCE')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            onClick={() => setViewMode('PERFORMANCE')} aria-pressed={viewMode === 'PERFORMANCE'}
+                            className={`flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
                                 viewMode === 'PERFORMANCE'
                                     ? 'bg-card text-foreground shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -156,8 +156,8 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                             Rendimiento
                         </button>
                         <button
-                            onClick={() => setViewMode('WEIGHT')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            onClick={() => setViewMode('WEIGHT')} aria-pressed={viewMode === 'WEIGHT'}
+                            className={`flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
                                 viewMode === 'WEIGHT'
                                     ? 'bg-card text-foreground shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -167,8 +167,8 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                             Ponderación
                         </button>
                         <button
-                            onClick={() => setViewMode('LIST')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            onClick={() => setViewMode('LIST')} aria-pressed={viewMode === 'LIST'}
+                            className={`flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
                                 viewMode === 'LIST'
                                     ? 'bg-card text-foreground shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -204,7 +204,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                 )}
             </CardHeader>
 
-            <CardContent className="px-4 pt-4 pb-5 sm:px-6 sm:pt-5">
+            <CardContent className="flex flex-1 flex-col px-4 pt-4 pb-5 sm:px-6 sm:pt-5">
                 {safeData.length === 0 ? (
                     <div className="flex h-[360px] flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-secondary/15 px-6 text-center space-y-3">
                         <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
@@ -218,12 +218,15 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         </div>
                     </div>
                 ) : viewMode === 'PERFORMANCE' ? (
-                    <div className="h-[300px] w-full sm:h-[340px] lg:h-[360px]">
+                    <div className="h-[320px] min-h-[320px] flex-1 w-full overflow-x-auto sm:min-h-[390px]">
+                      <div className="h-full" style={{ minWidth: Math.max(280, safeData.length * 96) }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
+                            accessibilityLayer
                                 data={safeData}
                                 margin={{ top: 20, right: 16, bottom: 8, left: -10 }}
                                 barGap={8}
+                                maxBarSize={48}
                                 barCategoryGap={safeData.length === 1 ? '58%' : safeData.length <= 2 ? '42%' : '20%'}
                             >
                                 <defs>
@@ -246,13 +249,13 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                     dataKey="asset"
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={{ ...CHART_AXIS_TICK, fontSize: 10 }}
+                                    tick={{ ...CHART_AXIS_TICK, fontSize: 13 }}
                                     tickMargin={10}
                                 />
                                 <YAxis
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={{ ...CHART_AXIS_TICK, fontSize: 10 }}
+                                    tick={{ ...CHART_AXIS_TICK, fontSize: 13 }}
                                     width={52}
                                     tickFormatter={(val: number) => `${val >= 0 ? '+' : ''}${val}%`}
                                     domain={yDomain}
@@ -280,9 +283,9 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                     maxBarSize={38}
                                     radius={[5, 5, 5, 5]}
                                 >
-                                    {safeData.map((entry, index) => (
+                                    {safeData.map((entry) => (
                                         <Cell
-                                            key={`return-cell-${index}`}
+                                            key={`return-cell-${entry.symbol}`}
                                             fill={entry.return >= 0 ? 'url(#barReturnPos)' : 'url(#barReturnNeg)'}
                                         />
                                     ))}
@@ -298,6 +301,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                 />
                             </BarChart>
                         </ResponsiveContainer>
+                      </div>
                     </div>
                 ) : viewMode === 'WEIGHT' ? (
                     <div className="min-h-[300px] w-full flex flex-col justify-center gap-4 px-1 sm:min-h-[340px] sm:px-4">
@@ -351,13 +355,13 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                     {/* Bottom row: retorno + aporte side by side */}
                                     <div className="flex items-center gap-3 font-mono pl-11">
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Retorno</div>
+                                            <div className="text-sm text-muted-foreground uppercase tracking-wider">Retorno</div>
                                             <div className={`text-sm font-black ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                 {formatPercent(item.return, 2, true)}
                                             </div>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Aporte</div>
+                                            <div className="text-sm text-muted-foreground uppercase tracking-wider">Aporte</div>
                                             <div className={`text-sm font-bold ${item.contribution >= 0 ? 'text-sky-400' : 'text-rose-300'}`}>
                                                 {formatPercent(item.contribution, 2, true)}
                                             </div>

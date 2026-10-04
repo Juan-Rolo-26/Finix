@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, ChevronRight, Loader2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import { formatFinancialAmount, hasEarningsData, normalizeEarnings } from '@finix/shared';
+import { formatFinancialAmount, hasEarningsData, normalizeEarnings, formatEconomicEventTitle } from '@finix/shared';
 import { AssetLogoImg } from '@/components/TopGainersCard';
 
 interface CalendarHomeItem {
@@ -162,7 +162,7 @@ export function CalendarPreviewCard() {
                                             </div>
                                         )}
                                         <p className="text-[13px] font-bold text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-                                            {evt.title}
+                                            {isEarnings ? evt.title : formatEconomicEventTitle(evt.title, evt.country)}
                                         </p>
                                     </div>
 

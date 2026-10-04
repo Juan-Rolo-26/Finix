@@ -163,3 +163,45 @@ test('the first recorded purchase uses its real execution price instead of an ol
     assert.equal(data.performance.series[0].value, 1100);
     assert.equal(data.returns.portfolio, 0);
 });
+
+test('monthly chart uses historical flow-adjusted measurements, not capital growth or current quotes for the past', async () => {
+    const deposits = service([tx('BUY', 10, 1000, 10), tx('BUY', 3, 2760, 27.6)]);
+    assert.ok((await deposits.engine.getReturns('p', 'u', 'USD')).every(month => month.value === 0));
+    const rising = service([tx('BUY', 35, 1000, 10)], { price: 110 });
+    const months = await rising.engine.getReturns('p', 'u', 'USD');
+    assert.deepEqual(months.map(month => month.monthKey), ['2026-08', '2026-09', '2026-10']);
+    assert.equal(months.find(month => month.monthKey === '2026-09').value, 0, 'past flat prices stay flat');
+    assert.equal(months.at(-1).value, 10, 'current gain belongs to the current month');
+});
+
+test('monthly returns compound measured changes inside each month and omit unobserved/empty months', async () => {
+    const { engine } = service([]);
+    engine.getPerformance = async () => ({ insufficientData: false, markers: [], series: [
+        { date: '2026-08-31T18:00:00Z', value: 100, returnPct: 0 },
+        { date: '2026-09-29T18:00:00Z', value: 110, returnPct: 10, dailyReturn: 10 },
+        { date: '2026-09-30T18:00:00Z', value: 121, returnPct: 21, dailyReturn: 10 },
+        { date: '2026-10-01T18:00:00Z', value: 0, returnPct: -100, dailyReturn: -100 },
+        { date: '2026-11-01T18:00:00Z', value: 0, returnPct: -100, dailyReturn: 0 },
+    ] });
+    assert.deepEqual((await engine.getReturns('p', 'u')).map(month => [month.monthKey, month.value]), [['2026-09', 21], ['2026-10', -100]]);
+});
+
+test('monthly graph never fabricates returns when there is no usable history', async () => {
+    const { engine } = service([tx('BUY', 10, 1000, 10)], { history: [] });
+    assert.deepEqual(await engine.getReturns('p', 'u'), []);
+    assert.deepEqual(await service([]).engine.getReturns('p', 'u'), []);
+});
+
+test('profile and private metrics delegate monthly returns to the same engine in the portfolio currency', async () => {
+    const { PortfolioService } = require('../src/portfolio/portfolio.service.ts');
+    const record = { id: 'p', userId: 'u', monedaBase: 'ARS', holdings: [], transactions: [], cashAccounts: [] };
+    const calls = [];
+    const monthly = Array.from({ length: 14 }, (_, i) => ({ monthKey: String(i), value: 0, label: 'mes' }));
+    const engine = { getReturns: async (...args) => { calls.push(args); return monthly; } };
+    const portfolios = new PortfolioService({ portfolio: { findFirst: async () => record } }, { getQuotes: async () => [] }, {}, engine);
+    portfolios.getPublicPortfolioRecord = async () => record;
+    for (const result of [await portfolios.getPortfolioMetrics('p', 'u'), await portfolios.getPublicPortfolioMetrics('p')]) {
+        assert.deepEqual(result.retornosMensuales, monthly.slice(-12));
+    }
+    assert.deepEqual(calls, [['p', 'u', 'ARS'], ['p', 'u', 'ARS']]);
+});

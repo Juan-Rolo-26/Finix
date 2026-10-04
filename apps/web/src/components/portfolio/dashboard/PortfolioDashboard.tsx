@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ArrowDownRight, ArrowUpRight, Layers3, Target, WalletCards } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { AllocationSummary, MonthlyReturnChart } from '../summary/PortfolioSummaryCharts';
 import { usePortfolioHistory } from './usePortfolioHistory';
 import { resolveAssetInfo } from '@/lib/tradingview';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -199,8 +200,7 @@ function buildAssetPerformanceData(metrics?: DashboardMetrics | null, assets: Da
                 weight: Number((totalValue > 0 ? (currentValue / totalValue) * 100 : 0).toFixed(1)),
             };
         })
-        .sort((a, b) => b.weight - a.weight)
-        .slice(0, 6);
+        .sort((a, b) => b.weight - a.weight);
 }
 
 function buildSectorData(assets: DashboardAsset[] = []): SectorDatum[] {
@@ -261,19 +261,22 @@ function resolveData({
     };
 }
 
+const EMPTY_ASSETS: DashboardAsset[] = [];
+const EMPTY_MOVEMENTS: DashboardMovement[] = [];
+
 export function PortfolioDashboard({
     portfolioId,
     portfolioName = 'Portafolio Finix',
     currency = 'USD',
     metrics,
-    assets = [],
-    movements = [],
+    assets = EMPTY_ASSETS,
+    movements = EMPTY_MOVEMENTS,
     data,
     className,
 }: PortfolioDashboardProps) {
     const [selectedRange, setSelectedRange] = useState<TimeRange>('ALL');
     const revision = JSON.stringify([
-        assets.map(asset => [asset.ticker, asset.cantidad, asset.ppc]),
+        assets.map(asset => [asset.ticker, asset.cantidad, asset.ppc, asset.precioActual]),
         movements.map(movement => [movement.fecha, movement.total, movement.tipoMovimiento]),
     ]);
     const { history, comparison, notice: historyNotice, loading: historyLoading } = usePortfolioHistory(portfolioId, currency, selectedRange, revision);
@@ -313,7 +316,7 @@ export function PortfolioDashboard({
             benchmarkAvailable: !isPortfolioEmpty && typeof lastComparison?.sp500 === 'number',
             holdings: metrics?.cantidadActivos ?? assets.length,
             sleeves: resolvedData.allocation.length,
-            topWinner: resolvedData.assetPerformance[0],
+            topWinner: [...resolvedData.assetPerformance].sort((a, b) => b.return - a.return)[0],
             isPortfolioEmpty,
         };
     }, [assets, metrics, resolvedData, selectedRange, hasHistory]);
@@ -362,11 +365,11 @@ export function PortfolioDashboard({
                         Vista en vivo
                     </Badge>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-foreground flex items-center justify-center gap-2.5 text-center">
+                <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground flex items-center justify-center gap-2.5 text-center">
                     <WalletCards className="w-5 h-5 text-primary" />
                     <span>Métricas y Análisis de Rendimiento</span>
                 </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 text-center max-w-xl mx-auto">
+                <p className="text-base text-muted-foreground mt-0.5 text-center max-w-xl mx-auto">
                     Evolución patrimonial y comparativa de mercado de {portfolioName}
                 </p>
             </div>
@@ -379,14 +382,14 @@ export function PortfolioDashboard({
             )}
 
             {/* ── KPI METRICS STRIP (4 TARJETAS SIMÉTRICAS QUE OCUPAN TODO EL ANCHO) ── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4 sm:gap-5 w-full">
                 {summaryCards.map((item) => (
                     <div
                         key={item.label}
                         className="rounded-2xl border border-border/70 bg-card/80 hover:bg-card/95 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 p-4 sm:p-5 backdrop-blur-md relative overflow-hidden group flex flex-col items-center text-center"
                     >
                         <div className="flex items-center justify-center gap-2 mb-2 w-full text-center">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground truncate text-center">
+                            <span className="text-sm font-semibold text-muted-foreground text-center">
                                 {item.label}
                             </span>
                             <div className={cn(
@@ -399,11 +402,11 @@ export function PortfolioDashboard({
                             </div>
                         </div>
 
-                        <div className={cn('text-2xl sm:text-3xl font-black tracking-tight font-mono text-center', item.positive ? 'text-emerald-500' : 'text-rose-500')}>
+                        <div className={cn('text-3xl sm:text-4xl font-bold tracking-tight tabular-nums text-center', item.positive ? 'text-emerald-500' : 'text-rose-500')}>
                             {item.value}
                         </div>
 
-                        <p className="mt-2 text-xs text-muted-foreground/80 font-medium truncate text-center">
+                        <p className="mt-2 text-sm text-muted-foreground font-medium text-center">
                             {item.sublabel}
                         </p>
                     </div>
@@ -419,6 +422,11 @@ export function PortfolioDashboard({
                     currency={currency}
                     costBasis={summary.costBasis}
                 />
+            </div>
+
+            <div className="space-y-6">
+                <MonthlyReturnChart returns={metrics?.retornosMensuales} />
+                <AllocationSummary data={Object.fromEntries(resolvedData.allocation.map(item => [item.name, item.value]))} />
             </div>
 
             {/* ── RENDIMIENTO Y COMPARATIVA BENCHMARK (DISTRIBUCIÓN SIMÉTRICA 2 COLUMNAS) ── */}

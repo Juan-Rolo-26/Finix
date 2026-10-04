@@ -64,6 +64,8 @@ import { AddTransactionModal } from "@/components/portfolio/AddTransactionModal"
 import { PortfolioAdvancedMetrics } from "@/components/portfolio/AdvancedDiversification";
 import { PortfolioDashboard } from "@/components/portfolio/dashboard/PortfolioDashboard";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { usePortfolioDetails } from "@/hooks/usePortfolioDetails";
+import { notifyPortfolioUpdate, subscribePortfolioUpdates } from "@/lib/portfolioUpdates";
 import { AssetRowInfo } from "@/components/AssetBadge";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -239,13 +241,13 @@ function StatCard({
 }) {
   const isPos = positive ?? (delta !== undefined ? delta >= 0 : true);
   return (
-    <div className="flex-1 min-w-0 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md px-3 py-3 sm:px-4 sm:py-3.5 shadow-xs transition-all hover:border-border/80 flex flex-col items-center text-center">
+    <div className="flex-1 min-w-0 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md px-5 py-5 sm:px-6 sm:py-6 shadow-xs transition-all hover:border-border/80 flex flex-col items-center text-center">
       <div className="flex items-center justify-center gap-1.5 mb-1.5 w-full text-center">
         {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />}
-        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground text-center">{label}</span>
+        <span className="text-sm font-semibold text-muted-foreground text-center">{label}</span>
       </div>
       <div className="flex items-center justify-center gap-2 flex-wrap text-center">
-        <p className="text-xl sm:text-2xl font-black tracking-tight tabular-nums text-foreground text-center">
+        <p className="text-3xl sm:text-4xl font-bold tracking-tight tabular-nums text-foreground text-center">
           {hideValues ? "••••••" : fmtCompact(value, currency)}
         </p>
         {delta !== undefined && (
@@ -646,8 +648,7 @@ const PortfolioPage = () => {
 
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
-  const [metrics, setMetrics] = useState<PortfolioMetrics | null>(null);
-  const [movements, setMovements] = useState<Movement[]>([]);
+  const { metrics, movements } = usePortfolioDetails<PortfolioMetrics, Movement>(selectedPortfolio);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isInitialLoadRef = useRef(true);
@@ -709,6 +710,10 @@ const PortfolioPage = () => {
         res = await apiFetch("/portfolios");
       }
       if (!res.ok) {
+        if ([401, 403, 404].includes(res.status)) {
+          setPortfolios([]);
+          setSelectedPortfolio(null);
+        }
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || "No se pudieron cargar los portafolios (Error del servidor)");
       }
@@ -725,8 +730,6 @@ const PortfolioPage = () => {
         return list[0];
       });
     } catch (e: any) {
-      setPortfolios([]);
-      setSelectedPortfolio(null);
       setErrorMessage(e?.message || "No se pudieron cargar los portafolios");
     } finally {
       isInitialLoadRef.current = false;
@@ -769,41 +772,28 @@ const PortfolioPage = () => {
     initialDataLoadStartedRef.current = true;
     void loadPortfolios();
     void loadRates();
-    // No auto-reloads on focus or intervals: only loads when user opens/refreshes the page or triggers manual refresh.
   }, [isPro, loadPortfolios, loadRates]);
 
   useEffect(() => {
-    if (selectedPortfolio?.id) {
-      void loadMetrics(selectedPortfolio.id);
-      void loadMovements(selectedPortfolio.id);
-      return;
-    }
-    setMetrics(null);
-    setMovements([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPortfolio?.id]);
-
-  const loadMetrics = async (id: string) => {
-    try {
-      const res = await apiFetch(`/portfolios/${id}/metrics`);
-      if (!res.ok) throw new Error();
-      const data = await res.json().catch(() => null);
-      setMetrics(data || null);
-    } catch {
-      setMetrics(null);
-    }
-  };
-
-  const loadMovements = async (id: string) => {
-    try {
-      const res = await apiFetch(`/portfolios/${id}/movements`);
-      if (!res.ok) throw new Error();
-      const data = await res.json().catch(() => null);
-      setMovements(Array.isArray(data) ? data : []);
-    } catch {
-      setMovements([]);
-    }
-  };
+    if (!isPro) return;
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      void loadPortfolios(undefined, true);
+      void loadRates();
+    };
+    const timer = window.setInterval(refresh, 60000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    const unsubscribe = subscribePortfolioUpdates(refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+      unsubscribe();
+    };
+  }, [isPro, loadPortfolios, loadRates]);
 
   // ── Mutations ────────────────────────────────────────────────────────────────
   const createPortfolio = async () => {
@@ -819,6 +809,7 @@ const PortfolioPage = () => {
       setCreatePortfolioOpen(false);
       setPortfolioForm(getInitialPortfolioForm());
       await loadPortfolios(newP?.id);
+      notifyPortfolioUpdate(newP.id);
     } catch (e: any) {
       alert(e?.message || "No se pudo crear el portafolio");
     } finally {
@@ -838,6 +829,7 @@ const PortfolioPage = () => {
       if (!res.ok) throw new Error();
       const updated = await res.json();
       await loadPortfolios(updated?.id || selectedPortfolio.id);
+      notifyPortfolioUpdate(selectedPortfolio.id);
     } catch {
       /* silent */
     } finally {
@@ -848,8 +840,10 @@ const PortfolioPage = () => {
   const deletePortfolio = async (id: string) => {
     if (!confirm(t.portfolio.deleteConfirm)) return;
     try {
-      await apiFetch(`/portfolios/${id}`, { method: "DELETE" });
+      const response = await apiFetch(`/portfolios/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("No se pudo eliminar el portafolio");
       await loadPortfolios();
+      notifyPortfolioUpdate(id);
     } catch {/* silent */ }
   };
 
@@ -892,6 +886,8 @@ const PortfolioPage = () => {
       valorActual: metrics.valorActual * conversionRate,
       totalValue: (metrics.totalValue || 0) * conversionRate,
       gananciaTotal: metrics.gananciaTotal * conversionRate,
+      diversificacionPorClase: Object.fromEntries(Object.entries(metrics.diversificacionPorClase || {}).map(([key, value]) => [key, value * conversionRate])),
+      diversificacionPorActivo: Object.fromEntries(Object.entries(metrics.diversificacionPorActivo || {}).map(([key, value]) => [key, value * conversionRate])),
     } : null;
     return {
       displayPortfolio: p as Portfolio,
@@ -1126,10 +1122,6 @@ const PortfolioPage = () => {
                   onClick={() => {
                     void loadPortfolios(selectedPortfolio?.id, false);
                     void loadRates();
-                    if (selectedPortfolio?.id) {
-                      void loadMetrics(selectedPortfolio.id);
-                      void loadMovements(selectedPortfolio.id);
-                    }
                   }}
                   disabled={isRefreshing}
                   title="Actualizar datos del portafolio manualmente"
@@ -1267,7 +1259,7 @@ const PortfolioPage = () => {
         {/* ── ERROR ────────────────────────────────────────────────────────────── */}
         <AnimatePresence>
           {errorMessage && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+            <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
               <Card className="border-red-500/40 bg-red-500/5">
                 <CardContent className="p-4 text-sm text-red-300 flex items-center justify-between">
                   <span>{errorMessage}</span>
@@ -1661,9 +1653,9 @@ const PortfolioPage = () => {
             <AnimatePresence>
               {showAdvanced && displayMetrics && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
                   className="overflow-hidden"
                 >
                   <ErrorBoundary fallbackTitle="Análisis de diversificación temporalmente inaccesible">
@@ -1684,7 +1676,7 @@ const PortfolioPage = () => {
             mode={modalMode}
             initialSymbol={modalInitialSymbol}
             portfolioAssets={displayPortfolio.assets}
-            onSuccess={() => void loadPortfolios(displayPortfolio.id)}
+            onSuccess={() => { void loadPortfolios(displayPortfolio.id); notifyPortfolioUpdate(displayPortfolio.id); }}
           />
         )}
         </div>

@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { RefreshCw, Newspaper } from 'lucide-react';
 import { isProUser, useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
@@ -116,48 +116,79 @@ export default function NewsPage() {
     const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [slotsLoading, setSlotsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const activeRequest = useRef<AbortController | null>(null);
 
     const isPro = isProUser(user);
 
     // Load categories from API
     useEffect(() => {
         if (!isPro) { setCategoriesLoading(false); return; }
-        apiFetch('/news/slots/categories')
-            .then((r) => r.json())
+        const request = new AbortController();
+        setCategoriesLoading(true);
+        apiFetch('/news/slots/categories', { signal: request.signal, cache: 'no-store' })
+            .then((r) => {
+                if (!r.ok) throw new Error('Error al cargar categorías');
+                return r.json();
+            })
             .then((data) => {
+                if (request.signal.aborted) return;
                 const cats: NewsCategory[] = Array.isArray(data) ? data : [];
                 setCategories(cats);
                 if (cats.length > 0) setSelectedSlug(cats[0].slug);
             })
-            .catch(() => setError('No se pudieron cargar las categorías'))
-            .finally(() => setCategoriesLoading(false));
+            .catch(() => { if (!request.signal.aborted) setError('No se pudieron cargar las categorías'); })
+            .finally(() => { if (!request.signal.aborted) setCategoriesLoading(false); });
+        return () => request.abort();
     }, [isPro]);
 
     // Load slots for selected category
     const loadSlots = useCallback(async (slug: string, background = false) => {
+        if (background && activeRequest.current) return;
+        activeRequest.current?.abort();
+        const request = new AbortController();
+        activeRequest.current = request;
         setSlotsLoading(true);
         setError(null);
         try {
-            const res = await apiFetch(`/news/slots/category/${slug}`);
+            const res = await apiFetch(`/news/slots/category/${encodeURIComponent(slug)}`, { signal: request.signal, cache: 'no-store' });
             if (!res.ok) throw new Error('Error al cargar slots');
             const data = await res.json();
-            setCategoryData(data);
+            if (data.category?.slug !== slug || !Array.isArray(data.slots)) throw new Error('Respuesta de noticias inválida');
+            if (!request.signal.aborted) setCategoryData(data);
         } catch {
-            setError('No se pudo cargar el contenido. Intentá de nuevo.');
-            if (!background) setCategoryData(null);
+            if (!request.signal.aborted) {
+                setError(background ? 'No se pudo actualizar. Se conservan las últimas noticias; volveremos a intentarlo.' : 'No se pudo cargar el contenido. Intentá de nuevo.');
+                if (!background) setCategoryData(null);
+            }
         } finally {
-            setSlotsLoading(false);
+            if (!request.signal.aborted) setSlotsLoading(false);
+            if (activeRequest.current === request) activeRequest.current = null;
         }
     }, []);
 
     useEffect(() => {
-        if (!selectedSlug) return;
+        if (!isPro || !selectedSlug) return;
         void loadSlots(selectedSlug);
-        const refreshTimer = window.setInterval(() => {
-            void loadSlots(selectedSlug, true);
-        }, 5 * 60 * 1000);
-        return () => window.clearInterval(refreshTimer);
-    }, [selectedSlug, loadSlots]);
+        const refresh = () => { if (document.visibilityState === 'visible') void loadSlots(selectedSlug, true); };
+        const refreshTimer = window.setInterval(refresh, 5 * 60 * 1000);
+        window.addEventListener('focus', refresh);
+        window.addEventListener('online', refresh);
+        document.addEventListener('visibilitychange', refresh);
+        return () => {
+            window.clearInterval(refreshTimer);
+            window.removeEventListener('focus', refresh);
+            window.removeEventListener('online', refresh);
+            document.removeEventListener('visibilitychange', refresh);
+            activeRequest.current?.abort();
+            activeRequest.current = null;
+        };
+    }, [isPro, selectedSlug, loadSlots]);
+
+    useEffect(() => {
+        if (!isPro || !selectedSlug || slotsLoading || categoryData?.slots.some(slot => slot.isActive && slot.article)) return;
+        const retry = window.setTimeout(() => void loadSlots(selectedSlug, true), 30_000);
+        return () => window.clearTimeout(retry);
+    }, [isPro, selectedSlug, slotsLoading, categoryData, loadSlots]);
 
     // Click tracking
     const handleClickTracking = useCallback((slotId: string) => {
@@ -178,7 +209,7 @@ export default function NewsPage() {
     }
 
     const selectedCat = categories.find((c) => c.slug === selectedSlug);
-    const hasContent = categoryData?.slots.some((s) => s.article !== null) ?? false;
+    const hasContent = categoryData?.slots.some((s) => s.isActive && Boolean(s.article)) ?? false;
     const showSkeleton = slotsLoading && !categoryData;
 
     return (
@@ -195,7 +226,7 @@ export default function NewsPage() {
                         </p>
                     </div>
                     <button
-                        onClick={() => selectedSlug && loadSlots(selectedSlug)}
+                        onClick={() => selectedSlug && loadSlots(selectedSlug, Boolean(categoryData))}
                         disabled={slotsLoading}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-secondary text-sm font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                     >
@@ -231,7 +262,7 @@ export default function NewsPage() {
                     <div className="flex items-center justify-between gap-4 p-4 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-600 text-sm">
                         <span>{error}</span>
                         <button
-                            onClick={() => selectedSlug && loadSlots(selectedSlug)}
+                            onClick={() => selectedSlug && loadSlots(selectedSlug, Boolean(categoryData))}
                             className="shrink-0 text-xs underline hover:no-underline"
                         >
                             Reintentar
@@ -240,7 +271,7 @@ export default function NewsPage() {
                 )}
 
                 {/* Mosaic */}
-                <AnimatePresence mode="wait">
+                <>
                     {showSkeleton ? (
                         <motion.div
                             key="skeleton"
@@ -278,7 +309,7 @@ export default function NewsPage() {
                             </motion.div>
                         )
                     ) : null}
-                </AnimatePresence>
+                </>
             </div>
         </div>
     );

@@ -65,6 +65,15 @@ export const DEFAULT_NEWS_CATEGORIES: DefaultNewsCategory[] = [
 
 // Seeds only: all source fields and category policies remain editable in Admin.
 export const DEFAULT_NEWS_SOURCES: DefaultNewsSource[] = [
+    { name: 'Kiplinger', baseUrl: 'https://www.kiplinger.com', rssUrl: 'https://www.kiplinger.com/feed/all', country: 'US', language: 'en', priority: 85, reliabilityScore: 85, categories: ['finanzas-personales'], categoryPolicies: policies(['finanzas-personales'], 85, 85) },
+    { name: 'NerdWallet', baseUrl: 'https://www.nerdwallet.com', rssUrl: 'https://www.nerdwallet.com/blog/feed/', country: 'US', language: 'en', priority: 80, reliabilityScore: 85, categories: ['finanzas-personales'], categoryPolicies: policies(['finanzas-personales'], 80, 85) },
+    { name: 'ETF Trends', baseUrl: 'https://www.etftrends.com', rssUrl: 'https://www.etftrends.com/feed/', country: 'US', language: 'en', priority: 90, reliabilityScore: 85, categories: ['etfs'], categoryPolicies: policies(['etfs'], 90, 85) },
+    { name: 'Brainsre', baseUrl: 'https://brainsre.news', rssUrl: 'https://brainsre.news/feed/', country: 'ES', language: 'es', priority: 90, reliabilityScore: 85, categories: ['real-estate'], categoryPolicies: policies(['real-estate'], 90, 85) },
+    { name: 'Finextra', baseUrl: 'https://www.finextra.com', rssUrl: 'https://www.finextra.com/rss/headlines.aspx', country: 'UK', language: 'en', priority: 90, reliabilityScore: 85, categories: ['fintech'], categoryPolicies: policies(['fintech'], 90, 85) },
+    { name: 'Finance Magnates Fintech', baseUrl: 'https://www.financemagnates.com', rssUrl: 'https://www.financemagnates.com/fintech/feed/', country: 'GLOBAL', language: 'en', priority: 80, reliabilityScore: 80, categories: ['fintech'], categoryPolicies: policies(['fintech'], 80, 80) },
+    { name: 'Emprendedores', baseUrl: 'https://emprendedores.es', rssUrl: 'https://emprendedores.es/feed/', country: 'ES', language: 'es', priority: 85, reliabilityScore: 80, categories: ['startups'], categoryPolicies: policies(['startups'], 85, 80) },
+    { name: 'Xataka IA', baseUrl: 'https://www.xataka.com', rssUrl: 'https://www.xataka.com/categoria/inteligencia-artificial/rss2.xml', country: 'ES', language: 'es', priority: 85, reliabilityScore: 85, categories: ['ai'], categoryPolicies: policies(['ai'], 85, 85) },
+    { name: 'Xataka Componentes', baseUrl: 'https://www.xataka.com', rssUrl: 'https://www.xataka.com/categoria/componentes/rss2.xml', country: 'ES', language: 'es', priority: 85, reliabilityScore: 85, categories: ['tecnologia'], categoryPolicies: policies(['tecnologia'], 85, 85) },
     { name: 'Reuters', legacyNames: ['Reuters Business'], baseUrl: 'https://www.reuters.com', rssUrl: 'https://feeds.reuters.com/reuters/businessNews', country: 'US', language: 'en', priority: 100, reliabilityScore: 95, categories: ['mercados', 'global', 'empresas', 'commodities', 'economia'], categoryPolicies: policies(['mercados', 'global', 'empresas', 'commodities', 'economia'], 95, 95, { mercados: { priority: 100 }, global: { priority: 100 } }) },
     { name: 'Bloomberg', baseUrl: 'https://www.bloomberg.com', rssUrl: 'https://feeds.bloomberg.com/markets/news.rss', country: 'US', language: 'en', priority: 100, reliabilityScore: 94, categories: ['mercados', 'global', 'empresas', 'commodities', 'economia', 'acciones', 'etfs'], categoryPolicies: policies(['mercados', 'global', 'empresas', 'commodities', 'economia', 'acciones', 'etfs'], 100, 94) },
     { name: 'CNBC', baseUrl: 'https://www.cnbc.com', rssUrl: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', country: 'US', language: 'en', priority: 90, reliabilityScore: 88, categories: ['mercados', 'empresas', 'acciones', 'global', 'economia'], categoryPolicies: policies(['mercados', 'empresas', 'acciones', 'global', 'economia'], 90, 88) },
@@ -106,12 +115,18 @@ export const NEWS_CATEGORY_KEYWORDS: Record<string, string[]> = {
     cripto: ['bitcoin', 'ethereum', 'crypto', 'cripto', 'blockchain', 'stablecoin', 'token', 'etf de bitcoin'],
     global: ['global', 'internacional', 'world', 'china', 'europa', 'unión europea', 'union europea', 'geopolítica', 'geopolitica'],
     startups: ['startup', 'start-up', 'venture capital', 'ronda', 'seed', 'serie a', 'emprendedor'],
-    economia: ['economía', 'economia', 'inflación', 'inflacion', 'pib', 'empleo', 'desempleo', 'recesión', 'recesion'],
+    economia: ['economía', 'economia', 'inflación', 'inflacion', 'pib', 'empleo', 'desempleo', 'recesión', 'recesion', 'economy', 'inflation', 'gdp', 'employment', 'unemployment', 'recession'],
     acciones: ['acción', 'accion', 'acciones', 'stock', 'shares', 'cotización', 'cotizacion', 'ticker'],
-    etfs: ['etf', 'fondo cotizado', 'index fund'],
-    'real-estate': ['real estate', 'inmobiliario', 'vivienda', 'hipoteca', 'property', 'housing'],
-    'finanzas-personales': ['finanzas personales', 'ahorro', 'presupuesto', 'tarjeta', 'jubilación', 'jubilacion', 'crédito', 'credito'],
-    ai: ['inteligencia artificial', 'artificial intelligence', 'machine learning', 'openai', 'modelo de lenguaje', 'chip de ia'],
+    etfs: ['etf', 'etfs', 'fondo cotizado', 'fondos cotizados', 'index fund', 'exchange traded fund'],
+    'real-estate': ['real estate', 'inmobiliario', 'inmobiliaria', 'vivienda', 'hipoteca', 'property', 'housing', 'mortgage'],
+    'finanzas-personales': ['finanzas personales', 'ahorro', 'presupuesto', 'tarjeta', 'jubilación', 'jubilacion', 'crédito', 'credito', 'personal finance', 'savings', 'retirement', 'credit card'],
+    ai: ['inteligencia artificial', 'artificial intelligence', 'machine learning', 'openai', 'modelo de lenguaje', 'chip de ia', 'ia', 'ai'],
     tecnologia: ['tecnología', 'tecnologia', 'technology', 'software', 'hardware', 'smartphone', 'internet', 'ciberseguridad'],
-    fintech: ['fintech', 'pagos digitales', 'banca digital', 'wallet', 'neobanco', 'billetera virtual'],
+    fintech: ['fintech', 'pagos digitales', 'banca digital', 'wallet', 'neobanco', 'billetera virtual', 'digital payments', 'digital banking', 'neobank'],
 };
+
+export function newsCategoryMatchCount(slug: string, text: string): number {
+    const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const normalized = ` ${normalize(text)} `;
+    return (NEWS_CATEGORY_KEYWORDS[slug] || []).filter(keyword => normalized.includes(` ${normalize(keyword)} `)).length;
+}

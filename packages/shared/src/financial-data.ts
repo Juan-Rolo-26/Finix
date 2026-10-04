@@ -45,7 +45,8 @@ export function normalizeEarnings<T extends EarningsFinancialData>(event: T): T 
         epsSurprise: earningsSurprise(actualEps, epsEstimate),
         revenueSurprise: earningsSurprise(actualRevenue, revenueEstimate),
         marketCap: marketCap !== undefined && marketCap > 0 ? marketCap : undefined,
-        marketReaction: financialNumber(event.marketReaction),
+        // Automatic feeds supplied a daily quote change, not a measured report reaction.
+        marketReaction: event.sourceType === 'MANUAL' ? financialNumber(event.marketReaction) : undefined,
     };
 }
 

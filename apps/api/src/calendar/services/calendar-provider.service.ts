@@ -365,7 +365,6 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                     'earnings_per_share_forecast_fq',
                     'revenue_fq',
                     'revenue_forecast_fq',
-                    'change',
                 ]);
                 const fetchedByKey = new Map<string, EarningsEventItem>();
                 const addEvent = (event: EarningsEventItem) => {
@@ -393,7 +392,6 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                     if (!ticker) continue;
                     const marketCap = financialNumber(row.d[6]);
                     const logoid = row.d[7];
-                    const marketReaction = financialNumber(row.d[13]);
                     const common = {
                         eventType: 'EARNINGS' as const, ticker,
                         companyName: String(row.d[1] || ticker),
@@ -415,7 +413,6 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                             dateStatus: 'ESTIMATED', reportTiming,
                             epsEstimate: financialNumber(row.d[4]),
                             revenueEstimate: financialNumber(row.d[5]),
-                            marketReaction,
                         });
                     }
                     if (reportedDate) {
@@ -424,7 +421,6 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                             dateStatus: 'CONFIRMED',
                             actualEps: financialNumber(row.d[9]), epsEstimate: financialNumber(row.d[10]),
                             actualRevenue: financialNumber(row.d[11]), revenueEstimate: financialNumber(row.d[12]),
-                            marketReaction,
                         });
                     }
                 }

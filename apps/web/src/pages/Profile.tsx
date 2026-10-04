@@ -18,11 +18,13 @@ import {
     BarChart3, Target, MessageSquare, UserPlus,
     Star, Search, Plus, Wallet, DollarSign,
     ArrowUpRight, ArrowDownRight, Layers, Activity, Loader2, Lock, Flag,
-    Share2, Settings as SettingsIcon, CheckCircle2, AlertCircle
+    Share2, Settings as SettingsIcon, CheckCircle2, AlertCircle, RefreshCw
 } from 'lucide-react';
 import ReportModal from '@/components/ReportModal';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useProfilePortfolio } from '@/components/portfolio/summary/useProfilePortfolio';
+import { AllocationSummary, MonthlyReturnChart } from '@/components/portfolio/summary/PortfolioSummaryCharts';
 import VerifiedBadge from '@/components/common/VerifiedBadge';
 
 
@@ -81,70 +83,6 @@ interface PinnedAsset {
 
 // ─── Portfolio types ─────────────────────────────────────────────────────────
 
-interface PortfolioAsset {
-    id: string;
-    ticker: string;
-    tipoActivo: string;
-    montoInvertido: number;
-    ppc: number;
-    cantidad: number;
-    precioActual?: number;
-}
-
-interface PortfolioMovement {
-    id: string;
-    fecha: string;
-    tipoMovimiento: string;
-    ticker: string;
-    claseActivo: string;
-    cantidad: number;
-    precio: number;
-    total: number;
-}
-
-interface PortfolioData {
-    id: string;
-    nombre: string;
-    monedaBase: string;
-    nivelRiesgo: string;
-    esPrincipal: boolean;
-    modoSocial: boolean;
-    assets: PortfolioAsset[];
-}
-
-interface PortfolioMetricsData {
-    capitalTotal: number;
-    capitalInvertido?: number;
-    assetsValue?: number;
-    cashBalance?: number;
-    valorActual: number;
-    totalValue?: number;
-    gananciaTotal: number;
-    variacionPorcentual: number;
-    diversificacionPorClase: Record<string, number>;
-    diversificacionPorActivo: Record<string, number>;
-    cantidadActivos: number;
-    retornosMensuales?: Array<{
-        monthKey: string;
-        label: string;
-        value: number;
-    }>;
-}
-
-function normalizeAllocationLabel(value: string) {
-    const normalized = value.trim().toLowerCase();
-
-    if (normalized.includes('cedear')) return 'Acciones';
-    if (normalized.includes('accion') || normalized.includes('stock') || normalized.includes('equity')) return 'Acciones';
-    if (normalized.includes('cripto') || normalized.includes('crypto')) return 'Cripto';
-    if (normalized.includes('etf')) return 'ETFs';
-    if (normalized.includes('bond') || normalized.includes('bono') || normalized.includes('fijo') || normalized.includes('fija') || normalized.includes('renta fija')) return 'Bonos';
-    if (normalized === 'cash' || normalized.includes('efectivo')) return 'Efectivo';
-    if (normalized.includes('commodity') || normalized.includes('materias primas')) return 'Commodities';
-
-    return value;
-}
-
 function formatSignedPercentage(value?: number | null, fractionDigits = 2, returnsVisibilityMode = 'exact', showExactReturns = true) {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
         return '—';
@@ -161,126 +99,6 @@ function formatSignedPercentage(value?: number | null, fractionDigits = 2, retur
     }
 
     return `${value >= 0 ? '+' : ''}${value.toFixed(fractionDigits)}%`;
-}
-
-// ─── Mini Pie Chart ───────────────────────────────────────────────────────────
-
-function MiniPieChart({ data }: { data: { label: string; value: number; color: string }[] }) {
-    const size = 160;
-    const cx = size / 2;
-    const cy = size / 2;
-    const r = 62;
-    const innerR = 38;
-    const total = data.reduce((s, d) => s + d.value, 0);
-    if (total === 0) return <div className="w-40 h-40 flex items-center justify-center text-xs text-muted-foreground">Sin datos</div>;
-
-    let cum = 0;
-    const visibleData = data.filter((item) => item.value > 0);
-    const slices = visibleData.map((d) => {
-        const start = (cum / total) * 2 * Math.PI - Math.PI / 2;
-        cum += d.value;
-        const end = (cum / total) * 2 * Math.PI - Math.PI / 2;
-        const large = (d.value / total) > 0.5 ? 1 : 0;
-        return {
-            ...d,
-            path: `M ${cx + r * Math.cos(start)} ${cy + r * Math.sin(start)} A ${r} ${r} 0 ${large} 1 ${cx + r * Math.cos(end)} ${cy + r * Math.sin(end)} L ${cx + innerR * Math.cos(end)} ${cy + innerR * Math.sin(end)} A ${innerR} ${innerR} 0 ${large} 0 ${cx + innerR * Math.cos(start)} ${cy + innerR * Math.sin(start)} Z`,
-        };
-    });
-
-    return (
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Distribución del portafolio">
-            <circle cx={cx} cy={cy} r={r} fill="none" stroke="hsl(var(--border) / 0.55)" strokeWidth="18" />
-            {visibleData.length === 1 ? (
-                <circle
-                    cx={cx}
-                    cy={cy}
-                    r={r}
-                    fill="none"
-                    stroke={visibleData[0].color}
-                    strokeWidth="18"
-                    strokeLinecap="round"
-                    className="transition-opacity"
-                />
-            ) : (
-                slices.map((s, i) => (
-                    <path key={i} d={s.path} fill={s.color} opacity={0.9} className="transition-opacity hover:opacity-100" />
-                ))
-            )}
-            <circle cx={cx} cy={cy} r={innerR - 2} fill="hsl(var(--card))" />
-            <text x={cx} y={cy - 4} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="9" fontWeight="600">TOTAL</text>
-            <text x={cx} y={cy + 11} textAnchor="middle" fill="hsl(var(--foreground))" fontSize="13" fontWeight="800">{data.length}</text>
-        </svg>
-    );
-}
-
-// ─── Monthly Return Bars ──────────────────────────────────────────────────────
-
-function MonthlyBars({
-    returns,
-}: {
-    returns?: Array<{
-        monthKey: string;
-        label: string;
-        value: number;
-    }>;
-}) {
-    if (!returns || returns.length === 0) {
-        return (
-            <div className="flex h-28 items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/30 px-4 text-center text-xs text-muted-foreground">
-                Sin historial suficiente para mostrar retornos mensuales reales.
-            </div>
-        );
-    }
-
-    const values = returns.map((entry) => entry.value);
-    const maxAbs = Math.max(...values.map(Math.abs), 0.01);
-
-    return (
-        <div className="w-full rounded-2xl border border-border/60 bg-background/35 px-3 pb-3 pt-4 sm:px-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-[10px] font-semibold text-muted-foreground">
-                    <span className="h-2 w-2 rounded-full bg-primary" />
-                    Variación por mes
-                </div>
-                <span className="rounded-full border border-border/70 bg-card/70 px-2 py-1 text-[10px] font-semibold text-muted-foreground">
-                    {returns.length} meses
-                </span>
-            </div>
-            <div className="flex h-32 items-stretch gap-1.5 sm:gap-2">
-                {returns.map(({ monthKey, value }, i) => {
-                    const v = value;
-                    const isPos = v >= 0;
-                    const heightPct = Math.max((Math.abs(v) / maxAbs) * 42, 4);
-                    return (
-                        <div key={monthKey} className="group relative flex min-w-0 flex-1 items-stretch">
-                            <div className="absolute inset-x-0 top-1/2 h-px bg-border/80" />
-                            <div
-                                className="absolute left-1/2 z-[1] w-[min(24px,72%)] -translate-x-1/2 rounded-full transition-[height,opacity] duration-500"
-                                style={{
-                                    height: `${heightPct}%`,
-                                    ...(isPos ? { bottom: '50%' } : { top: '50%' }),
-                                    background: isPos
-                                        ? 'linear-gradient(180deg, hsl(158 100% 58%), hsl(158 100% 34%))'
-                                        : 'linear-gradient(180deg, hsl(0 85% 63%), hsl(0 75% 45%))',
-                                    opacity: i === values.length - 1 ? 1 : 0.72,
-                                }}
-                            />
-                            {/* Tooltip */}
-                            <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1 rounded-lg border border-border bg-popover px-2 py-1 text-[9px] font-bold whitespace-nowrap opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
-                                style={{ color: isPos ? 'hsl(158 100% 45%)' : 'hsl(0 80% 60%)' }}>
-                                {isPos ? '+' : ''}{v.toFixed(1)}%
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-            <div className="mt-2 flex justify-between">
-                {returns.map(({ monthKey, label }) => (
-                    <span key={monthKey} className="min-w-0 flex-1 truncate text-center text-[9px] font-medium text-muted-foreground">{label}</span>
-                ))}
-            </div>
-        </div>
-    );
 }
 
 // ─── Risk Meter ───────────────────────────────────────────────────────────────
@@ -301,7 +119,7 @@ function RiskMeter({ level }: { level: string }) {
             </div>
             <div className="flex justify-between">
                 {labels.map((l, i) => (
-                    <span key={l} className="text-[10px]" style={{ color: i === idx ? colors[idx] : 'hsl(var(--muted-foreground))' }}>{l}</span>
+                    <span key={l} className="text-sm" style={{ color: i === idx ? colors[idx] : 'hsl(var(--muted-foreground))' }}>{l}</span>
                 ))}
             </div>
         </div>
@@ -323,119 +141,8 @@ interface ProfilePortfolioSectionProps {
 }
 
 export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, totalReturn, winRate, riskScore, showStats, showExactReturns, returnsVisibilityMode }: ProfilePortfolioSectionProps) {
-    const [portfolios, setPortfolios] = useState<PortfolioData[]>([]);
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [metrics, setMetrics] = useState<PortfolioMetricsData | null>(null);
-    const [movements, setMovements] = useState<PortfolioMovement[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { portfolios, selectedId, selected, selectPortfolio, metrics, movements, loading, refreshing, error, updatedAt, refresh } = useProfilePortfolio(profileUserId, isOwnProfile, showPortfolio);
     const [activeView, setActiveView] = useState<'overview' | 'assets' | 'movements'>('overview');
-
-    const selected = portfolios.find(p => p.id === selectedId) ?? null;
-
-    useEffect(() => {
-        let cancelled = false;
-
-        setLoading(true);
-        setPortfolios([]);
-        setSelectedId(null);
-        setMetrics(null);
-        setMovements([]);
-
-        (async () => {
-            try {
-                const endpoint = isOwnProfile ? '/portfolios' : `/portfolios/public/${profileUserId}`;
-                const res = await apiFetch(endpoint);
-                if (!res.ok) {
-                    if (!cancelled) {
-                        setPortfolios([]);
-                        setSelectedId(null);
-                    }
-                    return;
-                }
-
-                const data: PortfolioData[] = await res.json();
-                const list = Array.isArray(data) ? data : [];
-
-                if (cancelled) return;
-
-                setPortfolios(list);
-                setSelectedId((current) => {
-                    if (current && list.some((portfolio) => portfolio.id === current)) {
-                        return current;
-                    }
-                    return list[0]?.id ?? null;
-                });
-            } catch {
-                if (!cancelled) {
-                    setPortfolios([]);
-                    setSelectedId(null);
-                }
-            } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            }
-        })();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [isOwnProfile, profileUserId]);
-
-    useEffect(() => {
-        if (!selectedId) {
-            setMetrics(null);
-            setMovements([]);
-            return;
-        }
-
-        let cancelled = false;
-
-        (async () => {
-            setMetrics(null);
-            setMovements([]);
-            try {
-                const metricsEndpoint = isOwnProfile
-                    ? `/portfolios/${selectedId}/metrics`
-                    : `/portfolios/public/portfolio/${selectedId}/metrics`;
-                const movementsEndpoint = isOwnProfile
-                    ? `/portfolios/${selectedId}/movements`
-                    : `/portfolios/public/portfolio/${selectedId}/movements`;
-
-                const [mRes, mvRes] = await Promise.all([
-                    apiFetch(metricsEndpoint),
-                    apiFetch(movementsEndpoint),
-                ]);
-
-                if (mRes.ok) {
-                    const metricsData = await mRes.json();
-                    if (!cancelled) {
-                        setMetrics(metricsData);
-                    }
-                } else if (!cancelled) {
-                    setMetrics(null);
-                }
-
-                if (mvRes.ok) {
-                    const movementData = await mvRes.json();
-                    if (!cancelled) {
-                        setMovements(Array.isArray(movementData) ? movementData.slice(0, 6) : []);
-                    }
-                } else if (!cancelled) {
-                    setMovements([]);
-                }
-            } catch {
-                if (!cancelled) {
-                    setMetrics(null);
-                    setMovements([]);
-                }
-            }
-        })();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [isOwnProfile, selectedId]);
 
     const fmt = (n: number, cur = 'USD') => {
         if (!isOwnProfile && (!showExactReturns || returnsVisibilityMode === 'range')) return '***';
@@ -446,16 +153,15 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
 
     const fmtPct = (n: number) => isOwnProfile ? formatSignedPercentage(n) : formatSignedPercentage(n, 2, returnsVisibilityMode, showExactReturns);
 
-    const PIE_COLORS = ['hsl(158 100% 45%)', '#3b82f6', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316'];
     const riskLabels: Record<string, string> = {
         bajo: 'Conservador',
         medio: 'Moderado',
         alto: 'Agresivo',
     };
     const hasTotalReturn = typeof totalReturn === 'number' && Number.isFinite(totalReturn);
-    const hasWinRate = typeof winRate === 'number' && Number.isFinite(winRate);
-    const hasRiskScore = typeof riskScore === 'number' && Number.isFinite(riskScore);
-    const resolvedTotalReturn = hasTotalReturn ? totalReturn : metrics?.variacionPorcentual;
+    const hasWinRate = Boolean(selected?.esPrincipal) && typeof winRate === 'number' && Number.isFinite(winRate);
+    const hasRiskScore = Boolean(selected?.esPrincipal) && typeof riskScore === 'number' && Number.isFinite(riskScore);
+    const resolvedTotalReturn = metrics?.variacionPorcentual ?? (selected?.esPrincipal && hasTotalReturn ? totalReturn : undefined);
     const totalReturnDisplay = isOwnProfile ? formatSignedPercentage(resolvedTotalReturn) : formatSignedPercentage(resolvedTotalReturn, 2, returnsVisibilityMode, showExactReturns);
     const totalReturnColor =
         typeof resolvedTotalReturn === 'number' && Number.isFinite(resolvedTotalReturn) && resolvedTotalReturn < 0
@@ -502,7 +208,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
             <div className="rounded-2xl py-12 text-center space-y-3" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px dashed hsl(var(--border))' }}>
                 <Lock className="w-8 h-8 mx-auto text-muted-foreground opacity-40" />
                 <p className="text-sm font-semibold text-foreground">Portafolio privado</p>
-                <p className="text-xs text-muted-foreground">Este usuario mantiene su portafolio oculto</p>
+                <p className="text-sm text-muted-foreground">Este usuario mantiene su portafolio oculto</p>
             </div>
         );
     }
@@ -522,10 +228,11 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
             <div className="rounded-2xl py-12 text-center space-y-3" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px dashed hsl(var(--border))' }}>
                 <Wallet className="w-8 h-8 mx-auto text-muted-foreground opacity-40" />
                 <p className="text-sm font-semibold text-foreground">
-                    {isOwnProfile ? 'Aun no tenes portafolios' : 'Sin portafolios publicos'}
+                    {error || (isOwnProfile ? 'Aún no tenés portafolios' : 'Sin portafolios públicos')}
                 </p>
-                {isOwnProfile && (
-                    <Link to="/portfolio" className="inline-block text-xs font-bold px-4 py-1.5 rounded-xl"
+                {error && <button type="button" onClick={refresh} className="rounded-xl border border-border px-5 py-3 text-base font-semibold">Reintentar</button>}
+                {!error && isOwnProfile && (
+                    <Link to="/portfolio" className="inline-block text-sm font-bold px-4 py-1.5 rounded-xl"
                         style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}>
                         + Crear portafolio
                     </Link>
@@ -534,27 +241,31 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
         );
     }
 
-    // Build pie data from diversificacionPorClase
-    const pieData = metrics
-        ? Object.entries(metrics.diversificacionPorClase || {}).map(([label, value], i) => ({ label: normalizeAllocationLabel(label), value, color: PIE_COLORS[i % PIE_COLORS.length] }))
-        : [];
-    const allocationData = pieData.length > 0 ? pieData : [
-        { label: 'Acciones', value: 55, color: PRIMARY },
-        { label: 'Cripto', value: 25, color: '#3b82f6' },
-        { label: 'Otros', value: 20, color: '#f59e0b' },
-    ];
-    const allocationTotal = allocationData.reduce((sum, item) => sum + Number(item.value), 0) || 1;
-
     const totalValue = metrics?.valorActual ?? 0;
 
     return (
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-6" aria-label="Resumen del portafolio del perfil" aria-busy={loading || refreshing}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">{selected?.nombre}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        {updatedAt ? `Actualizado a las ${new Date(updatedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}` : 'Cargando datos del portafolio…'} · {selected?.monedaBase}
+                    </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={refresh} disabled={refreshing} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold hover:bg-secondary disabled:opacity-60">
+                        <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />Actualizar
+                    </button>
+                    {isOwnProfile && <Link to="/portfolio" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground"><Wallet className="h-4 w-4" />Administrar portafolio<ArrowUpRight className="h-4 w-4" /></Link>}
+                </div>
+            </div>
+            {error && <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-foreground">{error}</p>}
             {/* ── Portfolio selector ── */}
             {portfolios.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-1">
                     {portfolios.map(p => (
-                        <button key={p.id} onClick={() => { setSelectedId(p.id); setMetrics(null); setMovements([]); }}
-                            className="flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                        <button key={p.id} onClick={() => selectPortfolio(p.id)} aria-pressed={selectedId === p.id}
+                            className="flex-shrink-0 px-4 py-3 rounded-xl text-sm font-semibold transition-all"
                             style={{
                                 background: selectedId === p.id ? PRIMARY_DIM : 'hsl(var(--secondary) / 0.5)',
                                 color: selectedId === p.id ? PRIMARY : 'hsl(var(--muted-foreground))',
@@ -569,24 +280,24 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
 
             {/* ── 4 KPI Cards ── */}
             {metrics && (
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
                     {[
-                        { label: 'Capital Invertido', value: fmt(metrics.capitalTotal, selected?.monedaBase), icon: DollarSign, color: '#3b82f6', sub: 'Total aportado' },
+                        { label: 'Capital aportado', value: fmt(metrics.capitalTotal, selected?.monedaBase), icon: DollarSign, color: '#3b82f6', sub: 'Aportes netos de retiros' },
                         { label: 'Valor Actual', value: fmt(metrics.valorActual, selected?.monedaBase), icon: TrendingUp, color: PRIMARY, sub: 'A precios de mercado' },
                         { label: 'Ganancia / Pérdida', value: fmt(metrics.gananciaTotal, selected?.monedaBase), icon: metrics.gananciaTotal >= 0 ? ArrowUpRight : ArrowDownRight, color: metrics.gananciaTotal >= 0 ? PRIMARY : 'hsl(0 90% 58%)', sub: fmtPct(metrics.variacionPorcentual) },
                         { label: 'Activos en cartera', value: metrics.cantidadActivos.toString(), icon: Layers, color: '#a855f7', sub: `en ${selected?.nombre ?? ''}` },
                     ].map(({ label, value, icon: Icon, color, sub }) => (
                         <motion.div key={label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                            className="relative overflow-hidden rounded-2xl p-4 shadow-sm" style={{ background: 'linear-gradient(145deg, hsl(var(--card) / 0.94), hsl(var(--secondary) / 0.48))', border: '1px solid hsl(var(--border) / 0.78)' }}>
+                            className="relative min-w-0 overflow-hidden rounded-3xl p-5 shadow-sm sm:p-6" style={{ background: 'linear-gradient(145deg, hsl(var(--card) / 0.94), hsl(var(--secondary) / 0.48))', border: '1px solid hsl(var(--border) / 0.78)' }}>
                             <div className="absolute -right-7 -top-8 h-20 w-20 rounded-full blur-2xl" style={{ background: color, opacity: 0.09 }} />
                             <div className="relative flex items-start justify-between gap-2">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: color + '18', border: `1px solid ${color}22` }}>
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: `color-mix(in srgb, ${color} 12%, transparent)`, border: `1px solid color-mix(in srgb, ${color} 20%, transparent)` }}>
                                     <Icon className="h-4 w-4" style={{ color }} />
                                 </div>
-                                <span className="pt-1 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+                                <span className="pt-1 text-right text-sm font-semibold text-muted-foreground">{label}</span>
                             </div>
-                            <div className="relative mt-4 truncate text-xl font-black leading-tight text-foreground">{value}</div>
-                            <div className="relative mt-1 truncate text-[10px] text-muted-foreground">{sub}</div>
+                            <div className="relative mt-5 break-words text-3xl font-extrabold leading-tight tracking-tight tabular-nums text-foreground sm:text-[32px]">{value}</div>
+                            <div className="relative mt-2 text-sm text-muted-foreground">{sub}</div>
                         </motion.div>
                     ))}
                 </div>
@@ -598,13 +309,13 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                     const ViewIcon = v === 'overview' ? BarChart3 : v === 'assets' ? Layers : Activity;
                     return (
                     <button key={v} onClick={() => setActiveView(v)}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-[10px] font-bold uppercase tracking-wide transition-[color,background-color,box-shadow] sm:text-[11px]"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl min-h-12 py-3 text-sm font-bold transition-[color,background-color,box-shadow] sm:text-base"
                         style={{
                             background: activeView === v ? 'linear-gradient(135deg, hsl(158 100% 50%), hsl(158 100% 38%))' : 'transparent',
                             color: activeView === v ? '#001b12' : 'hsl(var(--muted-foreground))',
                             boxShadow: activeView === v ? '0 5px 16px hsl(158 100% 35% / 0.2)' : 'none',
                         }}>
-                        <ViewIcon className="h-3.5 w-3.5" />
+                        <ViewIcon className="h-5 w-5" />
                         {v === 'overview' ? 'Resumen' : v === 'assets' ? 'Activos' : 'Movimientos'}
                     </button>
                     );
@@ -612,113 +323,37 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
             </div>
 
             {/* ══ OVERVIEW ══ */}
-            <AnimatePresence mode="wait">
+            <AnimatePresence initial={false}>
                 {activeView === 'overview' && (
                     <motion.div key="overview" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                        {/* Monthly returns chart */}
-                        <div className="rounded-[24px] p-4 shadow-sm sm:p-5" style={{ background: 'linear-gradient(145deg, hsl(var(--card) / 0.94), hsl(var(--secondary) / 0.42))', border: '1px solid hsl(var(--border) / 0.8)' }}>
-                            <div className="mb-4 flex items-start justify-between gap-4">
-                                <div className="flex items-start gap-3">
-                                    <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: PRIMARY_DIM, color: PRIMARY }}>
-                                        <TrendingUp className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-sm font-bold text-foreground">Rendimiento mensual</h4>
-                                        <p className="mt-0.5 text-[11px] text-muted-foreground">Evolución de los últimos 12 meses</p>
-                                    </div>
+                        <MonthlyReturnChart
+                            returns={metrics?.retornosMensuales}
+                            loading={!metrics && !error}
+                            hidden={!isOwnProfile && (!showExactReturns || returnsVisibilityMode === 'range')}
+                            totalReturn={totalReturnDisplay}
+                        />
+                        <AllocationSummary data={metrics?.diversificacionPorClase ?? {}} loading={!metrics && !error} />
+                        {selected?.nivelRiesgo && (
+                            <div className="rounded-2xl border border-border bg-card p-5">
+                                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                                    <p className="text-base font-semibold">Perfil de riesgo declarado</p>
+                                    <span className="text-base font-bold">{riskLabels[selected.nivelRiesgo.toLowerCase()] ?? selected.nivelRiesgo}</span>
                                 </div>
-                                {totalReturnDisplay !== '—' && (
-                                    <div className="rounded-xl border border-border/70 bg-background/35 px-3 py-2 text-right">
-                                        <div className="text-base font-black" style={{ color: totalReturnColor }}>
-                                            {totalReturnDisplay}
-                                        </div>
-                                        <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Retorno total</div>
-                                    </div>
-                                )}
+                                <RiskMeter level={selected.nivelRiesgo} />
                             </div>
-                            <MonthlyBars returns={metrics?.retornosMensuales} />
-                        </div>
-
-                        {/* Diversification + Stats */}
-                        <div className="grid gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.35fr)]">
-                            {/* Pie chart */}
-                            <div className="rounded-[24px] p-4 shadow-sm sm:p-5" style={{ background: 'linear-gradient(145deg, hsl(var(--card) / 0.94), hsl(var(--secondary) / 0.42))', border: '1px solid hsl(var(--border) / 0.8)' }}>
-                                <div className="mb-3 flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Clases</p>
-                                        <p className="mt-1 text-xs text-muted-foreground">Composición del portafolio</p>
-                                    </div>
-                                    <span className="rounded-full border border-border/70 bg-background/35 px-2 py-1 text-[10px] font-bold text-foreground">{allocationData.length} tipos</span>
-                                </div>
-                                <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                                    <MiniPieChart data={allocationData} />
-                                    <div className="w-full space-y-2 sm:max-w-[150px]">
-                                        {allocationData.slice(0, 4).map((item) => (
-                                            <div key={item.label} className="flex items-center justify-between gap-3 text-[11px]">
-                                                <div className="flex min-w-0 items-center gap-2">
-                                                    <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: item.color }} />
-                                                    <span className="truncate text-muted-foreground">{item.label}</span>
-                                                </div>
-                                                <span className="font-bold text-foreground">{((Number(item.value) / allocationTotal) * 100).toFixed(0)}%</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Legend + risk */}
-                            <div className="rounded-[24px] p-4 shadow-sm sm:p-5" style={{ background: 'linear-gradient(145deg, hsl(var(--card) / 0.94), hsl(var(--secondary) / 0.42))', border: '1px solid hsl(var(--border) / 0.8)' }}>
-                                <div className="mb-4 flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Distribución</p>
-                                        <p className="mt-1 text-xs text-muted-foreground">Peso de cada clase de activo</p>
-                                    </div>
-                                    <Layers className="h-4 w-4 text-muted-foreground" />
-                                </div>
-                                <div className="space-y-3">
-                                    {allocationData.slice(0, 5).map((d) => {
-                                        const pct = (Number(d.value) / allocationTotal) * 100;
-                                        return (
-                                            <div key={d.label} className="space-y-1.5">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <div className="flex min-w-0 items-center gap-2">
-                                                        <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ background: d.color, boxShadow: `0 0 0 4px ${d.color}18` }} />
-                                                        <span className="truncate text-xs font-semibold text-foreground">{d.label}</span>
-                                                    </div>
-                                                    <span className="text-xs font-black text-foreground">{pct.toFixed(0)}%</span>
-                                                </div>
-                                                <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: 'hsl(var(--border) / 0.75)' }}>
-                                                    <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${Math.min(pct, 100)}%`, background: `linear-gradient(90deg, ${d.color}, ${d.color}aa)` }} />
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Risk level */}
-                                {selected?.nivelRiesgo && (
-                                    <div className="mt-5 rounded-2xl border border-border/60 bg-background/30 p-3">
-                                        <div className="mb-2 flex items-center justify-between">
-                                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Nivel de riesgo</p>
-                                            <span className="text-[11px] font-bold text-foreground">{riskLabels[selected.nivelRiesgo.toLowerCase()] ?? selected.nivelRiesgo}</span>
-                                        </div>
-                                        <RiskMeter level={selected.nivelRiesgo} />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        )}
 
                         {/* Stats row */}
-                        {(showStats || isOwnProfile) && (
+                        {(showStats || isOwnProfile) && (hasWinRate || hasRiskScore) && (
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                 {statsCards.map(({ label, value, color, icon: Icon }) => (
                                     <div key={label} className="flex items-center gap-3 rounded-2xl p-4 shadow-sm" style={{ background: 'hsl(var(--card) / 0.82)', border: '1px solid hsl(var(--border) / 0.8)' }}>
-                                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl" style={{ background: color + '18' }}>
+                                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl" style={{ background: `color-mix(in srgb, ${color} 12%, transparent)` }}>
                                             <Icon className="h-4 w-4" style={{ color }} />
                                         </div>
                                         <div className="min-w-0">
-                                            <div className="truncate text-base font-black" style={{ color }}>{value}</div>
-                                            <div className="mt-0.5 truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+                                            <div className="break-words text-2xl font-bold" style={{ color }}>{value}</div>
+                                            <div className="mt-0.5 text-sm font-semibold text-muted-foreground">{label}</div>
                                         </div>
                                     </div>
                                 ))}
@@ -731,9 +366,10 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                 {activeView === 'assets' && (
                     <motion.div key="assets" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-2">
                         {selected && selected.assets.length > 0 ? (
-                            <>
+                            <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+                              <div className="min-w-[680px] space-y-2 p-3">
                                 {/* Header */}
-                                <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                <div className="grid grid-cols-12 gap-2 px-3 py-2 text-sm font-bold text-muted-foreground uppercase tracking-wider">
                                     <span className="col-span-3">Activo</span>
                                     <span className="col-span-2 text-right">Cant.</span>
                                     <span className="col-span-3 text-right">Invertido</span>
@@ -758,30 +394,30 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                                         >
                                             {/* Ticker */}
                                             <div className="col-span-3 flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[9px] font-black flex-shrink-0"
+                                                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black flex-shrink-0"
                                                     style={{ background: PRIMARY_DIM, color: PRIMARY }}>
                                                     {asset.ticker.slice(0, 2)}
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-xs font-bold text-foreground truncate">{asset.ticker}</p>
-                                                    <p className="text-[9px] text-muted-foreground">{weight.toFixed(1)}%</p>
+                                                    <p className="text-sm font-bold text-foreground truncate">{asset.ticker}</p>
+                                                    <p className="text-sm text-muted-foreground">{weight.toFixed(1)}%</p>
                                                 </div>
                                             </div>
                                             {/* Quantity */}
                                             <div className="col-span-2 text-right">
-                                                <span className="text-xs text-muted-foreground">{asset.cantidad.toFixed(3)}</span>
+                                                <span className="text-sm text-muted-foreground">{asset.cantidad.toFixed(3)}</span>
                                             </div>
                                             {/* Invested */}
                                             <div className="col-span-3 text-right">
-                                                <span className="text-xs text-foreground font-medium">{fmt(asset.montoInvertido, selected.monedaBase)}</span>
+                                                <span className="text-sm text-foreground font-medium">{fmt(asset.montoInvertido, selected.monedaBase)}</span>
                                             </div>
                                             {/* Avg price */}
                                             <div className="col-span-2 text-right">
-                                                <span className="text-xs text-muted-foreground">{fmt(asset.ppc, selected.monedaBase)}</span>
+                                                <span className="text-sm text-muted-foreground">{fmt(asset.ppc, selected.monedaBase)}</span>
                                             </div>
                                             {/* P&L */}
                                             <div className="col-span-2 text-right">
-                                                <span className="text-xs font-bold" style={{ color: isUp ? PRIMARY : 'hsl(0 90% 58%)' }}>
+                                                <span className="text-sm font-bold" style={{ color: isUp ? PRIMARY : 'hsl(0 90% 58%)' }}>
                                                     {isUp ? '+' : ''}{pct.toFixed(1)}%
                                                 </span>
                                             </div>
@@ -789,19 +425,18 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                                             {/* Weight bar (full width) */}
                                             <div className="col-span-12 mt-1">
                                                 <div className="w-full h-0.5 rounded-full overflow-hidden" style={{ background: 'hsl(var(--border))' }}>
-                                                    <motion.div className="h-full rounded-full"
-                                                        initial={{ width: 0 }} animate={{ width: `${weight}%` }} transition={{ delay: i * 0.06, duration: 0.6 }}
-                                                        style={{ background: isUp ? PRIMARY : 'hsl(0 90% 58%)' }} />
+                                                    <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(weight, 100))}%`, background: isUp ? PRIMARY : 'hsl(0 90% 58%)' }} />
                                                 </div>
                                             </div>
                                         </motion.div>
                                     );
                                 })}
-                            </>
+                              </div>
+                            </div>
                         ) : (
                             <div className="rounded-2xl py-10 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px dashed hsl(var(--border))' }}>
                                 <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                                <p className="text-xs text-muted-foreground">Sin activos en este portafolio</p>
+                                <p className="text-sm text-muted-foreground">Sin activos en este portafolio</p>
                             </div>
                         )}
                     </motion.div>
@@ -828,8 +463,8 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                                         {/* Info */}
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs font-bold text-foreground">{mv.ticker}</span>
-                                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"
+                                                <span className="text-sm font-bold text-foreground">{mv.ticker}</span>
+                                                <span className="text-sm font-bold px-1.5 py-0.5 rounded uppercase"
                                                     style={{
                                                         background: isCompra ? 'hsl(158 100% 45% / 0.12)' : 'hsl(0 90% 58% / 0.12)',
                                                         color: isCompra ? PRIMARY : 'hsl(0 90% 58%)',
@@ -837,16 +472,16 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                                                     {mv.tipoMovimiento}
                                                 </span>
                                             </div>
-                                            <p className="text-[10px] text-muted-foreground">
+                                            <p className="text-sm text-muted-foreground">
                                                 {mv.cantidad.toFixed(3)} × ${mv.precio.toFixed(2)}
                                             </p>
                                         </div>
                                         {/* Amount + date */}
                                         <div className="text-right flex-shrink-0">
-                                            <div className="text-xs font-bold" style={{ color: isCompra ? PRIMARY : 'hsl(0 90% 58%)' }}>
+                                            <div className="text-sm font-bold" style={{ color: isCompra ? PRIMARY : 'hsl(0 90% 58%)' }}>
                                                 {isCompra ? '-' : '+'}{fmt(mv.total, selected?.monedaBase)}
                                             </div>
-                                            <div className="text-[9px] text-muted-foreground">
+                                            <div className="text-sm text-muted-foreground">
                                                 {mv.fecha ? new Date(mv.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) : '—'}
                                             </div>
                                         </div>
@@ -856,7 +491,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                         ) : (
                             <div className="rounded-2xl py-10 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px dashed hsl(var(--border))' }}>
                                 <Activity className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                                <p className="text-xs text-muted-foreground">Sin movimientos registrados</p>
+                                <p className="text-sm text-muted-foreground">Sin movimientos registrados</p>
                             </div>
                         )}
                     </motion.div>
@@ -1113,22 +748,28 @@ export default function Profile() {
 
     /* ── Search assets ───────────────────────────── */
     useEffect(() => {
-        if (!assetSearch.trim()) { setSearchResults([]); return; }
+        if (!assetSearch.trim()) { setSearchResults([]); setIsSearching(false); return; }
         if (searchTimeout.current) clearTimeout(searchTimeout.current);
         setIsSearching(true);
+        const controller = new AbortController();
         searchTimeout.current = setTimeout(async () => {
             try {
-                const res = await apiFetch(`/market/search?query=${encodeURIComponent(assetSearch)}`);
+                const res = await apiFetch(`/market/search?query=${encodeURIComponent(assetSearch)}`, { signal: controller.signal });
                 if (res.ok) {
                     const data = await res.json();
+                    if (controller.signal.aborted) return;
                     setSearchResults((data.quotes || data || []).slice(0, 8).map((q: any) => ({
                         symbol: q.symbol,
                         name: q.shortname || q.longname || q.symbol,
                     })));
                 }
             } catch { }
-            setIsSearching(false);
+            if (!controller.signal.aborted) setIsSearching(false);
         }, 350);
+        return () => {
+            controller.abort();
+            if (searchTimeout.current) clearTimeout(searchTimeout.current);
+        };
     }, [assetSearch]);
 
     const addPinnedAsset = async (ticker: string, name: string) => {

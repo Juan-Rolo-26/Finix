@@ -25,7 +25,7 @@ import {
     HelpCircle,
 } from 'lucide-react';
 import { adminFetch } from '../lib/api';
-import { formatFinancialAmount, isVisibleEarnings, normalizeEarnings } from '@finix/shared';
+import { formatFinancialAmount, isVisibleEarnings, normalizeEarnings, formatEconomicEventTitle, formatEconomicEventDescription, formatEconomicEventSource, localizeEconomicEvent } from '@finix/shared';
 
 interface CalendarEvent {
     id: string;
@@ -540,8 +540,8 @@ export default function CalendarManagement() {
             // Filtro por Búsqueda
             if (macroSearch.trim()) {
                 const q = macroSearch.toLowerCase().trim();
-                const matchTitle = e.title.toLowerCase().includes(q);
-                const matchDesc = e.description?.toLowerCase().includes(q);
+                const matchTitle = formatEconomicEventTitle(e.title, e.country).toLowerCase().includes(q) || e.title.toLowerCase().includes(q);
+                const matchDesc = formatEconomicEventDescription(e.title, e.description, e.country).toLowerCase().includes(q);
                 const matchTicker = e.ticker?.toLowerCase().includes(q);
                 const matchCompany = e.companyName?.toLowerCase().includes(q);
                 const matchSource = e.sourceName?.toLowerCase().includes(q) || e.source?.toLowerCase().includes(q);
@@ -1039,7 +1039,7 @@ export default function CalendarManagement() {
                                                                         {e.ticker}
                                                                     </span>
                                                                 )}
-                                                                {e.title}
+                                                                {e.eventType === 'ECONOMIC' ? formatEconomicEventTitle(e.title, e.country) : e.title}
                                                             </div>
                                                             <div className="flex items-center gap-1.5 flex-wrap">
                                                                 <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-secondary/80 text-muted-foreground border border-border/50">
@@ -1091,8 +1091,8 @@ export default function CalendarManagement() {
                                                     <td className="p-3.5">
                                                         <div className="space-y-1">
                                                             <div className="flex items-center gap-1">
-                                                                <span className="text-xs font-semibold text-foreground max-w-[140px] truncate block" title={e.sourceName || e.source}>
-                                                                    {e.sourceName || e.source || 'Oficial'}
+                                                                <span className="text-xs font-semibold text-foreground max-w-[140px] truncate block" title={formatEconomicEventSource(e.sourceName || e.source)}>
+                                                                    {formatEconomicEventSource(e.sourceName || e.source) || 'Oficial'}
                                                                 </span>
                                                                 {e.sourceUrl && (
                                                                     <a
@@ -1141,7 +1141,7 @@ export default function CalendarManagement() {
                                                             {/* Editar */}
                                                             <button
                                                                 onClick={() => {
-                                                                    setEditingEvent({ ...e });
+                                                                    setEditingEvent(e.eventType === 'ECONOMIC' ? localizeEconomicEvent(e) : { ...e });
                                                                     setShowEditModal(true);
                                                                 }}
                                                                 className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
@@ -1487,14 +1487,14 @@ export default function CalendarManagement() {
                                 <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
                                     {viewingEvent.country} • {viewingEvent.category}
                                 </span>
-                                <h3 className="font-bold text-lg text-foreground mt-0.5">{viewingEvent.title}</h3>
+                                <h3 className="font-bold text-lg text-foreground mt-0.5">{viewingEvent.eventType === 'ECONOMIC' ? formatEconomicEventTitle(viewingEvent.title, viewingEvent.country) : viewingEvent.title}</h3>
                             </div>
                             <button onClick={() => setShowDetailModal(false)} className="text-muted-foreground hover:text-foreground">✕</button>
                         </div>
 
-                        {viewingEvent.description && (
+                        {(viewingEvent.description || viewingEvent.eventType === 'ECONOMIC') && (
                             <p className="text-xs text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-xl border border-border/50">
-                                {viewingEvent.description}
+                                {viewingEvent.eventType === 'ECONOMIC' ? formatEconomicEventDescription(viewingEvent.title, viewingEvent.description, viewingEvent.country) : viewingEvent.description}
                             </p>
                         )}
 
@@ -1521,7 +1521,7 @@ export default function CalendarManagement() {
                         <div className="p-3 rounded-xl bg-muted/20 border border-border/50 space-y-2 text-xs">
                             <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">Fuente Proveedora:</span>
-                                <span className="font-semibold text-foreground">{viewingEvent.sourceName || viewingEvent.source || 'Oficial'}</span>
+                                <span className="font-semibold text-foreground">{formatEconomicEventSource(viewingEvent.sourceName || viewingEvent.source) || 'Oficial'}</span>
                             </div>
                             {viewingEvent.sourceUrl && (
                                 <div className="flex items-center justify-between">

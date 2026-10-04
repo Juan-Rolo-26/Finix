@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma.service';
 import { CreatePortfolioDto, UpdatePortfolioDto, CreateAssetDto, UpdateAssetDto, CreateTransactionDto } from './dto/portfolio.dto';
 import { MarketQuote, MarketService } from '../market/market.service';
 import { AccessControlService } from '../access/access-control.service';
+import { PortfolioPerformanceService } from './portfolio-performance.service';
 import { getCedearDefinition } from '../market/cedear.data';
 
 const normalizeAssetType = (value?: string) => {
@@ -57,6 +58,7 @@ export class PortfolioService {
         private prisma: PrismaService,
         private marketService: MarketService,
         private accessControlService: AccessControlService,
+        private performanceService: PortfolioPerformanceService,
     ) { }
 
     private async assertPortfolioOwner(portfolioId: string, userId: string) {
@@ -200,102 +202,6 @@ export class PortfolioService {
         ]);
         const cclRate = cclData?.venta || cclData?.compra || 1590;
         return { quoteMap, cclRate };
-    }
-
-    private toMonthKey(date: Date) {
-        const year = date.getUTCFullYear();
-        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-        return `${year}-${month}`;
-    }
-
-    private shiftUtcMonth(date: Date, offset: number) {
-        return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + offset, 1));
-    }
-
-    private getTrailingMonthlyWindows() {
-        const now = new Date();
-        const currentMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-
-        return Array.from({ length: 12 }, (_, index) => {
-            const start = this.shiftUtcMonth(currentMonthStart, index - 11);
-            const isCurrentMonth = start.getUTCFullYear() === now.getUTCFullYear() && start.getUTCMonth() === now.getUTCMonth();
-            const end = isCurrentMonth
-                ? now
-                : new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0, 23, 59, 59, 999));
-            const daysInMonth = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0)).getUTCDate();
-            const label = new Intl.DateTimeFormat('es-AR', { month: 'short', timeZone: 'UTC' })
-                .format(start)
-                .replace('.', '')
-                .toUpperCase();
-
-            return {
-                monthKey: this.toMonthKey(start),
-                previousMonthKey: this.toMonthKey(this.shiftUtcMonth(start, -1)),
-                start,
-                end,
-                daysInMonth,
-                label,
-            };
-        });
-    }
-
-    private async getHistoricalMonthEndPriceMap(ticker: string, startDate: Date, endDate: Date) {
-        const normalizedTicker = this.normalizeTicker(ticker);
-        const monthEndPrices = new Map<string, number>();
-
-        if (!normalizedTicker) {
-            return monthEndPrices;
-        }
-
-        const period1 = Math.floor(startDate.getTime() / 1000);
-        const period2 = Math.floor((endDate.getTime() + 24 * 60 * 60 * 1000) / 1000);
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(normalizedTicker)}?interval=1d&period1=${period1}&period2=${period2}&includePrePost=false&events=div%2Csplits`;
-
-        try {
-            const response = await fetch(url, {
-                headers: {
-                    Accept: 'application/json',
-                    'User-Agent': 'Mozilla/5.0',
-                },
-            });
-
-            if (!response.ok) {
-                return monthEndPrices;
-            }
-
-            const payload = await response.json() as any;
-            const result = payload?.chart?.result?.[0];
-            const timestamps = result?.timestamp;
-            const closes = result?.indicators?.quote?.[0]?.close;
-
-            if (!Array.isArray(timestamps) || !Array.isArray(closes)) {
-                return monthEndPrices;
-            }
-
-            for (let index = 0; index < timestamps.length; index += 1) {
-                const timestamp = timestamps[index];
-                const close = closes[index];
-
-                if (!Number.isFinite(timestamp) || !Number.isFinite(close)) {
-                    continue;
-                }
-
-                monthEndPrices.set(this.toMonthKey(new Date(timestamp * 1000)), Number(close));
-            }
-        } catch (error) {
-            console.error(`[PortfolioService] Failed to load historical prices for ${normalizedTicker}:`, error);
-        }
-
-        return monthEndPrices;
-    }
-
-    private async getHistoricalMonthEndPriceMaps(tickers: string[], startDate: Date, endDate: Date) {
-        const uniqueTickers = Array.from(new Set(tickers.map((ticker) => this.normalizeTicker(ticker)).filter(Boolean)));
-        const histories = await Promise.all(
-            uniqueTickers.map(async (ticker) => ([ticker, await this.getHistoricalMonthEndPriceMap(ticker, startDate, endDate)] as const)),
-        );
-
-        return new Map(histories);
     }
 
     private buildCurrentHoldingMap(holdings: any[]) {
@@ -534,31 +440,6 @@ export class PortfolioService {
         return holdingCostMap;
     }
 
-    private calculatePortfolioValueForMonth(
-        holdings: Map<string, number>,
-        monthKey: string,
-        historicalPriceMaps: Map<string, Map<string, number>>,
-        quoteMap: Map<string, MarketQuote>,
-        fallbackPriceMap: Map<string, number>,
-    ) {
-        let totalValue = 0;
-
-        holdings.forEach((quantity, ticker) => {
-            if (!Number.isFinite(quantity) || quantity <= 0) {
-                return;
-            }
-
-            const historicalPrice = historicalPriceMaps.get(ticker)?.get(monthKey);
-            const livePrice = quoteMap.get(ticker)?.price;
-            const fallbackPrice = fallbackPriceMap.get(ticker);
-            const price = historicalPrice ?? livePrice ?? fallbackPrice ?? 0;
-
-            totalValue += quantity * price;
-        });
-
-        return totalValue;
-    }
-
     private buildEffectiveCashState(portfolio: { cashAccounts?: any[]; transactions?: any[] }) {
         const transactions = this.sortTransactionsChronologically(
             (portfolio.transactions ?? []).filter((transaction: any) => transaction?.date),
@@ -589,118 +470,6 @@ export class PortfolioService {
                     balance: Number(balance.toFixed(2)),
                 })),
         };
-    }
-
-    private buildFallbackPriceMap(holdings: any[], transactions: any[], quoteMap: Map<string, MarketQuote>) {
-        const fallbackPriceMap = new Map<string, number>();
-
-        for (const holding of holdings ?? []) {
-            const ticker = this.normalizeTicker(holding?.asset?.ticker);
-            if (!ticker) continue;
-
-            const livePrice = quoteMap.get(ticker)?.price;
-            const avgCost = Number(holding.averageCost ?? 0);
-            fallbackPriceMap.set(ticker, livePrice ?? avgCost);
-        }
-
-        for (const transaction of transactions ?? []) {
-            const ticker = this.normalizeTicker(transaction?.asset?.ticker);
-            if (!ticker) continue;
-
-            const pricePerUnit = Number(transaction.pricePerUnit ?? 0);
-            if (!fallbackPriceMap.has(ticker) && pricePerUnit > 0) {
-                fallbackPriceMap.set(ticker, pricePerUnit);
-            }
-        }
-
-        return fallbackPriceMap;
-    }
-
-    private async buildMonthlyReturns(
-        portfolio: {
-            holdings?: Array<{ quantity?: any; averageCost?: any; asset?: { ticker?: string } | null }>;
-            transactions?: Array<{ type?: string; date?: Date; createdAt?: Date; quantity?: any; total?: any; fee?: any; pricePerUnit?: any; currency?: string; asset?: { ticker?: string } | null }>;
-            cashAccounts?: Array<{ currency?: string; balance?: any }>;
-        },
-        quoteMap: Map<string, MarketQuote>,
-    ) {
-        const cashState = this.buildEffectiveCashState(portfolio);
-        const transactions = cashState.transactions;
-        const months = this.getTrailingMonthlyWindows();
-        const historyStart = this.shiftUtcMonth(months[0].start, -1);
-        const tickers = Array.from(new Set([
-            ...(portfolio.holdings ?? []).map((holding) => holding?.asset?.ticker ?? ''),
-            ...transactions.map((transaction) => transaction?.asset?.ticker ?? ''),
-        ].map((ticker) => this.normalizeTicker(ticker)).filter(Boolean)));
-        const historicalPriceMaps = await this.getHistoricalMonthEndPriceMaps(tickers, historyStart, new Date());
-        const fallbackPriceMap = this.buildFallbackPriceMap(portfolio.holdings ?? [], transactions, quoteMap);
-        const baselineHoldings = this.buildBaselineHoldingMap(portfolio.holdings ?? [], transactions);
-
-        return months.map((month) => {
-            const startHoldings = this.buildHoldingMapAtDate(transactions, baselineHoldings, month.start.getTime(), false);
-            const endHoldings = this.buildHoldingMapAtDate(transactions, baselineHoldings, month.end.getTime(), true);
-            const startCash = this.buildCashMapAtDate(cashState.cashEvents, cashState.baselineCash, month.start.getTime(), false);
-            const endCash = this.buildCashMapAtDate(cashState.cashEvents, cashState.baselineCash, month.end.getTime(), true);
-            const startValue = this.calculatePortfolioValueForMonth(
-                startHoldings,
-                month.previousMonthKey,
-                historicalPriceMaps,
-                quoteMap,
-                fallbackPriceMap,
-            ) + this.sumBalanceMap(startCash);
-            const endValue = this.calculatePortfolioValueForMonth(
-                endHoldings,
-                month.monthKey,
-                historicalPriceMaps,
-                quoteMap,
-                fallbackPriceMap,
-            ) + this.sumBalanceMap(endCash);
-
-            let netFlows = 0;
-            let weightedFlows = 0;
-
-            for (const transaction of transactions) {
-                const transactionDate = new Date(transaction.date!);
-                if (transactionDate < month.start || transactionDate > month.end) {
-                    continue;
-                }
-
-                const type = String(transaction.type ?? '').toUpperCase();
-                const total = Number(transaction.total ?? 0);
-                const dayWeight = (month.daysInMonth - transactionDate.getUTCDate() + 1) / month.daysInMonth;
-
-                if (type === 'DEPOSIT' || type === 'WITHDRAW') {
-                    const flow = type === 'DEPOSIT' ? total : -total;
-                    netFlows += flow;
-                    weightedFlows += flow * dayWeight;
-                }
-            }
-
-            for (const fundingEvent of cashState.syntheticFundingEvents) {
-                if (fundingEvent.date < month.start || fundingEvent.date > month.end) {
-                    continue;
-                }
-
-                const dayWeight = (month.daysInMonth - fundingEvent.date.getUTCDate() + 1) / month.daysInMonth;
-                netFlows += fundingEvent.amount;
-                weightedFlows += fundingEvent.amount * dayWeight;
-            }
-
-            const numerator = endValue - startValue - netFlows;
-            const denominator = startValue + weightedFlows;
-            const fallbackBase = Math.abs(weightedFlows) > 1e-6 ? Math.abs(weightedFlows) : Math.max(startValue, endValue, 0);
-            const rawReturn = Math.abs(denominator) > 1e-6
-                ? (numerator / denominator) * 100
-                : fallbackBase > 1e-6
-                    ? (numerator / fallbackBase) * 100
-                    : 0;
-
-            return {
-                monthKey: month.monthKey,
-                label: month.label,
-                value: Number((Number.isFinite(rawReturn) ? rawReturn : 0).toFixed(2)),
-            };
-        });
     }
 
     private toLegacyAsset(
@@ -1427,6 +1196,9 @@ export class PortfolioService {
     }
 
     private async buildPortfolioMetrics(portfolio: {
+        id: string;
+        userId: string;
+        monedaBase: string;
         holdings: Array<{ quantity: any; averageCost: any; asset?: { ticker?: string; type?: string } | null }>;
         transactions?: Array<{ type?: string; date?: Date; createdAt?: Date; quantity?: any; total?: any; fee?: any; pricePerUnit?: any; currency?: string; asset?: { ticker?: string; type?: string } | null }>;
         cashAccounts?: Array<{ currency?: string; balance?: any }>;
@@ -1490,7 +1262,7 @@ export class PortfolioService {
         const capitalTotal = initialHoldingsContribution + initialCashContribution + explicitNetDeposits + syntheticFundingTotal;
         const totalValue = assetsValue + cashState.currentCashBalance;
         const gananciaTotal = totalValue - capitalTotal;
-        const retornosMensuales = await this.buildMonthlyReturns(portfolio, quoteMap);
+        const retornosMensuales = (await this.performanceService.getReturns(portfolio.id, portfolio.userId, portfolio.monedaBase)).slice(-12);
 
         return {
             capitalTotal: Number(capitalTotal.toFixed(2)),

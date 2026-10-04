@@ -212,7 +212,7 @@ export function BenchmarkComparisonChart({
     const metricCardClass = 'min-w-0 rounded-2xl border border-border/50 bg-background/70 px-4 py-3.5 shadow-xs backdrop-blur-md transition-all hover:border-border/80';
 
     return (
-        <div role="region" aria-label="Comparación del portafolio con S&P 500" aria-busy={loading} className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-lg flex flex-col justify-between text-center', className)}>
+        <div role="region" aria-label="Comparación del portafolio con S&P 500" aria-busy={loading} className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-sm flex flex-col justify-between text-center', className)}>
             {/* Header */}
             <div className="border-b border-border/40 px-6 py-6 sm:px-7 sm:py-7 text-center">
                 <div className="flex flex-col items-center justify-center gap-6 text-center">
@@ -220,7 +220,7 @@ export function BenchmarkComparisonChart({
                     <div className="flex flex-col items-center justify-center gap-4 text-center">
                         <div className="space-y-1.5 flex flex-col items-center text-center">
                             <div className="flex items-center justify-center gap-2">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground text-center">
+                                <p className="text-sm font-semibold text-muted-foreground text-center">
                                     Benchmark Comparativo
                                 </p>
                                 <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
@@ -231,7 +231,7 @@ export function BenchmarkComparisonChart({
                             <h3 className="text-xl font-extrabold tracking-tight sm:text-2xl text-foreground text-center">
                                 Portafolio vs S&P 500
                             </h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground/80 max-w-xl text-center mx-auto">
+                            <p className="text-base text-muted-foreground max-w-xl text-center mx-auto">
                                 {loading
                                     ? 'Cargando comparación con datos reales…'
                                     : summary.isPortfolioInactive
@@ -245,14 +245,14 @@ export function BenchmarkComparisonChart({
                         {/* Badges & Range Switcher */}
                         <div className="flex flex-col items-center justify-center gap-3">
                             <div className="flex flex-wrap items-center justify-center gap-2">
-                                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-foreground/90">
+                                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-foreground/90">
                                     <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_#10b981]" style={{ backgroundColor: PORTFOLIO_COLOR }} />
                                     Portafolio
                                     <span className={cn('font-bold tabular-nums', summary.portfolioReturn >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
                                         {summary.hasData ? formatPercent(summary.portfolioReturn, 1, true) : '—'}
                                     </span>
                                 </span>
-                                <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-foreground/90">
+                                <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-foreground/90">
                                     <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_#38bdf8]" style={{ backgroundColor: SP500_COLOR }} />
                                     S&P 500 (SPY)
                                 <span className={cn('font-bold tabular-nums', summary.sp500Return == null ? 'text-muted-foreground' : summary.sp500Return >= 0 ? 'text-sky-500' : 'text-rose-500')}>
@@ -269,8 +269,9 @@ export function BenchmarkComparisonChart({
                                         type="button"
                                         onClick={() => handleRangeClick(range)}
                                         title={TIME_RANGE_LABELS[range]}
+                                        aria-pressed={activeRange === range}
                                         className={cn(
-                                            'shrink-0 rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer',
+                                            'shrink-0 rounded-lg min-h-11 px-3 py-2 text-sm font-bold transition-all cursor-pointer',
                                             activeRange === range
                                                 ? 'bg-primary text-primary-foreground shadow-xs'
                                                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
@@ -287,7 +288,7 @@ export function BenchmarkComparisonChart({
                     <div className="grid gap-3 sm:grid-cols-3 w-full">
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
                             <div className="flex items-center justify-center gap-1.5 text-muted-foreground w-full">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-center">Diferencia de rendimiento</span>
+                                <span className="text-sm font-semibold text-center">Diferencia de rendimiento</span>
                                 {!summary.hasBenchmark ? (
                                     <Target className="w-4 h-4 text-muted-foreground/60" />
                                 ) : isOutperforming ? (
@@ -299,33 +300,33 @@ export function BenchmarkComparisonChart({
                             <p className={cn('mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums text-center', summary.isPortfolioInactive ? 'text-muted-foreground' : (isOutperforming ? 'text-emerald-500' : 'text-rose-500'))}>
                                 {!summary.hasBenchmark ? '—' : `${isOutperforming ? '+' : ''}${summary.spread?.toFixed(1)} pts`}
                             </p>
-                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium text-center">
+                            <p className="mt-1.5 text-sm text-muted-foreground font-medium text-center">
                                 {!summary.hasBenchmark ? 'Esperando datos reales de SPY' : (isOutperforming ? 'Superando al benchmark' : 'Por debajo del benchmark')}
                             </p>
                         </div>
 
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
                             <div className="flex items-center justify-center gap-1.5 text-muted-foreground w-full">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-center">Líder del período</span>
+                                <span className="text-sm font-semibold text-center">Líder del período</span>
                                 <Trophy className={cn('w-4 h-4', summary.isPortfolioInactive ? 'text-muted-foreground/60' : (isOutperforming ? 'text-amber-400' : 'text-sky-400'))} />
                             </div>
                             <p className="mt-2 text-xl sm:text-2xl font-extrabold leading-none tracking-tight text-foreground truncate text-center">
                                 {summary.leader}
                             </p>
-                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium text-center">
+                            <p className="mt-1.5 text-sm text-muted-foreground font-medium text-center">
                                 {!summary.hasBenchmark ? 'Sin comparación disponible' : (isOutperforming ? `Ventaja de +${summary.spread?.toFixed(1)} pts` : `Diferencia de ${Math.abs(summary.spread ?? 0).toFixed(1)} pts`)}
                             </p>
                         </div>
 
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
                             <div className="flex items-center justify-center gap-1.5 text-muted-foreground w-full">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-center">Base normalizada</span>
+                                <span className="text-sm font-semibold text-center">Base normalizada</span>
                                 <HelpCircle className="w-4 h-4 text-muted-foreground/50" />
                             </div>
                             <p className="mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums text-foreground/90 text-center">
                                 {summary.hasData ? '100.0' : '—'}
                             </p>
-                            <p className="mt-1.5 text-[11px] text-muted-foreground font-medium text-center">
+                            <p className="mt-1.5 text-sm text-muted-foreground font-medium text-center">
                                 Punto de partida comparativo
                             </p>
                         </div>
@@ -336,19 +337,19 @@ export function BenchmarkComparisonChart({
             {/* Chart Container */}
             <div className="px-6 pt-4 pb-2 sm:px-7 text-center">
                 <div className="flex flex-col items-center justify-center text-center gap-1">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70 text-center">
+                    <span className="text-sm font-semibold text-muted-foreground/70 text-center">
                         Evolución temporal · {TIME_RANGE_LABELS[activeRange]}
                     </span>
-                    <span className="text-[11px] text-muted-foreground/60 text-center">
+                    <span className="text-sm text-muted-foreground text-center">
                         Línea sólida: Portafolio · Línea punteada: S&P 500 (SPY)
                     </span>
                 </div>
             </div>
 
             {activeData.length > 0 ? (
-                <div className="h-[285px] w-full px-1 pb-5 pt-2 sm:h-[350px] sm:px-4 sm:pb-6 lg:h-[390px]">
+                <div className="h-[320px] w-full px-1 pb-5 pt-2 sm:h-[390px] sm:px-4 sm:pb-6 lg:h-[430px]">
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={activeData} margin={{ top: 12, right: 10, bottom: 2, left: 0 }}>
+                        <AreaChart accessibilityLayer data={activeData} margin={{ top: 12, right: 10, bottom: 2, left: 0 }}>
                         <defs>
                             {/* Portfolio gradient */}
                             <linearGradient id={gradPortfolioId} x1="0" y1="0" x2="0" y2="1">
@@ -383,7 +384,7 @@ export function BenchmarkComparisonChart({
                             dataKey="date"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ ...CHART_AXIS_TICK, fontSize: 10 }}
+                            tick={{ ...CHART_AXIS_TICK, fontSize: 13 }}
                             padding={{ left: 14, right: 14 }}
                             minTickGap={30}
                             tickMargin={9}
@@ -393,8 +394,8 @@ export function BenchmarkComparisonChart({
                         <YAxis
                             axisLine={false}
                             tickLine={false}
-                            tick={{ ...CHART_AXIS_TICK, fontSize: 11 }}
-                            width={48}
+                            tick={{ ...CHART_AXIS_TICK, fontSize: 13 }}
+                            width={58}
                             tickMargin={7}
                             tickCount={6}
                             domain={chartDomain}
@@ -418,7 +419,7 @@ export function BenchmarkComparisonChart({
                             fill={`url(#${gradSp500Id})`}
                             fillOpacity={1}
                             dot={false}
-                            activeDot={{ r: 6, strokeWidth: 2.5, stroke: SP500_COLOR, fill: '#0f172a' }}
+                            activeDot={{ r: 6, strokeWidth: 2.5, stroke: SP500_COLOR, fill: 'hsl(var(--background))' }}
                         />}
 
                         {/* Portfolio Area & Stroke */}
@@ -432,7 +433,7 @@ export function BenchmarkComparisonChart({
                             fill={`url(#${gradPortfolioId})`}
                             fillOpacity={1}
                             dot={false}
-                            activeDot={{ r: 6, strokeWidth: 2.5, stroke: PORTFOLIO_COLOR, fill: '#0f172a' }}
+                            activeDot={{ r: 6, strokeWidth: 2.5, stroke: PORTFOLIO_COLOR, fill: 'hsl(var(--background))' }}
                         />
                         </AreaChart>
                     </ResponsiveContainer>

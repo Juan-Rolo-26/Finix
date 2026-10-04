@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { financialNumber, isCalendarDate, isVisibleEarnings, normalizeEarnings, earningsSurprise, formatEconomicEventDescription } from '@finix/shared';
+import { financialNumber, isCalendarDate, isVisibleEarnings, normalizeEarnings, earningsSurprise, formatEconomicEventDescription, formatEconomicEventTitle, formatEconomicEventSource, localizeEconomicEvent } from '@finix/shared';
 import { PrismaService } from '../prisma.service';
 import {
     HomeCalendarResponse,
@@ -164,7 +164,7 @@ export class CalendarService {
                 id: topUS.id,
                 type: 'ECONOMIC',
                 country: 'US',
-                title: topUS.title,
+                title: formatEconomicEventTitle(topUS.title, topUS.country),
                 subtitle: 'Estados Unidos',
                 date: topUS.date,
                 time: topUS.time || undefined,
@@ -187,7 +187,7 @@ export class CalendarService {
                 id: topAR.id,
                 type: 'ECONOMIC',
                 country: 'AR',
-                title: topAR.title,
+                title: formatEconomicEventTitle(topAR.title, topAR.country),
                 subtitle: 'Argentina',
                 date: topAR.date,
                 time: topAR.time || undefined,
@@ -204,15 +204,17 @@ export class CalendarService {
         }
 
         // Fill remaining slots up to 3 from other high-impact economic events if needed
+        const selectedEconomicTitles = new Set([topUS, topAR].filter(Boolean).map(event => event.title.trim().toLowerCase()));
         if (selectedCards.length < 3) {
             for (const eco of economicEvents) {
                 if (selectedCards.length >= 3) break;
-                if (!selectedCards.some(c => c.id === eco.id || c.title.trim().toLowerCase() === eco.title.trim().toLowerCase())) {
+                if (!selectedCards.some(c => c.id === eco.id) && !selectedEconomicTitles.has(eco.title.trim().toLowerCase())) {
+                    selectedEconomicTitles.add(eco.title.trim().toLowerCase());
                     selectedCards.push({
                         id: eco.id,
                         type: 'ECONOMIC',
                         country: eco.country as any,
-                        title: eco.title,
+                        title: formatEconomicEventTitle(eco.title, eco.country),
                         subtitle: eco.country === 'AR' ? 'Argentina' : 'Estados Unidos',
                         date: eco.date,
                         time: eco.time || undefined,
@@ -425,7 +427,7 @@ export class CalendarService {
             eventType: 'ECONOMIC',
             country: e.country,
             currency: e.currency || undefined,
-            title: e.title,
+            title: formatEconomicEventTitle(e.title, e.country),
             description: formatEconomicEventDescription(e.title, e.description, e.country),
             category: e.category,
             importance: e.importance as any,
@@ -443,8 +445,8 @@ export class CalendarService {
             surprisePercent: isProUser ? (e.surprisePercent ?? undefined) : undefined,
             expectedMarketEffect: isProUser ? (e.expectedMarketEffect || undefined) : undefined,
             affectedAssets: isProUser && e.affectedAssets ? this.parseAffectedAssets(e.affectedAssets) : undefined,
-            source: isProUser ? (e.source || undefined) : undefined,
-            sourceName: isProUser ? (e.sourceName || undefined) : undefined,
+            source: isProUser ? (formatEconomicEventSource(e.source) || undefined) : undefined,
+            sourceName: isProUser ? (formatEconomicEventSource(e.sourceName) || undefined) : undefined,
             sourceUrl: isProUser ? (e.sourceUrl || undefined) : undefined,
             sourceType: e.sourceType as any,
             isPublished: e.isPublished,
@@ -1004,7 +1006,6 @@ export class CalendarService {
                                 'revenue_fq',
                                 'revenue_forecast_fq',
                                 'earnings_release_date',
-                                'change',
                             ],
                         }),
                         signal: AbortSignal.timeout(10000),
@@ -1031,7 +1032,6 @@ export class CalendarService {
                         const forecastEps = financialNumber(row.d[2]);
                         const actualRevenue = financialNumber(row.d[3]);
                         const forecastRevenue = financialNumber(row.d[4]);
-                        const marketReaction = financialNumber(row.d[6]);
                         const epsSurprise = earningsSurprise(actualEps, forecastEps);
                         const revenueSurprise = earningsSurprise(actualRevenue, forecastRevenue);
                         const updateData: any = {};
@@ -1041,7 +1041,6 @@ export class CalendarService {
                         if (forecastRevenue !== undefined) updateData.revenueEstimate = forecastRevenue;
                         if (actualEps !== undefined) updateData.epsSurprise = epsSurprise ?? null;
                         if (actualRevenue !== undefined) updateData.revenueSurprise = revenueSurprise ?? null;
-                        if (marketReaction !== undefined) updateData.marketReaction = marketReaction;
 
                         if (Object.keys(updateData).length > 0) {
                             await this.prisma.marketEarningsEvent.update({
@@ -1363,7 +1362,7 @@ export class CalendarService {
             this.prisma.marketCalendarEvent.count({ where }),
         ]);
 
-        return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+        return { items: items.map(item => item.eventType === 'ECONOMIC' ? localizeEconomicEvent(item) : item), total, page, limit, totalPages: Math.ceil(total / limit) };
     }
 
     async createAdminManualEvent(dto: any) {
@@ -1553,7 +1552,7 @@ export class CalendarService {
 
     async getEventById(id: string) {
         const eco = await this.prisma.marketCalendarEvent.findUnique({ where: { id } });
-        if (eco) return eco;
+        if (eco) return eco.eventType === 'ECONOMIC' ? localizeEconomicEvent(eco) : eco;
         const earn = await this.prisma.marketEarningsEvent.findUnique({ where: { id } });
         if (earn && !isLegacyEarningsTemplate(earn) && isVisibleEarnings(earn)) return normalizeEarnings(earn);
         throw new NotFoundException('Evento no encontrado');
@@ -1646,7 +1645,7 @@ export class CalendarService {
             this.prisma.marketCalendarEvent.count({ where }),
         ]);
 
-        return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+        return { items: items.map(item => item.eventType === 'ECONOMIC' ? localizeEconomicEvent(item) : item), total, page, limit, totalPages: Math.ceil(total / limit) };
     }
 
     async getPublicSources() {

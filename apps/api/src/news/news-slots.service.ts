@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../prisma.service';
 import { NewsTranslationService } from './news-translation.service';
 import * as cheerio from 'cheerio';
-import { DEFAULT_NEWS_CATEGORIES } from './news-catalog';
+import { DEFAULT_NEWS_CATEGORIES, NEWS_CATEGORY_KEYWORDS, newsCategoryMatchCount } from './news-catalog';
 import { resolveNewsImage } from './news-image.util';
 import { extractHtmlNewsImage, normalizeSourceImage } from './news-source-image.util';
 
@@ -160,6 +160,7 @@ export class NewsSlotsService {
             throw new NotFoundException(`Categoría "${slug}" no encontrada`);
         }
         await this.ensureSlotsExist(category.id, category.slug);
+        await this.fillEmptySlots(category.id, category.slug);
 
         const slots = await this.prisma.newsSlot.findMany({
             where: { categoryId: category.id },
@@ -202,7 +203,7 @@ export class NewsSlotsService {
                 position: slot.position,
                 isActive: slot.isActive,
                 article:
-                    slot.isActive && slot.article?.isPublished && slot.article?.isActive
+                    slot.isActive && slot.article?.isPublished && slot.article?.isActive && slot.article.status === 'PUBLISHED'
                         ? {
                             ...(await this.toSpanishArticle(slot.article)),
                             imageUrl: resolveNewsImage(slot.article.title, category.slug, slot.article.imageUrl),
@@ -216,12 +217,17 @@ export class NewsSlotsService {
         if (!article) return article;
 
         const sourceLanguage = article.source?.language || undefined;
-        const attemptIsRecent = article.translationAttemptedAt &&
-            Date.now() - new Date(article.translationAttemptedAt).getTime() < 4 * 60 * 60 * 1000;
-        const titleNeedsTranslation = !article.titleEs;
-        const descriptionNeedsTranslation = Boolean(article.description) && !article.descriptionEs;
+        const englishSource = sourceLanguage?.toLowerCase().startsWith('en');
         let titleEs = article.titleEs as string | null;
         let descriptionEs = article.descriptionEs as string | null;
+        // A provider can echo its input. That does not make an English field Spanish.
+        if (englishSource && titleEs === article.title && !this.translator.isSpanish(article.title)) titleEs = null;
+        if (descriptionEs && this.translator.isEnglish(descriptionEs)) descriptionEs = null;
+        const invalidCachedTranslation = (article.titleEs && !titleEs) || (article.descriptionEs && !descriptionEs);
+        const attemptIsRecent = !invalidCachedTranslation && article.translationAttemptedAt &&
+            Date.now() - new Date(article.translationAttemptedAt).getTime() < 4 * 60 * 60 * 1000;
+        const titleNeedsTranslation = !titleEs;
+        const descriptionNeedsTranslation = Boolean(article.description) && !descriptionEs;
 
         if ((titleNeedsTranslation || descriptionNeedsTranslation) && !attemptIsRecent) {
             const fields: Array<{ key: 'titleEs' | 'descriptionEs'; text: string }> = [];
@@ -233,11 +239,11 @@ export class NewsSlotsService {
             let everyFieldResolved = fields.length > 0;
             fields.forEach((field, index) => {
                 const result = String(translated[index] || '').trim();
-                const wasAlreadySpanish = sourceLanguage?.toLowerCase().startsWith('es') || this.translator.isSpanish(field.text);
-                const resolved = result && (
+                const wasAlreadySpanish = this.translator.isSpanish(field.text) || (sourceLanguage?.toLowerCase().startsWith('es') && !this.translator.isEnglish(field.text));
+                const resolved = result && !this.translator.isEnglish(result) && (
                     result !== field.text ||
                     wasAlreadySpanish ||
-                    !this.translator.isEnglish(field.text)
+                    (!englishSource && !this.translator.isEnglish(field.text))
                 );
                 if (resolved) {
                     update[field.key] = result;
@@ -259,7 +265,7 @@ export class NewsSlotsService {
         return {
             ...article,
             title: titleEs || article.title,
-            description: descriptionEs || article.description,
+            description: descriptionEs || (this.translator.isSpanish(article.description || '') || (sourceLanguage?.toLowerCase().startsWith('es') && !this.translator.isEnglish(article.description || '')) ? article.description : undefined),
         };
     }
 
@@ -349,11 +355,19 @@ export class NewsSlotsService {
         const slots = await this.prisma.newsSlot.findMany({
             where: { categoryId },
             orderBy: { position: 'asc' },
+            include: { article: true },
         });
 
-        for (let index = 0; index < slots.length; index += 1) {
-            const slot = slots[index];
-            const nextArticleId = articleIds[index] || null;
+        const editorial = (slot: typeof slots[number]) => slot.article && (!slot.article.sourceId || slot.article.customTitle || slot.article.customDescription || slot.article.customImage);
+        const reserved = new Set(slots.filter(slot => !slot.isActive || editorial(slot)).map(slot => slot.articleId));
+        const previousPublished = slots.filter(slot => slot.isActive && slot.article?.isPublished && slot.article.isActive && slot.article.status === 'PUBLISHED').map(slot => slot.articleId).filter(Boolean) as string[];
+        const available = [...new Set([...articleIds, ...previousPublished])].filter(id => !reserved.has(id));
+        let next = 0;
+        for (const slot of slots) {
+            if (!slot.isActive || editorial(slot)) continue;
+            const nextArticleId = available[next++];
+            // An outage or a short feed must never erase the last published stories.
+            if (!nextArticleId) continue;
             if (slot.articleId === nextArticleId) continue;
 
             await this.prisma.newsSlot.update({
@@ -367,6 +381,39 @@ export class NewsSlotsService {
                     newArticleId: nextArticleId || undefined,
                 },
             });
+        }
+    }
+
+    /** Restore unassigned cards from published stories, including relevant coverage in other categories. */
+    async fillEmptySlots(categoryId: string, slug: string) {
+        const slots = await this.prisma.newsSlot.findMany({ where: { categoryId }, orderBy: { position: 'asc' } });
+        const empty = slots.filter(slot => slot.isActive && !slot.articleId);
+        if (!empty.length) return;
+        const used = slots.map(slot => slot.articleId).filter(Boolean) as string[];
+        const keywords = NEWS_CATEGORY_KEYWORDS[slug] || [];
+        const articles = await this.prisma.newsArticle.findMany({
+            where: {
+                isPublished: true, isActive: true, status: 'PUBLISHED', id: { notIn: used },
+                OR: [
+                    { categoryId },
+                    { slots: { some: { categoryId, isActive: true } } },
+                    ...(keywords.length ? [{
+                        source: { isActive: true, categoryLinks: { some: { categoryId, isActive: true } } },
+                        OR: keywords.flatMap(keyword => ['title', 'titleEs', 'description', 'descriptionEs'].map(field => ({ [field]: { contains: keyword, mode: 'insensitive' as const } }))),
+                    }] : []),
+                ],
+            },
+            orderBy: [{ publishedAt: 'desc' }, { relevanceScore: 'desc' }],
+            take: 100,
+        });
+        const relevant = articles.filter(article => article.categoryId === categoryId || newsCategoryMatchCount(slug, `${article.title} ${article.titleEs || ''} ${article.description || ''} ${article.descriptionEs || ''}`) > 0);
+        for (let index = 0; index < Math.min(empty.length, relevant.length); index++) {
+            const article = relevant[index];
+            const result = await this.prisma.newsSlot.updateMany({
+                where: { id: empty[index].id, articleId: null, isActive: true },
+                data: { articleId: article.id },
+            });
+            if (result.count) await this.prisma.newsSlotHistory.create({ data: { slotId: empty[index].id, newArticleId: article.id } });
         }
     }
 
