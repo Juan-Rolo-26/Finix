@@ -117,14 +117,46 @@ for FINIX_APP in api web admin; do
   install -m 600 "$FINIX_ENV" "$FINIX_RELEASE/apps/$FINIX_APP/.env"
 done
 node - "$FINIX_RELEASE" "$FINIX_API_ENV" <<'NODE'
-const fs = require('fs'), path = require('path'), root = process.argv[2];
+const fs = require('fs'), path = require('path'), crypto = require('crypto'), root = process.argv[2];
 const config = require('dotenv').parse(fs.readFileSync(process.argv[3]));
 const link = path.join(root, 'apps/api/uploads');
-if (fs.existsSync(link)) {
-  if (fs.readdirSync(link).length) throw new Error('Tracked uploads in release; review before deployment');
-  fs.rmdirSync(link);
+const shared = config.UPLOADS_DIR;
+if (!path.isAbsolute(shared)) throw new Error('UPLOADS_DIR must be absolute');
+fs.mkdirSync(shared, { recursive: true });
+const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const files = [];
+function inspect(source, destination) {
+  const stat = fs.lstatSync(source);
+  if (stat.isSymbolicLink()) throw new Error('Symlink in tracked uploads: ' + source);
+  if (stat.isDirectory()) {
+    if (fs.existsSync(destination) && (!fs.lstatSync(destination).isDirectory() || fs.lstatSync(destination).isSymbolicLink())) {
+      throw new Error('Unsafe uploads destination: ' + destination);
+    }
+    for (const name of fs.readdirSync(source)) inspect(path.join(source, name), path.join(destination, name));
+  } else if (stat.isFile()) {
+    if (fs.existsSync(destination)) {
+      const target = fs.lstatSync(destination);
+      if (!target.isFile() || target.isSymbolicLink() || hash(source) !== hash(destination)) {
+        throw new Error('Tracked upload conflicts with persistent file: ' + destination);
+      }
+    }
+    files.push([source, destination]);
+  } else throw new Error('Unsupported tracked upload: ' + source);
 }
-fs.symlinkSync(config.UPLOADS_DIR, link, 'dir');
+if (fs.existsSync(link)) {
+  // Validate every conflict before copying; never overwrite an existing upload.
+  inspect(link, shared);
+  for (const [source, destination] of files) {
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    if (!fs.existsSync(destination)) fs.copyFileSync(source, destination, fs.constants.COPYFILE_EXCL);
+    if (hash(source) !== hash(destination)) throw new Error('Upload copy verification failed');
+  }
+  // Keep original tracked files private for auditing and rollback.
+  const archive = path.join(root, '.deployment-archive');
+  fs.mkdirSync(archive, { mode: 0o700 });
+  fs.renameSync(link, path.join(archive, 'uploads'));
+}
+fs.symlinkSync(shared, link, 'dir');
 NODE
 (
  cd "$FINIX_RELEASE"
