@@ -33,7 +33,7 @@ interface NewsCardProps {
     onClickTracking?: (slotId: string) => void;
 }
 
-function formatRelativeTime(value?: string): string {
+export function formatRelativeTime(value?: string): string {
     if (!value) return '';
     const date = new Date(value);
     if (isNaN(date.getTime())) return '';

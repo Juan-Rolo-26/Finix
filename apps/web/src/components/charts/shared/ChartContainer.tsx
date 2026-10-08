@@ -94,7 +94,7 @@ export function ChartContainer({
       role="region"
       aria-label={ariaLabel ?? title}
       className={cn(
-        'rounded-[22px] border border-border/50 bg-card/80 shadow-lg overflow-hidden',
+        'finix-chart-container rounded-[22px] border border-border/50 bg-card/80 shadow-lg overflow-hidden',
         'flex flex-col',
         isFullscreen && 'fixed inset-0 z-50 rounded-none bg-background',
         className,

@@ -1,22 +1,4 @@
-export type MessageAttachmentType = 'image' | 'post' | 'chart' | 'story';
-
-export interface SharedStoryPreviewAuthor {
-    id: string;
-    username: string;
-    avatarUrl?: string | null;
-    isVerified?: boolean;
-}
-
-export interface SharedStoryPreview {
-    id: string;
-    content?: string | null;
-    mediaUrl?: string | null;
-    background?: string | null;
-    textColor?: string | null;
-    createdAt: string;
-    expiresAt?: string | null;
-    author: SharedStoryPreviewAuthor;
-}
+export type MessageAttachmentType = 'image' | 'post' | 'chart';
 
 export interface MessageAttachmentMeta {
     originalName?: string;
@@ -26,8 +8,6 @@ export interface MessageAttachmentMeta {
     title?: string;
     analysisType?: string;
     riskLevel?: string;
-    storyId?: string;
-    story?: SharedStoryPreview | null;
     [key: string]: unknown;
 }
 
@@ -63,5 +43,4 @@ export interface ComposerAttachment {
     postId?: string;
     meta?: MessageAttachmentMeta | null;
     sharedPost?: SharedPostPreview | null;
-    sharedStory?: SharedStoryPreview | null;
 }

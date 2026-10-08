@@ -2,8 +2,8 @@ import { IsString, IsOptional, IsEnum, IsObject, ValidateNested, IsArray, ArrayM
 import { Type } from 'class-transformer';
 
 export class MessageAttachmentDto {
-    @IsEnum(['image', 'post', 'chart', 'story'])
-    type: 'image' | 'post' | 'chart' | 'story';
+    @IsEnum(['image', 'post', 'chart'])
+    type: 'image' | 'post' | 'chart';
 
     @IsOptional()
     @IsString()

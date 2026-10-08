@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -123,6 +124,30 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
     const maxFiles = 10;
     const acceptedTypes = ALLOWED_IMAGE.join(',');
+
+    // Lock background scroll while modal is open
+    useEffect(() => {
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = originalOverflow;
+        };
+    }, []);
+
+    // Close on Escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (isFullscreenChart) {
+                    setIsFullscreenChart(false);
+                } else {
+                    onClose();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFullscreenChart, onClose]);
 
     // ── File handling ─────────────────────────────────────────────────────────
 
@@ -406,22 +431,27 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
     // ── Render ────────────────────────────────────────────────────────────────
 
-    return (
+    const modalContent = (
         <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-[150] bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 overflow-y-auto"
             onClick={onClose}
         >
             <motion.div
-                initial={{ y: 100, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 100, opacity: 0 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="bg-card border border-border/50 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-4xl max-h-[95vh] overflow-y-auto pb-6 sm:pb-0"
+                initial={{ opacity: 0, scale: 0.96, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 16 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className={`bg-card border border-border/70 rounded-t-3xl sm:rounded-2xl w-full ${
+                    type === 'chart' ? 'sm:max-w-4xl' : 'sm:max-w-2xl'
+                } max-h-[92vh] flex flex-col shadow-2xl relative my-auto overflow-hidden transition-[max-width] duration-200`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="sticky top-0 bg-card/95 backdrop-blur-sm border-b border-border/30 px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
+                <div className="shrink-0 bg-card/95 backdrop-blur-md border-b border-border/40 px-5 py-4 flex items-center justify-between rounded-t-3xl sm:rounded-t-2xl z-10">
                     <div className="flex items-center gap-3">
                         {user?.avatarUrl
                             ? <img src={resolveMediaUrl(user.avatarUrl)} alt={user.username} className="w-9 h-9 rounded-full object-cover" />
@@ -432,12 +462,17 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                             <p className="text-xs text-muted-foreground">Crear para el feed principal</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/50 transition-colors">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                        aria-label="Cerrar modal"
+                    >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <div className="p-5 space-y-5">
+                <div className="p-5 space-y-5 overflow-y-auto flex-1">
                     {/* Type selector */}
                     <div className="grid grid-cols-2 max-w-md w-full mx-auto gap-3">
                         {TYPE_OPTIONS.map(({ key, label, desc, icon: Icon }) => (
@@ -847,4 +882,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
             )}
         </motion.div>
     );
+
+    if (typeof document === 'undefined') return null;
+    return createPortal(modalContent, document.body);
 }

@@ -3,20 +3,34 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const cardVariants = cva(
-    "rounded-2xl border transition-all duration-200 text-card-foreground overflow-hidden",
+    // Base: border, background, overflow, transition
+    "border transition-colors duration-150 text-card-foreground overflow-hidden",
     {
         variants: {
             variant: {
+                // Standard: subtle border, flat bg
                 default:
-                    "border-border/70 bg-card/95 shadow-xs backdrop-blur-xs",
+                    "rounded-[6px] border-border/80 bg-card",
+                // Interactive: hover lift, border tightens
                 interactive:
-                    "border-border/70 bg-card/95 shadow-xs hover:border-border hover:shadow-md hover:-translate-y-0.5 cursor-pointer backdrop-blur-xs",
+                    "rounded-[6px] border-border/70 bg-card cursor-pointer " +
+                    "hover:border-border-strong hover:shadow-[0_2px_10px_hsl(var(--foreground)/0.06)] " +
+                    "hover:-translate-y-px transition-all duration-150",
+                // Elevated: slightly more shadow
                 elevated:
-                    "border-border/80 bg-card shadow-md",
+                    "rounded-[6px] border-border/80 bg-card shadow-[0_2px_8px_hsl(var(--foreground)/0.05)]",
+                // Ghost: invisible container
                 ghost:
-                    "border-transparent bg-transparent shadow-none",
+                    "rounded-[6px] border-transparent bg-transparent",
+                // Metric: data-forward, tight padding via CardContent
+                metric:
+                    "rounded-[6px] border-border/70 bg-card",
+                // Stat shorthand with built-in padding
                 stat:
-                    "border-border/70 bg-card/95 shadow-xs p-4 sm:p-5 flex flex-col justify-between",
+                    "rounded-[6px] border-border/70 bg-card p-4 flex flex-col justify-between",
+                // Outlined with dashed border for empty states
+                dashed:
+                    "rounded-[6px] border-dashed border-border/70 bg-card/30",
             },
         },
         defaultVariants: {
@@ -46,7 +60,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <div
         ref={ref}
-        className={cn("flex flex-col space-y-1.5 p-4 sm:p-5 md:p-6", className)}
+        className={cn("flex flex-col space-y-1 p-4", className)}
         {...props}
     />
 ))
@@ -59,7 +73,7 @@ const CardTitle = React.forwardRef<
     <h3
         ref={ref}
         className={cn(
-            "text-lg sm:text-xl font-bold leading-tight tracking-tight text-foreground",
+            "text-sm font-semibold leading-snug tracking-tight text-foreground",
             className
         )}
         {...props}
@@ -73,7 +87,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <p
         ref={ref}
-        className={cn("text-xs sm:text-sm text-muted-foreground leading-relaxed", className)}
+        className={cn("text-xs text-muted-foreground leading-relaxed", className)}
         {...props}
     />
 ))
@@ -83,7 +97,7 @@ const CardContent = React.forwardRef<
     HTMLDivElement,
     React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("p-4 sm:p-5 md:p-6 pt-0 sm:pt-0 md:pt-0", className)} {...props} />
+    <div ref={ref} className={cn("p-4 pt-0", className)} {...props} />
 ))
 CardContent.displayName = "CardContent"
 
@@ -93,7 +107,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <div
         ref={ref}
-        className={cn("flex items-center p-4 sm:p-5 md:p-6 pt-0 sm:pt-0 md:pt-0", className)}
+        className={cn("flex items-center p-4 pt-0", className)}
         {...props}
     />
 ))

@@ -59,6 +59,7 @@ export class ValueCreationService implements OnModuleInit {
     constructor(private readonly prisma: PrismaService) {}
 
     onModuleInit() {
+        if (process.env.FINIX_LOCAL_MODE === 'true') return;
         // No bloquea el arranque: precarga en segundo plano y conserva caché si el proveedor no responde.
         setTimeout(() => void this.getSP500ValueCreation().catch(() => undefined), 10_000);
     }

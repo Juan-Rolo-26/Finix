@@ -163,30 +163,6 @@ export default function Login() {
         }
     };
 
-    const handleSetupNewTotp = async () => {
-        if (!preAuthToken) return;
-        setLoading(true);
-        setError('');
-        try {
-            const res = await adminFetch('/admin/auth/setup-totp', {
-                method: 'POST',
-                body: JSON.stringify({ token: preAuthToken }),
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                throw new Error(data.message || 'Error generando código QR');
-            }
-            setMfaSecret(data.secret);
-            setStep('setup_2fa');
-            setCode('');
-            setSuccessMessage('Escaneá este nuevo código QR en tu celular.');
-        } catch (err: any) {
-            setError(err.message || 'Error al configurar autenticador');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const copySecret = () => {
         if (!mfaSecret) return;
         navigator.clipboard.writeText(mfaSecret);
@@ -285,7 +261,7 @@ export default function Login() {
                                     <Smartphone className="w-4 h-4" />
                                     Código enviado a tu email
                                 </div>
-                                <p className="text-foreground/90 font-mono font-medium">juanpablorolo2007@gmail.com</p>
+                                <p className="text-foreground/90 font-medium">Revisá el correo del administrador.</p>
                                 <p className="text-[11px] text-muted-foreground">
                                     Ingresá el código de 6 dígitos que enviamos a tu email para verificar tu identidad.
                                 </p>
@@ -297,6 +273,7 @@ export default function Login() {
                                 </label>
                                 <input
                                     aria-label="Código de verificación de 6 dígitos"
+                                    autoComplete="one-time-code"
                                     type="text"
                                     required
                                     autoFocus
@@ -413,27 +390,9 @@ export default function Login() {
                                 />
                             </div>
 
-                            <div className="flex flex-col gap-2 pt-1">
-                                <button
-                                    type="button"
-                                    disabled={resending || resendCooldown > 0}
-                                    onClick={handleResendCode}
-                                    className="flex items-center justify-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50 py-1"
-                                >
-                                    <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
-                                    {resendCooldown > 0
-                                        ? `Reenviar código en ${resendCooldown}s`
-                                        : 'El código de Google Authenticator cambia cada 30 segundos'}
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={handleSetupNewTotp}
-                                    className="text-[11px] text-muted-foreground hover:text-foreground text-center transition-colors"
-                                >
-                                    ¿Configurar o cambiar app Authenticator en mi celular?
-                                </button>
-                            </div>
+                            <p className="pt-1 text-center text-xs text-muted-foreground">
+                                El código de Google Authenticator cambia cada 30 segundos.
+                            </p>
                         </div>
                     )}
 

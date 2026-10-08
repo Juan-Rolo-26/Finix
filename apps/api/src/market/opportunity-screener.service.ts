@@ -42,6 +42,7 @@ export class OpportunityScreenerService implements OnModuleInit {
     constructor(private readonly prisma: PrismaService, private readonly valueCreation: ValueCreationService) {}
 
     onModuleInit() {
+        if (process.env.FINIX_LOCAL_MODE === 'true') return;
         setTimeout(() => void this.getOpportunities({ limit: 1 }).catch(() => undefined), 15_000);
     }
 

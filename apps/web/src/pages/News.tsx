@@ -7,6 +7,8 @@ import { apiFetch } from '@/lib/api';
 import { NewsMosaic, NewsMosaicSkeleton } from '@/components/news/NewsMosaic';
 import type { NewsSlotData } from '@/components/news/NewsCard';
 import { ProGate } from '@/components/ProGate';
+import { DesktopNews, DesktopNewsHero } from '@/components/news/DesktopNews';
+import { InvestorQuote } from '@/components/common/InvestorQuote';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -37,7 +39,7 @@ function CategoryTabs({
     onSelect: (slug: string) => void;
 }) {
     return (
-        <div className="w-full flex justify-center py-1">
+        <div className="news-category-tabs w-full flex justify-center py-1">
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 max-w-5xl mx-auto">
                 {categories.map((cat) => {
                     const isActive = cat.slug === selected;
@@ -47,18 +49,18 @@ function CategoryTabs({
                             key={cat.slug}
                             data-slug={cat.slug}
                             onClick={() => onSelect(cat.slug)}
-                            className={`group relative inline-flex items-center gap-2 px-4 py-2 sm:px-4.5 sm:py-2 rounded-full text-xs sm:text-[13px] font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer select-none border ${
+                            className={`group relative inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-[13px] font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer select-none border shrink-0 whitespace-nowrap ${
                                 isActive
-                                    ? 'shadow-md scale-[1.03] font-bold keep-white'
-                                    : 'bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground border-border/70 hover:border-foreground/20 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 active:scale-95'
+                                    ? 'shadow-xs font-bold'
+                                    : 'bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground border-border/80 hover:border-foreground/20 shadow-2xs hover:shadow-xs hover:-translate-y-0.5'
                             }`}
                             style={
                                 isActive
                                     ? {
-                                          backgroundColor: catColor,
-                                          borderColor: catColor,
-                                          boxShadow: `0 4px 16px -2px ${catColor}55`,
-                                          color: '#ffffff',
+                                          backgroundColor: `color-mix(in srgb, ${catColor} 14%, hsl(var(--card)))`,
+                                          borderColor: `color-mix(in srgb, ${catColor} 65%, transparent)`,
+                                          boxShadow: `0 2px 10px -1px color-mix(in srgb, ${catColor} 25%, transparent)`,
+                                          color: 'hsl(var(--foreground))',
                                       }
                                     : undefined
                             }
@@ -67,15 +69,12 @@ function CategoryTabs({
                             <span
                                 className={`w-2 h-2 rounded-full shrink-0 transition-transform duration-200 ${
                                     isActive
-                                        ? 'bg-white scale-110 shadow-xs'
+                                        ? 'scale-110 shadow-xs ring-2 ring-card'
                                         : 'group-hover:scale-125 opacity-80 group-hover:opacity-100'
                                 }`}
-                                style={!isActive ? { backgroundColor: catColor } : undefined}
+                                style={{ backgroundColor: catColor }}
                             />
-                            <span
-                                className={isActive ? 'keep-white font-bold' : ''}
-                                style={isActive ? { color: '#ffffff' } : undefined}
-                            >
+                            <span className={isActive ? 'font-bold text-foreground' : ''}>
                                 {cat.name}
                             </span>
                         </button>
@@ -199,6 +198,7 @@ export default function NewsPage() {
     if (!isPro && !categoriesLoading) {
         return (
             <div className="min-h-[calc(100vh-60px)] flex flex-col flex-1 bg-background">
+                <DesktopNewsHero />
                 <ProGate
                     section="news"
                     buttonText="Activar Finix PRO"
@@ -213,10 +213,30 @@ export default function NewsPage() {
     const showSkeleton = slotsLoading && !categoryData;
 
     return (
-        <div className="min-h-screen bg-background w-full">
-            <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-6 lg:py-8 space-y-6 lg:space-y-8">
+        <div className="news-page min-h-screen bg-background w-full">
+            <DesktopNewsHero>
+                {categoriesLoading ? (
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="h-9 w-24 sm:w-28 rounded-full bg-secondary/50 animate-pulse" />
+                        ))}
+                    </div>
+                ) : categories.length > 0 ? (
+                    <CategoryTabs
+                        categories={categories}
+                        selected={selectedSlug}
+                        onSelect={(slug) => {
+                            if (slug !== selectedSlug) {
+                                setSelectedSlug(slug);
+                                setCategoryData(null);
+                            }
+                        }}
+                    />
+                ) : null}
+            </DesktopNewsHero>
+            <div className="news-page__content w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-6 lg:py-8 space-y-6 lg:space-y-8">
                 {/* Header */}
-                <div className="flex flex-col items-center justify-center text-center gap-4 max-w-2xl mx-auto">
+                <div className="news-mobile-content flex flex-col items-center justify-center text-center gap-4 max-w-2xl mx-auto">
                     <div className="flex flex-col items-center text-center">
                         <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight text-center">
                             Noticias
@@ -236,7 +256,7 @@ export default function NewsPage() {
                 </div>
 
                 {/* Category tabs */}
-                {categoriesLoading ? (
+                <div className="news-mobile-content">{categoriesLoading ? (
                     <div className="w-full flex justify-center py-1">
                         <div className="flex flex-wrap items-center justify-center gap-2 max-w-5xl mx-auto">
                             {[...Array(10)].map((_, i) => (
@@ -255,7 +275,17 @@ export default function NewsPage() {
                             }
                         }}
                     />
-                ) : null}
+                ) : null}</div>
+
+                <DesktopNews
+                    slots={categoryData?.slots || []}
+                    categoryName={selectedCat?.name}
+                    categoryColor={selectedCat?.color}
+                    loading={categoriesLoading || showSkeleton}
+                    refreshing={categoriesLoading || slotsLoading || !selectedSlug}
+                    onRefresh={() => selectedSlug && void loadSlots(selectedSlug, Boolean(categoryData))}
+                    onClickTracking={handleClickTracking}
+                />
 
                 {/* Error */}
                 {error && (
@@ -271,7 +301,7 @@ export default function NewsPage() {
                 )}
 
                 {/* Mosaic */}
-                <>
+                <div className="news-mobile-content news-mobile-mosaic">
                     {showSkeleton ? (
                         <motion.div
                             key="skeleton"
@@ -309,7 +339,10 @@ export default function NewsPage() {
                             </motion.div>
                         )
                     ) : null}
-                </>
+                </div>
+
+                {/* Investor Wisdom Quote */}
+                <InvestorQuote investorId="howard-marks" showBackToTop />
             </div>
         </div>
     );

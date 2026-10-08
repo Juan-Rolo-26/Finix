@@ -652,6 +652,7 @@ export class PortfolioService {
 
     async getUserPortfolios(userId: string) {
         const portfolios = await this.prisma.portfolio.findMany({
+            relationLoadStrategy: 'join',
             where: { userId },
             include: {
                 holdings: { include: { asset: true } },
@@ -689,6 +690,7 @@ export class PortfolioService {
         }
 
         const portfolios = await this.prisma.portfolio.findMany({
+            relationLoadStrategy: 'join',
             where: { userId },
             include: {
                 holdings: { include: { asset: true } },
@@ -731,6 +733,7 @@ export class PortfolioService {
 
     async getPortfolioById(portfolioId: string, userId: string) {
         const portfolio = await this.prisma.portfolio.findFirst({
+            relationLoadStrategy: 'join',
             where: { id: portfolioId, userId },
             include: {
                 holdings: { include: { asset: true } },
@@ -989,6 +992,7 @@ export class PortfolioService {
         await this.assertPortfolioOwner(portfolioId, userId);
 
         const portfolio = await this.prisma.portfolio.findUnique({
+            relationLoadStrategy: 'join',
             where: { id: portfolioId },
             include: {
                 transactions: {
@@ -1150,6 +1154,7 @@ export class PortfolioService {
         await this.assertPortfolioOwner(portfolioId, userId);
 
         const holdings = await this.prisma.holding.findMany({
+            relationLoadStrategy: 'join',
             where: { portfolioId },
             include: { asset: true },
         });
@@ -1283,6 +1288,7 @@ export class PortfolioService {
 
     async getPortfolioMetrics(portfolioId: string, userId: string) {
         const portfolio = await this.prisma.portfolio.findFirst({
+            relationLoadStrategy: 'join',
             where: { id: portfolioId, userId },
             include: {
                 holdings: { include: { asset: true } },
@@ -1329,6 +1335,7 @@ export class PortfolioService {
 
         const limit = Math.min(100, Math.max(1, Math.floor(Number(filters?.limit) || 50)));
         const transactions = await this.prisma.transaction.findMany({
+            relationLoadStrategy: 'join',
             where, include: { asset: true }, take: limit + 1,
             orderBy: [{ date: 'desc' }, { id: 'desc' }],
             ...(filters?.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),

@@ -129,7 +129,7 @@ export class NewsService {
             skip: offset,
         });
 
-        const formatted = this.formatNewsItems(news);
+        const formatted = await this.formatNewsItems(news);
         this.queryCache.set(cacheKey, { data: formatted, exp: Date.now() + 60_000 });
         return formatted;
     }
@@ -194,7 +194,7 @@ export class NewsService {
             skip: offset,
         });
 
-        const formatted = this.formatNewsItems(news);
+        const formatted = await this.formatNewsItems(news);
         this.queryCache.set(cacheKey, { data: formatted, exp: Date.now() + 60_000 });
         return formatted;
     }
@@ -534,28 +534,34 @@ export class NewsService {
     /**
      * Format news items for response
      */
-    private formatNewsItems(news: any[]) {
-        return news.map(item => ({
-            id: item.id,
-            title: item.titleEs || item.title,
-            titleOriginal: item.wasTranslated ? item.title : undefined,
-            summary: item.summaryEs || item.summary,
-            content: item.contentEs || item.content,
-            url: item.url,
-            image: resolveNewsImage(item.titleEs || item.title, item.category?.slug || item.category?.name, item.imageUrl),
-            imageUrl: resolveNewsImage(item.titleEs || item.title, item.category?.slug || item.category?.name, item.imageUrl),
-            source: item.source.name,
-            category: item.category?.name,
-            categorySlug: item.category?.slug,
-            author: item.author,
-            sentiment: item.sentiment,
-            sentimentScore: item.sentimentScore,
-            impactLevel: item.impactLevel,
-            tickers: item.tickers ? item.tickers.split(',').filter((t: string) => t.trim()) : [],
-            publishedAt: item.publishedAt,
-            wasTranslated: item.wasTranslated,
-            language: item.language,
+    private async formatNewsItems(news: any[]) {
+        const valid = (text: unknown): string | undefined => typeof text === 'string' && this.translator.isSpanish(text) ? text : undefined;
+        const localized = await Promise.all(news.map(async item => {
+            let title = valid(item.titleEs) || valid(item.title);
+            let summary = valid(item.summaryEs) || valid(item.summary);
+            if (!title || (!summary && item.summary)) {
+                const fields = [!title ? item.title : '', !summary ? item.summary || '' : ''];
+                const translated = await this.translator.translateBatch(fields, item.language);
+                title ||= valid(translated[0]);
+                summary ||= valid(translated[1]);
+                if (title) await this.prisma.news.update({ where: { id: item.id }, data: { titleEs: title, summaryEs: summary || null, wasTranslated: title !== item.title } });
+            }
+            if (!title) return null;
+            return {
+                id: item.id, title, summary,
+                content: valid(item.contentEs) || valid(item.content),
+                url: item.url, image: normalizeSourceImage(item.imageUrl, item.url),
+                imageUrl: normalizeSourceImage(item.imageUrl, item.url),
+                source: item.source.name, category: item.category?.name,
+                categorySlug: item.category?.slug, categoryColor: item.category?.color,
+                author: item.author, sentiment: item.sentiment,
+                sentimentScore: item.sentimentScore, impactLevel: item.impactLevel,
+                tickers: item.tickers ? item.tickers.split(',').filter((t: string) => t.trim()) : [],
+                publishedAt: item.publishedAt, wasTranslated: title !== item.title,
+                language: 'es',
+            };
         }));
+        return localized.filter(Boolean);
     }
 
     /**

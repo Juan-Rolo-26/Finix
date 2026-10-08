@@ -14,13 +14,15 @@ import {
     Req,
     UseInterceptors,
     UploadedFile,
+    Res,
+    NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { Throttle } from '@nestjs/throttler';
-import type { Request } from 'express';
-import { extname } from 'path';
-import { unlinkSync } from 'fs';
+import type { Request, Response } from 'express';
+import { extname, resolve, sep } from 'path';
+import { existsSync, realpathSync, unlinkSync } from 'fs';
 import { AdminGuard } from './admin.guard';
 import { PrismaService } from '../prisma.service';
 import {
@@ -42,7 +44,7 @@ import { AnalysisService } from '../analysis/analysis.service';
 import { ProEmailCampaignService } from './pro-email-campaign.service';
 import { ValueCreationService } from '../market/value-creation.service';
 import { EmailMarketingService } from './email-marketing.service';
-import { buildUploadPublicPath, getUploadFolder } from '../uploads/upload-url.util';
+import { buildUploadPublicPath, getUploadFolder, getUploadsRootDir } from '../uploads/upload-url.util';
 
 type AdminRequest = Request & {
     user?: {
@@ -342,6 +344,26 @@ export class AdminController {
             take: 50,
         });
         return { data: verifications };
+    }
+
+    @Get('verifications/document')
+    @RequireAdminPermissions(AdminPermission.USERS_READ)
+    verificationDocument(@Query('path') input: string, @Res() res: Response) {
+        if (!input || input.includes('\0')) throw new BadRequestException('Ruta inválida');
+        let root: string, relative: string;
+        if (/^(\/api)?\/uploads\//.test(input) || input.startsWith('uploads/')) {
+            root = getUploadsRootDir();
+            relative = input.replace(/^(\/api)?\/?uploads\//, '');
+        } else {
+            root = process.env.FINIX_PRIVATE_STORAGE_DIR || resolve(__dirname, '../../../../.local/finix/private/storage');
+            relative = `financial-verifications/${input.replace(/^\/?financial-verifications\//, '')}`;
+        }
+        const file = resolve(root, relative);
+        if (!file.startsWith(resolve(root) + sep) || !existsSync(file)) throw new NotFoundException('Documento no encontrado');
+        if (!realpathSync(file).startsWith(realpathSync(root) + sep)) throw new NotFoundException('Documento no encontrado');
+        res.setHeader('Cache-Control', 'private, no-store');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.sendFile(file);
     }
 
     @Patch('verifications/:id/status')

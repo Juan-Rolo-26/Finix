@@ -1,326 +1,179 @@
 #!/usr/bin/env bash
+# Isolated releases. Changes only Finix pointers and the finix-api PM2 process.
 set -Eeuo pipefail
-IFS=$'\n\t'
 umask 077
-
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-cd "$SCRIPT_DIR"
-DEPLOY_STAGE="startup"
-SKIP_PULL=0
-DRY_RUN=0
-LOCK_FILE="${FINIX_DEPLOY_LOCK:-/tmp/finix-deploy.lock}"
-LOG_DIR="$SCRIPT_DIR/logs/deploy"
-STAMP="$(date -u +%Y-%m-%d_%H%M%S)"
-LOG_FILE="$LOG_DIR/deploy-$STAMP.log"
-TMP_DIR=""
-PREVIOUS_WEB=""
-PREVIOUS_ADMIN=""
-NGINX_BACKUP=""
-API_DIST_BACKUP=""
-PUBLISHED=0
-DEPLOY_COMMIT=""
-
-for arg in "$@"; do
-    case "$arg" in
-        --skip-pull) SKIP_PULL=1 ;;
-        --dry-run) DRY_RUN=1 ;;
-        -h|--help) printf 'Uso: bash deploy.sh [--dry-run] [--skip-pull]\n'; exit 0 ;;
-        *) printf 'ERROR: opción desconocida: %s\n' "$arg" >&2; exit 2 ;;
-    esac
+FINIX_SOURCE_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+cd "$FINIX_SOURCE_ROOT"
+if [[ -n ${FINIX_DEPLOY_CONFIG:-} ]]; then
+  [[ -f $FINIX_DEPLOY_CONFIG ]] || { echo 'Falta FINIX_DEPLOY_CONFIG' >&2; exit 1; }
+  set -a; source "$FINIX_DEPLOY_CONFIG"; set +a
+fi
+# Reviewed per-release .env is authoritative; do not inherit another DB target.
+unset DATABASE_URL DIRECT_URL SOURCE_DATABASE_URL FINIX_BACKUP_SOURCE_URL REDIS_URL
+FINIX_DRY_RUN=0
+FINIX_SKIP_FETCH=0
+for FINIX_ARG in "$@"; do
+  case "$FINIX_ARG" in
+    --dry-run) FINIX_DRY_RUN=1 ;;
+    --skip-pull|--skip-fetch) FINIX_SKIP_FETCH=1 ;;
+    --help|-h) echo 'Uso: FINIX_DEPLOY_CONFIG=/etc/finix/deploy.env bash deploy.sh [--dry-run] [--skip-fetch]'; exit 0 ;;
+    *) echo "Opción desconocida: $FINIX_ARG" >&2; exit 2 ;;
+  esac
 done
-
-mkdir -p "$LOG_DIR"
-exec > >(tee -a "$LOG_FILE") 2>&1
-
-log() { printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
-ok() { printf '  OK    %s\n' "$*"; }
-warn() { printf '  WARN  %s\n' "$*" >&2; }
-die() { printf '  ERROR %s\n' "$*" >&2; exit 1; }
-stage() { DEPLOY_STAGE="$1"; printf '\n[%s] %s\n' "$2" "$1"; }
-
-rollback() {
-    [[ "$PUBLISHED" -eq 1 || -n "$API_DIST_BACKUP" ]] || return 0
-    log 'Intentando rollback de frontend, API y Nginx...'
-    if [[ "$PUBLISHED" -eq 1 && -n "$PREVIOUS_WEB" && -e "$PREVIOUS_WEB" ]]; then sudo ln -sfnT "$PREVIOUS_WEB" /var/www/finix-web/current || true; fi
-    if [[ "$PUBLISHED" -eq 1 && -n "$PREVIOUS_ADMIN" && -e "$PREVIOUS_ADMIN" ]]; then sudo ln -sfnT "$PREVIOUS_ADMIN" /var/www/finix-admin/current || true; fi
-    if [[ -n "$API_DIST_BACKUP" && -d "$API_DIST_BACKUP" ]]; then
-        rm -rf -- "$SCRIPT_DIR/apps/api/dist"
-        cp -a -- "$API_DIST_BACKUP" "$SCRIPT_DIR/apps/api/dist"
-        pm2 reload finix-api --update-env >/dev/null 2>&1 || true
-    fi
-    if [[ -n "$NGINX_BACKUP" && -f "$NGINX_BACKUP" ]]; then
-        sudo cp -- "$NGINX_BACKUP" /etc/nginx/sites-available/finixarg.com.conf
-        sudo nginx -t >/dev/null 2>&1 && sudo systemctl reload nginx >/dev/null 2>&1 || true
-    fi
-    warn 'Rollback de archivos/proceso intentado. Las migraciones de base de datos no se revierten automáticamente.'
+FINIX_RELEASE_ROOT=${FINIX_RELEASE_ROOT:-/opt/finix/releases}
+FINIX_SHARED_ROOT=${FINIX_SHARED_ROOT:-/opt/finix/shared}
+FINIX_API_CURRENT=${FINIX_API_CURRENT:-/opt/finix/current}
+FINIX_WEB_CURRENT=${FINIX_WEB_CURRENT:-/var/www/finix-web/current}
+FINIX_ADMIN_CURRENT=${FINIX_ADMIN_CURRENT:-/var/www/finix-admin/current}
+FINIX_BACKUP_ROOT=${FINIX_BACKUP_ROOT:-/var/backups/finix}
+FINIX_DEPLOY_BRANCH=${FINIX_DEPLOY_BRANCH:-main}
+export FINIX_API_ENV FINIX_WEB_ENV FINIX_ADMIN_ENV FINIX_BACKUP_ROOT FINIX_DB_CONTAINER FINIX_SECRETS_DIR FINIX_ALLOW_GOOGLE_DISABLED
+fail() { echo "ERROR: $*" >&2; exit 1; }
+for FINIX_CMD in node npm git tar curl docker pm2 flock; do command -v "$FINIX_CMD" >/dev/null || fail "Falta $FINIX_CMD"; done
+node -e 'if(Number(process.versions.node.split(".")[0])<22)throw new Error("Usar Node 22+ compatible con las dependencias")'
+git rev-parse --is-inside-work-tree >/dev/null
+node scripts/deploy-preflight.cjs environment
+# Dry run: no fetch, no mkdir, no lock/log file, no backup or process changes.
+if [[ $FINIX_DRY_RUN == 1 ]]; then
+  node scripts/deploy-preflight.cjs database
+  printf 'DRY RUN: fetch %s; git archive; npm ci; generate; build; backup verificado; migrate deploy revisado; publicar symlinks; reiniciar sólo finix-api; health; rollback del código si falla.\n' "$FINIX_DEPLOY_BRANCH"
+  printf 'Nginx, SSL, DNS, SSH, firewall, otros procesos y base existente: sin modificaciones de configuración.\n'
+  exit 0
+fi
+[[ -z $(git status --porcelain --untracked-files=normal) ]] || fail 'Hay cambios de código sin publicar; revisar y crear el commit antes de deploy.'
+if ! pm2 jlist | node scripts/pm2-path-check.cjs "$FINIX_API_CURRENT/apps/api"; then
+  [[ ${FINIX_RECREATE_PM2_ONCE:-false} == true ]] || fail 'PM2 conserva un cwd anterior. En el primer corte controlado, configurar FINIX_RECREATE_PM2_ONCE=true para recrear sólo finix-api.'
+fi
+[[ $FINIX_DEPLOY_BRANCH =~ ^[a-zA-Z0-9._/-]+$ && $FINIX_DEPLOY_BRANCH != -* ]] || fail 'Rama inválida'
+[[ -d $FINIX_RELEASE_ROOT && -w $FINIX_RELEASE_ROOT && -d $FINIX_SHARED_ROOT && -w $FINIX_SHARED_ROOT ]] || fail 'Preparar directorios de releases/shared con el usuario de Finix'
+for FINIX_POINTER in "$FINIX_API_CURRENT" "$FINIX_WEB_CURRENT" "$FINIX_ADMIN_CURRENT"; do
+  [[ -d $(dirname -- "$FINIX_POINTER") && -w $(dirname -- "$FINIX_POINTER") ]] || fail "Sin permisos para $FINIX_POINTER"
+  [[ ! -e $FINIX_POINTER || -L $FINIX_POINTER ]] || fail "El destino debe ser un symlink: $FINIX_POINTER"
+done
+exec 9>"$FINIX_SHARED_ROOT/deploy.lock"
+flock -n 9 || fail 'Ya hay un deploy de Finix en curso'
+mkdir -p "$FINIX_SHARED_ROOT/logs/deploy"
+FINIX_STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+exec > >(tee -a "$FINIX_SHARED_ROOT/logs/deploy/$FINIX_STAMP.log") 2>&1
+FINIX_STAGE=fetch
+FINIX_PUBLISHED=0
+FINIX_SUCCESS=0
+FINIX_PREVIOUS_API=$(readlink -f -- "$FINIX_API_CURRENT" || true)
+FINIX_PREVIOUS_WEB=$(readlink -f -- "$FINIX_WEB_CURRENT" || true)
+FINIX_PREVIOUS_ADMIN=$(readlink -f -- "$FINIX_ADMIN_CURRENT" || true)
+FINIX_PREVIOUS_COMMIT=unknown
+if [[ -f $FINIX_PREVIOUS_API/release.json ]]; then FINIX_PREVIOUS_COMMIT=$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1])).commit)' "$FINIX_PREVIOUS_API/release.json"); fi
+pointer() {
+  local FINIX_TARGET=$1 FINIX_LINK=$2 FINIX_TEMP
+  FINIX_TEMP="$FINIX_LINK.next.$$"
+  ln -s -- "$FINIX_TARGET" "$FINIX_TEMP"
+  mv -Tf -- "$FINIX_TEMP" "$FINIX_LINK"
 }
-
-on_error() {
-    local code=$? line=$1 command=$2
-    trap - ERR
-    printf '\nFINIX DEPLOY FAILED\nStage: %s\nLine: %s\nCommand: %s\nExit code: %s\nProduction version: %s\nLog: %s\n' \
-        "$DEPLOY_STAGE" "$line" "$command" "$code" "$([[ "$PUBLISHED" -eq 1 ]] && echo 'rollback attempted' || echo 'unchanged')" "$LOG_FILE" >&2
-    rollback || true
-    exit "$code"
+restart_finix() {
+  if ! pm2 jlist | node "$FINIX_SOURCE_ROOT/scripts/pm2-path-check.cjs" "$FINIX_API_CURRENT/apps/api"; then
+    [[ ${FINIX_RECREATE_PM2_ONCE:-false} == true ]] || return 1
+    pm2 delete finix-api
+  fi
+  # PM2 retains cwd on reload. Keep its path stable; replace the symlink atomically.
+  FINIX_ROOT="$FINIX_API_CURRENT" FINIX_COMMIT=$2 FINIX_LOG_DIR="$FINIX_SHARED_ROOT/logs" pm2 startOrReload "$1/ops/ecosystem.config.cjs" --only finix-api --env production --update-env
 }
-trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
-
-cleanup() {
-    local code=$?
-    [[ -n "$TMP_DIR" && -d "$TMP_DIR" ]] && rm -rf -- "$TMP_DIR"
-    exec 9>&- || true
-    exit "$code"
-}
-trap cleanup EXIT
-
-require_command() { command -v "$1" >/dev/null 2>&1 || die "Falta $1. Instalálo antes de desplegar."; }
-
-validate_runtime() {
-    local node_major required_major
-    node_major="$(node -p 'process.versions.node.split(".")[0]')"
-    required_major="$(node - <<'NODE'
-const fs = require('fs');
-const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const value = p.engines?.node || '';
-const match = value.match(/(?:^|[^0-9])(\d{2})(?:[^0-9]|$)/);
-process.stdout.write(match ? match[1] : '');
-NODE
-)"
-    log "Node detectado: $(node --version)${required_major:+ | requerido según package.json: Node $required_major+}"
-    [[ -z "$required_major" || "$node_major" -ge "$required_major" ]] || die "Node incompatible: detectado $(node --version), requerido Node $required_major+."
-}
-
-validate_environment() {
-    [[ -f apps/api/.env ]] || die 'No existe apps/api/.env en el VPS.'
-    [[ -f apps/web/.env ]] || die 'No existe apps/web/.env en el VPS. Debe contener las variables públicas de Supabase para compilar el frontend.'
-    node - <<'NODE'
-const fs = require('fs');
-const dotenv = require('dotenv');
-const apiEnv = dotenv.parse(fs.readFileSync('apps/api/.env'));
-const webEnv = dotenv.parse(fs.readFileSync('apps/web/.env'));
-const required = ['NODE_ENV', 'PORT', 'DATABASE_URL', 'DIRECT_URL', 'JWT_SECRET', 'FRONTEND_URL', 'ADMIN_URL'];
-const missing = required.filter((key) => !apiEnv[key] || apiEnv[key].startsWith('REPLACE_WITH_'));
-if (missing.length) { console.error(`Faltan variables obligatorias: ${missing.join(', ')}`); process.exit(1); }
-if (apiEnv.NODE_ENV !== 'production') { console.error(`NODE_ENV debe ser production, recibido: ${apiEnv.NODE_ENV}`); process.exit(1); }
-if (apiEnv.JWT_SECRET.length < 32) { console.error('JWT_SECRET debe tener al menos 32 caracteres'); process.exit(1); }
-const webRequired = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'];
-const webMissing = webRequired.filter((key) => !webEnv[key] || webEnv[key].includes('YOUR_PROJECT') || webEnv[key].includes('REPLACE_WITH'));
-if (webMissing.length) { console.error(`Faltan variables públicas del frontend: ${webMissing.join(', ')}`); process.exit(1); }
-if (!/^https:\/\//i.test(webEnv.VITE_SUPABASE_URL)) { console.error('VITE_SUPABASE_URL debe comenzar con https://'); process.exit(1); }
-for (const key of required) console.log(`${key}: OK`);
-for (const key of webRequired) console.log(`${key}: OK`);
-NODE
-}
-
-check_git() {
-    local dirty remote
-    git rev-parse --is-inside-work-tree >/dev/null
-    [[ "$(git branch --show-current)" == main ]] || die "El checkout no está en main (actual: $(git branch --show-current))."
-    remote="$(git remote get-url origin 2>/dev/null || true)"
-    [[ -n "$remote" ]] || die 'No existe el remote origin.'
-    log "Repositorio: $remote"
-    case "$remote" in
-        *github.com:Juan-Rolo-26/Finix.git|*github.com/Juan-Rolo-26/Finix.git) ;;
-        *) die "El remote origin no corresponde a Juan-Rolo-26/Finix.git: $remote" ;;
-    esac
-    # Este repositorio histórico contiene algunos artifacts generados tracked. Se ignoran
-    # únicamente caches/dependencias/builds; cualquier fuente o configuración sí bloquea.
-    dirty="$(git status --porcelain --untracked-files=no | awk '{ path=substr($0,4); if (path !~ /(^|\/)node_modules\// && path !~ /(^|\/)\.vite\// && path !~ /(^|\/)\.cache\// && path !~ /(^|\/)(dist|build)\//) print }')"
-    if [[ -n "$dirty" ]]; then printf '%s\n' "$dirty"; die 'Hay cambios tracked de código/configuración; deploy cancelado.'; fi
-    if [[ "$SKIP_PULL" -eq 0 ]]; then git fetch --prune origin main; git pull --ff-only origin main; fi
-    dirty="$(git status --porcelain --untracked-files=no | awk '{ path=substr($0,4); if (path !~ /(^|\/)node_modules\// && path !~ /(^|\/)\.vite\// && path !~ /(^|\/)\.cache\// && path !~ /(^|\/)(dist|build)\//) print }')"
-    [[ -z "$dirty" ]] || { printf '%s\n' "$dirty"; die 'El checkout quedó sucio después del pull.'; }
-    DEPLOY_COMMIT="$(git rev-parse HEAD)"
-    log "Commit seleccionado para publicar: $DEPLOY_COMMIT"
-}
-
-check_resources() {
-    local free_kb mem_kb
-    free_kb="$(df -Pk "$SCRIPT_DIR" | awk 'NR==2 {print $4}')"
-    mem_kb="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)"
-    log "Disco disponible: $((free_kb / 1024 / 1024)) GB"
-    log "Memoria disponible: $((mem_kb / 1024)) MB"
-    (( free_kb >= 2097152 )) || die 'Menos de 2 GB libres en disco; deploy cancelado.'
-    (( mem_kb == 0 || mem_kb >= 524288 )) || warn 'Menos de 512 MB libres de RAM; el build puede fallar.'
-}
-
-check_sudo() { sudo -n true >/dev/null 2>&1 || die 'sudo no está disponible sin interacción; configurá sudoers para el usuario de deploy.'; }
-install_dependencies() { npm ci --no-audit --no-fund; }
-
-run_prisma() {
-    (cd apps/api && npx prisma generate --schema prisma/schema.prisma)
-
-    log "Verificando estado de migraciones Prisma..."
-    (
-        cd apps/api
-        npx prisma migrate status --schema prisma/schema.prisma || {
-            warn "Hay migraciones pendientes. Se aplicarán de forma segura en el paso Prisma migrations."
-            return 0
-        }
-    )
-}
-
-build_all() {
-    mkdir -p "$TMP_DIR"
-    [[ -d apps/api/dist ]] && { cp -a apps/api/dist "$TMP_DIR/api-dist-backup"; API_DIST_BACKUP="$TMP_DIR/api-dist-backup"; } || true
-    npm run build -w @finix/shared
-    [[ -s packages/shared/dist/index.js && -s packages/shared/dist/index.d.ts ]] || die 'No se pudo construir packages/shared/dist.'
-    npm run build -w api
-    npm run build -w web
-    npm run build -w admin
-    [[ -s apps/api/dist/main.js ]] || die 'No existe apps/api/dist/main.js después del build API.'
-    [[ -d apps/web/dist && -n "$(find apps/web/dist -mindepth 1 -print -quit)" ]] || die 'apps/web/dist está vacío.'
-    [[ -d apps/admin/dist && -n "$(find apps/admin/dist -mindepth 1 -print -quit)" ]] || die 'apps/admin/dist está vacío.'
-
-    # Metadata pública para verificar exactamente qué commit sirve Nginx.
-    printf '{"commit":"%s","builtAt":"%s"}\n' "$DEPLOY_COMMIT" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > apps/web/dist/release.json
-    cp apps/web/dist/release.json apps/admin/dist/release.json
-}
-
-publish_frontends() {
-    local web_release="/var/www/finix-web/releases/$STAMP" admin_release="/var/www/finix-admin/releases/$STAMP"
-    PREVIOUS_WEB="$(readlink -f /var/www/finix-web/current 2>/dev/null || true)"
-    PREVIOUS_ADMIN="$(readlink -f /var/www/finix-admin/current 2>/dev/null || true)"
-    sudo mkdir -p "$web_release" "$admin_release"
-    sudo cp -a apps/web/dist/. "$web_release/"
-    sudo cp -a apps/admin/dist/. "$admin_release/"
-    sudo chown -R www-data:www-data "$web_release" "$admin_release"
-    sudo find "$web_release" "$admin_release" -type d -exec chmod 755 {} +
-    sudo find "$web_release" "$admin_release" -type f -exec chmod 644 {} +
-    PUBLISHED=1
-    sudo ln -sfnT "$web_release" /var/www/finix-web/current
-    sudo ln -sfnT "$admin_release" /var/www/finix-admin/current
-}
-
-deploy_api() {
-    mkdir -p logs
-    export FINIX_ROOT="$SCRIPT_DIR"
-    export FINIX_COMMIT="$DEPLOY_COMMIT"
-    if pm2 describe finix-api >/dev/null 2>&1; then pm2 reload ops/ecosystem.config.cjs --only finix-api --env production --update-env; else pm2 start ops/ecosystem.config.cjs --only finix-api --env production; fi
-}
-
-configure_nginx() {
-    NGINX_BACKUP="$TMP_DIR/finixarg.com.conf.previous"
-    local nginx_mode='systemd'
-    if ! sudo systemctl is-active --quiet nginx; then
-        if sudo pgrep -x nginx >/dev/null 2>&1; then
-            nginx_mode='existing-process'
-            warn 'Nginx está activo fuera de systemd; se conservará la instancia multi-sitio y se hará reload seguro.'
+finish() {
+  local FINIX_EXIT=$?
+  trap - EXIT
+  if [[ $FINIX_SUCCESS != 1 ]]; then
+    echo "Deploy falló en $FINIX_STAGE (código $FINIX_EXIT)."
+    if [[ $FINIX_PUBLISHED == 1 ]]; then
+      if [[ -d $FINIX_PREVIOUS_API ]]; then
+        pointer "$FINIX_PREVIOUS_API" "$FINIX_API_CURRENT" || true
+        [[ -d $FINIX_PREVIOUS_WEB ]] && pointer "$FINIX_PREVIOUS_WEB" "$FINIX_WEB_CURRENT" || true
+        [[ -d $FINIX_PREVIOUS_ADMIN ]] && pointer "$FINIX_PREVIOUS_ADMIN" "$FINIX_ADMIN_CURRENT" || true
+        restart_finix "$FINIX_PREVIOUS_API" "$FINIX_PREVIOUS_COMMIT" || true
+        if curl --silent --fail --max-time 5 http://127.0.0.1:3010/ready >/dev/null; then
+          echo 'Rollback de código: /ready respondió. Las migraciones no se revierten automáticamente.'
         else
-            die 'Nginx no está activo y no existe un proceso Nginx reutilizable.'
+          echo 'Rollback solicitado, pero /ready no respondió: requiere comprobación del operador.'
         fi
+      else
+        pm2 stop finix-api || true
+        echo 'Primer deploy sin release anterior: API detenida; requiere intervención. No se restaura la DB sobre datos nuevos.'
+      fi
     fi
-    if sudo test -f /etc/nginx/sites-available/finixarg.com.conf; then sudo cp /etc/nginx/sites-available/finixarg.com.conf "$NGINX_BACKUP"; fi
-    sudo install -m 0644 deploy/nginx/finixarg.com.conf /etc/nginx/sites-available/finixarg.com.conf
-    sudo ln -sfn /etc/nginx/sites-available/finixarg.com.conf /etc/nginx/sites-enabled/finixarg.com.conf
-    sudo nginx -t
-    if [[ "$nginx_mode" == 'systemd' ]]; then
-        sudo systemctl reload nginx
-    else
-        local -a nginx_masters=() live_masters=()
-        local sample pid cmdline
-        for sample in 1 2 3; do
-            mapfile -t nginx_masters < <(sudo ps -eo pid=,args= | awk '$0 ~ /nginx: master process/ {print $1}')
-            live_masters=()
-            for pid in "${nginx_masters[@]}"; do
-                [[ "$pid" =~ ^[0-9]+$ ]] || continue
-                sudo kill -0 "$pid" 2>/dev/null || continue
-                cmdline="$(sudo tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
-                [[ "$cmdline" == *'nginx: master process'* ]] || continue
-                live_masters+=("$pid")
-            done
-            if (( ${#live_masters[@]} == 1 )); then
-                break
-            fi
-            sleep 1
-        done
-        if (( ${#live_masters[@]} == 0 )); then
-            die 'Nginx aparece fuera de systemd, pero no se encontró ningún master vivo.'
-        fi
-        if (( ${#live_masters[@]} > 1 )); then
-            printf 'Masters vivos encontrados: %s\n' "${live_masters[*]}" >&2
-            die 'Se encontraron múltiples masters vivos de Nginx; revisión manual requerida.'
-        fi
-        log "Nginx fuera de systemd. Master PID: ${live_masters[0]}"
-        sudo kill -HUP "${live_masters[0]}"
-    fi
+  fi
+  exit "$FINIX_EXIT"
 }
-
-health_api() {
-    local status attempt body
-    for attempt in {1..10}; do
-        body="$(curl -sS --max-time 5 'http://127.0.0.1:3010/health' || true)"
-        status="$(printf '%s' "$body" | node -e "let s=''; process.stdin.on('data', d => s += d).on('end', () => { try { const v = JSON.parse(s); process.stdout.write(String(v.status === 'ok' && v.commit === '$DEPLOY_COMMIT' ? 200 : 409)); } catch { process.stdout.write('000'); } });")"
-        [[ "$status" == 200 ]] && { ok "API OK (commit $DEPLOY_COMMIT, intento $attempt)"; return; }
-        log "API intento $attempt/10: HTTP ${status:-error}"; sleep 2
-    done
-    pm2 logs finix-api --lines 40 --nostream || true
-    die 'La API no respondió correctamente.'
+trap finish EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+if [[ $FINIX_SKIP_FETCH == 0 ]]; then git fetch origin "$FINIX_DEPLOY_BRANCH"; FINIX_REF=FETCH_HEAD; else FINIX_REF=HEAD; fi
+FINIX_COMMIT=$(git rev-parse "$FINIX_REF^{commit}")
+FINIX_RELEASE="$FINIX_RELEASE_ROOT/$FINIX_STAMP-${FINIX_COMMIT:0:12}"
+mkdir -- "$FINIX_RELEASE"
+chmod 711 "$FINIX_RELEASE"
+git archive "$FINIX_COMMIT" | tar -x -C "$FINIX_RELEASE"
+FINIX_STAGE=build
+for FINIX_APP in api web admin; do
+  case "$FINIX_APP" in api) FINIX_ENV=$FINIX_API_ENV;; web) FINIX_ENV=$FINIX_WEB_ENV;; admin) FINIX_ENV=$FINIX_ADMIN_ENV;; esac
+  # Keep an immutable private config per release so code rollback restores config.
+  install -m 600 "$FINIX_ENV" "$FINIX_RELEASE/apps/$FINIX_APP/.env"
+done
+node - "$FINIX_RELEASE" "$FINIX_API_ENV" <<'NODE'
+const fs = require('fs'), path = require('path'), root = process.argv[2];
+const config = require('dotenv').parse(fs.readFileSync(process.argv[3]));
+const link = path.join(root, 'apps/api/uploads');
+if (fs.existsSync(link)) {
+  if (fs.readdirSync(link).length) throw new Error('Tracked uploads in release; review before deployment');
+  fs.rmdirSync(link);
 }
-
-health_external() {
-    local url local_index live_index release_live status expected_js expected_css actual_js actual_css
-    for url in https://finixarg.com https://admin.finixarg.com; do
-        if [[ "$url" == 'https://finixarg.com' ]]; then
-            local_index='apps/web/dist/index.html'
-            live_index="$TMP_DIR/web-index.live.html"
-        else
-            local_index='apps/admin/dist/index.html'
-            live_index="$TMP_DIR/admin-index.live.html"
-        fi
-
-        status="$(curl -LfsS --max-time 20 -o "$live_index" -w '%{http_code}' "$url/?deploy=$STAMP" || true)"
-        [[ "$status" =~ ^2[0-9][0-9]$|^3[0-9][0-9]$ ]] || die "Health check externo falló: $url (HTTP ${status:-error})"
-
-        release_live="$(curl -LfsS --max-time 20 "$url/release.json?deploy=$STAMP" || true)"
-        grep -Fq "\"commit\":\"$DEPLOY_COMMIT\"" <<< "$release_live" || \
-            die "El dominio $url responde una release distinta (esperado commit $DEPLOY_COMMIT; release: ${release_live:-sin metadata})."
-
-        expected_js="$(grep -oE 'src="/assets/index-[^"]+\.js"' "$local_index" | head -n1 || true)"
-        expected_css="$(grep -oE 'href="/assets/index-[^"]+\.css"' "$local_index" | head -n1 || true)"
-        actual_js="$(grep -oE 'src="/assets/index-[^"]+\.js"' "$live_index" | head -n1 || true)"
-        actual_css="$(grep -oE 'href="/assets/index-[^"]+\.css"' "$live_index" | head -n1 || true)"
-
-        [[ -n "$expected_js" && -n "$expected_css" ]] || die "No se pudieron leer los assets esperados de $local_index."
-        [[ "$actual_js" == "$expected_js" && "$actual_css" == "$expected_css" ]] || \
-            die "El dominio $url responde HTTP $status pero sigue sirviendo assets antiguos (esperado: $expected_js y $expected_css; recibido: ${actual_js:-sin JS} y ${actual_css:-sin CSS})."
-
-        ok "$url (HTTP $status, commit $DEPLOY_COMMIT, frontend actualizado: $expected_js)"
-    done
+fs.symlinkSync(config.UPLOADS_DIR, link, 'dir');
+NODE
+(
+ cd "$FINIX_RELEASE"
+ npm ci --no-audit --no-fund
+ npx --no-install prisma generate --schema apps/api/prisma/schema.prisma
+ npm run build -w @finix/shared
+ npm run build -w api
+ npm run build -w web
+ npm run build -w admin
+ FINIX_API_ENV="$FINIX_RELEASE/apps/api/.env" node scripts/deploy-preflight.cjs database apps/api/prisma/migrations
+ node -e 'const fs=require("fs"), data=JSON.stringify({commit:process.argv[1],builtAt:new Date().toISOString()}); for(const f of ["release.json","apps/web/dist/release.json","apps/admin/dist/release.json"])fs.writeFileSync(f,data)' "$FINIX_COMMIT"
+ node - <<'NODE'
+const fs = require('fs');
+// Nginx must traverse releases and read public files. Private .env stays 600.
+for (const directory of ['apps', 'apps/web', 'apps/admin']) fs.chmodSync(directory, 0o755);
+function publishPermissions(directory) {
+  fs.chmodSync(directory, 0o755);
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const file = directory + '/' + entry.name;
+    if (entry.isDirectory()) publishPermissions(file);
+    else if (entry.isFile()) fs.chmodSync(file, 0o644);
+    else throw new Error('Unexpected symlink in public build');
+  }
 }
-
-cleanup_releases() {
-    local base file
-    for base in /var/www/finix-web /var/www/finix-admin; do
-        while IFS= read -r file; do sudo rm -rf -- "$file"; done < <(sudo find "$base/releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -rn | awk 'NR > 5 {sub(/^[^ ]+ /, ""); print}')
-    done
-    while IFS= read -r file; do rm -f -- "$file"; done < <(find "$LOG_DIR" -type f -name 'deploy-*.log' -printf '%T@ %p\n' | sort -rn | awk 'NR > 10 {sub(/^[^ ]+ /, ""); print}')
-}
-
-main() {
-    exec 9>"$LOCK_FILE"
-    flock -n 9 || die "Ya hay otro deploy ejecutándose (lock: $LOCK_FILE)."
-    TMP_DIR="$(mktemp -d /tmp/finix-deploy.XXXXXX)"
-    printf '\nFINIX DEPLOY\nNode: %s\nnpm: %s\nGit: %s\nPM2: %s\nNginx: %s\nDirectorio: %s\nBranch: %s\nCommit: %s\nUsuario: %s\nFecha: %s\nLog: %s\n' \
-        "$(node --version 2>/dev/null || echo missing)" "$(npm --version 2>/dev/null || echo missing)" "$(git --version 2>/dev/null || echo missing)" "$(pm2 --version 2>/dev/null || echo missing)" "$(nginx -v 2>&1 | head -n1 || echo missing)" "$SCRIPT_DIR" "$(git branch --show-current)" "$(git rev-parse --short HEAD)" "$(id -un)" "$(date -Is)" "$LOG_FILE"
-    log "PM2 user: $(id -un); PM2 home: ${PM2_HOME:-$HOME/.pm2}"
-
-    stage 'Preflight checks' '01/15'; for cmd in node npm git pm2 nginx curl flock sudo pgrep; do require_command "$cmd"; done; validate_runtime; check_resources; check_sudo
-    if [[ "$DRY_RUN" -eq 1 ]]; then validate_environment; check_git; ok 'Dry run: no se modificó producción'; return; fi
-    stage 'Git' '02/15'; check_git
-    stage 'Dependencies' '03/15'; install_dependencies
-    stage 'Environment' '04/15'; validate_environment
-    stage 'Prisma and builds' '05/15'; run_prisma; build_all
-    stage 'Database backup' '06/15'; bash backup.sh; ok 'Backup OK'
-    stage 'Prisma migrations' '07/15'; (cd apps/api && npx prisma migrate deploy --schema prisma/schema.prisma)
-    stage 'Publish frontend' '08/15'; publish_frontends
-    stage 'PM2' '09/15'; deploy_api
-    stage 'API health' '10/15'; health_api
-    stage 'Nginx' '11/15'; configure_nginx
-    stage 'External health' '12/15'; health_external
-    stage 'PM2 save' '13/15'; pm2 save
-    stage 'Cleanup' '14/15'; cleanup_releases
-    stage 'Summary' '15/15'; printf '\nFINIX DEPLOY SUCCESSFUL\nCommit: %s\nAPI: http://127.0.0.1:3010\nWeb: https://finixarg.com\nAdmin: https://admin.finixarg.com\nLog: %s\n' "$(git rev-parse --short HEAD)" "$LOG_FILE"
-}
-
-main "$@"
+publishPermissions('apps/web/dist'); publishPermissions('apps/admin/dist');
+NODE
+)
+FINIX_STAGE=backup
+bash "$FINIX_RELEASE/backup.sh" "$FINIX_BACKUP_ROOT/pre-deploy-$FINIX_STAMP"
+FINIX_STAGE=migration
+(cd "$FINIX_RELEASE/apps/api"; npx --no-install prisma migrate deploy --schema prisma/schema.prisma)
+FINIX_STAGE=publish
+FINIX_PUBLISHED=1
+pointer "$FINIX_RELEASE" "$FINIX_API_CURRENT"
+pointer "$FINIX_RELEASE/apps/web/dist" "$FINIX_WEB_CURRENT"
+pointer "$FINIX_RELEASE/apps/admin/dist" "$FINIX_ADMIN_CURRENT"
+restart_finix "$FINIX_RELEASE" "$FINIX_COMMIT"
+FINIX_STAGE=health
+FINIX_READY=0
+for FINIX_ATTEMPT in $(seq 1 30); do
+ if curl --silent --fail --max-time 3 http://127.0.0.1:3010/ready >/dev/null && curl --silent --fail --max-time 3 http://127.0.0.1:3010/health | node -e 'let s="";process.stdin.on("data",x=>s+=x);process.stdin.on("end",()=>{try{if(JSON.parse(s).commit!==process.argv[1])process.exit(1)}catch{process.exit(1)}})' "$FINIX_COMMIT"; then FINIX_READY=1; break; fi
+ sleep 2
+done
+[[ $FINIX_READY == 1 ]] || fail 'API/DB/Redis no quedaron listos con el commit esperado'
+for FINIX_URL in "${FINIX_WEB_HEALTH_URL:-}" "${FINIX_ADMIN_HEALTH_URL:-}"; do
+ [[ -n $FINIX_URL ]] || fail 'Configurar URLs HTTPS públicas de release.json'
+ [[ $FINIX_URL == https://* ]] || fail 'Health público requiere HTTPS'
+ curl --silent --fail --max-time 15 --header 'Cache-Control: no-cache' "$FINIX_URL?deploy=$FINIX_COMMIT" | node -e 'let s="";process.stdin.on("data",x=>s+=x);process.stdin.on("end",()=>{try{if(JSON.parse(s).commit!==process.argv[1])process.exit(1)}catch{process.exit(1)}})' "$FINIX_COMMIT"
+done
+FINIX_SUCCESS=1
+echo "Deploy completo: $FINIX_COMMIT; respaldo: $FINIX_BACKUP_ROOT/pre-deploy-$FINIX_STAMP"
+echo 'Un único proceso puede tener una interrupción breve. Se conservan releases anteriores; no se modifica Nginx ni otros servicios.'

@@ -36,8 +36,8 @@ const RequireAdminAuth = ({ children }: { children: JSX.Element }) => {
                 }
 
                 const errorMessage = await readAdminErrorMessage(res, 'No se pudo validar la sesión del administrador.');
-                setMessage(errorMessage);
-                setStatus(res.status === 403 ? 'forbidden' : 'unauthorized');
+                setMessage(res.status === 429 ? 'Hubo demasiadas consultas seguidas. Esperá unos segundos y volvé a intentar.' : errorMessage);
+                setStatus(res.status === 401 ? 'unauthorized' : res.status === 403 ? 'forbidden' : 'error');
             } catch {
                 if (!mounted) return;
                 setMessage('No se pudo conectar con la API del administrador.');

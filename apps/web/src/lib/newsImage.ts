@@ -55,7 +55,7 @@ function normalizeImageText(value: string) {
         .trim();
 }
 
-function normalizeProvidedImage(value?: string | null) {
+export function normalizeNewsImage(value?: string | null) {
     if (!value) return undefined;
     const candidate = value.trim().startsWith('//') ? `https:${value.trim()}` : value.trim();
     try {
@@ -67,7 +67,7 @@ function normalizeProvidedImage(value?: string | null) {
 }
 
 export function resolveNewsImage(title: string, categoryName = '', providedImage?: string | null) {
-    const provided = normalizeProvidedImage(providedImage);
+    const provided = normalizeNewsImage(providedImage);
     if (provided) return provided;
 
     const titleText = normalizeImageText(title);

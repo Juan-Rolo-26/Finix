@@ -76,6 +76,7 @@ apps/api/node_modules/
 
 # ─── Misc ─────────────────────────────────────────────────────────────────────
 .claude/
+/.local/
 test_connection.js
 test_db.sh
 test_pg.js

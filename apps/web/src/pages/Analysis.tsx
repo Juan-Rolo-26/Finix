@@ -19,6 +19,7 @@ import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { ProGate } from '@/components/ProGate';
 import TradingViewChart from '@/components/TradingViewChart';
+import { InvestorQuote } from '@/components/common/InvestorQuote';
 
 // Helper para formatear monedas y números grandes
 const formatCurrency = (val: number | null | undefined, compact = false) => {
@@ -1042,7 +1043,7 @@ export default function Analysis() {
 
         return (
             <div className="analysis-page w-full max-w-full py-10 px-4 sm:px-6 lg:px-8 xl:px-10 space-y-10 pb-28">
-                <div className="flex flex-col items-center justify-center text-center gap-6 max-w-4xl mx-auto">
+                <div className="desktop-page-heading flex flex-col items-center justify-center text-center gap-6 max-w-4xl mx-auto">
                     <div className="flex flex-col items-center text-center">
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs sm:text-sm font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20 mb-3 mx-auto">
                             <Star className="w-4 h-4 fill-primary" /> Finix Pro Research
@@ -1155,6 +1156,9 @@ export default function Analysis() {
                         ))}
                     </div>
                 )}
+
+                {/* Investor Wisdom Quote */}
+                <InvestorQuote investorId="benjamin-graham" showBackToTop />
             </div>
         );
     }
@@ -2209,6 +2213,9 @@ export default function Analysis() {
                         {a.sources && <p className="font-bold text-foreground">Fuentes de Información: {a.sources}</p>}
                         <p className="leading-relaxed font-medium">{a.legalDisclaimer || 'Este contenido tiene fines informativos y educativos y no constituye asesoramiento financiero ni recomendación de inversión.'}</p>
                     </div>
+
+                    {/* Investor Wisdom Quote */}
+                    <InvestorQuote investorId="joel-greenblatt" showBackToTop />
                 </div>
             )}
         </div>

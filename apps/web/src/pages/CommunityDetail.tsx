@@ -13,6 +13,7 @@ import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { useAuthStore } from '@/stores/authStore';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import ReportModal from '@/components/ReportModal';
 import CommunityPaymentModal from '@/components/CommunityPaymentModal';
 
@@ -129,15 +130,24 @@ function PostCard({ post, community, onDelete }: {
     const [likeCount, setLikeCount] = useState(post._count.likes);
     const [showMenu, setShowMenu] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+    const [likeError, setLikeError] = useState('');
+    const liking = useRef(false);
 
     const canDelete = user?.id === post.author.id || user?.id === community.creator.id;
 
     const handleLike = async () => {
+        if (liking.current) return;
+        liking.current = true;
+        setLikeError('');
         setLiked(l => !l);
         setLikeCount(c => liked ? c - 1 : c + 1);
         try {
-            await apiFetch(`/posts/${post.id}/like`, { method: 'POST' });
-        } catch { setLiked(l => !l); setLikeCount(c => liked ? c + 1 : c - 1); }
+            const response = await apiFetch(`/posts/${post.id}/like`, { method: 'POST' });
+            if (!response.ok) throw new Error('No se pudo guardar el me gusta.');
+        } catch {
+            setLiked(l => !l); setLikeCount(c => liked ? c + 1 : c - 1);
+            setLikeError('No se pudo guardar el me gusta. Intentá nuevamente.');
+        } finally { liking.current = false; }
     };
 
     return (
@@ -148,6 +158,7 @@ function PostCard({ post, community, onDelete }: {
             style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
         >
             {/* Author */}
+            {likeError && <p role="alert" className="text-sm text-destructive">{likeError}</p>}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                     <Avatar className="h-8 w-8">
@@ -627,20 +638,28 @@ export default function CommunityDetail(props?: {
     const [resources, setResources] = useState<CommunityResource[]>([]);
     const [members, setMembers] = useState<any[]>([]);
     const [tabLoaded, setTabLoaded] = useState<Record<string, boolean>>({});
+    const [communityError, setCommunityError] = useState('');
+    const [actionError, setActionError] = useState('');
+    const [reloadKey, setReloadKey] = useState(0);
 
     useEffect(() => {
         if (!props?.community && paramId) {
+            const controller = new AbortController();
             setLoading(true);
-            apiFetch(`/communities/${paramId}`)
-                .then(r => r.ok ? r.json() : null)
-                .then(d => {
-                    if (d) setCommunity(d);
-                    else navigate('/comunidades');
+            setCommunityError('');
+            apiFetch(`/communities/${paramId}`, { signal: controller.signal })
+                .then(r => {
+                    if (!r.ok) throw new Error(r.status === 404 ? 'Esta comunidad no existe o ya no está disponible.' : 'No se pudo cargar la comunidad.');
+                    return r.json();
                 })
-                .catch(() => navigate('/comunidades'))
-                .finally(() => setLoading(false));
+                .then(d => {
+                    if (!controller.signal.aborted) setCommunity(d);
+                })
+                .catch(error => { if (!controller.signal.aborted) setCommunityError(error.message || 'No se pudo cargar la comunidad.'); })
+                .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+            return () => controller.abort();
         }
-    }, [props?.community, paramId, navigate]);
+    }, [props?.community, paramId, reloadKey]);
 
     const isOwner = Boolean(user && community && (user.id === community.creator.id || community.isOwner));
     const canManage = Boolean(community && (isOwner || community.canManage));
@@ -706,19 +725,26 @@ export default function CommunityDetail(props?: {
     const handleLeave = async () => {
         if (!community?.id) return;
         if (!confirm('¿Abandonar esta comunidad?')) return;
-        await apiFetch(`/communities/${community.id}/leave`, { method: 'DELETE' });
-        const res = await apiFetch(`/communities/${community.id}`);
-        if (res.ok) {
+        setActionError('');
+        try {
+            const response = await apiFetch(`/communities/${community.id}/leave`, { method: 'DELETE' });
+            if (!response.ok) throw new Error('No se pudo abandonar la comunidad.');
+            const res = await apiFetch(`/communities/${community.id}`);
+            if (!res.ok) throw new Error('No se pudo actualizar la comunidad.');
             const updated = await res.json();
             setCommunity(updated);
             if (props?.onRefresh) props.onRefresh(updated);
-        }
+        } catch (error) { setActionError((error as Error).message); }
     };
 
     const handleDeletePost = async (postId: string) => {
         if (!community?.id) return;
-        await apiFetch(`/communities/${community.id}/posts/${postId}`, { method: 'DELETE' });
-        setPosts(prev => prev.filter(p => p.id !== postId));
+        setActionError('');
+        try {
+            const response = await apiFetch(`/communities/${community.id}/posts/${postId}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error('No se pudo eliminar la publicación.');
+            setPosts(prev => prev.filter(p => p.id !== postId));
+        } catch (error) { setActionError((error as Error).message); }
     };
 
     const handleBack = () => {
@@ -726,6 +752,15 @@ export default function CommunityDetail(props?: {
         else navigate('/comunidades');
     };
 
+    if (communityError) {
+        return <div role="alert" className="mx-auto max-w-xl space-y-4 p-8 text-center">
+            <p>{communityError}</p>
+            <div className="flex justify-center gap-3">
+                <Button variant="outline" onClick={handleBack}>Volver a comunidades</Button>
+                <Button onClick={() => setReloadKey(key => key + 1)}>Reintentar</Button>
+            </div>
+        </div>;
+    }
     if (loading || !community) {
         return (
             <div className="flex h-96 items-center justify-center">
@@ -736,6 +771,7 @@ export default function CommunityDetail(props?: {
 
     return (
         <div className="flex flex-col flex-1 min-h-0 w-full pb-10">
+            {actionError && <p role="alert" className="m-4 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{actionError}</p>}
             {/* ── Banner + Header ── */}
             <div className="flex-shrink-0 relative">
                 {/* Banner */}

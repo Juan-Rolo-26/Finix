@@ -9,14 +9,21 @@ interface SubscriptionRenewalChoiceProps {
     error?: string | null;
     mercadoPagoAvailable?: boolean;
     stripeAvailable?: boolean;
+    stripeMonthlyPrice?: number | null;
     onClose: () => void;
     onConfirm: (autoRenew: boolean) => void;
     onConfirmStripe?: () => void;
 }
 
-export function SubscriptionRenewalChoice({ open, planName, monthlyPrice, busy = false, error, mercadoPagoAvailable = true, stripeAvailable = false, onClose, onConfirm, onConfirmStripe }: SubscriptionRenewalChoiceProps) {
+export function SubscriptionRenewalChoice({ open, planName, monthlyPrice, busy = false, error, mercadoPagoAvailable = true, stripeAvailable = false, stripeMonthlyPrice, onClose, onConfirm, onConfirmStripe }: SubscriptionRenewalChoiceProps) {
     const [autoRenew, setAutoRenew] = useState(false);
     useEffect(() => { if (open) setAutoRenew(false); }, [open]);
+    useEffect(() => {
+        if (!open) return;
+        const handleEscape = (event: KeyboardEvent) => { if (event.key === 'Escape' && !busy) onClose(); };
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [open, busy, onClose]);
     if (!open) return null;
 
     return (
@@ -26,29 +33,29 @@ export function SubscriptionRenewalChoice({ open, planName, monthlyPrice, busy =
                     <div>
                         <p className="text-xs font-bold uppercase tracking-wider text-primary">Antes de continuar</p>
                         <h2 id="renewal-choice-title" className="mt-1 text-xl font-bold">Elegí cómo pagar {planName}</h2>
-                        <p className="mt-1 text-sm text-muted-foreground">Precio actual: {monthlyPrice} ARS por mes.</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{mercadoPagoAvailable ? `Mercado Pago: $${monthlyPrice} ARS por mes.` : 'Elegí el medio de pago disponible.'}</p>
                     </div>
                     <button type="button" aria-label="Cerrar" disabled={busy} onClick={onClose} className="rounded-lg p-2 text-muted-foreground hover:bg-muted disabled:opacity-50"><X className="h-4 w-4" /></button>
                 </div>
 
-                <div className="space-y-3">
-                    <button type="button" aria-pressed={!autoRenew} onClick={() => setAutoRenew(false)} className={`w-full rounded-xl border p-4 text-left transition-colors ${!autoRenew ? 'border-primary bg-primary/10' : 'border-border bg-background/50 hover:bg-muted/50'}`}>
+                {mercadoPagoAvailable && <div className="space-y-3">
+                    <button type="button" disabled={busy} aria-pressed={!autoRenew} onClick={() => setAutoRenew(false)} className={`w-full rounded-xl border p-4 text-left transition-colors ${!autoRenew ? 'border-primary bg-primary/10' : 'border-border bg-background/50 hover:bg-muted/50'}`}>
                         <span className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" />Pagar un mes, sin renovación</span>
                         <span className="mt-1 block pl-6 text-xs leading-relaxed text-muted-foreground">Pagás {monthlyPrice} ARS una sola vez. Mercado Pago muestra tarjetas Visa/Mastercard, billeteras y otros medios disponibles para tu cuenta.</span>
                     </button>
-                    <button type="button" aria-pressed={autoRenew} onClick={() => setAutoRenew(true)} className={`w-full rounded-xl border p-4 text-left transition-colors ${autoRenew ? 'border-primary bg-primary/10' : 'border-border bg-background/50 hover:bg-muted/50'}`}>
+                    <button type="button" disabled={busy} aria-pressed={autoRenew} onClick={() => setAutoRenew(true)} className={`w-full rounded-xl border p-4 text-left transition-colors ${autoRenew ? 'border-primary bg-primary/10' : 'border-border bg-background/50 hover:bg-muted/50'}`}>
                         <span className="flex items-center gap-2 text-sm font-semibold"><RefreshCw className="h-4 w-4 text-primary" />Renovar y cobrar automáticamente cada mes</span>
                         <span className="mt-1 block pl-6 text-xs leading-relaxed text-muted-foreground">Mercado Pago cobrará {monthlyPrice} ARS por mes hasta que canceles la renovación desde Configuración → Suscripción.</span>
                     </button>
-                </div>
+                </div>}
 
                 {stripeAvailable && onConfirmStripe ? (
                     <div className="space-y-2 border-t border-border pt-4">
                         <p className="text-center text-xs text-muted-foreground">¿Preferís pagar con tarjeta directamente?</p>
-                        <button type="button" disabled={busy} onClick={onConfirmStripe} className="w-full rounded-xl border border-indigo-400/40 bg-indigo-500/10 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-indigo-500/20 disabled:opacity-50">
+                        <button type="button" disabled={busy} onClick={onConfirmStripe} className="w-full rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-primary/20 disabled:opacity-50">
                             Pagar con tarjeta mediante Stripe
                         </button>
-                        <p className="text-center text-[11px] text-muted-foreground">Stripe acepta tarjetas Visa, Mastercard y otras tarjetas habilitadas. Este checkout inicia renovación mensual.</p>
+                        <p className="text-center text-[11px] text-muted-foreground">{stripeMonthlyPrice ? `Stripe: US$${stripeMonthlyPrice.toLocaleString('es-AR')} por mes, con renovación automática.` : 'Stripe inicia una suscripción mensual automática. El importe y la moneda se muestran en su checkout antes de confirmar el pago.'}</p>
                     </div>
                 ) : null}
 

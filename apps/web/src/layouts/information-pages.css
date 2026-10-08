@@ -1,0 +1,190 @@
+/* Shared public information layout; the existing mobile presentation is retained. */
+.info-page__grid,
+.info-page__body,
+.info-page__help-sidebar { display: contents; }
+
+@media (min-width: 1024px) {
+    .finix-desktop-shell .info-page {
+        min-height: calc(100dvh - 56px);
+        background: hsl(var(--background));
+    }
+    .info-page__mobile-nav { display: none; }
+    .finix-desktop-shell .info-page__container {
+        width: 100%;
+        max-width: none;
+        margin-inline: 0;
+        padding: 80px var(--desktop-gutter) 48px;
+    }
+    .finix-desktop-shell .info-page :is(h1, h2, h3, h4, .font-heading) {
+        font-family: Inter, system-ui, sans-serif;
+    }
+    /* info-page__tabs is now a card grid — reset old pill-container overrides */
+    .finix-desktop-shell .info-page__tabs {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+        min-height: auto;
+        padding: 0;
+        margin-bottom: 28px;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+    }
+    /* Individual nav cards */
+    .info-page__tabs a {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        min-height: auto;
+        padding: 14px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: none;
+    }
+    .info-page__tabs a[aria-current='page'] {
+        color: hsl(var(--primary));
+        border-color: hsl(var(--primary) / .35);
+        background: hsl(var(--primary) / .08);
+    }
+    .finix-desktop-shell .info-page__header {
+        width: 100%;
+        max-width: none;
+        min-height: 304px;
+        margin: 0 0 24px;
+        padding: 28px;
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        background: linear-gradient(110deg, hsl(var(--primary) / .045), transparent), hsl(var(--card));
+        text-align: left;
+    }
+    .info-page__header > :first-child {
+        margin: 0 0 16px;
+    }
+    .info-page__header > .inline-flex {
+        min-height: 44px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 6px;
+    }
+    .info-page__header > .flex {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+    }
+    .info-page__header > .flex > svg { width: 22px; height: 22px; }
+    .finix-desktop-shell .info-page__header > :not([hidden]) ~ :not([hidden]) { margin-top: 0; }
+    .finix-desktop-shell .info-page__header > .mt-4:not([hidden]) { margin-top: 16px; }
+    .finix-desktop-shell .info-page__header h1 {
+        margin: 0 0 10px;
+        font-size: 30px;
+        line-height: 1.25;
+        font-weight: 700;
+        letter-spacing: -.025em;
+    }
+    .finix-desktop-shell .info-page__header > p {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.65;
+        color: hsl(var(--muted-foreground));
+    }
+    .finix-desktop-shell .info-page__header > .relative:not([hidden]) {
+        max-width: 640px;
+        margin: 16px 0 0;
+        padding: 0;
+    }
+    .finix-desktop-shell .info-page__header input { min-height: 44px; border-radius: 6px; }
+    .info-page__grid {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+    }
+    .info-page__sidebar {
+        display: block;
+        width: auto;
+        min-width: 0;
+        position: sticky;
+        top: 80px;
+        padding: 12px;
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        background: hsl(var(--card));
+    }
+    .info-page__sidebar > :is(nav, [role='tablist']) {
+        position: static;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        max-height: calc(100dvh - 128px);
+        overflow-y: auto;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+    }
+    /* Override the global horizontal filter-bar rules for this vertical index. */
+    .finix-desktop-shell .desktop-main .info-page__sidebar > [role='tablist'] {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        align-items: stretch !important;
+        gap: 2px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+    }
+    .info-page__sidebar [role='img'] { display: none; }
+    .finix-desktop-shell .info-page__sidebar :is(a, button) {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        width: 100%;
+        padding: 9px 12px;
+        border: 0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.45;
+        text-align: left;
+        white-space: normal;
+        color: hsl(var(--muted-foreground));
+        background: transparent;
+        box-shadow: none;
+        transition: color 150ms, background-color 150ms;
+    }
+    .info-page__sidebar :is(a, button):hover,
+    .info-page__sidebar a.text-primary,
+    .info-page__sidebar button[aria-selected='true'] {
+        color: hsl(var(--primary));
+        background: hsl(var(--primary) / .08);
+    }
+    .info-page__sidebar button[aria-selected='true'] {
+        font-weight: 600;
+    }
+    .info-page__body { display: block; min-width: 0; }
+    .info-page__body > .mb-16 { margin-bottom: 24px; }
+    .info-page__body :is(section[id], [id='filosofia'], [id='seguridad'], [id='empezar']) {
+        border-radius: 8px;
+        padding: 24px;
+        scroll-margin-top: 80px;
+        box-shadow: none;
+    }
+    .finix-desktop-shell .info-page__body h2 { font-size: 22px; font-weight: 700; line-height: 1.4; }
+    .finix-desktop-shell .info-page__body h3 { font-size: 18px; font-weight: 650; line-height: 1.45; }
+    .finix-desktop-shell .info-page__body :is(p, li) { font-size: 15px; line-height: 1.75; }
+    .info-page__body [id='filosofia'] > .max-w-2xl { max-width: none; }
+    .info-page__body [id='herramientas'] { scroll-margin-top: 80px; }
+    .info-page__body [id='herramientas'] > .text-center { text-align: left; margin-bottom: 20px; }
+    .info-page__body [id='herramientas'] .grid > div { border-radius: 8px; }
+    .info-page__body [role='listitem'] button { font-size: 15px; }
+    .info-page__body footer {
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 32px;
+        padding-top: 20px;
+    }
+    .finix-desktop-shell .info-page__body footer p { font-size: 12px; }
+    .info-page__body footer > div { flex-wrap: wrap; gap: 16px; }
+}

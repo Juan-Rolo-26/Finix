@@ -12,7 +12,8 @@ const TabsList = React.forwardRef<
     <TabsPrimitive.List
         ref={ref}
         className={cn(
-            "inline-flex h-10 items-center justify-center rounded-xl border border-border/70 bg-secondary/80 p-1 text-muted-foreground",
+            "inline-flex h-9 items-center justify-center rounded-[5px] " +
+            "border border-border/60 bg-secondary/60 p-0.5 text-muted-foreground",
             className
         )}
         {...props}
@@ -27,7 +28,14 @@ const TabsTrigger = React.forwardRef<
     <TabsPrimitive.Trigger
         ref={ref}
         className={cn(
-            "inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-brand/20 data-[state=active]:bg-brand/10 data-[state=active]:text-foreground",
+            "inline-flex items-center justify-center whitespace-nowrap rounded-[4px] " +
+            "px-3 py-1.5 text-xs font-medium ring-offset-background " +
+            "transition-all duration-150 " +
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 " +
+            "disabled:pointer-events-none disabled:opacity-50 " +
+            "data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:font-semibold " +
+            "data-[state=active]:shadow-[0_1px_3px_hsl(var(--foreground)/0.07)] " +
+            "hover:text-foreground",
             className
         )}
         {...props}
@@ -42,7 +50,9 @@ const TabsContent = React.forwardRef<
     <TabsPrimitive.Content
         ref={ref}
         className={cn(
-            "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            "mt-2 ring-offset-background " +
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 " +
+            "data-[state=active]:animate-[fade-in_180ms_ease_both]",
             className
         )}
         {...props}

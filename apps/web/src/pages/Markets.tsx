@@ -21,6 +21,8 @@ import {
     Clock,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { InvestorQuote } from '@/components/common/InvestorQuote';
+import { MarketStatusPill } from '@/components/common/MarketStatusPill';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -160,6 +162,9 @@ export default function Markets() {
 
     useEffect(() => {
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            // The desktop header owns the global shortcut; the local asset
+            // picker remains available through the market's search button.
+            if (window.matchMedia('(min-width: 1024px)').matches) return;
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
                 setIsSearchOpen((prev) => !prev);
@@ -333,12 +338,15 @@ export default function Markets() {
     return (
         <div className="relative w-full overflow-hidden pb-20 markets-view">
             <div className="market-shell">
+                <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                    <MarketStatusPill />
+                </div>
                 <Tabs
                     value={activeTab}
                     onValueChange={setActiveTab}
                     className="space-y-6"
                 >
-                    <TabsList className="market-tabs">
+                    <TabsList className="market-tabs justify-center">
                         <TabsTrigger value="overview" className="market-tab">
                             <span className="market-tab-icon">
                                 <Activity className="h-3.5 w-3.5" />
@@ -549,6 +557,9 @@ export default function Markets() {
                         )}
                     </TabsContent></Suspense>
                 </Tabs>
+
+                {/* Investor Wisdom Quote */}
+                <InvestorQuote investorId="warren-buffett" showBackToTop />
             </div>
         </div>
     );

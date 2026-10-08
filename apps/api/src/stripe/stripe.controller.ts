@@ -13,7 +13,7 @@ export class StripeController {
     async getConfig() {
         return {
             ...getAccessMode(),
-            configured: !isFreeAccessEnabled() && this.stripeService.isConfigured(),
+            configured: !isFreeAccessEnabled() && await this.stripeService.isCheckoutReady(),
             credentialsConfigured: this.stripeService.isConfigured(),
             communityCurrency: 'ARS',
             proPriceUsd: await this.stripeService.getProMonthlyPriceUsd(),

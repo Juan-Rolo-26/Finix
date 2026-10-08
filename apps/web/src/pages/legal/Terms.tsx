@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Scale, AlertTriangle, ArrowLeft, ArrowUp, ChevronDown } from 'lucide-react';
-import { LEGAL_NAV } from '@/components/legal/LegalPageLayout';
+import { InformationPageTabs } from '@/components/legal/InformationPageTabs';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const LAST_UPDATED = '15 de septiembre de 2026';
@@ -44,10 +44,12 @@ const SECTIONS = [
     { id: 'contacto', title: '30. Contacto' },
 ];
 
+const SECTION_IDS = SECTIONS.map(section => section.id);
+
 // ─── Scroll spy hook ───────────────────────────────────────────────────────────
 function useScrollSpy(ids: string[]) {
     const [activeId, setActiveId] = useState(ids[0] ?? '');
-    useState(() => {
+    useEffect(() => {
         const fn = () => {
             let found = ids[0] ?? '';
             for (const id of ids) {
@@ -59,7 +61,8 @@ function useScrollSpy(ids: string[]) {
         };
         window.addEventListener('scroll', fn, { passive: true });
         fn();
-    });
+        return () => window.removeEventListener('scroll', fn);
+    }, [ids]);
     return activeId;
 }
 
@@ -121,17 +124,19 @@ function MobileToc({ activeId }: { activeId: string }) {
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function Terms() {
     const navigate = useNavigate();
-    const activeId = useScrollSpy(SECTIONS.map(s => s.id));
+    const activeId = useScrollSpy(SECTION_IDS);
     const [showBackTop, setShowBackTop] = useState(false);
-    useState(() => {
+    useEffect(() => {
         const fn = () => setShowBackTop(window.scrollY > 400);
         window.addEventListener('scroll', fn, { passive: true });
-    });
+        fn();
+        return () => window.removeEventListener('scroll', fn);
+    }, []);
 
     return (
-        <div className="min-h-screen finix-unified-bg text-foreground font-sans selection:bg-primary/30">
+        <div className="info-page min-h-screen finix-unified-bg text-foreground font-sans selection:bg-primary/30">
             {/* ── Navbar ── */}
-            <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+            <nav aria-label="Volver a Finix" className="info-page__mobile-nav fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
                 <div className="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
                     <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer" aria-label="Volver">
                         <ArrowLeft className="w-4 h-4" />
@@ -146,19 +151,27 @@ export default function Terms() {
                 </div>
             </nav>
 
-            <div className="container mx-auto px-4 md:px-8 pt-24 pb-20 max-w-6xl">
+            <div className="info-page__container container mx-auto px-4 md:px-8 pt-24 pb-20 max-w-6xl">
                 {/* ── Legal tabs ── */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 scrollbar-hide border-b border-border/40 text-sm font-semibold">
-                    {LEGAL_NAV.map(nav => (
-                        <Link key={nav.to} to={nav.to} className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${nav.to === '/terms' ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
-                            {nav.label}
-                        </Link>
-                    ))}
-                </div>
+                <InformationPageTabs />
 
-                <div className="flex gap-10">
+                <header className="info-page__header mb-10">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 text-primary">
+                        <Scale className="w-6 h-6" />
+                    </div>
+                    <h1 className="text-3xl sm:text-4xl font-heading font-black tracking-tight mb-2">
+                        Términos y Condiciones
+                    </h1>
+                    <p className="text-xs text-muted-foreground/70 font-medium">Última actualización: {LAST_UPDATED}</p>
+                    <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border/40 text-xs text-muted-foreground">
+                        Este documento ha sido preparado con fines informativos y deberá ser revisado por un profesional legal antes de su publicación definitiva.
+                        La razón social, domicilio legal y jurisdicción deberán completarse con los datos reales.
+                    </div>
+                </header>
+
+                <div className="info-page__grid flex gap-10">
                     {/* ── Sidebar TOC ── */}
-                    <aside className="hidden lg:block w-64 shrink-0">
+                    <aside className="info-page__sidebar hidden lg:block w-64 shrink-0">
                         <nav aria-label="Índice" className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2 space-y-1 scrollbar-hide">
                             {SECTIONS.map(s => (
                                 <a
@@ -173,21 +186,9 @@ export default function Terms() {
                     </aside>
 
                     {/* ── Content ── */}
-                    <div className="flex-1 min-w-0">
+                    <div className="info-page__body flex-1 min-w-0">
                         {/* Header */}
-                        <header className="mb-10">
-                            <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 text-primary">
-                                <Scale className="w-6 h-6" />
-                            </div>
-                            <h1 className="text-3xl sm:text-4xl font-heading font-black tracking-tight mb-2">
-                                Términos y Condiciones
-                            </h1>
-                            <p className="text-xs text-muted-foreground/70 font-medium">Última actualización: {LAST_UPDATED}</p>
-                            <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border/40 text-xs text-muted-foreground">
-                                Este documento ha sido preparado con fines informativos y deberá ser revisado por un profesional legal antes de su publicación definitiva.
-                                La razón social, domicilio legal y jurisdicción deberán completarse con los datos reales.
-                            </div>
-                        </header>
+
 
                         <MobileToc activeId={activeId} />
 
@@ -325,7 +326,7 @@ export default function Terms() {
                                     Sos responsable de mantener la confidencialidad de tus credenciales y de todas las actividades que ocurran bajo tu cuenta. Debés notificarnos inmediatamente si detectás acceso no autorizado o cualquier incidente de seguridad a través de <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>.
                                 </p>
                                 <p>
-                                    La autenticación en Finix es gestionada a través de <strong>Supabase</strong>, que utiliza estándares de seguridad de la industria para el manejo de credenciales.
+                                    La autenticación es gestionada por <strong>Finix</strong>, con contraseñas protegidas mediante hashes y sesiones propias. El acceso con Google verifica tu identidad a través de Google.
                                 </p>
                             </Section>
 
@@ -520,7 +521,7 @@ export default function Terms() {
                                     Finix integra servicios de terceros para proveer sus funcionalidades. Los principales proveedores son:
                                 </p>
                                 <ul className="list-disc pl-5 space-y-1.5">
-                                    <li><strong>Supabase</strong> — Infraestructura de autenticación y base de datos</li>
+                                    <li><strong>Google</strong> — Verificación de identidad cuando elegís iniciar sesión con Google</li>
                                     <li><strong>MercadoPago</strong> — Procesamiento de pagos (plan Finix Pro y comunidades)</li>
                                     <li><strong>Stripe</strong> — Procesamiento de pagos (comunidades)</li>
                                     <li><strong>Resend</strong> — Envío de emails transaccionales</li>

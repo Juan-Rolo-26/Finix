@@ -8,11 +8,10 @@ import {
 import { PrismaService } from '../prisma.service';
 import { NewsTranslationService } from './news-translation.service';
 import * as cheerio from 'cheerio';
-import { DEFAULT_NEWS_CATEGORIES, NEWS_CATEGORY_KEYWORDS, newsCategoryMatchCount } from './news-catalog';
-import { resolveNewsImage } from './news-image.util';
+import { DEFAULT_NEWS_CATEGORIES, NEWS_ARTICLES_PER_CATEGORY, NEWS_CATEGORY_KEYWORDS, newsCategoryMatchCount } from './news-catalog';
 import { extractHtmlNewsImage, normalizeSourceImage } from './news-source-image.util';
 
-const SLOT_COUNT = 5;
+const SLOT_COUNT = NEWS_ARTICLES_PER_CATEGORY;
 
 const PRIVATE_IP_PATTERNS = [
     /^127\./,
@@ -104,6 +103,7 @@ export class NewsSlotsService {
     private async loadPublicHeadlines(limit = 6) {
         limit = Math.min(20, Math.max(1, Math.floor(Number(limit) || 6)));
         const slots = await this.prisma.newsSlot.findMany({
+            relationLoadStrategy: 'join',
             where: {
                 isActive: true,
                 article: {
@@ -148,20 +148,22 @@ export class NewsSlotsService {
                 { article: { publishedAt: 'desc' } },
                 { updatedAt: 'desc' },
             ],
-            take: limit,
+            take: limit * 3,
         });
 
-        return Promise.all(slots
-            .filter((s) => s.article)
+        const seen = new Set<string>();
+        const headlines = await Promise.all(slots
+            .filter((s) => s.article && !seen.has(s.article.id) && Boolean(seen.add(s.article.id)))
             .map(async (s) => {
                 const article = await this.toSpanishArticle(s.article);
+                if (!article) return null;
                 return {
                     id: article.id,
                     slotId: s.id,
                     slotKey: s.slotKey,
                     title: article.title,
                     description: article.description,
-                    imageUrl: resolveNewsImage(article.title, s.category.slug, article.imageUrl),
+                    imageUrl: normalizeSourceImage(article.imageUrl, article.url),
                     url: article.url,
                     sourceName: article.sourceName || 'Finix',
                     publishedAt: article.publishedAt,
@@ -171,6 +173,7 @@ export class NewsSlotsService {
                     relevanceScore: article.relevanceScore,
                 };
             }));
+        return headlines.filter(Boolean).slice(0, limit);
     }
 
 
@@ -184,6 +187,7 @@ export class NewsSlotsService {
             throw new NotFoundException(`Categoría "${slug}" no encontrada`);
         }
         const loadSlots = () => this.prisma.newsSlot.findMany({
+            relationLoadStrategy: 'join',
             where: { categoryId: category.id },
             orderBy: { position: 'asc' },
             include: {
@@ -229,23 +233,19 @@ export class NewsSlotsService {
                 icon: category.icon,
                 image: category.image,
             },
-            slots: await Promise.all(slots.map(async (slot) => ({
-                id: slot.id,
-                slotKey: slot.slotKey,
-                position: slot.position,
-                isActive: slot.isActive,
-                article:
-                    slot.isActive && slot.article?.isPublished && slot.article?.isActive && slot.article.status === 'PUBLISHED'
-                        ? {
-                            ...(await this.toSpanishArticle(slot.article)),
-                            imageUrl: resolveNewsImage(slot.article.title, category.slug, slot.article.imageUrl),
-                        }
-                        : null,
-            }))),
+            slots: await Promise.all(slots.map(async (slot) => {
+                const article = slot.isActive && slot.article?.isPublished && slot.article?.isActive && slot.article.status === 'PUBLISHED'
+                    ? await this.toSpanishArticle(slot.article) : null;
+                return {
+                    id: slot.id, slotKey: slot.slotKey, position: slot.position,
+                    isActive: slot.isActive,
+                    article: article ? { ...article, imageUrl: normalizeSourceImage(article.imageUrl, article.url) } : null,
+                };
+            })),
         };
     }
 
-    private toSpanishArticle(article: any): Promise<any> {
+    toSpanishArticle(article: any): Promise<any> {
         if (!article) return Promise.resolve(article);
         const key = JSON.stringify([article.id, article.title, article.description, article.titleEs, article.descriptionEs, article.translationAttemptedAt]);
         const pending = this.translations.get(key);
@@ -258,56 +258,40 @@ export class NewsSlotsService {
     private async translateArticle(article: any) {
         if (!article) return article;
 
-        const sourceLanguage = article.source?.language || undefined;
-        const englishSource = sourceLanguage?.toLowerCase().startsWith('en');
-        let titleEs = article.titleEs as string | null;
-        let descriptionEs = article.descriptionEs as string | null;
-        // A provider can echo its input. That does not make an English field Spanish.
-        if (englishSource && titleEs === article.title && !this.translator.isSpanish(article.title)) titleEs = null;
-        if (descriptionEs && this.translator.isEnglish(descriptionEs)) descriptionEs = null;
-        const invalidCachedTranslation = (article.titleEs && !titleEs) || (article.descriptionEs && !descriptionEs);
-        const attemptIsRecent = !invalidCachedTranslation && article.translationAttemptedAt &&
-            Date.now() - new Date(article.translationAttemptedAt).getTime() < 4 * 60 * 60 * 1000;
-        const titleNeedsTranslation = !titleEs;
-        const descriptionNeedsTranslation = Boolean(article.description) && !descriptionEs;
-
-        if ((titleNeedsTranslation || descriptionNeedsTranslation) && !attemptIsRecent) {
-            const fields: Array<{ key: 'titleEs' | 'descriptionEs'; text: string }> = [];
-            if (titleNeedsTranslation && article.title) fields.push({ key: 'titleEs', text: article.title });
-            if (descriptionNeedsTranslation && article.description) fields.push({ key: 'descriptionEs', text: article.description });
-
-            const translated = await this.translator.translateBatch(fields.map((field) => field.text), sourceLanguage);
-            const update: { titleEs?: string; descriptionEs?: string; translationAttemptedAt?: Date } = {};
-            let everyFieldResolved = fields.length > 0;
-            fields.forEach((field, index) => {
-                const result = String(translated[index] || '').trim();
-                const wasAlreadySpanish = this.translator.isSpanish(field.text) || (sourceLanguage?.toLowerCase().startsWith('es') && !this.translator.isEnglish(field.text));
-                const resolved = result && !this.translator.isEnglish(result) && (
-                    result !== field.text ||
-                    wasAlreadySpanish ||
-                    (!englishSource && !this.translator.isEnglish(field.text))
-                );
-                if (resolved) {
-                    update[field.key] = result;
-                    if (field.key === 'titleEs') titleEs = result;
-                    else descriptionEs = result;
-                } else {
-                    everyFieldResolved = false;
-                }
-            });
-
-            // Keep successful fields, but don't suppress retries for a provider
-            // outage or an incomplete translation (e.g. title succeeded, summary did not).
-            if (everyFieldResolved) update.translationAttemptedAt = new Date();
-            if (Object.keys(update).length > 0) {
-                await this.prisma.newsArticle.update({ where: { id: article.id }, data: update });
-            }
+        const valid = (text: unknown): string | null => typeof text === 'string' && this.translator.isSpanish(text) ? text : null;
+        let titleEs = valid(article.titleEs) || valid(article.title);
+        let descriptionEs = valid(article.descriptionEs) || valid(article.description);
+        const needsTitle = !titleEs;
+        const needsDescription = Boolean(article.description) && !descriptionEs;
+        // Persist failures as well, so a provider outage does not trigger a
+        // translation request on every page view. Invalid originals stay hidden.
+        const recent = article.translationAttemptedAt && Date.now() - new Date(article.translationAttemptedAt).getTime() < 10 * 60_000;
+        if (recent && ((article.titleEs && !valid(article.titleEs)) || (article.descriptionEs && !valid(article.descriptionEs)))) {
+            // Repair mislabeled cached translations without waiting for the
+            // provider retry window; coverage recovery must see the missing title.
+            await this.prisma.newsArticle.update({ where: { id: article.id }, data: { titleEs, descriptionEs } });
         }
-
+        if ((needsTitle || needsDescription) && !recent) {
+            const fields: Array<{ key: 'titleEs' | 'descriptionEs'; text: string }> = [];
+            if (needsTitle) fields.push({ key: 'titleEs', text: article.title || '' });
+            if (needsDescription) fields.push({ key: 'descriptionEs', text: article.description });
+            const translated = await this.translator.translateBatch(fields.map(field => field.text), article.source?.language);
+            const update: { titleEs?: string | null; descriptionEs?: string | null; translationAttemptedAt: Date } = { titleEs, descriptionEs, translationAttemptedAt: new Date() };
+            fields.forEach((field, index) => {
+                const result = valid(translated[index]);
+                update[field.key] = result;
+                if (field.key === 'titleEs') titleEs = result;
+                else descriptionEs = result;
+            });
+            await this.prisma.newsArticle.update({ where: { id: article.id }, data: update });
+        }
+        if (!titleEs) return null;
+        // Return only public fields; raw/cached untranslated fields never leak.
         return {
-            ...article,
-            title: titleEs || article.title,
-            description: descriptionEs || (this.translator.isSpanish(article.description || '') || (sourceLanguage?.toLowerCase().startsWith('es') && !this.translator.isEnglish(article.description || '')) ? article.description : undefined),
+            id: article.id, url: article.url, title: titleEs,
+            description: descriptionEs || undefined, imageUrl: article.imageUrl,
+            sourceName: article.sourceName, publishedAt: article.publishedAt,
+            author: article.author, relevanceScore: article.relevanceScore,
         };
     }
 
@@ -456,8 +440,11 @@ export class NewsSlotsService {
     }
 
     private async writeFillEmptySlots(categoryId: string, slug: string) {
-        const slots = await this.prisma.newsSlot.findMany({ where: { categoryId }, orderBy: { position: 'asc' } });
-        const empty = slots.filter(slot => slot.isActive && !slot.articleId);
+        const slots = await this.prisma.newsSlot.findMany({ where: { categoryId }, orderBy: { position: 'asc' }, include: { article: true } });
+        const empty = slots.filter(slot => slot.isActive && (!slot.articleId || (
+            slot.article?.sourceId && !slot.article.customTitle && !slot.article.customDescription && !slot.article.customImage &&
+            slot.article.translationAttemptedAt && !this.translator.isSpanish(slot.article.titleEs || '') && !this.translator.isSpanish(slot.article.title)
+        )));
         if (!empty.length) return;
         const used = slots.map(slot => slot.articleId).filter(Boolean) as string[];
         const keywords = NEWS_CATEGORY_KEYWORDS[slug] || [];
@@ -477,13 +464,22 @@ export class NewsSlotsService {
             take: 100,
         });
         const relevant = articles.filter(article => article.categoryId === categoryId || newsCategoryMatchCount(slug, `${article.title} ${article.titleEs || ''} ${article.description || ''} ${article.descriptionEs || ''}`) > 0);
-        for (let index = 0; index < Math.min(empty.length, relevant.length); index++) {
-            const article = relevant[index];
+        // Prefer already localized stories during recovery, then translate more
+        // candidates until the available spaces are covered.
+        relevant.sort((a, b) => Number(this.translator.isSpanish(b.titleEs || b.title)) - Number(this.translator.isSpanish(a.titleEs || a.title)));
+        const localized: typeof relevant = [];
+        for (let offset = 0; offset < relevant.length && localized.length < empty.length; offset += SLOT_COUNT) {
+            const batch = relevant.slice(offset, offset + SLOT_COUNT);
+            const ready = await Promise.all(batch.map(article => this.toSpanishArticle(article)));
+            batch.forEach((article, index) => { if (ready[index]) localized.push(article); });
+        }
+        for (let index = 0; index < Math.min(empty.length, localized.length); index++) {
+            const article = localized[index];
             const result = await this.prisma.newsSlot.updateMany({
-                where: { id: empty[index].id, articleId: null, isActive: true },
+                where: { id: empty[index].id, articleId: empty[index].articleId || null, isActive: true },
                 data: { articleId: article.id },
             });
-            if (result.count) await this.prisma.newsSlotHistory.create({ data: { slotId: empty[index].id, newArticleId: article.id } });
+            if (result.count) await this.prisma.newsSlotHistory.create({ data: { slotId: empty[index].id, previousArticleId: empty[index].articleId || undefined, newArticleId: article.id } });
         }
     }
 
@@ -693,16 +689,9 @@ export class NewsSlotsService {
         }
     }
 
-    private async ensureArticlePhoto(url: string, title: string, providedImage?: string | null, categoryId?: string): Promise<string> {
-        const provided = normalizeSourceImage(providedImage, url);
-        if (provided) return provided;
-        const metadata = await this.scrapeUrlPreview(url);
-        const photo = normalizeSourceImage(metadata.imageUrl, url);
-        if (photo) return photo;
-        const category = categoryId
-            ? await this.prisma.newsCategory.findUnique({ where: { id: categoryId }, select: { slug: true } })
-            : null;
-        return resolveNewsImage(title || metadata.title || 'Noticia', category?.slug);
+    private async ensureArticlePhoto(url: string, _title: string, providedImage?: string | null, _categoryId?: string): Promise<string | null> {
+        // Photos are optional. Keep an actual source/editor photo when supplied.
+        return normalizeSourceImage(providedImage, url) || null;
     }
 
     private validateUrl(url: string) {

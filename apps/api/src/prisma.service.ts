@@ -1,37 +1,12 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Injectable, Optional, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ReadCacheService } from './cache/read-cache.service';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { normalizeDatabaseUrl } from './common/database-url';
+import { requestMetrics } from './common/request-metrics';
 
-const normalizeDatabaseUrl = (rawUrl?: string) => {
-    if (!rawUrl) {
-        return rawUrl;
-    }
-
-    try {
-        const url = new URL(rawUrl);
-        if (url.hostname.endsWith('.pooler.supabase.com')) {
-            if (!url.port || url.port === '5432') {
-                url.port = '6543';
-            }
-            if (!url.searchParams.has('pgbouncer')) {
-                url.searchParams.set('pgbouncer', 'true');
-            }
-            if (!url.searchParams.has('connection_limit')) {
-                url.searchParams.set('connection_limit', '10');
-            }
-            // Timeout de conexión: falla rápido si Supabase no responde
-            if (!url.searchParams.has('connect_timeout')) {
-                url.searchParams.set('connect_timeout', '10');
-            }
-            // Timeout de pool: no esperar más de 15s para obtener una conexión libre
-            if (!url.searchParams.has('pool_timeout')) {
-                url.searchParams.set('pool_timeout', '15');
-            }
-        }
-        return url.toString();
-    } catch {
-        return rawUrl;
-    }
-};
+const relationFields = new Map(Prisma.dmmf.datamodel.models.map(model => [
+    model.name, new Set(model.fields.filter(field => field.kind === 'object').map(field => field.name)),
+]));
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -39,7 +14,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     private reconnectScheduled = false;
     private shuttingDown = false;
 
-    constructor() {
+    constructor(@Optional() private readonly cache?: ReadCacheService) {
         const databaseUrl = normalizeDatabaseUrl(process.env.DATABASE_URL);
 
         super(
@@ -56,28 +31,50 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
                 }
                 : undefined,
         );
+
+        // Enabling relationJoins changes Prisma's default. Preserve the existing
+        // strategy everywhere; only explicitly profiled reads opt into SQL joins.
+        this.$use(async (params, next) => {
+            const loadsRelations = params.args?.include || Object.keys(params.args?.select || {})
+                .some(key => relationFields.get(params.model)?.has(key));
+            if (loadsRelations && ['findUnique', 'findUniqueOrThrow', 'findFirst', 'findFirstOrThrow', 'findMany'].includes(params.action)) {
+                params.args = { relationLoadStrategy: 'query', ...params.args };
+            }
+            return next(params);
+        });
+        const publicCacheModels = new Set(['User', 'Portfolio', 'Holding', 'Transaction', 'CashAccount', 'Post', 'PostLike', 'Community', 'AssetAnalysis']);
+        this.$use(async (params, next) => {
+            const started = performance.now();
+            let result: any;
+            try { result = await next(params); }
+            finally {
+                const elapsedMs = performance.now() - started;
+                const metrics = requestMetrics.getStore();
+                if (metrics) { metrics.dbOperations++; metrics.dbMs += elapsedMs; }
+                if (elapsedMs >= 500) console.log(JSON.stringify({ event: 'database_slow_operation', model: params.model || 'raw', action: params.action, elapsedMs: Number(elapsedMs.toFixed(2)), requestId: metrics?.id }));
+            }
+            if (cache && publicCacheModels.has(params.model) && /^(create|update|upsert|delete)/.test(params.action)) {
+                const transaction = cache.transaction.getStore();
+                if (transaction) transaction.mutated = true;
+                else await cache.invalidate();
+            }
+            return result;
+        });
+        if (cache) {
+            const transaction = this.$transaction.bind(this);
+            Object.defineProperty(this, '$transaction', { value: async (...args: any[]) => {
+                const context = { mutated: false };
+                const result = await cache.transaction.run(context, () => (transaction as any)(...args));
+                // Invalidate after successful COMMIT, never after a rollback.
+                if (context.mutated) await cache.invalidate();
+                return result;
+            } });
+        }
     }
 
     async onModuleInit() {
-        // Register the middleware before the first query so every database
-        // operation has the same bounded timeout.
-        this.$use(async (params, next) => {
-            let timeoutId: NodeJS.Timeout | undefined;
-            const timeout = new Promise<never>((_, reject) => {
-                timeoutId = setTimeout(
-                    () => reject(new Error(`[Prisma] Query timeout: ${params.model}.${params.action} exceeded 20s`)),
-                    20_000,
-                );
-            });
-
-            try {
-                return await Promise.race([next(params), timeout]);
-            } finally {
-                // Do not leave thousands of pending timers behind after fast queries.
-                if (timeoutId) clearTimeout(timeoutId);
-            }
-        });
-
+        // PostgreSQL's role-level statement_timeout cancels the actual query.
+        // Promise.race cannot cancel writes and can report failure after a commit.
         await this.connectToDatabase();
     }
 
@@ -101,7 +98,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             await this.$connect();
             console.log('✅ [Prisma] Conectado a la base de datos');
         } catch (err: any) {
-            console.error('⚠️ [Prisma] No se pudo conectar a la base de datos:', err?.message || err);
+            console.error(JSON.stringify({ event: 'database_connect_failed', code: err?.code || 'unavailable' }));
             console.error('⚠️ La API seguirá viva, pero no estará lista hasta recuperar DATABASE_URL.');
             this.scheduleReconnect();
         }

@@ -1,0 +1,283 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   FINIX — DESKTOP SOCIAL / DASHBOARD LAYOUT
+   Applies ONLY at ≥1024 px. Mobile layout is untouched.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+
+    /* ─────────────────────────────────────────────────────────────────────
+       SOCIAL PAGE SHELL
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-social-page {
+        --dashboard-viewport-offset: 80px;
+        padding-block: 12px;
+        padding-inline: var(--desktop-gutter);
+        max-width: none;
+        width: 100%;
+        margin-inline: auto;
+    }
+
+    .finix-desktop-shell .desktop-main:has(> .desktop-section-nav) .desktop-social-page {
+        --dashboard-viewport-offset: 130px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       THREE-COLUMN GRID
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-social-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 2.2fr) minmax(220px, 0.85fr) minmax(220px, 0.85fr);
+        gap: clamp(12px, 1.2vw, 20px);
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .finix-desktop-shell .desktop-social-feed {
+        grid-column: 1;
+        grid-row: 1;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        margin-inline: 0;
+    }
+
+    /* Sidebar: sticky, fills remaining height */
+    .finix-desktop-shell .desktop-social-sidebar {
+        display: flex;
+        flex-direction: column;
+        grid-row: 1;
+        position: sticky;
+        top: 68px;
+        height: calc(100dvh - var(--dashboard-viewport-offset));
+        min-height: 0;
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        gap: 10px;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .finix-desktop-shell .desktop-social-sidebar--left  { grid-column: 2; }
+    .finix-desktop-shell .desktop-social-sidebar--right { grid-column: 3; }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       SIDEBAR CARDS — Evenly fill available height
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-social-sidebar > :is(
+        .market-ranking-card,
+        .calendar-preview-card,
+        .dashboard-headlines-card
+    ) {
+        flex: 1 1 0%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        border-radius: 16px;
+        border: 1px solid hsl(var(--border) / 0.6);
+        background: hsl(var(--card));
+        overflow: hidden;
+    }
+
+    /* Card headers */
+    .finix-desktop-shell .desktop-social-sidebar > :is(
+        .market-ranking-card,
+        .calendar-preview-card,
+        .dashboard-headlines-card
+    ) > div:first-child {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+        padding: 10px 14px;
+        border-bottom: 1px solid hsl(var(--border) / 0.5);
+    }
+
+    /* Card header titles */
+    .finix-desktop-shell .desktop-social-sidebar :is(
+        h3,
+        .calendar-preview-card > div:first-child span.text-\[14\.5px\],
+        .dashboard-headlines-card h3
+    ) {
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.25;
+        letter-spacing: -0.01em;
+    }
+
+    /* Card header actions */
+    .finix-desktop-shell .desktop-social-sidebar > :is(
+        .market-ranking-card,
+        .calendar-preview-card,
+        .dashboard-headlines-card
+    ) > div:first-child > :is(a, button) {
+        flex-shrink: 0;
+        font-size: 11px;
+        font-weight: 700;
+        color: hsl(var(--primary));
+        transition: opacity 140ms ease;
+    }
+    .finix-desktop-shell .desktop-social-sidebar > :is(
+        .market-ranking-card,
+        .calendar-preview-card,
+        .dashboard-headlines-card
+    ) > div:first-child > :is(a, button):hover { opacity: 0.75; }
+
+    /* Card content area */
+    .finix-desktop-shell .desktop-social-sidebar > :is(
+        .market-ranking-card,
+        .calendar-preview-card,
+        .dashboard-headlines-card
+    ) > div:last-child {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 6px 8px;
+        overflow: hidden;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       TOP GAINERS / LOSERS
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-social-sidebar .market-ranking-card .space-y-0\.5 {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 2px;
+        margin: 0;
+    }
+    .finix-desktop-shell .desktop-social-sidebar .market-ranking-card button {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border: 1px solid transparent !important;
+        border-radius: 8px !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        transition: background 130ms ease;
+        cursor: pointer;
+    }
+    .finix-desktop-shell .desktop-social-sidebar .market-ranking-card button:hover {
+        background: hsl(var(--muted) / 0.5) !important;
+    }
+    .finix-desktop-shell .desktop-social-sidebar .market-ranking-card img,
+    .finix-desktop-shell .desktop-social-sidebar .market-ranking-card .w-9 {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+    }
+    .finix-desktop-shell .desktop-social-sidebar .market-ranking-card :is(.text-\[14px\], .text-\[12\.5px\]) {
+        font-size: 13.5px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    .finix-desktop-shell .desktop-social-sidebar .market-ranking-card :is(.text-\[11\.5px\], .text-\[10px\]) {
+        font-size: 11px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       CALENDAR PREVIEW
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-social-sidebar .calendar-preview-card > div:last-child {
+        padding: 6px 8px;
+    }
+    .finix-desktop-shell .desktop-social-sidebar .calendar-preview-card a {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        padding: 6px 8px;
+        border-radius: 5px;
+        transition: background 130ms ease;
+    }
+    .finix-desktop-shell .desktop-social-sidebar .calendar-preview-card a:hover {
+        background: hsl(var(--muted) / 0.4);
+    }
+    .finix-desktop-shell .desktop-social-sidebar .calendar-preview-card p.line-clamp-1,
+    .finix-desktop-shell .desktop-social-sidebar .calendar-preview-card p.line-clamp-2 {
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       HEADLINES CARD
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-social-sidebar .dashboard-headlines-card > div:last-child {
+        padding: 6px 10px;
+    }
+    .finix-desktop-shell .desktop-social-sidebar .dashboard-headlines-card .dashboard-headlines-wrapper {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
+    .finix-desktop-shell .desktop-social-sidebar .dashboard-headlines-card .dashboard-headlines-list {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 3px;
+        height: 100%;
+    }
+    .finix-desktop-shell .desktop-social-sidebar .dashboard-headlines-card .dashboard-headline-item {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 5px 7px;
+        border-radius: 6px;
+        transition: background 130ms ease;
+        cursor: pointer;
+    }
+    .finix-desktop-shell .desktop-social-sidebar .dashboard-headlines-card .dashboard-headline-item:hover {
+        background: hsl(var(--muted) / 0.4);
+    }
+    .finix-desktop-shell .desktop-social-sidebar .dashboard-headlines-card h4 {
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       DASHBOARD FOOTER
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .dashboard-footer {
+        flex-shrink: 0;
+        margin-top: 24px;
+        padding: 20px 16px 28px;
+        gap: 10px;
+        width: 100%;
+    }
+    .finix-desktop-shell .dashboard-footer a { font-size: 12px; }
+    .finix-desktop-shell .dashboard-footer > div:last-child { font-size: 11px; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   COMPACT HEIGHT — Shorter viewports
+───────────────────────────────────────────────────────────────────────────── */
+@media (min-width: 1024px) and (max-height: 800px) {
+    .finix-desktop-shell .desktop-social-sidebar { gap: 7px; }
+    .finix-desktop-shell .desktop-social-sidebar > :is(
+        .market-ranking-card,
+        .calendar-preview-card,
+        .dashboard-headlines-card
+    ) > div:first-child { padding: 8px 12px; }
+    .finix-desktop-shell .desktop-social-sidebar .market-ranking-card button { padding: 3px 7px; }
+    .finix-desktop-shell .desktop-social-sidebar .calendar-preview-card a { padding: 5px 7px; }
+    .finix-desktop-shell .desktop-social-sidebar :is(
+        .dashboard-headlines-card h4,
+        .calendar-preview-card p.line-clamp-2
+    ) { line-clamp: 1; -webkit-line-clamp: 1; }
+}

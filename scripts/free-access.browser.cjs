@@ -26,17 +26,19 @@ const basic = { id: 'basic-test', email: 'basic@example.test', username: 'basic-
                 const unauthenticated = !loggedIn && ['/auth/me', '/auth/refresh'].includes(path);
                 await route.fulfill({ status: unauthenticated ? 401 : 200, json: unauthenticated ? { message: 'No autenticado' } : response });
             });
+            page.setDefaultTimeout(15000);
             await page.goto(base + '/pro');
-            await page.getByText('Incluye', { exact: true }).first().waitFor();
+            await page.locator('.pricing-plan').first().waitFor();
             if (freeAccess) {
-                await page.getByText('Finix está gratis para todos.', { exact: true }).waitFor();
-                assert.equal(await page.getByText('$0', { exact: true }).count(), 3);
+                await page.getByText('Finix está gratis para todos durante esta etapa', { exact: true }).waitFor();
+                assert.match(await page.locator('[data-plan=PRO]').innerText(), /6\.300/);
+                assert.match(await page.locator('[data-plan=CREATOR]').innerText(), /29\.900/);
                 assert.equal(await page.getByRole('button', { name: 'Iniciar sesión para comprar' }).count(), 0);
                 await page.getByRole('button', { name: 'Crear cuenta gratis' }).last().click();
                 assert.equal(purchases.length, 0);
             } else {
-                assert.equal(await page.getByText('Finix está gratis para todos.', { exact: true }).count(), 0);
-                await page.getByText('$6.300', { exact: true }).waitFor();
+                assert.equal(await page.getByText('Finix está gratis para todos durante esta etapa', { exact: true }).count(), 0);
+                assert.match(await page.locator('[data-plan=PRO]').innerText(), /6\.300/);
             }
 
             // Test an existing basic account, including an explicit PRO denial.

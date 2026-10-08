@@ -1,11 +1,12 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { EventsGateway } from '../events.gateway';
 import { PrismaService } from '../prisma.service';
 import { hasEffectiveProAccess } from '../auth/pro-access';
 import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 @Injectable()
 export class SettingsService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService, @Optional() private eventsGateway?: EventsGateway) { }
 
     private normalizeUserMedia<T extends { avatarUrl?: string | null; bannerUrl?: string | null }>(user: T): T {
         return {
@@ -254,10 +255,12 @@ export class SettingsService {
 
     // ─── LOGOUT ALL SESSIONS ────────────────────────────────────────────────────
     async logoutAllSessions(userId: string) {
-        // In a JWT-based system without token blacklisting, we rotate a secret or
-        // store a "sessions_invalidated_at" timestamp. For now we return success.
-        // TODO: implement token invalidation if needed
-        return { success: true, message: 'Sesiones cerradas (JWT stateless - tokens expirarán naturalmente)' };
+        await this.prisma.userSession.updateMany({
+            where: { userId, revokedAt: null },
+            data: { revokedAt: new Date() },
+        });
+        this.eventsGateway?.disconnectUserSessions(userId);
+        return { success: true, message: 'Todas las sesiones de Finix fueron cerradas' };
     }
 
     // ─── FINANCIAL ADVISOR VERIFICATION ─────────────────────────────────────────

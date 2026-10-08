@@ -425,6 +425,7 @@ export class PortfolioPerformanceService {
         await this.assertOwner(portfolioId, userId);
 
         const portfolio = await this.prisma.portfolio.findUnique({
+            relationLoadStrategy: 'join',
             where: { id: portfolioId },
             include: {
                 holdings: { include: { asset: true } },
@@ -524,6 +525,7 @@ export class PortfolioPerformanceService {
 
     private async loadPerformance(portfolioId: string, range: string, currency: string) {
         const portfolio = await this.prisma.portfolio.findUnique({
+            relationLoadStrategy: 'join',
             where: { id: portfolioId },
             include: {
                 holdings: { include: { asset: true } },

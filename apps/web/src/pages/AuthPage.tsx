@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
 
 import { normalizeAuthError } from '@/lib/api-errors';
 import { apiFetch } from '@/lib/api';
@@ -148,19 +147,19 @@ export default function AuthPage() {
         setIsLoading(true);
         clearMessages();
 
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-                queryParams: {
-                    prompt: 'select_account',
-                    access_type: 'online',
-                },
-            },
-        });
-
-        if (error) {
-            setAuthError(normalizeAuthError(error.message, t.auth.errors.googleNotConfigured));
+        try {
+            const response = await apiFetch('/auth/providers');
+            const providers = await response.json();
+            if (!response.ok || !providers.google) {
+                setAuthError('El acceso con Google todavía no está configurado. Podés ingresar con email o recuperar tu contraseña.');
+                setIsLoading(false);
+                return;
+            }
+            const params = new URLSearchParams();
+            if (view === 'register') params.set('username', username.trim());
+            window.location.assign(`/api/auth/google${params.size ? `?${params}` : ''}`);
+        } catch (error) {
+            setAuthError(normalizeAuthError(error instanceof Error ? error.message : null, t.auth.errors.connectionError));
             setIsLoading(false);
         }
     };
@@ -302,8 +301,8 @@ export default function AuthPage() {
             setAuthError('El nombre de usuario debe tener al menos 3 caracteres.');
             return;
         }
-        if (view === 'login' && !loginCodeStep && password.length < 6) {
-            setAuthError('La contraseña debe tener al menos 6 caracteres.');
+        if (view === 'login' && !loginCodeStep && password.length < 8) {
+            setAuthError('La contraseña debe tener al menos 8 caracteres.');
             return;
         }
         if (view === 'login' && loginCodeStep && loginCode.length !== 6) {

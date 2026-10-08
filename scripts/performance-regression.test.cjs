@@ -119,7 +119,7 @@ test('news readers share populated category data and editorial changes invalidat
     const { NewsSlotsService } = require('../apps/api/dist/news/news-slots.service');
     let categoryReads = 0, slotReads = 0, published = true;
     const article = { id: 'article', title: 'El mercado argentino', titleEs: 'El mercado argentino', description: 'Informe del mercado', descriptionEs: 'Informe del mercado', source: { language: 'es' }, isActive: true, isPublished: true, status: 'PUBLISHED', translationAttemptedAt: new Date() };
-    const rows = Array.from({ length: 5 }, (_, index) => ({ id: String(index), isActive: true, articleId: 'article', article: { ...article } }));
+    const rows = Array.from({ length: 10 }, (_, index) => ({ id: String(index), isActive: true, articleId: 'article', article: { ...article } }));
     const prisma = {
         newsCategory: { findUnique: async () => { categoryReads++; return { id: 'cat', slug: 'argentina', isActive: true }; } },
         newsSlot: { findMany: async () => { slotReads++; return rows; }, findUnique: async () => ({ article }), },

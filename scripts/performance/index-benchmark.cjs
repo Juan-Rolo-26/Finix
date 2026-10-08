@@ -35,7 +35,7 @@ for (const name of ['20261004010000_public_ranking_index', '20261004010100_incom
 sql('ANALYZE');
 const after = measure();
 for (const [name,q] of Object.entries(queries)) { if(name==='followers') assert.deepEqual(sql(q).split('\n').sort(), beforeRows[name].split('\n').sort()); else assert.equal(sql(q),beforeRows[name]); }
-fs.writeFileSync(output, JSON.stringify({conditions:'Local PostgreSQL16; warm synthetic fixture, 100k posts, 50k users, 100k follows, 3 EXPLAIN ANALYZE runs each; minimal columns matching query predicates, no production data. Migration applied twice without transaction.',before,after},null,2));
+fs.writeFileSync(output, JSON.stringify({conditions:'Local PostgreSQL18.6; warm synthetic fixture, 100k posts, 50k users, 100k follows, 3 EXPLAIN ANALYZE runs each; minimal columns matching query predicates, no production data. Migration applied twice without transaction.',before,after},null,2));
 console.log(JSON.stringify(Object.fromEntries(Object.keys(queries).map(name=>[name,{before:before[name].map(p=>p['Execution Time']),after:after[name].map(p=>p['Execution Time'])}]))));
 
 execFileSync('docker', ['exec',container,'dropdb','-U','postgres',database]);

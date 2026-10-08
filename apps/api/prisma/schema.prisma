@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -9,11 +10,12 @@ datasource db {
 }
 
 model User {
+  externalIdentities ExternalIdentity[]
   pushSubscriptions PushSubscription[]
   id                String             @id @default(uuid())
   email             String             @unique
   username          String             @unique
-  password          String? // Managed by Finix for email/password auth; Supabase remains for OAuth
+  password          String? // Finix Argon2 or imported legacy bcrypt hash
   role              String             @default("USER") // USER, CREATOR, ADMIN
   status            String             @default("ACTIVE") // ACTIVE, BANNED
   shadowbanned      Boolean            @default(false)
@@ -1251,6 +1253,8 @@ model DirectMessage {
   @@index([sharedPostId])
 }
 
+// Retired feature: retain these models and historical migrations to preserve
+// existing data and backup compatibility. No stories API or publisher is active.
 model Story {
   id         String      @id @default(uuid())
   authorId   String
@@ -2336,4 +2340,17 @@ model ChartAnalysisVersion {
 
   @@index([analysisId])
   @@index([createdAt])
+}
+
+model ExternalIdentity {
+  id        String   @id @default(uuid())
+  provider  String
+  subject   String
+  userId    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, subject])
+  @@index([userId])
 }

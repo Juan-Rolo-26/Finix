@@ -14,12 +14,12 @@ import {
     Newspaper,
 } from 'lucide-react';
 import SocialFeed from '../components/SocialFeed';
-import { StoriesRail } from '@/components/stories/StoriesRail';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TopGainersCard } from '@/components/TopGainersCard';
 import { TopLosersCard } from '@/components/TopLosersCard';
 import { CalendarPreviewCard } from '@/components/CalendarPreviewCard';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { InvestorQuote } from '@/components/common/InvestorQuote';
 
 interface MarketTicker {
     symbol: string;
@@ -88,33 +88,56 @@ function MarketTicker({ tickers }: { tickers: MarketTicker[] }) {
 /* ── Feed Tabs ──────────────────────────────────────────────────── */
 function FeedTabs({ active, onChange }: { active: FeedTab; onChange: (t: FeedTab) => void }) {
     return (
-        <div className="flex items-center gap-1 p-1 rounded-2xl"
-            style={{ background: 'hsl(var(--secondary) / 0.45)' }}>
+        <div
+            className="flex items-center gap-1.5 p-1.5 rounded-full border shadow-inner transition-all max-w-xl mx-auto w-full"
+            style={{
+                background: 'hsl(var(--secondary) / 0.45)',
+                borderColor: 'hsl(var(--border) / 0.55)',
+            }}
+        >
             {FEED_TABS.map((tab) => {
                 const isActive = tab.key === active;
                 const Icon = tab.icon;
                 return (
                     <button
                         key={tab.key}
+                        type="button"
                         onClick={() => onChange(tab.key)}
-                        className="relative flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[12px] sm:text-[13px] font-semibold transition-colors select-none flex-1 justify-center whitespace-nowrap"
+                        className="group relative flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full text-[12.5px] sm:text-[13px] font-semibold transition-all select-none flex-1 justify-center whitespace-nowrap cursor-pointer"
                         style={{
                             color: isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
-                            background: isActive ? 'hsl(var(--card))' : 'transparent',
-                            boxShadow: isActive ? '0 1px 8px hsl(220 42% 3% / 0.2)' : 'none',
                         }}
                     >
                         {isActive && (
                             <motion.div
                                 layoutId="tab-bg"
-                                className="absolute inset-0 rounded-xl"
-                                style={{ background: 'hsl(var(--card))', zIndex: 0 }}
+                                className="absolute inset-0 rounded-full border"
+                                style={{
+                                    background: 'hsl(var(--card))',
+                                    borderColor: 'hsl(var(--border) / 0.7)',
+                                    boxShadow: '0 2px 10px -1px hsl(0 0% 0% / 0.1), 0 1px 3px hsl(0 0% 0% / 0.05)',
+                                    zIndex: 0,
+                                }}
                                 initial={false}
-                                transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+                                transition={{ type: 'spring', stiffness: 420, damping: 32 }}
                             />
                         )}
-                        <Icon className="w-3.5 h-3.5 relative z-10 shrink-0" style={{ color: isActive ? 'hsl(var(--primary))' : undefined }} />
-                        <span className="relative z-10 tracking-tight">{tab.label}</span>
+                        <span
+                            className="relative z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 shrink-0"
+                            style={{
+                                background: isActive
+                                    ? 'hsl(var(--primary) / 0.14)'
+                                    : 'hsl(var(--muted) / 0.45)',
+                                color: isActive
+                                    ? 'hsl(var(--primary))'
+                                    : 'hsl(var(--muted-foreground))',
+                            }}
+                        >
+                            <Icon className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-110" />
+                        </span>
+                        <span className="relative z-10 font-bold tracking-tight transition-colors duration-200 group-hover:text-foreground">
+                            {tab.label}
+                        </span>
                     </button>
                 );
             })}
@@ -140,28 +163,26 @@ function SideCard({ title, icon, iconColor, iconBg, to, toLabel, children, index
             custom={index}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0, transition: { delay: index * 0.08, duration: 0.35, ease: 'easeOut' } }}
-            className="rounded-2xl overflow-hidden shrink-0"
-            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border) / 0.5)' }}
+            className="dashboard-headlines-card rounded-2xl overflow-hidden flex-1 flex flex-col min-h-0 shadow-sm border border-border/60"
+            style={{ background: 'hsl(var(--card))' }}
         >
-            <div className="flex items-center justify-between px-4 pt-4 pb-3">
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-border/40 shrink-0">
                 <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: iconBg }}>
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-2xs" style={{ background: iconBg }}>
                         <span style={{ color: iconColor }}>{icon}</span>
                     </div>
-                    <h3 className="text-[13px] font-bold">{title}</h3>
+                    <h3 className="text-[14.5px] font-bold text-foreground">{title}</h3>
                 </div>
                 {to && (
                     <Link to={to}
-                        className="text-[11.5px] font-semibold flex items-center gap-0.5 transition-colors"
-                        style={{ color: 'hsl(var(--primary) / 0.6)' }}
-                        onMouseEnter={e => (e.currentTarget.style.color = 'hsl(var(--primary))')}
-                        onMouseLeave={e => (e.currentTarget.style.color = 'hsl(var(--primary) / 0.6)')}
+                        className="text-[12px] font-bold flex items-center gap-0.5 transition-colors text-primary/80 hover:text-primary group"
                     >
-                        {toLabel ?? 'Ver todo'}<ChevronRight className="w-3 h-3" />
+                        <span>{toLabel ?? 'Ver todo'}</span>
+                        <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                 )}
             </div>
-            <div className="pb-2">{children}</div>
+            <div className="p-2.5 flex-1 flex flex-col min-h-0 justify-between">{children}</div>
         </motion.div>
     );
 }
@@ -197,6 +218,9 @@ function formatHeadlineTime(dateStr?: string) {
     return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
 }
 
+const HEADLINES_PAGE_SIZE = 3;   // items shown at once
+const HEADLINES_INTERVAL_MS = 30_000; // 30 seconds
+
 function HeadlinesCard({
     headlines,
     isLoading,
@@ -206,6 +230,31 @@ function HeadlinesCard({
     isLoading: boolean;
     onNavigate: (path: string) => void;
 }) {
+    const [page, setPage] = useState(0);
+    const totalPages = Math.max(1, Math.ceil(headlines.length / HEADLINES_PAGE_SIZE));
+
+    // Auto-rotate every 30 s — loops indefinitely through pages of 3 headlines
+    useEffect(() => {
+        if (isLoading || headlines.length <= HEADLINES_PAGE_SIZE) return;
+
+        const interval = setInterval(() => {
+            setPage(p => (p + 1) % totalPages);
+        }, HEADLINES_INTERVAL_MS);
+
+        return () => clearInterval(interval);
+    }, [isLoading, headlines.length, totalPages]);
+
+    // Keep page in valid bounds when headlines count changes
+    useEffect(() => {
+        setPage(p => (p >= totalPages ? 0 : p));
+    }, [totalPages]);
+
+    // Build visible window of 3 — wraps around the array in a continuous loop
+    const currentItems = Array.from(
+        { length: Math.min(HEADLINES_PAGE_SIZE, headlines.length) },
+        (_, i) => headlines[(page * HEADLINES_PAGE_SIZE + i) % headlines.length]
+    );
+
     return (
         <SideCard
             index={2}
@@ -216,63 +265,72 @@ function HeadlinesCard({
             to="/news"
             toLabel="Noticias"
         >
-            <div className="px-5 pb-5 pt-1">
-                {isLoading ? (
-                    <div className="space-y-4 py-2">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="animate-pulse space-y-2">
-                                <div className="h-2.5 bg-muted/60 rounded w-16" />
-                                <div className="h-3.5 bg-muted/80 rounded w-full" />
-                                <div className="h-2.5 bg-muted/40 rounded w-24" />
-                            </div>
-                        ))}
-                    </div>
-                ) : headlines.length === 0 ? (
-                    <div className="py-6 text-center flex flex-col items-center justify-center">
-                        <Newspaper className="w-8 h-8 text-muted-foreground/30 mb-2" />
-                        <p className="text-[12.5px] font-semibold text-muted-foreground">Sin titulares publicados</p>
-                        <p className="text-[11px] text-muted-foreground/60 mt-0.5">El contenido se publica desde el panel editorial.</p>
-                        <button
-                            onClick={() => onNavigate('/news')}
-                            className="mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold bg-secondary/80 hover:bg-secondary text-foreground transition-colors"
+            {isLoading ? (
+                <div className="flex-1 flex flex-col justify-between py-1 space-y-2">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="animate-pulse space-y-2 p-2 rounded-xl bg-secondary/30 flex-1">
+                            <div className="h-2.5 bg-muted/60 rounded w-16" />
+                            <div className="h-3.5 bg-muted/80 rounded w-full" />
+                            <div className="h-2.5 bg-muted/40 rounded w-24" />
+                        </div>
+                    ))}
+                </div>
+            ) : headlines.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+                    <Newspaper className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                    <p className="text-[13px] font-semibold text-muted-foreground">Sin titulares publicados</p>
+                    <p className="text-[11.5px] text-muted-foreground/60 mt-0.5">El contenido se publica desde el panel editorial.</p>
+                    <button
+                        onClick={() => onNavigate('/news')}
+                        className="mt-3 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-secondary/80 hover:bg-secondary text-foreground transition-colors"
+                    >
+                        Ver sección Noticias
+                    </button>
+                </div>
+            ) : (
+                <div className="dashboard-headlines-wrapper flex-1 flex flex-col justify-between min-h-0 h-full overflow-hidden">
+                    <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                            key={page}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.32, ease: 'easeOut' }}
+                            className="dashboard-headlines-list flex-1 flex flex-col justify-between min-h-0 gap-1.5 h-full"
                         >
-                            Ver sección Noticias
-                        </button>
-                    </div>
-                ) : (
-                    <div className="space-y-3.5">
-                        {headlines.slice(0, 3).map((item) => (
-                            <div
-                                key={item.id}
-                                className="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition-opacity group"
-                                onClick={() => {
-                                    if (item.slotId) {
-                                        apiFetch(`/news/slots/${item.slotId}/click`, { method: 'POST' }).catch(() => {});
-                                    }
-                                    if (item.categorySlug) {
-                                        onNavigate(`/news?category=${item.categorySlug}`);
-                                    } else {
-                                        onNavigate('/news');
-                                    }
-                                }}
-                            >
-                                <span
-                                    className="text-[10px] font-bold tracking-wider uppercase transition-opacity"
-                                    style={{ color: item.categoryColor || 'hsl(var(--primary))' }}
+                            {currentItems.map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="dashboard-headline-item flex-1 flex flex-col justify-center gap-1 cursor-pointer hover:bg-secondary/40 p-2 rounded-xl transition-all group min-h-0"
+                                    onClick={() => {
+                                        if (item.slotId) {
+                                            apiFetch(`/news/slots/${item.slotId}/click`, { method: 'POST' }).catch(() => {});
+                                        }
+                                        if (item.categorySlug) {
+                                            onNavigate(`/news?category=${item.categorySlug}`);
+                                        } else {
+                                            onNavigate('/news');
+                                        }
+                                    }}
                                 >
-                                    {item.category}
-                                </span>
-                                <h4 className="text-[13px] font-semibold leading-snug group-hover:text-primary transition-colors line-clamp-2">
-                                    {item.title}
-                                </h4>
-                                <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>
-                                    {formatHeadlineTime(item.publishedAt)}{item.sourceName ? ` · ${item.sourceName}` : ''}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+                                    <span
+                                        className="text-[10px] font-extrabold tracking-wider uppercase shrink-0"
+                                        style={{ color: item.categoryColor || 'hsl(var(--primary))' }}
+                                    >
+                                        {item.category}
+                                    </span>
+                                    <h4 className="text-[12.5px] font-bold leading-snug group-hover:text-primary transition-colors line-clamp-2 text-foreground">
+                                        {item.title}
+                                    </h4>
+                                    <span className="text-[11px] font-medium text-muted-foreground/70 shrink-0">
+                                        {formatHeadlineTime(item.publishedAt)}{item.sourceName ? ` · ${item.sourceName}` : ''}
+                                    </span>
+                                </div>
+                            ))}
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            )}
         </SideCard>
     );
 }
@@ -345,16 +403,16 @@ export default function Dashboard() {
             });
     };
 
-    const fetchHeadlines = () => {
-        setIsHeadlinesLoading(true);
-        apiFetch('/news/slots/headlines?limit=3')
+    const fetchHeadlines = (silent = false) => {
+        if (!silent) setIsHeadlinesLoading(true);
+        apiFetch('/news/slots/headlines?limit=12')
             .then(r => r.ok ? r.json() : [])
             .then(data => {
-                if (Array.isArray(data)) setHeadlines(data);
+                if (Array.isArray(data) && data.length > 0) setHeadlines(data);
             })
             .catch(() => {})
             .finally(() => {
-                setIsHeadlinesLoading(false);
+                if (!silent) setIsHeadlinesLoading(false);
             });
     };
 
@@ -362,32 +420,29 @@ export default function Dashboard() {
         fetchTopGainers();
         fetchTopLosers();
         fetchHeadlines();
+
+        const newsRefreshInterval = setInterval(() => {
+            fetchHeadlines(true);
+        }, 60_000);
+
+        return () => clearInterval(newsRefreshInterval);
     }, []);
 
 
 
     return (
-        <div className="page-enter w-full max-w-[1920px] mx-auto px-4 py-6 md:px-6 xl:px-8">
-            {/* 
-              Responsive Grid:
-              - Mobile/Tablet: 1 column
-              - Desktop (lg): 2 columns (Feed + Right Sidebar)
-              - Ultrawide (2xl): 3 columns (Feed + Market + Connect/News) for perfect full-width distribution
-            */}
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_340px_340px] gap-6 xl:gap-8 items-start">
+        <div className="desktop-social-page page-enter w-full mx-auto px-4 lg:px-0 py-3">
+            {/* Desktop: left feed, uniform sidebars on the right. */}
+            <div className="desktop-social-grid grid grid-cols-1 gap-6 items-stretch">
 
-                {/* ── Left Column: Main Feed ── */}
-                <div className="space-y-4 min-w-0 max-w-[800px] w-full mx-auto 2xl:mx-0 2xl:max-w-none">
+                {/* Feed on the left. */}
+                <div className="desktop-social-feed space-y-4 min-w-0 w-full">
 
-                    {/* Top stories */}
-                    <ErrorBoundary fallbackTitle="Historias no disponibles temporalmente">
-                        <StoriesRail key={owner || "anon"} />
-                    </ErrorBoundary>
 
                     {/* Main Feed Container */}
                     <div className="rounded-2xl border transition-all duration-300"
                         style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border) / 0.5)', boxShadow: '0 4px 20px hsl(0 0% 0% / 0.1)' }}>
-                        <div className="p-3 pb-0 border-b" style={{ borderColor: 'hsl(var(--border) / 0.4)' }}>
+                        <div className="p-3.5 border-b" style={{ borderColor: 'hsl(var(--border) / 0.4)' }}>
                             <FeedTabs active={activeTab} onChange={setActiveTab} />
                         </div>
                         <AnimatePresence mode="wait">
@@ -419,11 +474,10 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* ── Middle Column (or joined in Right on lg) ── */}
+                {/* First right column: gainers and calendar. */}
                 <aside
-                    className="hidden lg:flex lg:sticky lg:top-6 flex-col gap-5 z-10 self-start w-full max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-hide pb-4"
+                    className="desktop-social-sidebar desktop-social-sidebar--left hidden lg:flex flex-col z-10 w-full"
                 >
-
                     {/* Mejores Rendimientos (S&P 500 Top Gainers) */}
                     <TopGainersCard
                         items={topGainers}
@@ -434,42 +488,15 @@ export default function Dashboard() {
                         onRetry={fetchTopGainers}
                     />
 
-                    {/* Peores Rendimientos (S&P 500 Top Losers) on lg only (on 2xl it lives in right aside) */}
-                    <div className="2xl:hidden">
-                        <TopLosersCard
-                            items={topLosers}
-                            isLoading={isLosersLoading}
-                            isError={isLosersError}
-                            isStale={losersStale}
-                            date={losersDate}
-                            onRetry={fetchTopLosers}
-                        />
-                    </div>
-
-                    {/* News / Pulse (lg only, moved to right on 2xl) */}
-                    <div className="2xl:hidden">
-                        <HeadlinesCard
-                            headlines={headlines}
-                            isLoading={isHeadlinesLoading}
-                            onNavigate={navigate}
-                        />
-                    </div>
-
                     {/* Calendario Finix */}
                     <CalendarPreviewCard />
-
-                    {/* Enlaces de información y legales en columna media solo cuando la columna 2xl está oculta */}
-                    <div className="2xl:hidden">
-                        <DashboardFooter />
-                    </div>
                 </aside>
 
-                {/* ── Right Column (2xl only) ── */}
+                {/* Right desktop column */}
                 <aside
-                    className="hidden 2xl:flex 2xl:sticky 2xl:top-6 flex-col gap-5 z-10 self-start w-full max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-hide pb-4"
+                    className="desktop-social-sidebar desktop-social-sidebar--right hidden lg:flex flex-col z-10 w-full"
                 >
-
-                    {/* Peores Rendimientos (S&P 500 Top Losers) — AL LADO Y DEL MISMO TAMAÑO */}
+                    {/* Peores Rendimientos (S&P 500 Top Losers) */}
                     <TopLosersCard
                         items={topLosers}
                         isLoading={isLosersLoading}
@@ -479,32 +506,35 @@ export default function Dashboard() {
                         onRetry={fetchTopLosers}
                     />
 
-                    {/* Dedicated News Card for 2xl */}
+                    {/* Titulares del día */}
                     <HeadlinesCard
                         headlines={headlines}
                         isLoading={isHeadlinesLoading}
                         onNavigate={navigate}
                     />
-
-                    {/* Botones de Telegram, Instagram y enlaces directamente debajo de Noticias */}
-                    <DashboardFooter />
                 </aside>
 
             </div>
+
+            {/* Investor Wisdom Quote */}
+            <InvestorQuote investorId="john-templeton" showBackToTop />
+
+            {/* Footer independiente al pie de la página / feed */}
+            <DashboardFooter />
         </div>
     );
 }
 
 function DashboardFooter() {
     return (
-        <div className="flex flex-col items-center justify-center text-center gap-2.5 px-2 pt-1 pb-4 shrink-0" style={{ color: 'hsl(var(--muted-foreground) / 0.65)' }}>
+        <footer className="dashboard-footer flex flex-col items-center justify-center text-center gap-3 px-4 pt-8 pb-8 mt-8 border-t border-border/40 w-full" style={{ color: 'hsl(var(--muted-foreground) / 0.7)' }}>
             {/* Redes Sociales / Comunidad */}
-            <div className="flex items-center justify-center gap-2 pt-0.5">
+            <div className="flex items-center justify-center gap-2.5">
                 <a
                     href="https://t.me/Finixcomunidad"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/20 hover:text-sky-300 transition-all text-[11.5px] font-semibold shadow-2xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/20 hover:text-sky-300 transition-all text-xs font-semibold shadow-2xs cursor-pointer"
                     title="Comunidad oficial en Telegram"
                 >
                     <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
@@ -516,7 +546,7 @@ function DashboardFooter() {
                     href="https://instagram.com/finixarg_"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 hover:bg-pink-500/20 hover:text-pink-300 transition-all text-[11.5px] font-semibold shadow-2xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 hover:bg-pink-500/20 hover:text-pink-300 transition-all text-xs font-semibold shadow-2xs cursor-pointer"
                     title="Instagram oficial"
                 >
                     <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
@@ -527,7 +557,7 @@ function DashboardFooter() {
             </div>
 
             {/* Enlaces de información y legales */}
-            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] font-medium text-center">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs font-medium text-center">
                 <Link to="/about" className="hover:text-primary transition-colors">Sobre Finix</Link>
                 <span className="opacity-30">·</span>
                 <Link to="/help" className="hover:text-primary transition-colors">Ayuda</Link>
@@ -539,7 +569,7 @@ function DashboardFooter() {
                 <Link to="/cookies" className="hover:text-primary transition-colors">Cookies</Link>
             </div>
 
-            <div className="w-full text-center text-[10.5px] opacity-50 font-medium">© 2026 Finix Network Inc.</div>
-        </div>
+            <div className="w-full text-center text-xs opacity-50 font-medium">© 2026 Finix Network Inc.</div>
+        </footer>
     );
 }

@@ -20,7 +20,6 @@ import { FundamentalModule } from './fundamental/fundamental.module';
 import { AiModule } from './ai/ai.module';
 import { MessagesModule } from './messages/messages.module';
 import { AdminModule } from './admin/admin.module';
-import { StoriesModule } from './stories/stories.module';
 import { PrismaModule } from './prisma.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ContactModule } from './contact/contact.module';
@@ -34,6 +33,7 @@ import { MercadoPagoModule } from './mercadopago/mercadopago.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { FinanceModule } from './finance/finance.module';
 import { WatchlistModule } from './watchlist/watchlist.module';
+import { isLocalMode } from './config/local-mode';
 
 @Module({
     imports: [
@@ -54,7 +54,7 @@ import { WatchlistModule } from './watchlist/watchlist.module';
                 limit: 100,
             }
         ]),
-        ScheduleModule.forRoot(),
+        ScheduleModule.forRoot(isLocalMode() ? { cronJobs: false, intervals: false, timeouts: false } : {}),
         PrismaModule,
         HealthModule,
         ContactModule,
@@ -75,7 +75,6 @@ import { WatchlistModule } from './watchlist/watchlist.module';
         FundamentalModule,
         AiModule,
         MessagesModule,
-        StoriesModule,
         AdminModule,
         MailModule,
         HubModule,

@@ -24,6 +24,8 @@ export class StripeService {
         apiVersion: '2026-01-28.clover',
     });
     private readonly frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    private readiness: { available: boolean; until: number } | null = null;
+    private readinessPending: Promise<boolean> | null = null;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -133,6 +135,26 @@ export class StripeService {
         return /^sk_(test|live)_/.test(this.stripeSecretKey) && !/placeholder|xxx|\.\.\./i.test(this.stripeSecretKey);
     }
 
+    /** Verify credentials without creating a payment or exposing account data. */
+    async isCheckoutReady(): Promise<boolean> {
+        if (!this.isConfigured()) return false;
+        if (this.readiness && this.readiness.until > Date.now()) return this.readiness.available;
+        if (this.readinessPending) return this.readinessPending;
+        this.readinessPending = (async () => {
+            let available = false;
+            try {
+                await this.stripe.balance.retrieve({}, { timeout: 5000, maxNetworkRetries: 0 });
+                available = true;
+            } catch {
+                this.logger.warn('Stripe no está disponible: revisá sus credenciales y la conexión.');
+            }
+            this.readiness = { available, until: Date.now() + (available ? 300000 : 30000) };
+            return available;
+        })();
+        try { return await this.readinessPending; }
+        finally { this.readinessPending = null; }
+    }
+
     async checkoutStatus(userId: string, sessionId: string) {
         this.ensureStripeConfigured();
         const session = await this.stripe.checkout.sessions.retrieve(sessionId);
@@ -166,8 +188,8 @@ export class StripeService {
             where: {
                 userId,
                 ...(subscriptionId ? { id: subscriptionId } : {}),
-                planType: { in: ['pro_investor', 'pro_creator'] },
-                status: { in: ['ACTIVE', 'PAST_DUE'] },
+                planType: { in: ['PRO', 'PRO_INVESTOR', 'pro_investor', 'CREATOR', 'PRO_CREATOR', 'pro_creator'] },
+                status: { in: ['ACTIVE', 'PAST_DUE', 'PENDING'] },
             },
             orderBy: { createdAt: 'desc' },
         });

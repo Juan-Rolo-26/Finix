@@ -463,6 +463,7 @@ export default function CalendarPage() {
                     title="Calendario de mercado"
                     eyebrow="AGENDA · FINIX"
                     icon={CalendarIcon}
+                    centered
                     description={
                         <span className="calendar-subtitle">
                             Economía, balances de EE. UU. y dividendos del S&amp;P 500.

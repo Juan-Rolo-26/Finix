@@ -1,10 +1,14 @@
 const path = require('path');
+const fs = require('fs');
 
 // PM2 Ecosystem Config — Production
 // Usage: pm2 start ecosystem.config.cjs
 
 const rootDir = process.env.FINIX_ROOT || path.resolve(__dirname, '..');
-const logDir = path.join(rootDir, 'logs');
+const logDir = process.env.FINIX_LOG_DIR || path.join(rootDir, 'logs');
+const environmentFile = path.join(rootDir, 'apps/api/.env');
+const apiEnvironment = fs.existsSync(environmentFile)
+    ? require('dotenv').parse(fs.readFileSync(environmentFile)) : {};
 
 module.exports = {
     apps: [
@@ -22,6 +26,9 @@ module.exports = {
 
             // ── Env ──────────────────────────────────────────────────────────
             env_production: {
+                // Override old PM2 values as well as shell values. dotenv/config
+                // alone does not replace a previously exported DATABASE_URL.
+                ...apiEnvironment,
                 NODE_ENV: 'production',
                 PORT: 3010,
                 FINIX_COMMIT: process.env.FINIX_COMMIT || 'unknown',

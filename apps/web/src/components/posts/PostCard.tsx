@@ -128,25 +128,35 @@ function MediaCarousel({
     const [idx, setIdx] = useState(0);
     const [playing, setPlaying] = useState(true);
     const [muted, setMuted] = useState(true);
+    const [failedMedia, setFailedMedia] = useState<string[]>([]);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     if (!media || media.length === 0) return null;
 
-    const current = media[idx];
+    const current = media[Math.min(idx, media.length - 1)];
     const isVideo = current.mediaType === 'video';
 
     const prev = () => setIdx((i) => Math.max(0, i - 1));
     const next = () => setIdx((i) => Math.min(media.length - 1, i + 1));
 
-    const togglePlay = () => {
+    const togglePlay = async () => {
         if (!videoRef.current) return;
         if (playing) { videoRef.current.pause(); setPlaying(false); }
-        else { videoRef.current.play(); setPlaying(true); }
+        else {
+            try { await videoRef.current.play(); setPlaying(true); }
+            catch { setPlaying(false); }
+        }
     };
 
     return (
         <div className="relative rounded-xl overflow-hidden bg-black/20 group">
-            {isVideo ? (
+            {failedMedia.includes(current.url) ? (
+                <div role="status" className="flex min-h-40 flex-col items-center justify-center gap-3 bg-secondary p-6 text-center text-muted-foreground">
+                    <ImageIcon className="h-7 w-7" />
+                    <p className="text-sm">Este archivo no está disponible.</p>
+                    <button type="button" className="text-sm text-primary underline" onClick={() => setFailedMedia(previous => previous.filter(url => url !== current.url))}>Reintentar</button>
+                </div>
+            ) : isVideo ? (
                 <div className="relative">
                     <video
                         ref={videoRef}
@@ -156,6 +166,7 @@ function MediaCarousel({
                         loop
                         muted={muted}
                         playsInline
+                        onError={() => setFailedMedia(previous => [...previous, current.url])}
                     />
                     {/* Video controls */}
                     <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -182,7 +193,7 @@ function MediaCarousel({
                     onLoad={validateChart ? (event) => {
                         if (isFlatChartImage(event.currentTarget)) onInvalidChart?.();
                     } : undefined}
-                    onError={validateChart ? onInvalidChart : undefined}
+                    onError={validateChart ? onInvalidChart : () => setFailedMedia(previous => [...previous, current.url])}
                 />
             )}
 

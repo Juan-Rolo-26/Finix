@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowUp, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+    ArrowLeft, ArrowUp, ChevronDown, ChevronRight,
+    Info, LifeBuoy, ScrollText, ShieldCheck, Cookie,
+} from 'lucide-react';
 
 // ─── Legal navigation items ────────────────────────────────────────────────────
 export const LEGAL_NAV = [
-    { to: '/about', label: 'Sobre Finix' },
-    { to: '/help', label: 'Centro de Ayuda' },
-    { to: '/terms', label: 'Términos' },
-    { to: '/privacy', label: 'Privacidad' },
-    { to: '/cookies', label: 'Cookies' },
+    { to: '/about',   label: 'Sobre Finix',     icon: Info,        desc: 'Conocé nuestra misión y equipo' },
+    { to: '/help',    label: 'Centro de Ayuda', icon: LifeBuoy,    desc: 'Preguntas frecuentes y soporte' },
+    { to: '/terms',   label: 'Términos',         icon: ScrollText,  desc: 'Condiciones de uso de la plataforma' },
+    { to: '/privacy', label: 'Privacidad',       icon: ShieldCheck, desc: 'Cómo cuidamos tus datos personales' },
+    { to: '/cookies', label: 'Cookies',          icon: Cookie,      desc: 'Política de cookies y rastreo' },
 ];
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -191,31 +194,47 @@ export default function LegalPageLayout({
             </nav>
 
             <div className="container mx-auto px-4 md:px-8 pt-24 pb-20 max-w-6xl">
-                {/* ── Legal nav tabs ── */}
-                <div
-                    className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 scrollbar-hide border-b border-border/40 text-sm font-semibold"
+                {/* ── Legal nav cards ── */}
+                <nav
+                    className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-10"
                     role="tablist"
-                    aria-label="Secciones legales"
+                    aria-label="Secciones de información"
                 >
                     {LEGAL_NAV.map(nav => {
                         const isActive = currentPath === nav.to;
+                        const Icon = nav.icon;
                         return (
                             <Link
                                 key={nav.to}
                                 to={nav.to}
                                 role="tab"
                                 aria-selected={isActive}
-                                className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${
+                                className={`group relative flex flex-col gap-2.5 p-4 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                                     isActive
-                                        ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                        ? 'bg-primary/10 border-primary/40 shadow-sm shadow-primary/10'
+                                        : 'bg-card border-border/50 hover:border-border hover:bg-card/80'
                                 }`}
                             >
-                                {nav.label}
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                    isActive
+                                        ? 'bg-primary/20 text-primary'
+                                        : 'bg-muted/60 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                                }`}>
+                                    <Icon className="w-4 h-4" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <p className={`text-sm font-semibold leading-snug ${
+                                        isActive ? 'text-primary' : 'text-foreground'
+                                    }`}>{nav.label}</p>
+                                    <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">{nav.desc}</p>
+                                </div>
+                                {isActive && (
+                                    <span className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full bg-primary/60" />
+                                )}
                             </Link>
                         );
                     })}
-                </div>
+                </nav>
 
                 <div className="flex gap-10">
                     {/* ── Sidebar (desktop) ── */}

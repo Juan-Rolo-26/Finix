@@ -201,12 +201,6 @@ export class AdminManagementService {
             await tx.conversationParticipant.deleteMany({
                 where: { userId },
             });
-            await tx.storyView.deleteMany({
-                where: { viewerId: userId },
-            });
-            await tx.story.deleteMany({
-                where: { authorId: userId },
-            });
             await tx.adminSession.deleteMany({
                 where: { userId },
             });

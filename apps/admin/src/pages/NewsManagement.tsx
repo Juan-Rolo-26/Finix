@@ -194,6 +194,10 @@ function SlotsMosaic({ slots, onEditSlot }: { slots: Slot[]; onEditSlot: (slot: 
             </div>
             {/* Row 3: Slot 5 (banner) */}
             <SlotPreviewCard slot={s5} variant="banner" onEdit={() => onEditSlot(s5)} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {slots.filter(slot => slot.position > 5).sort((a, b) => a.position - b.position).map(slot =>
+                    <SlotPreviewCard key={slot.id} slot={slot} variant="standard" onEdit={() => onEditSlot(slot)} />)}
+            </div>
         </div>
     );
 }

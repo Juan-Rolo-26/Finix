@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Shield, ArrowLeft, ArrowUp, ChevronDown } from 'lucide-react';
-import { LEGAL_NAV } from '@/components/legal/LegalPageLayout';
+import { InformationPageTabs } from '@/components/legal/InformationPageTabs';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const LAST_UPDATED = '15 de septiembre de 2026';
@@ -32,10 +32,12 @@ const SECTIONS = [
     { id: 'contacto', title: '20. Contacto' },
 ];
 
+const SECTION_IDS = SECTIONS.map(section => section.id);
+
 // ─── Scroll spy ────────────────────────────────────────────────────────────────
 function useScrollSpy(ids: string[]) {
     const [activeId, setActiveId] = useState(ids[0] ?? '');
-    useState(() => {
+    useEffect(() => {
         const fn = () => {
             let found = ids[0] ?? '';
             for (const id of ids) {
@@ -47,7 +49,8 @@ function useScrollSpy(ids: string[]) {
         };
         window.addEventListener('scroll', fn, { passive: true });
         fn();
-    });
+        return () => window.removeEventListener('scroll', fn);
+    }, [ids]);
     return activeId;
 }
 
@@ -95,17 +98,19 @@ function MobileToc({ activeId }: { activeId: string }) {
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function Privacy() {
     const navigate = useNavigate();
-    const activeId = useScrollSpy(SECTIONS.map(s => s.id));
+    const activeId = useScrollSpy(SECTION_IDS);
     const [showBackTop, setShowBackTop] = useState(false);
-    useState(() => {
+    useEffect(() => {
         const fn = () => setShowBackTop(window.scrollY > 400);
         window.addEventListener('scroll', fn, { passive: true });
-    });
+        fn();
+        return () => window.removeEventListener('scroll', fn);
+    }, []);
 
     return (
-        <div className="min-h-screen finix-unified-bg text-foreground font-sans selection:bg-primary/30">
+        <div className="info-page min-h-screen finix-unified-bg text-foreground font-sans selection:bg-primary/30">
             {/* ── Navbar ── */}
-            <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+            <nav aria-label="Volver a Finix" className="info-page__mobile-nav fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
                 <div className="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
                     <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer" aria-label="Volver">
                         <ArrowLeft className="w-4 h-4" /><span className="hidden sm:inline">Volver</span>
@@ -119,19 +124,24 @@ export default function Privacy() {
                 </div>
             </nav>
 
-            <div className="container mx-auto px-4 md:px-8 pt-24 pb-20 max-w-6xl">
+            <div className="info-page__container container mx-auto px-4 md:px-8 pt-24 pb-20 max-w-6xl">
                 {/* ── Tabs ── */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 scrollbar-hide border-b border-border/40 text-sm font-semibold">
-                    {LEGAL_NAV.map(nav => (
-                        <Link key={nav.to} to={nav.to} className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${nav.to === '/privacy' ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
-                            {nav.label}
-                        </Link>
-                    ))}
-                </div>
+                <InformationPageTabs />
 
-                <div className="flex gap-10">
+                <header className="info-page__header mb-10">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 text-primary">
+                        <Shield className="w-7 h-7" />
+                    </div>
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-black tracking-tight mb-3">Política de Privacidad</h1>
+                    <p className="text-sm text-muted-foreground/80 font-medium">Última actualización: {LAST_UPDATED}</p>
+                    <div className="mt-4 p-4 rounded-xl bg-muted/40 border border-border/40 text-sm text-muted-foreground">
+                        Este documento ha sido preparado con fines informativos y deberá ser revisado por un profesional legal antes de su publicación definitiva.
+                    </div>
+                </header>
+
+                <div className="info-page__grid flex gap-10">
                     {/* ── Sidebar ── */}
-                    <aside className="hidden lg:block w-64 shrink-0">
+                    <aside className="info-page__sidebar hidden lg:block w-64 shrink-0">
                         <nav aria-label="Índice" className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2 space-y-1 scrollbar-hide">
                             {SECTIONS.map(s => (
                                 <a key={s.id} href={`#${s.id}`} className={`block px-3.5 py-2 rounded-lg text-sm leading-snug transition-all ${s.id === activeId ? 'text-primary font-bold bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}`}>
@@ -142,17 +152,8 @@ export default function Privacy() {
                     </aside>
 
                     {/* ── Content ── */}
-                    <div className="flex-1 min-w-0">
-                        <header className="mb-10">
-                            <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 text-primary">
-                                <Shield className="w-7 h-7" />
-                            </div>
-                            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-black tracking-tight mb-3">Política de Privacidad</h1>
-                            <p className="text-sm text-muted-foreground/80 font-medium">Última actualización: {LAST_UPDATED}</p>
-                            <div className="mt-4 p-4 rounded-xl bg-muted/40 border border-border/40 text-sm text-muted-foreground">
-                                Este documento ha sido preparado con fines informativos y deberá ser revisado por un profesional legal antes de su publicación definitiva.
-                            </div>
-                        </header>
+                    <div className="info-page__body flex-1 min-w-0">
+
 
                         {/* ── Summary callout ── */}
                         <div className="rounded-3xl border border-primary/25 bg-primary/5 p-6 sm:p-7 mb-8">
@@ -327,7 +328,7 @@ export default function Privacy() {
                                 </p>
                                 <ul className="list-disc pl-5 space-y-2">
                                     <li>
-                                        <strong>Supabase</strong> — Infraestructura de autenticación y base de datos. Gestiona el inicio de sesión, la seguridad de credenciales y el almacenamiento de datos de la Plataforma.
+                                        <strong>Google</strong> — Verificación de identidad cuando elegís iniciar sesión con Google. Las cuentas, sesiones y datos de la Plataforma son gestionados por Finix.
                                     </li>
                                     <li>
                                         <strong>Resend</strong> — Servicio de email transaccional. Utilizado para enviar correos de verificación de cuenta, recuperación de contraseña y comunicaciones operativas.
@@ -379,7 +380,7 @@ export default function Privacy() {
                                     Finix implementa medidas técnicas y organizativas razonables para proteger los datos personales, incluyendo:
                                 </p>
                                 <ul className="list-disc pl-5 space-y-1">
-                                    <li>Autenticación gestionada por Supabase con estándares de seguridad de la industria</li>
+                                    <li>Autenticación gestionada por Finix con contraseñas protegidas mediante hashes y sesiones propias</li>
                                     <li>Transmisión de datos mediante cifrado HTTPS</li>
                                     <li>Controles de acceso a datos internos</li>
                                     <li>Monitoreo de actividad sospechosa</li>

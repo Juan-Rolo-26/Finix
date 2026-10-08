@@ -19,19 +19,16 @@ import {
     BellOff,
     ArrowDownRight,
     Loader2,
-    Crown,
     X,
     LayoutDashboard,
     List,
     TrendingUp,
     ChevronRight,
-    Eye,
     Filter,
     RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
-    MarketHeader,
     MarketChange,
 } from '@/components/markets/MarketPrimitives';
 import '@/components/markets/market.css';
@@ -44,6 +41,9 @@ import WatchlistDetailDrawer from '@/components/watchlist/WatchlistDetailDrawer'
 import WatchlistIdeasSection from '@/components/watchlist/WatchlistIdeasSection';
 import { useWatchlistHistory } from '@/components/watchlist/useWatchlistHistory';
 import WatchlistDashboard from '@/components/watchlist/WatchlistDashboard';
+import WatchlistHero from '@/components/watchlist/WatchlistHero';
+import { InvestorQuote } from '@/components/common/InvestorQuote';
+import '@/components/watchlist/watchlist.css';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
     RESEARCHING: {
@@ -105,6 +105,7 @@ export default function WatchlistPage() {
     const [selectedItemForDrawer, setSelectedItemForDrawer] = useState<any | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [addModalSymbol, setAddModalSymbol] = useState('');
+    const [addModalName, setAddModalName] = useState<string | undefined>();
 
     const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
     const [bulkActionLoading, setBulkActionLoading] = useState(false);
@@ -281,120 +282,51 @@ export default function WatchlistPage() {
 
     // Stats rapidas
     const totalItems = activeListDetail?.items?.length ?? 0;
-    const gainersCount = activeListDetail?.items?.filter((i: any) => Number.isFinite(i.changePercent) && i.changePercent > 0).length ?? 0;
-    const losersCount = totalItems - gainersCount;
+    const gainersCount = activeListDetail?.items?.filter((i: any) => !i.isUnavailable && Number.isFinite(i.changePercent) && i.changePercent > 0).length ?? 0;
+    const losersCount = activeListDetail?.items?.filter((i: any) => !i.isUnavailable && Number.isFinite(i.changePercent) && i.changePercent < 0).length ?? 0;
     const withAlert = activeListDetail?.items?.filter((i: any) => i.hasActiveAlert).length ?? 0;
 
     return (
-        <div className="relative w-full overflow-hidden pb-20 markets-view">
-            <div className="market-shell">
-                {/* HEADER PRINCIPAL */}
-                <MarketHeader
-                    title="Seguimiento"
-                    eyebrow="PORTAFOLIO & MERCADOS · FINIX"
-                    icon={Bookmark}
-                    description="Organizá y monitoreá activos bajo tus propias condiciones y alertas"
-                    actions={
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setShowIdeasSection(!showIdeasSection)}
-                                className={cn(
-                                    'rounded-xl border-border/80 px-3.5 py-2 hover:bg-secondary/60 transition-all shadow-2xs',
-                                    showIdeasSection && 'border-primary text-primary bg-primary/10',
-                                )}
-                            >
-                                <Sparkles size={15} />
-                                <span>{showIdeasSection ? 'Ocultar ideas' : 'Ideas para explorar'}</span>
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={!activeListId}
-                                onClick={() => setIsImportModalOpen(true)}
-                                className="rounded-xl border-border/80 px-3.5 py-2 hover:bg-secondary/60 transition-all shadow-2xs disabled:opacity-40"
-                            >
-                                <UploadCloud size={15} />
-                                <span>Importar</span>
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={!activeListId}
-                                onClick={() => handleExport('csv')}
-                                className="rounded-xl border-border/80 px-3.5 py-2 hover:bg-secondary/60 transition-all shadow-2xs disabled:opacity-40"
-                            >
-                                <Download size={15} />
-                                <span>Exportar</span>
-                            </Button>
-
-                            <Button
-                                size="sm"
-                                onClick={() => setIsCreateModalOpen(true)}
-                                className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-4 py-2 shadow-xs transition-all"
-                            >
-                                <Plus size={16} />
-                                <span>Nueva lista</span>
-                            </Button>
-                        </div>
-                    }
-                />
-
-                {/* BANNER BIENVENIDA */}
-                {showOnboarding && (
-                    <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 mb-6 backdrop-blur-sm shadow-xs">
-                        <button
-                            type="button"
-                            onClick={handleDismissOnboarding}
-                            className="absolute top-3.5 right-3.5 text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-secondary/60 transition-colors"
-                            aria-label="Cerrar aviso"
-                        >
-                            <X size={16} />
-                        </button>
-                        <div className="flex items-start gap-4 max-w-4xl">
-                            <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary shrink-0 shadow-2xs">
-                                <Eye size={19} />
-                            </div>
-                            <div className="space-y-1">
-                                <h3 className="font-bold text-foreground text-base">
-                                    Bienvenido a Seguimiento en Finix
-                                </h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    <span className="font-bold text-foreground">Seguimiento no es un portafolio:</span> agregar una
-                                    acción o CEDEAR acá no altera tus saldos, compras ni rendimientos reales. Usá este
-                                    espacio para investigar activos, definir tus propios puntos de entrada y recibir
-                                    alertas cuando el mercado alcance tus condiciones.
-                                </p>
-                            </div>
-                        </div>
+        <div className="watchlist-page markets-view">
+            <WatchlistHero
+                items={activeListDetail?.items || []}
+                isPro={isPro}
+                showWelcome={showOnboarding}
+                onDismissWelcome={handleDismissOnboarding}
+                onAddAsset={asset => { setAddModalSymbol(asset.symbol); setAddModalName(asset.name || asset.description); setIsAddModalOpen(true); }}
+            />
+            <nav className="watchlist-navigation" aria-label="Navegación de seguimiento">
+                <div role="tablist" aria-label="Vistas de seguimiento" onKeyDown={event => {
+                    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                    event.preventDefault();
+                    const nextTab = event.key === 'Home' ? 'dashboard' : event.key === 'End' ? 'list' : activeTab === 'dashboard' ? 'list' : 'dashboard';
+                    setActiveTab(nextTab);
+                    document.getElementById(`watchlist-${nextTab}-tab`)?.focus();
+                }}>
+                    <button type="button" role="tab" id="watchlist-dashboard-tab" aria-controls="watchlist-content" tabIndex={activeTab === 'dashboard' ? 0 : -1} aria-selected={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')}>
+                        <LayoutDashboard size={17} /> Dashboard
+                    </button>
+                    <button type="button" role="tab" id="watchlist-list-tab" aria-controls="watchlist-content" tabIndex={activeTab === 'list' ? 0 : -1} aria-selected={activeTab === 'list'} onClick={() => setActiveTab('list')}>
+                        <List size={17} /> Lista de seguimiento
+                    </button>
+                </div>
+                <button type="button" aria-pressed={showIdeasSection} onClick={() => setShowIdeasSection(!showIdeasSection)}>
+                    <Sparkles size={17} /> {showIdeasSection ? 'Ocultar ideas' : 'Ideas para explorar'}
+                </button>
+            </nav>
+            <div className="market-shell watchlist-shell">
+                <div className="watchlist-heading">
+                    <h1>Seguimiento</h1>
+                    <p>Tu radar de inversión</p>
+                </div>
+                <div className="watchlist-actions">
+                    <span>Un lugar para cada idea de inversión.</span>
+                    <div>
+                        <Button variant="outline" size="sm" disabled={!activeListId} onClick={() => setIsImportModalOpen(true)}><UploadCloud size={15} /> Importar</Button>
+                        <Button variant="outline" size="sm" disabled={!activeListId} onClick={() => handleExport('csv')}><Download size={15} /> Exportar</Button>
+                        <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus size={16} /> Nueva lista</Button>
                     </div>
-                )}
-
-                {/* AVISO PLAN FREE */}
-                {!isPro && (
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-500/25 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent px-5 py-3.5 mb-6 shadow-xs">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
-                                <Crown className="w-4 h-4 text-amber-500" />
-                            </div>
-                            <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">
-                                Plan Free — 1 lista y hasta 5 activos. Pasá a{' '}
-                                <span className="font-bold text-amber-600 dark:text-amber-400">Finix PRO</span> para listas ilimitadas,
-                                importación CSV y alertas avanzadas.
-                            </span>
-                        </div>
-                        <Button
-                            size="sm"
-                            onClick={() => navigate('/settings/plan')}
-                            className="rounded-xl h-9 px-4 font-bold bg-amber-500 hover:bg-amber-400 text-black shrink-0 shadow-xs"
-                        >
-                            Pasar a PRO
-                        </Button>
-                    </div>
-                )}
+                </div>
 
                 {/* SECCION IDEAS */}
                 {showIdeasSection && (
@@ -402,6 +334,7 @@ export default function WatchlistPage() {
                         <WatchlistIdeasSection
                             onAddSymbol={(symbol) => {
                                 setAddModalSymbol(symbol);
+                                setAddModalName(undefined);
                                 setIsAddModalOpen(true);
                             }}
                         />
@@ -409,7 +342,7 @@ export default function WatchlistPage() {
                 )}
 
                 {/* SELECTOR DE LISTAS */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3 mb-6">
+                <div className="watchlist-list-selector">
                     {loadingLists ? (
                         <div className="flex items-center gap-2.5 py-2 text-muted-foreground text-sm">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -420,7 +353,7 @@ export default function WatchlistPage() {
                             No tenés listas de seguimiento creadas todavía.
                         </span>
                     ) : (
-                        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Listas de seguimiento">
+                        <div className="watchlist-list-selector__tabs" role="group" aria-label="Listas de seguimiento">
                             {watchlists.map((wl) => {
                                 const isActive = wl.id === activeListId;
                                 return (
@@ -432,25 +365,17 @@ export default function WatchlistPage() {
                                             setSearchParams({ list: wl.id });
                                         }}
                                         aria-pressed={isActive}
-                                        className={cn(
-                                            "flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-sm font-medium transition-all",
-                                            isActive
-                                                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                                                : "bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/50"
-                                        )}
+                                        className="watchlist-list-tab"
                                     >
+                                        <List size={15} />
                                         <span>{wl.name}</span>
-                                        <span className={cn(
-                                            "text-xs px-2 py-0.5 rounded-full font-bold",
-                                            isActive
-                                                ? "bg-primary-foreground/20 text-primary-foreground"
-                                                : "bg-background/80 text-muted-foreground"
-                                        )}>
-                                            {wl.itemCount}
+                                        <span className="watchlist-list-tab__count">
+                                            {isActive && activeListDetail?.id === activeListId ? totalItems : wl.itemCount}
                                         </span>
                                     </button>
                                 );
                             })}
+                            <button type="button" className="watchlist-list-selector__add" onClick={() => setIsCreateModalOpen(true)} aria-label="Crear otra lista" title="Crear otra lista"><Plus size={19} /></button>
                         </div>
                     )}
 
@@ -488,102 +413,19 @@ export default function WatchlistPage() {
                     )}
                 </div>
 
-                {/* STATS RAPIDAS */}
                 {activeList && totalItems > 0 && (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
-                        <div className="rounded-2xl border border-border/70 bg-card/70 backdrop-blur-sm p-4 hover:border-border hover:shadow-xs transition-all flex flex-col justify-between">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Activos</span>
-                                <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                                    <List size={16} />
-                                </span>
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight tabular-nums">{totalItems}</span>
-                                <span className="text-xs text-muted-foreground">en esta lista</span>
-                            </div>
-                        </div>
-
-                        <div className="rounded-2xl border border-border/70 bg-card/70 backdrop-blur-sm p-4 hover:border-border hover:shadow-xs transition-all flex flex-col justify-between">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Al alza hoy</span>
-                                <span className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                    <TrendingUp size={16} />
-                                </span>
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">{gainersCount}</span>
-                                <span className="text-xs text-muted-foreground">variación positiva</span>
-                            </div>
-                        </div>
-
-                        <div className="rounded-2xl border border-border/70 bg-card/70 backdrop-blur-sm p-4 hover:border-border hover:shadow-xs transition-all flex flex-col justify-between">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">A la baja</span>
-                                <span className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-                                    <ArrowDownRight size={16} />
-                                </span>
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight tabular-nums">{losersCount}</span>
-                                <span className="text-xs text-muted-foreground">variación negativa</span>
-                            </div>
-                        </div>
-
-                        <div className="rounded-2xl border border-border/70 bg-card/70 backdrop-blur-sm p-4 hover:border-border hover:shadow-xs transition-all flex flex-col justify-between">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Alertas activas</span>
-                                <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                                    <Bell size={16} />
-                                </span>
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 tracking-tight tabular-nums">{withAlert}</span>
-                                <span className="text-xs text-muted-foreground">monitoreo activo</span>
-                            </div>
-                        </div>
+                    <div className="watchlist-stats" aria-label="Resumen de seguimiento">
+                        <div><List size={16} /><strong>{totalItems}</strong><span>activos en tu lista</span></div>
+                        <div className="watchlist-stats__positive"><TrendingUp size={16} /><strong>{gainersCount}</strong><span>al alza hoy</span></div>
+                        <div className="watchlist-stats__negative"><ArrowDownRight size={16} /><strong>{losersCount}</strong><span>a la baja hoy</span></div>
+                        <div><Bell size={16} /><strong>{withAlert}</strong><span>alertas activas</span></div>
                     </div>
                 )}
 
                 {/* TABS + TOOLBAR */}
-                {activeList && (
+                {activeList && activeTab === 'list' && (
                     <div className="flex flex-col gap-4 mb-6">
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center p-1 bg-secondary/50 border border-border/60 rounded-xl" role="tablist" aria-label="Vistas de seguimiento">
-                                <button
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={activeTab === 'dashboard'}
-                                    aria-pressed={activeTab === 'dashboard'}
-                                    onClick={() => setActiveTab('dashboard')}
-                                    className={cn(
-                                        "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
-                                        activeTab === 'dashboard'
-                                            ? "bg-card text-foreground shadow-xs"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    <LayoutDashboard size={16} />
-                                    <span>Dashboard</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={activeTab === 'list'}
-                                    aria-pressed={activeTab === 'list'}
-                                    onClick={() => setActiveTab('list')}
-                                    className={cn(
-                                        "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
-                                        activeTab === 'list'
-                                            ? "bg-card text-foreground shadow-xs"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    <List size={16} />
-                                    <span>Lista de seguimiento</span>
-                                </button>
-                            </div>
-
                             {activeTab === 'list' && (
                                 <div className="flex items-center p-1 bg-secondary/50 border border-border/60 rounded-xl" role="group" aria-label="Modo de vista">
                                     <button
@@ -730,6 +572,7 @@ export default function WatchlistPage() {
                 {loadError && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
                     <span>{loadError}</span><Button variant="outline" size="sm" onClick={handleRefresh}>Reintentar</Button>
                 </div>}
+                <div id="watchlist-content" role="tabpanel" aria-labelledby={activeTab === 'dashboard' ? 'watchlist-dashboard-tab' : 'watchlist-list-tab'}>
                 {/* CONTENIDO PRINCIPAL */}
                 {loadingDetail ? (
                     <div className="market-empty flex flex-col items-center justify-center gap-3">
@@ -763,10 +606,10 @@ export default function WatchlistPage() {
                         <div className="market-empty max-w-lg mx-auto flex flex-col items-center">
                             <LayoutDashboard size={36} className="text-muted-foreground mb-2" />
                             <h3 className="text-lg font-bold text-foreground mb-2">Lista vacía</h3>
-                            <p className="text-sm text-muted-foreground mb-5">Agregá activos para ver el dashboard con análisis y timeline.</p>
+                            <p className="text-sm text-muted-foreground mb-5">Buscá tu primer activo para empezar a seguir sus precios y definir objetivos.</p>
                             <div className="flex justify-center gap-2.5">
-                                <Button size="sm" onClick={() => setIsImportModalOpen(true)} className="market-action bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
-                                    <UploadCloud size={16} /> Importar activos
+                                <Button size="sm" onClick={() => document.getElementById('watchlist-asset-search')?.focus()} className="market-action bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
+                                    <Plus size={16} /> Agregar activo
                                 </Button>
                                 <Button variant="outline" size="sm" onClick={() => navigate('/market')} className="market-action">
                                     Explorar Mercado
@@ -786,7 +629,7 @@ export default function WatchlistPage() {
                         <p className="text-sm text-muted-foreground mb-5">
                             {searchQuery || statusFilter !== 'ALL' || portfolioFilter !== 'ALL'
                                 ? 'Probá cambiando los términos de búsqueda o limpiando los filtros.'
-                                : 'Importá tickers en lote o buscá activos en Mercado.'}
+                                : 'Buscá un activo para agregarlo a tu lista o importá tus tickers desde el menú superior.'}
                         </p>
                         {searchQuery || statusFilter !== 'ALL' || portfolioFilter !== 'ALL' ? (
                             <Button variant="outline" size="sm" onClick={() => { setSearchQuery(''); setStatusFilter('ALL'); setPortfolioFilter('ALL'); }} className="market-action gap-2">
@@ -794,8 +637,8 @@ export default function WatchlistPage() {
                             </Button>
                         ) : (
                             <div className="flex justify-center gap-2.5">
-                                <Button size="sm" onClick={() => setIsImportModalOpen(true)} className="market-action bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
-                                    <UploadCloud size={16} /> Importar activos
+                                <Button size="sm" onClick={() => document.getElementById('watchlist-asset-search')?.focus()} className="market-action bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
+                                    <Plus size={16} /> Agregar activo
                                 </Button>
                                 <Button variant="outline" size="sm" onClick={() => navigate('/market')} className="market-action">
                                     Explorar Mercado
@@ -1082,8 +925,8 @@ export default function WatchlistPage() {
                         {/* Card para agregar activo */}
                         <button
                             type="button"
-                            onClick={() => setIsImportModalOpen(true)}
-                            className="group rounded-2xl border-2 border-dashed border-border/70 hover:border-primary/50 bg-card/40 hover:bg-card/80 flex flex-col items-center justify-center gap-3 p-6 text-muted-foreground hover:text-primary cursor-pointer transition-all duration-200 min-h-[220px]"
+                            onClick={() => document.getElementById('watchlist-asset-search')?.focus()}
+                            className="group rounded-2xl border-2 border-dashed border-border/70 hover:border-primary/50 bg-card/40 hover:bg-card/80 flex flex-col items-center justify-center gap-3 p-6 text-muted-foreground hover:text-primary cursor-pointer transition-[background-color,border-color,color] duration-200 min-h-[220px]"
                         >
                             <div className="w-12 h-12 rounded-2xl bg-secondary group-hover:bg-primary/10 group-hover:text-primary flex items-center justify-center transition-all duration-200 shadow-2xs">
                                 <Plus size={22} className="group-hover:scale-110 transition-transform" />
@@ -1099,7 +942,11 @@ export default function WatchlistPage() {
                         </button>
                     </div>
                 )}
+                </div>
             </div>
+
+            {/* CITA DE INVERSOR LEGENDARIO */}
+            <InvestorQuote investorId="peter-lynch" showBackToTop />
 
             {/* MODALES */}
             <CreateEditWatchlistModal
@@ -1142,6 +989,7 @@ export default function WatchlistPage() {
 
             <AddToWatchlistModal
                 symbol={addModalSymbol}
+                name={addModalName}
                 isOpen={isAddModalOpen}
                 onClose={() => { setIsAddModalOpen(false); setAddModalSymbol(''); }}
                 onSuccess={() => { if (activeListId) fetchListDetail(activeListId); fetchWatchlists(); }}

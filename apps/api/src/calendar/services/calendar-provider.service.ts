@@ -13,6 +13,7 @@ import { MarketImpactScoringService } from './market-impact-scoring.service';
 import { EarningsImpactScoringService } from './earnings-impact-scoring.service';
 import { TV_SYMBOL_SLUGS } from '../../market-ranking/services/tv-slugs.const';
 import { MarketDataProviderService } from '../../market-ranking/services/market-data-provider.service';
+import { TtlCache } from '../../common/ttl-cache';
 
 @Injectable()
 export class CalendarProviderService implements ICalendarProvider, IEarningsProvider {
@@ -28,6 +29,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
     ) { }
 
     private constituentsCache: { tickers: Set<string>; fetchedAt: number } | null = null;
+    private readonly scans = new TtlCache<any[]>(4);
 
     private async getConstituentTickers(): Promise<string[]> {
         if (!this.constituentsCache || Date.now() - this.constituentsCache.fetchedAt > 86400000) {
@@ -61,6 +63,10 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
      * del S&P 500 y permite mostrar todas las empresas con eventos publicados.
      */
     private async fetchTradingViewAmericaScan(columns: string[]): Promise<any[]> {
+        return this.scans.getOrLoad(JSON.stringify(columns), 0, () => this.loadTradingViewAmericaScan(columns));
+    }
+
+    private async loadTradingViewAmericaScan(columns: string[]): Promise<any[]> {
         const res = await fetch('https://scanner.tradingview.com/america/scan', {
             method: 'POST',
             headers: {
@@ -343,7 +349,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
         forceRefresh?: boolean;
     }): Promise<EarningsEventItem[]> {
         const now = Date.now();
-        const CACHE_TTL = 30 * 60 * 1000; // 30 minutos
+        const CACHE_TTL = 5 * 60 * 1000; // Match the calendar's automatic refresh.
 
         let allEarnings: EarningsEventItem[] = [];
 
@@ -466,7 +472,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
         forceRefresh?: boolean;
     }): Promise<DividendEventItem[]> {
         const now = Date.now();
-        const CACHE_TTL = 30 * 60 * 1000; // 30 minutos
+        const CACHE_TTL = 5 * 60 * 1000;
 
         let allDividends: DividendEventItem[] = [];
 

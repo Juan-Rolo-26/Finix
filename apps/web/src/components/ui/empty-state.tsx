@@ -9,6 +9,8 @@ export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
     description?: string
     actionLabel?: string
     onAction?: () => void
+    /** Use compact mode for inline empty states (e.g. inside table rows) */
+    compact?: boolean
 }
 
 export function EmptyState({
@@ -17,34 +19,49 @@ export function EmptyState({
     description,
     actionLabel,
     onAction,
+    compact = false,
     className,
     ...props
 }: EmptyStateProps) {
     return (
         <div
             className={cn(
-                "flex flex-col items-center justify-center text-center p-8 sm:p-12 rounded-2xl border border-dashed border-border/80 bg-card/40 my-4 select-none",
+                "flex flex-col items-center justify-center text-center select-none",
+                compact
+                    ? "p-6 gap-2"
+                    : "p-10 gap-3 rounded-[6px] border border-dashed border-border/60 bg-card/30 my-3",
                 className
             )}
             {...props}
         >
-            <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground mb-3.5 shadow-2xs">
-                <Icon className="w-6 h-6 stroke-[1.75]" />
+            <div className={cn(
+                "flex items-center justify-center rounded-[5px] bg-muted/50 text-muted-foreground/60 mb-0.5",
+                compact ? "w-9 h-9" : "w-10 h-10"
+            )}>
+                <Icon className={cn("stroke-[1.5]", compact ? "w-4.5 h-4.5" : "w-5 h-5")} />
             </div>
-            <h3 className="text-sm sm:text-base font-bold text-foreground">
-                {title}
-            </h3>
-            {description && (
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm leading-relaxed">
-                    {description}
-                </p>
-            )}
+            <div className="space-y-1">
+                <h3 className={cn(
+                    "font-semibold text-foreground",
+                    compact ? "text-xs" : "text-sm"
+                )}>
+                    {title}
+                </h3>
+                {description && (
+                    <p className={cn(
+                        "text-muted-foreground leading-relaxed max-w-xs",
+                        compact ? "text-[10.5px]" : "text-xs"
+                    )}>
+                        {description}
+                    </p>
+                )}
+            </div>
             {actionLabel && onAction && (
                 <Button
                     onClick={onAction}
                     variant="outline"
-                    size="sm"
-                    className="mt-4"
+                    size={compact ? "sm" : "default"}
+                    className="mt-1"
                 >
                     {actionLabel}
                 </Button>

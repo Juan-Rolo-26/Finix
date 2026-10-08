@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import * as jwt from 'jsonwebtoken';
 import { isAllowedOrigin } from './config/allowed-origins';
 import { MessagesService } from './messages/messages.service';
+import { PrismaService } from './prisma.service';
 
 @WebSocketGateway({
     cors: {
@@ -25,35 +26,56 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     /** userId -> Set of socketIds (a user can have multiple tabs open) */
     private onlineUsers = new Map<string, Set<string>>();
 
-    constructor(private readonly messagesService: MessagesService) { }
+    constructor(
+        private readonly messagesService: MessagesService,
+        private readonly prisma: PrismaService,
+    ) { }
+
+    private async authenticatedUser(client: Socket): Promise<string | null> {
+        try {
+            const token = client.data.accessToken;
+            if (!token || !process.env.JWT_SECRET) throw new Error('Sesión requerida');
+            const payload = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] }) as any;
+            if (payload.iss !== 'finix-api' || !payload.sub) throw new Error('Token inválido');
+            const user = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, status: true } });
+            if (!user || ['BANNED', 'SUSPENDED'].includes(user.status)) throw new Error('Cuenta no disponible');
+            if (payload.sid) {
+                const session = await this.prisma.userSession.findUnique({ where: { id: payload.sid }, select: { userId: true, revokedAt: true, expiresAt: true } });
+                if (!session || session.userId !== user.id || session.revokedAt || (session.expiresAt && session.expiresAt < new Date())) throw new Error('Sesión cerrada');
+            }
+            return user.id;
+        } catch {
+            client.disconnect(true);
+            return null;
+        }
+    }
+
+    disconnectUserSessions(userId: string) {
+        this.server?.in(`user:${userId}`).disconnectSockets(true);
+    }
 
     // ─── Connection lifecycle ────────────────────────────────────────────────
 
-    handleConnection(client: Socket) {
+    async handleConnection(client: Socket) {
         const token =
             (client.handshake.auth?.token as string) ||
             (client.handshake.query?.token as string);
 
         if (token) {
-            try {
-                const secret = process.env.JWT_SECRET;
-                if (!secret) throw new Error('JWT_SECRET no está configurado');
-                const payload = jwt.verify(token, secret) as any;
-                const userId: string = payload.sub || payload.id;
-                if (userId) {
-                    client.data.userId = userId;
-                    client.join(`user:${userId}`);
+            client.data.accessToken = token;
+            const userId = await this.authenticatedUser(client);
+            if (!client.connected) return;
+            if (userId) {
+                client.data.userId = userId;
+                client.join(`user:${userId}`);
 
-                    if (!this.onlineUsers.has(userId)) {
-                        this.onlineUsers.set(userId, new Set());
-                    }
-                    this.onlineUsers.get(userId)!.add(client.id);
-
-                    // Notify others this user is online
-                    this.server.emit('userOnline', { userId });
+                if (!this.onlineUsers.has(userId)) {
+                    this.onlineUsers.set(userId, new Set());
                 }
-            } catch {
-                // Invalid token – allow connection but without userId
+                this.onlineUsers.get(userId)!.add(client.id);
+
+                // Notify others this user is online
+                this.server.emit('userOnline', { userId });
             }
         }
     }
@@ -89,7 +111,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: Socket,
         @MessageBody() data: { conversationId: string },
     ) {
-        const userId: string | undefined = client.data.userId;
+        const userId = await this.authenticatedUser(client);
         if (!userId || !data?.conversationId) return;
         const participantIds = await this.messagesService.getConversationParticipantIds(data.conversationId);
         if (participantIds.includes(userId)) {
@@ -108,11 +130,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // ─── Typing indicator ────────────────────────────────────────────────────
 
     @SubscribeMessage('typing')
-    handleTyping(
+    async handleTyping(
         @ConnectedSocket() client: Socket,
         @MessageBody() data: { conversationId: string; isTyping: boolean },
     ) {
-        const userId: string | undefined = client.data.userId;
+        const userId = await this.authenticatedUser(client);
+        if (!userId || !data?.conversationId) return;
+        const participants = await this.messagesService.getConversationParticipantIds(data.conversationId);
+        if (!participants.includes(userId)) return;
         client.to(`conv:${data.conversationId}`).emit('userTyping', {
             userId,
             conversationId: data.conversationId,
@@ -129,14 +154,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
             conversationId: string;
             content?: string;
             attachment?: {
-                type: 'image' | 'post' | 'chart' | 'story';
+                type: 'image' | 'post' | 'chart';
                 url?: string;
                 postId?: string;
                 meta?: Record<string, any>;
             } | null;
         },
     ) {
-        const senderId: string | undefined = client.data.userId;
+        const senderId = await this.authenticatedUser(client);
         if (!senderId) return;
 
         try {

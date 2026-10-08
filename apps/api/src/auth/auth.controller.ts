@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Post, HttpCode, HttpStatus, UseGuards, Request, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, HttpCode, HttpStatus, UseGuards, Request, Req, Res } from '@nestjs/common';
 import type { Request as ExpressRequest, Response } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { GoogleAuthService } from './google-auth.service';
 import {
     EmailCodeDto,
     EmailRequestDto,
@@ -13,7 +14,40 @@ import {
 
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService) { }
+    constructor(private authService: AuthService, private googleAuth: GoogleAuthService) { }
+
+    @Get('providers')
+    providers() { return { google: this.googleAuth.isConfigured() }; }
+
+    @Get('google')
+    async google(@Query('username') username: string | undefined, @Res() res: Response) {
+        const flow = await this.googleAuth.start(username);
+        res.cookie('finix_google_flow', flow.cookie, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/api/auth/google', maxAge: 600_000 });
+        res.redirect(flow.url);
+    }
+
+    @Get('google/callback')
+    async googleCallback(@Query('code') code: string, @Query('state') state: string, @Req() req: ExpressRequest, @Res() res: Response) {
+        const cookie = req.cookies?.finix_google_flow;
+        res.clearCookie('finix_google_flow', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/api/auth/google' });
+        const destination = new URL('/auth/callback', process.env.FRONTEND_URL || 'http://localhost:5173');
+        try {
+            const user = await this.googleAuth.finish(code, state, cookie);
+            const session = await this.authService.createPersistentSession(user.id, this.getRequestMeta(req));
+            this.attachAuthCookies(res, session);
+        } catch {
+            destination.searchParams.set('error', 'No se pudo ingresar con Google. Volvé a intentarlo o recuperá tu contraseña.');
+        }
+        res.redirect(destination.toString());
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('google/link')
+    async linkGoogle(@Request() req: any, @Res() res: Response) {
+        const flow = await this.googleAuth.start(undefined, req.user.id);
+        res.cookie('finix_google_flow', flow.cookie, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/api/auth/google', maxAge: 600_000 });
+        res.redirect(flow.url);
+    }
 
     @HttpCode(HttpStatus.OK)
     @Post('register/request-code')
@@ -84,9 +118,9 @@ export class AuthController {
     }
 
     /**
-     * Called by the frontend after a Supabase signup or OAuth login.
+     * Synchronizes the profile of an already authenticated Finix user.
      * Creates the Prisma User row if it doesn't exist yet (idempotent).
-     * Requires the Supabase JWT in the Authorization header.
+     * Requires a Finix access token or session cookie.
      */
     @UseGuards(JwtAuthGuard)
     @HttpCode(HttpStatus.OK)
@@ -103,7 +137,7 @@ export class AuthController {
             body.username ?? req.user.username,
         );
 
-        // Supabase/Google gives us the identity token, but Finix also needs
+        // The verified identity also needs
         // its own persistent browser session so refresh works after a reload,
         // browser restart, or long inactivity. The cookie is HttpOnly and is
         // revoked only by /logout (or an administrator).
@@ -123,7 +157,7 @@ export class AuthController {
 
     /**
      * Returns the Prisma profile for the currently authenticated user.
-     * Called after every Supabase login to hydrate the frontend store.
+     * Called after login to hydrate the frontend store.
      */
     @UseGuards(JwtAuthGuard)
     @Get('me')

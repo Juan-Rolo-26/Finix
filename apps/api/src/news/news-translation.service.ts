@@ -1,68 +1,82 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { detect } from 'tinyld';
 
 @Injectable()
 export class NewsTranslationService {
     private readonly logger = new Logger(NewsTranslationService.name);
     private readonly timeoutMs = Math.max(1000, Number(process.env.NEWS_TRANSLATION_TIMEOUT_MS) || 4500);
-
-    private readonly spanishWords = new Set([
-        'al', 'ante', 'con', 'como', 'cuando', 'de', 'del', 'desde', 'donde', 'durante',
-        'el', 'ella', 'en', 'entre', 'esa', 'ese', 'esta', 'este', 'fue', 'ha', 'hacia',
-        'las', 'los', 'más', 'menos', 'mientras', 'no', 'para', 'pero', 'por', 'que',
-        'según', 'sin', 'sobre', 'tras', 'un', 'una', 'uno', 'y', 'ya', 'acciones',
-        'anuncia', 'banco', 'cae', 'caen', 'dólar', 'economía', 'empresa', 'empresas',
-        'mercado', 'mercados', 'sube', 'suben', 'inversores', 'inversión', 'ganancias',
-    ]);
-
-    private readonly englishWords = new Set([
-        'a', 'about', 'after', 'amid', 'and', 'are', 'as', 'at', 'before', 'by', 'for',
-        'from', 'has', 'have', 'in', 'into', 'is', 'its', 'market', 'markets', 'of', 'on',
-        'or', 'report', 'shares', 'stocks', 'the', 'their', 'to', 'with', 'will', 'earnings',
-        'revenue', 'investors', 'company', 'companies', 'rises', 'falls', 'prices', 'rate',
-    ]);
+    private readonly results = new Map<string, { value: string; expires: number }>();
+    private readonly pending = new Map<string, Promise<string>>();
+    private active = 0;
+    private readonly waiters: Array<() => void> = [];
 
     isSpanish(text: string): boolean {
         const words = this.words(text);
         if (!words.length) return false;
-        const score = words.filter((word) => this.spanishWords.has(word)).length;
-        const accentedChars = (text.match(/[áéíóúüñ]/gi) || []).length;
-        return score >= 2 || (score >= 1 && accentedChars > 0);
+        const english = new Set(['the', 'and', 'with', 'after', 'before', 'shares', 'stocks', 'earnings', 'revenue', 'acquires', 'launches', 'raises', 'reports', 'investors', 'company', 'companies', 'will', 'growth', 'prices', 'rises', 'rise', 'falls', 'fall', 'new', 'says', 'surge', 'surges']);
+        if (words.filter(word => english.has(word)).length >= 2) return false;
+        const language = detect(text);
+        // Statistical detectors struggle with short titles dominated by ticker
+        // symbols. Recognize unambiguous Spanish words, never feed metadata.
+        const distinctive = new Set(['sube', 'suben', 'cae', 'caen', 'acciones', 'dólar', 'economía', 'inversión', 'ganancias', 'noticias', 'últimas', 'inversores']);
+        const shortSpanish = words.length <= 6 && !['en', 'pt', 'fr', 'it', 'de'].includes(language) && words.some(word => distinctive.has(word)) && !words.some(word => english.has(word));
+        if (language !== 'es' && !shortSpanish) return false;
+        // Validate each sentence too: a Spanish title must not legitimize an
+        // untranslated English paragraph or quote appended to the same field.
+        return !String(text).split(/[.!?\n;]+/).some(part =>
+            part.trim().length >= 18 && detect(part) === 'en');
     }
 
     isEnglish(text: string): boolean {
         const words = this.words(text);
-        if (!words.length || this.isSpanish(text)) return false;
-        const score = words.filter((word) => this.englishWords.has(word)).length;
-        return score >= 2;
+        return words.length > 0 && detect(text) === 'en';
     }
 
     async translateToSpanish(text: string, sourceLanguage?: string): Promise<string> {
         const original = String(text || '').trim();
-        if (!original) return text;
+        if (!original) return '';
+        if (this.isSpanish(original)) return original;
 
-        const source = String(sourceLanguage || '').trim().toLowerCase();
-        if (source === 'es' || source.startsWith('es-')) return text;
-        // The source metadata can be stale or mixed (for example, an English
-        // feed containing an editor-written Spanish headline). Never translate
-        // text that already reads as Spanish, even when the feed says "en".
-        if (this.isSpanish(original)) return text;
+        const cached = this.results.get(original);
+        if (cached && cached.expires > Date.now()) return cached.value;
+        const pending = this.pending.get(original);
+        if (pending) return pending;
+        const request = this.translateUncached(original, sourceLanguage).then(value => {
+            if (this.results.size >= 2000) this.results.delete(this.results.keys().next().value!);
+            this.results.set(original, { value, expires: Date.now() + (value ? 24 * 60 * 60_000 : 10 * 60_000) });
+            return value;
+        }).finally(() => this.pending.delete(original));
+        this.pending.set(original, request);
+        return request;
+    }
 
-        const sourceCode = source.startsWith('en') ? 'en' : 'auto';
-        const providers = [
-            () => this.translateWithGoogle(original, sourceCode),
-            () => this.translateWithLibreTranslate(original, sourceCode),
-            () => this.translateWithMyMemory(original),
-        ];
+    private async translateUncached(original: string, sourceLanguage?: string): Promise<string> {
+        if (this.active >= 8) await new Promise<void>(resolve => this.waiters.push(resolve));
+        this.active++;
+        try {
 
-        for (const translate of providers) {
-            try {
-                const translated = (await translate()).trim();
-                if (translated && translated !== original) return translated;
-            } catch (error: any) {
-                this.logger.debug(`Translation provider unavailable: ${error?.message || 'unknown error'}`);
+            // Detect the text, rather than trusting a feed's language metadata.
+            const sourceCode = this.isEnglish(original) || sourceLanguage?.startsWith('en') ? 'en' : 'auto';
+            const providers = [
+                () => this.translateWithGoogle(original, sourceCode),
+                () => this.translateWithLibreTranslate(original, sourceCode),
+                () => this.translateWithMyMemory(original),
+            ];
+
+            for (const translate of providers) {
+                try {
+                    const translated = (await translate()).trim();
+                    if (translated !== original && this.isSpanish(translated)) return translated;
+                } catch (error: any) {
+                    this.logger.debug(`Translation provider unavailable: ${error?.message || 'unknown error'}`);
+                }
             }
+            // Never fall back to the untranslated original in public news.
+            return '';
+        } finally {
+            this.active--;
+            this.waiters.shift()?.();
         }
-        return text;
     }
 
     async translateBatch(texts: string[], sourceLanguage?: string): Promise<string[]> {
@@ -70,8 +84,11 @@ export class NewsTranslationService {
         if (source.startsWith('en') && texts.length > 1 && texts.every((text) => !this.isSpanish(text))) {
             const separator = 'FINIXNEWSFIELDSEPARATORQ7X';
             const combined = await this.translateToSpanish(texts.join(`\n${separator}\n`), source);
+            // A failed batch already tried every provider. Avoid immediately
+            // multiplying the outage into one more request per field.
+            if (!combined) return texts.map(() => '');
             const parts = combined.split(separator).map((part) => part.trim());
-            if (parts.length === texts.length && parts.every(Boolean)) return parts;
+            if (parts.length === texts.length && parts.every(part => this.isSpanish(part))) return parts;
         }
         return Promise.all(texts.map((text) => this.translateToSpanish(text, sourceLanguage)));
     }

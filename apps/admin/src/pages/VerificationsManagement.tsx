@@ -18,11 +18,7 @@ export default function VerificationsManagement() {
         if (path.startsWith('/api/uploads/')) {
             return path;
         }
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        if (supabaseUrl) {
-            return `${supabaseUrl}/storage/v1/object/public/financial-verifications/${path}`;
-        }
-        return `https://pfyzdohllcxhztmldqou.supabase.co/storage/v1/object/public/financial-verifications/${path}`;
+        return `/api/admin/verifications/document?path=${encodeURIComponent(path)}`;
     };
 
     useEffect(() => {

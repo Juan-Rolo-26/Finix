@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useProfilePortfolio } from '@/components/portfolio/summary/useProfilePortfolio';
 import { AllocationSummary, MonthlyReturnChart } from '@/components/portfolio/summary/PortfolioSummaryCharts';
 import VerifiedBadge from '@/components/common/VerifiedBadge';
+import { InvestorStreakPill } from '@/components/common/InvestorStreakPill';
 
 
 /* ─── Brand tokens ─────────────────────────────────────────── */
@@ -1354,6 +1355,7 @@ export default function Profile() {
                                 <Award className="w-3 h-3 inline mr-1" />Influencer
                             </span>
                         )}
+                        <InvestorStreakPill />
                     </div>
 
                     {isEditing ? (
@@ -1627,12 +1629,13 @@ export default function Profile() {
                 </div>
 
                 {/* ── TABS ──────────────────────────────────────── */}
-                <div className="px-6 border-b border-border">
-                    <div className="flex">
+                <div className="desktop-profile-tabs px-6 border-b border-border">
+                    <div className="desktop-filter-bar flex">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
+                                aria-pressed={activeTab === tab.id}
                                 className="relative flex items-center gap-1.5 px-5 py-3 text-sm font-semibold transition-colors"
                                 style={{ color: activeTab === tab.id ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                             >

@@ -388,6 +388,7 @@ export class PostsService {
                     : [{ createdAt: 'desc' }, { id: 'desc' }];
 
             const posts = await this.prisma.post.findMany({
+                relationLoadStrategy: 'join',
                 where,
                 take: limit + 1,
                 ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),

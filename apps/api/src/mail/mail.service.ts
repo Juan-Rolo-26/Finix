@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { isLocalMode } from '../config/local-mode';
 
 @Injectable()
 export class MailService {
@@ -95,41 +96,101 @@ export class MailService {
         replyTo?: string;
         idempotencyKey?: string;
     }) {
-        const response = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${this.getResendApiKey()}`,
-                'Content-Type': 'application/json',
-                ...(params.idempotencyKey ? { 'Idempotency-Key': params.idempotencyKey } : {}),
-            },
-            body: JSON.stringify({
-                from: this.getEmailFrom(),
-                to: [params.to],
-                subject: params.subject,
-                text: params.text,
-                html: params.html,
-                reply_to: params.replyTo,
-            }),
-            signal: AbortSignal.timeout(15000),
-        });
-
-        const body = await response.json().catch(() => ({} as { message?: string; id?: string }));
-        if (!response.ok) {
-            const errorMessage = typeof body.message === 'string' ? body.message : 'No se pudo enviar el correo.';
-            if (
-                errorMessage.includes('verify a domain') ||
-                errorMessage.includes('testing emails')
-            ) {
-                throw new BadRequestException(
-                    'El correo saliente de Finix todavia no esta listo para produccion. Verifica tu dominio en Resend y usalo en EMAIL_FROM.',
-                );
-            }
-            this.logger.error(`Error sending email with Resend: ${errorMessage}`);
-            throw new BadRequestException(errorMessage);
+        let resendKey = process.env.RESEND_API_KEY?.trim() || process.env.SMTP_PASS?.trim();
+        if (!resendKey) {
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const candidates = [
+                    path.resolve(process.cwd(), 'apps/api/.env'),
+                    path.resolve(process.cwd(), '.env'),
+                    path.resolve(__dirname, '../../../.env'),
+                ];
+                for (const p of candidates) {
+                    if (fs.existsSync(p)) {
+                        require('dotenv').config({ path: p, override: true });
+                        break;
+                    }
+                }
+                resendKey = process.env.RESEND_API_KEY?.trim() || process.env.SMTP_PASS?.trim();
+            } catch {}
         }
 
-        this.logger.log(`Email sent to ${params.to}: ${body.id ?? 'without-id'}`);
-        return body;
+        // 1. Si está configurada la clave de Resend, enviamos por Resend real (incluso en local)
+        if (resendKey) {
+            let from = this.getEmailFrom();
+            if (from.includes('.test') || from.includes('local@')) {
+                from = 'Finix <onboarding@finixarg.com>';
+            }
+
+            try {
+                const response = await fetch('https://api.resend.com/emails', {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${resendKey}`,
+                        'Content-Type': 'application/json',
+                        ...(params.idempotencyKey ? { 'Idempotency-Key': params.idempotencyKey } : {}),
+                    },
+                    body: JSON.stringify({
+                        from,
+                        to: [params.to],
+                        subject: params.subject,
+                        text: params.text,
+                        html: params.html,
+                        reply_to: params.replyTo,
+                    }),
+                    signal: AbortSignal.timeout(15000),
+                });
+
+                const body = await response.json().catch(() => ({} as { message?: string; id?: string }));
+                if (!response.ok) {
+                    const errorMessage = typeof body.message === 'string' ? body.message : 'No se pudo enviar el correo.';
+                    this.logger.error(`Error sending email with Resend: ${errorMessage}`);
+                    // En desarrollo local, imprimimos en consola por si la cuenta de Resend rechaza el envío
+                    console.log(`\n==================================================`);
+                    console.log(`📧 [FINIX EMAIL - FALLBACK LOCAL POR ERROR RESEND]`);
+                    console.log(`Para: ${params.to}`);
+                    console.log(`Asunto: ${params.subject}`);
+                    console.log(`Contenido:\n${params.text}`);
+                    console.log(`==================================================\n`);
+                    throw new BadRequestException(errorMessage);
+                }
+
+                this.logger.log(`Email sent via Resend to ${params.to}: ${body.id ?? 'without-id'}`);
+                return body;
+            } catch (err: any) {
+                if (err instanceof BadRequestException) throw err;
+                this.logger.error(`Resend request failed: ${err.message}`);
+                throw new BadRequestException('No se pudo conectar con el servicio de correo Resend.');
+            }
+        }
+
+        // 2. Si no hay RESEND_API_KEY: en local imprimimos el código en consola para no bloquear el desarrollo
+        console.log(`\n==================================================`);
+        console.log(`📧 [FINIX EMAIL - MODO LOCAL (CÓDIGO DE VERIFICACIÓN)]`);
+        console.log(`Para: ${params.to}`);
+        console.log(`Asunto: ${params.subject}`);
+        console.log(`Contenido:\n${params.text}`);
+        console.log(`==================================================\n`);
+
+        if (isLocalMode()) {
+            try {
+                const nodemailer = require('nodemailer');
+                const transport = nodemailer.createTransport({
+                    host: '127.0.0.1', port: 1025, secure: false,
+                });
+                const result = await transport.sendMail({
+                    from: this.getEmailFrom(), to: params.to, subject: params.subject,
+                    text: params.text, html: params.html, replyTo: params.replyTo,
+                });
+                return { id: result.messageId };
+            } catch (smtpErr: any) {
+                this.logger.warn(`Mailpit local SMTP no disponible (${smtpErr.message}), pero el correo fue impreso en consola.`);
+                return { id: 'mock-local-console' };
+            }
+        }
+
+        throw new BadRequestException('Falta configurar RESEND_API_KEY para enviar correos desde Finix.');
     }
 
     private async sendCodeEmail(params: {

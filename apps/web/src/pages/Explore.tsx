@@ -5,21 +5,13 @@ import { useAuthStore } from '@/stores/authStore';
 import { useLocation, useNavigate } from 'react-router-dom';
 import PostCard from '@/components/posts/PostCard';
 import CreatePostModal from '@/components/posts/CreatePostModal';
-import { StoryComposerModal } from '@/components/stories/StoryComposerModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { InvestorQuote } from '@/components/common/InvestorQuote';
 import {
     Card,
     CardContent,
 } from '@/components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
     Flame,
@@ -34,10 +26,7 @@ import {
     BarChart2,
     Image,
     Bookmark,
-    ChevronDown,
-    Sparkles,
 } from 'lucide-react';
-import type { StoryAuthor, StoryItem } from '@/components/stories/storyTypes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -113,7 +102,6 @@ export default function ExplorePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
-    const [showStoryComposer, setShowStoryComposer] = useState(false);
     const [showSaved, setShowSaved] = useState(false);
     const loaderRef = useRef<HTMLDivElement>(null);
 
@@ -121,15 +109,6 @@ export default function ExplorePage() {
     const activeRequestIdRef = useRef(0);
     const nextCursorRef = useRef<string | null>(null);
     nextCursorRef.current = nextCursor;
-
-    const storyComposerUser: StoryAuthor | null = user ? {
-        id: user.id,
-        username: user.username,
-        avatarUrl: user.avatarUrl,
-        isVerified: user.isVerified,
-        bio: user.bio,
-        title: (user as any).title,
-    } : null;
 
     const fetchPosts = useCallback(async (reset = false, cursorOverride?: string | null) => {
         if (fetchingRef.current && !reset) return;
@@ -245,19 +224,15 @@ export default function ExplorePage() {
         setPosts((prev) => prev.filter((p) => p.id !== postId));
     };
 
-    const handleStoryCreated = (_story: StoryItem) => {
-        setShowStoryComposer(false);
-    };
-
     return (
-        <div className="min-h-screen w-full">
+        <div className="explore-page min-h-screen w-full">
             <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
 
                 <Card className="overflow-hidden border-border/60 bg-card/80 shadow-sm">
                     <div className="relative">
                         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.16),transparent_34%)]" />
                         <div className="relative flex flex-col gap-6 p-6 md:p-8">
-                            <div className="flex flex-col items-center justify-center text-center gap-5 max-w-3xl mx-auto">
+                            <div className="desktop-page-heading flex flex-col items-center justify-center text-center gap-5 max-w-3xl mx-auto">
                                 <div className="max-w-3xl space-y-3 flex flex-col items-center text-center">
                                     <Badge
                                         variant="outline"
@@ -292,60 +267,48 @@ export default function ExplorePage() {
                                     >
                                         <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
                                     </Button>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button className="gap-2 bg-gradient-to-r from-primary to-emerald-400 text-black font-bold shadow-glow">
-                                                <PenSquare className="w-4 h-4" />
-                                                <span>Crear</span>
-                                                <ChevronDown className="w-4 h-4 opacity-70" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-52">
-                                            <DropdownMenuLabel>Nuevo contenido</DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={() => setShowCreate(true)}>
-                                                <PenSquare className="w-4 h-4" />
-                                                Publicación
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setShowStoryComposer(true)}>
-                                                <Sparkles className="w-4 h-4" />
-                                                Historia
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                    <Button
+                                        onClick={() => setShowCreate(true)}
+                                        className="gap-2 bg-gradient-to-r from-primary to-emerald-400 text-black font-bold shadow-glow"
+                                    >
+                                        <PenSquare className="w-4 h-4" />
+                                        <span>Crear publicación</span>
+                                    </Button>
                                 </div>
                             </div>
 
                             {!showSaved && (
-                                <div className="grid gap-4">
-                                    <div className="grid gap-2 rounded-2xl border border-border/60 bg-background/70 p-2 md:grid-cols-2 xl:grid-cols-4">
+                                <div className="flex flex-col items-center justify-center gap-2.5 sm:gap-3 w-full text-center">
+                                    <div className="desktop-filter-bar is-centered justify-center flex flex-wrap items-center gap-1.5 sm:gap-2 rounded-2xl border border-border/60 bg-background/70 p-1.5 sm:p-2 mx-auto max-w-full">
                                         {SORT_TABS.map(({ key, label, icon: Icon }) => (
                                             <button
                                                 key={key}
                                                 onClick={() => setSort(key)}
-                                                className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${sort === key
+                                                aria-pressed={sort === key}
+                                                className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium transition-all ${sort === key
                                                     ? 'bg-card text-foreground shadow-sm ring-1 ring-border/70'
                                                     : 'text-muted-foreground hover:bg-background hover:text-foreground'
                                                     }`}
                                             >
-                                                <Icon className="w-4 h-4" />
-                                                {label}
+                                                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                                                <span>{label}</span>
                                             </button>
                                         ))}
                                     </div>
 
-                                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
+                                    <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2.5 mx-auto max-w-full">
                                         {TYPE_FILTERS.map(({ key, label, icon: Icon }) => (
                                             <button
                                                 key={key}
                                                 onClick={() => setTypeFilter(key)}
-                                                className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${typeFilter === key
+                                                aria-pressed={typeFilter === key}
+                                                className={`flex items-center gap-1.5 sm:gap-2 rounded-full border px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all ${typeFilter === key
                                                     ? 'border-primary/40 bg-primary/10 text-primary'
                                                     : 'border-border/60 bg-background/50 text-muted-foreground hover:border-border hover:text-foreground'
                                                     }`}
                                             >
-                                                <Icon className="w-3.5 h-3.5" />
-                                                {label}
+                                                <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                                                <span>{label}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -445,6 +408,9 @@ export default function ExplorePage() {
                         )}
                     </div>
                 </div>
+
+                {/* Investor Wisdom Quote */}
+                <InvestorQuote investorId="stanley-druckenmiller" showBackToTop />
             </div>
 
             {/* ── Create Post Modal ── */}
@@ -457,12 +423,6 @@ export default function ExplorePage() {
                 )}
             </AnimatePresence>
 
-            <StoryComposerModal
-                open={showStoryComposer}
-                onOpenChange={setShowStoryComposer}
-                onCreated={handleStoryCreated}
-                currentUser={storyComposerUser}
-            />
         </div>
     );
 }

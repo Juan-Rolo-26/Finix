@@ -13,6 +13,7 @@ import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { hasCommunityCreatorAccess, useAuthStore } from '@/stores/authStore';
 import CommunityDetail from './CommunityDetail';
+import { InvestorQuote } from '@/components/common/InvestorQuote';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -844,7 +845,7 @@ export default function Comunidades() {
             {/* ── Header ── */}
             <div className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-0"
                 style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                <div className="flex flex-col items-center justify-center text-center gap-3 mb-4 max-w-xl mx-auto">
+                <div className="desktop-page-heading flex flex-col items-center justify-center text-center gap-3 mb-4 max-w-xl mx-auto">
                     <div className="min-w-0 text-center">
                         <h1 className="text-xl sm:text-2xl font-black tracking-tight text-center">Comunidades</h1>
                         <p className="text-xs sm:text-[13px] mt-0.5 text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -994,6 +995,9 @@ export default function Comunidades() {
                         ))}
                     </div>
                 )}
+
+                {/* Investor Wisdom Quote */}
+                <InvestorQuote investorId="george-soros" showBackToTop />
             </div>
 
             {/* ── Create Modal ── */}

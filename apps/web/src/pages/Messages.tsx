@@ -26,7 +26,6 @@ import {
     Image as ImageIcon,
     Newspaper,
     MoreHorizontal,
-    Sparkles,
     Flag,
     Pencil,
     Users,
@@ -49,9 +48,7 @@ import {
 import type {
     ComposerAttachment,
     MessageAttachmentMeta,
-    MessageAttachmentType,
     SharedPostPreview,
-    SharedStoryPreview,
 } from '@/components/messages/messageTypes';
 import { useAuthStore } from '@/stores/authStore';
 import { usePreferencesStore } from '@/stores/preferencesStore';
@@ -73,7 +70,8 @@ interface DirectMessage {
     senderId: string;
     sender: MsgUser;
     content: string;
-    attachmentType?: MessageAttachmentType | null;
+    // Stored messages may contain attachments from retired features.
+    attachmentType?: string | null;
     attachmentUrl?: string | null;
     attachmentMeta?: MessageAttachmentMeta | null;
     sharedPost?: SharedPostPreview | null;
@@ -287,11 +285,8 @@ function getMessagePreview(message: DirectMessage | null) {
     if (message.attachmentType === 'chart') {
         return text ? `Grafico: ${text}` : 'Grafico compartido';
     }
-    if (message.attachmentType === 'story') {
-        return text ? `Historia: ${text}` : 'Historia compartida';
-    }
 
-    return text || 'Mensaje';
+    return text || (message.attachmentType ? 'Adjunto no disponible' : 'Mensaje');
 }
 
 function getConversationName(conversation: ConversationItem) {
@@ -421,96 +416,6 @@ function SharedPostCard({
     );
 }
 
-function SharedStoryCard({
-    story,
-    borderColor,
-    isLight,
-    textPrimary,
-    textMuted,
-}: {
-    story: SharedStoryPreview;
-    borderColor: string;
-    isLight: boolean;
-    textPrimary: string;
-    textMuted: string;
-}) {
-    const background = story.background || 'linear-gradient(135deg, #0f172a 0%, #111827 45%, #10b981 100%)';
-
-    return (
-        <div
-            className="rounded-2xl overflow-hidden border"
-            style={{
-                borderColor,
-                background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 100% / 0.04)',
-            }}
-        >
-            <div className="p-3 space-y-3">
-                <div className="flex items-center gap-2.5">
-                    {story.author.avatarUrl ? (
-                        <img
-                            src={resolveMediaUrl(story.author.avatarUrl)}
-                            alt={story.author.username}
-                            className="w-9 h-9 rounded-full object-cover"
-                        />
-                    ) : (
-                        <div className="w-9 h-9 rounded-full bg-primary text-black font-bold flex items-center justify-center">
-                            {story.author.username[0]?.toUpperCase() || '?'}
-                        </div>
-                    )}
-
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-semibold truncate" style={{ color: textPrimary }}>
-                                {story.author.username}
-                            </span>
-                            {story.author.isVerified && <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />}
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-[11px]" style={{ color: textMuted }}>
-                            <span>Historia</span>
-                        </div>
-                    </div>
-                </div>
-
-                {story.mediaUrl ? (
-                    <div className="rounded-2xl overflow-hidden border" style={{ borderColor }}>
-                        <img
-                            src={resolveMediaUrl(story.mediaUrl)}
-                            alt={`Historia de ${story.author.username}`}
-                            className="w-full max-h-80 object-cover"
-                            loading="lazy"
-                        />
-                    </div>
-                ) : (
-                    <div
-                        className="flex min-h-[200px] items-center justify-center rounded-2xl px-5 py-6 text-center"
-                        style={{ background }}
-                    >
-                        <p
-                            className="whitespace-pre-wrap break-words text-lg font-semibold leading-tight"
-                            style={{ color: story.textColor || '#ffffff' }}
-                        >
-                            {story.content || 'Historia compartida'}
-                        </p>
-                    </div>
-                )}
-
-                {story.mediaUrl && story.content && (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textPrimary }}>
-                        {story.content}
-                    </p>
-                )}
-
-                <Link
-                    to={`/profile/${story.author.username}`}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-primary"
-                >
-                    Ver perfil
-                    <ExternalLink className="w-3.5 h-3.5" />
-                </Link>
-            </div>
-        </div>
-    );
-}
 
 function MessageAttachmentCard({
     message,
@@ -620,24 +525,10 @@ function MessageAttachmentCard({
         );
     }
 
-    if (message.attachmentType === 'story') {
-        const story = message.attachmentMeta?.story as SharedStoryPreview | null | undefined;
-        if (!story) return null;
 
-        return (
-            <div className="w-full max-w-[360px]">
-                <SharedStoryCard
-                    story={story}
-                    borderColor={borderColor}
-                    isLight={isLight}
-                    textPrimary={textPrimary}
-                    textMuted={textMuted}
-                />
-            </div>
-        );
-    }
-
-    return null;
+    return message.attachmentType ? (
+        <p className="text-sm" style={{ color: textMuted }}>Adjunto no disponible</p>
+    ) : null;
 }
 
 // ─── New Message Modal ────────────────────────────────────────────────────────
@@ -1265,6 +1156,12 @@ export default function MessagesPage() {
     useEffect(() => {
         const state = location.state as { composerAttachment?: ComposerAttachment | null; openNewMessage?: boolean } | null;
         if (!state?.composerAttachment) return;
+
+        if (!['image', 'post', 'chart'].includes(state.composerAttachment.type)) {
+            setComposerError('Este adjunto ya no está disponible.');
+            navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+            return;
+        }
 
         setPendingAttachment(state.composerAttachment);
         setComposerError('');
@@ -2225,19 +2122,6 @@ export default function MessagesPage() {
                                                     </div>
                                                 )}
 
-                                                {pendingAttachment.type === 'story' && (
-                                                    pendingAttachment.sharedStory?.mediaUrl ? (
-                                                        <img
-                                                            src={resolveMediaUrl(pendingAttachment.sharedStory.mediaUrl)}
-                                                            alt="Historia lista para enviar"
-                                                            className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-                                                            <Sparkles className="w-7 h-7" />
-                                                        </div>
-                                                    )
-                                                )}
 
                                                 <div className="min-w-0 flex-1">
                                                     {pendingAttachment.type === 'image' && (
@@ -2278,21 +2162,6 @@ export default function MessagesPage() {
                                                         </>
                                                     )}
 
-                                                    {pendingAttachment.type === 'story' && pendingAttachment.sharedStory && (
-                                                        <>
-                                                            <p className="text-sm font-semibold" style={{ color: textPrimary }}>
-                                                                Historia compartida
-                                                            </p>
-                                                            <p className="text-xs mt-1" style={{ color: textMuted }}>
-                                                                {pendingAttachment.sharedStory.author.username}
-                                                            </p>
-                                                            {pendingAttachment.sharedStory.content && (
-                                                                <p className="text-sm mt-2 max-h-10 overflow-hidden" style={{ color: textPrimary }}>
-                                                                    {pendingAttachment.sharedStory.content}
-                                                                </p>
-                                                            )}
-                                                        </>
-                                                    )}
                                                 </div>
 
                                                 <button

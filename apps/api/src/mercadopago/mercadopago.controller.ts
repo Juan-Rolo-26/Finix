@@ -14,6 +14,8 @@ import {
 import { MercadoPagoService } from './mercadopago.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { getAccessMode } from '../access/free-access';
+import { WATCHLIST_CONFIG } from '../watchlist/watchlist.config';
+import { PLAN_PERMISSIONS } from '../access/plan-permissions';
 
 @Controller('mercadopago')
 export class MercadoPagoController {
@@ -54,6 +56,11 @@ export class MercadoPagoController {
             communityCurrency: 'ARS',
             proPriceArs: this.mpService.getProPrice(),
             creatorPriceArs: this.mpService.getCreatorPrice(),
+            planLimits: {
+                FREE: { ...WATCHLIST_CONFIG.FREE, maxPortfolios: PLAN_PERMISSIONS.free.maxPortfolios },
+                PRO: { ...WATCHLIST_CONFIG.PRO, maxPortfolios: null },
+                CREATOR: { ...WATCHLIST_CONFIG.CREATOR, maxPortfolios: null },
+            },
         };
     }
 

@@ -274,11 +274,12 @@ export default function CommunityAdmin() {
         newOrder.splice(targetIndex, 0, moved);
         setSections(newOrder);
         try {
-            await apiFetch(`/communities/${community.id}/sections/reorder`, {
+            const response = await apiFetch(`/communities/${community.id}/sections/reorder`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sectionIds: newOrder.map(s => s.id) }),
             });
+            if (!response.ok) throw new Error('No se pudo guardar el orden de las secciones.');
         } catch (err) {
             console.error(err);
             fetchSections();

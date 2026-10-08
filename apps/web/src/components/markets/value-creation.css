@@ -1,25 +1,27 @@
 .value-creation .market-header {
-    flex-direction: row;
-    justify-content: space-between;
-    text-align: left;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 .value-creation .market-header__text {
-    align-items: flex-start;
-    margin-inline: 0;
-    max-width: none;
-    min-width: 0;
+    align-items: center;
+    margin-inline: auto;
+    text-align: center;
+    max-width: 800px;
 }
 .value-creation .market-header h1,
 .value-creation .market-header__description {
-    text-align: left;
-    margin-inline: 0;
+    text-align: center;
+    margin-inline: auto;
 }
 .value-creation .market-header__actions {
     width: auto;
-    flex-shrink: 0;
+    margin-top: 8px;
 }
 .value-creation .market-eyebrow {
-    justify-content: flex-start;
+    justify-content: center;
+    margin-inline: auto;
 }
 .value-creation .market-overview {
     gap: 20px;

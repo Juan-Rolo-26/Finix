@@ -1,12 +1,11 @@
 import FreeAccessNotice from '@/components/FreeAccessNotice';
-import { usePlatformAccessStore } from '@/stores/platformAccessStore';
-import { useState, useEffect } from 'react';
+import { usePlanCheckout } from '@/hooks/usePlanCheckout';
+import { PlanCheckoutDialog } from '@/components/PlanCheckoutDialog';
+import { formatArs, subscribedPlan } from '@/lib/plans';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Check, Sparkles, Zap, Shield, Target, Loader2, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore, isProUser } from '@/stores/authStore';
-import { apiFetch } from '@/lib/api';
-import { SubscriptionRenewalChoice } from '@/components/SubscriptionRenewalChoice';
+import { useAuthStore } from '@/stores/authStore';
 
 const FEATURES = [
     'Datos de mercado y Pre-Market organizados.',
@@ -20,74 +19,20 @@ const FEATURES = [
 ];
 
 export default function ProUpgrade() {
-    const { freeAccessEnabled: freeAccess, purchasesPaused } = usePlatformAccessStore();
+    const checkout = usePlanCheckout();
+    const freeAccess = checkout.catalog?.freeAccessEnabled === true;
+    const proPriceArs = checkout.catalog?.proPriceArs;
     const navigate = useNavigate();
     const user = useAuthStore(s => s.user);
-    const hasPro = isProUser(user);
-    const [loading, setLoading] = useState(false);
-    const [proPriceArs, setProPriceArs] = useState(6300);
-    const [renewalOpen, setRenewalOpen] = useState(false);
-    const [checkoutError, setCheckoutError] = useState<string | null>(null);
-
-    useEffect(() => {
-        apiFetch('/mercadopago/config')
-            .then(res => res.json())
-            .then(data => {
-                if (data.proPriceArs) {
-                    setProPriceArs(Number(data.proPriceArs));
-                }
-            })
-            .catch(() => {});
-    }, []);
-
-    const handleUpgrade = async () => {
-        if (purchasesPaused) { navigate(user ? '/market' : '/auth?mode=register'); return; }
-        if (!user) {
-            navigate(`/auth?redirect=${encodeURIComponent('/pro')}&plan=PRO`);
-            return;
-        }
-        setCheckoutError(null);
-        setRenewalOpen(true);
-    };
-
-    const confirmCheckout = async (autoRenew: boolean) => {
-        if (purchasesPaused) return;
-        setLoading(true);
-        setCheckoutError(null);
-        try {
-            const res = await apiFetch('/mercadopago/checkout/pro', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ autoRenew }),
-            });
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.message || 'Error al conectar con Mercado Pago');
-            }
-            const data = await res.json();
-            const checkoutUrl = data.checkoutUrl
-                || (data.environment === 'sandbox' ? data.sandbox_init_point : data.init_point)
-                || data.init_point
-                || data.sandbox_init_point
-                || data.url;
-            if (checkoutUrl) {
-                window.location.href = checkoutUrl;
-            } else {
-                throw new Error('No se recibió la URL de checkout de Mercado Pago');
-            }
-        } catch (error: any) {
-            const message = String(error?.message || 'Ocurrió un error inesperado.');
-            setCheckoutError(/both payer and collector must be real or test users/i.test(message)
-                ? 'Mercado Pago detectó una mezcla entre una cuenta real y una cuenta de prueba. Para pagar en producción, iniciá sesión con una cuenta real de Mercado Pago. Para probar el checkout, configurá credenciales TEST y usá un comprador y un vendedor de prueba.'
-                : message);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const hasPro = subscribedPlan(user) !== 'FREE';
+    const loading = checkout.busy;
+    const handleUpgrade = () => checkout.choose('PRO');
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden">
             <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-4"><FreeAccessNotice /></div>
+            {(checkout.configError || (checkout.error && !checkout.selectedPlan)) && <div role="alert" className="relative z-10 mx-auto max-w-6xl px-6 py-4">{checkout.configError || checkout.error}<button className="ml-3 text-primary underline" onClick={() => { void checkout.reload(); }}>Reintentar</button></div>}
+            {freeAccess && <p className="relative z-10 mx-auto px-6 pt-3 text-sm text-muted-foreground">Precio mensual configurado: {formatArs(proPriceArs)}. El acceso temporal no crea una suscripción.</p>}
             {/* Background Effects */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full opacity-30"
@@ -129,7 +74,7 @@ export default function ProUpgrade() {
                                 </span>
                             </h1>
                             <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-                                Reuní cotizaciones, noticias, portafolios y métricas en un mismo lugar. Finix ofrece datos y herramientas informativas; no brinda asesoramiento financiero.
+                                Reuní cotizaciones, noticias, portafolios y métricas en un mismo lugar. Consultá los precios, límites y condiciones de cada plan antes de contratar.
                             </p>
                         </div>
 
@@ -177,8 +122,8 @@ export default function ProUpgrade() {
                             </div>
 
                             <div className="flex items-baseline gap-2 mb-1">
-                                <span className="text-5xl font-extrabold tracking-tighter">{freeAccess ? 'Gratis' : `$${proPriceArs.toLocaleString('es-AR')}`} </span>
-                                <span className="text-muted-foreground font-medium">{freeAccess ? 'durante esta etapa' : 'ARS / mes'}</span>
+                                <span className="text-5xl font-extrabold tracking-tighter">{freeAccess ? 'Gratis' : formatArs(proPriceArs)} </span>
+                                <span className="text-muted-foreground font-medium">{freeAccess ? 'durante esta etapa' : '/ mes'}</span>
                             </div>
                             <p className="text-xs text-emerald-400 font-semibold mb-6 flex items-center gap-1.5">
                                 <Sparkles className="w-3.5 h-3.5" /> {freeAccess ? 'Todas las funciones PRO están incluidas sin pagar.' : 'Elegí un pago mensual o la renovación automática con Mercado Pago.'}
@@ -186,7 +131,7 @@ export default function ProUpgrade() {
 
                             <button 
                                 onClick={handleUpgrade}
-                                disabled={loading || (!freeAccess && hasPro)}
+                                disabled={loading || checkout.loading || !checkout.catalog}
                                 className={`w-full py-4 px-6 rounded-2xl font-extrabold text-base sm:text-lg flex items-center justify-center gap-3 transition-all duration-200 ${
                                     hasPro && !freeAccess
                                         ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
@@ -204,7 +149,7 @@ export default function ProUpgrade() {
                                         <ArrowRight className="w-5 h-5" />
                                     </>
                                 ) : freeAccess ? ('Usar PRO gratis') : hasPro ? (
-                                    'Ya eres PRO'
+                                    'Gestionar mi plan'
                                 ) : (
                                     <>
                                         <span>Mejorar a PRO</span>
@@ -232,15 +177,7 @@ export default function ProUpgrade() {
 
                 </div>
             </main>
-            <SubscriptionRenewalChoice
-                open={renewalOpen}
-                planName="Finix PRO"
-                monthlyPrice={proPriceArs.toLocaleString('es-AR')}
-                busy={loading}
-                error={checkoutError}
-                onClose={() => { setRenewalOpen(false); setCheckoutError(null); }}
-                onConfirm={(autoRenew) => { void confirmCheckout(autoRenew); }}
-            />
+            <PlanCheckoutDialog checkout={checkout} />
         </div>
     );
 }

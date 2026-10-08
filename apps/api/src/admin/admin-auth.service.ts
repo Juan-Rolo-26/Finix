@@ -19,6 +19,7 @@ import {
     createDecipheriv,
     createHash,
     randomBytes,
+    randomInt,
     randomUUID,
 } from 'crypto';
 import { AdminLoginDto, AdminVerifyTwoFactorDto } from './dto/admin-auth.dto';
@@ -200,13 +201,8 @@ export class AdminAuthService {
             await this.clearFailedUserAttempts(user.id);
             this.clearIpAttempts(meta.ip, dto.email);
 
-            this.assertNotLocked(user);
-
-            await this.clearFailedUserAttempts(user.id);
-            this.clearIpAttempts(meta.ip, dto.email);
-
             // Primer factor: código de un solo uso enviado únicamente al correo del administrador.
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            const code = randomInt(100000, 1000000).toString();
             const encryptedSecret = this.encryptSecret(code);
             const expires = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -224,7 +220,7 @@ export class AdminAuthService {
                 {
                     sub: user.id,
                     type: 'admin_pre_auth',
-                    purpose: 'verify_2fa',
+                    purpose: 'verify_email',
                 },
                 { expiresIn: this.preAuthTokenTtl },
             );
@@ -251,18 +247,8 @@ export class AdminAuthService {
     }
 
     private async sendAdminEmailNotification(code: string) {
-        const adminEmail = (process.env.ADMIN_2FA_EMAIL || 'juanpablorolo2007@gmail.com').trim().toLowerCase();
-        await this.mailService.sendAdmin2faCode(adminEmail, code).catch((err) => {
-            console.error('Error enviando email Admin 2FA:', err);
-        });
-
-        // 3. Log visible para monitoreo de seguridad
-        console.log('\n================================================================');
-        console.log('📱 [FINIX ADMIN 2FA] CÓDIGO DE VERIFICACIÓN');
-        console.log(`📧 Destinatario email:   ${adminEmail}`);
-        console.log(`🔑 CÓDIGO 2FA:          ${code}`);
-        console.log('⏰ Expiración:           10 minutos');
-        console.log('================================================================\n');
+        const adminEmail = (process.env.ADMIN_2FA_EMAIL || this.mailService.getAdminNotificationEmail()).trim().toLowerCase();
+        await this.mailService.sendAdmin2faCode(adminEmail, code);
     }
 
     async verifyEmail(dto: AdminVerifyTwoFactorDto, meta: RequestMeta) {
@@ -273,20 +259,24 @@ export class AdminAuthService {
         try { payload = await this.jwtService.verifyAsync(dto.token); }
         catch { throw new UnauthorizedException('Token de verificación inválido o expirado'); }
 
-        if (payload?.type !== 'admin_pre_auth' || !payload?.sub) {
+        if (payload?.type !== 'admin_pre_auth' || payload?.purpose !== 'verify_email' || !payload?.sub) {
             throw new UnauthorizedException('Token de verificación inválido');
         }
 
         const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
         if (!user) throw new UnauthorizedException('Usuario no encontrado');
         this.assertRoleAndOwner(user);
+        this.assertNotLocked(user);
 
         if (!user.adminTotpTempSecret || !user.adminTotpTempExpires || user.adminTotpTempExpires < new Date()) {
             throw new UnauthorizedException('Código de verificación expirado, vuelve a iniciar sesión');
         }
 
         const validCode = this.decryptSecret(user.adminTotpTempSecret);
-        if (validCode !== code) throw new UnauthorizedException('Código de verificación incorrecto');
+        if (validCode !== code) {
+            await this.registerFailedUserAttempt(user.id);
+            throw new UnauthorizedException('Código de verificación incorrecto');
+        }
 
         await this.prisma.user.update({
             where: { id: user.id },
@@ -294,36 +284,11 @@ export class AdminAuthService {
         });
 
         if (user.adminTwoFactorEnabled && user.adminTotpSecret) {
-            // Ya tiene 2FA configurado y validó el código de celular exitosamente
-            await this.prisma.user.update({
-                where: { id: user.id },
-                data: {
-                    lastLogin: new Date(),
-                    adminFailedLoginAttempts: 0,
-                    adminLockedUntil: null,
-                },
-            });
-
-            const tokens = await this.createSessionTokens(user, meta);
-
-            await this.adminAuditService.logDirect({
-                actorId: user.id,
-                action: 'AUTH_LOGIN_SUCCESS',
-                targetId: user.id,
-                sessionId: tokens.sessionId,
-                ipAddress: meta.ip,
-                userAgent: meta.userAgent,
-            });
-
-            return {
-                ...tokens,
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    username: user.username,
-                    role: user.role,
-                },
-            };
+            const token = await this.jwtService.signAsync(
+                { sub: user.id, type: 'admin_pre_auth', purpose: 'verify_totp' },
+                { expiresIn: this.preAuthTokenTtl },
+            );
+            return { step: 'VERIFY_2FA' as const, token };
         } else {
             // Primera vez: configuración de la app Authenticator en el celular
             const secret = speakeasy.generateSecret({
@@ -361,7 +326,7 @@ export class AdminAuthService {
             throw new UnauthorizedException('Token de verificación inválido o expirado');
         }
 
-        if (preAuthPayload?.type !== 'admin_pre_auth' || !preAuthPayload?.sub) {
+        if (preAuthPayload?.type !== 'admin_pre_auth' || preAuthPayload?.purpose !== 'verify_totp' || !preAuthPayload?.sub) {
             throw new UnauthorizedException('Token de verificación inválido');
         }
 
@@ -371,6 +336,7 @@ export class AdminAuthService {
         }
 
         this.assertRoleAndOwner(user);
+        this.assertNotLocked(user);
 
         let verified = false;
 
@@ -437,15 +403,17 @@ export class AdminAuthService {
             throw new UnauthorizedException('Sesión de verificación expirada. Vuelve a iniciar sesión.');
         }
 
-        if (payload?.type !== 'admin_pre_auth' || !payload?.sub) {
+        if (payload?.type !== 'admin_pre_auth' || payload?.purpose !== 'verify_email' || !payload?.sub) {
             throw new UnauthorizedException('Token de verificación inválido');
         }
 
         const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
         if (!user) throw new UnauthorizedException('Usuario no encontrado');
         this.assertRoleAndOwner(user);
+        this.assertNotLocked(user);
+        if (!user.adminTotpTempSecret) throw new UnauthorizedException('Vuelve a iniciar sesión para solicitar un código.');
 
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const code = randomInt(100000, 1000000).toString();
         const encryptedSecret = this.encryptSecret(code);
         const expires = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -481,13 +449,17 @@ export class AdminAuthService {
             throw new UnauthorizedException('Token de verificación expirado');
         }
 
-        if (payload?.type !== 'admin_pre_auth' || !payload?.sub) {
+        if (payload?.type !== 'admin_pre_auth' || payload?.purpose !== 'verify_totp' || !payload?.sub) {
             throw new UnauthorizedException('Token inválido');
         }
 
         const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
         if (!user) throw new UnauthorizedException('Usuario no encontrado');
         this.assertRoleAndOwner(user);
+        this.assertNotLocked(user);
+        if (user.adminTwoFactorEnabled) {
+            throw new ForbiddenException('El Authenticator ya está configurado. No se puede reemplazar desde el login.');
+        }
 
         const secret = speakeasy.generateSecret({
             name: `Finix Admin (${user.email})`,

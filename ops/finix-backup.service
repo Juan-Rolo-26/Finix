@@ -1,0 +1,13 @@
+[Unit]
+Description=Finix verified PostgreSQL and storage backup
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=finix
+Group=finix
+WorkingDirectory=/opt/finix/source
+Environment=FINIX_DEPLOY_CONFIG=/etc/finix/deploy.env
+ExecStart=/bin/bash /opt/finix/source/ops/daily-backup.sh
+UMask=0077

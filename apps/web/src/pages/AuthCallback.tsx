@@ -1,14 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { Loader2 } from 'lucide-react';
 
-/**
- * Landing page after Supabase email verification links and OAuth redirects.
- * Supabase puts the session tokens in the URL hash (#access_token=...).
- * The Supabase client picks them up automatically on load.
- */
 export default function AuthCallback() {
     const navigate = useNavigate();
     const { syncFromSession } = useAuthStore();
@@ -29,25 +23,6 @@ export default function AuthCallback() {
                 return;
             }
 
-            // Supabase restores the OAuth session from the URL before getSession.
-            // A short retry protects slower browsers and mobile redirects.
-            let session = null;
-            let error = null;
-            for (let attempt = 0; attempt < 5 && !session; attempt += 1) {
-                const result = await supabase.auth.getSession();
-                session = result.data.session;
-                error = result.error;
-                if (!session && !error) {
-                    await new Promise((resolve) => window.setTimeout(resolve, 200));
-                }
-            }
-
-            if (error || !session) {
-                navigate('/?reason=auth-failed', { replace: true });
-                return;
-            }
-
-            // Sync with NestJS backend
             const user = await syncFromSession();
 
             if (!user) {
@@ -55,9 +30,10 @@ export default function AuthCallback() {
                 return;
             }
 
-            const isNewUser = session.user.created_at && (new Date().getTime() - new Date(session.user.created_at).getTime()) < 60000;
+            const isNewUser = !user.onboardingCompleted;
             const requestedRedirect = sessionStorage.getItem('authRedirect');
             sessionStorage.removeItem('authRedirect');
+            localStorage.removeItem('pendingUsername');
             const redirectTarget = requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')
                 ? requestedRedirect
                 : '/dashboard';

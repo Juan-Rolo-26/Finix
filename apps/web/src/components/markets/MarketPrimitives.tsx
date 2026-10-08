@@ -15,26 +15,28 @@ export function MarketHeader({
     icon: Icon,
     description,
     actions,
+    centered = true,
 }: {
     title: string;
     eyebrow: string;
     icon: LucideIcon;
     description?: ReactNode;
     actions?: ReactNode;
+    centered?: boolean;
 }) {
     return (
-        <header className="market-header">
-            <div className="market-header__text">
-                <div className="market-eyebrow">
-                    <Icon size={17} aria-hidden="true" />
-                    {eyebrow}
+        <header className={`market-header ${centered ? 'market-header--centered' : ''} flex flex-col items-center text-center gap-4 pb-4 mb-5 border-b border-border/40 w-full`}>
+            <div className="market-header__text flex flex-col items-center text-center min-w-0">
+                <div className="market-eyebrow flex items-center justify-center gap-1.5 text-xs font-semibold text-primary uppercase tracking-wider mb-1">
+                    <Icon size={14} aria-hidden="true" className="text-primary" />
+                    <span>{eyebrow}</span>
                 </div>
-                <h1>{title}</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground text-center">{title}</h1>
                 {description && (
-                    <div className="market-header__description">{description}</div>
+                    <div className="market-header__description text-sm text-muted-foreground mt-1 text-center flex justify-center">{description}</div>
                 )}
             </div>
-            {actions && <div className="market-header__actions">{actions}</div>}
+            {actions && <div className="market-header__actions flex items-center justify-center gap-2 flex-wrap shrink-0 w-full">{actions}</div>}
         </header>
     );
 }

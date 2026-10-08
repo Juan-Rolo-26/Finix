@@ -6,31 +6,54 @@ import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-    "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 ring-offset-background disabled:pointer-events-none disabled:opacity-45 cursor-pointer",
+    // Base: consistent height, font, transitions, focus ring
+    "finix-button inline-flex items-center justify-center whitespace-nowrap font-medium select-none cursor-pointer " +
+    "transition-all duration-150 " +
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-1 ring-offset-background " +
+    "disabled:pointer-events-none disabled:opacity-40",
     {
         variants: {
             variant: {
+                // Primary — Finix green
                 default:
-                    "bg-primary text-primary-foreground font-semibold shadow-xs hover:bg-primary/90 active:scale-[0.98] border border-transparent",
+                    "finix-button--primary bg-primary text-primary-foreground font-semibold border border-transparent " +
+                    "hover:bg-primary/90 active:scale-[0.98] active:bg-primary/85",
                 primary:
-                    "bg-primary text-primary-foreground font-semibold shadow-xs hover:bg-primary/90 active:scale-[0.98] border border-transparent",
+                    "finix-button--primary bg-primary text-primary-foreground font-semibold border border-transparent " +
+                    "hover:bg-primary/90 active:scale-[0.98] active:bg-primary/85",
+                // Destructive
                 destructive:
-                    "bg-destructive text-destructive-foreground font-semibold shadow-xs hover:bg-destructive/90 active:scale-[0.98] border border-transparent",
+                    "finix-button--danger bg-destructive text-destructive-foreground font-semibold border border-transparent " +
+                    "hover:bg-destructive/90 active:scale-[0.98]",
+                // Outline — visible border, transparent bg
                 outline:
-                    "border border-border/80 bg-background/60 text-foreground font-medium hover:bg-secondary hover:text-foreground hover:border-border active:scale-[0.98]",
+                    "finix-button--neutral border border-border bg-transparent text-foreground " +
+                    "hover:bg-secondary hover:border-border-strong active:scale-[0.98]",
+                // Secondary — subtle filled
                 secondary:
-                    "border border-border/70 bg-secondary text-secondary-foreground font-medium hover:bg-secondary/80 hover:border-border active:scale-[0.98]",
+                    "finix-button--neutral border border-border/60 bg-secondary text-secondary-foreground " +
+                    "hover:bg-secondary/75 hover:border-border active:scale-[0.98]",
+                // Ghost — no border, no bg until hover
                 ghost:
-                    "text-muted-foreground hover:text-foreground hover:bg-secondary/70 active:scale-[0.98] border border-transparent",
+                    "finix-button--neutral text-muted-foreground border border-transparent " +
+                    "hover:text-foreground hover:bg-secondary/60 active:scale-[0.98]",
+                // Link — text only
                 link:
-                    "text-primary underline-offset-4 hover:underline p-0 h-auto font-medium border-0",
+                    "finix-button--neutral text-primary underline-offset-4 hover:underline p-0 h-auto border-0",
+                // Danger ghost
+                danger:
+                    "finix-button--danger text-danger border border-transparent " +
+                    "hover:bg-danger/8 hover:border-danger/20 active:scale-[0.98]",
             },
             size: {
-                default: "h-10 px-4 py-2 rounded-xl gap-2",
-                sm: "h-8.5 px-3 text-xs rounded-lg gap-1.5",
-                lg: "h-11.5 px-6 text-base rounded-xl gap-2.5",
-                icon: "h-10 w-10 rounded-xl p-0",
-                "icon-sm": "h-8.5 w-8.5 rounded-lg p-0",
+                // Desktop-optimized sizes: tighter heights, consistent padding
+                default: "h-9 px-3.5 py-2 text-sm rounded-md gap-1.5",
+                sm:      "h-7.5 px-2.5 text-xs rounded gap-1",
+                lg:      "h-10 px-5 text-sm rounded-md gap-2",
+                xl:      "h-11 px-6 text-base rounded-md gap-2",
+                icon:    "h-9 w-9 rounded-md p-0",
+                "icon-sm": "h-7.5 w-7.5 rounded p-0",
+                "icon-lg": "h-10 w-10 rounded-md p-0",
             },
         },
         defaultVariants: {
@@ -54,6 +77,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         if (asChild) {
             return (
                 <Slot
+                    aria-disabled={disabled || isLoading || undefined}
+                    aria-busy={isLoading || undefined}
                     className={cn(buttonVariants({ variant, size, className }))}
                     ref={ref}
                     {...props}
@@ -65,13 +90,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         return (
             <button
+                aria-busy={isLoading || undefined}
                 className={cn(buttonVariants({ variant, size, className }))}
                 ref={ref}
                 disabled={disabled || isLoading}
                 {...props}
             >
                 {isLoading && (
-                    <Loader2 className="w-4 h-4 animate-spin shrink-0 text-current" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-current" />
                 )}
                 {!isLoading && leftIcon && (
                     <span className="shrink-0 flex items-center">{leftIcon}</span>

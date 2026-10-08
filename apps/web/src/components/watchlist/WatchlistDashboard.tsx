@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
-import { watchlistChartSymbol, watchlistPeriodChange, type WatchlistHistory, type WatchlistPricePoint } from './watchlistData';
+import { watchlistChartSymbol, watchlistPeriodChange, type WatchlistHistory, type WatchlistPricePoint, type WatchlistPeriod } from './watchlistData';
 import SymbolLogo from '@/components/SymbolLogo';
+import WatchlistValueCreation from './WatchlistValueCreation';
+import WatchlistNews from './WatchlistNews';
+import WatchlistSectorCharts from './WatchlistSectorCharts';
 import {
     TrendingUp,
     TrendingDown,
@@ -11,13 +14,19 @@ import {
     ArrowDownRight,
     Info,
     Filter,
+    ShieldCheck,
+    Newspaper,
+    PieChart,
 } from 'lucide-react';
 
 interface WatchlistDashboardProps {
     items: any[];
     onItemClick: (item: any) => void;
     histories: Record<string, WatchlistHistory>;
+    defaultSubView?: DashboardSubView;
 }
+
+export type DashboardSubView = 'radar' | 'value' | 'news' | 'charts';
 
 type EventCategory = 'prices' | 'earnings';
 
@@ -70,7 +79,53 @@ function Sparkline({ points, history }: { points: WatchlistPricePoint[]; history
     </svg>;
 }
 
-export default function WatchlistDashboard({ items, onItemClick, histories }: WatchlistDashboardProps) {
+function MoversCard({ items, period, onPeriodChange, onItemClick, negative = false }: {
+    items: any[];
+    period: WatchlistPeriod;
+    onPeriodChange: (period: WatchlistPeriod) => void;
+    onItemClick: (item: any) => void;
+    negative?: boolean;
+}) {
+    const Icon = negative ? TrendingDown : TrendingUp;
+    const maximum = Math.max(0.01, ...items.map(item => Math.abs(item.changePercent)));
+    return (
+        <section className={`watchlist-insight watchlist-movers ${negative ? 'watchlist-movers--negative' : ''}`} aria-label={negative ? 'Mayores bajas' : 'Mayores subas'}>
+            <div className="watchlist-insight__header">
+                <div className="watchlist-insight__identity">
+                    <span className="watchlist-insight__icon"><Icon size={17} /></span>
+                    <div>
+                        <h3>{negative ? 'Top Losers' : 'Top Gainers'}</h3>
+                        <p>{negative ? 'Mayores bajas de tu lista' : 'Mayores subas de tu lista'}</p>
+                    </div>
+                </div>
+                <div className="watchlist-periods" role="group" aria-label="Período de variación">
+                    {(['1D', '1W', '1M'] as const).map(timeframe => (
+                        <button key={timeframe} type="button" aria-pressed={period === timeframe} onClick={() => onPeriodChange(timeframe)}>{timeframe}</button>
+                    ))}
+                </div>
+            </div>
+            {items.length === 0 ? (
+                <div className="watchlist-insight__empty"><Icon size={22} /><p>Sin {negative ? 'bajas' : 'subas'} con datos para este período</p></div>
+            ) : (
+                <div className="watchlist-movers__chart">
+                    {items.map(item => {
+                        const pct = item.changePercent;
+                        return (
+                            <button key={item.id} type="button" className="watchlist-movers__asset" onClick={() => onItemClick(item)} aria-label={`Ver ${item.symbol}, ${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`}>
+                                <span className="watchlist-movers__value">{pct > 0 ? '+' : ''}{pct.toFixed(1)}%</span>
+                                <span className="watchlist-movers__plot"><span className="watchlist-movers__bar" style={{ height: `${Math.max(8, Math.abs(pct) / maximum * 100)}%` }} /></span>
+                                <span className="watchlist-movers__label"><SymbolLogo symbol={item.symbol} size={22} /><span title={item.symbol}>{item.symbol.split(':').pop()}</span></span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </section>
+    );
+}
+
+export default function WatchlistDashboard({ items, onItemClick, histories, defaultSubView = 'radar' }: WatchlistDashboardProps) {
+    const [subView, setSubView] = useState<DashboardSubView>(defaultSubView);
     const [activeCategories, setActiveCategories] = useState<Set<EventCategory>>(
         new Set(['prices', 'earnings'])
     );
@@ -87,7 +142,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories }: Wa
 
     const opportunities = useMemo(() =>
         items
-            .filter(i => !i.isUnavailable && Number.isFinite(i.currentPrice) && Number.isFinite(i.targetPrice) && (i.targetDirection === 'ABOVE' ? i.currentPrice > i.targetPrice : i.currentPrice < i.targetPrice))
+            .filter(i => !i.isUnavailable && Number.isFinite(i.currentPrice) && Number.isFinite(i.targetPrice) && (i.targetDirection === 'ABOVE' ? i.currentPrice >= i.targetPrice : i.currentPrice <= i.targetPrice))
             .sort((a, b) => (b.distancePct ?? 0) - (a.distancePct ?? 0))
             .slice(0, 4),
         [items]
@@ -109,9 +164,6 @@ export default function WatchlistDashboard({ items, onItemClick, histories }: Wa
         [items, histories, losersTimeframe]
     );
 
-    const maxGain = gainers[0]?.changePercent ?? 1;
-    const maxLoss = Math.abs(losers[0]?.changePercent ?? 1);
-
     const allEvents = useMemo(() => generateTimelineEvents(items), [items]);
     const filteredEvents = useMemo(() =>
         allEvents.filter(e => activeCategories.has(e.category)),
@@ -127,29 +179,93 @@ export default function WatchlistDashboard({ items, onItemClick, histories }: Wa
         return groups;
     }, [filteredEvents]);
 
-    const timeframes = ['1D', '1W', '1M'] as const;
-
     if (!items.length) return null;
 
     return (
-        <div className="flex flex-col gap-6">
-            {/* TOP ROW */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="watchlist-dashboard">
+            {/* SUB-NAVIGATION BAR */}
+            <div className="flex items-center gap-1.5 p-1 bg-secondary/50 border border-border/70 rounded-2xl mb-6 overflow-x-auto scrollbar-none">
+                <button
+                    type="button"
+                    onClick={() => setSubView('radar')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                        subView === 'radar'
+                            ? 'bg-card text-foreground shadow-xs border border-border/80'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                    }`}
+                >
+                    <TrendingUp size={15} />
+                    <span>Radar de Mercado</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSubView('value')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                        subView === 'value'
+                            ? 'bg-card text-foreground shadow-xs border border-border/80'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                    }`}
+                >
+                    <ShieldCheck size={15} className="text-emerald-500" />
+                    <span>Creación de Valor (ROIC vs WACC)</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSubView('news')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                        subView === 'news'
+                            ? 'bg-card text-foreground shadow-xs border border-border/80'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                    }`}
+                >
+                    <Newspaper size={15} className="text-sky-400" />
+                    <span>Noticias de tus Activos</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSubView('charts')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                        subView === 'charts'
+                            ? 'bg-card text-foreground shadow-xs border border-border/80'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                    }`}
+                >
+                    <PieChart size={15} className="text-purple-400" />
+                    <span>Sectores & Gráficos</span>
+                </button>
+            </div>
+
+            {/* CONDITIONAL SUBVIEW RENDERING */}
+            {subView === 'value' && (
+                <WatchlistValueCreation items={items} onItemClick={onItemClick} />
+            )}
+
+            {subView === 'news' && (
+                <WatchlistNews items={items} onItemClick={onItemClick} />
+            )}
+
+            {subView === 'charts' && (
+                <WatchlistSectorCharts items={items} onItemClick={onItemClick} />
+            )}
+
+            {subView === 'radar' && (
+                <div className="space-y-6">
+            <div className="watchlist-insights">
                 {/* Opportunities */}
-                <div className="rounded-lg border border-border bg-card p-5 flex flex-col gap-4 shadow-xs">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                            <Target className="w-4 h-4 text-emerald-400" />
+                <section className="watchlist-insight watchlist-opportunities">
+                    <div className="watchlist-insight__identity">
+                        <div className="watchlist-insight__icon">
+                            <Target className="w-4 h-4" />
                         </div>
                         <div>
-                            <h3 className="text-base font-bold text-foreground leading-none">Objetivos alcanzados</h3>
-                            <p className="text-xs text-muted-foreground mt-1">Activos que alcanzaron tu condición de precio</p>
+                            <h3>Objetivos alcanzados</h3>
+                            <p>Activos que alcanzaron tu condición de precio</p>
                         </div>
                     </div>
                     {opportunities.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
+                        <div className="watchlist-insight__empty">
                             <Info className="w-5 h-5 text-muted-foreground/50" />
-                            <p className="text-xs text-muted-foreground">Definí objetivos de precio para ver oportunidades</p>
+                            <p className="text-xs text-muted-foreground">{items.some(item => Number.isFinite(item.targetPrice)) ? 'Todavía no se alcanzaron tus objetivos de precio' : 'Definí objetivos de precio para ver oportunidades'}</p>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-2">
@@ -169,7 +285,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories }: Wa
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-bold px-2 py-1 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                            {item.distancePct > 0 ? '+' : ''}{item.distancePct.toFixed(1)}%
+                                            {Number.isFinite(item.distancePct) ? `${item.distancePct > 0 ? '+' : ''}${item.distancePct.toFixed(1)}%` : 'Alcanzado'}
                                         </span>
                                         <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                                     </div>
@@ -177,108 +293,20 @@ export default function WatchlistDashboard({ items, onItemClick, histories }: Wa
                             ))}
                         </div>
                     )}
-                </div>
+                </section>
 
-                {/* Gainers */}
-                <div className="rounded-lg border border-border bg-card p-5 flex flex-col gap-4 shadow-xs">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-base font-bold text-foreground leading-none">Top Gainers</h3>
-                                <p className="text-xs text-muted-foreground mt-1">Mayores subas de tu lista</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-1 rounded-lg border border-border p-0.5 bg-secondary/30">
-                            {timeframes.map(tf => (
-                                <button key={tf} type="button" onClick={() => setGainersTimeframe(tf)}
-                                    className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${gainersTimeframe === tf ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}>
-                                    {tf}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    {gainers.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
-                            <TrendingUp className="w-5 h-5 text-muted-foreground/50" />
-                            <p className="text-xs text-muted-foreground">Sin subas con datos para este período</p>
-                        </div>
-                    ) : (
-                        <div className="flex items-end gap-2 h-24 px-1">
-                            {gainers.map(item => {
-                                const pct = item.changePercent ?? 0;
-                                const barH = maxGain > 0 ? Math.max(12, (pct / maxGain) * 100) : 12;
-                                return (
-                                    <button key={item.id} type="button" onClick={() => onItemClick(item)} className="flex-1 flex flex-col items-center gap-1 group">
-                                        <span className="text-xs font-bold text-emerald-500">+{pct.toFixed(1)}%</span>
-                                        <div className="w-full rounded-t bg-emerald-500/30 group-hover:bg-emerald-500/60 border-t-2 border-emerald-500 transition-all"
-                                            style={{ height: `${barH * 0.8}px` }} />
-                                        <SymbolLogo symbol={item.symbol} size={20} />
-                                        <span className="text-xs font-bold text-muted-foreground font-mono">{item.symbol}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-
-                {/* Losers */}
-                <div className="rounded-lg border border-border bg-card p-5 flex flex-col gap-4 shadow-xs">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-center justify-center">
-                                <TrendingDown className="w-4 h-4 text-rose-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-base font-bold text-foreground leading-none">Top Losers</h3>
-                                <p className="text-xs text-muted-foreground mt-1">Mayores bajas de tu lista</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-1 rounded-lg border border-border p-0.5 bg-secondary/30">
-                            {timeframes.map(tf => (
-                                <button key={tf} type="button" onClick={() => setLosersTimeframe(tf)}
-                                    className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${losersTimeframe === tf ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}>
-                                    {tf}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    {losers.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
-                            <TrendingDown className="w-5 h-5 text-muted-foreground/50" />
-                            <p className="text-xs text-muted-foreground">Sin bajas con datos para este período</p>
-                        </div>
-                    ) : (
-                        <div className="flex items-end gap-2 h-24 px-1">
-                            {losers.map(item => {
-                                const pct = item.changePercent ?? 0;
-                                const absPct = Math.abs(pct);
-                                const barH = maxLoss > 0 ? Math.max(12, (absPct / maxLoss) * 100) : 12;
-                                return (
-                                    <button key={item.id} type="button" onClick={() => onItemClick(item)} className="flex-1 flex flex-col items-center gap-1 group">
-                                        <span className="text-xs font-bold text-rose-500">{pct.toFixed(1)}%</span>
-                                        <div className="w-full rounded-t bg-rose-500/30 group-hover:bg-rose-500/60 border-t-2 border-rose-500 transition-all"
-                                            style={{ height: `${barH * 0.8}px` }} />
-                                        <SymbolLogo symbol={item.symbol} size={20} />
-                                        <span className="text-xs font-bold text-muted-foreground font-mono">{item.symbol}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
+                <MoversCard items={gainers} period={gainersTimeframe} onPeriodChange={setGainersTimeframe} onItemClick={onItemClick} />
+                <MoversCard items={losers} period={losersTimeframe} onPeriodChange={setLosersTimeframe} onItemClick={onItemClick} negative />
             </div>
 
             {/* PREMIUM TABLE */}
-            <div className="rounded-lg border border-border bg-card overflow-hidden shadow-xs">
+            <div className="watchlist-summary rounded-lg border border-border bg-card overflow-hidden shadow-xs">
                 <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
                     <h3 className="text-base font-bold text-foreground">Resumen de tu Lista</h3>
                     <span className="text-xs text-muted-foreground font-semibold">{items.length} activos</span>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
+                    <table className="w-full min-w-[850px] text-left text-sm">
                         <thead>
                             <tr className="border-b border-border bg-secondary/30 text-muted-foreground font-bold text-xs uppercase tracking-wider">
                                 <th className="px-5 py-3.5">Empresa</th>
@@ -446,7 +474,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories }: Wa
                             const Icon = cfg.icon;
                             const active = activeCategories.has(cat);
                             return (
-                                <button key={cat} type="button" onClick={() => toggleCategory(cat)}
+                                <button key={cat} type="button" aria-pressed={active} onClick={() => toggleCategory(cat)}
                                     className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all ${active ? 'border-emerald-500/30 bg-emerald-500/8' : 'border-border/40 bg-secondary/20 opacity-60'}`}>
                                     <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${active ? 'bg-emerald-500/20 border-emerald-500/50' : 'bg-secondary border-border/40'}`}>
                                         {active && <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />}
@@ -459,6 +487,8 @@ export default function WatchlistDashboard({ items, onItemClick, histories }: Wa
                     </div>
                 </div>
             </div>
+            </div>
+            )}
         </div>
     );
 }

@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, UnauthorizedException, OnModuleInit, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
+import * as bcrypt from 'bcryptjs';
+import { isLocalMode } from '../config/local-mode';
 import { createHash, randomInt, randomUUID } from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma.service';
@@ -48,6 +50,7 @@ export class AuthService implements OnModuleInit {
     }
 
     async onModuleInit() {
+        if (isLocalMode()) return;
         try {
             const res = await this.prisma.user.updateMany({
                 where: {
@@ -256,7 +259,7 @@ export class AuthService implements OnModuleInit {
 
     /**
      * Creates the same persistent Finix session used by email/password login.
-     * OAuth providers authenticate the user in Supabase first, so the
+     * OAuth providers authenticate the user first, so the
      * controller calls this method after syncing the Prisma profile. This
      * keeps Google and email login consistent across browser restarts.
      */
@@ -273,10 +276,14 @@ export class AuthService implements OnModuleInit {
     }
 
     private getManagedPasswordHash(user: { password?: string | null }) {
-        if (!user.password || !user.password.startsWith('$argon2')) {
+        if (!user.password || !/^\$(argon2|2[aby]\$)/.test(user.password)) {
             return null;
         }
         return user.password;
+    }
+
+    private async verifyPassword(hash: string, password: string) {
+        return hash.startsWith('$argon2') ? argon2.verify(hash, password) : bcrypt.compare(password, hash);
     }
 
     private async deliverAuthCode(params: {
@@ -449,7 +456,7 @@ export class AuthService implements OnModuleInit {
             throw new BadRequestException('Esta cuenta todavia no tiene una contrasena Finix. Usa "Olvide mi contrasena" para crearla.');
         }
 
-        const isPasswordValid = await argon2.verify(managedPasswordHash, password);
+        const isPasswordValid = await this.verifyPassword(managedPasswordHash, password);
         if (!isPasswordValid) {
             throw new UnauthorizedException('El correo o la contrasena no son correctos.');
         }
@@ -483,7 +490,7 @@ export class AuthService implements OnModuleInit {
             throw new BadRequestException('Esta cuenta todavia no tiene una contraseña Finix. Usá "Olvidé mi contraseña" para crearla.');
         }
 
-        const isPasswordValid = await argon2.verify(managedPasswordHash, password);
+        const isPasswordValid = await this.verifyPassword(managedPasswordHash, password);
         if (!isPasswordValid) {
             throw new UnauthorizedException('El correo o la contrasena no son correctos.');
         }
@@ -689,7 +696,7 @@ export class AuthService implements OnModuleInit {
                     id: supabaseId,
                     email: normalizedEmail,
                     username: resolvedUsername,
-                    password: '',          // Supabase manages authentication
+                    password: '',          // OAuth-only account; verified recovery can set a password
                     emailVerified: true,   // Supabase already verified the email
                     isVerified: false,
                     plan: isJuan ? 'PRO' : 'FREE',

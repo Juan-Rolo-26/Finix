@@ -63,16 +63,18 @@ export class BillingService {
             startDate: item.startDate,
             endDate: item.endDate,
             cancelAtPeriodEnd: item.cancelAtPeriodEnd,
-            autoRenew: Boolean(item.mercadoPagoPreapprovalId || item.stripeSubscriptionId) && !item.cancelAtPeriodEnd,
+            autoRenew: ['ACTIVE', 'PAST_DUE'].includes(item.status) && Boolean(item.mercadoPagoPreapprovalId || item.stripeSubscriptionId) && !item.cancelAtPeriodEnd,
             provider: item.mercadoPagoPreapprovalId ? 'Mercado Pago' : item.stripeSubscriptionId ? 'Stripe' : 'Pago único',
         }) : null;
 
+        const currentPlanType = this.normalizePlanType(user.plan);
+        const currentSubscription = currentPlanType ? latestByPlan[currentPlanType] : null;
         return {
             currentPlan: user.plan,
             ...getAccessMode(),
             subscriptionStatus: user.subscriptionStatus,
-            nextBillingDate: latestByPlan.PRO?.endDate || null,
-            cancelAtPeriodEnd: latestByPlan.PRO?.cancelAtPeriodEnd || false,
+            nextBillingDate: subscriptionSummary(currentSubscription)?.autoRenew ? currentSubscription?.endDate || null : null,
+            cancelAtPeriodEnd: currentSubscription?.cancelAtPeriodEnd || false,
             subscriptions: {
                 PRO: subscriptionSummary(latestByPlan.PRO),
                 CREATOR: subscriptionSummary(latestByPlan.CREATOR),
@@ -133,32 +135,29 @@ export class BillingService {
             throw new NotFoundException('Usuario no encontrado');
         }
 
-        const targetPlan = planType || (user.isCreator && user.plan !== 'PRO' ? 'CREATOR' : 'PRO');
-        const planNames = targetPlan === 'CREATOR' ? ['CREATOR', 'pro_creator'] : ['PRO', 'pro_investor'];
+        const targetPlan = planType || this.normalizePlanType(user.plan) || (user.isCreator ? 'CREATOR' : 'PRO');
+        const planNames = targetPlan === 'CREATOR' ? ['CREATOR', 'PRO_CREATOR', 'pro_creator'] : ['PRO', 'PRO_INVESTOR', 'pro_investor'];
         const subscription = await this.prisma.subscription.findFirst({
             where: { userId, planType: { in: planNames }, status: { in: ['ACTIVE', 'PAST_DUE', 'PENDING'] } },
             orderBy: { createdAt: 'desc' },
         });
 
+        if (!subscription) {
+            throw new NotFoundException('No hay una suscripción facturable para cancelar en este plan.');
+        }
+
         const now = new Date();
         let retainsAccess = false;
 
         if (subscription) {
-            if (subscription.mercadoPagoPreapprovalId) {
-                try {
-                    await this.mercadoPagoService.cancelPreapproval(subscription.mercadoPagoPreapprovalId);
-                } catch {
-                    // preapproval might already be canceled or sandbox
-                }
-            } else if (subscription.stripeSubscriptionId) {
-                try {
-                    await this.stripeService.cancelSubscription(userId, subscription.id);
-                } catch {
-                    // stripe subscription cancel
-                }
+            // Only record a cancellation after the payment provider confirms it.
+            if (!subscription.cancelAtPeriodEnd && subscription.mercadoPagoPreapprovalId) {
+                await this.mercadoPagoService.cancelPreapproval(subscription.mercadoPagoPreapprovalId);
+            } else if (!subscription.cancelAtPeriodEnd && subscription.stripeSubscriptionId) {
+                await this.stripeService.cancelSubscription(userId, subscription.id);
             }
 
-            retainsAccess = Boolean(subscription.endDate && subscription.endDate > now);
+            retainsAccess = subscription.status === 'ACTIVE' && Boolean(subscription.endDate && subscription.endDate > now);
             await this.prisma.subscription.update({
                 where: { id: subscription.id },
                 data: {
@@ -171,7 +170,7 @@ export class BillingService {
         if (!retainsAccess) {
             if (targetPlan === 'CREATOR') {
                 const hasProSub = await this.prisma.subscription.findFirst({
-                    where: { userId, planType: { in: ['PRO', 'pro_investor'] }, status: 'ACTIVE', endDate: { gt: now } }
+                    where: { userId, planType: { in: ['PRO', 'PRO_INVESTOR', 'pro_investor'] }, status: 'ACTIVE', endDate: { gt: now } }
                 });
                 const keepPro = Boolean(hasProSub);
                 await this.prisma.user.update({
@@ -185,7 +184,7 @@ export class BillingService {
                 });
             } else {
                 const hasCreatorSub = await this.prisma.subscription.findFirst({
-                    where: { userId, planType: { in: ['CREATOR', 'pro_creator'] }, status: 'ACTIVE', endDate: { gt: now } }
+                    where: { userId, planType: { in: ['CREATOR', 'PRO_CREATOR', 'pro_creator'] }, status: 'ACTIVE', endDate: { gt: now } }
                 });
                 const keepCreator = Boolean(hasCreatorSub);
                 await this.prisma.user.update({
@@ -207,7 +206,9 @@ export class BillingService {
         return {
             success: true,
             message: retainsAccess
-                ? `La renovación de ${targetPlan === 'CREATOR' ? 'Creador' : 'PRO'} fue cancelada. Conservás el acceso hasta ${subscription!.endDate!.toLocaleDateString('es-AR')}.`
+                ? subscription.mercadoPagoPreapprovalId || subscription.stripeSubscriptionId
+                    ? `La renovación de ${targetPlan === 'CREATOR' ? 'Creador' : 'PRO'} fue cancelada. Conservás el acceso hasta ${subscription.endDate!.toLocaleDateString('es-AR')}.`
+                    : `Tu plan no tiene renovación automática. Conservás el acceso hasta ${subscription.endDate!.toLocaleDateString('es-AR')}.`
                 : `El plan ${targetPlan === 'CREATOR' ? 'Creador' : 'PRO'} fue dado de baja exitosamente.`,
             user: updatedUser,
         };

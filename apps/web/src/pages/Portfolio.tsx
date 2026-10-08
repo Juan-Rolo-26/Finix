@@ -36,6 +36,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { InvestorQuote } from "@/components/common/InvestorQuote";
 import {
   Dialog,
   DialogContent,
@@ -230,33 +231,38 @@ function StatCard({
   currency,
   icon: Icon,
   hideValues,
+  subtitle,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   delta?: number;
   positive?: boolean;
-  currency: string;
+  currency?: string;
   icon?: any;
   hideValues?: boolean;
+  subtitle?: string;
 }) {
   const isPos = positive ?? (delta !== undefined ? delta >= 0 : true);
   return (
-    <div className="flex-1 min-w-0 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md px-5 py-5 sm:px-6 sm:py-6 shadow-xs transition-all hover:border-border/80 flex flex-col items-center text-center">
-      <div className="flex items-center justify-center gap-1.5 mb-1.5 w-full text-center">
-        {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />}
-        <span className="text-sm font-semibold text-muted-foreground text-center">{label}</span>
+    <div className="rounded-lg border border-border/50 bg-card p-4 transition-colors hover:border-border/80 flex flex-col justify-between min-w-0">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+        {Icon && <Icon className="w-4 h-4 text-muted-foreground/60 shrink-0" />}
       </div>
-      <div className="flex items-center justify-center gap-2 flex-wrap text-center">
-        <p className="text-3xl sm:text-4xl font-bold tracking-tight tabular-nums text-foreground text-center">
-          {hideValues ? "••••••" : fmtCompact(value, currency)}
-        </p>
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-2xl font-bold tracking-tight tabular-nums text-foreground">
+          {hideValues ? "••••••" : typeof value === 'number' ? fmtCompact(value, currency || "USD") : value}
+        </span>
         {delta !== undefined && (
-          <span className={cn("text-xs font-bold flex items-center justify-center gap-0.5", isPos ? "text-emerald-500" : "text-red-500")}>
+          <span className={cn("text-xs font-semibold inline-flex items-center gap-0.5", isPos ? "text-emerald-500" : "text-rose-500")}>
             {isPos ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
             {fmtPct(delta)}
           </span>
         )}
       </div>
+      {subtitle && (
+        <p className="text-xs text-muted-foreground mt-1.5 font-normal truncate">{subtitle}</p>
+      )}
     </div>
   );
 }
@@ -698,6 +704,12 @@ const PortfolioPage = () => {
     }
     try {
       let res = await apiFetch("/portfolios");
+      // Retry an idempotent read once when the API/database is recovering.
+      // Keep the request lock so startup and manual refresh cannot overlap.
+      if ([500, 502, 503, 504].includes(res.status)) {
+        await new Promise(resolve => window.setTimeout(resolve, 500));
+        res = await apiFetch("/portfolios");
+      }
       // A portfolio page can render from the persisted profile before the
       // Finix API session has been restored after a reload. Reconcile the
       // session once and retry instead of showing a dead
@@ -715,12 +727,16 @@ const PortfolioPage = () => {
           setSelectedPortfolio(null);
         }
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "No se pudieron cargar los portafolios (Error del servidor)");
+        const message = typeof errorData.message === 'string' ? errorData.message : null;
+        throw new Error(res.status >= 500
+          ? "No pudimos cargar tu portafolio. Intentá nuevamente en unos instantes."
+          : message || "No se pudieron cargar los portafolios");
       }
       const data = await res.json().catch(() => null);
       if (!data) throw new Error("Respuesta inválida del servidor");
 
-      const list: Portfolio[] = Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) throw new Error("Respuesta inválida del servidor");
+      const list: Portfolio[] = data;
       setPortfolios(list);
       setErrorMessage(null);
       if (!list.length) { setSelectedPortfolio(null); return; }
@@ -1045,7 +1061,7 @@ const PortfolioPage = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><PortfolioSkeleton /></div>;
 
   return (
-    <div className="min-h-screen pb-24 w-full">
+    <div className="desktop-portfolio-page min-h-screen pb-24 w-full">
       <ErrorBoundary
         fallbackTitle="Error al cargar el portafolio"
         fallbackMessage="Ocurrió un problema al procesar los datos del portafolio. Podés reintentar recargar la vista."
@@ -1053,246 +1069,256 @@ const PortfolioPage = () => {
       >
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 space-y-6 py-6">
 
-        {/* ── HERO HEADER ──────────────────────────────────────────────────────── */}
-        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-3xl border border-border/60"
-          style={{ background: "linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.6) 100%)" }}>
-          {/* Ambient glow */}
-          <div className="pointer-events-none absolute inset-0 opacity-40"
-            style={{ background: "radial-gradient(ellipse 60% 50% at 20% 30%, hsl(var(--primary) / 0.18), transparent), radial-gradient(ellipse 40% 60% at 80% 70%, hsl(159 84% 42% / 0.12), transparent)" }} />
-
-          <div className="relative px-6 py-8 md:px-8 text-center flex flex-col items-center">
-            <div className="flex flex-col items-center justify-center gap-6 w-full max-w-4xl mx-auto text-center">
-              {/* Top: title + privacy badge */}
-              <div className="flex items-center justify-center gap-3 flex-wrap text-center">
-                {selectedPortfolio && (
-                  <>
-                    <h1 className="text-xl sm:text-2xl font-black text-foreground text-center">{selectedPortfolio.nombre}</h1>
-                    <PrivacyBadge mode={privacyMode} />
-                    {selectedPortfolio.esPrincipal && (
-                      <Badge variant="outline" className="border-primary/30 text-primary text-[10px]">Principal</Badge>
-                    )}
-                  </>
+        {/* ── PORTFOLIO EXECUTIVE HEADER ────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-border/40">
+            {/* Identity & Total Value */}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  {selectedPortfolio?.nombre || "Mi Portafolio"}
+                </h1>
+                {selectedPortfolio && <PrivacyBadge mode={privacyMode} />}
+                {selectedPortfolio?.esPrincipal && (
+                  <Badge variant="outline" className="border-primary/40 text-primary text-[10.5px] font-semibold">Principal</Badge>
                 )}
-                {!selectedPortfolio && <h1 className="text-2xl font-black text-foreground text-center">Mi Portfolio</h1>}
               </div>
 
-              {/* Total Value */}
-              <div className="flex flex-col items-center text-center">
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground mb-2 text-center">Valor total</p>
-                <div className="flex items-center justify-center gap-4 flex-wrap">
-                  <span className="text-4xl md:text-5xl font-extrabold tracking-tight tabular-nums text-foreground">
-                    {mask(fmtCurrency(totalValue, currency))}
-                  </span>
-                  {displayPortfolio && (
-                    <div className={cn("flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-sm font-bold",
-                      pnl >= 0 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/15 text-rose-600 dark:text-rose-400")}>
-                      {pnl >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                      {mask(fmtCompact(pnl, currency))} ({fmtPct(pnlPct)})
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions toolbar centered */}
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                {/* Hide values */}
-                <button
-                  onClick={() => setHideValues(!hideValues)}
-                  className={cn(
-                    "h-9 px-3 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer",
-                    hideValues
-                      ? "border-primary/40 bg-primary/10 text-primary"
-                      : "border-border/60 bg-card/60 text-muted-foreground hover:text-foreground hover:border-border"
-                  )}
-                  title={hideValues ? "Mostrar saldos" : "Ocultar saldos"}
-                >
-                  {hideValues ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  <span className="hidden sm:inline">{hideValues ? "Oculto" : "Visible"}</span>
-                </button>
-
-                {/* Currency toggle */}
-                {(cclRate || mepRate) && displayPortfolio && (
-                  <button
-                    onClick={() => setViewCurrency(activeCurrency === "ARS" ? "USD" : "ARS")}
-                    className="h-9 rounded-xl border border-border/60 bg-card/60 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors flex items-center gap-2 cursor-pointer shadow-2xs"
-                    title={`CCL: $${cclRate ?? mepRate} · MEP: $${mepRate ?? 'N/A'}${rateUpdatedAt ? ` · Cotización al día` : ''}`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                    <span>{activeCurrency === "ARS" ? "USD" : "ARS"}</span>
-                    <RefreshCw className="w-3 h-3 opacity-70" />
-                  </button>
-                )}
-
-                {/* Privacy toggle */}
-                {selectedPortfolio && (
-                  <button
-                    onClick={() => updateVisibility(!selectedPortfolio.modoSocial)}
-                    disabled={isUpdatingVisibility}
-                    className="h-9 rounded-xl border border-border/60 bg-card/60 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors gap-1.5 flex items-center cursor-pointer shadow-2xs"
-                  >
-                    {selectedPortfolio.modoSocial ? <Globe className="w-3.5 h-3.5 text-emerald-400" /> : <Lock className="w-3.5 h-3.5 text-zinc-400" />}
-                    <span className="hidden sm:inline">{selectedPortfolio.modoSocial ? "Público" : "Privado"}</span>
-                  </button>
-                )}
-
-                {/* Share */}
-                <button
-                  onClick={handleShare}
-                  title="Compartir enlace al portfolio"
-                  className="h-9 px-3 rounded-xl border border-border/60 bg-card/60 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-colors cursor-pointer shadow-2xs"
-                >
-                  {copyFeedback ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">{copyFeedback ? "¡Copiado!" : "Compartir"}</span>
-                </button>
-
-                {/* Manual refresh */}
-                <button
-                  onClick={() => {
-                    void loadPortfolios(selectedPortfolio?.id, false);
-                    void loadRates();
-                  }}
-                  disabled={isRefreshing}
-                  title="Actualizar datos del portafolio manualmente"
-                  className="h-9 px-3 rounded-xl border border-border/60 bg-card/60 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-colors cursor-pointer shadow-2xs"
-                >
-                  <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin text-emerald-400")} />
-                  <span className="hidden sm:inline">{isRefreshing ? "Actualizando..." : "Actualizar"}</span>
-                </button>
-
-                {/* Add asset CTA */}
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span data-testid="portfolio-total-value" className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">
+                  {mask(!displayPortfolio && (loading || errorMessage) ? '—' : fmtCurrency(totalValue, currency))}
+                </span>
                 {displayPortfolio && (
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 shadow-[0_2px_12px_rgba(16,185,129,0.35)] hover:shadow-[0_4px_18px_rgba(16,185,129,0.5)] border border-emerald-400/30 active:scale-[0.97] transition-all duration-200 cursor-pointer select-none"
-                    onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
-                  >
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-white group-hover:rotate-90 transition-transform duration-200">
-                      <Plus className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                    <span>Agregar transacción</span>
-                  </button>
+                  <div className={cn(
+                    "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums",
+                    pnl >= 0 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                  )}>
+                    {pnl >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                    <span>{mask(fmtCompact(pnl, currency))} ({fmtPct(pnlPct)})</span>
+                  </div>
                 )}
+              </div>
+            </div>
 
-                {/* Create portfolio */}
-                {portfolios.length === 0 && (
-                  <Dialog open={createPortfolioOpen} onOpenChange={setCreatePortfolioOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl border-primary/40 text-primary hover:bg-primary/10">
-                        <Plus className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Crear Portfolio</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[480px]">
-                      <DialogHeader>
-                        <DialogTitle>{t.portfolio.createTitle}</DialogTitle>
-                        <DialogDescription>{t.portfolio.createDesc}</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
+            {/* Actions Toolbar */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Hide values */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setHideValues(!hideValues)}
+                className="h-8.5 px-2.5 text-xs font-medium gap-1.5 border-border/60"
+                title={hideValues ? "Mostrar saldos" : "Ocultar saldos"}
+              >
+                {hideValues ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">{hideValues ? "Oculto" : "Visible"}</span>
+              </Button>
+
+              {/* Currency toggle */}
+              {(cclRate || mepRate) && displayPortfolio && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewCurrency(activeCurrency === "ARS" ? "USD" : "ARS")}
+                  className="h-8.5 px-2.5 text-xs font-medium gap-1.5 border-border/60"
+                  title={`CCL: $${cclRate ?? mepRate} · MEP: $${mepRate ?? 'N/A'}${rateUpdatedAt ? ` · Cotización al día` : ''}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>{activeCurrency === "ARS" ? "USD" : "ARS"}</span>
+                </Button>
+              )}
+
+              {/* Privacy toggle */}
+              {selectedPortfolio && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateVisibility(!selectedPortfolio.modoSocial)}
+                  disabled={isUpdatingVisibility}
+                  className="h-8.5 px-2.5 text-xs font-medium gap-1.5 border-border/60"
+                >
+                  {selectedPortfolio.modoSocial ? <Globe className="w-3.5 h-3.5 text-emerald-500" /> : <Lock className="w-3.5 h-3.5 text-muted-foreground" />}
+                  <span className="hidden sm:inline">{selectedPortfolio.modoSocial ? "Público" : "Privado"}</span>
+                </Button>
+              )}
+
+              {/* Share */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShare}
+                className="h-8.5 px-2.5 text-xs font-medium gap-1.5 border-border/60"
+                title="Compartir enlace al portfolio"
+              >
+                {copyFeedback ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">{copyFeedback ? "¡Copiado!" : "Compartir"}</span>
+              </Button>
+
+              {/* Manual refresh */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void loadPortfolios(selectedPortfolio?.id, false);
+                  void loadRates();
+                }}
+                disabled={isRefreshing}
+                className="h-8.5 px-2.5 text-xs font-medium gap-1.5 border-border/60"
+                title="Actualizar datos del portafolio manualmente"
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin text-emerald-500")} />
+                <span className="hidden sm:inline">{isRefreshing ? "Actualizando…" : "Actualizar"}</span>
+              </Button>
+
+              {/* Add asset CTA */}
+              {displayPortfolio && (
+                <Button
+                  size="sm"
+                  className="h-8.5 px-3.5 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+                  onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Agregar transacción</span>
+                </Button>
+              )}
+
+              {/* Create portfolio */}
+              {portfolios.length === 0 && !loading && !errorMessage && (
+                <Dialog open={createPortfolioOpen} onOpenChange={setCreatePortfolioOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="h-8.5 gap-1.5">
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Crear Portafolio</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[480px]">
+                    <DialogHeader>
+                      <DialogTitle>{t.portfolio.createTitle}</DialogTitle>
+                      <DialogDescription>{t.portfolio.createDesc}</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label>{t.portfolio.form.name} *</Label>
+                        <Input placeholder={t.portfolio.form.namePlaceholder} value={portfolioForm.nombre}
+                          onChange={(e) => setPortfolioForm({ ...portfolioForm, nombre: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{t.portfolio.form.desc}</Label>
+                        <Textarea placeholder={t.portfolio.form.descPlaceholder} value={portfolioForm.descripcion}
+                          onChange={(e) => setPortfolioForm({ ...portfolioForm, descripcion: e.target.value })} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>{t.portfolio.form.name} *</Label>
-                          <Input placeholder={t.portfolio.form.namePlaceholder} value={portfolioForm.nombre}
-                            onChange={(e) => setPortfolioForm({ ...portfolioForm, nombre: e.target.value })} />
+                          <Label>{t.portfolio.form.baseCurrency}</Label>
+                          <Select value={portfolioForm.monedaBase} onValueChange={(v) => setPortfolioForm({ ...portfolioForm, monedaBase: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USD">USD</SelectItem>
+                              <SelectItem value="ARS">ARS</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label>{t.portfolio.form.desc}</Label>
-                          <Textarea placeholder={t.portfolio.form.descPlaceholder} value={portfolioForm.descripcion}
-                            onChange={(e) => setPortfolioForm({ ...portfolioForm, descripcion: e.target.value })} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>{t.portfolio.form.baseCurrency}</Label>
-                            <Select value={portfolioForm.monedaBase} onValueChange={(v) => setPortfolioForm({ ...portfolioForm, monedaBase: v })}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="USD">USD</SelectItem>
-                                <SelectItem value="ARS">ARS</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>{t.portfolio.form.riskLevel}</Label>
-                            <Select value={portfolioForm.nivelRiesgo} onValueChange={(v) => setPortfolioForm({ ...portfolioForm, nivelRiesgo: v })}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="bajo">Bajo</SelectItem>
-                                <SelectItem value="medio">Medio</SelectItem>
-                                <SelectItem value="alto">Alto</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between py-2">
-                          <div><Label>Modo social</Label><p className="text-xs text-muted-foreground">Visible para tus seguidores</p></div>
-                          <Switch checked={portfolioForm.modoSocial} onCheckedChange={(v) => setPortfolioForm({ ...portfolioForm, modoSocial: v })} />
-                        </div>
-                        <div className="flex items-center justify-between py-2">
-                          <div><Label>Portfolio principal</Label><p className="text-xs text-muted-foreground">Se muestra en tu perfil</p></div>
-                          <Switch checked={portfolioForm.esPrincipal} onCheckedChange={(v) => setPortfolioForm({ ...portfolioForm, esPrincipal: v })} />
+                          <Label>{t.portfolio.form.riskLevel}</Label>
+                          <Select value={portfolioForm.nivelRiesgo} onValueChange={(v) => setPortfolioForm({ ...portfolioForm, nivelRiesgo: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="bajo">Bajo</SelectItem>
+                              <SelectItem value="medio">Medio</SelectItem>
+                              <SelectItem value="alto">Alto</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setCreatePortfolioOpen(false)}>Cancelar</Button>
-                        <Button onClick={createPortfolio} disabled={!portfolioForm.nombre || isSubmitting}>
-                          {isSubmitting ? "Creando..." : "Crear portfolio"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                )}
+                      <div className="flex items-center justify-between py-2">
+                        <div><Label>Modo social</Label><p className="text-xs text-muted-foreground">Visible para tus seguidores</p></div>
+                        <Switch checked={portfolioForm.modoSocial} onCheckedChange={(v) => setPortfolioForm({ ...portfolioForm, modoSocial: v })} />
+                      </div>
+                      <div className="flex items-center justify-between py-2">
+                        <div><Label>Portfolio principal</Label><p className="text-xs text-muted-foreground">Se muestra en tu perfil</p></div>
+                        <Switch checked={portfolioForm.esPrincipal} onCheckedChange={(v) => setPortfolioForm({ ...portfolioForm, esPrincipal: v })} />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setCreatePortfolioOpen(false)}>Cancelar</Button>
+                      <Button onClick={createPortfolio} disabled={!portfolioForm.nombre || isSubmitting}>
+                        {isSubmitting ? "Creando..." : "Crear portfolio"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
 
-                {/* Delete */}
-                {selectedPortfolio && (
-                  <button onClick={() => deletePortfolio(selectedPortfolio.id)}
-                    className="w-9 h-9 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors"
-                    title="Eliminar Portfolio">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-
-              {/* StatCards grid centered */}
-              {displayPortfolio && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 w-full max-w-3xl mx-auto">
-                  <StatCard
-                    label="Total en Activos"
-                    value={assetsValue}
-                    positive={true}
-                    currency={currency}
-                    icon={BarChart3}
-                    hideValues={hideValues}
-                  />
-                  <StatCard
-                    label="Efectivo Disponible"
-                    value={cashBalance}
-                    positive={true}
-                    currency={currency}
-                    icon={Wallet}
-                    hideValues={hideValues}
-                  />
-                  <StatCard
-                    label="G/P Total"
-                    value={pnl}
-                    delta={pnlPct}
-                    positive={pnl >= 0}
-                    currency={currency}
-                    icon={pnl >= 0 ? TrendingUp : TrendingDown}
-                    hideValues={hideValues}
-                  />
-                </div>
+              {/* Delete */}
+              {selectedPortfolio && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => deletePortfolio(selectedPortfolio.id)}
+                  className="h-8.5 w-8.5 p-0 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
+                  title="Eliminar Portfolio"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
               )}
             </div>
           </div>
+
+          {/* KPI Strip (Unified 4-Card Institutional Grid) */}
+          {displayPortfolio && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <StatCard
+                label="Total en Activos"
+                value={assetsValue}
+                positive={true}
+                currency={currency}
+                icon={BarChart3}
+                hideValues={hideValues}
+                subtitle={`${displayPortfolio.assets.length} activos en cartera`}
+              />
+              <StatCard
+                label="Efectivo Disponible"
+                value={cashBalance}
+                positive={true}
+                currency={currency}
+                icon={Wallet}
+                hideValues={hideValues}
+                subtitle="Liquidez disponible"
+              />
+              <StatCard
+                label="G/P Total"
+                value={pnl}
+                delta={pnlPct}
+                positive={pnl >= 0}
+                currency={currency}
+                icon={pnl >= 0 ? TrendingUp : TrendingDown}
+                hideValues={hideValues}
+                subtitle="Ganancia / pérdida acumulada"
+              />
+              <StatCard
+                label="Rendimiento Total"
+                value={fmtPct(pnlPct)}
+                delta={pnlPct}
+                positive={pnlPct >= 0}
+                icon={Target}
+                subtitle={`Base: ${mask(fmtCompact(displayMetrics?.capitalTotal ?? displayMetrics?.capitalInvertido ?? 0, currency))}`}
+              />
+            </div>
+          )}
         </motion.div>
 
         {/* ── ERROR ────────────────────────────────────────────────────────────── */}
         <AnimatePresence>
           {errorMessage && (
             <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
-              <Card className="border-red-500/40 bg-red-500/5">
-                <CardContent className="p-4 text-sm text-red-300 flex items-center justify-between">
-                  <span>{errorMessage}</span>
-                  <Button size="sm" variant="ghost" className="text-red-400" onClick={() => loadPortfolios()}>
-                    <RefreshCw className="w-3.5 h-3.5 mr-1" /> Reintentar
+              <Card className="border-red-500/30 bg-red-500/5" role="alert">
+                <CardContent className="p-4 text-sm text-red-700 dark:text-red-300 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-semibold">{errorMessage}</p>
+                    {!displayPortfolio && <p className="mt-1 text-muted-foreground">La información se mostrará cuando se restablezca la conexión.</p>}
+                  </div>
+                  <Button size="sm" variant="outline" disabled={isRefreshing} className="shrink-0 border-red-500/30 text-red-700 dark:text-red-300" onClick={() => loadPortfolios()}>
+                    <RefreshCw className={cn("w-3.5 h-3.5 mr-1", isRefreshing && "animate-spin")} /> {isRefreshing ? 'Reintentando…' : 'Reintentar'}
                   </Button>
                 </CardContent>
               </Card>
@@ -1303,7 +1329,7 @@ const PortfolioPage = () => {
         {/* ── PORTFOLIO SELECTOR (Hidden for single-portfolio enforcement) ────────────────── */}
 
         {/* ── EMPTY STATE ──────────────────────────────────────────────────────── */}
-        {!displayPortfolio && !loading && (
+        {!displayPortfolio && !loading && !errorMessage && (
           <EmptyPortfolio
             isFirstCreation={portfolios.length === 0}
             onAdd={() => {
@@ -1709,6 +1735,9 @@ const PortfolioPage = () => {
             onSuccess={() => { void loadPortfolios(displayPortfolio.id); notifyPortfolioUpdate(displayPortfolio.id); }}
           /></Suspense>
         )}
+
+        {/* Investor Wisdom Quote */}
+        <InvestorQuote investorId="ray-dalio" showBackToTop />
         </div>
       </ErrorBoundary>
     </div>

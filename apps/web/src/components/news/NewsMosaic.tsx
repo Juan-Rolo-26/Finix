@@ -85,6 +85,10 @@ export function NewsMosaic({ slots, categoryColor, categoryName, onClickTracking
             {showRow3 && (
                 <NewsCard slot={s5} variant="banner" {...sharedProps} />
             )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {slots.filter(slot => slot.position > 5 && slot.isActive && slot.article).sort((a, b) => a.position - b.position).map(slot =>
+                    <NewsCard key={slot.article!.id} slot={slot} variant="standard" {...sharedProps} />)}
+            </div>
         </div>
     );
 }

@@ -14,6 +14,7 @@ import type { Request, Response } from 'express';
 import { AdminAuthService } from './admin-auth.service';
 import { AdminRefreshDto, AdminLoginDto, AdminVerifyTwoFactorDto, AdminResendCodeDto } from './dto/admin-auth.dto';
 import { AdminGuard } from './admin.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('admin/auth')
 export class AdminAuthController {
@@ -121,6 +122,7 @@ export class AdminAuthController {
 
     @Get('me')
     @UseGuards(AdminGuard)
+    @Throttle({ short: { limit: 20, ttl: 1000 }, medium: { limit: 100, ttl: 10000 }, long: { limit: 500, ttl: 60000 } })
     async me(@Req() req: Request & { user?: { id: string } }) {
         if (!req.user?.id) {
             throw new UnauthorizedException('Sesión inválida');

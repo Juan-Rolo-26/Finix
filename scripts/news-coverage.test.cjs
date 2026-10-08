@@ -52,7 +52,9 @@ test('A URL saved long ago in another category is reused without violating globa
 });
 
 test('Unassigned cards recover distinct published stories while editorial drafts and inactive cards remain intact', async () => {
-    const service = new NewsSlotsService({}, {});
+    const { NewsTranslationService } = require('../apps/api/dist/news/news-translation.service');
+    const service = new NewsSlotsService({}, new NewsTranslationService());
+    service.translator.translateBatch = async () => ['OpenAI anuncia nuevas inversiones'];
     const slots = [
         { id: 'first', articleId: null, isActive: true },
         { id: 'second', articleId: null, isActive: true },
@@ -73,7 +75,7 @@ test('Unassigned cards recover distinct published stories while editorial drafts
             return [
                 { id: 'irrelevant', categoryId: 'other', title: 'Dubai airport opens' },
                 { id: 'ai-1', categoryId: 'ai', title: 'La inteligencia artificial' },
-                { id: 'ai-2', categoryId: 'technology', title: 'OpenAI announces a new model' },
+                { id: 'ai-2', categoryId: 'technology', title: 'OpenAI announces a new model', titleEs: 'OpenAI anuncia nuevas inversiones' },
             ];
         } },
         newsSlotHistory: { create: async args => history.push(args) },
@@ -139,8 +141,9 @@ test('An echoed English title is not cached as Spanish and unavailable translati
         id: 'story', source: { language: 'en' }, title: 'Monarch acquires HMBradley', titleEs: 'Monarch acquires HMBradley',
         description: 'The company reports revenue and shares in the market.', translationAttemptedAt: new Date(),
     });
-    assert.equal(writes.length, 0);
-    assert.equal(result.description, undefined);
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0].data.titleEs, null);
+    assert.equal(result, null);
 });
 
 test('Startup and recurring recovery fill stored stories before fetching only incomplete categories', async () => {

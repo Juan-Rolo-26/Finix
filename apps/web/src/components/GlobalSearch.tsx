@@ -16,6 +16,7 @@ import {
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
+import './global-search.css';
 
 // Búsquedas sugeridas "inteligentes"
 const SUGGESTED_QUERIES = [
@@ -38,7 +39,8 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     // Focus input on open
     useEffect(() => {
         if (isOpen) {
-            setTimeout(() => inputRef.current?.focus(), 100);
+            const timer = window.setTimeout(() => inputRef.current?.focus(), 100);
+            return () => window.clearTimeout(timer);
         } else {
             setQuery('');
             setResults([]);
@@ -110,38 +112,54 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     return (
         <AnimatePresence>
             <motion.div
-                className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] px-4 sm:px-0"
+                className="global-search-overlay fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] px-4 sm:px-0"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
             >
                 {/* Backdrop */}
-                <div
-                    className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+                <button
+                    type="button"
+                    aria-label="Cerrar búsqueda"
+                    className="global-search-backdrop absolute inset-0 bg-background/80 backdrop-blur-sm"
                     onClick={onClose}
                 />
 
                 {/* Modal */}
                 <motion.div
-                    className="relative w-full max-w-2xl bg-card border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Buscar en Finix"
+                    className="global-search-dialog relative w-full max-w-2xl bg-card border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col"
                     initial={{ scale: 0.95, y: -20, opacity: 0 }}
                     animate={{ scale: 1, y: 0, opacity: 1 }}
                     exit={{ scale: 0.95, y: -20, opacity: 0 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 >
+                    <div className="global-search-intro global-search-desktop-only">
+                        <div>
+                            <span className="global-search-eyebrow"><img src="/logo-small.webp" alt="" />EXPLORÁ FINIX</span>
+                            <h2>Todo empieza con una búsqueda</h2>
+                            <p>Encontrá activos, inversores y nuevas ideas.</p>
+                        </div>
+                        <button type="button" onClick={onClose} className="global-search-close" aria-label="Cerrar buscador">
+                            <X size={18} /><kbd>Esc</kbd>
+                        </button>
+                    </div>
                     {/* Header Input */}
-                    <div className="flex items-center px-4 py-3 border-b border-border/50 gap-3">
+                    <div className="global-search-input flex items-center px-4 py-3 border-b border-border/50 gap-3">
                         <Search className="w-5 h-5 text-primary" />
                         <input
                             ref={inputRef}
                             type="text"
+                            aria-label="Buscar en Finix"
                             className="flex-1 bg-transparent border-none outline-none text-base placeholder:text-muted-foreground"
                             placeholder="Buscar en Finix o pedir a la IA..."
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                         />
                         {query && (
-                            <button onClick={() => setQuery('')} className="p-1 hover:bg-secondary rounded-full transition-colors">
+                            <button type="button" aria-label="Limpiar búsqueda" onClick={() => setQuery('')} className="p-1 hover:bg-secondary rounded-full transition-colors">
                                 <X className="w-4 h-4 text-muted-foreground" />
                             </button>
                         )}
@@ -151,49 +169,56 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                     </div>
 
                     {/* Filters */}
-                    <div className="flex items-center gap-2 px-4 py-2 border-b border-border/30 bg-muted/20 overflow-x-auto scrollbar-hide">
+                    <div className="global-search-filters flex items-center gap-2 px-4 py-2 border-b border-border/30 bg-muted/20 overflow-x-auto scrollbar-hide">
                         {[
                             { id: 'all', label: 'Todo', icon: Search },
                             { id: 'users', label: 'Inversores', icon: Users },
                             { id: 'assets', label: 'Mercado', icon: TrendingUp },
                             { id: 'communities', label: 'Comunidades', icon: MessageSquare }
-                        ].map(f => (
-                            <button
-                                key={f.id}
-                                onClick={() => setActiveFilter(f.id as any)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
-                                    ${activeFilter === f.id
-                                        ? 'bg-primary text-primary-foreground shadow-sm'
-                                        : 'bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground'
+                        ].map(f => {
+                            const Icon = f.icon;
+                            const isActive = activeFilter === f.id;
+                            return (
+                                <button
+                                    key={f.id}
+                                    type="button"
+                                    onClick={() => setActiveFilter(f.id as any)}
+                                    aria-pressed={isActive}
+                                    className={`global-search-filter-pill inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 cursor-pointer ${
+                                        isActive
+                                            ? 'bg-primary/15 text-primary border border-primary/30'
+                                            : 'bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground border border-transparent'
                                     }`}
-                            >
-                                <f.icon className="w-3.5 h-3.5" />
-                                {f.label}
-                            </button>
-                        ))}
+                                >
+                                    <Icon size={14} className="shrink-0" />
+                                    <span>{f.label}</span>
+                                </button>
+                            );
+                        })}
                     </div>
 
                     {/* Body */}
-                    <div className="max-h-[60vh] overflow-y-auto p-2">
+                    <div className="global-search-body max-h-[60vh] overflow-y-auto p-2">
                         {isLoading ? (
                             <div className="flex flex-col items-center justify-center py-10 gap-3">
                                 <Loader2 className="w-6 h-6 text-primary animate-spin" />
                                 <span className="text-xs text-muted-foreground">Buscando inteligéntemente...</span>
                             </div>
                         ) : query.length < 2 ? (
-                            <div className="p-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <div className="mb-6">
+                            <div className="global-search-start p-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="global-search-history mb-6">
                                     <h4 className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-widest px-2 mb-3">
                                         <History className="w-3.5 h-3.5" />
                                         Búsquedas Recientes
                                     </h4>
-                                    <div className="space-y-1">
+                                    <div className="global-search-history-list space-y-1">
                                         {history.map(h => (
                                             <button
                                                 key={h}
                                                 onClick={() => applySuggested(h)}
-                                                className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-secondary text-sm transition-colors group"
+                                                className="global-search-recent w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-secondary text-sm transition-colors group"
                                             >
+                                                <span className="global-search-recent-icon global-search-desktop-only"><History size={17} /></span>
                                                 <span className="text-foreground">{h}</span>
                                                 <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                                             </button>
@@ -201,7 +226,7 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                                     </div>
                                 </div>
 
-                                <div>
+                                <div className="global-search-suggestions">
                                     <h4 className="flex items-center gap-1.5 text-xs font-semibold text-primary uppercase tracking-widest px-2 mb-3">
                                         <Sparkles className="w-3.5 h-3.5" />
                                         Consultas Inteligentes (IA)
@@ -211,65 +236,68 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                                             <button
                                                 key={q}
                                                 onClick={() => applySuggested(q)}
-                                                className="flex items-center text-left gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
+                                                className="global-search-suggestion flex items-center text-left gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
                                             >
                                                 <div className="w-8 h-8 rounded-full bg-primary/20 flex flex-shrink-0 items-center justify-center">
                                                     <Sparkles className="w-4 h-4 text-primary" />
                                                 </div>
                                                 <span className="text-xs font-medium text-primary-foreground sm:text-foreground">{q}</span>
+                                                <ChevronRight size={16} className="global-search-desktop-only" />
                                             </button>
                                         ))}
                                     </div>
                                 </div>
                             </div>
                         ) : results.length > 0 ? (
-                            <div className="space-y-1 p-2">
+                            <div className="global-search-results space-y-1 p-2">
                                 <h4 className="text-xs font-semibold text-muted-foreground px-2 py-1 mb-1">
                                     Resultados ({results.length})
                                 </h4>
-                                {results.map((r, i) => {
+                                {results.map((r) => {
                                     if (r._searchType === 'asset') {
                                         return (
-                                            <button
-                                                key={r.symbol || i}
-                                                onClick={() => handleSelect(r)}
-                                                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left"
+                                            <div
+                                                key={r.symbol}
+                                                className="global-search-result w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left"
                                             >
-                                                <div className="w-10 h-10 rounded-full bg-secondary flex overflow-hidden items-center justify-center flex-shrink-0 border border-border">
-                                                    <TrendingUp className="w-5 h-5 text-muted-foreground" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-semibold text-foreground truncate">
-                                                            {r.name}
-                                                        </span>
-                                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                                                            {r.type}
+                                                <button type="button" onClick={() => handleSelect(r)} className="flex flex-1 min-w-0 items-center gap-3 text-left">
+                                                    <div className="w-10 h-10 rounded-full bg-secondary flex overflow-hidden items-center justify-center flex-shrink-0 border border-border">
+                                                        <TrendingUp className="w-5 h-5 text-muted-foreground" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm font-semibold text-foreground truncate">
+                                                                {r.name}
+                                                            </span>
+                                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                                                                {r.type}
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-xs text-muted-foreground block truncate">
+                                                        {r.symbol.includes(':') ? r.symbol : `${r.exchange ? `${r.exchange}:` : ''}${r.symbol}`}
                                                         </span>
                                                     </div>
-                                                    <span className="text-xs text-muted-foreground block truncate">
-                                                        {r.exchange}:{r.symbol}
-                                                    </span>
-                                                </div>
+                                                </button>
                                                 <button
                                                     type="button"
                                                     title="Agregar a Seguimiento"
+                                                    aria-label={`Agregar ${r.name || r.symbol} a Seguimiento`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setWatchlistAsset({ symbol: r.symbol, name: r.name });
                                                     }}
-                                                    className="p-2 rounded-lg hover:bg-violet-500/20 text-muted-foreground hover:text-violet-400 transition-colors"
+                                                    className="global-search-watchlist-button p-2 rounded-lg hover:bg-violet-500/20 text-muted-foreground hover:text-violet-400 transition-colors"
                                                 >
                                                     <Bookmark className="w-4 h-4" />
                                                 </button>
-                                            </button>
+                                            </div>
                                         );
                                     }
                                     return (
                                         <button
-                                            key={r.id || i}
+                                            key={r.id || r.username}
                                             onClick={() => handleSelect(r)}
-                                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left"
+                                            className="global-search-result w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left"
                                         >
                                             <div className="w-10 h-10 rounded-full bg-secondary flex overflow-hidden items-center justify-center flex-shrink-0 border border-border">
                                                 {r.avatarUrl ? (

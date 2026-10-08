@@ -8,7 +8,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
-type MessageAttachmentType = 'image' | 'post' | 'chart' | 'story';
+type MessageAttachmentType = 'image' | 'post' | 'chart';
 type MessageAttachmentInput =
     | {
         type: MessageAttachmentType;
@@ -530,7 +530,7 @@ export class MessagesService {
         if (!input) return null;
 
         const type = input.type;
-        if (!type || !['image', 'post', 'chart', 'story'].includes(type)) {
+        if (!type || !['image', 'post', 'chart'].includes(type)) {
             throw new BadRequestException('Tipo de adjunto inválido');
         }
 
@@ -550,52 +550,6 @@ export class MessagesService {
             };
         }
 
-        if (type === 'story') {
-            const meta = input.meta && typeof input.meta === 'object' ? input.meta : {};
-            const nestedStory = meta.story && typeof meta.story === 'object'
-                ? meta.story as Record<string, any>
-                : null;
-            const rawStoryId = typeof meta.storyId === 'string'
-                ? meta.storyId
-                : typeof nestedStory?.id === 'string'
-                    ? String(nestedStory.id)
-                    : '';
-            const storyId = rawStoryId.trim();
-
-            if (!storyId) {
-                throw new BadRequestException('La historia es obligatoria');
-            }
-
-            const sharedStory = await this.prisma.story.findUnique({
-                where: { id: storyId },
-                include: {
-                    author: { select: USER_SELECT },
-                },
-            });
-
-            if (!sharedStory || sharedStory.expiresAt <= new Date()) {
-                throw new NotFoundException('La historia no existe o ya expiró');
-            }
-
-            return {
-                attachmentType: 'story' as const,
-                attachmentUrl: normalizeStoredUploadUrl(sharedStory.mediaUrl) ?? sharedStory.mediaUrl ?? null,
-                attachmentData: this.stringifyMeta({
-                    storyId: sharedStory.id,
-                    story: {
-                        id: sharedStory.id,
-                        content: sharedStory.content,
-                        mediaUrl: normalizeStoredUploadUrl(sharedStory.mediaUrl) ?? sharedStory.mediaUrl,
-                        background: sharedStory.background,
-                        textColor: sharedStory.textColor,
-                        createdAt: sharedStory.createdAt,
-                        expiresAt: sharedStory.expiresAt,
-                        author: sharedStory.author,
-                    },
-                }),
-                sharedPostId: null,
-            };
-        }
 
         if (type === 'image') {
             if (!input.url) {

@@ -10,7 +10,7 @@ describe('MarketRankingService Unit Tests', () => {
         mockPrisma = {
             sP500Asset: {
                 findMany: jest.fn(),
-                createMany: jest.fn(),
+                createMany: jest.fn().mockImplementation(({ data }) => Promise.resolve({ count: data.length })),
                 count: jest.fn(),
             },
             dailyMarketRanking: {
@@ -25,12 +25,13 @@ describe('MarketRankingService Unit Tests', () => {
 
         mockProvider = {
             providerName: 'MockProvider',
-            getSP500Constituents: jest.fn(),
+            getSP500Constituents: jest.fn().mockImplementation(() => mockPrisma.sP500Asset.findMany()),
             getBatchQuotes: jest.fn(),
         };
 
         mockLogoService = {
             getCanonicalLogoUrl: jest.fn((ticker: string) => `https://images.financialmodelingprep.com/symbol/${ticker}.png`),
+            resolveTradingViewLogo: jest.fn(async (ticker: string) => `https://s3-symbol-logo.tradingview.com/${ticker.toLowerCase()}.svg`),
         };
 
         service = new MarketRankingService(mockPrisma, mockProvider, mockLogoService);
@@ -62,7 +63,9 @@ describe('MarketRankingService Unit Tests', () => {
         const result = await service.executeDailyRanking('2026-09-13');
 
         expect(result.success).toBe(true);
-        expect(result.topResults).toHaveLength(5);
+        // Persist all eligible constituents for the expanded ranking; the widget reads five.
+        expect(result.topResults).toHaveLength(6);
+        expect(result.topResults.map(item => item.ticker)).toEqual(['NVDA', 'AMD', 'META', 'MSFT', 'AAPL', 'TSLA']);
 
         // Verification of descending order: NVDA (8%), AMD (7%), META (6%), MSFT (3%), AAPL (2%)
         expect(result.topResults[0].ticker).toBe('NVDA');

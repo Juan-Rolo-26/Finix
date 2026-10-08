@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Cookie, ArrowLeft, ArrowUp, ChevronDown } from 'lucide-react';
-import { LEGAL_NAV } from '@/components/legal/LegalPageLayout';
+import { InformationPageTabs } from '@/components/legal/InformationPageTabs';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const LAST_UPDATED = '15 de septiembre de 2026';
@@ -25,10 +25,12 @@ const SECTIONS = [
     { id: 'contacto', title: '14. Contacto' },
 ];
 
+const SECTION_IDS = SECTIONS.map(section => section.id);
+
 // ─── Scroll spy ────────────────────────────────────────────────────────────────
 function useScrollSpy(ids: string[]) {
     const [activeId, setActiveId] = useState(ids[0] ?? '');
-    useState(() => {
+    useEffect(() => {
         const fn = () => {
             let found = ids[0] ?? '';
             for (const id of ids) {
@@ -40,7 +42,8 @@ function useScrollSpy(ids: string[]) {
         };
         window.addEventListener('scroll', fn, { passive: true });
         fn();
-    });
+        return () => window.removeEventListener('scroll', fn);
+    }, [ids]);
     return activeId;
 }
 
@@ -83,17 +86,19 @@ function MobileToc({ activeId }: { activeId: string }) {
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function Cookies() {
     const navigate = useNavigate();
-    const activeId = useScrollSpy(SECTIONS.map(s => s.id));
+    const activeId = useScrollSpy(SECTION_IDS);
     const [showBackTop, setShowBackTop] = useState(false);
-    useState(() => {
+    useEffect(() => {
         const fn = () => setShowBackTop(window.scrollY > 400);
         window.addEventListener('scroll', fn, { passive: true });
-    });
+        fn();
+        return () => window.removeEventListener('scroll', fn);
+    }, []);
 
     return (
-        <div className="min-h-screen finix-unified-bg text-foreground font-sans selection:bg-primary/30">
+        <div className="info-page min-h-screen finix-unified-bg text-foreground font-sans selection:bg-primary/30">
             {/* ── Navbar ── */}
-            <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+            <nav aria-label="Volver a Finix" className="info-page__mobile-nav fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
                 <div className="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
                     <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer" aria-label="Volver">
                         <ArrowLeft className="w-4 h-4" /><span className="hidden sm:inline">Volver</span>
@@ -107,19 +112,21 @@ export default function Cookies() {
                 </div>
             </nav>
 
-            <div className="container mx-auto px-4 md:px-8 pt-24 pb-20 max-w-6xl">
+            <div className="info-page__container container mx-auto px-4 md:px-8 pt-24 pb-20 max-w-6xl">
                 {/* ── Tabs ── */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 scrollbar-hide border-b border-border/40 text-sm font-semibold">
-                    {LEGAL_NAV.map(nav => (
-                        <Link key={nav.to} to={nav.to} className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${nav.to === '/cookies' ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
-                            {nav.label}
-                        </Link>
-                    ))}
-                </div>
+                <InformationPageTabs />
 
-                <div className="flex gap-10">
+                <header className="info-page__header mb-10">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 text-primary">
+                        <Cookie className="w-7 h-7" />
+                    </div>
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-black tracking-tight mb-3">Política de Cookies</h1>
+                    <p className="text-sm text-muted-foreground/80 font-medium">Última actualización: {LAST_UPDATED}</p>
+                </header>
+
+                <div className="info-page__grid flex gap-10">
                     {/* ── Sidebar ── */}
-                    <aside className="hidden lg:block w-64 shrink-0">
+                    <aside className="info-page__sidebar hidden lg:block w-64 shrink-0">
                         <nav aria-label="Índice" className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2 space-y-1 scrollbar-hide">
                             {SECTIONS.map(s => (
                                 <a key={s.id} href={`#${s.id}`} className={`block px-3.5 py-2 rounded-lg text-sm leading-snug transition-all ${s.id === activeId ? 'text-primary font-bold bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}`}>
@@ -130,14 +137,8 @@ export default function Cookies() {
                     </aside>
 
                     {/* ── Content ── */}
-                    <div className="flex-1 min-w-0">
-                        <header className="mb-10">
-                            <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 text-primary">
-                                <Cookie className="w-7 h-7" />
-                            </div>
-                            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-black tracking-tight mb-3">Política de Cookies</h1>
-                            <p className="text-sm text-muted-foreground/80 font-medium">Última actualización: {LAST_UPDATED}</p>
-                        </header>
+                    <div className="info-page__body flex-1 min-w-0">
+
 
                         {/* ── Summary callout ── */}
                         <div className="rounded-3xl border border-primary/25 bg-primary/5 p-6 sm:p-7 mb-8">
@@ -189,7 +190,7 @@ export default function Cookies() {
 
                             <Section id="cookies-sesion" title="4. Autenticación y sesión">
                                 <p>
-                                    La autenticación en Finix es gestionada por <strong>Supabase</strong>. Durante el proceso de inicio de sesión, Supabase puede establecer cookies o datos de sesión necesarios para verificar tu identidad y mantener el acceso seguro.
+                                    La autenticación es gestionada por <strong>Finix</strong>. Durante el inicio de sesión, Finix establece cookies y datos de sesión necesarios para verificar tu identidad y mantener el acceso seguro.
                                 </p>
                                 <p>
                                     Estas cookies/tokens son <strong>estrictamente necesarias</strong> para que puedas acceder a tu cuenta. Sin ellas, no es posible iniciar sesión ni utilizar las funcionalidades que requieren autenticación.
@@ -292,9 +293,9 @@ export default function Cookies() {
                                                 <td className="py-3">1 año</td>
                                             </tr>
                                             <tr>
-                                                <td className="py-3 pr-4 font-mono text-foreground font-medium">sb-* (Supabase)</td>
+                                                <td className="py-3 pr-4 font-mono text-foreground font-medium">finix_token / finix_refresh_token</td>
                                                 <td className="py-3 pr-4">localStorage / Cookie</td>
-                                                <td className="py-3 pr-4">Sesión de autenticación de Supabase</td>
+                                                <td className="py-3 pr-4">Sesión de autenticación de Finix</td>
                                                 <td className="py-3">Según configuración de sesión</td>
                                             </tr>
                                             <tr>

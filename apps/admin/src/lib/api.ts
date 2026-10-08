@@ -3,7 +3,9 @@ const withApiPrefix = (path: string) => {
         return path;
     }
 
-    let baseUrl = import.meta.env.VITE_ADMIN_API_URL || import.meta.env.VITE_ADMIN_API_PROXY_TARGET || '';
+    // PROXY_TARGET configures Vite's server, not browser requests. Using it
+    // here bypassed /api and sent login requests to an unregistered route.
+    let baseUrl = import.meta.env.VITE_ADMIN_API_URL || '';
 
     // En navegador en producción (o en admin.finixarg.com), usamos '/api'
     // aprovechando el proxy de Nginx (o el proxy de Vite en desarrollo).

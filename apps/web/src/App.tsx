@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { hasCommunityAccess, hasCommunityCreatorAccess, useAuthStore } from './stores/authStore';
 import { usePreferencesStore } from './stores/preferencesStore';
 const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'));
+const InformationLayout = lazy(() => import('./layouts/InformationLayout'));
 import InstallBanner from './components/InstallBanner';
 const CookieConsent = lazy(() => import('./components/CookieConsent'));
 import { usePlatformAccessStore } from './stores/platformAccessStore';
@@ -83,13 +84,17 @@ function ThemeApplier() {
 
 // ─── Route Guards ─────────────────────────────────────────────────────────────
 
-function RequireOnboarding({ children }: { children: React.ReactNode }) {
+function RequireAuth({ children }: { children: React.ReactNode }) {
     const { token, user } = useAuthStore();
+    const location = useLocation();
+    if (!token && !user) return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+    return <>{children}</>;
+}
+
+function AccessGuard({ children }: { children: React.ReactNode }) {
     const accessLoaded = usePlatformAccessStore(state => state.loaded);
     const location = useLocation();
-    if (!token && !user) return <Navigate to="/" replace />;
     if (!accessLoaded && location.pathname !== '/dashboard') return <div className="min-h-screen grid place-items-center" role="status">Cargando Finix…</div>;
-    // Guard removed: users who skipped onboarding can use the app and edit from profile
     return <>{children}</>;
 }
 
@@ -116,7 +121,7 @@ export default function App() {
     const { token, user, syncFromSession } = useAuthStore();
 
     // Restore the Finix session on app load. Auth token ownership and provider
-    // refresh handling live in authStore so Supabase cannot replace the API token.
+    // refresh handling live in authStore using Finix sessions.
     useEffect(() => {
         void loadAccess();
         syncFromSession();
@@ -140,9 +145,11 @@ export default function App() {
                 }
             >
                 <Routes>
-                    {/* Root route: Login/Registration. If logged in → dashboard */}
+                    {/* Root route: Go directly to platform dashboard instead of old login screen */}
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
                     <Route
-                        path="/"
+                        path="/login"
                         element={
                             !token && !user
                                 ? <AuthPage />
@@ -152,10 +159,14 @@ export default function App() {
 
                     <Route
                         path="/auth"
-                        element={<Navigate to="/" replace />}
+                        element={
+                            !token && !user
+                                ? <AuthPage />
+                                : <Navigate to="/dashboard" replace />
+                        }
                     />
 
-                    {/* Supabase auth callback (email verification + OAuth) */}
+                    {/* Finix OAuth callback */}
                     <Route path="/auth/callback" element={<AuthCallback />} />
 
                     <Route path="/verify-email" element={<VerifyEmail />} />
@@ -166,7 +177,7 @@ export default function App() {
                         path="/onboarding"
                         element={
                             !token && !user
-                                ? <Navigate to="/" replace />
+                                ? <Navigate to="/login" replace />
                                 : <OnboardingWizard />
                         }
                     />
@@ -175,19 +186,17 @@ export default function App() {
                     <Route path="/info" element={<InfoPage />} />
                     <Route path="/info/:section" element={<InfoPage />} />
 
-                    {/* Protected Routes (require auth + completed onboarding) */}
+                    {/* Dashboard Layout Routes */}
                     <Route
                         element={
-                            <RequireOnboarding>
+                            <AccessGuard>
                                 <DashboardLayout />
-                            </RequireOnboarding>
+                            </AccessGuard>
                         }
                     >
                         <Route path="/dashboard" element={<SocialDashboard />} />
                         <Route path="/social" element={<SocialDashboard />} />
-                        <Route path="/finanzas/*" element={<FinanceWorkspace />} />
-                        <Route path="/finanzas-personales" element={<Navigate to="/finanzas" replace />} />
-                        <Route path="/portfolio" element={<PortfolioPage />} />
+                        <Route path="/explore" element={<Explore />} />
                         <Route path="/market" element={<Markets />} />
                         <Route path="/mercado/seguimiento" element={<WatchlistPage />} />
                         <Route path="/market/seguimiento" element={<WatchlistPage />} />
@@ -196,43 +205,49 @@ export default function App() {
                         <Route path="/market/top-gainers" element={<TopGainersPage />} />
                         <Route path="/calendario" element={<CalendarPage />} />
                         <Route path="/calendar" element={<CalendarPage />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/profile/:username" element={<Profile />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/settings/plan" element={<ProUpgrade />} />
-                        <Route path="/explore" element={<Explore />} />
-                        <Route path="/messages" element={<Messages />} />
-                        <Route path="/comunidades" element={<RequireCommunityAccess><Comunidades /></RequireCommunityAccess>} />
-                        <Route path="/comunidades/crear" element={<RequireCommunityAccess creatorOnly><CommunityCreate /></RequireCommunityAccess>} />
-                        <Route path="/comunidades/:id" element={<RequireCommunityAccess><CommunityDetail /></RequireCommunityAccess>} />
-                        <Route path="/comunidades/:id/admin" element={<RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess>} />
-                        <Route path="/comunidades/:id/moderacion" element={<RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess>} />
-                        <Route path="/comunidades/:id/admin/finanzas" element={<RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess>} />
-                        <Route path="/comunidades/:id/admin/configuracion" element={<RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess>} />
                         <Route path="/news" element={<NewsPage />} />
-                        <Route path="/notifications" element={<NotificationsPage />} />
                         <Route path="/analysis" element={<AnalysisPage />} />
                         <Route path="/analysis/:slug" element={<AnalysisPage />} />
                         <Route path="/analisis" element={<AnalysisPage />} />
                         <Route path="/analisis/:slug" element={<AnalysisPage />} />
+                        <Route path="/profile/:username" element={<Profile />} />
+
+                        {/* Protected Routes (require auth) */}
+                        <Route path="/finanzas/*" element={<RequireAuth><FinanceWorkspace /></RequireAuth>} />
+                        <Route path="/finanzas-personales" element={<Navigate to="/finanzas" replace />} />
+                        <Route path="/portfolio" element={<RequireAuth><PortfolioPage /></RequireAuth>} />
+                        <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+                        <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
+                        <Route path="/settings/plan" element={<ProUpgrade />} />
+                        <Route path="/messages" element={<RequireAuth><Messages /></RequireAuth>} />
+                        <Route path="/notifications" element={<RequireAuth><NotificationsPage /></RequireAuth>} />
+                        <Route path="/comunidades" element={<RequireAuth><RequireCommunityAccess><Comunidades /></RequireCommunityAccess></RequireAuth>} />
+                        <Route path="/comunidades/crear" element={<RequireAuth><RequireCommunityAccess creatorOnly><CommunityCreate /></RequireCommunityAccess></RequireAuth>} />
+                        <Route path="/comunidades/:id" element={<RequireAuth><RequireCommunityAccess><CommunityDetail /></RequireCommunityAccess></RequireAuth>} />
+                        <Route path="/comunidades/:id/admin" element={<RequireAuth><RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
+                        <Route path="/comunidades/:id/moderacion" element={<RequireAuth><RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
+                        <Route path="/comunidades/:id/admin/finanzas" element={<RequireAuth><RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
+                        <Route path="/comunidades/:id/admin/configuracion" element={<RequireAuth><RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
                     </Route>
 
                     {/* Info & Legal Routes */}
-                    <Route path="/pro" element={<Pricing />} />
-                    {/* Alias kept for all existing upgrade buttons and deep links. */}
-                    <Route path="/pricing" element={<Pricing />} />
-                    <Route path="/payment-result" element={<PaymentResult />} />
-                    <Route path="/creator" element={<CreatorPage />} />
-                    <Route path="/creador" element={<CreatorPage />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/help" element={<Help />} />
-                    <Route path="/legal/privacy" element={<Privacy />} />
-                    <Route path="/privacy" element={<Privacy />} />
-                    <Route path="/legal/terms" element={<Terms />} />
-                    <Route path="/terms" element={<Terms />} />
-                    <Route path="/legal/cookies" element={<Cookies />} />
-                    <Route path="/cookies" element={<Cookies />} />
-                    <Route path="/legal/responsible" element={<ResponsibleUse />} />
+                    <Route element={<InformationLayout />}>
+                        <Route path="/pro" element={<Pricing />} />
+                        {/* Alias kept for all existing upgrade buttons and deep links. */}
+                        <Route path="/pricing" element={<Pricing />} />
+                        <Route path="/payment-result" element={<PaymentResult />} />
+                        <Route path="/creator" element={<CreatorPage />} />
+                        <Route path="/creador" element={<CreatorPage />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="/help" element={<Help />} />
+                        <Route path="/legal/privacy" element={<Privacy />} />
+                        <Route path="/privacy" element={<Privacy />} />
+                        <Route path="/legal/terms" element={<Terms />} />
+                        <Route path="/terms" element={<Terms />} />
+                        <Route path="/legal/cookies" element={<Cookies />} />
+                        <Route path="/cookies" element={<Cookies />} />
+                        <Route path="/legal/responsible" element={<ResponsibleUse />} />
+                    </Route>
 
                     {/* Catch-all */}
                     <Route path="*" element={<Navigate to="/" replace />} />

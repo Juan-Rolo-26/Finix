@@ -13,7 +13,7 @@ export class AdapterFMPService implements FundamentalProviderAdapter {
     private readonly apiKey =
         process.env.FMP_API_KEY || process.env.FINANCIAL_MODELING_PREP_API_KEY || process.env.FMP_KEY || '';
 
-    private readonly baseUrl = process.env.FMP_BASE_URL || 'https://financialmodelingprep.com/api/v3';
+    private readonly baseUrl = process.env.FMP_BASE_URL || 'https://financialmodelingprep.com/stable';
 
     getDescriptor(): ProviderDescriptor {
         const keyConfigured = !!this.apiKey;
@@ -51,13 +51,13 @@ export class AdapterFMPService implements FundamentalProviderAdapter {
         const ticker = symbol.normalizedTicker;
 
         const [profileRaw, ratiosRaw, keyMetricsRaw, incomeRaw, balanceRaw, cashRaw, earningsRaw] = await Promise.all([
-            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl(`/profile/${ticker}`), retries: 2 }),
-            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl(`/ratios/${ticker}`, { limit: 8 }), retries: 2 }),
-            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl(`/key-metrics/${ticker}`, { limit: 8 }), retries: 2 }),
-            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl(`/income-statement/${ticker}`, { limit: 8 }), retries: 2 }),
-            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl(`/balance-sheet-statement/${ticker}`, { limit: 8 }), retries: 2 }),
-            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl(`/cash-flow-statement/${ticker}`, { limit: 8 }), retries: 2 }),
-            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl(`/historical/earning_calendar/${ticker}`, { limit: 8 }), retries: 2 }),
+            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl('/profile', { symbol: ticker }), retries: 2 }),
+            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl('/ratios', { symbol: ticker, limit: 5 }), retries: 2 }),
+            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl('/key-metrics', { symbol: ticker, limit: 5 }), retries: 2 }),
+            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl('/income-statement', { symbol: ticker, limit: 5 }), retries: 2 }),
+            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl('/balance-sheet-statement', { symbol: ticker, limit: 5 }), retries: 2 }),
+            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl('/cash-flow-statement', { symbol: ticker, limit: 5 }), retries: 2 }),
+            fetchJsonWithRetry<any[]>({ provider: this.provider, url: this.buildUrl('/earnings', { symbol: ticker, limit: 5 }), retries: 2 }),
         ]);
 
         const profile = Array.isArray(profileRaw) ? profileRaw[0] || {} : {};
@@ -67,7 +67,7 @@ export class AdapterFMPService implements FundamentalProviderAdapter {
         const balanceArr = Array.isArray(balanceRaw) ? balanceRaw : [];
         const cashArr = Array.isArray(cashRaw) ? cashRaw : [];
 
-        if (!profile && incomeArr.length === 0 && balanceArr.length === 0 && cashArr.length === 0) {
+        if (!Object.keys(profile).length && incomeArr.length === 0 && balanceArr.length === 0 && cashArr.length === 0) {
             throw new ProviderApiError({
                 provider: this.provider,
                 message: `FMP sin datos para ${ticker}`,
@@ -78,7 +78,7 @@ export class AdapterFMPService implements FundamentalProviderAdapter {
         const incomeStatement: StatementPoint[] = incomeArr.map((row: any) => ({
             date: String(row?.date || ''),
             period: row?.period || null,
-            fiscalYear: toNumber(row?.calendarYear),
+            fiscalYear: toNumber(row?.fiscalYear ?? row?.calendarYear),
             currency: row?.reportedCurrency || null,
             revenue: toNumber(row?.revenue),
             grossProfit: toNumber(row?.grossProfit),
@@ -91,7 +91,7 @@ export class AdapterFMPService implements FundamentalProviderAdapter {
         const balanceSheet: StatementPoint[] = balanceArr.map((row: any) => ({
             date: String(row?.date || ''),
             period: row?.period || null,
-            fiscalYear: toNumber(row?.calendarYear),
+            fiscalYear: toNumber(row?.fiscalYear ?? row?.calendarYear),
             currency: row?.reportedCurrency || null,
             totalAssets: toNumber(row?.totalAssets),
             totalLiabilities: toNumber(row?.totalLiabilities),
@@ -103,7 +103,7 @@ export class AdapterFMPService implements FundamentalProviderAdapter {
         const cashFlow: StatementPoint[] = cashArr.map((row: any) => ({
             date: String(row?.date || ''),
             period: row?.period || null,
-            fiscalYear: toNumber(row?.calendarYear),
+            fiscalYear: toNumber(row?.fiscalYear ?? row?.calendarYear),
             currency: row?.reportedCurrency || null,
             operatingCashFlow: toNumber(row?.operatingCashFlow),
             capex: toNumber(row?.capitalExpenditure),
@@ -123,13 +123,12 @@ export class AdapterFMPService implements FundamentalProviderAdapter {
 
         const enterpriseValue = toNumber(keyMetrics?.enterpriseValue) || toNumber(profile?.enterpriseValue);
         const peRatio =
-            toNumber(ratios?.priceEarningsRatio) ||
-            toNumber(ratios?.priceEarningsToGrowthRatio) ||
+            toNumber(ratios?.priceToEarningsRatio ?? ratios?.priceEarningsRatio) ??
             toNumber(profile?.pe);
-        const roe = toNumber(ratios?.returnOnEquity) || toNumber(keyMetrics?.roe);
-        const roic = toNumber(ratios?.returnOnInvestedCapital) || toNumber(keyMetrics?.roic);
+        const roe = toNumber(ratios?.returnOnEquity) ?? toNumber(keyMetrics?.returnOnEquity ?? keyMetrics?.roe);
+        const roic = toNumber(ratios?.returnOnInvestedCapital) ?? toNumber(keyMetrics?.returnOnInvestedCapital ?? keyMetrics?.roic);
         const debtToEquity =
-            toNumber(ratios?.debtEquityRatio) ||
+            toNumber(ratios?.debtToEquityRatio ?? ratios?.debtEquityRatio) ??
             safeRatio(latestBalance?.totalDebt || null, latestBalance?.totalEquity || null);
         const netMargin =
             toNumber(ratios?.netProfitMargin) ||

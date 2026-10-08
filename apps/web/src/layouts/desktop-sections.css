@@ -1,0 +1,478 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   FINIX — DESKTOP SECTIONS, PAGE FRAMES & ANIMATIONS
+   Rules apply ONLY at ≥1024 px. Mobile layout is untouched.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Transparent on mobile so nothing breaks below the breakpoint */
+.desktop-page-frame { display: contents; }
+.desktop-info-shell, .desktop-info-main { display: contents; }
+
+@media (min-width: 1024px) {
+
+    /* ─────────────────────────────────────────────────────────────────────
+       PAGE ENTRY ANIMATION — subtle, fast, professional
+    ───────────────────────────────────────────────────────────────────── */
+    @keyframes ds-page-in {
+        from { opacity: 0; transform: translateY(4px); }
+        to   { opacity: 1; transform: none; }
+    }
+
+    .desktop-page-frame > * {
+        animation: ds-page-in 200ms cubic-bezier(0, 0, 0.2, 1) both;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       TYPOGRAPHY SCALE — desktop-specific overrides
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell {
+        --desktop-font:         Inter, system-ui, sans-serif;
+        --desktop-title:        26px;
+        --desktop-section-title: 20px;
+        --desktop-card-title:   16px;
+        --desktop-body:         14px;
+        --desktop-label:        13px;
+        --desktop-meta:         12px;
+        --desktop-card-radius:  6px;
+    }
+
+    /* Bump tiny mobile class names to legible desktop equivalents */
+    .finix-desktop-shell :where(
+        [class~="text-[9px]"], [class~="text-[9.5px]"], [class~="text-[10px]"],
+        [class~="sm:text-[10px]"], [class~="text-[10.5px]"]
+    ) { font-size: 11px; }
+
+    .finix-desktop-shell :where(
+        [class~="text-[11px]"], [class~="sm:text-[11px]"], [class~="text-[11.5px]"]
+    ) { font-size: 12px; }
+
+    .finix-desktop-shell :where(
+        [class~="text-xs"], [class~="sm:text-xs"], [class~="text-[12px]"], [class~="sm:text-[12px]"]
+    ) { font-size: 12px; }
+
+    .finix-desktop-shell :where(
+        [class~="text-[12.5px]"], [class~="sm:text-[12.5px]"],
+        [class~="text-[13px]"],   [class~="sm:text-[13px]"]
+    ) { font-size: 13px; }
+
+    .finix-desktop-shell :where(
+        [class~="text-sm"], [class~="sm:text-sm"], [class~="text-[14px]"]
+    ) { font-size: 14px; }
+
+    .finix-desktop-shell :where(
+        [class~="text-[15px]"], [class~="sm:text-[15px]"]
+    ) { font-size: 15px; }
+
+    .finix-desktop-shell :where(
+        [class~="text-base"], [class~="sm:text-base"], [class~="md:text-base"], [class~="text-[16px]"]
+    ) { font-size: 16px; }
+
+    .finix-desktop-shell :where([class~="text-lg"], [class~="sm:text-lg"]) { font-size: 18px; }
+    .finix-desktop-shell :where([class~="text-xl"], [class~="sm:text-xl"], [class~="md:text-xl"]) { font-size: 20px; }
+    .finix-desktop-shell :where([class~="text-2xl"], [class~="sm:text-2xl"]) { font-size: 24px; }
+    .finix-desktop-shell :where([class~="text-3xl"], [class~="sm:text-3xl"], [class~="md:text-3xl"]) { font-size: 28px; }
+    .finix-desktop-shell :where([class~="text-4xl"], [class~="sm:text-4xl"], [class~="lg:text-4xl"]) { font-size: 34px; }
+
+    /* Headings letter-spacing on desktop */
+    .finix-desktop-shell h1,
+    .finix-desktop-shell h2,
+    .finix-desktop-shell h3,
+    .finix-desktop-shell h4 { letter-spacing: -0.01em; }
+
+    /* Tap highlight removed on desktop */
+    .finix-desktop-shell button,
+    .finix-desktop-shell a,
+    .desktop-tools-menu a,
+    .desktop-account-menu a { -webkit-tap-highlight-color: transparent; }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       PAGE FRAMES — Standard layouts with consistent gutter
+    ───────────────────────────────────────────────────────────────────── */
+
+    /* Standard pages: profile, settings, analysis, etc. */
+    .finix-desktop-shell .desktop-page-frame[data-layout='standard'] > :first-child {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        margin-inline: 0;
+        padding: 28px var(--desktop-gutter) 48px;
+    }
+
+    /* Explore page: inner container */
+    .finix-desktop-shell .desktop-page-frame[data-page='explore'] > :first-child > .mx-auto {
+        max-width: none;
+        padding: 28px var(--desktop-gutter) 48px;
+    }
+
+    /* Market, Portfolio, and Calendar pages: consistent gutter & matching top navbar width */
+    .finix-desktop-shell .desktop-page-frame:is([data-page='mercado'], [data-page='market'], [data-page='portfolio'], [data-page='calendario'], [data-page='calendar']) > :first-child {
+        width: 100%;
+        max-width: 1440px;
+        min-width: 0;
+        margin-inline: auto;
+        padding: 24px clamp(20px, 2.5vw, 40px) 48px;
+    }
+
+    .finix-desktop-shell .desktop-page-frame[data-page='mercado'] .max-w-7xl,
+    .finix-desktop-shell .desktop-page-frame[data-page='market'] .max-w-7xl {
+        max-width: 100%;
+        padding-inline: 0;
+    }
+
+    /* Settings page */
+    .finix-desktop-shell .desktop-page-frame[data-layout='sectioned'][data-page='settings'] > :first-child > :is(header, .max-w-6xl),
+    .finix-desktop-shell .desktop-page-frame[data-layout='sectioned'][data-page='settings'] > :first-child > main > .max-w-6xl {
+        max-width: none;
+        padding-inline: var(--desktop-gutter);
+    }
+
+    /* Messages (chat) layout */
+    .finix-desktop-shell .desktop-page-frame[data-layout='chat'] > .flex {
+        width: calc(100% - 2 * var(--desktop-gutter));
+        margin: 20px var(--desktop-gutter);
+        height: calc(100dvh - 160px);
+        min-height: 0;
+        flex: none;
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--desktop-card-radius);
+        background: hsl(var(--card));
+    }
+
+    /* Sticky elements should clear the 56px header */
+    .finix-desktop-shell .desktop-page-frame[data-page='notifications'] .sticky,
+    .finix-desktop-shell .desktop-page-frame[data-page='mercado'] .sticky,
+    .finix-desktop-shell .desktop-page-frame[data-page='market'] .sticky { top: 56px; }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       PAGE HEADING SYSTEM — Consistent across all pages
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-main .desktop-page-heading {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        max-width: none;
+        margin-inline: 0;
+        text-align: left;
+        gap: 16px;
+    }
+    .finix-desktop-shell .desktop-main .desktop-page-heading > :first-child {
+        flex: 1;
+        min-width: 0;
+        max-width: none;
+        align-items: flex-start;
+    }
+    .finix-desktop-shell .desktop-main .desktop-page-heading :is(h1, p, div.text-center) { text-align: left; }
+    .finix-desktop-shell .desktop-main .desktop-page-heading p { font-size: var(--desktop-body); margin-inline: 0; }
+    .finix-desktop-shell .desktop-main .desktop-page-heading .mx-auto { margin-inline: 0; }
+    .finix-desktop-shell .desktop-main .desktop-page-heading > :last-child:not(:first-child) { margin-inline: 0; }
+
+    /* News-specific hero typography */
+    .finix-desktop-shell .desktop-main .desktop-news-hero h1 { font-size: 40px; font-weight: 700; }
+    .finix-desktop-shell .desktop-social-page aside h3 { font-size: var(--desktop-body); }
+    .finix-desktop-shell .desktop-main .watchlist-hero h2 { font-size: var(--desktop-title); font-weight: 700; }
+    .finix-desktop-shell .desktop-main .finix-chart-container h3 { font-size: 15px; }
+    .finix-desktop-shell .desktop-main .desktop-news-card__cover h2 { font-size: var(--desktop-card-title); font-weight: 650; }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       SHARED COMPONENTS — Cards, inputs, tabs, role-tablist
+    ───────────────────────────────────────────────────────────────────── */
+
+    /* Consistent border-radius using the design token */
+    .finix-desktop-shell .desktop-main :where(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
+        border-radius: var(--desktop-card-radius);
+    }
+
+    /* Form inputs */
+    .finix-desktop-shell .desktop-main :where(
+        input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+        select
+    ) {
+        font-size: var(--desktop-body);
+        min-height: 36px;
+    }
+
+    /* Tabs and filter bars */
+    .finix-desktop-shell .desktop-main [role='tablist']:not(.market-tabs):not(.calendar-tabs),
+    .finix-desktop-shell .desktop-main .desktop-filter-bar,
+    .finix-desktop-shell .desktop-main nav[aria-label='Finanzas personales'] {
+        display: inline-flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 3px !important;
+        padding: 3px !important;
+        background: hsl(var(--secondary) / 0.5) !important;
+        border: 1px solid hsl(var(--border) / 0.6) !important;
+        border-radius: var(--desktop-card-radius) !important;
+        width: auto !important;
+        max-width: 100% !important;
+        min-height: 38px !important;
+        height: auto !important;
+        margin-bottom: 20px !important;
+    }
+
+    .finix-desktop-shell .desktop-main [role='tablist'].is-centered,
+    .finix-desktop-shell .desktop-main [role='tablist'].justify-center,
+    .finix-desktop-shell .desktop-page-frame[data-page='settings'] [role='tablist'],
+    .finix-desktop-shell .desktop-main .desktop-filter-bar.is-centered,
+    .finix-desktop-shell .desktop-main .desktop-filter-bar.justify-center {
+        margin-inline: auto !important;
+        justify-content: center !important;
+        align-self: center !important;
+    }
+
+    /* Market and Calendar primary navigation tabs — full width matching top navbar */
+    .finix-desktop-shell .desktop-main .market-tabs,
+    .finix-desktop-shell .desktop-main .calendar-tabs {
+        display: flex !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        align-items: center !important;
+        gap: 4px !important;
+        padding: 4px !important;
+        background: hsl(var(--secondary) / 0.5) !important;
+        border: 1px solid hsl(var(--border) / 0.6) !important;
+        border-radius: var(--desktop-card-radius) !important;
+        min-height: 42px !important;
+        height: auto !important;
+        margin-bottom: 24px !important;
+    }
+
+    .finix-desktop-shell .desktop-main :is(.market-tabs, .calendar-tabs) > :is(button, [role='tab']) {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        min-height: 34px !important;
+        height: 34px !important;
+        padding: 4px 10px !important;
+        border-radius: calc(var(--desktop-card-radius) - 2px) !important;
+        border: none !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        color: hsl(var(--muted-foreground)) !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        cursor: pointer !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+        transition: color 120ms ease, background 120ms ease !important;
+    }
+
+    .finix-desktop-shell .desktop-main :is(.market-tabs, .calendar-tabs) > :is(button:hover, [role='tab']:hover) {
+        color: hsl(var(--foreground)) !important;
+        background: hsl(var(--muted) / 0.4) !important;
+    }
+
+    .finix-desktop-shell .desktop-main :is(.market-tabs, .calendar-tabs) > :is(button[aria-pressed='true'], [role='tab'][data-state='active']) {
+        background: hsl(var(--card)) !important;
+        color: hsl(var(--foreground)) !important;
+        font-weight: 600 !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       INTERACTIVE HOVER STATES — Consistent across all interactive elements
+    ───────────────────────────────────────────────────────────────────── */
+
+    /* All clickable items get pointer */
+    .finix-desktop-shell .desktop-main [role='button'],
+    .finix-desktop-shell .desktop-main button:not(:disabled),
+    .finix-desktop-shell .desktop-main a[href] {
+        cursor: pointer;
+    }
+
+    /* Row hover: subtle, not flashy */
+    .finix-desktop-shell .desktop-main tr:not(.no-hover):hover td {
+        background-color: hsl(var(--muted) / 0.35);
+        transition: background-color 120ms ease;
+    }
+
+    /* Card hover: minimal lift */
+    .finix-desktop-shell .desktop-main .fintech-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px hsl(222 40% 3% / 0.10);
+        border-color: hsl(var(--border-strong));
+    }
+    .light .finix-desktop-shell .desktop-main .fintech-card:hover {
+        box-shadow: 0 4px 14px hsl(220 20% 18% / 0.08);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       DROPDOWN MENUS — Refined Radix dropdown animations
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell [data-radix-popper-content-wrapper] [role='menu'],
+    .finix-desktop-shell [data-radix-dropdown-menu-content] {
+        animation: ds-dropdown-in 160ms cubic-bezier(0, 0, 0.2, 1) both;
+        transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+    }
+
+    @keyframes ds-dropdown-in {
+        from { opacity: 0; transform: scale(0.97) translateY(-4px); }
+        to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       TABLE SYSTEM — Dense, scannable, financial
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-main .finix-table,
+    .finix-desktop-shell .desktop-main table.data-table {
+        font-size: var(--desktop-meta);
+        border-collapse: collapse;
+    }
+    .finix-desktop-shell .desktop-main .finix-table th,
+    .finix-desktop-shell .desktop-main table.data-table th {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground) / 0.7);
+        padding: 8px 10px;
+        text-align: left;
+        border-bottom: 1px solid hsl(var(--border) / 0.6);
+        white-space: nowrap;
+    }
+    .finix-desktop-shell .desktop-main .finix-table td,
+    .finix-desktop-shell .desktop-main table.data-table td {
+        padding: 9px 10px;
+        border-bottom: 1px solid hsl(var(--border) / 0.3);
+        vertical-align: middle;
+        font-size: var(--desktop-meta);
+    }
+    .finix-desktop-shell .desktop-main .finix-table tbody tr,
+    .finix-desktop-shell .desktop-main table.data-table tbody tr {
+        transition: background 120ms ease;
+    }
+    .finix-desktop-shell .desktop-main .finix-table tbody tr:hover,
+    .finix-desktop-shell .desktop-main table.data-table tbody tr:hover {
+        background: hsl(var(--primary) / 0.04);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       SKELETON LOADING STATES
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-main .animate-pulse {
+        border-radius: var(--desktop-card-radius);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       ANALYSIS PAGE — Research report layout
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .analysis-page {
+        font-size: var(--desktop-body);
+        line-height: 1.65;
+    }
+    .finix-desktop-shell .analysis-page h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+    .finix-desktop-shell .analysis-page h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
+    .finix-desktop-shell .analysis-page h3 { font-size: 15px; font-weight: 600; }
+    .finix-desktop-shell .analysis-page p  { font-size: var(--desktop-body); line-height: 1.7; }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       NOTIFICATIONS PAGE
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-page-frame[data-page='notifications'] .sticky {
+        top: 56px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       TOOLTIP SYSTEM
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell [data-radix-tooltip-content] {
+        font-size: 12px;
+        font-weight: 500;
+        padding: 5px 9px;
+        border-radius: 4px;
+        max-width: 260px;
+        line-height: 1.45;
+        animation: ds-tooltip-in 140ms cubic-bezier(0, 0, 0.2, 1) both;
+    }
+
+    @keyframes ds-tooltip-in {
+        from { opacity: 0; transform: translateY(2px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       BADGES — Consistent system
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-main .badge,
+    .finix-desktop-shell .desktop-main [class*='badge'] {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        padding: 2px 7px;
+        border-radius: 3px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       DIALOG / MODAL SYSTEM — Refined entry/exit
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell [role='dialog'] {
+        border-radius: var(--desktop-card-radius) !important;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       SCROLLBARS — Thin and subtle on desktop
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-main ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+    .finix-desktop-shell .desktop-main ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .finix-desktop-shell .desktop-main ::-webkit-scrollbar-thumb {
+        background: hsl(var(--border));
+        border-radius: 99px;
+    }
+    .finix-desktop-shell .desktop-main ::-webkit-scrollbar-thumb:hover {
+        background: hsl(var(--border-strong));
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       FOCUS VISIBLE — Accessible focus rings
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .desktop-main :focus-visible {
+        outline: 2px solid hsl(var(--ring));
+        outline-offset: 2px;
+        border-radius: 3px;
+    }
+    /* Suppress default browser outline on elements that handle it differently */
+    .finix-desktop-shell .desktop-main button:focus:not(:focus-visible),
+    .finix-desktop-shell .desktop-main a:focus:not(:focus-visible) {
+        outline: none;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       RECHARTS / CHART CONSISTENCY
+    ───────────────────────────────────────────────────────────────────── */
+    .finix-desktop-shell .recharts-text {
+        font-family: Inter, system-ui, sans-serif !important;
+        font-size: var(--desktop-meta) !important;
+    }
+    .finix-desktop-shell .recharts-default-tooltip {
+        font-family: Inter, system-ui, sans-serif !important;
+        font-size: var(--desktop-meta) !important;
+        border-radius: var(--desktop-card-radius) !important;
+        border-color: hsl(var(--border)) !important;
+        background: hsl(var(--popover)) !important;
+        padding: 8px 12px !important;
+        box-shadow: 0 4px 16px hsl(222 40% 3% / 0.14) !important;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   REDUCED MOTION — Respect user preference
+───────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .finix-desktop-shell .desktop-page-frame > *,
+    .finix-desktop-shell [data-radix-popper-content-wrapper] [role='menu'],
+    .finix-desktop-shell [data-radix-dropdown-menu-content],
+    .finix-desktop-shell [data-radix-tooltip-content] {
+        animation: none !important;
+        transition: none !important;
+    }
+}

@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, HelpCircle, Mail, ChevronRight, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowUp } from 'lucide-react';
-import { LEGAL_NAV } from '@/components/legal/LegalPageLayout';
+import { InformationPageTabs } from '@/components/legal/InformationPageTabs';
+import { InvestorQuote } from '@/components/common/InvestorQuote';
 
 // ─── FAQ Data ──────────────────────────────────────────────────────────────────
 
@@ -275,7 +276,7 @@ const FAQS: FaqItem[] = [
     {
         id: 'p-05', categoryId: 'privacidad',
         question: '¿Cómo protege Finix mi información?',
-        answer: 'Implementamos medidas técnicas y organizativas razonables para proteger los datos personales. La autenticación es gestionada por Supabase con cifrado estándar de la industria. Aun así, ningún sistema conectado a Internet puede garantizar seguridad absoluta.',
+        answer: 'Implementamos medidas técnicas y organizativas razonables para proteger los datos personales. Finix gestiona la autenticación con contraseñas protegidas mediante hashes y sesiones propias. Aun así, ningún sistema conectado a Internet puede garantizar seguridad absoluta.',
     },
     {
         id: 'p-06', categoryId: 'privacidad',
@@ -363,13 +364,15 @@ export default function Help() {
     const [scrolled, setScrolled] = useState(false);
     const [showBackTop, setShowBackTop] = useState(false);
 
-    useState(() => {
+    useEffect(() => {
         const fn = () => {
             setScrolled(window.scrollY > 10);
             setShowBackTop(window.scrollY > 400);
         };
         window.addEventListener('scroll', fn, { passive: true });
-    });
+        fn();
+        return () => window.removeEventListener('scroll', fn);
+    }, []);
 
     const filteredFaqs = useMemo(() => {
         return FAQS.filter(faq => {
@@ -383,9 +386,9 @@ export default function Help() {
     }, [searchQuery, selectedCategory]);
 
     return (
-        <div className="min-h-screen finix-unified-bg text-foreground font-sans selection:bg-primary/30">
+        <div className="info-page min-h-screen finix-unified-bg text-foreground font-sans selection:bg-primary/30">
             {/* ── Navbar ── */}
-            <nav className={`fixed top-0 w-full z-50 border-b transition-all ${scrolled ? 'border-border/50 bg-background/80 backdrop-blur-xl' : 'border-transparent bg-transparent'}`}>
+            <nav aria-label="Volver a Finix" className={`info-page__mobile-nav fixed top-0 w-full z-50 border-b transition-all ${scrolled ? 'border-border/50 bg-background/80 backdrop-blur-xl' : 'border-transparent bg-transparent'}`}>
                 <div className="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
                     <button
                         onClick={() => navigate(-1)}
@@ -404,29 +407,12 @@ export default function Help() {
                 </div>
             </nav>
 
-            <main className="container mx-auto px-4 md:px-8 pt-24 pb-20 max-w-4xl">
+            <main className="info-page__container container mx-auto px-4 md:px-8 pt-24 pb-20 max-w-4xl">
                 {/* ── Legal nav tabs ── */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 scrollbar-hide border-b border-border/40 text-sm font-semibold">
-                    {LEGAL_NAV.map(nav => {
-                        const isActive = nav.to === '/help';
-                        return (
-                            <Link
-                                key={nav.to}
-                                to={nav.to}
-                                className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${
-                                    isActive
-                                        ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                                }`}
-                            >
-                                {nav.label}
-                            </Link>
-                        );
-                    })}
-                </div>
+                <InformationPageTabs />
 
                 {/* ── Header ── */}
-                <header className="text-center max-w-2xl mx-auto mb-12 space-y-4">
+                <header className="info-page__header text-center max-w-2xl mx-auto mb-12 space-y-4">
                     <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary">
                         <HelpCircle className="w-6 h-6" />
                     </div>
@@ -460,112 +446,120 @@ export default function Help() {
                     </div>
                 </header>
 
-                {/* ── Category filters ── */}
-                <div
-                    className="flex items-center gap-2 overflow-x-auto pb-3 mb-8 scrollbar-hide"
-                    role="tablist"
-                    aria-label="Categorías de ayuda"
-                >
-                    {CATEGORIES.map(cat => {
-                        const active = selectedCategory === cat.id;
-                        return (
-                            <button
-                                key={cat.id}
-                                role="tab"
-                                aria-selected={active}
-                                onClick={() => setSelectedCategory(cat.id)}
-                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                                    active
-                                        ? 'bg-primary text-primary-foreground shadow-sm'
-                                        : 'bg-card border border-border/60 text-muted-foreground hover:text-foreground hover:border-border'
-                                }`}
-                            >
-                                <span role="img" aria-hidden="true">{cat.icon}</span>
-                                {cat.label}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* ── FAQ results info ── */}
-                {searchQuery && (
-                    <p className="text-xs text-muted-foreground mb-4">
-                        {filteredFaqs.length} resultado{filteredFaqs.length !== 1 ? 's' : ''} para &ldquo;{searchQuery}&rdquo;
-                    </p>
-                )}
-
-                {/* ── FAQ list ── */}
-                <div className="space-y-3 mb-16" role="list">
-                    {filteredFaqs.length === 0 ? (
-                        <div className="text-center py-16 rounded-3xl bg-card border border-border/60">
-                            <p className="text-sm font-semibold text-muted-foreground mb-2">
-                                No encontramos resultados para tu búsqueda.
+                <div className="info-page__grid">
+                    <aside className="info-page__sidebar">
+                        {/* ── Category filters ── */}
+                        <div
+                            role="tablist"
+                            aria-label="Categorías de ayuda"
+                            className="flex flex-row flex-wrap gap-2 lg:flex-col lg:gap-1 pb-3 lg:pb-0 mb-6 lg:mb-0 overflow-x-auto scrollbar-hide"
+                        >
+                            {CATEGORIES.map(cat => {
+                                const active = selectedCategory === cat.id;
+                                return (
+                                    <button
+                                        key={cat.id}
+                                        role="tab"
+                                        aria-selected={active}
+                                        onClick={() => setSelectedCategory(cat.id)}
+                                        className={`flex items-center gap-1.5 shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all lg:rounded-lg lg:text-sm lg:font-medium lg:w-full lg:justify-start ${
+                                            active
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'bg-card border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 lg:border-0 lg:bg-transparent'
+                                        }`}
+                                    >
+                                        <span role="img" aria-hidden="true" className="lg:hidden">{cat.icon}</span>
+                                        {cat.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </aside>
+                    <div className="info-page__body">
+                        {/* ── FAQ results info ── */}
+                        {searchQuery && (
+                            <p className="text-xs text-muted-foreground mb-4">
+                                {filteredFaqs.length} resultado{filteredFaqs.length !== 1 ? 's' : ''} para &ldquo;{searchQuery}&rdquo;
                             </p>
-                            <button
-                                onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}
-                                className="text-xs font-bold text-primary hover:underline"
-                            >
-                                Restablecer filtros
-                            </button>
+                        )}
+
+                        {/* ── FAQ list ── */}
+                        <div className="space-y-3 mb-16" role="list">
+                            {filteredFaqs.length === 0 ? (
+                                <div className="text-center py-16 rounded-3xl bg-card border border-border/60">
+                                    <p className="text-sm font-semibold text-muted-foreground mb-2">
+                                        No encontramos resultados para tu búsqueda.
+                                    </p>
+                                    <button
+                                        onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}
+                                        className="text-xs font-bold text-primary hover:underline"
+                                    >
+                                        Restablecer filtros
+                                    </button>
+                                </div>
+                            ) : (
+                                filteredFaqs.map(faq => (
+                                    <div key={faq.id} role="listitem">
+                                        <FaqAccordion faq={faq} />
+                                    </div>
+                                ))
+                            )}
                         </div>
-                    ) : (
-                        filteredFaqs.map(faq => (
-                            <div key={faq.id} role="listitem">
-                                <FaqAccordion faq={faq} />
+
+                        {/* ── Financial disclaimer ── */}
+                        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-5 mb-10">
+                            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 leading-relaxed">
+                                ⚠️ <strong>Aviso importante:</strong> Finix ofrece información general, herramientas y contenido educativo relacionados con finanzas y mercados. La información disponible no constituye asesoramiento financiero, recomendación de inversión, ni una invitación a comprar o vender activos. Las decisiones de inversión son responsabilidad exclusiva del usuario y pueden implicar pérdidas.
+                            </p>
+                        </div>
+
+                        {/* ── Contact card ── */}
+                        <div
+                            id="contacto"
+                            className="rounded-3xl border border-primary/25 bg-gradient-to-br from-card via-card to-primary/5 p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-lg scroll-mt-24"
+                        >
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-primary text-xs font-bold uppercase tracking-wider">
+                                    <Mail className="w-4 h-4" />
+                                    <span>¿No encontraste lo que buscabas?</span>
+                                </div>
+                                <h2 className="text-xl font-heading font-bold">Contactar a Finix</h2>
+                                <p className="text-sm text-muted-foreground max-w-md">
+                                    Nuestro equipo responde generalmente en menos de 24 horas hábiles. Describí tu consulta con el mayor detalle posible.
+                                </p>
                             </div>
-                        ))
-                    )}
-                </div>
-
-                {/* ── Financial disclaimer ── */}
-                <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-5 mb-10">
-                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 leading-relaxed">
-                        ⚠️ <strong>Aviso importante:</strong> Finix ofrece información general, herramientas y contenido educativo relacionados con finanzas y mercados. La información disponible no constituye asesoramiento financiero, recomendación de inversión, ni una invitación a comprar o vender activos. Las decisiones de inversión son responsabilidad exclusiva del usuario y pueden implicar pérdidas.
-                    </p>
-                </div>
-
-                {/* ── Contact card ── */}
-                <div
-                    id="contacto"
-                    className="rounded-3xl border border-primary/25 bg-gradient-to-br from-card via-card to-primary/5 p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-lg scroll-mt-24"
-                >
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-primary text-xs font-bold uppercase tracking-wider">
-                            <Mail className="w-4 h-4" />
-                            <span>¿No encontraste lo que buscabas?</span>
+                            <div className="flex flex-col items-stretch gap-2 sm:items-end shrink-0">
+                                <Link
+                                    to="/info/contact#contacto"
+                                    className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
+                                >
+                                    <Mail className="w-4 h-4" />
+                                    Enviar consulta
+                                </Link>
+                                <a
+                                    href={`mailto:${CONTACT_EMAIL}?subject=Consulta%20sobre%20Finix`}
+                                    className="text-xs text-muted-foreground text-center sm:text-right hover:text-primary transition-colors"
+                                    aria-label={`Enviar un correo a ${CONTACT_EMAIL}`}
+                                >
+                                    También podés escribir a {CONTACT_EMAIL}
+                                </a>
+                            </div>
                         </div>
-                        <h2 className="text-xl font-heading font-bold">Contactar a Finix</h2>
-                        <p className="text-sm text-muted-foreground max-w-md">
-                            Nuestro equipo responde generalmente en menos de 24 horas hábiles. Describí tu consulta con el mayor detalle posible.
-                        </p>
-                    </div>
-                    <div className="flex flex-col items-stretch gap-2 sm:items-end shrink-0">
-                        <Link
-                            to="/info/contact#contacto"
-                            className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
-                        >
-                            <Mail className="w-4 h-4" />
-                            Enviar consulta
-                        </Link>
-                        <a
-                            href={`mailto:${CONTACT_EMAIL}?subject=Consulta%20sobre%20Finix`}
-                            className="text-xs text-muted-foreground text-center sm:text-right hover:text-primary transition-colors"
-                            aria-label={`Enviar un correo a ${CONTACT_EMAIL}`}
-                        >
-                            También podés escribir a {CONTACT_EMAIL}
-                        </a>
+
+                        {/* Investor Wisdom Quote */}
+                        <InvestorQuote investorId="howard-marks" showBackToTop />
+
+                        {/* ── Footer ── */}
+                        <footer className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+                            <p>© {new Date().getFullYear()} Finix. Todos los derechos reservados.</p>
+                            <div className="flex flex-wrap items-center justify-center gap-4">
+                                <Link to="/terms" className="hover:text-foreground transition-colors">Términos</Link>
+                                <Link to="/privacy" className="hover:text-foreground transition-colors">Privacidad</Link>
+                                <Link to="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>
+                            </div>
+                        </footer>
                     </div>
                 </div>
-
-                {/* ── Footer ── */}
-                <footer className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-                    <p>© {new Date().getFullYear()} Finix. Todos los derechos reservados.</p>
-                    <div className="flex flex-wrap items-center justify-center gap-4">
-                        <Link to="/terms" className="hover:text-foreground transition-colors">Términos</Link>
-                        <Link to="/privacy" className="hover:text-foreground transition-colors">Privacidad</Link>
-                        <Link to="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>
-                    </div>
-                </footer>
             </main>
 
             {/* ── Back to top ── */}

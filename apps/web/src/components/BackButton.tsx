@@ -33,7 +33,7 @@ export default function BackButton({
 
     if (to && !disabled) {
         return (
-            <Link to={to} className={cn(baseClass, className)}>
+            <Link to={to} data-finix-button="neutral" className={cn(baseClass, className)}>
                 {content}
             </Link>
         );

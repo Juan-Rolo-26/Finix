@@ -1,6 +1,4 @@
 import { useMemo, useState } from 'react';
-import { ArrowDownRight, ArrowUpRight, Layers3, Target, WalletCards } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { AllocationSummary, MonthlyReturnChart } from '../summary/PortfolioSummaryCharts';
 import { usePortfolioHistory } from './usePortfolioHistory';
@@ -9,11 +7,10 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { AssetPerformanceChart } from './AssetPerformanceChart';
 import { BenchmarkComparisonChart } from './BenchmarkComparisonChart';
 import { PortfolioChart } from './PortfolioChart';
-import { formatPercent, titleCase } from './chartUtils';
+import { titleCase } from './chartUtils';
 import { buildBenchmarkComparisonSeries } from './benchmarkUtils';
 import {
     TIME_RANGES,
-    TIME_RANGE_LABELS,
     type AllocationDatum,
     type AssetPerformanceDatum,
     type ComparisonDatum,
@@ -266,7 +263,6 @@ const EMPTY_MOVEMENTS: DashboardMovement[] = [];
 
 export function PortfolioDashboard({
     portfolioId,
-    portfolioName = 'Portafolio Finix',
     currency = 'USD',
     metrics,
     assets = EMPTY_ASSETS,
@@ -321,97 +317,14 @@ export function PortfolioDashboard({
         };
     }, [assets, metrics, resolvedData, selectedRange, hasHistory]);
 
-    const summaryCards = [
-        {
-            label: 'Retorno del período',
-            value: summary.totalReturn == null ? '—' : formatPercent(summary.totalReturn, 1, true),
-            sublabel: summary.totalReturn == null ? 'Sin historial suficiente' : `${TIME_RANGE_LABELS[selectedRange]} · Aportes y retiros descontados`,
-            positive: (summary.totalReturn ?? 0) >= 0,
-            icon: (summary.totalReturn ?? 0) >= 0 ? ArrowUpRight : ArrowDownRight,
-        },
-        {
-            label: 'Ventaja vs S&P 500',
-            value: summary.isPortfolioEmpty || !summary.benchmarkAvailable ? '—' : `${(summary.benchmarkSpread ?? 0) >= 0 ? '+' : ''}${summary.benchmarkSpread?.toFixed(1)} pts`,
-            sublabel: summary.isPortfolioEmpty
-                ? 'Sin posiciones cargadas'
-                : !summary.benchmarkAvailable
-                    ? 'Esperando datos reales de SPY'
-                    : (summary.benchmarkSpread != null && summary.benchmarkSpread >= 0 ? 'Superando al índice' : 'Por debajo del índice'),
-            positive: summary.isPortfolioEmpty || !summary.benchmarkAvailable ? true : (summary.benchmarkSpread ?? 0) >= 0,
-            icon: Target,
-        },
-        {
-            label: 'Activos en cartera',
-            value: `${summary.holdings}`,
-            sublabel: `${summary.sleeves} clases diversificadas`,
-            positive: true,
-            icon: Layers3,
-        },
-        {
-            label: 'Mejor posición',
-            value: summary.topWinner ? `${summary.topWinner.asset} ${formatPercent(summary.topWinner.return, 1, true)}` : 'N/A',
-            sublabel: summary.topWinner ? 'Activo líder en retorno' : 'Sin posiciones',
-            positive: (summary.topWinner?.return ?? 0) >= 0,
-            icon: ArrowUpRight,
-        },
-    ];
-
     return (
         <div className={cn('min-w-0 space-y-6 w-full', className)}>
-            {/* ── ENCABEZADO DE SECCIÓN ── */}
-            <div className="flex flex-col items-center text-center justify-center gap-2 pt-1">
-                <div className="flex items-center justify-center">
-                    <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-xs font-bold px-3 py-1">
-                        Vista en vivo
-                    </Badge>
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground flex items-center justify-center gap-2.5 text-center">
-                    <WalletCards className="w-5 h-5 text-primary" />
-                    <span>Métricas y Análisis de Rendimiento</span>
-                </h3>
-                <p className="text-base text-muted-foreground mt-0.5 text-center max-w-xl mx-auto">
-                    Evolución patrimonial y comparativa de mercado de {portfolioName}
-                </p>
-            </div>
-
             {historyNotice && (
-                <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-xs sm:text-sm text-blue-300 flex items-center justify-center text-center gap-2.5 backdrop-blur-sm max-w-2xl mx-auto">
-                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" />
+                <div className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                     <span>{historyNotice}</span>
                 </div>
             )}
-
-            {/* ── KPI METRICS STRIP (4 TARJETAS SIMÉTRICAS QUE OCUPAN TODO EL ANCHO) ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4 sm:gap-5 w-full">
-                {summaryCards.map((item) => (
-                    <div
-                        key={item.label}
-                        className="rounded-2xl border border-border/70 bg-card/80 hover:bg-card/95 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 p-4 sm:p-5 backdrop-blur-md relative overflow-hidden group flex flex-col items-center text-center"
-                    >
-                        <div className="flex items-center justify-center gap-2 mb-2 w-full text-center">
-                            <span className="text-sm font-semibold text-muted-foreground text-center">
-                                {item.label}
-                            </span>
-                            <div className={cn(
-                                "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border transition-transform group-hover:scale-110",
-                                item.positive 
-                                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" 
-                                    : "bg-rose-500/10 border-rose-500/20 text-rose-500"
-                            )}>
-                                <item.icon className="h-3.5 w-3.5" />
-                            </div>
-                        </div>
-
-                        <div className={cn('text-3xl sm:text-4xl font-bold tracking-tight tabular-nums text-center', item.positive ? 'text-emerald-500' : 'text-rose-500')}>
-                            {item.value}
-                        </div>
-
-                        <p className="mt-2 text-sm text-muted-foreground font-medium text-center">
-                            {item.sublabel}
-                        </p>
-                    </div>
-                ))}
-            </div>
 
             {/* ── EVOLUCIÓN HISTÓRICA DEL PORTAFOLIO (ANCHO COMPLETO) ── */}
             <div className="w-full">

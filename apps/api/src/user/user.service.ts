@@ -9,9 +9,6 @@ import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 @Injectable()
 export class UserService {
-    private topTradersCache: { data: any[]; fetchedAt: number } | null = null;
-    private readonly topTradersTtlMs = 5 * 60 * 1000; // 5 minutes
-
     constructor(
         private prisma: PrismaService,
         private notificationsService: NotificationsService,
@@ -666,7 +663,6 @@ export class UserService {
                 select: this.getProfileSelect(),
             });
             this.searchCache.clear();
-            this.topTradersCache = null;
             return this.normalizeUserMedia(updated);
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -698,6 +694,9 @@ export class UserService {
             throw new NotFoundException('Usuario no encontrado');
         }
 
+        if (!user.password?.startsWith('$argon2')) {
+            throw new BadRequestException('Esta cuenta no tiene una contraseña Finix. Usá "Olvidé mi contraseña" para crearla.');
+        }
         const isValidPassword = await argon2.verify(user.password, currentPassword);
         if (!isValidPassword) {
             throw new UnauthorizedException('La contraseña actual es incorrecta');
@@ -882,9 +881,8 @@ export class UserService {
     }
 
     async getTopTraders() {
-        if (this.topTradersCache && Date.now() - this.topTradersCache.fetchedAt < this.topTradersTtlMs) {
-            return this.topTradersCache.data;
-        }
+        // Always apply current privacy and visibility settings in PostgreSQL.
+        // An old process cache can expose a recently hidden profile for minutes.
 
         const traders = await this.prisma.user.findMany({
             where: {
@@ -914,7 +912,6 @@ export class UserService {
             avatarUrl: normalizeStoredUploadUrl(trader.avatarUrl) ?? null,
         }));
 
-        this.topTradersCache = { data: result, fetchedAt: Date.now() };
         return result;
     }
 

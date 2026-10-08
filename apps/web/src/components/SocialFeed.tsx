@@ -173,29 +173,98 @@ function ActionBtn({
     );
 }
 
+/* ── Quick Feed Pill Filters ────────────────────────────────────────── */
+const QUICK_FILTERS = [
+    { key: 'all', label: 'Todos' },
+    { key: 'analysis', label: '#Análisis 📈' },
+    { key: 'news', label: '#Noticias 📰' },
+    { key: 'opinion', label: '#Debate 💬' },
+    { key: 'BTC', label: '$BTC' },
+    { key: 'NVDA', label: '$NVDA' },
+    { key: 'AAPL', label: '$AAPL' },
+    { key: 'SPY', label: '$SPY' },
+] as const;
+
+type QuickFilterKey = typeof QUICK_FILTERS[number]['key'];
+
 /* ── Main Feed ──────────────────────────────────────────────────── */
 export default function SocialFeed({ initialPosts, isLoading = false, onPostCreated }: SocialFeedProps) {
     const [posts, setPosts] = useState<Post[]>(initialPosts);
     const [prevInitialPosts, setPrevInitialPosts] = useState(initialPosts);
+    const [activeFilter, setActiveFilter] = useState<QuickFilterKey>('all');
+
     if (initialPosts !== prevInitialPosts) { setPrevInitialPosts(initialPosts); setPosts(initialPosts); }
 
     const handlePostCreated = (post: Post) => { setPosts([post, ...posts]); onPostCreated(post); };
 
+    const filteredPosts = posts.filter(post => {
+        if (activeFilter === 'all') return true;
+        const content = (post.content || '').toLowerCase();
+        const tickers = (post.tickers || '').toLowerCase();
+        const assetSymbol = (post.assetSymbol || '').toLowerCase();
+        if (activeFilter === 'analysis') {
+            return post.type === 'analysis' || content.includes('#análisis') || content.includes('#analisis');
+        }
+        if (activeFilter === 'news') {
+            return post.type === 'news' || content.includes('#noticia') || content.includes('#noticias');
+        }
+        if (activeFilter === 'opinion') {
+            return post.type === 'opinion' || post.type === 'question' || content.includes('#debate') || content.includes('#opinion');
+        }
+        const keyLower = activeFilter.toLowerCase();
+        return content.includes(`$${keyLower}`) || content.includes(keyLower) || tickers.includes(keyLower) || assetSymbol.includes(keyLower);
+    });
+
     return (
-        <div className="space-y-3">
+        <div className="space-y-3.5">
             <CreatePostWidget onPostCreated={handlePostCreated} />
 
+            {/* Circular Quick Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-hide select-none">
+                {QUICK_FILTERS.map(f => {
+                    const isSelected = activeFilter === f.key;
+                    return (
+                        <button
+                            key={f.key}
+                            type="button"
+                            onClick={() => setActiveFilter(f.key)}
+                            className={`px-3 py-1 rounded-full text-[12px] font-semibold whitespace-nowrap border transition-all duration-150 cursor-pointer ${
+                                isSelected
+                                    ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                                    : 'bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/80 border-border/50'
+                            }`}
+                        >
+                            {f.label}
+                        </button>
+                    );
+                })}
+            </div>
+
             <div className="space-y-2.5">
-                {isLoading && posts.length === 0 ? (
+                {isLoading && filteredPosts.length === 0 ? (
                     <div className="flex flex-col gap-2.5">
                         <PostSkeleton /> <PostSkeleton /> <PostSkeleton />
                     </div>
-                ) : posts.length === 0 ? (
-                    <EmptyFeed />
+                ) : filteredPosts.length === 0 ? (
+                    activeFilter !== 'all' ? (
+                        <div className="p-8 text-center rounded-2xl border border-dashed border-border/60 bg-secondary/10 space-y-2">
+                            <p className="text-sm font-semibold text-foreground">No encontramos publicaciones con este filtro</p>
+                            <p className="text-xs text-muted-foreground">Sé el primero en compartir un post o volvé a ver todos.</p>
+                            <button
+                                type="button"
+                                onClick={() => setActiveFilter('all')}
+                                className="mt-2 px-3 py-1 rounded-full text-xs font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20"
+                            >
+                                Mostrar todos
+                            </button>
+                        </div>
+                    ) : (
+                        <EmptyFeed />
+                    )
                 ) : (
                     <AnimatePresence initial={false}>
                         <div className="flex flex-col gap-2.5">
-                            {posts.map((post, i) => (
+                            {filteredPosts.map((post, i) => (
                                 <motion.div
                                     key={post.id}
                                     initial={{ opacity: 0, y: 10 }}

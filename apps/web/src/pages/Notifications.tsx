@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Bell, Heart, MessageSquare, TrendingUp, UserPlus, Loader2, CheckCheck, Settings, ShieldAlert, Sparkles, Building2, Repeat } from 'lucide-react';
@@ -39,9 +39,14 @@ export default function Notifications() {
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [activeTab, setActiveTab] = useState('ALL');
     const [nextCursor, setNextCursor] = useState<string | null>(null);
+    const [error, setError] = useState('');
+    const [isMarkingRead, setIsMarkingRead] = useState(false);
+    const loadSequence = useRef(0);
 
     const loadNotifications = async (cursor?: string | null, tab = activeTab) => {
+        const sequence = ++loadSequence.current;
         try {
+            setError('');
             const isInitial = !cursor;
             if (isInitial) setIsLoading(true);
             else setIsLoadingMore(true);
@@ -52,20 +57,24 @@ export default function Notifications() {
             if (cursor) url += `&cursor=${cursor}`;
 
             const res = await apiFetch(url);
-            if (res.ok) {
-                const data = await res.json();
+            if (!res.ok) throw new Error('No se pudieron cargar las notificaciones.');
+            const data = await res.json();
+            if (!Array.isArray(data?.items)) throw new Error('No se pudieron cargar las notificaciones.');
+            if (sequence === loadSequence.current) {
                 if (isInitial) {
-                    setNotifications(data.items || []);
+                    setNotifications(data.items);
                 } else {
-                    setNotifications(prev => [...prev, ...(data.items || [])]);
+                    setNotifications(prev => [...prev, ...data.items]);
                 }
                 setNextCursor(data.nextCursor || null);
             }
-        } catch (e) {
-            console.error('Error loading notifications:', e);
+        } catch {
+            if (sequence === loadSequence.current) setError('No se pudieron cargar las notificaciones. Intentá nuevamente.');
         } finally {
-            setIsLoading(false);
-            setIsLoadingMore(false);
+            if (sequence === loadSequence.current) {
+                setIsLoading(false);
+                setIsLoadingMore(false);
+            }
         }
     };
 
@@ -73,26 +82,40 @@ export default function Notifications() {
         setNotifications([]);
         setNextCursor(null);
         loadNotifications(null, activeTab);
+        return () => { loadSequence.current++; };
     }, [activeTab]);
 
     const handleMarkAllRead = async () => {
+        if (isMarkingRead) return;
+        const ids = new Set(notifications.map(n => n.id));
+        setIsMarkingRead(true);
+        setError('');
         try {
-            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             let body: any = {};
             if (activeTab !== 'ALL' && activeTab !== 'UNREAD') {
                 body.category = activeTab;
             }
-            await apiFetch('/notifications/read-all', {
+            const response = await apiFetch('/notifications/read-all', {
                 method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
                 body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined
             });
-        } catch (e) { }
+            if (!response.ok) throw new Error('No se pudieron marcar las notificaciones como leídas.');
+            setNotifications(prev => prev.map(n => ids.has(n.id) ? { ...n, isRead: true } : n));
+            window.dispatchEvent(new Event('finix:unread-refresh'));
+        } catch {
+            setError('No se pudieron marcar las notificaciones como leídas. Intentá nuevamente.');
+        } finally { setIsMarkingRead(false); }
     };
 
     const handleNotificationClick = async (n: NotificationItem) => {
         if (!n.isRead) {
-            setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, isRead: true } : x));
-            apiFetch(`/notifications/${n.id}/read`, { method: 'PATCH' }).catch(() => { });
+            try {
+                const response = await apiFetch(`/notifications/${n.id}/read`, { method: 'PATCH' });
+                if (!response.ok) throw new Error('No se pudo guardar la lectura.');
+                setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, isRead: true } : x));
+                window.dispatchEvent(new Event('finix:unread-refresh'));
+            } catch { setError('No se pudo marcar la notificación como leída. Intentá nuevamente.'); }
         }
         if (n.link) navigate(n.link);
     };
@@ -113,6 +136,7 @@ export default function Notifications() {
                         {notifications.length > 0 && notifications.some(n => !n.isRead) && (
                             <button
                                 onClick={handleMarkAllRead}
+                                disabled={isMarkingRead}
                                 className="w-8 h-8 md:w-auto md:px-3 md:h-9 flex items-center justify-center gap-2 rounded-xl transition-all"
                                 style={{ color: 'hsl(var(--primary))', background: 'hsl(var(--primary) / 0.1)' }}
                                 title="Marcar leídas"
@@ -132,13 +156,14 @@ export default function Notifications() {
                 </div>
 
                 {/* Tabs / Filters */}
-                <div className="flex items-center gap-2 overflow-x-auto scb-hidden pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+                <div className="desktop-filter-bar flex items-center gap-2 overflow-x-auto scb-hidden pb-1 -mx-4 px-4 md:mx-0 md:px-0">
                     {CATEGORIES.map(c => {
                         const isActive = activeTab === c.id;
                         return (
                             <button
                                 key={c.id}
                                 onClick={() => setActiveTab(c.id)}
+                                aria-pressed={isActive}
                                 className="relative px-3.5 py-1.5 rounded-full text-[13px] font-semibold flex-shrink-0 transition-colors z-10"
                                 style={{
                                     color: isActive ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))',
@@ -161,11 +186,15 @@ export default function Notifications() {
 
             {/* List */}
             <div className="flex-1 px-4 md:px-0 mt-4 pb-20">
+                {error && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+                    <span>{error}</span>
+                    <button type="button" className="underline" onClick={() => void loadNotifications(null, activeTab)}>Reintentar</button>
+                </div>}
                 {isLoading ? (
                     <div className="flex justify-center items-center py-32">
                         <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'hsl(var(--muted-foreground))' }} />
                     </div>
-                ) : groups.length === 0 ? (
+                ) : groups.length === 0 && !error ? (
                     <div className="flex flex-col items-center justify-center py-32 text-center">
                         <div className="w-16 h-16 rounded-3xl flex items-center justify-center mb-4" style={{ background: 'hsl(var(--muted) / 0.5)' }}>
                             <Bell className="w-7 h-7" style={{ color: 'hsl(var(--muted-foreground))' }} />

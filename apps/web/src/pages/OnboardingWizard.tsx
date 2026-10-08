@@ -358,7 +358,7 @@ export default function OnboardingWizard() {
             }
             if (step >= 2) {
                 // Privacy saved via /me/privacy
-                await apiFetch('/me/privacy', {
+                const privacyResponse = await apiFetch('/me/privacy', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -368,9 +368,10 @@ export default function OnboardingWizard() {
                         showStats: data.showStats,
                     }),
                 });
+                if (!privacyResponse.ok) throw new Error('No se pudo guardar la privacidad.');
             }
             if (step >= 3) {
-                await apiFetch('/me/preferences', {
+                const preferencesResponse = await apiFetch('/me/preferences', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -381,26 +382,30 @@ export default function OnboardingWizard() {
                         showAdvancedMetrics: data.showAdvancedMetrics,
                     }),
                 });
+                if (!preferencesResponse.ok) throw new Error('No se pudieron guardar las preferencias.');
             }
 
-            await apiFetch('/me/onboarding', {
+            const onboardingResponse = await apiFetch('/me/onboarding', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
+            if (!onboardingResponse.ok) throw new Error('No se pudo guardar la configuración.');
 
             if (completed) {
                 updateUser({ onboardingCompleted: true } as any);
             }
+            return true;
         } catch {
-            setSaveError('No se pudo guardar. Reintentando...');
+            setSaveError('No se pudo guardar. Intentá nuevamente para continuar.');
+            return false;
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleNext = async () => {
-        await saveStep(currentStep + 1);
+        if (!await saveStep(currentStep + 1)) return;
         if (currentStep < STEPS.length - 1) {
             setCurrentStep((s) => s + 1);
         }
@@ -411,12 +416,12 @@ export default function OnboardingWizard() {
     };
 
     const handleSkip = async () => {
-        await saveStep(currentStep + 1);
+        if (!await saveStep(currentStep + 1)) return;
         setCurrentStep((s) => s + 1);
     };
 
     const handleFinish = async () => {
-        await saveStep(STEPS.length - 1, true);
+        if (!await saveStep(STEPS.length - 1, true)) return;
         const requestedRedirect = sessionStorage.getItem('postOnboardingRedirect');
         sessionStorage.removeItem('postOnboardingRedirect');
         const redirectTarget = requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')

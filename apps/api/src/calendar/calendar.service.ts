@@ -20,23 +20,7 @@ import { isLegacyEconomicTemplate, isLegacyEarningsTemplate } from './calendar-l
 @Injectable()
 export class CalendarService {
     private readonly logger = new Logger(CalendarService.name);
-    private earningsRefresh: Promise<unknown> | null = null;
-    private dividendsRefresh: Promise<unknown> | null = null;
-
-    private async refreshCorporateEvents(category?: string) {
-        const pending: Promise<unknown>[] = [];
-        if (!category || category === 'ALL' || category === 'EARNINGS') {
-            this.earningsRefresh ??= this.providerService.fetchTradingViewSP500Earnings({ forceRefresh: true })
-                .finally(() => { this.earningsRefresh = null; });
-            pending.push(this.earningsRefresh);
-        }
-        if (!category || category === 'ALL' || category === 'DIVIDEND') {
-            this.dividendsRefresh ??= this.providerService.fetchTradingViewSP500Dividends({ forceRefresh: true })
-                .finally(() => { this.dividendsRefresh = null; });
-            pending.push(this.dividendsRefresh);
-        }
-        await Promise.all(pending);
-    }
+    private readonly homeSync = new TtlCache<unknown>(2);
 
     constructor(
         private readonly prisma: PrismaService,
@@ -67,7 +51,7 @@ export class CalendarService {
         const { mondayStr, fridayStr } = this.getCurrentWeekBounds();
 
         // Check if we have events in DB for the week
-        let [economicEvents, earningsEvents] = await Promise.all([
+        let [economicEvents, earningsEvents, liveEconomic, liveEarnings] = await Promise.all([
             this.prisma.marketCalendarEvent.findMany({
                 where: {
                     date: { gte: mondayStr, lte: fridayStr },
@@ -88,28 +72,20 @@ export class CalendarService {
                     { date: 'asc' },
                 ],
             }),
+            this.providerService.getUpcomingEconomicEvents(mondayStr, fridayStr),
+            this.providerService.fetchTradingViewSP500Earnings({ from: mondayStr, to: fridayStr }),
         ]);
 
         // Auto-seed or sync if database is empty for this week
         if (economicEvents.length === 0 && earningsEvents.length === 0) {
-            await this.syncWeeklyData(mondayStr, fridayStr);
-            [economicEvents, earningsEvents] = await Promise.all([
-                this.prisma.marketCalendarEvent.findMany({
-                    where: { date: { gte: mondayStr, lte: fridayStr }, isPublished: true },
-                    orderBy: [{ marketImpactScore: 'desc' }, { date: 'asc' }],
-                }),
-                this.prisma.marketEarningsEvent.findMany({
-                    where: { date: { gte: mondayStr, lte: fridayStr }, isPublished: true },
-                    orderBy: [{ earningsImpactScore: 'desc' }, { date: 'asc' }],
-                }),
-            ]);
+            // Live events below can render immediately. Persisting the entire
+            // week (including historical reports/dividends) belongs in background.
+            void this.homeSync.getOrLoad(`${mondayStr}:${fridayStr}`, 60000,
+                () => this.syncWeeklyData(mondayStr, fridayStr))
+                .catch(() => this.logger.warn('No se pudo sincronizar la semana en segundo plano'));
         }
 
         economicEvents = economicEvents.filter(event => !isLegacyEconomicTemplate(event));
-        const [liveEconomic, liveEarnings] = await Promise.all([
-            this.providerService.getUpcomingEconomicEvents(mondayStr, fridayStr),
-            this.providerService.fetchTradingViewSP500Earnings({ from: mondayStr, to: fridayStr }),
-        ]);
         const eventKey = (event: any) => JSON.stringify([event.country, event.date, event.time || '', event.title.trim().toLowerCase()]);
         const merged = new Map<string, (typeof economicEvents)[number]>(economicEvents.map(event => [eventKey(event), event]));
         for (const event of liveEconomic) {
@@ -284,9 +260,17 @@ export class CalendarService {
             sundayStr = sunday.toISOString().substring(0, 10);
         }
 
-        // Fetch current provider data without waiting for the scheduled DB sync.
-        // Concurrent page loads share the same in-flight provider request.
-        await this.refreshCorporateEvents(params.category);
+        // Begin independent providers together with DB reads. Respect the shared
+        // provider cache instead of rescanning 20,000 symbols on every navigation.
+        const countries = params.category === 'US' || params.category === 'AR' ? [params.category] : ['US', 'AR'];
+        const liveData = Promise.all([
+            !isAll && params.category !== 'EARNINGS' && params.category !== 'DIVIDEND'
+                ? this.providerService.getUpcomingEconomicEvents(mondayStr, sundayStr, countries) : [],
+            params.category !== 'US' && params.category !== 'AR' && params.category !== 'DIVIDEND'
+                ? this.providerService.fetchTradingViewSP500Earnings({ from: mondayStr, to: sundayStr }) : [],
+            params.category !== 'US' && params.category !== 'AR' && params.category !== 'EARNINGS'
+                ? this.providerService.fetchTradingViewSP500Dividends({ from: mondayStr, to: sundayStr }) : [],
+        ]);
 
         // Fetch economic and earnings
         const economicWhere: any = {
@@ -306,7 +290,7 @@ export class CalendarService {
             earningsWhere.date = { gte: mondayStr, lte: sundayStr };
         }
 
-        let [dbEconomic, dbEarnings] = await Promise.all([
+        const [databaseEvents, [liveEconomic, tvEarnings, tvDivs]] = await Promise.all([Promise.all([
             (params.category === 'EARNINGS' || params.category === 'DIVIDEND') ? [] : this.prisma.marketCalendarEvent.findMany({
                 where: economicWhere,
                 orderBy: [{ date: 'asc' }, { time: 'asc' }, { marketImpactScore: 'desc' }],
@@ -315,16 +299,14 @@ export class CalendarService {
                 where: earningsWhere,
                 orderBy: [{ date: 'asc' }, { earningsImpactScore: 'desc' }],
             }),
-        ]);
+        ]), liveData]);
+        let [dbEconomic, dbEarnings] = databaseEvents;
 
         const excludedLegacyEvents = dbEconomic.filter(isLegacyEconomicTemplate).length;
         dbEconomic = dbEconomic.filter(event => !isLegacyEconomicTemplate(event));
         dbEarnings = dbEarnings.filter(event => !isLegacyEarningsTemplate(event));
         let economicData: CalendarWeekResponse['economicData'];
         if (!isAll && params.category !== 'EARNINGS' && params.category !== 'DIVIDEND') {
-            const countries = params.category === 'US' || params.category === 'AR'
-                ? [params.category] : ['US', 'AR'];
-            const liveEconomic = await this.providerService.getUpcomingEconomicEvents(mondayStr, sundayStr, countries);
             economicData = {
                 ...this.providerService.getEconomicFeedStatus(mondayStr, sundayStr, countries),
                 excludedLegacyEvents,
@@ -346,7 +328,6 @@ export class CalendarService {
         }
 
         if (params.category !== 'US' && params.category !== 'AR' && params.category !== 'DIVIDEND') {
-            const tvEarnings = await this.providerService.fetchTradingViewSP500Earnings({ from: mondayStr, to: sundayStr });
             const existingByKey = new Map<string, number>(dbEarnings.map((e, index) => [`${tickerKey(e.ticker)}|${e.date}`, index]));
             for (const event of tvEarnings) {
                 const key = `${tickerKey(event.ticker)}|${event.date}`;
@@ -383,7 +364,6 @@ export class CalendarService {
                 // Table might not exist yet
             }
 
-            const tvDivs = await this.providerService.fetchTradingViewSP500Dividends({ from: mondayStr, to: sundayStr });
             const dividendKey = (d: any) => `${String(d.ticker).trim().toUpperCase().replace(/\./g, '-')}|${d.exDate || ''}|${d.paymentDate || ''}|${d.amount ?? ''}`;
             const existingByKey = new Map(dbDividends.map((d, index) => [dividendKey(d), index]));
             for (const event of tvDivs) {

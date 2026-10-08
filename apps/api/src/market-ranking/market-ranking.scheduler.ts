@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { isLocalMode } from '../config/local-mode';
 import { MarketRankingService } from './services/market-ranking.service';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class MarketRankingScheduler implements OnModuleInit {
      * Si no existe o la base de datos está vacía, se ejecuta inmediatamente.
      */
     async onModuleInit() {
+        if (isLocalMode()) return;
         this.logger.log('Inicializando MarketRankingScheduler. Verificando frescura de rankings...');
         setTimeout(async () => {
             try {

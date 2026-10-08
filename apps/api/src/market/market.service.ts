@@ -1,6 +1,7 @@
 import { TtlCache } from '../common/ttl-cache';
 import { resolveMarketIdentity } from './market-symbol';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { ReadCacheService } from '../cache/read-cache.service';
 import { Cron } from '@nestjs/schedule';
 import { mkdir, readFile, writeFile, rename } from 'fs/promises';
 import { join } from 'path';
@@ -154,7 +155,7 @@ export class MarketService {
     private readonly premarketTtlMs = 60 * 1000; // 60 seconds – matches frontend refresh interval
     private readonly finvizDefaultBaseScript = '/assets/dist-legacy/map_base_sec.v1.6b264ef1.js';
 
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService, @Optional() private cache?: ReadCacheService) { }
 
     private stripHtml(value: string) {
         return value.replace(/\u003c[^\u003e]*\u003e/g, '').trim();
@@ -1152,6 +1153,11 @@ export class MarketService {
     }
 
     async getDashboard(): Promise<MarketDashboardPayload> {
+        if (this.cache) return this.cache.remember('market-dashboard', 5000, () => this.buildDashboard());
+        return this.buildDashboard();
+    }
+
+    private async buildDashboard(): Promise<MarketDashboardPayload> {
         const definitions = this.getDashboardDefinitions();
         const [quotes, dollars, community] = await Promise.all([
             this.getQuotes(definitions.map((item) => item.symbol)),

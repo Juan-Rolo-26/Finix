@@ -30,8 +30,6 @@ jobs:
       - run: npm run typecheck -w web --if-present
         env:
           VITE_API_URL: /api
-          VITE_SUPABASE_URL: https://placeholder.supabase.co
-          VITE_SUPABASE_ANON_KEY: placeholder
 
   typecheck-api:
     name: TypeScript — API
@@ -96,8 +94,6 @@ jobs:
       DATABASE_URL: postgresql://test:test@localhost:5432/finix_test
       DIRECT_URL: postgresql://test:test@localhost:5432/finix_test
       JWT_SECRET: test_jwt_secret_for_ci_only
-      SUPABASE_URL: https://placeholder.supabase.co
-      SUPABASE_JWT_SECRET: test_secret
       NODE_ENV: test
     services:
       postgres:
@@ -140,8 +136,6 @@ jobs:
         run: npm test -- --passWithNoTests
         env:
           VITE_API_URL: /api
-          VITE_SUPABASE_URL: https://placeholder.supabase.co
-          VITE_SUPABASE_ANON_KEY: placeholder
 
   # ──────────────────────────────────────────────────────────────────────────
   # 3. BUILD
@@ -180,8 +174,6 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: /api
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/upload-artifact@v4
         with:
           name: web-dist

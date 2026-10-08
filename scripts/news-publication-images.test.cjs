@@ -27,32 +27,32 @@ function slotService(article = null, foundPhoto = undefined) {
     return { service, writes, lookedUp };
 }
 
-test('publishing a text-only article saves a related photo before it becomes visible', async () => {
+test('publishing text-only news does not require or invent a photo', async () => {
     const { service, writes } = slotService({ id: 'old', url: articleUrl, title: 'Bitcoin sube', imageUrl: null });
     await service.publishSlot('slot');
-    assert.deepEqual(writes[0].data, { status: 'PUBLISHED', isPublished: true, imageUrl: resolveNewsImage('Bitcoin sube') });
+    assert.deepEqual(writes[0].data, { status: 'PUBLISHED', isPublished: true, imageUrl: null });
 });
 
-test('a missing photo is recovered and saved in the same update that publishes the article', async () => {
+test('publishing text-only news does not fetch a photograph', async () => {
     const { service, writes, lookedUp } = slotService({ id: 'old', url: articleUrl, imageUrl: null }, photo);
     await service.publishSlot('slot');
-    assert.deepEqual(lookedUp, [articleUrl]);
-    assert.deepEqual(writes[0].data, { status: 'PUBLISHED', isPublished: true, imageUrl: photo });
+    assert.deepEqual(lookedUp, []);
+    assert.deepEqual(writes[0].data, { status: 'PUBLISHED', isPublished: true, imageUrl: null });
 });
 
-test('manual uploads without a photo get one automatically for drafts and immediate publication', async () => {
+test('manual uploads allow missing photos in drafts and immediate publication', async () => {
     for (const status of ['DRAFT', 'PUBLISHED']) {
         const { service, writes } = slotService();
         await service.assignArticleToSlot('slot', { url: articleUrl, title: 'Earnings', status });
-        assert.ok(isIllustrativeNewsImage(writes[0].create.imageUrl));
+        assert.equal(writes[0].create.imageUrl, null);
         assert.equal(writes[0].update.imageUrl, writes[0].create.imageUrl);
         assert.equal(writes[0].create.isPublished, status === 'PUBLISHED');
     }
 });
 
 test('manual upload persists the original photo rather than relying on a card fallback', async () => {
-    const { service, writes } = slotService(null, '/news/photos/earnings.jpg');
-    await service.assignArticleToSlot('slot', { url: articleUrl, title: 'Earnings', status: 'PUBLISHED' });
+    const { service, writes } = slotService();
+    await service.assignArticleToSlot('slot', { url: articleUrl, title: 'Earnings', status: 'PUBLISHED', imageUrl: '/news/photos/earnings.jpg' });
     assert.equal(writes[0].create.imageUrl, 'https://publisher.com/news/photos/earnings.jpg');
     assert.equal(writes[0].update.imageUrl, writes[0].create.imageUrl);
     assert.equal(writes[0].create.isPublished, true);
@@ -61,8 +61,8 @@ test('manual upload persists the original photo rather than relying on a card fa
 test('replacing a story does not borrow the photo from the previous story', async () => {
     const { service, writes, lookedUp } = slotService({ id: 'previous', url: 'https://publisher.com/other', imageUrl: photo });
     await service.assignArticleToSlot('slot', { url: articleUrl, title: 'New story', status: 'PUBLISHED' });
-    assert.deepEqual(lookedUp, [articleUrl]);
-    assert.ok(isIllustrativeNewsImage(writes[0].create.imageUrl));
+    assert.deepEqual(lookedUp, []);
+    assert.equal(writes[0].create.imageUrl, null);
     assert.notEqual(writes[0].create.imageUrl, photo);
 });
 
@@ -95,13 +95,13 @@ const record = imageUrl => ({
         source: { id: 'source', name: 'Publisher', baseUrl: 'https://publisher.com' }, category,
 });
 
-test('automatic persistence always saves a photo and uses the category when the title is unspecific', async () => {
+test('automatic persistence accepts photo-less news and preserves actual source photographs', async () => {
     for (const image of [undefined, 'javascript:invalid', resolveNewsImage('Generic story'), photo]) {
         const { service, writes } = syncService();
         const result = await service.persistArticles([record(image)], [category]);
         assert.equal(result.created, 1);
         assert.equal(writes.length, 1);
-        assert.equal(writes[0].data.imageUrl, image === photo ? photo : resolveNewsImage('Earnings report', 'cripto'));
+        assert.equal(writes[0].data.imageUrl, image === photo ? photo : null);
     }
 });
 
@@ -133,28 +133,14 @@ test('the legacy manual import adds a related photo before creating a text-only 
     assert.equal(saved.create.imageUrl, resolveNewsImage('Bitcoin sube', 'cripto'));
 });
 
-test('category selection chooses other news with original photos and fills remaining spaces with illustrated news', async () => {
-    for (const originalCount of [0, 2, 5]) {
-        const service = Object.create(NewsSyncService.prototype);
-        const rows = [
-            ...Array.from({ length: originalCount }, (_, i) => ({ id: `original-${i}`, imageUrl: photo + `?${i}`, score: 10 - i })),
-            ...Array.from({ length: 5 }, (_, i) => ({ id: `illustrated-${i}`, imageUrl: NEWS_ILLUSTRATION_URLS[i], score: 100 - i })),
-            { id: 'missing-photo', imageUrl: null, score: 1000 },
-        ];
-        let requests = 0;
-        service.prisma = { newsArticle: { findMany: async args => {
-            requests++;
-            return rows.filter(row => row.imageUrl && (args.where.imageUrl.notIn
-                ? !args.where.imageUrl.notIn.includes(row.imageUrl)
-                : args.where.imageUrl.in.includes(row.imageUrl)))
-                .sort((a, b) => b.score - a.score).slice(0, args.take).map(row => ({ id: row.id }));
-        } } };
-        const selected = await service.findArticlesWithPhotos(category.id);
-        assert.equal(selected.length, 5);
-        assert.deepEqual(selected.slice(0, originalCount).map(row => row.id), Array.from({ length: originalCount }, (_, i) => `original-${i}`));
-        assert.ok(selected.slice(originalCount).every(row => row.id.startsWith('illustrated-')));
-        assert.equal(requests, originalCount === 5 ? 1 : 2);
-    }
+test('selection ranks ten localized stories by relevance and freshness regardless of photos', async () => {
+    const service = Object.create(NewsSyncService.prototype);
+    const rows = Array.from({ length: 16 }, (_, index) => ({ id: String(index), title: 'Las acciones suben', publishedAt: new Date(), relevanceScore: index, imageUrl: index % 2 ? photo : null }));
+    service.prisma = { newsArticle: { findMany: async args => { assert.equal(args.where.imageUrl, undefined); return rows; } } };
+    service.slotsService = { toSpanishArticle: async article => article.id === '15' ? null : article };
+    const selected = await service.findBestArticles(category.id);
+    assert.equal(selected.length, 10);
+    assert.deepEqual(selected.map(article => article.id), Array.from({ length: 10 }, (_, index) => String(14 - index)));
 });
 
 test('a source outage does not create mock articles with generic stock photos', async () => {

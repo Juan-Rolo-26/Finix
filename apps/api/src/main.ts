@@ -2,11 +2,13 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { PrismaService } from './prisma.service';
+import { ReadCacheService } from './cache/read-cache.service';
 import * as bodyParser from 'body-parser';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import { isAllowedOrigin } from './config/allowed-origins';
 import helmet from 'helmet';
+import { metricsMiddleware } from './common/request-metrics';
 
 const logger = new Logger('Bootstrap');
 
@@ -27,6 +29,7 @@ async function bootstrap() {
     });
 
     app.getHttpAdapter().getInstance().set('trust proxy', 1);
+    app.use(metricsMiddleware);
 
     // ── Body parsers ─────────────────────────────────────────────────────────
     // Stripe webhook MUST receive raw body for signature validation.
@@ -82,10 +85,12 @@ async function bootstrap() {
     httpAdapter.get('/ready', async (_req, res) => {
         const prisma = app.get(PrismaService);
         const databaseReady = await prisma.isDatabaseReady();
+        const redisReady = await app.get(ReadCacheService).isReady();
 
-        res.status(databaseReady ? 200 : 503).json({
-            status: databaseReady ? 'ready' : 'not_ready',
+        res.status(databaseReady && redisReady ? 200 : 503).json({
+            status: databaseReady && redisReady ? 'ready' : 'not_ready',
             database: databaseReady ? 'connected' : 'unavailable',
+            redis: process.env.REDIS_URL ? (redisReady ? 'connected' : 'unavailable') : 'disabled',
         });
     });
 
@@ -103,7 +108,7 @@ async function bootstrap() {
     app.enableShutdownHooks();
 
     const port = Number(process.env.PORT || 3010);
-    await app.listen(port, '0.0.0.0');
+    await app.listen(port, process.env.API_BIND_HOST || '0.0.0.0');
 
     console.log('\n\n=============================================');
     console.log('===> LEVANTANDO BACKEND LOCAL <===');

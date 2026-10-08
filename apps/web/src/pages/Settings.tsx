@@ -1,3 +1,4 @@
+import { formatArs } from '@/lib/plans';
 import FreeAccessNotice from '@/components/FreeAccessNotice';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { useEffect, useCallback, useRef, useState } from 'react';
@@ -42,7 +43,7 @@ import {
     Camera,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AvatarUpload from '@/components/AvatarUpload';
 import LocationQuickSelect from '@/components/LocationQuickSelect';
 import FinancialVerificationTab from '@/components/settings/FinancialVerificationTab';
@@ -159,6 +160,9 @@ const SectionHeader = ({ icon, title, description }: { icon: React.ReactNode; ti
 export default function Settings() {
     const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const validTabs = ['cuenta', 'suscripcion', 'privacidad', 'preferencias', 'notificaciones', 'seguridad', 'verificacion'];
+    const activeTab = validTabs.includes(searchParams.get('tab') || '') ? searchParams.get('tab')! : 'cuenta';
     const { user, updateUser, syncFromSession, logout } = useAuthStore();
     const { setTheme: setGlobalTheme, setLanguage: setGlobalLanguage, updatePreferences: setGlobalPreferences } = usePreferencesStore();
 
@@ -219,6 +223,15 @@ export default function Settings() {
     const [showPwd, setShowPwd] = useState({ current: false, new: false, confirm: false });
     const [pwdErrors, setPwdErrors] = useState<string[]>([]);
     const [isSavingPwd, setIsSavingPwd] = useState(false);
+    const [googleAvailable, setGoogleAvailable] = useState(false);
+    useEffect(() => {
+        let active = true;
+        void apiFetch('/auth/providers').then(async response => {
+            const providers = response.ok ? await response.json() : {};
+            if (active) setGoogleAvailable(providers.google === true);
+        }).catch(() => {});
+        return () => { active = false; };
+    }, []);
 
     // ── Delete account ──
     const [deleteConfirm, setDeleteConfirm] = useState('');
@@ -470,19 +483,21 @@ export default function Settings() {
     const [isCancelingSubscription, setIsCancelingSubscription] = useState(false);
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [planToCancel, setPlanToCancel] = useState<'PRO' | 'CREATOR'>('PRO');
-    const [proPriceArs, setProPriceArs] = useState(6300);
+    const [proPriceArs, setProPriceArs] = useState<number | null>(null);
+    const [creatorPriceArs, setCreatorPriceArs] = useState<number | null>(null);
+    const [billingError, setBillingError] = useState<string | null>(null);
     const proBilling = billingOverview?.subscriptions?.PRO;
     const creatorBilling = billingOverview?.subscriptions?.CREATOR;
 
     const fetchBillingOverview = useCallback(async () => {
         try {
             const res = await apiFetch('/billing/overview');
-            if (res.ok) {
-                const data = await res.json();
-                setBillingOverview(data);
-            }
+            if (!res.ok) throw new Error('No pudimos consultar tu facturación.');
+            const data = await res.json();
+            setBillingOverview(data);
+            setBillingError(null);
         } catch {
-            // best effort
+            setBillingError('No pudimos consultar tu facturación. Reintentá antes de gestionar una suscripción.');
         }
     }, []);
 
@@ -492,9 +507,10 @@ export default function Settings() {
 
     useEffect(() => {
         apiFetch('/mercadopago/config')
-            .then((res) => res.json())
+            .then((res) => { if (!res.ok) throw new Error('Precios no disponibles'); return res.json(); })
             .then((data) => {
                 if (Number(data?.proPriceArs) > 0) setProPriceArs(Number(data.proPriceArs));
+                if (Number(data?.creatorPriceArs) > 0) setCreatorPriceArs(Number(data.creatorPriceArs));
             })
             .catch(() => {});
     }, []);
@@ -518,14 +534,6 @@ export default function Settings() {
             if (data.user) {
                 (updateUser as any)(data.user);
                 setSettings((p) => (p ? { ...p, ...data.user } : p));
-            } else {
-                if (planToCancel === 'PRO') {
-                    (updateUser as any)({ plan: 'FREE', isPro: false, subscriptionStatus: 'CANCELED' });
-                    setSettings((p) => (p ? { ...p, plan: 'FREE', subscriptionStatus: 'CANCELED' } : p));
-                } else {
-                    (updateUser as any)({ isCreator: false, accountType: 'BASIC' });
-                    setSettings((p) => (p ? { ...p, isCreator: false, accountType: 'BASIC' } : p));
-                }
             }
 
             await syncFromSession?.();
@@ -598,8 +606,10 @@ export default function Settings() {
     // ─── Logout all ───────────────────────────────────────────────────────────
     const logoutAll = async () => {
         try {
-            await apiFetch('/me/logout-all', { method: 'POST' });
-            showToast('Sesiones cerradas correctamente');
+            const response = await apiFetch('/me/logout-all', { method: 'POST' });
+            if (!response.ok) throw new Error('No se pudo cerrar las sesiones');
+            await useAuthStore.getState().logout();
+            navigate('/login', { replace: true });
         } catch {
             showToast('No se pudo cerrar las sesiones', 'error');
         }
@@ -626,7 +636,7 @@ export default function Settings() {
             <FreeAccessNotice />
             {/* Header */}
             <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-7 shadow-xs">
-                <div className="flex flex-col items-center justify-center text-center gap-4 max-w-2xl mx-auto">
+                <div className="desktop-page-heading flex flex-col items-center justify-center text-center gap-4 max-w-2xl mx-auto">
                     <div className="flex flex-col items-center text-center">
                         <h1 className="text-3xl sm:text-4xl font-heading font-black tracking-tight text-foreground text-center">Configuración</h1>
                         <p className="mt-1.5 text-sm sm:text-base text-muted-foreground leading-relaxed font-normal text-center">
@@ -651,27 +661,29 @@ export default function Settings() {
             </AnimatePresence>
 
             {/* Tabs */}
-            <Tabs defaultValue="cuenta" className="space-y-6">
-                <TabsList className="grid h-auto w-full grid-cols-2 gap-1.5 p-2 bg-secondary/40 border border-border/60 rounded-2xl sm:grid-cols-4 lg:grid-cols-7">
-                    {[
-                        { value: 'cuenta', label: 'Cuenta', icon: <User className="w-4 h-4" /> },
-                        { value: 'suscripcion', label: 'Planes PRO y Creador', icon: <Crown className="w-4 h-4 text-amber-500" /> },
-                        { value: 'privacidad', label: 'Privacidad', icon: <Shield className="w-4 h-4" /> },
-                        { value: 'preferencias', label: 'Preferencias', icon: <Globe className="w-4 h-4" /> },
-                        { value: 'notificaciones', label: 'Notificaciones', icon: <Bell className="w-4 h-4" /> },
-                        { value: 'seguridad', label: 'Seguridad', icon: <Lock className="w-4 h-4" /> },
-                        { value: 'verificacion', label: 'Verificación', icon: <BadgeCheck className="w-4 h-4" /> },
-                    ].map(({ value, label, icon }) => (
-                        <TabsTrigger
-                            key={value}
-                            value={value}
-                            className="flex items-center justify-center gap-2 py-3 px-3 rounded-xl text-xs sm:text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-secondary/70 transition-all text-muted-foreground"
-                        >
-                            {icon}
-                            <span className="hidden sm:inline">{label}</span>
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
+            <Tabs value={activeTab} onValueChange={tab => setSearchParams({ tab })} className="space-y-6">
+                <div className="w-full overflow-x-auto pb-2 scrollbar-none flex justify-start sm:justify-center">
+                    <TabsList className="is-centered justify-center mx-auto inline-flex flex-nowrap items-center gap-1.5 p-1.5 bg-secondary/40 border border-border/60 rounded-2xl min-w-max">
+                        {[
+                            { value: 'cuenta', label: 'Cuenta', icon: <User className="w-4 h-4 shrink-0" /> },
+                            { value: 'suscripcion', label: 'Planes PRO', icon: <Crown className="w-4 h-4 text-amber-500 shrink-0" /> },
+                            { value: 'privacidad', label: 'Privacidad', icon: <Shield className="w-4 h-4 shrink-0" /> },
+                            { value: 'preferencias', label: 'Preferencias', icon: <Globe className="w-4 h-4 shrink-0" /> },
+                            { value: 'notificaciones', label: 'Notificaciones', icon: <Bell className="w-4 h-4 shrink-0" /> },
+                            { value: 'seguridad', label: 'Seguridad', icon: <Lock className="w-4 h-4 shrink-0" /> },
+                            { value: 'verificacion', label: 'Verificación', icon: <BadgeCheck className="w-4 h-4 shrink-0" /> },
+                        ].map(({ value, label, icon }) => (
+                            <TabsTrigger
+                                key={value}
+                                value={value}
+                                className="flex items-center justify-center gap-2 py-2 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-secondary/70 transition-all text-muted-foreground shrink-0"
+                            >
+                                {icon}
+                                <span className="whitespace-nowrap">{label}</span>
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </div>
 
                 <TabsContent value="verificacion">
                     <FinancialVerificationTab />
@@ -1026,6 +1038,9 @@ export default function Settings() {
 
                 {/* ── SUSCRIPCIÓN ── */}
                 <TabsContent value="suscripcion" className="space-y-6">
+                    {billingError && <div role="alert" className="rounded-xl border border-border bg-card p-4">{billingError}<button className="ml-3 text-primary underline" onClick={() => { void fetchBillingOverview(); }}>Reintentar</button></div>}
+                    {!billingOverview && !billingError && <p role="status">Consultando tu suscripción…</p>}
+                    {freeAccess && <p className="text-sm text-muted-foreground">Precios mensuales configurados: PRO {formatArs(proPriceArs)} · Creador {formatArs(creatorPriceArs)}. Hoy el acceso a estas funciones es gratuito temporalmente.</p>}
                     {/* Recurring Billing Notice Banner */}
                     <div className="relative overflow-hidden rounded-3xl border border-amber-500/35 bg-gradient-to-br from-amber-500/15 via-amber-500/8 to-card p-5 sm:p-6 shadow-xs backdrop-blur-sm">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -1078,14 +1093,14 @@ export default function Settings() {
                                         )}
                                     </div>
                                     <CardDescription className="text-sm text-muted-foreground mt-1 font-medium">
-                                        Acceso sin restricciones a herramientas financieras avanzadas y señales exclusivas.
+                                        Herramientas de análisis, portafolios y seguimiento de inversiones.
                                     </CardDescription>
                                 </div>
                             </div>
                             <div className="sm:text-right shrink-0">
                                 <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground tabular-nums">
-                                    {freeAccess ? 'Gratis' : `$${proPriceArs.toLocaleString('es-AR')}`}
-                                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400 ml-1.5">{!freeAccess && 'ARS'}</span>
+                                    {freeAccess ? 'Gratis' : formatArs(proPriceArs)}
+
                                 </span>
                                 <span className="text-xs sm:text-sm font-semibold text-muted-foreground block mt-0.5">{freeAccess ? 'durante esta etapa' : '/ mes contratado'}</span>
                             </div>
@@ -1098,12 +1113,12 @@ export default function Settings() {
                                 </h5>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 p-5 rounded-2xl border border-border/60 bg-secondary/30 dark:bg-card/50">
                                     {[
-                                        'Acceso ilimitado a todas las secciones y métricas PRO',
+                                        'Portafolios personales ilimitados',
                                         'Finanzas Personales: gastos, tarjetas, cuentas y presupuestos',
-                                        'Alertas en tiempo real por Gmail y notificaciones push',
-                                        'Análisis de ballenas y movimientos institucionales',
-                                        'Filtros técnicos avanzados y gráficos sin límites',
-                                        'Badge exclusivo Finix PRO en la comunidad',
+                                        'Alertas avanzadas de tus listas de seguimiento',
+                                        'Seguimiento de ideas e importación CSV',
+                                        'Mercados, análisis, noticias y calendario',
+                                        'Acceso a la sección de comunidades',
                                         'Pago mensual en ARS mediante Mercado Pago, con renovación opcional',
                                     ].map((feature) => (
                                         <div key={feature} className="flex items-center gap-3">
@@ -1153,7 +1168,7 @@ export default function Settings() {
                                 {freeAccess && !proBilling ? <p className="text-sm font-medium">PRO está incluido gratis. No necesitás contratar una suscripción.</p> : proBilling?.status === 'PENDING' ? (
                                     <>
                                         <p className="text-sm text-muted-foreground font-medium">La autorización de pago todavía está pendiente.</p>
-                                        <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('PRO'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl shadow-xs">Cancelar solicitud</Button>
+                                        <Button type="button" variant="destructive" size="sm" disabled={!!billingError || !proBilling} onClick={() => { setPlanToCancel('PRO'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl shadow-xs">Cancelar solicitud</Button>
                                     </>
                                 ) : isProActive ? (
                                     <>
@@ -1162,9 +1177,9 @@ export default function Settings() {
                                                 <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
                                                     La baja del plan ya fue solicitada. Conservás acceso hasta el {proBilling?.endDate ? new Date(proBilling.endDate).toLocaleDateString('es-AR') : 'fin del período'}.
                                                 </p>
-                                                <Link to="/pro" className="w-full sm:w-auto">
+                                                <Link to="/pricing#planes" className="w-full sm:w-auto">
                                                     <Button variant="outline" size="sm" className="w-full sm:w-auto font-bold text-sm rounded-xl border-amber-500/40 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10">
-                                                        Reactivar plan PRO
+                                                        Ver planes disponibles
                                                     </Button>
                                                 </Link>
                                             </div>
@@ -1179,7 +1194,7 @@ export default function Settings() {
                                                     type="button"
                                                     variant="outline"
                                                     size="sm"
-                                                    onClick={() => { setPlanToCancel('PRO'); setCancelModalOpen(true); }}
+                                                    disabled={!!billingError || !proBilling} onClick={() => { setPlanToCancel('PRO'); setCancelModalOpen(true); }}
                                                     className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:border-red-500/60 shadow-xs gap-2 shrink-0 transition-colors"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -1193,7 +1208,7 @@ export default function Settings() {
                                         <p className="text-sm text-muted-foreground font-medium">
                                             Subí a PRO para acceder a todas las secciones bloqueadas y alertas por Gmail.
                                         </p>
-                                                <Link to="/pro" className="w-full sm:w-auto">
+                                                <Link to="/pricing#planes" className="w-full sm:w-auto">
                                             <Button
                                                 type="button"
                                                 size="sm"
@@ -1243,8 +1258,8 @@ export default function Settings() {
                             </div>
                             <div className="sm:text-right shrink-0">
                                 <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground tabular-nums">
-                                    {freeAccess ? 'Gratis' : `$${Number(billingOverview?.creatorPriceArs || 29900).toLocaleString('es-AR')}`}
-                                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400 ml-1.5">{!freeAccess && 'ARS'}</span>
+                                    {freeAccess ? 'Gratis' : formatArs(creatorPriceArs)}
+
                                 </span>
                                 <span className="block text-xs sm:text-sm font-semibold text-muted-foreground mt-0.5">{freeAccess ? 'durante esta etapa' : '/ mes contratado'}</span>
                             </div>
@@ -1259,7 +1274,7 @@ export default function Settings() {
                                         'Creación y monetización de comunidades exclusivas',
                                         'Cobro de membresías a tus seguidores',
                                         'Herramientas avanzadas de publicación y gráficos',
-                                        'Badge de Creador Verificado en tu perfil',
+                                        'Gestión de miembros y salas de la comunidad',
                                     ].map((feature) => (
                                         <div key={feature} className="flex items-center gap-3">
                                             <div className="rounded-full bg-blue-500/15 p-1 text-blue-600 dark:text-blue-400 shrink-0 border border-blue-500/25">
@@ -1295,7 +1310,7 @@ export default function Settings() {
                                         Estado
                                     </span>
                                     <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold uppercase tracking-wide bg-background border border-border/80 shadow-2xs text-foreground">
-                                        {freeAccess && !creatorBilling ? 'Acceso gratuito' : isCreatorActive ? 'Activo' : 'Inactivo'}
+                                        {creatorBilling?.status === 'PENDING' ? 'Pendiente' : creatorBilling?.status || (freeAccess ? 'Acceso gratuito' : isCreatorActive ? 'Acceso especial activo' : 'Inactivo')}
                                     </span>
                                 </div>
                             </div>
@@ -1304,7 +1319,7 @@ export default function Settings() {
                                 {freeAccess && !creatorBilling ? <p className="text-sm font-medium">Creator está incluido gratis. Podés crear tu comunidad sin pagar.</p> : creatorBilling?.status === 'PENDING' ? (
                                     <>
                                         <p className="text-sm text-muted-foreground font-medium">La autorización de pago todavía está pendiente.</p>
-                                        <Button type="button" variant="destructive" size="sm" onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl shadow-xs">Cancelar solicitud</Button>
+                                        <Button type="button" variant="destructive" size="sm" disabled={!!billingError || !creatorBilling} onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl shadow-xs">Cancelar solicitud</Button>
                                     </>
                                 ) : isCreatorActive ? (
                                     <>
@@ -1313,9 +1328,9 @@ export default function Settings() {
                                                 <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
                                                     La baja del plan ya fue solicitada. Conservás tus herramientas hasta el {creatorBilling?.endDate ? new Date(creatorBilling.endDate).toLocaleDateString('es-AR') : 'fin del período'}.
                                                 </p>
-                                                <Link to="/creator" className="w-full sm:w-auto">
+                                                <Link to="/pricing#planes" className="w-full sm:w-auto">
                                                     <Button variant="outline" size="sm" className="w-full sm:w-auto font-bold text-sm rounded-xl border-blue-500/40 text-blue-700 dark:text-blue-300 hover:bg-blue-500/10">
-                                                        Reactivar Plan Creador
+                                                        Ver planes disponibles
                                                     </Button>
                                                 </Link>
                                             </div>
@@ -1330,7 +1345,7 @@ export default function Settings() {
                                                     type="button"
                                                     variant="outline"
                                                     size="sm"
-                                                    onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }}
+                                                    disabled={!!billingError || !creatorBilling} onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }}
                                                     className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:border-red-500/60 shadow-xs gap-2 shrink-0 transition-colors"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -1344,7 +1359,7 @@ export default function Settings() {
                                         <p className="text-sm text-muted-foreground font-medium">
                                             ¿Querés monetizar tus análisis y crear tu comunidad en Finix?
                                         </p>
-                                        <Link to="/creator" className="w-full sm:w-auto">
+                                        <Link to="/pricing#planes" className="w-full sm:w-auto">
                                             <Button
                                                 type="button"
                                                 variant="outline"
@@ -1610,7 +1625,7 @@ export default function Settings() {
                                                 <Sparkles className="h-3.5 w-3.5" /> Función bloqueada para cuentas gratuitas
                                             </p>
                                             <p>
-                                                Finix PRO cuesta $${proPriceArs.toLocaleString('es-AR')} ARS/mes. Podés pagar un mes o renovarlo automáticamente y cancelarlo cuando quieras.
+                                                Finix PRO: {formatArs(proPriceArs)} por mes. Podés pagar un mes o renovarlo automáticamente y cancelarlo cuando quieras.
                                             </p>
                                         </div>
                                         <Link to="/pro" className="shrink-0 w-full sm:w-auto">
@@ -1641,6 +1656,11 @@ export default function Settings() {
                             description="Actualizá tu contraseña para proteger tu cuenta."
                         />
                         <CardContent className="space-y-4">
+                            {googleAvailable && (
+                                <Button type="button" variant="outline" onClick={() => window.location.assign('/api/auth/google/link')}>
+                                    Vincular mi cuenta de Google
+                                </Button>
+                            )}
                             {[
                                 { id: 'pwd-current', key: 'current', label: 'Contraseña actual', show: showPwd.current, toggle: () => setShowPwd((p) => ({ ...p, current: !p.current })) },
                                 { id: 'pwd-new', key: 'newPwd', label: 'Nueva contraseña', show: showPwd.new, toggle: () => setShowPwd((p) => ({ ...p, new: !p.new })) },
@@ -1731,7 +1751,7 @@ export default function Settings() {
                                 <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed font-normal">
                                     {planToCancel === 'PRO'
                                         ? 'Al confirmar, se cancelarán las renovaciones automáticas y los cobros futuros de tu suscripción.'
-                                        : 'Al confirmar, se detendrán los cobros futuros y se cerrarán las herramientas de monetización para creadores.'}
+                                        : 'Al confirmar, se detendrán los cobros futuros. Conservás las herramientas durante el período ya pagado.'}
                                 </p>
                             </div>
                         </div>
@@ -1746,13 +1766,13 @@ export default function Settings() {
                                     <>
                                         <li>No se generará ningún cobro adicional en tu medio de pago.</li>
                                         <li>Conservás las funciones hasta el final del ciclo si ya estaba pagado.</li>
-                                        <li>Podés reactivar o cambiar de plan cuando quieras sin perder tus publicaciones.</li>
+                                        <li>Después del vencimiento podés volver a contratar un plan sin perder tus publicaciones.</li>
                                     </>
                                 ) : (
                                     <>
                                         <li>No se generará ningún cobro adicional en tu medio de pago.</li>
-                                        <li>Dejarás de monetizar comunidades pagas y gestionar suscripciones de miembros.</li>
-                                        <li>Podés volver a activar tu perfil de Creador cuando lo desees.</li>
+                                        <li>Conservás las herramientas de Creador hasta el final del período ya pagado.</li>
+                                        <li>La suscripción de Creador es independiente de las membresías de tus comunidades.</li>
                                     </>
                                 )}
                             </ul>

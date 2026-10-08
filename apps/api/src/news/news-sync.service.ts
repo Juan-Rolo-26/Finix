@@ -10,11 +10,12 @@ import { PrismaService } from '../prisma.service';
 import { NewsFetcherService, RawNewsItem } from './news-fetcher.service';
 import { NewsSlotsService } from './news-slots.service';
 import { normalizeSourceImage } from './news-source-image.util';
-import { isIllustrativeNewsImage, NEWS_ILLUSTRATION_URLS, resolveNewsImage } from './news-image.util';
+import { isIllustrativeNewsImage } from './news-image.util';
 import {
     DEFAULT_NEWS_CATEGORIES,
     DEFAULT_NEWS_SOURCES,
     NEWS_TIME_ZONE,
+    NEWS_ARTICLES_PER_CATEGORY,
     NewsUpdateFrequency,
     newsCategoryMatchCount,
 } from './news-catalog';
@@ -197,14 +198,18 @@ export class NewsSyncService {
         await this.prepareDefaults();
         if (this.running) return;
         const categories = await this.prisma.newsCategory.findMany({ where: { isActive: true } });
+        const missingCoverage = { OR: [
+            { articleId: null },
+            { article: { sourceId: { not: null }, titleEs: null, translationAttemptedAt: { not: null }, customTitle: false, customDescription: false, customImage: false } },
+        ] };
         const emptyGroups = await this.prisma.newsSlot.groupBy({
-            by: ['categoryId'], where: { isActive: true, articleId: null }, _count: { _all: true },
+            by: ['categoryId'], where: { isActive: true, ...missingCoverage }, _count: { _all: true },
         });
         const emptyIds = new Set(emptyGroups.map(group => group.categoryId));
         const sparse = categories.filter(category => emptyIds.has(category.id));
         for (const category of sparse) await this.slotsService.fillEmptySlots(category.id, category.slug);
         const remaining = sparse.length ? await this.prisma.newsSlot.groupBy({
-            by: ['categoryId'], where: { categoryId: { in: sparse.map(category => category.id) }, isActive: true, articleId: null }, _count: { _all: true },
+            by: ['categoryId'], where: { categoryId: { in: sparse.map(category => category.id) }, isActive: true, ...missingCoverage }, _count: { _all: true },
         }) : [];
         const incomplete = remaining.map(group => group.categoryId);
         if (incomplete.length) await this.syncFrequency('MANUAL', incomplete);
@@ -380,7 +385,7 @@ export class NewsSyncService {
             duplicatesDetected = result.duplicates;
 
             for (const category of categories) {
-                const topArticles = await this.findArticlesWithPhotos(category.id);
+                const topArticles = await this.findBestArticles(category.id);
                 await this.slotsService.replaceAutomaticSlots(category.id, topArticles.map((article) => article.id));
                 await this.slotsService.fillEmptySlots(category.id, category.slug);
                 await this.prisma.newsCategory.update({
@@ -636,15 +641,11 @@ export class NewsSyncService {
                 await this.prisma.newsCategory.update({
                     where: { id: category.id },
                     data: {
-                        updateFrequency: definition.updateFrequency,
-                        updateHour: definition.updateHour,
-                        updateMinute: definition.updateMinute,
-                        updateDayOfWeek: definition.updateDayOfWeek,
                         nextUpdateAt: calculateNextNewsRun(
-                            definition.updateFrequency,
-                            definition.updateHour,
-                            definition.updateMinute,
-                            definition.updateDayOfWeek,
+                            category.updateFrequency as NewsUpdateFrequency,
+                            category.updateHour,
+                            category.updateMinute,
+                            category.updateDayOfWeek,
                         ),
                     },
                 });
@@ -758,34 +759,32 @@ export class NewsSyncService {
             category,
             score: newsCategoryMatchCount(category.slug, text),
         })).sort((a: any, b: any) => b.score - a.score);
-        return scored[0]?.category || links[0];
+        // Broad feeds must match the topic; a dedicated financial feed may
+        // cover relevant stories without repeating the category's keywords.
+        return scored[0]?.score > 0 || links.length === 1 ? scored[0]?.category : null;
     }
 
-    private async findArticlesWithPhotos(categoryId: string) {
-        const options = {
+    private async findBestArticles(categoryId: string) {
+        const candidates = await this.prisma.newsArticle.findMany({
             where: {
                 OR: [{ categoryId }, { slots: { some: { categoryId, isActive: true } } }],
-                isActive: true,
-                isPublished: true,
-                status: 'PUBLISHED' as const,
-                AND: [{ imageUrl: { not: null } }, { imageUrl: { not: '' } }],
+                isActive: true, isPublished: true, status: 'PUBLISHED',
             },
-            orderBy: [{ publishedAt: 'desc' as const }, { relevanceScore: 'desc' as const }],
-            select: { id: true },
-        };
-        // Prefer another news story with its own photo before using illustrations.
-        const originals = await this.prisma.newsArticle.findMany({
-            ...options,
-            where: { ...options.where, imageUrl: { notIn: NEWS_ILLUSTRATION_URLS } },
-            take: 5,
+            include: { source: { select: { language: true } } },
+            orderBy: [{ publishedAt: 'desc' }, { relevanceScore: 'desc' }],
+            take: 100,
         });
-        if (originals.length === 5) return originals;
-        const illustrated = await this.prisma.newsArticle.findMany({
-            ...options,
-            where: { ...options.where, imageUrl: { in: NEWS_ILLUSTRATION_URLS } },
-            take: 5 - originals.length,
-        });
-        return [...originals, ...illustrated];
+        // Impact matters more than a photograph. Rank within a freshness window
+        // so yesterday's important story can outrank a minor update just posted.
+        const score = (article: typeof candidates[number]) => (article.relevanceScore || 0) -
+            Math.max(0, (Date.now() - new Date(article.publishedAt).getTime()) / 3_600_000) * 2;
+        candidates.sort((a, b) => score(b) - score(a));
+        const selected: Array<{ id: string }> = [];
+        for (let offset = 0; offset < candidates.length && selected.length < NEWS_ARTICLES_PER_CATEGORY; offset += NEWS_ARTICLES_PER_CATEGORY) {
+            const localized = await Promise.all(candidates.slice(offset, offset + NEWS_ARTICLES_PER_CATEGORY).map(article => this.slotsService.toSpanishArticle(article)));
+            for (const article of localized) if (article && selected.length < NEWS_ARTICLES_PER_CATEGORY) selected.push({ id: article.id });
+        }
+        return selected;
     }
 
     private async persistArticles(
@@ -837,9 +836,9 @@ export class NewsSyncService {
 
         for (const record of ordered) {
             const item = record.item;
-            // Enforce the photo requirement again at the database boundary.
+            // Keep source photos, but do not manufacture images for text-only news.
             const suppliedImage = normalizeSourceImage(item.imageUrl, item.url);
-            const sourceImage = resolveNewsImage(item.title, record.category.slug, isIllustrativeNewsImage(suppliedImage) ? undefined : suppliedImage);
+            const sourceImage = isIllustrativeNewsImage(suppliedImage) ? null : suppliedImage || null;
             const normalizedUrl = normalizeNewsUrl(item.url);
             const normalizedTitle = normalizeNewsTitle(item.title);
             const tickers = this.extractTickers(`${item.title} ${item.summary} ${item.content}`);
@@ -856,7 +855,7 @@ export class NewsSyncService {
                 duplicates += 1;
                 const nextScore = Math.max(existing.relevanceScore || 0, relevance);
                 const previousImage = normalizeSourceImage(existing.imageUrl, existing.url);
-                const keepPreviousPhoto = previousImage && (existing.customImage ||
+                const keepPreviousPhoto = previousImage && (!sourceImage || existing.customImage ||
                     (isIllustrativeNewsImage(sourceImage) && !isIllustrativeNewsImage(previousImage)));
                 const nextImageUrl = keepPreviousPhoto ? previousImage : sourceImage;
                 await this.prisma.newsArticle.update({

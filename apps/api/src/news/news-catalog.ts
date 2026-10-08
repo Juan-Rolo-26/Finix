@@ -1,6 +1,7 @@
 export type NewsUpdateFrequency = 'DAILY' | 'WEEKLY' | 'MANUAL';
 
 export const NEWS_TIME_ZONE = 'America/Argentina/Cordoba';
+export const NEWS_ARTICLES_PER_CATEGORY = 10;
 
 export interface DefaultNewsCategory {
     name: string;
@@ -65,6 +66,12 @@ export const DEFAULT_NEWS_CATEGORIES: DefaultNewsCategory[] = [
 
 // Seeds only: all source fields and category policies remain editable in Admin.
 export const DEFAULT_NEWS_SOURCES: DefaultNewsSource[] = [
+    // Native Spanish coverage keeps the edition useful during translation outages.
+    { name: 'FundsPeople ETF', baseUrl: 'https://fundspeople.com/es', rssUrl: 'https://fundspeople.com/es/tag/etf/feed/', country: 'ES', language: 'es', priority: 90, reliabilityScore: 85, categories: ['etfs'], categoryPolicies: policies(['etfs'], 90, 85) },
+    { name: 'CriptoNoticias', baseUrl: 'https://www.criptonoticias.com', rssUrl: 'https://www.criptonoticias.com/feed/', country: 'GLOBAL', language: 'es', priority: 85, reliabilityScore: 80, categories: ['cripto'], categoryPolicies: policies(['cripto'], 85, 80) },
+    { name: 'elEconomista Mercados', baseUrl: 'https://www.eleconomista.es', rssUrl: 'https://www.eleconomista.es/rss/rss-mercados.php', country: 'ES', language: 'es', priority: 85, reliabilityScore: 85, categories: ['mercados', 'acciones', 'commodities', 'etfs'], categoryPolicies: policies(['mercados', 'acciones', 'commodities', 'etfs'], 85, 85) },
+    { name: 'El Economista Finanzas', baseUrl: 'https://eleconomista.com.ar', rssUrl: 'https://eleconomista.com.ar/finanzas/feed/', country: 'AR', language: 'es', priority: 85, reliabilityScore: 80, categories: ['argentina', 'mercados', 'acciones', 'finanzas-personales', 'fintech'], categoryPolicies: policies(['argentina', 'mercados', 'acciones', 'finanzas-personales', 'fintech'], 85, 80) },
+    { name: 'Cinco Días', baseUrl: 'https://cincodias.elpais.com', rssUrl: 'https://feeds.elpais.com/mrss-s/pages/ep/site/cincodias.elpais.com/portada', country: 'ES', language: 'es', priority: 85, reliabilityScore: 85, categories: ['empresas', 'mercados', 'acciones', 'global', 'economia', 'finanzas-personales', 'fintech', 'startups', 'real-estate'], categoryPolicies: policies(['empresas', 'mercados', 'acciones', 'global', 'economia', 'finanzas-personales', 'fintech', 'startups', 'real-estate'], 85, 85) },
     { name: 'Kiplinger', baseUrl: 'https://www.kiplinger.com', rssUrl: 'https://www.kiplinger.com/feed/all', country: 'US', language: 'en', priority: 85, reliabilityScore: 85, categories: ['finanzas-personales'], categoryPolicies: policies(['finanzas-personales'], 85, 85) },
     { name: 'NerdWallet', baseUrl: 'https://www.nerdwallet.com', rssUrl: 'https://www.nerdwallet.com/blog/feed/', country: 'US', language: 'en', priority: 80, reliabilityScore: 85, categories: ['finanzas-personales'], categoryPolicies: policies(['finanzas-personales'], 80, 85) },
     { name: 'ETF Trends', baseUrl: 'https://www.etftrends.com', rssUrl: 'https://www.etftrends.com/feed/', country: 'US', language: 'en', priority: 90, reliabilityScore: 85, categories: ['etfs'], categoryPolicies: policies(['etfs'], 90, 85) },

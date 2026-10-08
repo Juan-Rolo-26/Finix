@@ -1,0 +1,14 @@
+# Add to compose.yml for local testing only. All published ports use loopback.
+services:
+  mailpit:
+    image: axllent/mailpit:v1.29
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    environment:
+      MP_DATABASE: /data/mailpit.db
+    volumes:
+      - mail:/data
+volumes:
+  mail:

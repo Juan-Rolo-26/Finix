@@ -3,6 +3,43 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { financialNumber, isVisibleEarnings, normalizeEarnings, formatFinancialAmount } = require('../packages/shared/dist');
 
+test('FMP stable endpoints preserve fiscal years and zero ratios without confusing P/E with PEG', async () => {
+    const nativeFetch = global.fetch;
+    const { AdapterFMPService } = require('../apps/api/dist/fundamental/adapters/adapter-fmp.service');
+    const adapter = new AdapterFMPService();
+    adapter.apiKey = 'isolated-test-key';
+    adapter.baseUrl = 'https://financialmodelingprep.com/stable';
+    const calls = [];
+    global.fetch = async input => {
+        const url = new URL(input); calls.push(url);
+        const data = {
+            '/stable/profile': [{ companyName: 'Example', marketCap: 1000 }],
+            '/stable/ratios': [{ priceToEarningsRatio: 0, priceToEarningsGrowthRatio: 99, debtToEquityRatio: 0 }],
+            '/stable/key-metrics': [{ returnOnEquity: 0, returnOnInvestedCapital: 0 }],
+            '/stable/income-statement': [{ date: '2025-12-31', fiscalYear: 2025, revenue: 100, netIncome: 5 }],
+            '/stable/balance-sheet-statement': [{ date: '2025-12-31', fiscalYear: 2025, totalDebt: 50, totalStockholdersEquity: 100 }],
+            '/stable/cash-flow-statement': [{ date: '2025-12-31', fiscalYear: 2025, freeCashFlow: 10 }],
+            '/stable/earnings': [{ date: '2025-12-31', epsActual: 0, epsEstimated: 1 }],
+        };
+        assert.ok(url.pathname in data, 'Uses documented stable endpoint');
+        assert.equal(url.searchParams.get('symbol'), 'AAPL');
+        if (url.pathname !== '/stable/profile') assert.equal(url.searchParams.get('limit'), '5', 'Current provider subscription permits five periods');
+        return new Response(JSON.stringify(data[url.pathname]), { headers: { 'content-type': 'application/json' } });
+    };
+    try {
+        const result = await adapter.fetchFundamentals({ normalizedTicker: 'AAPL', assetType: 'stock' });
+        assert.equal(calls.length, 7);
+        assert.equal(result.metrics.peRatio, 0);
+        assert.equal(result.metrics.roe, 0);
+        assert.equal(result.metrics.roic, 0);
+        assert.equal(result.metrics.debtToEquity, 0);
+        assert.equal(result.statements.incomeStatement[0].fiscalYear, 2025);
+        assert.equal(result.statements.earnings[0].actualEps, 0);
+        global.fetch = async () => new Response('[]', { headers: { 'content-type': 'application/json' } });
+        await assert.rejects(adapter.fetchFundamentals({ normalizedTicker: 'EMPTY' }), /sin datos/);
+    } finally { global.fetch = nativeFetch; }
+});
+
 test('missing and malformed financial values are not coerced into zero', () => {
     for (const value of [null, undefined, '', ' ', NaN, Infinity, -Infinity, true, false, [], {}, 'unknown', '1e999']) {
         assert.equal(financialNumber(value), undefined);

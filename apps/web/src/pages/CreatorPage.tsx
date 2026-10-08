@@ -1,6 +1,8 @@
 import FreeAccessNotice from '@/components/FreeAccessNotice';
-import { usePlatformAccessStore } from '@/stores/platformAccessStore';
-import { useState, useEffect } from 'react';
+import { usePlanCheckout } from '@/hooks/usePlanCheckout';
+import { PlanCheckoutDialog } from '@/components/PlanCheckoutDialog';
+import { formatArs } from '@/lib/plans';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -11,7 +13,6 @@ import {
     ShieldCheck,
     Coins,
     BarChart3,
-    Check,
     ChevronRight,
     ArrowRight,
     ArrowLeft,
@@ -23,19 +24,17 @@ import {
     Loader2
 } from 'lucide-react';
 import { useAuthStore, isCreatorUser } from '@/stores/authStore';
-import { apiFetch } from '@/lib/api';
-import { SubscriptionRenewalChoice } from '@/components/SubscriptionRenewalChoice';
+import { InvestorQuote } from '@/components/common/InvestorQuote';
 
 export default function CreatorPage() {
-    const { freeAccessEnabled: freeAccess, purchasesPaused } = usePlatformAccessStore();
+    const checkout = usePlanCheckout();
+    const freeAccess = checkout.catalog?.freeAccessEnabled === true;
+    const creatorPrice = checkout.catalog?.creatorPriceArs;
+    const loadingCheckout = checkout.busy;
+    const handleCheckoutCreator = () => checkout.choose('CREATOR');
     const navigate = useNavigate();
     const user = useAuthStore(s => s.user);
     const isCreator = isCreatorUser(user);
-
-    const [loadingCheckout, setLoadingCheckout] = useState(false);
-    const [renewalChoiceOpen, setRenewalChoiceOpen] = useState(false);
-    const [creatorPrice, setCreatorPrice] = useState(29900);
-    const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
     // Earnings Calculator State
     const [memberCount, setMemberCount] = useState<number>(100);
@@ -44,73 +43,18 @@ export default function CreatorPage() {
     // FAQ Accordion State
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-    useEffect(() => {
-        apiFetch('/mercadopago/config')
-            .then(res => res.json())
-            .then(data => {
-                if (data.creatorPriceArs) {
-                    setCreatorPrice(data.creatorPriceArs);
-                }
-            })
-            .catch(() => {});
-    }, []);
-
-    const handleCheckoutCreator = async () => {
-        if (purchasesPaused) { navigate(user ? '/comunidades/crear' : '/auth?mode=register'); return; }
-        if (!user) {
-            navigate(`/auth?redirect=${encodeURIComponent('/creator')}&plan=Creador`);
-            return;
-        }
-
-        if (isCreator) {
-            navigate('/comunidades/crear');
-            return;
-        }
-
-        setCheckoutError(null);
-        setRenewalChoiceOpen(true);
-    };
-
-    const confirmCreatorCheckout = async (autoRenew: boolean) => {
-        if (purchasesPaused) return;
-        setLoadingCheckout(true);
-        try {
-            const res = await apiFetch('/mercadopago/checkout/creator', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ autoRenew }),
-            });
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.message || 'Error al conectar con Mercado Pago');
-            }
-            const data = await res.json();
-            const checkoutUrl = data.checkoutUrl || data.url || data.init_point;
-            if (checkoutUrl) {
-                window.location.href = checkoutUrl;
-            } else {
-                throw new Error('No se recibió el enlace de pago');
-            }
-        } catch (error: any) {
-            setCheckoutError(error.message || 'Ocurrió un error al procesar la solicitud.');
-        } finally {
-            setLoadingCheckout(false);
-        }
-    };
-
     // Earnings calculations
     const grossMonthlyArs = memberCount * monthlyFee;
     const grossAnnualArs = grossMonthlyArs * 12;
-    const estimatedUsdMonthly = Math.round(grossMonthlyArs / 1250); // Tipo de cambio de referencia
 
     const faqs = [
         {
             q: '¿Qué es el Programa de Creadores de Finix?',
-            a: 'Es la suite profesional para analistas, educadores e inversores que quieren liderar su propia comunidad financiera. Te permite crear canales públicos y salas privadas de pago, compartir tesis fundamentadas con datos bursátiles en tiempo real y cobrar suscripciones mensuales automatizadas.'
+            a: 'Es la suite profesional para analistas, educadores e inversores que quieren liderar su propia comunidad financiera. Te permite crear canales públicos y salas privadas de pago, compartir tesis fundamentadas con datos de Finix y cobrar suscripciones mensuales automatizadas.'
         },
         {
             q: '¿Cómo y cuándo cobro las suscripciones de mis miembros?',
-            a: 'Tus miembros se suscriben mediante Mercado Pago con cobro recurrente automático. Los fondos se acreditan de forma directa y transparente en tu cuenta conectada, sin demoras ni retenciones sorpresivas.'
+            a: 'Las membresías se pagan por los medios disponibles en Finix. Podés consultar pagos, comisiones y saldos del creador desde Configuración. El saldo disponible puede diferir de tus ingresos brutos.'
         },
         {
             q: '¿Puedo tener canales gratuitos y salas VIP de pago simultáneamente?',
@@ -118,7 +62,7 @@ export default function CreatorPage() {
         },
         {
             q: '¿Qué incluye además de las herramientas para crear comunidades?',
-            a: 'El Plan Creador incluye TODO lo de Finix PRO: cotizaciones de mercados en tiempo real, portafolios institucionales sin límites, modelos de valuación (DCF), noticias financieras en vivo y calendario económico con balances corporativos.'
+            a: 'El Plan Creador incluye TODO lo de Finix PRO: datos de mercados, portafolios personales ilimitados, modelos de valuación (DCF), noticias financieras en vivo y calendario económico con balances corporativos.'
         },
         {
             q: '¿Tengo permanencia o penalización si quiero cancelar?',
@@ -129,6 +73,8 @@ export default function CreatorPage() {
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden selection:bg-amber-500/20 selection:text-amber-300">
             <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-4"><FreeAccessNotice /></div>
+            {(checkout.configError || (checkout.error && !checkout.selectedPlan)) && <div role="alert" className="relative z-10 mx-auto max-w-6xl px-6 py-4">{checkout.configError || checkout.error}<button className="ml-3 text-primary underline" onClick={() => { void checkout.reload(); }}>Reintentar</button></div>}
+            {freeAccess && <p className="relative z-10 mx-auto px-6 pt-3 text-sm text-muted-foreground">Precio mensual configurado: {formatArs(creatorPrice)}. El acceso temporal no crea una suscripción.</p>}
             {/* Ambient Background Glows */}
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                 <div
@@ -179,7 +125,7 @@ export default function CreatorPage() {
                         ) : (
                             <button
                                 onClick={handleCheckoutCreator}
-                                disabled={loadingCheckout}
+                                disabled={loadingCheckout || checkout.loading || !checkout.catalog}
                                 className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-black font-extrabold text-xs px-4 py-2 rounded-xl shadow-lg shadow-amber-500/20 transition-all hover:scale-105 disabled:opacity-50"
                             >
                                 {loadingCheckout ? (
@@ -211,10 +157,10 @@ export default function CreatorPage() {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                                        ¡Tu perfil de Creator está activo y verificado!
+                                        Tenés acceso a las herramientas de Creador
                                     </h4>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        Tenés acceso ilimitado para fundar comunidades, monetizar salas y moderar miembros.
+                                        {freeAccess ? 'Podés crear y gestionar comunidades. Las compras están pausadas durante el acceso gratuito.' : 'Podés crear y gestionar comunidades con las herramientas de Creador.'}
                                     </p>
                                 </div>
                             </div>
@@ -243,7 +189,7 @@ export default function CreatorPage() {
                     </h1>
 
                     <p className="max-w-3xl mx-auto text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed mb-10">
-                        Creá un espacio exclusivo con salas privadas, compartí tesis con datos bursátiles en tiempo real y cobrá suscripciones mensuales recurrentes sin ocuparte de la cobranza manual.
+                        Creá un espacio exclusivo con salas privadas, compartí tesis con datos de Finix y configurá membresías para tus seguidores.
                     </p>
 
                     {/* Hero CTAs */}
@@ -260,7 +206,7 @@ export default function CreatorPage() {
                         ) : (
                             <button
                                 onClick={handleCheckoutCreator}
-                                disabled={loadingCheckout}
+                                disabled={loadingCheckout || checkout.loading || !checkout.catalog}
                                 className="w-full sm:w-auto h-14 px-8 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500 hover:from-amber-400 hover:to-emerald-400 text-black shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                             >
                                 {loadingCheckout ? (
@@ -396,10 +342,10 @@ export default function CreatorPage() {
                                 <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 text-xs text-muted-foreground space-y-1.5">
                                     <div className="flex items-center gap-1.5 text-foreground font-semibold">
                                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                                        {freeAccess ? 'Simulación para la futura etapa paga. Hoy los cobros están pausados.' : 'Cobros automáticos recurrentes cada 30 días'}
+                                        {freeAccess ? 'Simulación para la futura etapa paga. Hoy los cobros están pausados.' : 'Membresías según la modalidad elegida'}
                                     </div>
                                     <p>
-                                        Finix gestiona la cobranza automática vía Mercado Pago. Si el pago de un miembro falla, el sistema gestiona los reintentos y suspende el acceso al canal VIP sin que tengas que intervenir.
+                                        Esta simulación multiplica la cantidad de miembros por la cuota mensual. El saldo real depende de los pagos confirmados, las comisiones y los costos aplicables.
                                     </p>
                                 </div>
                             </div>
@@ -413,7 +359,7 @@ export default function CreatorPage() {
                                 <div className="relative z-10 space-y-6">
                                     <div>
                                         <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
-                                            Ingresos Mensuales Estimados
+                                            Ingresos mensuales brutos simulados
                                         </span>
                                         <div className="mt-2 flex items-baseline gap-2">
                                             <span className="text-3xl sm:text-4xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
@@ -422,7 +368,7 @@ export default function CreatorPage() {
                                             <span className="text-xs font-semibold text-muted-foreground">ARS / mes</span>
                                         </div>
                                         <p className="text-xs font-semibold text-emerald-400/90 mt-1 flex items-center gap-1">
-                                            <Sparkles className="w-3 h-3" /> Aprox. ~${estimatedUsdMonthly.toLocaleString('en-US')} USD mensuales
+                                            <Sparkles className="w-3 h-3" /> Antes de comisiones, costos e impuestos
                                         </p>
                                     </div>
 
@@ -434,8 +380,8 @@ export default function CreatorPage() {
                                             </span>
                                         </div>
                                         <div className="flex justify-between items-center text-xs">
-                                            <span className="text-muted-foreground">Retención promedio Finix:</span>
-                                            <span className="font-extrabold text-emerald-400">92% mensual</span>
+                                            <span className="text-muted-foreground">Tipo de cálculo:</span>
+                                            <span className="font-extrabold text-emerald-400">Simulación sin garantía</span>
                                         </div>
                                         <div className="flex justify-between items-center text-xs">
                                             <span className="text-muted-foreground">Costo de hosting/servidores:</span>
@@ -446,7 +392,7 @@ export default function CreatorPage() {
                                     <div className="pt-2">
                                         <button
                                             onClick={handleCheckoutCreator}
-                                            disabled={loadingCheckout}
+                                            disabled={loadingCheckout || checkout.loading || !checkout.catalog}
                                             className="w-full py-3.5 px-4 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                                         >
                                             {loadingCheckout ? (
@@ -486,10 +432,10 @@ export default function CreatorPage() {
                                 <Crown className="w-6 h-6 fill-amber-400" />
                             </div>
                             <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-                                <span>Insignia Verificada</span>
+                                <span>Perfil de Creador</span>
                             </h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                Tu perfil se destaca en discusiones, comentarios y rankings con el sello dorado oficial de Finix Creator, otorgándote autoridad institucional inmediata.
+                                Tu perfil se destaca en discusiones, comentarios y rankings con el sello dorado oficial de Finix Creator, para identificar tu participación como creador. La verificación del perfil se gestiona por separado.
                             </p>
                         </div>
 
@@ -520,9 +466,9 @@ export default function CreatorPage() {
                             <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-5 group-hover:scale-110 transition-transform">
                                 <Coins className="w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold mb-2">Cobro Recurrente Mercado Pago</h3>
+                            <h3 className="text-lg font-bold mb-2">Membresías y facturación</h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                Suscripciones mensuales automáticas con tarjetas argentinas y saldo en cuenta. Vos te dedicás a analizar y Finix se ocupa de procesar los pagos.
+                                Configurá planes para los miembros de tu comunidad y consultá los pagos confirmados, las comisiones y los saldos en Finix. Las compras dependen de la disponibilidad de las pasarelas.
                             </p>
                         </div>
 
@@ -531,9 +477,9 @@ export default function CreatorPage() {
                             <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-5 group-hover:scale-110 transition-transform">
                                 <TrendingUp className="w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold mb-2">Portafolio Auditado en Vivo</h3>
+                            <h3 className="text-lg font-bold mb-2">Seguimiento de portafolios</h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                Mostrá la evolución real de tu cartera a tus miembros. Cero capturas manipuladas: transparencia total con métricas de Alpha, Beta y Sharpe Ratio.
+                                Organizá tus portafolios y compartí la información que elijas publicar con tu comunidad. Las métricas se calculan con los datos registrados en Finix.
                             </p>
                         </div>
 
@@ -550,75 +496,8 @@ export default function CreatorPage() {
                     </div>
                 </section>
 
-                {/* ── 4. COMPARISON TABLE: FINIX VS OTRAS PLATAFORMAS ── */}
-                <section className="py-16 sm:py-20 px-4 sm:px-6 bg-card/40 border-y border-border/50">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="text-center mb-12">
-                            <h2 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight">
-                                ¿Por qué los analistas prefieren Finix a WhatsApp o Telegram?
-                            </h2>
-                            <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-                                Comparativa directa entre Finix Creator y las alternativas informales.
-                            </p>
-                        </div>
-
-                        <div className="overflow-x-auto rounded-3xl border border-border/70 bg-card shadow-xl">
-                            <table className="w-full text-left text-xs sm:text-sm border-collapse">
-                                <thead>
-                                    <tr className="border-b border-border/60 bg-muted/40">
-                                        <th className="p-4 sm:p-5 font-bold text-muted-foreground">Característica</th>
-                                        <th className="p-4 sm:p-5 font-extrabold text-amber-400 bg-amber-500/5 border-x border-border/40">
-                                            Finix Creator
-                                        </th>
-                                        <th className="p-4 sm:p-5 font-medium text-muted-foreground">Telegram / Discord</th>
-                                        <th className="p-4 sm:p-5 font-medium text-muted-foreground">Grupos de WhatsApp</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border/40 font-medium">
-                                    <tr>
-                                        <td className="p-4 sm:p-5 text-foreground font-semibold">Cobro automático recurrente mensual</td>
-                                        <td className="p-4 sm:p-5 bg-amber-500/5 border-x border-border/40 text-emerald-400 font-bold flex items-center gap-1.5">
-                                            <Check className="w-4 h-4 text-emerald-400 stroke-[3]" /> Sí (Mercado Pago)
-                                        </td>
-                                        <td className="p-4 sm:p-5 text-muted-foreground">Manual por transferencia</td>
-                                        <td className="p-4 sm:p-5 text-muted-foreground">Manual uno por uno</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="p-4 sm:p-5 text-foreground font-semibold">Expulsión automática si no abona</td>
-                                        <td className="p-4 sm:p-5 bg-amber-500/5 border-x border-border/40 text-emerald-400 font-bold flex items-center gap-1.5">
-                                            <Check className="w-4 h-4 text-emerald-400 stroke-[3]" /> 100% Automático
-                                        </td>
-                                        <td className="p-4 sm:p-5 text-muted-foreground">Tenés que hacerlo a mano</td>
-                                        <td className="p-4 sm:p-5 text-muted-foreground">Tenés que hacerlo a mano</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="p-4 sm:p-5 text-foreground font-semibold">Cotizaciones bursátiles y gráficos integrados</td>
-                                        <td className="p-4 sm:p-5 bg-amber-500/5 border-x border-border/40 text-emerald-400 font-bold flex items-center gap-1.5">
-                                            <Check className="w-4 h-4 text-emerald-400 stroke-[3]" /> Sí, en vivo
-                                        </td>
-                                        <td className="p-4 sm:p-5 text-muted-foreground">No, requiere bots externos</td>
-                                        <td className="p-4 sm:p-5 text-muted-foreground">Inexistente</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="p-4 sm:p-5 text-foreground font-semibold">Verificación de identidad oficial</td>
-                                        <td className="p-4 sm:p-5 bg-amber-500/5 border-x border-border/40 text-emerald-400 font-bold flex items-center gap-1.5">
-                                            <Check className="w-4 h-4 text-emerald-400 stroke-[3]" /> Insignia dorada
-                                        </td>
-                                        <td className="p-4 sm:p-5 text-muted-foreground">Cualquiera puede clonarte</td>
-                                        <td className="p-4 sm:p-5 text-muted-foreground">Sin verificación</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="p-4 sm:p-5 text-foreground font-semibold">Acceso a todas las herramientas PRO</td>
-                                        <td className="p-4 sm:p-5 bg-amber-500/5 border-x border-border/40 text-emerald-400 font-bold flex items-center gap-1.5">
-                                            <Check className="w-4 h-4 text-emerald-400 stroke-[3]" /> Incluido 100%
-                                        </td>
-                                        <td className="p-4 sm:p-5 text-muted-foreground">No aplica</td>
-                                        <td className="p-4 sm:p-5 text-muted-foreground">No aplica</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <section className="px-4 sm:px-6 py-8 max-w-6xl mx-auto w-full">
+                    <Link to="/pricing#planes" className="inline-flex items-center gap-2 text-primary font-semibold">Comparar Free, PRO y Creador con sus límites reales <ArrowRight className="w-4 h-4" /></Link>
                 </section>
 
                 {/* ── 5. PRICING & CHECKOUT CARD ── */}
@@ -633,7 +512,7 @@ export default function CreatorPage() {
 
                         <div className="max-w-2xl">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30 mb-4">
-                                <Crown className="w-3.5 h-3.5 fill-amber-400" /> Membresía Todo Incluido
+                                <Crown className="w-3.5 h-3.5 fill-amber-400" /> Plan Creador · incluye PRO
                             </div>
 
                             <h3 className="text-2xl sm:text-4xl font-heading font-black tracking-tight mb-3">
@@ -645,9 +524,9 @@ export default function CreatorPage() {
 
                             <div className="flex items-baseline gap-2 mb-6">
                                 <span className="text-4xl sm:text-5xl font-black text-foreground">
-                                    {freeAccess ? 'Gratis' : `$${creatorPrice.toLocaleString('es-AR')}`}
+                                    {freeAccess ? 'Gratis' : formatArs(creatorPrice)}
                                 </span>
-                                <span className="text-sm font-semibold text-muted-foreground">{freeAccess ? 'durante esta etapa' : 'ARS / mes'}</span>
+                                <span className="text-sm font-semibold text-muted-foreground">{freeAccess ? 'durante esta etapa' : '/ mes'}</span>
                                 <span className="ml-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
                                     {freeAccess ? 'Acceso gratuito' : 'Precio mensual'}
                                 </span>
@@ -661,7 +540,7 @@ export default function CreatorPage() {
                                 </div>
                                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
                                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                                    <span>Cobro mensual automático a suscriptores</span>
+                                    <span>Gestión de membresías y pagos</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
                                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
@@ -673,11 +552,11 @@ export default function CreatorPage() {
                                 </div>
                                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
                                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                                    <span>Publicación de tesis con datos auditados</span>
+                                    <span>Publicación de tesis con datos de Finix</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
                                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                                    <span>Cancelación en 1 clic desde Configuración</span>
+                                    <span>Cancelación desde Configuración</span>
                                 </div>
                             </div>
 
@@ -688,13 +567,13 @@ export default function CreatorPage() {
                                     className="w-full sm:w-auto h-14 px-8 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-amber-400 text-black shadow-xl shadow-amber-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
                                 >
                                     <Crown className="w-5 h-5 fill-black" />
-                                    <span>Tu plan está activo: Crear Comunidad</span>
+                                    <span>Crear comunidad con mi acceso</span>
                                     <ArrowRight className="w-4 h-4" />
                                 </Link>
                             ) : (
                                 <button
                                     onClick={handleCheckoutCreator}
-                                    disabled={loadingCheckout}
+                                    disabled={loadingCheckout || checkout.loading || !checkout.catalog}
                                     className="w-full sm:w-auto h-14 px-8 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 hover:from-amber-400 hover:to-amber-200 text-black shadow-xl shadow-amber-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
                                 >
                                     {loadingCheckout ? (
@@ -770,6 +649,9 @@ export default function CreatorPage() {
                         })}
                     </div>
                 </section>
+
+                {/* Investor Wisdom Quote */}
+                <InvestorQuote investorId="peter-lynch" showBackToTop />
             </main>
 
             {/* Footer */}
@@ -787,15 +669,7 @@ export default function CreatorPage() {
                     </div>
                 </div>
             </footer>
-            <SubscriptionRenewalChoice
-                open={renewalChoiceOpen}
-                planName="Creador"
-                monthlyPrice={creatorPrice.toLocaleString('es-AR')}
-                busy={loadingCheckout}
-                error={checkoutError}
-                onClose={() => { setRenewalChoiceOpen(false); setCheckoutError(null); }}
-                onConfirm={(autoRenew) => { void confirmCreatorCheckout(autoRenew); }}
-            />
+            <PlanCheckoutDialog checkout={checkout} />
         </div>
     );
 }
