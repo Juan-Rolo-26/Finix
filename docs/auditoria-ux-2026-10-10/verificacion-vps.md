@@ -34,3 +34,11 @@ La prueba local de respuesta devolvió OK. Una prueba del servicio de análisis 
 Los JSON, registros de controles y una selección de capturas finales de celular/escritorio se conservan en Git. La colección completa de capturas, incluidos ensayos previos, se guarda como archivo de evidencia en outputs/auditoria-finix-2026-10-10 del workspace.
 
 Quedan separados de la aceptación local: entrega efectiva de correo, acceso nuevo por correo/Google, cotejo con proveedores financieros y prueba física en iOS/Android. No se inventaron datos de razón social, domicilio ni jurisdicción; se omitieron por instrucción del titular.
+
+## Comprobación posterior de datos reales
+
+La primera entrega 982fedbc se publicó con web/API/admin coincidentes, PostgreSQL y Redis conectados y cinco categorías educativas. Resend fue verificado desde la configuración inmutable de la entrega: HTTP 200 y dominio confirmado, sin correos enviados.
+
+La consulta BXP del orquestador publicado aplicó el respaldo FMP → Finnhub: 22 registros de cada estado y cuatro resultados trimestrales reales. La revisión detectó que el margen correcto del proveedor se llama netProfitMarginTTM (8,44%) y que ROIC=0 debía preservarse. Se corrigieron ambos y la caché pasó a v3. El valor empresa de basic metrics no informa su unidad en la respuesta; se deja no disponible para evitar presentarlo con escala incorrecta. Nueve pruebas de contrato/ausencia de datos/unidades pasaron, y la API compiló nuevamente.
+
+No se confirmó una entrega real de OTP ni un acceso nuevo con Google; no equivalen a la validación de la clave de Resend. Brillo físico en iOS/Android sigue pendiente.

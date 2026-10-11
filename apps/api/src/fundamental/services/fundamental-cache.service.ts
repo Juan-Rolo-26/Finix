@@ -24,7 +24,7 @@ export class FundamentalCacheService {
     }
 
     buildCacheKey(ticker: string, providerRequested: FundamentalProviderId): string {
-        return `v2:${providerRequested}:${ticker.toUpperCase()}`;
+        return `v3:${providerRequested}:${ticker.toUpperCase()}`;
     }
 
     async get(cacheKey: string): Promise<{ data: FundamentalResponse; stale: boolean; cacheHit: boolean } | null> {

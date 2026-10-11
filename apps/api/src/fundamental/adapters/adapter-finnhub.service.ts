@@ -182,16 +182,21 @@ export class AdapterFinnhubService implements FundamentalProviderAdapter {
             },
             metrics: {
                 marketCap: marketCap !== null ? marketCap * 1_000_000 : null,
-                enterpriseValue: toNumber(metric?.enterpriseValue) || toNumber(metric?.enterpriseValueTTM),
+                // The basic-metric response does not identify the enterprise-value unit.
+                // Do not label an unverified million-scaled value as currency units.
+                enterpriseValue: null,
                 peRatio: toNumber(metric?.peTTM) || toNumber(metric?.peBasicExclExtraTTM),
                 roe: toNumber(metric?.roeTTM),
-                roic: toNumber(metric?.roicTTM) || toNumber(metric?.roiTTM),
+                roic: toNumber(metric?.roicTTM) ?? toNumber(metric?.roiTTM),
                 debtToEquity:
                     toNumber(metric?.totalDebtToEquityQuarterly) ||
                     safeRatio(latestBalance?.totalDebt || null, latestBalance?.totalEquity || null),
                 netMargin:
-                    toNumber(metric?.netMarginTTM) ||
-                    (safeRatio(latestIncome?.netIncome || null, latestIncome?.revenue || null) ?? null),
+                    toNumber(metric?.netProfitMarginTTM) ?? toNumber(metric?.netMarginTTM) ??
+                    (() => {
+                        const ratio = safeRatio(latestIncome?.netIncome ?? null, latestIncome?.revenue ?? null);
+                        return ratio === null ? null : ratio * 100;
+                    })(),
                 freeCashFlow: toNumber(metric?.freeCashFlowTTM) || latestCash?.freeCashFlow || null,
                 revenueGrowthCagr: cagrFromSeries(revenues, cagrYears),
             },
