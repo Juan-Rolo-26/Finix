@@ -199,7 +199,7 @@ pointer "$FINIX_RELEASE/apps/admin/dist" "$FINIX_ADMIN_CURRENT"
 restart_finix "$FINIX_RELEASE" "$FINIX_COMMIT"
 FINIX_STAGE=health
 FINIX_READY=0
-for FINIX_ATTEMPT in $(seq 1 30); do
+for FINIX_ATTEMPT in $(seq 1 60); do
  if curl --silent --fail --max-time 3 http://127.0.0.1:3010/ready >/dev/null && curl --silent --fail --max-time 3 http://127.0.0.1:3010/health | node -e 'let s="";process.stdin.on("data",x=>s+=x);process.stdin.on("end",()=>{try{if(JSON.parse(s).commit!==process.argv[1])process.exit(1)}catch{process.exit(1)}})' "$FINIX_COMMIT"; then FINIX_READY=1; break; fi
  sleep 2
 done
