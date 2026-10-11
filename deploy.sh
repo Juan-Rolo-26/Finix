@@ -4,6 +4,9 @@ set -Eeuo pipefail
 umask 077
 FINIX_SOURCE_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 cd "$FINIX_SOURCE_ROOT"
+if [[ -z ${FINIX_DEPLOY_CONFIG:-} && -f /etc/finix/deploy.env ]]; then
+  FINIX_DEPLOY_CONFIG=/etc/finix/deploy.env
+fi
 if [[ -n ${FINIX_DEPLOY_CONFIG:-} ]]; then
   [[ -f $FINIX_DEPLOY_CONFIG ]] || { echo 'Falta FINIX_DEPLOY_CONFIG' >&2; exit 1; }
   set -a; source "$FINIX_DEPLOY_CONFIG"; set +a
