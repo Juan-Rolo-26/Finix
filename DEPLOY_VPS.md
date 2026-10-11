@@ -35,8 +35,8 @@ sudo apt update && sudo apt upgrade -y
 # 2. Instalar herramientas base
 sudo apt install -y curl git nginx certbot python3-certbot-nginx build-essential
 
-# 3. Instalar Node.js 20 LTS
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# 3. Instalar Node.js 22 LTS
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 
 # 4. Instalar PM2 de manera global para mantener el backend siempre activo
