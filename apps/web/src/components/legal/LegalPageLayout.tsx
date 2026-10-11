@@ -94,7 +94,7 @@ function MobileSectionSelect({ sections, activeId }: { sections: LegalSection[];
                 aria-expanded={open}
                 aria-haspopup="listbox"
             >
-                <span className="truncate text-foreground">{active?.shortTitle ?? active?.title}</span>
+                <span className="min-w-0 break-words text-foreground">{active?.shortTitle ?? active?.title}</span>
                 <ChevronDown className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && (
@@ -108,7 +108,7 @@ function MobileSectionSelect({ sections, activeId }: { sections: LegalSection[];
                             href={`#${s.id}`}
                             role="option"
                             aria-selected={s.id === activeId}
-                            className={`block px-4 py-2.5 text-sm transition-colors ${s.id === activeId ? 'text-primary font-semibold bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}`}
+                            className={`block min-h-11 px-4 py-2.5 text-sm transition-colors ${s.id === activeId ? 'text-primary font-semibold bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}`}
                             onClick={() => setOpen(false)}
                         >
                             {s.shortTitle ?? s.title}
@@ -274,8 +274,7 @@ export default function LegalPageLayout({
                             role="contentinfo"
                         >
                             <p>
-                                © {new Date().getFullYear()} Finix. Todos los derechos reservados.{' '}
-                                <span className="opacity-60">[Razón social pendiente de configuración]</span>
+                                © {new Date().getFullYear()} Finix. Todos los derechos reservados.
                             </p>
                             <div className="flex flex-wrap items-center justify-center gap-4">
                                 <Link to="/help" className="hover:text-foreground transition-colors">Ayuda</Link>

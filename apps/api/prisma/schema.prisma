@@ -193,6 +193,10 @@ model User {
   // Market Alerts
   alerts MarketAlert[]
 
+  // Education
+  educationArticlesCreated EducationArticle[]      @relation("EducationArticlesCreated")
+  educationProgress        EducationUserProgress[] @relation("UserEducationProgress")
+
   @@index([isProfilePublic, showStats, totalReturn(sort: Desc)], map: "User_public_ranking_idx")
   @@index([username])
   @@index([createdAt])
@@ -2353,4 +2357,162 @@ model ExternalIdentity {
 
   @@unique([provider, subject])
   @@index([userId])
+}
+
+// ─── PLATAFORMA EDUCATIVA FINIX ──────────────────────────────────────────────
+
+enum EducationLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum EducationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model EducationCategory {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  description String?
+  icon        String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subcategories EducationSubcategory[]
+  articles      EducationArticle[]
+
+  @@index([order])
+  @@index([slug])
+}
+
+model EducationSubcategory {
+  id          String            @id @default(uuid())
+  categoryId  String
+  category    EducationCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  slug        String            @unique
+  name        String
+  description String?
+  order       Int               @default(0)
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  articles EducationArticle[]
+
+  @@index([categoryId])
+  @@index([order])
+}
+
+model EducationArticle {
+  id                String                @id @default(uuid())
+  slug              String                @unique
+  title             String
+  summary           String
+  content           String                // Markdown completo
+  categoryId        String
+  category          EducationCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategoryId     String?
+  subcategory       EducationSubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+
+  level             EducationLevel        @default(BEGINNER)
+  status            EducationStatus       @default(PUBLISHED)
+  isFeatured        Boolean               @default(false)
+  readTimeMinutes   Int                   @default(5)
+  order             Int                   @default(0)
+  viewsCount        Int                   @default(0)
+
+  // Campos técnicos y enriquecidos
+  formula           String?
+  interactiveWidget String?               // 'rsi' | 'macd' | 'trend' | 'roic_wacc' | 'candles' | 'support_resistance' | 'per'
+  keyTakeaways      Json?                 // string[]
+  commonMistakes    Json?                 // string[]
+  prosCons          Json?                 // { pros: string[], cons: string[] }
+  practicalExample  String?
+  sources           Json?                 // string[] o { title, url }[]
+
+  seoTitle          String?
+  seoDescription    String?
+
+  createdById       String?
+  createdBy         User?                 @relation("EducationArticlesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  learningPathItems EducationLearningPathItem[]
+  userProgress      EducationUserProgress[]
+  relatedTo         EducationArticleRelation[]  @relation("ArticleSource")
+  relatedFrom       EducationArticleRelation[]  @relation("ArticleTarget")
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([status])
+  @@index([level])
+  @@index([isFeatured])
+  @@index([order])
+}
+
+model EducationArticleRelation {
+  id         String           @id @default(uuid())
+  sourceId   String
+  targetId   String
+  source     EducationArticle @relation("ArticleSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  target     EducationArticle @relation("ArticleTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId])
+  @@index([sourceId])
+  @@index([targetId])
+}
+
+model EducationLearningPath {
+  id          String         @id @default(uuid())
+  slug        String         @unique
+  title       String
+  description String
+  level       EducationLevel @default(BEGINNER)
+  icon        String?
+  order       Int            @default(0)
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  items       EducationLearningPathItem[]
+
+  @@index([order])
+  @@index([slug])
+}
+
+model EducationLearningPathItem {
+  id        String                @id @default(uuid())
+  pathId    String
+  path      EducationLearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  articleId String
+  article   EducationArticle      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  order     Int                   @default(0)
+
+  @@unique([pathId, articleId])
+  @@index([pathId])
+  @@index([articleId])
+}
+
+model EducationUserProgress {
+  id          String           @id @default(uuid())
+  userId      String
+  user        User             @relation("UserEducationProgress", fields: [userId], references: [id], onDelete: Cascade)
+  articleId   String
+  article     EducationArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  isCompleted Boolean          @default(false)
+  completedAt DateTime?
+  lastReadAt  DateTime         @default(now())
+
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@index([articleId])
 }

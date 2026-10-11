@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');const{chromium}=require('playwright');const{writeFileSync}=require('node:fs');const{setup,capture,widths,BASE,OUT}=require('./auditoria-ux-vscode.browser.cjs');
+(async()=>{const rows=[],browser=await chromium.launch({headless:true});try{for(const theme of ['light','dark'])for(const width of widths){
+ const{page,errors,writes}=await setup(browser,{theme,width});
+ await page.goto(BASE+'/info/about?origen=auditoria#contacto');await page.waitForURL(url=>url.pathname==='/about');await page.locator('h1').waitFor();assert.ok(page.url().endsWith('/about?origen=auditoria#contacto'));
+ const heading=await page.locator('h1').innerText();const result=await capture(page,`integracion-canonica-about-${width}-${theme}`);assert.equal(result.width,result.scrollWidth);
+ await page.goto(BASE+'/about');await page.locator('h1').waitFor();assert.equal(await page.locator('h1').innerText(),heading);
+ for(const item of ['terms','privacy','cookies']){await page.goto(BASE+'/legal/'+item);await page.locator('h1').waitFor();const title=await page.locator('h1').innerText();await page.goto(BASE+'/'+item);await page.locator('h1').waitFor();assert.equal(await page.locator('h1').innerText(),title);}
+ await page.goto(BASE+'/creator');await page.getByText('Importe actual: ARS 0. Compras pausadas.',{exact:true}).waitFor();const cta=page.getByRole('button',{name:'Creá tu cuenta y accedé gratis',exact:true}).filter({visible:true}).first();await cta.click();await page.waitForURL(url=>url.pathname==='/login');assert.ok(page.url().includes('comunidades'));
+ assert.deepEqual(errors,[]);assert.ok(!writes.some(path=>/checkout|payments/.test(path)));rows.push({width,theme,...result,heading,aliases:['/info/about','/about','/legal/terms','/terms','/legal/privacy','/privacy','/legal/cookies','/cookies'],realWrites:0});writeFileSync(`${OUT}/aliases-final.json`,JSON.stringify(rows,null,2));console.log('aliases',width,theme);await page.close();
+}}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,0 +1,13 @@
+{
+  "results": [
+    "Reglas visibles, errores por campo asociados y foco en el primer error; no se envía registro inválido.",
+    "Credenciales incorrectas: mensaje específico en español; mostrar/ocultar y teclado comprobados.",
+    "API key is invalid normalizado; recuperación mediante reintento y enlace Ayuda.",
+    "Contrato UI de acceso en dos pasos preserva /messages. Fixture aislado: no prueba acceso real.",
+    "Google no configurado y error de callback recuperables, con /messages conservado. Acceso Google real pendiente.",
+    "Nueva lista visitante pide cuenta antes de escribir y conserva destino; cierre Escape.",
+    "Crear publicación visitante solicita cuenta antes del compositor; no se puede perder un borrador inicial."
+  ],
+  "realLogin": "bloqueado: requiere credenciales y proveedor desplegado",
+  "errors": []
+}

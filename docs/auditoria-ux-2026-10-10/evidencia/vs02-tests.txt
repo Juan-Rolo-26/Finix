@@ -1,0 +1,34 @@
+TAP version 13
+# Subtest: scripts/auditoria-finanzas.test.cjs
+ok 1 - scripts/auditoria-finanzas.test.cjs
+  ---
+  duration_ms: 3176.088392
+  type: 'test'
+  ...
+# Subtest: scripts/financial-data.test.cjs
+ok 2 - scripts/financial-data.test.cjs
+  ---
+  duration_ms: 915.694084
+  type: 'test'
+  ...
+# Subtest: scripts/local-auth.test.cjs
+ok 3 - scripts/local-auth.test.cjs
+  ---
+  duration_ms: 3150.834042
+  type: 'test'
+  ...
+# Subtest: scripts/premarket-quotes.test.cjs
+ok 4 - scripts/premarket-quotes.test.cjs
+  ---
+  duration_ms: 1202.515875
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3201.034008

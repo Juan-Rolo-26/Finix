@@ -1,0 +1,255 @@
+[
+  {
+    "view": "calendar",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 360,
+    "scrollWidth": 360,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 360,
+    "scrollWidth": 360,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 768,
+    "scrollWidth": 768,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 768,
+    "scrollWidth": 768,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 1024,
+    "scrollWidth": 1024,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "navigationDuringCapture": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 1280,
+    "scrollWidth": 1280,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 1280,
+    "scrollWidth": 1280,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 360,
+    "scrollWidth": 360,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 360,
+    "scrollWidth": 360,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 768,
+    "scrollWidth": 768,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 768,
+    "scrollWidth": 768,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 1024,
+    "scrollWidth": 1024,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 1024,
+    "scrollWidth": 1024,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 1280,
+    "scrollWidth": 1280,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 1280,
+    "scrollWidth": 1280,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  }
+]

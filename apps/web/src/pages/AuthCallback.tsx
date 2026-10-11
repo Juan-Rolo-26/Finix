@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
+import { normalizeRedirectTarget } from '@/lib/auth-navigation';
 import { Loader2 } from 'lucide-react';
 
 export default function AuthCallback() {
@@ -18,15 +19,15 @@ export default function AuthCallback() {
             const authError = params.get('error_description') || params.get('error')
                 || hashParams.get('error_description') || hashParams.get('error');
             if (authError) {
-                sessionStorage.removeItem('authRedirect');
-                navigate(`/?reason=google-auth-error&message=${encodeURIComponent(authError)}`, { replace: true });
+                const redirect = normalizeRedirectTarget(sessionStorage.getItem('authRedirect'));
+                navigate(`/login?reason=google-auth-error&redirect=${encodeURIComponent(redirect)}`, { replace: true });
                 return;
             }
 
             const user = await syncFromSession();
 
             if (!user) {
-                navigate('/?reason=auth-failed', { replace: true });
+                navigate(`/login?reason=auth-failed&redirect=${encodeURIComponent(normalizeRedirectTarget(sessionStorage.getItem('authRedirect')))}`, { replace: true });
                 return;
             }
 
@@ -34,9 +35,7 @@ export default function AuthCallback() {
             const requestedRedirect = sessionStorage.getItem('authRedirect');
             sessionStorage.removeItem('authRedirect');
             localStorage.removeItem('pendingUsername');
-            const redirectTarget = requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')
-                ? requestedRedirect
-                : '/dashboard';
+            const redirectTarget = normalizeRedirectTarget(requestedRedirect);
             if (!user.onboardingCompleted && isNewUser) {
                 sessionStorage.setItem('postOnboardingRedirect', redirectTarget);
                 navigate('/onboarding', { replace: true });
@@ -46,8 +45,7 @@ export default function AuthCallback() {
         };
 
         void handle().catch(() => {
-            sessionStorage.removeItem('authRedirect');
-            navigate('/?reason=auth-failed', { replace: true });
+            navigate(`/login?reason=auth-failed&redirect=${encodeURIComponent(normalizeRedirectTarget(sessionStorage.getItem('authRedirect')))}`, { replace: true });
         });
     }, []);
 

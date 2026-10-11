@@ -1,0 +1,786 @@
+[
+  {
+    "width": 320,
+    "theme": "light",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 360,
+    "theme": "light",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 430,
+    "theme": "light",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 768,
+    "theme": "light",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 1024,
+    "theme": "light",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 1440,
+    "theme": "light",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 360,
+    "theme": "dark",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 430,
+    "theme": "dark",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 768,
+    "theme": "dark",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 1024,
+    "theme": "dark",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  },
+  {
+    "width": 1440,
+    "theme": "dark",
+    "sectorsTranslated": true,
+    "providerValuePreserved": "Information Technology",
+    "states": [
+      {
+        "date": "2026-10-12T12:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-11-09T13:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 11:30 ARG",
+        "shortLabel": "Fuera de horario · 11:30 ARG",
+        "detail": "Horario habitual: 11:30–18:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-10-10T16:00:00Z",
+        "status": "CLOSED",
+        "label": "Fuera del horario regular · Apertura 10:30 ARG",
+        "shortLabel": "Fuera de horario · 10:30 ARG",
+        "detail": "Horario habitual: 10:30–17:00 Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.",
+        "dotColor": "bg-amber-500 dark:bg-amber-400",
+        "textColor": "text-amber-700 dark:text-amber-400",
+        "bgColor": "bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15"
+      },
+      {
+        "date": "2026-12-25T16:00:00Z",
+        "status": "OPEN",
+        "label": "Horario regular · Cierra en 5h 0m",
+        "shortLabel": "Horario regular · 5h 0m",
+        "detail": "Horario regular estimado · Cierre 18:00 Argentina / 16:00 Nueva York (restan 5h 0m). No confirma feriados, cierres anticipados ni interrupciones.",
+        "dotColor": "bg-emerald-500",
+        "textColor": "text-emerald-500 dark:text-emerald-400",
+        "bgColor": "bg-emerald-500/10 border-emerald-500/25"
+      }
+    ],
+    "realWrites": 0
+  }
+]

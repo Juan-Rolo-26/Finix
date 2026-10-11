@@ -1,0 +1,38 @@
+The `--diff` flag is deprecated; use `--scope changed` (add `--base <ref>` to pin the base) instead.
+✔ Select projects › admin, web
+Scanning changes: main → origin/main
+
+✔ Scanned 41 files in 34.2s
+
+React Doctor — Finix
+Score: 57 / 100 Critical
+
+11 issues
+Accessibility: 3 warnings
+Performance: 7 warnings
+Maintainability: 1 warning
+
+⚠ Label missing associated control
+  react-doctor/label-has-associated-control
+  src/pages/EmailMarketing.tsx:1400
+⚠ transition: all animates everything ×6
+  react-doctor/no-transition-all
+  src/components/BottomNav.tsx:381
+  src/components/BottomNav.tsx:388
+  src/components/BottomNav.tsx:484
+  src/components/markets/ValueCreationHeatmap.tsx:189
+  src/components/posts/CreatePostModal.tsx:784
+  src/pages/TopGainersPage.tsx:658
+⚠ Repeated localStorage reads
+  react-doctor/js-cache-storage
+  src/pages/AuthCallback.tsx:30
+⚠ React function has high control-flow complexity
+  react-doctor/no-high-complexity-react-function
+  src/pages/TopGainersPage.tsx:643
+⚠ Click handler missing keyboard handler
+  react-doctor/click-events-have-key-events
+  src/pages/TopGainersPage.tsx:766
+⚠ Interaction on static element
+  react-doctor/no-static-element-interactions
+  src/pages/TopGainersPage.tsx:766
+  Full diagnostics written to /tmp/react-doctor-2774d68a-27ab-4b4d-a5bb-eb81b289580e

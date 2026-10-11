@@ -112,3 +112,5 @@ export type CreateMovementDto = z.infer<typeof CreateMovementSchema>;
 
 export * from './financial-data';
 export * from './economic-descriptions';
+
+export * from './plan-limits';

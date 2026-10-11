@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, memo } from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
@@ -28,6 +29,8 @@ import {
     BookOpen,
     Newspaper,
     MessageSquare,
+    Maximize2,
+    X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,6 +41,7 @@ import DeletePostModal from '@/components/DeletePostModal';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import VerifiedBadge from '@/components/common/VerifiedBadge';
 import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
+import { isWatchlistEnabled } from '@/lib/featureFlags';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -129,7 +133,18 @@ function MediaCarousel({
     const [playing, setPlaying] = useState(true);
     const [muted, setMuted] = useState(true);
     const [failedMedia, setFailedMedia] = useState<string[]>([]);
+    const [isZoomed, setIsZoomed] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const zoomTriggerRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        if (!isZoomed) return;
+        const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+            if (e.key === 'Escape') setIsZoomed(false);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isZoomed]);
 
     if (!media || media.length === 0) return null;
 
@@ -149,19 +164,19 @@ function MediaCarousel({
     };
 
     return (
-        <div className="relative rounded-xl overflow-hidden bg-black/20 group">
+        <div className="relative rounded-xl overflow-hidden bg-black/20 group aspect-[4/3] max-h-[460px]">
             {failedMedia.includes(current.url) ? (
-                <div role="status" className="flex min-h-40 flex-col items-center justify-center gap-3 bg-secondary p-6 text-center text-muted-foreground">
+                <div role="status" className="flex h-full min-h-40 flex-col items-center justify-center gap-3 bg-secondary p-6 text-center text-muted-foreground">
                     <ImageIcon className="h-7 w-7" />
                     <p className="text-sm">Este archivo no está disponible.</p>
                     <button type="button" className="text-sm text-primary underline" onClick={() => setFailedMedia(previous => previous.filter(url => url !== current.url))}>Reintentar</button>
                 </div>
             ) : isVideo ? (
-                <div className="relative">
+                <div className="relative h-full">
                     <video
                         ref={videoRef}
                         src={resolveMediaUrl(current.url)}
-                        className="w-full max-h-[360px] object-contain"
+                        className="w-full h-full object-contain"
                         autoPlay
                         loop
                         muted={muted}
@@ -169,14 +184,16 @@ function MediaCarousel({
                         onError={() => setFailedMedia(previous => [...previous, current.url])}
                     />
                     {/* Video controls */}
-                    <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute bottom-3 right-3 flex gap-2 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         <button
+                            aria-label={playing ? 'Pausar video' : 'Reproducir video'}
                             onClick={togglePlay}
                             className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white"
                         >
                             {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                         </button>
                         <button
+                            aria-label={muted ? 'Activar sonido del video' : 'Silenciar video'}
                             onClick={() => setMuted(!muted)}
                             className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white"
                         >
@@ -185,16 +202,55 @@ function MediaCarousel({
                     </div>
                 </div>
             ) : (
-                <img
-                    src={resolveMediaUrl(current.url)}
-                    alt="Post media"
-                    className="w-full max-h-[460px] object-contain"
-                    loading="lazy"
-                    onLoad={validateChart ? (event) => {
-                        if (isFlatChartImage(event.currentTarget)) onInvalidChart?.();
-                    } : undefined}
-                    onError={validateChart ? onInvalidChart : () => setFailedMedia(previous => [...previous, current.url])}
-                />
+                <div className="relative h-full cursor-zoom-in" onClick={() => setIsZoomed(true)}>
+                    <img
+                        src={resolveMediaUrl(current.url)}
+                        alt="Imagen adjunta a la publicación"
+                        className="w-full h-full object-contain"
+                        loading="lazy"
+                        onLoad={validateChart ? (event) => {
+                            if (isFlatChartImage(event.currentTarget)) onInvalidChart?.();
+                        } : undefined}
+                        onError={validateChart ? onInvalidChart : () => setFailedMedia(previous => [...previous, current.url])}
+                    />
+                    <button
+                        ref={zoomTriggerRef}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setIsZoomed(true); }}
+                        className="absolute top-2 right-2 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-opacity opacity-0 group-hover:opacity-100 focus-visible:opacity-100 shadow-md"
+                        aria-label="Ampliar imagen"
+                    >
+                        <Maximize2 className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
+            {/* Lightbox zoom modal */}
+            {isZoomed && !isVideo && (
+                <DialogPrimitive.Root open onOpenChange={setIsZoomed}><DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-[200] bg-black/90" /><DialogPrimitive.Content
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Vista ampliada de la imagen"
+                    aria-describedby={undefined}
+                    onCloseAutoFocus={event => { event.preventDefault(); zoomTriggerRef.current?.focus(); }}
+                    className="fixed inset-0 z-[201] backdrop-blur-md flex items-center justify-center p-4 sm:p-8"
+                    onClick={() => setIsZoomed(false)}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setIsZoomed(false)}
+                        className="absolute top-4 right-4 z-50 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-white"
+                        aria-label="Cerrar imagen ampliada"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                    <img
+                        src={resolveMediaUrl(current.url)}
+                        alt="Imagen en tamaño completo"
+                        className="max-w-full max-h-[88vh] object-contain rounded-lg shadow-2xl select-none"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </DialogPrimitive.Content></DialogPrimitive.Portal></DialogPrimitive.Root>
             )}
 
             {/* Carousel nav */}
@@ -202,27 +258,33 @@ function MediaCarousel({
                 <>
                     {idx > 0 && (
                         <button
+                            type="button"
                             onClick={prev}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label="Imagen anterior"
+                            className="absolute left-2 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/70 backdrop-blur-xs flex items-center justify-center text-white transition-opacity hover:bg-black/90 focus-visible:opacity-100"
                         >
                             <ChevronLeft className="w-5 h-5" />
                         </button>
                     )}
                     {idx < media.length - 1 && (
                         <button
+                            type="button"
                             onClick={next}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label="Siguiente imagen"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/70 backdrop-blur-xs flex items-center justify-center text-white transition-opacity hover:bg-black/90 focus-visible:opacity-100"
                         >
                             <ChevronRight className="w-5 h-5" />
                         </button>
                     )}
                     {/* Dots */}
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 p-1.5 bg-black/40 backdrop-blur-xs rounded-full">
                         {media.map((_, i) => (
                             <button
                                 key={i}
+                                type="button"
                                 onClick={() => setIdx(i)}
-                                className={`w-1.5 h-1.5 rounded-full transition-all ${i === idx ? 'bg-white w-4' : 'bg-white/50'}`}
+                                aria-label={`Ir a imagen ${i + 1} de ${media.length}`}
+                                className={`rounded-full transition-all ${i === idx ? 'bg-white w-4 h-2' : 'bg-white/60 hover:bg-white w-2 h-2'}`}
                             />
                         ))}
                     </div>
@@ -262,11 +324,25 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
     const [repostComment, setRepostComment] = useState('');
     const [showReportModal, setShowReportModal] = useState(false);
     const [commentsCount, setCommentsCount] = useState(post.commentsCount);
+    const [isQuotedExpanded, setIsQuotedExpanded] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
+    const [quotedAvatarError, setQuotedAvatarError] = useState(false);
+    const [expandedQuotedMedia, setExpandedQuotedMedia] = useState<string | null>(null);
+    const quotedZoomTriggerRef = useRef<HTMLButtonElement>(null);
     // A chart post should show the author's captured analysis first. The live
     // TradingView chart remains available as an explicit alternative.
     const [showLiveChart, setShowLiveChart] = useState(false);
     const [invalidCapturedChart, setInvalidCapturedChart] = useState(false);
     const [watchlistTarget, setWatchlistTarget] = useState<{ symbol: string; name?: string } | null>(null);
+
+    useEffect(() => {
+        if (!expandedQuotedMedia) return;
+        const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+            if (e.key === 'Escape') setExpandedQuotedMedia(null);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [expandedQuotedMedia]);
 
     const isOwner = currentUserId === post.author.id;
     const canEdit = isOwner && !post.contentEditedAt &&
@@ -413,11 +489,12 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             <div className="flex items-start justify-between p-4 pb-3">
                 <Link to={`/profile/${post.author?.username || ''}`} className="flex items-center gap-3 group">
                     <div className="flex-shrink-0">
-                        {post.author?.avatarUrl ? (
+                        {post.author?.avatarUrl && !avatarError ? (
                             <img
                                 src={resolveMediaUrl(post.author.avatarUrl)}
                                 alt={post.author.username || 'Avatar'}
                                 className="w-10 h-10 rounded-full object-cover border-2 border-border/50 group-hover:border-primary/50 transition-colors"
+                                onError={() => setAvatarError(true)}
                             />
                         ) : (
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center text-black font-bold text-sm shrink-0">
@@ -441,8 +518,8 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                             <span>{timeAgo(post.createdAt)}</span>
                             {post.contentEditedAt && <span>· editado</span>}
                             {typeBadge && (
-                                <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[10px] font-medium ${typeBadge.color}`}>
-                                    <typeBadge.icon className="w-2.5 h-2.5" />
+                                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-semibold ${typeBadge.color}`}>
+                                    <typeBadge.icon className="w-3 h-3" />
                                     {typeBadge.label}
                                 </span>
                             )}
@@ -453,10 +530,12 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                 {/* Menu */}
                 <div className="relative">
                     <button
+                        type="button"
                         onClick={() => setShowMenu(!showMenu)}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all focus-visible:ring-2 focus-visible:ring-primary"
+                        aria-label="Más opciones"
                     >
-                        <MoreHorizontal className="w-4 h-4" />
+                        <MoreHorizontal className="w-5 h-5" />
                     </button>
                     <AnimatePresence>
                         {showMenu && (
@@ -511,18 +590,20 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                         <TrendingUp className="w-3 h-3" />
                         ${post.assetSymbol}
                     </span>
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setWatchlistTarget({ symbol: post.assetSymbol! });
-                        }}
-                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20 transition-all font-semibold"
-                        title="Seguir en Mis listas"
-                    >
-                        <Bookmark className="w-3 h-3" />
-                        <span>Seguir</span>
-                    </button>
+                    {isWatchlistEnabled() && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setWatchlistTarget({ symbol: post.assetSymbol! });
+                            }}
+                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20 transition-all font-semibold"
+                            title="Seguir en Mis listas"
+                        >
+                            <Bookmark className="w-3 h-3" />
+                            <span>Seguir</span>
+                        </button>
+                    )}
                     {post.analysisType && (
                         <span className="text-xs px-2 py-1 rounded-lg bg-secondary/50 border border-border/50 text-muted-foreground capitalize">
                             {post.analysisType === 'technical' ? 'Análisis Técnico' : 'Análisis Fundamental'}
@@ -541,6 +622,16 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                 <div className="px-4 pb-2 flex flex-wrap items-center gap-1.5">
                     {(Array.isArray(post.tickers) ? post.tickers : post.tickers.split(',')).filter(Boolean).map((t: string) => {
                         const cleanTicker = t.trim().replace(/^[$#]/, '');
+                        if (!isWatchlistEnabled()) {
+                            return (
+                                <span
+                                    key={t}
+                                    className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/5 text-xs text-primary font-medium"
+                                >
+                                    #{cleanTicker}
+                                </span>
+                            );
+                        }
                         return (
                             <button
                                 key={t}
@@ -598,36 +689,76 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
 
             {post.quotedPost && (
                 <div className="px-4 pb-3">
-                    <button
-                        type="button"
-                        onClick={() => navigate(`/posts/${post.quotedPost!.id}`)}
-                        className="w-full text-left rounded-xl border border-border/50 bg-background/30 p-4 hover:bg-muted/10 transition-colors"
+                    <div
+                        className="w-full text-left rounded-xl border border-border/50 bg-background/30 p-4 transition-colors focus-within:ring-2 focus-within:ring-primary/40"
                     >
-                        <div className="flex items-center gap-2 mb-2">
-                            {post.quotedPost.author?.avatarUrl ? (
-                                <img
-                                    src={resolveMediaUrl(post.quotedPost.author.avatarUrl)}
-                                    alt={post.quotedPost.author.username || 'Usuario'}
-                                    className="w-5 h-5 rounded-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold">
-                                    {(post.quotedPost.author?.username?.[0] || 'U').toUpperCase()}
-                                </div>
-                            )}
-                            <span className="font-bold text-sm">{post.quotedPost.author?.username || 'Usuario'}</span>
-                            <span className="text-xs text-muted-foreground">{timeAgo(post.quotedPost.createdAt)}</span>
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                {post.quotedPost.author?.avatarUrl && !quotedAvatarError ? (
+                                    <img
+                                        src={resolveMediaUrl(post.quotedPost.author.avatarUrl)}
+                                        alt={post.quotedPost.author.username || 'Usuario'}
+                                        className="w-6 h-6 rounded-full object-cover"
+                                        onError={() => setQuotedAvatarError(true)}
+                                    />
+                                ) : (
+                                    <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-xs font-bold">
+                                        {(post.quotedPost.author?.username?.[0] || 'U').toUpperCase()}
+                                    </div>
+                                )}
+                                <span className="font-bold text-sm">{post.quotedPost.author?.username || 'Usuario'}</span>
+                                <span className="text-xs text-muted-foreground">{timeAgo(post.quotedPost.createdAt)}</span>
+                            </div>
+                            <span className="text-xs font-medium text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded">
+                                Cita
+                            </span>
                         </div>
-                        <p className="text-sm line-clamp-3 mb-2">{post.quotedPost.content}</p>
-                        {quotedMediaUrl && (
-                            <img
-                                src={resolveMediaUrl(quotedMediaUrl)}
-                                alt="Vista previa del post citado"
-                                className="w-full h-32 object-cover rounded-lg"
-                                loading="lazy"
-                            />
+                        <p className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${isQuotedExpanded ? '' : 'line-clamp-3'} mb-2`}>
+                            {post.quotedPost.content}
+                        </p>
+                        {post.quotedPost.content && post.quotedPost.content.length > 120 && (
+                            <button
+                                type="button"
+                                onClick={() => setIsQuotedExpanded(!isQuotedExpanded)}
+                                className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1 mb-2 min-h-[44px] min-w-[44px] py-2 px-3 rounded-lg hover:bg-primary/10 transition-colors focus-visible:ring-2 focus-visible:ring-primary"
+                                aria-expanded={isQuotedExpanded}
+                            >
+                                {isQuotedExpanded ? 'Ver menos' : 'Leer más'}
+                            </button>
                         )}
-                    </button>
+                        {quotedMediaUrl && (
+                            <button type="button" aria-label="Ampliar imagen de la publicación citada"
+                                className="mt-2 mb-2 rounded-lg overflow-hidden border border-border/40 relative group cursor-pointer"
+                                ref={quotedZoomTriggerRef}
+                                onClick={() => setExpandedQuotedMedia(resolveMediaUrl(quotedMediaUrl))}
+                            >
+                                <img
+                                    src={resolveMediaUrl(quotedMediaUrl)}
+                                    alt={`Vista previa del post citado de ${post.quotedPost.author?.username || 'Usuario'}`}
+                                    className="w-full h-40 object-cover"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                        (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+                                    }}
+                                />
+                                <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                    <span className="text-xs font-semibold text-white bg-black/70 px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-xs">
+                                        <Maximize2 className="w-3.5 h-3.5" /> Ampliar imagen
+                                    </span>
+                                </div>
+                            </button>
+                        )}
+                        <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-end">
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/posts/${post.quotedPost!.id}`)}
+                                className="text-xs font-semibold text-primary hover:text-primary-hover flex items-center gap-1.5 py-2 px-3 rounded-lg hover:bg-primary/10 transition-colors focus-visible:ring-2 focus-visible:ring-primary min-h-[44px]"
+                            >
+                                <span>Ver publicación completa</span>
+                                <span aria-hidden="true">&rarr;</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -741,12 +872,14 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
             })()}
 
             {/* Action bar */}
-            <div className="px-4 py-3 border-t border-border/30 flex items-center justify-between">
-                <div className="flex items-center gap-1">
+            <div className="px-3 py-2 border-t border-border/30 flex items-center justify-between">
+                <div className="flex items-center gap-1 sm:gap-2">
                     {/* Like */}
                     <button
+                        type="button"
                         onClick={handleLike}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-secondary/50 ${liked ? 'text-red-400' : 'text-muted-foreground'}`}
+                        className={`min-w-[44px] min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm transition-all hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary ${liked ? 'text-red-400' : 'text-muted-foreground'}`}
+                        aria-label={liked ? `Quitar me gusta, ${likesCount} me gusta` : `Me gusta, ${likesCount} me gusta`}
                     >
                         <Heart className={`w-4 h-4 ${liked ? 'fill-red-400' : ''}`} />
                         <span className="text-xs font-medium">{likesCount > 0 ? likesCount : ''}</span>
@@ -754,8 +887,10 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
 
                     {/* Comment */}
                     <button
+                        type="button"
                         onClick={() => setShowComments(!showComments)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-secondary/50 ${showComments ? 'text-primary' : 'text-muted-foreground'}`}
+                        className={`min-w-[44px] min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm transition-all hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary ${showComments ? 'text-primary' : 'text-muted-foreground'}`}
+                        aria-label={`Comentarios, ${commentsCount} comentarios`}
                     >
                         <MessageCircle className="w-4 h-4" />
                         <span className="text-xs font-medium">{commentsCount > 0 ? commentsCount : ''}</span>
@@ -763,20 +898,24 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
 
                     {/* Repost */}
                     <button
+                        type="button"
                         onClick={() => setShowRepostModal(true)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-secondary/50 ${reposted ? 'text-emerald-400' : 'text-muted-foreground'}`}
+                        className={`min-w-[44px] min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm transition-all hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary ${reposted ? 'text-emerald-400' : 'text-muted-foreground'}`}
+                        aria-label={`Repostear, ${repostsCount} reposteos`}
                     >
                         <Repeat2 className="w-4 h-4" />
                         <span className="text-xs font-medium">{repostsCount > 0 ? repostsCount : ''}</span>
                     </button>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 sm:gap-2">
                     {/* Share */}
                     <button
+                        type="button"
                         onClick={handleShare}
-                        className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all focus-visible:ring-2 focus-visible:ring-primary"
                         title="Copiar enlace"
+                        aria-label="Copiar enlace de la publicación"
                     >
                         <Share2 className="w-4 h-4" />
                     </button>
@@ -788,8 +927,9 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                         disabled={isSavingPost}
                         aria-pressed={saved}
                         aria-busy={isSavingPost}
-                        className={`p-2 rounded-lg transition-all hover:bg-secondary/50 disabled:cursor-wait disabled:opacity-60 ${saved ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                        className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl transition-all hover:bg-secondary/50 disabled:cursor-wait disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary ${saved ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                         title={saved ? 'Quitar de guardados' : 'Guardar'}
+                        aria-label={saved ? 'Quitar de guardados' : 'Guardar publicación'}
                     >
                         <Bookmark className={`w-4 h-4 ${saved ? 'fill-primary' : ''}`} />
                     </button>
@@ -844,7 +984,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                                     </p>
                                 </div>
                             </div>
-                            
+
                             {!reposted && (
                                 <div className="space-y-2">
                                     <Textarea
@@ -857,7 +997,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                                     />
                                 </div>
                             )}
-                            
+
                             <div className="flex gap-3 pt-2">
                                 <Button variant="outline" onClick={() => setShowRepostModal(false)} className="flex-1 rounded-xl h-11 border-border/50">
                                     Cancelar
@@ -887,9 +1027,9 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                 )}
             </AnimatePresence>
 
-            <DeletePostModal 
-                isOpen={showDeleteModal} 
-                onClose={() => setShowDeleteModal(false)} 
+            <DeletePostModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
                 onConfirm={confirmDelete}
                 isDeleting={isDeleting}
             />
@@ -901,6 +1041,34 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                     symbol={watchlistTarget.symbol}
                     name={watchlistTarget.name}
                 />
+            )}
+
+            {/* Lightbox for quoted post media */}
+            {expandedQuotedMedia && (
+                <DialogPrimitive.Root open onOpenChange={open => { if (!open) setExpandedQuotedMedia(null); }}><DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-[200] bg-black/90" /><DialogPrimitive.Content
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Vista ampliada de la imagen citada"
+                    aria-describedby={undefined}
+                    onCloseAutoFocus={event => { event.preventDefault(); quotedZoomTriggerRef.current?.focus(); }}
+                    className="fixed inset-0 z-[201] backdrop-blur-md flex items-center justify-center p-4 sm:p-8"
+                    onClick={() => setExpandedQuotedMedia(null)}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setExpandedQuotedMedia(null)}
+                        className="absolute top-4 right-4 z-50 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-white"
+                        aria-label="Cerrar imagen ampliada"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                    <img
+                        src={expandedQuotedMedia}
+                        alt="Imagen citada en tamaño completo"
+                        className="max-w-full max-h-[88vh] object-contain rounded-lg shadow-2xl select-none"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </DialogPrimitive.Content></DialogPrimitive.Portal></DialogPrimitive.Root>
             )}
         </motion.article>
     );

@@ -1,0 +1,29 @@
+[
+  {
+    "path": "/settings",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "dark",
+    "bottom": true,
+    "key": "Control+End",
+    "realWrites": 0
+  },
+  {
+    "path": "/settings",
+    "width": 1024,
+    "scrollWidth": 1024,
+    "theme": "dark",
+    "bottom": true,
+    "key": "Control+End",
+    "realWrites": 0
+  },
+  {
+    "path": "/portfolio",
+    "width": 1024,
+    "scrollWidth": 1024,
+    "theme": "dark",
+    "bottom": true,
+    "key": "Control+End",
+    "realWrites": 0
+  }
+]

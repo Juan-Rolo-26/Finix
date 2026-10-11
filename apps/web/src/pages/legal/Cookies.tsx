@@ -67,13 +67,13 @@ function MobileToc({ activeId }: { activeId: string }) {
     return (
         <div className="relative lg:hidden mb-6">
             <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-card border border-border/60 text-base font-medium text-left cursor-pointer" aria-expanded={open}>
-                <span className="truncate text-foreground">{active?.title ?? 'Índice'}</span>
+                <span className="min-w-0 break-words text-foreground">{active?.title ?? 'Índice'}</span>
                 <ChevronDown className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && (
                 <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl bg-card border border-border/60 shadow-xl overflow-y-auto max-h-72">
                     {SECTIONS.map(s => (
-                        <a key={s.id} href={`#${s.id}`} className={`block px-4 py-2.5 text-sm transition-colors ${s.id === activeId ? 'text-primary font-semibold bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}`} onClick={() => setOpen(false)}>
+                        <a key={s.id} href={`#${s.id}`} className={`block min-h-11 px-4 py-2.5 text-sm transition-colors ${s.id === activeId ? 'text-primary font-semibold bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}`} onClick={() => setOpen(false)}>
                             {s.title}
                         </a>
                     ))}

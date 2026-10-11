@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useAuthStore } from '@/stores/authStore';
+import AccountRequired from '@/components/auth/AccountRequired';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -32,11 +34,13 @@ export default function CreateEditWatchlistModal({
     watchlist,
     onSuccess,
 }: CreateEditWatchlistModalProps) {
+    const user = useAuthStore(state => state.user);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [color, setColor] = useState('emerald');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const returnFocusRef = useRef<HTMLElement | null>(null);
 
     const isEditing = Boolean(watchlist);
 
@@ -55,6 +59,7 @@ export default function CreateEditWatchlistModal({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!useAuthStore.getState().user) return;
         if (!name.trim()) {
             setError('El nombre de la lista es obligatorio.');
             return;
@@ -92,9 +97,15 @@ export default function CreateEditWatchlistModal({
         }
     };
 
+    if (isOpen && !user) return <AccountRequired action="crear una lista de seguimiento" onClose={onClose} />;
+
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-md rounded-3xl border-border/60 bg-card/95 backdrop-blur-xl p-6 shadow-2xl">
+            <DialogContent
+                onOpenAutoFocus={() => { returnFocusRef.current = document.activeElement as HTMLElement; }}
+                onCloseAutoFocus={(event) => { event.preventDefault(); returnFocusRef.current?.focus(); }}
+                className="sm:max-w-md rounded-3xl border-border/60 bg-card/95 backdrop-blur-xl p-6 shadow-2xl"
+            >
                 <DialogHeader className="space-y-2">
                     <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                         {isEditing ? <Edit3 className="h-5 w-5" /> : <ListPlus className="h-5 w-5" />}
@@ -117,8 +128,9 @@ export default function CreateEditWatchlistModal({
                     )}
 
                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-foreground">Nombre de la lista *</label>
+                        <label htmlFor="watchlist-name" className="text-xs font-bold text-foreground">Nombre de la lista *</label>
                         <input
+                            id="watchlist-name"
                             type="text"
                             required
                             placeholder="Ej. CEDEARs de dividendos, Semiconductores, Value..."
@@ -129,8 +141,9 @@ export default function CreateEditWatchlistModal({
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-foreground">Descripción (opcional)</label>
+                        <label htmlFor="watchlist-description" className="text-xs font-bold text-foreground">Descripción (opcional)</label>
                         <textarea
+                            id="watchlist-description"
                             rows={2}
                             placeholder="Notas generales o criterios de selección para esta lista..."
                             value={description}
@@ -141,14 +154,16 @@ export default function CreateEditWatchlistModal({
 
                     <div className="space-y-1.5">
                         <label className="text-xs font-bold text-foreground">Color distintivo</label>
-                        <div className="flex items-center gap-2 pt-1">
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
                             {COLORS.map((c) => (
                                 <button
                                     key={c.key}
                                     type="button"
                                     onClick={() => setColor(c.key)}
-                                    className={`w-7 h-7 rounded-full ${c.bg} transition-all ${color === c.key
-                                            ? 'ring-2 ring-foreground ring-offset-2 ring-offset-card scale-110'
+                                    aria-label={`Color ${c.label}`}
+                                    aria-pressed={color === c.key}
+                                    className={`w-11 h-11 shrink-0 rounded-full ${c.bg} transition-all ${color === c.key
+                                            ? 'ring-2 ring-foreground ring-offset-2 ring-offset-card'
                                             : 'opacity-70 hover:opacity-100'
                                         }`}
                                     title={c.label}

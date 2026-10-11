@@ -1,7 +1,8 @@
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ComponentType } from 'react';
 import {
     LayoutDashboard,
@@ -23,21 +24,25 @@ import {
     AreaChart,
     Calendar,
     Receipt,
+    GraduationCap,
+    Bookmark,
+    Sparkles,
 } from 'lucide-react';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { hasCommunityAccess, useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
 import { cn } from '../lib/utils';
+import { isWatchlistEnabled } from '@/lib/featureFlags';
 
 const PRIMARY = 'hsl(var(--primary))';
 
 /* ── 4 main tabs + 1 create slot ──────────────────────────────── */
 const mainTabs = [
-    { path: '/dashboard', icon: LayoutDashboard },
-    { path: '/comunidades', icon: Users },
+    { path: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
+    { path: '/comunidades', label: 'Comunidades', icon: Users },
     // CENTER: create button
-    { path: '/explore', icon: Compass },
-    { path: '/messages', icon: MessageSquare },
+    { path: '/explore', label: 'Explorar', icon: Compass },
+    { path: '/messages', label: 'Mensajes', icon: MessageSquare },
 ];
 
 export function FinanceMobileNav({ location, navigate }: { location: ReturnType<typeof useLocation>; navigate: ReturnType<typeof useNavigate> }) {
@@ -72,6 +77,16 @@ export function BottomNav() {
 
     const [unreadMsgs, setUnreadMsgs] = useUnreadCount('messages');
     const [isMoreOpen, setIsMoreOpen] = useState(false);
+    const moreButtonRef = useRef<HTMLButtonElement>(null);
+    const navRef = useRef<HTMLElement>(null);
+    useEffect(() => {
+        const nav = navRef.current;
+        if (!nav) return;
+        const syncHeight = () => document.documentElement.style.setProperty('--finix-mobile-nav-height', `${nav.getBoundingClientRect().height}px`);
+        const observer = new ResizeObserver(syncHeight);
+        observer.observe(nav); syncHeight();
+        return () => { observer.disconnect(); document.documentElement.style.removeProperty('--finix-mobile-nav-height'); };
+    }, []);
 
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
     const visibleMainTabs = hasCommunityAccess(user)
@@ -79,8 +94,6 @@ export function BottomNav() {
         : mainTabs.filter((tab) => tab.path !== '/comunidades');
 
     /* poll unread */
-
-
     useEffect(() => {
         if (location.pathname === '/messages') setUnreadMsgs(0);
     }, [location.pathname, setUnreadMsgs]);
@@ -88,22 +101,39 @@ export function BottomNav() {
     /* close panel on route change */
     useEffect(() => { setIsMoreOpen(false); }, [location.pathname]);
 
+    /* close on Escape key and restore focus to trigger */
+    useEffect(() => {
+        if (!isMoreOpen) return;
+        const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsMoreOpen(false);
+                moreButtonRef.current?.focus();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isMoreOpen]);
+
     const isActive = (p: string) =>
         location.pathname === p ||
         (p !== '/dashboard' && location.pathname.startsWith(`${p}/`));
 
-    const moreActive = ['/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', '/learn', '/profile', '/settings', '/notifications'].some(p => isActive(p));
+    const moreActive = ['/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', '/educativa', '/profile', '/settings', '/notifications'].some(p => isActive(p));
 
     const moreLinks = [
-        // ...(financeAccess(user) ? [{ label: 'Finanzas Personales', path: '/finanzas', icon: Wallet }] : []),
         { label: 'Mercado',   path: '/market',   icon: TrendingUp  },
+        ...(isWatchlistEnabled() ? [{ label: 'Seguimiento', path: '/market/seguimiento', icon: Bookmark }] : []),
+        { label: 'Educativa', path: '/educativa', icon: GraduationCap },
         { label: 'Calendario', path: '/calendario', icon: Calendar },
         { label: 'Portafolio',path: '/portfolio', icon: Briefcase   },
         { label: 'Noticias',  path: '/news',     icon: Newspaper   },
         { label: 'Análisis',  path: '/analysis', icon: AreaChart   },
-        // { label: 'Aprender', path: '/learn', icon: BookOpen },
-        { label: 'Mi Perfil', path: '/profile',  icon: User        },
-        { label: 'Ajustes',   path: '/settings', icon: Settings    },
+        { label: 'Comunidades', path: '/comunidades', icon: Users },
+        { label: 'Planes PRO', path: '/pricing#planes', icon: Sparkles },
+        ...(user ? [
+            { label: 'Mi Perfil', path: '/profile', icon: User },
+            { label: 'Ajustes',   path: '/settings', icon: Settings },
+        ] : []),
     ];
 
     const LEFT_TABS = visibleMainTabs.slice(0, 2);
@@ -120,19 +150,23 @@ export function BottomNav() {
                     paddingBottom: 'env(safe-area-inset-bottom)',
                     paddingLeft: 'env(safe-area-inset-left)',
                     paddingRight: 'env(safe-area-inset-right)',
-                    height: 'calc(60px + env(safe-area-inset-bottom))',
+                    minHeight: 'calc(60px + env(safe-area-inset-bottom))',
                     boxSizing: 'border-box',
                 }}
+                ref={navRef}
+                aria-label="Navegación inferior"
             >
-                <div className="flex items-center justify-around h-[60px] px-1">
+                <div className="flex items-stretch justify-around min-h-[60px] py-1 px-1 gap-1">
                     {/* Left tabs */}
-                    {LEFT_TABS.map(({ path, icon: Icon }) => {
+                    {LEFT_TABS.map(({ path, label, icon: Icon }) => {
                         const active = isActive(path);
                         return (
                             <Link
                                 key={path}
                                 to={path}
-                                className="relative flex items-center justify-center w-12 h-12 rounded-xl"
+                                aria-label={label}
+                                aria-current={active ? 'page' : undefined}
+                                className="relative flex flex-col items-center justify-center min-w-0 flex-1 min-h-12 h-auto rounded-xl touch-manipulation px-1 focus-visible:ring-2 focus-visible:ring-primary"
                             >
                                 <AnimatePresence>
                                     {active && (
@@ -152,13 +186,19 @@ export function BottomNav() {
                                     className="w-5 h-5 relative z-10 transition-colors"
                                     style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                                 />
+                                <span
+                                    className="text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full break-words text-center leading-tight"
+                                    style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
+                                >
+                                    {label}
+                                </span>
                             </Link>
                         );
                     })}
 
                     {/* ── CENTER CREATE BUTTON ──────────────── */}
                     <button
-                        className="relative flex items-center justify-center w-12 h-12 rounded-full transition-all active:scale-90"
+                        className="relative flex items-center justify-center w-12 h-12 rounded-full transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-primary"
                         style={{
                             background: `linear-gradient(135deg, ${PRIMARY} 0%, hsl(var(--primary) / 0.72) 100%)`,
                             boxShadow: `0 4px 18px hsl(var(--primary) / 0.32), 0 2px 6px hsl(var(--primary) / 0.22)`,
@@ -171,14 +211,16 @@ export function BottomNav() {
                     </button>
 
                     {/* Right tabs */}
-                    {RIGHT_TABS.map(({ path, icon: Icon }) => {
+                    {RIGHT_TABS.map(({ path, label, icon: Icon }) => {
                         const active = isActive(path);
                         const badge = path === '/messages' ? unreadMsgs : 0;
                         return (
                             <Link
                                 key={path}
                                 to={path}
-                                className="relative flex items-center justify-center w-12 h-12 rounded-xl"
+                                aria-label={label}
+                                aria-current={active ? 'page' : undefined}
+                                className="relative flex flex-col items-center justify-center min-w-0 flex-1 min-h-12 h-auto rounded-xl touch-manipulation px-1 focus-visible:ring-2 focus-visible:ring-primary"
                             >
                                 <AnimatePresence>
                                     {active && (
@@ -198,11 +240,17 @@ export function BottomNav() {
                                     className="w-5 h-5 relative z-10 transition-colors"
                                     style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                                 />
+                                <span
+                                    className="text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full break-words text-center leading-tight"
+                                    style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
+                                >
+                                    {label}
+                                </span>
                                 {badge > 0 && (
                                     <motion.span
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
-                                        className="absolute top-1.5 right-1.5 min-w-[15px] h-[15px] rounded-full text-[9px] font-bold flex items-center justify-center px-0.5 z-20"
+                                        className="absolute top-1 right-1.5 min-w-[15px] h-[15px] rounded-full text-[9px] font-bold flex items-center justify-center px-0.5 z-20"
                                         style={{ background: PRIMARY, color: 'hsl(var(--primary-foreground))' }}
                                     >
                                         {badge > 9 ? '9+' : badge}
@@ -214,9 +262,13 @@ export function BottomNav() {
 
                     {/* More button */}
                     <button
-                        className="relative flex items-center justify-center w-12 h-12 rounded-xl"
+                        ref={moreButtonRef}
+                        type="button"
+                        className="relative flex flex-col items-center justify-center min-w-0 flex-1 min-h-12 h-auto rounded-xl touch-manipulation px-1 focus-visible:ring-2 focus-visible:ring-primary"
                         onClick={() => setIsMoreOpen(v => !v)}
-                        aria-label="Más opciones"
+                        aria-label="Más herramientas y opciones"
+                        aria-haspopup="dialog"
+                        aria-expanded={isMoreOpen}
                     >
                         {(moreActive || isMoreOpen) && (
                             <motion.div
@@ -232,6 +284,12 @@ export function BottomNav() {
                             className="w-5 h-5 relative z-10 transition-colors"
                             style={{ color: moreActive || isMoreOpen ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                         />
+                        <span
+                            className="text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full break-words text-center leading-tight"
+                            style={{ color: moreActive || isMoreOpen ? PRIMARY : 'hsl(var(--muted-foreground))' }}
+                        >
+                            Más
+                        </span>
                     </button>
                 </div>
             </nav>
@@ -239,18 +297,25 @@ export function BottomNav() {
             {/* ── MORE PANEL (slide-up sheet) ──────────────── */}
             <AnimatePresence>
                 {isMoreOpen && (
-                    <>
+                    <DialogPrimitive.Root open={isMoreOpen} onOpenChange={setIsMoreOpen}><DialogPrimitive.Portal>
                         {/* Backdrop */}
-                        <motion.div
+                        <DialogPrimitive.Overlay asChild><motion.div
                             className="fixed inset-0 z-40 lg:hidden"
                             style={{ background: 'hsl(0 0% 0% / 0.5)', backdropFilter: 'blur(3px)' }}
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            onClick={() => setIsMoreOpen(false)}
-                        />
+                            onClick={() => {
+                                setIsMoreOpen(false);
+                                moreButtonRef.current?.focus();
+                            }}
+                            aria-hidden="true"
+                        /></DialogPrimitive.Overlay>
 
                         {/* Sheet */}
-                        <motion.div
-                            className="fixed left-0 right-0 bottom-0 z-50 lg:hidden rounded-t-3xl overflow-hidden"
+                        <DialogPrimitive.Content asChild aria-describedby={undefined} onCloseAutoFocus={(event) => { event.preventDefault(); moreButtonRef.current?.focus(); }}><motion.div
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="more-menu-title"
+                            className="fixed left-0 right-0 bottom-0 z-50 lg:hidden rounded-t-3xl overflow-hidden shadow-2xl"
                             style={{
                                 background: 'hsl(var(--sidebar-bg))',
                                 borderTop: '1px solid hsl(var(--sidebar-border))',
@@ -270,42 +335,82 @@ export function BottomNav() {
                             <div className="overflow-y-auto scrollbar-hide" style={{ maxHeight: 'calc(88vh - 64px)' }}>
                                 {/* Header */}
                                 <div className="flex items-center justify-between px-5 py-3">
-                                    <div
-                                        className="flex items-center gap-3 cursor-pointer"
-                                        onClick={() => navigate('/profile')}
-                                    >
+                                    {user ? (
                                         <div
-                                            className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-[13px] flex-shrink-0 overflow-hidden"
-                                            style={{
-                                                background: user?.avatarUrl ? undefined : `linear-gradient(135deg, ${PRIMARY} 0%, hsl(var(--primary) / 0.7) 100%)`,
-                                                color: 'hsl(var(--primary-foreground))',
+                                            className="flex items-center gap-3 cursor-pointer"
+                                            onClick={() => {
+                                                setIsMoreOpen(false);
+                                                navigate('/profile');
                                             }}
                                         >
-                                            {user?.avatarUrl
-                                                ? <img src={resolveMediaUrl(user.avatarUrl)} alt={user.username} className="w-full h-full object-cover" />
-                                                : (user?.username?.[0]?.toUpperCase() || 'F')
-                                            }
+                                            <div
+                                                className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-[13px] flex-shrink-0 overflow-hidden"
+                                                style={{
+                                                    background: user?.avatarUrl ? undefined : `linear-gradient(135deg, ${PRIMARY} 0%, hsl(var(--primary) / 0.7) 100%)`,
+                                                    color: 'hsl(var(--primary-foreground))',
+                                                }}
+                                            >
+                                                {user?.avatarUrl
+                                                    ? <img src={resolveMediaUrl(user.avatarUrl)} alt={user.username} className="w-full h-full object-cover" />
+                                                    : (user?.username?.[0]?.toUpperCase() || 'F')
+                                                }
+                                            </div>
+                                            <div>
+                                                <p id="more-menu-title" className="font-bold text-[13.5px] leading-tight">{user?.username}</p>
+                                                <p className="text-[11px] font-semibold text-primary mt-0.5">
+                                                    Ver perfil →
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="font-bold text-[13.5px] leading-tight">{user?.username || 'Usuario'}</p>
-                                            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'hsl(var(--primary) / 0.6)' }}>
-                                                Ver perfil →
-                                            </p>
+                                    ) : (
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center flex-shrink-0">
+                                                <img src="/logo-small.webp" alt="Finix" className="w-6 h-6 object-contain" />
+                                            </div>
+                                            <div>
+                                                <p id="more-menu-title" className="font-bold text-[14px] leading-tight">Finix Inversiones</p>
+                                                <p className="text-xs text-muted-foreground mt-0.5">Navegación y herramientas</p>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                     <button
-                                        className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+                                        type="button"
+                                        aria-label="Cerrar menú de herramientas"
+                                        className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                                         style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}
-                                        onClick={() => setIsMoreOpen(false)}
+                                        onClick={() => {
+                                            setIsMoreOpen(false);
+                                            moreButtonRef.current?.focus();
+                                        }}
                                     >
-                                        <X className="w-4 h-4" />
+                                        <X className="w-5 h-5" />
                                     </button>
                                 </div>
+
+                                {!user && (
+                                    <div className="grid grid-cols-2 gap-2.5 px-4 pb-3">
+                                        <Link
+                                            to="/login"
+                                            onClick={() => setIsMoreOpen(false)}
+                                            className="flex items-center justify-center gap-1.5 py-2.5 px-3 min-h-[44px] rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-md shadow-primary/20 hover:opacity-95 transition-all focus-visible:ring-2 focus-visible:ring-primary"
+                                        >
+                                            Iniciar sesión
+                                        </Link>
+                                        <Link
+                                            to="/login?mode=signup"
+                                            onClick={() => setIsMoreOpen(false)}
+                                            className="flex items-center justify-center gap-1.5 py-2.5 px-3 min-h-[44px] rounded-xl bg-secondary text-foreground font-semibold text-xs border border-border hover:bg-secondary/80 transition-all focus-visible:ring-2 focus-visible:ring-primary"
+                                        >
+                                            Crear cuenta
+                                        </Link>
+                                    </div>
+                                )}
 
                                 {/* Search Trigger */}
                                 <div className="px-4 pb-3">
                                     <button
-                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left"
+                                        type="button"
+                                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors text-left min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary"
                                         style={{
                                             background: 'hsl(var(--secondary))',
                                             color: 'hsl(var(--muted-foreground))',
@@ -328,18 +433,22 @@ export function BottomNav() {
                                         return (
                                             <button
                                                 key={path}
-                                                className="flex flex-col items-center gap-2 py-3.5 rounded-2xl transition-all"
+                                                type="button"
+                                                className="flex flex-col items-center gap-2 py-3 rounded-2xl transition-all min-h-[72px] focus-visible:ring-2 focus-visible:ring-primary"
                                                 style={{
                                                     background: active ? `hsl(var(--primary) / 0.1)` : 'hsl(var(--secondary))',
                                                     border: `1px solid ${active ? `hsl(var(--primary) / 0.25)` : 'hsl(var(--border))'}`,
                                                     color: active ? PRIMARY : 'hsl(var(--foreground))',
                                                 }}
-                                                onClick={() => navigate(path)}
+                                                onClick={() => {
+                                                    setIsMoreOpen(false);
+                                                    navigate(path);
+                                                }}
                                             >
                                                 <div className="w-8 h-8 rounded-full flex items-center justify-center border border-black/30 dark:border-white/35 bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs">
                                                     <Icon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                                 </div>
-                                                <span className="text-[11px] font-semibold">{label}</span>
+                                                <span className="text-[11px] font-semibold text-center">{label}</span>
                                             </button>
                                         );
                                     })}
@@ -351,7 +460,8 @@ export function BottomNav() {
                                 <div className="px-4 pb-3 space-y-2">
                                     {/* Theme toggle */}
                                     <button
-                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-colors"
+                                        type="button"
+                                        className="w-full flex items-center gap-3 px-4 py-3 min-h-[44px] rounded-xl text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                                         style={{
                                             background: 'hsl(var(--secondary))',
                                             border: '1px solid hsl(var(--border))',
@@ -366,23 +476,34 @@ export function BottomNav() {
                                         {isLight ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
                                     </button>
 
-                                    {/* Logout */}
-                                    <button
-                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-colors"
-                                        style={{
-                                            background: 'hsl(0 60% 50% / 0.07)',
-                                            border: '1px solid hsl(0 60% 50% / 0.18)',
-                                            color: 'hsl(0 68% 55%)',
-                                        }}
-                                        onClick={() => { logout(); setIsMoreOpen(false); }}
-                                    >
-                                        <LogOut className="w-4 h-4" />
-                                        Cerrar sesión
-                                    </button>
+                                    {/* Auth action */}
+                                    {user ? (
+                                        <button
+                                            type="button"
+                                            className="w-full flex items-center gap-3 px-4 py-3 min-h-[44px] rounded-xl text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-red-500"
+                                            style={{
+                                                background: 'hsl(0 60% 50% / 0.07)',
+                                                border: '1px solid hsl(0 60% 50% / 0.18)',
+                                                color: 'hsl(0 68% 55%)',
+                                            }}
+                                            onClick={() => { logout(); setIsMoreOpen(false); }}
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            Cerrar sesión
+                                        </button>
+                                    ) : (
+                                        <Link
+                                            to="/login"
+                                            onClick={() => setIsMoreOpen(false)}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] rounded-xl text-[13px] font-bold text-primary-foreground bg-primary transition-all focus-visible:ring-2 focus-visible:ring-primary"
+                                        >
+                                            Iniciar sesión en Finix
+                                        </Link>
+                                    )}
                                 </div>
                             </div>
-                        </motion.div>
-                    </>
+                        </motion.div></DialogPrimitive.Content>
+                    </DialogPrimitive.Portal></DialogPrimitive.Root>
                 )}
             </AnimatePresence>
         </>

@@ -1,5 +1,6 @@
 import { useUnreadCount } from '@/hooks/useUnreadCount';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Bell, Sun, Moon, Plus } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
@@ -19,39 +20,53 @@ export function MobileTopBar() {
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
 
     const isMessages = location.pathname.startsWith('/messages');
+    const headerRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const header = headerRef.current;
+        if (!header) return;
+        const syncHeight = () => document.documentElement.style.setProperty('--finix-mobile-header-height', `${header.getBoundingClientRect().height}px`);
+        const observer = new ResizeObserver(syncHeight);
+        observer.observe(header);
+        syncHeight();
+        return () => { observer.disconnect(); document.documentElement.style.removeProperty('--finix-mobile-header-height'); };
+    }, [isMessages]);
     // Messages has its own integrated header — render nothing there.
     if (isMessages) return null;
 
     return (
         <div
-            className="fixed top-0 left-0 right-0 z-50 lg:hidden flex items-center justify-between px-3 sm:px-4"
+            ref={headerRef}
+            className="fixed top-0 left-0 right-0 z-50 lg:hidden flex flex-wrap items-center justify-between gap-x-2 px-3 sm:px-4"
             style={{
-                height: 'calc(52px + env(safe-area-inset-top))',
-                paddingTop: 'env(safe-area-inset-top)',
+                minHeight: 'calc(52px + env(safe-area-inset-top))',
+                paddingTop: 'calc(4px + env(safe-area-inset-top))',
+                paddingBottom: '4px',
                 background: 'hsl(var(--sidebar-bg))',
                 borderBottom: '1px solid hsl(var(--sidebar-border))',
             }}
         >
             {/* Logo */}
-            <div className="flex items-center gap-2" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
+            <Link to="/dashboard" aria-label="Finix · Inicio" className="flex items-center gap-1.5 min-h-11 shrink-0 focus-visible:ring-2 focus-visible:ring-primary rounded-lg">
                 <img
                     src="/logo-small.webp"
                     alt="Finix"
                     className="h-7 w-7 sm:h-8 sm:w-8 object-contain flex-shrink-0"
                 />
                 <span
-                    className="text-[15px] sm:text-[17px] font-black tracking-[0.12em] uppercase"
+                    className="text-[15px] sm:text-[17px] font-black tracking-[0.08em] uppercase"
                     style={{ color: 'hsl(var(--foreground))' }}
                 >
                     FINIX
                 </span>
-            </div>
+            </Link>
 
             {/* Actions */}
-            <div className="flex items-center gap-1">
+            <div className="ml-auto flex shrink-0 items-center gap-1">
                 {/* Theme toggle */}
                 <button
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-colors"
+                    type="button"
+                    aria-label={isLight ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro'}
+                    className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                     style={{ color: 'hsl(var(--muted-foreground))' }}
                     onClick={() => setTheme(isLight ? 'dark' : 'light')}
                 >
@@ -61,13 +76,13 @@ export function MobileTopBar() {
                 {user ? (
                     <>
                         {/* Streak Pill */}
-                        <div className="flex items-center shrink-0">
+                        <div className="hidden min-[430px]:flex items-center shrink-0">
                             <InvestorStreakPill />
                         </div>
 
                         {/* Create post */}
                         <button
-                            className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
+                            className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                             style={{ color: 'hsl(var(--muted-foreground))' }}
                             onClick={() => navigate('/explore?create=true')}
                             aria-label="Crear publicación"
@@ -78,7 +93,7 @@ export function MobileTopBar() {
                         {/* Notifications */}
                         <div className="relative">
                             <button
-                                className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors relative"
+                                className="w-11 h-11 rounded-xl flex items-center justify-center transition-colors relative focus-visible:ring-2 focus-visible:ring-primary"
                                 style={{
                                     color: location.pathname === '/notifications' ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
                                     background: location.pathname === '/notifications' ? 'hsl(var(--muted))' : 'transparent',
@@ -100,7 +115,7 @@ export function MobileTopBar() {
 
                         {/* Avatar → profile */}
                         <button
-                            className="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 ml-1"
+                            className="w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 focus-visible:ring-2 focus-visible:ring-primary"
                             style={{
                                 background: `linear-gradient(135deg, ${PRIMARY} 0%, hsl(var(--primary) / 0.7) 100%)`,
                                 boxShadow: `0 0 10px hsl(var(--primary) / 0.3)`,
@@ -122,13 +137,13 @@ export function MobileTopBar() {
                     <div className="flex items-center gap-1.5 ml-1">
                         <button
                             onClick={() => navigate('/pricing#planes')}
-                            className="px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                            className="px-2 min-h-11 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
                         >
-                            Pricing
+                            Planes
                         </button>
                         <button
                             onClick={() => navigate('/login')}
-                            className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                            className="px-2.5 min-h-11 rounded-xl text-xs font-bold transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-primary"
                             style={{
                                 background: PRIMARY,
                                 color: 'hsl(var(--primary-foreground))',

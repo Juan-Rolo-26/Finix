@@ -1,5 +1,6 @@
+import AccountRequired from '@/components/auth/AccountRequired';
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -118,8 +119,11 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
     const [isFullscreenChart, setIsFullscreenChart] = useState(false);
     const [activeStudies, setActiveStudies] = useState<string[]>([]);
     const [isCapturing, setIsCapturing] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const contentRef = useRef<HTMLTextAreaElement>(null);
+    const returnFocusRef = useRef(document.activeElement as HTMLElement | null);
     const tvWidgetRef = useRef<any>(null);
 
     const maxFiles = 10;
@@ -134,20 +138,6 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
         };
     }, []);
 
-    // Close on Escape key
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                if (isFullscreenChart) {
-                    setIsFullscreenChart(false);
-                } else {
-                    onClose();
-                }
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isFullscreenChart, onClose]);
 
     // ── File handling ─────────────────────────────────────────────────────────
 
@@ -273,6 +263,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
     // ── Publish ───────────────────────────────────────────────────────────────
 
     const handlePublish = async () => {
+        if (!useAuthStore.getState().user) return;
         setError('');
 
         // For charts: create persistent ChartAnalysis and link to post
@@ -432,19 +423,22 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
     // ── Render ────────────────────────────────────────────────────────────────
 
     const modalContent = (
-        <motion.div
+        <DialogPrimitive.Overlay asChild><motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             className="fixed inset-0 z-[150] bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 overflow-y-auto"
-            onClick={onClose}
+            onClick={() => { if (!isPublishing && !isFullscreenChart) onClose(); }}
         >
-            <motion.div
+            <DialogPrimitive.Content asChild aria-describedby={undefined} onOpenAutoFocus={event => { event.preventDefault(); contentRef.current?.focus(); }} onCloseAutoFocus={event => { event.preventDefault(); returnFocusRef.current?.focus(); }} onEscapeKeyDown={event => { if (isPublishing || isFullscreenChart) event.preventDefault(); }}><motion.div
                 initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 16 }}
                 transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="create-post-modal-title"
                 className={`bg-card border border-border/70 rounded-t-3xl sm:rounded-2xl w-full ${
                     type === 'chart' ? 'sm:max-w-4xl' : 'sm:max-w-2xl'
                 } max-h-[92vh] flex flex-col shadow-2xl relative my-auto overflow-hidden transition-[max-width] duration-200`}
@@ -453,19 +447,20 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                 {/* Header */}
                 <div className="shrink-0 bg-card/95 backdrop-blur-md border-b border-border/40 px-5 py-4 flex items-center justify-between rounded-t-3xl sm:rounded-t-2xl z-10">
                     <div className="flex items-center gap-3">
-                        {user?.avatarUrl
-                            ? <img src={resolveMediaUrl(user.avatarUrl)} alt={user.username} className="w-9 h-9 rounded-full object-cover" />
+                        {user?.avatarUrl && !avatarError
+                            ? <img src={resolveMediaUrl(user.avatarUrl)} alt={user.username} className="w-9 h-9 rounded-full object-cover" onError={() => setAvatarError(true)} />
                             : <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center text-black font-bold text-sm">{user?.username?.[0]?.toUpperCase()}</div>
                         }
                         <div>
-                            <p className="font-semibold text-sm">{user?.username}</p>
-                            <p className="text-xs text-muted-foreground">Crear para el feed principal</p>
+                            <p id="create-post-modal-title" className="font-semibold text-sm">Crear publicación</p>
+                            <p className="text-xs text-muted-foreground">{user?.username} · Feed principal</p>
                         </div>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                        disabled={isPublishing}
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                         aria-label="Cerrar modal"
                     >
                         <X className="w-5 h-5" />
@@ -477,8 +472,9 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                     <div className="grid grid-cols-2 max-w-md w-full mx-auto gap-3">
                         {TYPE_OPTIONS.map(({ key, label, desc, icon: Icon }) => (
                             <button key={key}
+                                type="button"
                                 onClick={() => { setType(key); setMediaFiles([]); setError(''); }}
-                                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-medium transition-all ${type === key ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border/50 text-muted-foreground hover:border-border hover:text-foreground'}`}
+                                className={`flex flex-col items-center justify-center gap-1.5 p-3 min-h-[56px] rounded-xl border text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary ${type === key ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border/50 text-muted-foreground hover:border-border hover:text-foreground'}`}
                                 title={desc}
                             >
                                 <Icon className="w-5 h-5" />
@@ -499,15 +495,15 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                             <input type="text" placeholder="Símbolo: AAPL, BTCUSDT..." value={symbolInput}
                                                 onChange={(e) => setSymbolInput(e.target.value.toUpperCase())}
                                                 onKeyDown={(e) => e.key === 'Enter' && applySymbol()}
-                                                className="w-full h-9 pl-8 pr-3 rounded-lg border border-border/50 bg-secondary/30 text-sm font-mono uppercase outline-none focus:border-primary/50 transition-colors"
+                                                className="w-full h-10 pl-8 pr-3 rounded-lg border border-border/50 bg-secondary/30 text-sm font-mono uppercase outline-none focus:border-primary/50 transition-colors"
                                             />
                                         </div>
-                                        <Button size="sm" variant="outline" onClick={applySymbol} className="h-9 px-3 text-xs border-border/50 hover:border-primary/40">Cargar</Button>
+                                        <Button size="sm" variant="outline" onClick={applySymbol} className="h-11 px-3.5 text-xs border-border/50 hover:border-primary/40 min-h-[44px] min-w-[44px]">Cargar</Button>
                                     </div>
-                                    <div className="flex items-center gap-1 flex-wrap">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
                                         {INTERVALS.map(({ v, label }) => (
-                                            <button key={v} onClick={() => { setTvInterval(v); }}
-                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${tvInterval === v ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
+                                            <button key={v} type="button" onClick={() => { setTvInterval(v); }}
+                                                className={`min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-lg text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary ${tvInterval === v ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
                                             >{label}</button>
                                         ))}
                                     </div>
@@ -516,22 +512,22 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 {/* Popular symbols & Studies */}
                                 <div className="flex items-center justify-between gap-2 flex-wrap">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Rápido:</span>
+                                        <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Rápido:</span>
                                         {POPULAR_SYMBOLS.map((s) => {
                                             const short = s.includes(':') ? s.split(':')[1].replace('USDT', '') : s;
                                             return (
-                                                <button key={s} onClick={() => { setSymbolInput(s); setAssetSymbol(s); }}
-                                                    className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-all ${assetSymbol === s ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground'}`}
+                                                <button key={s} type="button" onClick={() => { setSymbolInput(s); setAssetSymbol(s); }}
+                                                    className={`min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-md text-xs font-bold border transition-all focus-visible:ring-2 focus-visible:ring-primary ${assetSymbol === s ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground'}`}
                                                 >{short}</button>
                                             );
                                         })}
                                     </div>
 
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1.5">
                                         <button
                                             type="button"
                                             onClick={() => toggleStudy('RSI@tv-basicstudies')}
-                                            className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-all ${
+                                            className={`min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-md text-xs font-bold border transition-all focus-visible:ring-2 focus-visible:ring-primary ${
                                                 activeStudies.includes('RSI@tv-basicstudies')
                                                     ? 'border-indigo-500/50 bg-indigo-500/15 text-indigo-400'
                                                     : 'border-border/40 text-muted-foreground hover:bg-secondary'
@@ -542,7 +538,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                         <button
                                             type="button"
                                             onClick={() => toggleStudy('MACD@tv-basicstudies')}
-                                            className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-all ${
+                                            className={`min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-md text-xs font-bold border transition-all focus-visible:ring-2 focus-visible:ring-primary ${
                                                 activeStudies.includes('MACD@tv-basicstudies')
                                                     ? 'border-amber-500/50 bg-amber-500/15 text-amber-400'
                                                     : 'border-border/40 text-muted-foreground hover:bg-secondary'
@@ -555,11 +551,11 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
                                 {/* Touch & Scroll Control Bar */}
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2 rounded-xl bg-secondary/30 border border-border/40">
-                                    <div className="flex items-center gap-1 bg-background/80 p-0.5 rounded-lg border border-border/50 text-xs w-full sm:w-auto">
+                                    <div className="flex items-center gap-1 bg-background/80 p-1 rounded-lg border border-border/50 text-xs w-full sm:w-auto">
                                         <button
                                             type="button"
                                             onClick={() => setIsScrollMode(true)}
-                                            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1 rounded-md font-semibold transition-all ${
+                                            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-md font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary ${
                                                 isScrollMode
                                                     ? 'bg-primary text-primary-foreground shadow-xs'
                                                     : 'text-muted-foreground hover:text-foreground'
@@ -572,7 +568,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                         <button
                                             type="button"
                                             onClick={() => setIsScrollMode(false)}
-                                            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1 rounded-md font-semibold transition-all ${
+                                            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-md font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary ${
                                                 !isScrollMode
                                                     ? 'bg-primary text-primary-foreground shadow-xs'
                                                     : 'text-muted-foreground hover:text-foreground'
@@ -591,7 +587,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                             variant="outline"
                                             disabled={isCapturing}
                                             onClick={handleManualCapture}
-                                            className="h-8 text-xs gap-1.5 border-border/60 hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                                            className="min-h-[44px] min-w-[44px] h-11 px-3.5 text-xs gap-1.5 border-border/60 hover:border-primary/50 text-muted-foreground hover:text-foreground"
                                         >
                                             {isCapturing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                                             <span>Capturar</span>
@@ -604,7 +600,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                                 setIsScrollMode(false);
                                                 setIsFullscreenChart(true);
                                             }}
-                                            className="h-8 text-xs gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
+                                            className="min-h-[44px] min-w-[44px] h-11 px-3.5 text-xs gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
                                         >
                                             <Maximize2 className="w-3.5 h-3.5" />
                                             <span>Pantalla Completa</span>
@@ -643,7 +639,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                                             e.stopPropagation();
                                                             setIsScrollMode(false);
                                                         }}
-                                                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-xs"
+                                                        className="min-h-[44px] min-w-[44px] px-4 py-2.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-xs focus-visible:ring-2 focus-visible:ring-primary"
                                                     >
                                                         Trazar Líneas
                                                     </button>
@@ -654,7 +650,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                                             setIsScrollMode(false);
                                                             setIsFullscreenChart(true);
                                                         }}
-                                                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary/80 text-foreground border border-border/60 transition-all"
+                                                        className="flex items-center gap-1.5 min-h-[44px] min-w-[44px] px-4 py-2.5 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary/80 text-foreground border border-border/60 transition-all focus-visible:ring-2 focus-visible:ring-primary"
                                                     >
                                                         <Maximize2 className="w-3.5 h-3.5" />
                                                         <span>Expandir</span>
@@ -678,7 +674,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                                 <p className="text-[11px] text-muted-foreground">Tus líneas y análisis se verán exactamente congelados en el post.</p>
                                             </div>
                                         </div>
-                                        <Button size="sm" variant="ghost" onClick={() => removeMedia(0)} className="text-xs h-8 text-muted-foreground hover:text-rose-400">Cambiar</Button>
+                                        <Button size="sm" variant="ghost" onClick={() => removeMedia(0)} className="text-xs min-h-[44px] min-w-[44px] px-3.5 text-muted-foreground hover:text-rose-400">Cambiar</Button>
                                     </div>
                                 ) : (
                                     <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3.5 flex items-center justify-between gap-3 shadow-xs">
@@ -724,6 +720,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                     {/* ── TEXT AREA ── */}
                     <div className="space-y-1">
                         <Textarea
+                            ref={contentRef}
                             placeholder={type === 'chart' ? 'Describí tu análisis: zonas clave, stop loss, target, bias...' : '¿Qué estás pensando sobre el mercado?'}
                             value={content} onChange={(e) => setContent(e.target.value)}
                             className="bg-secondary/30 resize-none text-base border-none focus-visible:ring-0 min-h-[100px]" maxLength={MAX_POST_CONTENT_LENGTH}
@@ -737,66 +734,72 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                         <Input placeholder="AAPL BTC SPY (separados por espacio o coma)" value={tickers} onChange={(e) => setTickers(e.target.value)} className="bg-secondary/30 h-9 text-sm" />
                     </div>
 
-                    {/* ── MEDIA UPLOAD ── chart: upload extra screenshots */}
-                    {type === 'chart' && (
-                        <div className="space-y-3">
-                            <Label className="text-xs text-muted-foreground">
-                                Captura adicional o manual (opcional)
-                            </Label>
-                            {mediaFiles.length < maxFiles && (
-                                <div
-                                    className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${isDragging ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-border hover:bg-secondary/20'}`}
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => fileInputRef.current?.click()}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            fileInputRef.current?.click();
-                                        }
-                                    }}
-                                    onDrop={handleDrop}
-                                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                                    onDragLeave={() => setIsDragging(false)}
-                                >
-                                    <Upload className="w-7 h-7 mx-auto mb-2 text-muted-foreground" />
-                                    <p className="text-sm font-medium">Subir imagen</p>
-                                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WEBP · Máx {MAX_IMAGE_MB} MB</p>
-                                    <p className="text-xs text-primary mt-1">Hacé clic o arrastrá aquí</p>
-                                </div>
-                            )}
+                    {/* ── MEDIA UPLOAD ── */}
+                    <div className="space-y-3">
+                        <Label className="text-xs text-muted-foreground">
+                            {type === 'chart' ? 'Captura adicional o manual (opcional)' : 'Imágenes adjuntas (opcional)'}
+                        </Label>
+                        {mediaFiles.length < maxFiles && (
+                            <div
+                                className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${isDragging ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-border hover:bg-secondary/20'}`}
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Subir imágenes a la publicación"
+                                onClick={() => fileInputRef.current?.click()}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        fileInputRef.current?.click();
+                                    }
+                                }}
+                                onDrop={handleDrop}
+                                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                onDragLeave={() => setIsDragging(false)}
+                            >
+                                <Upload className="w-7 h-7 mx-auto mb-2 text-muted-foreground" />
+                                <p className="text-sm font-medium">Subir imagen</p>
+                                <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WEBP · Máx {MAX_IMAGE_MB} MB</p>
+                                <p className="text-xs text-primary mt-1">Hacé clic o arrastrá aquí</p>
+                            </div>
+                        )}
 
-                            <input ref={fileInputRef} type="file" accept={acceptedTypes} multiple
-                                onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ''; }} className="hidden" />
+                        <input ref={fileInputRef} type="file" accept={acceptedTypes} multiple
+                            onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ''; }} className="hidden" />
 
-                            {mediaFiles.length > 0 && (
-                                <div className={`grid gap-2 ${mediaFiles.length > 1 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1'}`}>
-                                    {mediaFiles.map((m, i) => (
-                                        <div key={m.url || m.preview || `${m.file.name}-${m.file.lastModified}-${i}`} className="relative group rounded-xl overflow-hidden bg-black/20 aspect-square">
-                                            {m.mediaType === 'video' ? <video src={m.preview} className="w-full h-full object-cover" muted /> : <img src={m.preview} alt="" className="w-full h-full object-cover" />}
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                <button onClick={() => removeMedia(i)} className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center"><Trash2 className="w-4 h-4 text-white" /></button>
-                                            </div>
-                                            {m.uploading && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 className="w-6 h-6 text-white animate-spin" /></div>}
-                                            {m.error && <div className="absolute bottom-0 left-0 right-0 bg-red-500/80 text-white text-xs p-1 text-center">{m.error}</div>}
-                                            {m.url && !m.uploading && !m.error && <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}
+                        {mediaFiles.length > 0 && (
+                            <div className={`grid gap-2 ${mediaFiles.length > 1 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1'}`}>
+                                {mediaFiles.map((m, i) => (
+                                    <div key={m.url || m.preview || `${m.file.name}-${m.file.lastModified}-${i}`} className="relative group rounded-xl overflow-hidden bg-black/20 aspect-square">
+                                        {m.mediaType === 'video' ? <video src={m.preview} className="w-full h-full object-cover" muted /> : <img src={m.preview} alt="" className="w-full h-full object-cover" />}
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => removeMedia(i)}
+                                                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-red-600/90 hover:bg-red-600 flex items-center justify-center text-white transition-all shadow-md focus-visible:ring-2 focus-visible:ring-white"
+                                                aria-label="Eliminar imagen"
+                                            >
+                                                <Trash2 className="w-5 h-5 text-white" />
+                                            </button>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                        {m.uploading && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 className="w-6 h-6 text-white animate-spin" /></div>}
+                                        {m.error && <div className="absolute bottom-0 left-0 right-0 bg-red-500/80 text-white text-xs p-1 text-center">{m.error}</div>}
+                                        {m.url && !m.uploading && !m.error && <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Error */}
                     {error && <p className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">{error}</p>}
 
                     {/* Publish */}
                     <div className="flex gap-3 pt-2">
-                        <Button variant="outline" onClick={onClose} className="flex-1">Cancelar</Button>
+                        <Button variant="outline" disabled={isPublishing} onClick={onClose} className="flex-1 min-h-[44px]">Cancelar</Button>
                         <Button
                             onClick={handlePublish}
                             disabled={isPublishing || mediaFiles.some((m) => m.uploading)}
-                            className="flex-1 bg-gradient-to-r from-primary to-emerald-400 text-black font-bold shadow-glow"
+                            className="flex-1 min-h-[44px] bg-gradient-to-r from-primary to-emerald-400 text-black font-bold shadow-glow"
                         >
                             {isPublishing
                                 ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Publicando...</>
@@ -807,19 +810,20 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                         </Button>
                     </div>
                 </div>
-            </motion.div>
+            </motion.div></DialogPrimitive.Content>
 
             {/* ── FULLSCREEN DRAWING STUDIO ── */}
             {isFullscreenChart && (
-                <div className="fixed inset-0 z-[250] bg-background flex flex-col animate-in fade-in duration-200">
+                <DialogPrimitive.Root open onOpenChange={setIsFullscreenChart}><DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-[250] bg-background" /><DialogPrimitive.Content aria-label="Gráfico de la publicación en pantalla completa" aria-describedby={undefined} className="fixed inset-0 z-[251] bg-background flex flex-col">
                     {/* Fullscreen Header */}
                     <div className="flex items-center justify-between px-3 sm:px-6 py-2.5 bg-card border-b border-border/60 shrink-0">
                         <div className="flex items-center gap-2 sm:gap-3">
                             <button
                                 type="button"
                                 onClick={() => setIsFullscreenChart(false)}
-                                className="p-1.5 rounded-xl border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary"
                                 title="Volver al post"
+                                aria-label="Volver al post"
                             >
                                 <ArrowLeft className="w-4 h-4" />
                             </button>
@@ -827,13 +831,13 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 <span className="font-mono font-bold text-sm sm:text-base text-foreground">{assetSymbol}</span>
                                 <span className="text-[11px] px-2 py-0.5 rounded-md bg-primary/15 text-primary font-bold">{tvInterval}</span>
                             </div>
-                            <div className="hidden sm:flex items-center gap-1 pl-2">
+                            <div className="hidden sm:flex items-center gap-1.5 pl-2">
                                 {INTERVALS.slice(0, 7).map(({ v, label }) => (
                                     <button
                                         key={v}
                                         type="button"
                                         onClick={() => setTvInterval(v)}
-                                        className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${tvInterval === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}
+                                        className={`min-h-[44px] min-w-[44px] px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-primary ${tvInterval === v ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:bg-secondary'}`}
                                     >
                                         {label}
                                     </button>
@@ -848,7 +852,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 variant="outline"
                                 disabled={isCapturing}
                                 onClick={handleManualCapture}
-                                className="h-8 text-xs gap-1.5 border-border/60 hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                                className="min-h-[44px] min-w-[44px] h-11 px-3.5 text-xs gap-1.5 border-border/60 hover:border-primary/50 text-muted-foreground hover:text-foreground"
                             >
                                 {isCapturing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                                 <span className="hidden xs:inline">Capturar</span>
@@ -860,7 +864,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                     await handleManualCapture();
                                     setIsFullscreenChart(false);
                                 }}
-                                className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
+                                className="min-h-[44px] min-w-[44px] h-11 px-4 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
                             >
                                 <Check className="w-4 h-4" />
                                 <span>Listo / Guardar Líneas</span>
@@ -878,11 +882,12 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                             onWidgetReady={(w) => { tvWidgetRef.current = w; }}
                         />
                     </div>
-                </div>
+                </DialogPrimitive.Content></DialogPrimitive.Portal></DialogPrimitive.Root>
             )}
-        </motion.div>
+        </motion.div></DialogPrimitive.Overlay>
     );
 
     if (typeof document === 'undefined') return null;
-    return createPortal(modalContent, document.body);
+    if (!user) return <AccountRequired action="crear una publicación" onClose={onClose} />;
+    return <DialogPrimitive.Root open onOpenChange={open => { if (!open && !isPublishing) onClose(); }}><DialogPrimitive.Portal>{modalContent}</DialogPrimitive.Portal></DialogPrimitive.Root>;
 }

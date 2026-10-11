@@ -5,9 +5,7 @@ import { InformationPageTabs } from '@/components/legal/InformationPageTabs';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const LAST_UPDATED = '15 de septiembre de 2026';
-// TODO: Completar con información legal real antes de publicar:
-const LEGAL_COMPANY_NAME = '[Razón social pendiente de configuración]';
-const LEGAL_JURISDICTION = '[Jurisdicción pendiente de configuración]';
+const LEGAL_COMPANY_NAME = 'Finix';
 const CONTACT_EMAIL = 'finiixarg@gmail.com';
 
 // ─── Section index ─────────────────────────────────────────────────────────────
@@ -100,7 +98,7 @@ function MobileToc({ activeId }: { activeId: string }) {
                 className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-card border border-border/60 text-base font-medium text-left cursor-pointer"
                 aria-expanded={open}
             >
-                <span className="truncate text-foreground">{active?.title ?? 'Índice'}</span>
+                <span className="min-w-0 break-words text-foreground">{active?.title ?? 'Índice'}</span>
                 <ChevronDown className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && (
@@ -109,7 +107,7 @@ function MobileToc({ activeId }: { activeId: string }) {
                         <a
                             key={s.id}
                             href={`#${s.id}`}
-                            className={`block px-4 py-2.5 text-sm transition-colors ${s.id === activeId ? 'text-primary font-semibold bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}`}
+                            className={`block min-h-11 px-4 py-2.5 text-sm transition-colors ${s.id === activeId ? 'text-primary font-semibold bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}`}
                             onClick={() => setOpen(false)}
                         >
                             {s.title}
@@ -163,10 +161,6 @@ export default function Terms() {
                         Términos y Condiciones
                     </h1>
                     <p className="text-xs text-muted-foreground/70 font-medium">Última actualización: {LAST_UPDATED}</p>
-                    <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border/40 text-xs text-muted-foreground">
-                        Este documento ha sido preparado con fines informativos y deberá ser revisado por un profesional legal antes de su publicación definitiva.
-                        La razón social, domicilio legal y jurisdicción deberán completarse con los datos reales.
-                    </div>
                 </header>
 
                 <div className="info-page__grid flex gap-10">
@@ -217,9 +211,6 @@ export default function Terms() {
                                 <p>
                                     La Plataforma es operada por <strong>{LEGAL_COMPANY_NAME}</strong>. El contacto oficial es{' '}
                                     <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>.
-                                </p>
-                                <p className="text-xs text-muted-foreground/60">
-                                    [Nota para revisión legal: Completar con razón social, CUIT/CUIL o número de registro, domicilio legal y jurisdicción antes de publicar.]
                                 </p>
                             </Section>
 
@@ -559,9 +550,6 @@ export default function Terms() {
                                     <li>Fallas de servicios de terceros integrados</li>
                                     <li>Acceso no autorizado a la cuenta del usuario derivado de su propio descuido en la gestión de credenciales</li>
                                 </ul>
-                                <p className="text-xs text-muted-foreground/60 mt-2">
-                                    [Nota para revisión legal: Esta cláusula debe adaptarse a los límites que la legislación argentina y de cada jurisdicción aplicable establece para las exclusiones de responsabilidad en contratos con consumidores.]
-                                </p>
                             </Section>
 
                             <Section id="indemnidad" title="27. Indemnidad">
@@ -581,10 +569,7 @@ export default function Terms() {
 
                             <Section id="legislacion" title="29. Legislación aplicable y jurisdicción">
                                 <p>
-                                    Estos Términos se rigen por la legislación de <strong>{LEGAL_JURISDICTION}</strong>, sin perjuicio de las protecciones que la normativa aplicable en el país de residencia del usuario pueda otorgar, especialmente en materia de defensa del consumidor.
-                                </p>
-                                <p className="text-xs text-muted-foreground/60">
-                                    [Nota para revisión legal: Definir jurisdicción aplicable, fuero competente y normas de defensa del consumidor relevantes para Argentina y para usuarios de otros países. Considerar la Ley 24.240 de Defensa del Consumidor.]
+                                    Estos Términos se rigen por la legislación aplicable, sin perjuicio de las protecciones que la normativa aplicable en el país de residencia del usuario pueda otorgar, especialmente en materia de defensa del consumidor.
                                 </p>
                             </Section>
 
@@ -594,9 +579,6 @@ export default function Terms() {
                                 </p>
                                 <p>
                                     <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline font-semibold">{CONTACT_EMAIL}</a>
-                                </p>
-                                <p className="text-xs text-muted-foreground/60">
-                                    [Completar con domicilio legal y datos de contacto formales cuando estén disponibles.]
                                 </p>
                             </Section>
 

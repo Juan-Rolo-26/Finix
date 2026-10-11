@@ -1,3 +1,5 @@
+import { usePlatformAccessStore } from '@/stores/platformAccessStore';
+import DataReferenceContext, { type DataReference } from '@/components/markets/DataReferenceContext';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -38,6 +40,7 @@ interface RankingItem {
 type SortField = 'change' | 'volume' | 'price';
 
 export default function TopGainersPage() {
+    const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const hasPaidRankingAccess = isProUser(user);
@@ -56,6 +59,7 @@ export default function TopGainersPage() {
             setSelectedLimit(50);
         }
     }, [hasPaidRankingAccess]);
+    const [dataContext, setDataContext] = useState<DataReference | undefined>();
     const [date, setDate] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [isStale, setIsStale] = useState<boolean>(false);
@@ -77,6 +81,7 @@ export default function TopGainersPage() {
             const data = await res.json();
             setItems(Array.isArray(data.items) ? data.items : []);
             setDate(data.date || '');
+            setDataContext(data.dataContext);
             setIsStale(Boolean(data.isStale));
         } catch {
             setIsError(true);
@@ -137,6 +142,7 @@ export default function TopGainersPage() {
                 <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                             onClick={() => navigate(-1)}
                             className="p-2 rounded-xl bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                             title="Volver"
@@ -154,8 +160,8 @@ export default function TopGainersPage() {
                                     {isLosers ? 'Peores rendimientos' : 'Mejores rendimientos'}
                                 </h1>
                                 <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${isLosers
-                                    ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                    : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                    ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
+                                    : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
                                     }`}>
                                     S&P 500
                                 </span>
@@ -164,8 +170,10 @@ export default function TopGainersPage() {
                                 {isLosers
                                     ? 'Acciones con mayor retroceso porcentual diario del índice S&P 500.'
                                     : 'Acciones con mayor avance porcentual diario del índice S&P 500.'}
-                                {date && <span className="ml-1.5 font-semibold text-foreground">· Fecha: {date}</span>}
+                                {date && <span className="ml-1.5 font-semibold text-foreground">· Fecha del ranking: {date}</span>}
                             </p>
+                            <DataReferenceContext context={dataContext} />
+                            <p className="text-xs text-muted-foreground">Escala de volumen: K = miles; M = millones de acciones.</p>
                         </div>
                     </div>
 
@@ -173,9 +181,10 @@ export default function TopGainersPage() {
                         {/* Selector de Tipo: Ganadores vs Perdedores */}
                         <div className="flex items-center bg-secondary/60 p-1 rounded-xl border border-border/40 text-xs font-semibold">
                             <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                                 onClick={() => setSearchParams({})}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${!isLosers
-                                    ? 'bg-card text-emerald-400 shadow-xs'
+                                    ? 'bg-card text-emerald-700 dark:text-emerald-400 shadow-xs'
                                     : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
@@ -183,9 +192,10 @@ export default function TopGainersPage() {
                                 Mejores
                             </button>
                             <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                                 onClick={() => setSearchParams({ tab: 'losers' })}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${isLosers
-                                    ? 'bg-card text-rose-400 shadow-xs'
+                                    ? 'bg-card text-rose-700 dark:text-rose-400 shadow-xs'
                                     : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
@@ -198,6 +208,7 @@ export default function TopGainersPage() {
                         <div className="flex items-center bg-secondary/60 p-1 rounded-xl border border-border/40 text-xs font-semibold">
                             {[5, 10, 25, 50].map(limit => (
                                 <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                                     key={limit}
                                     onClick={() => setSelectedLimit(limit)}
                                     className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${selectedLimit === limit
@@ -207,7 +218,7 @@ export default function TopGainersPage() {
                                 >
                                     <span>TOP {limit}</span>
                                     {limit > 5 && !hasPaidRankingAccess && (
-                                        <span className="text-[9px] font-black uppercase tracking-wider px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 inline-flex items-center gap-0.5">
+                                        <span className="text-[9px] font-black uppercase tracking-wider px-1 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-400 border border-amber-500/30 inline-flex items-center gap-0.5">
                                             <Crown className="w-2.5 h-2.5" /> PRO
                                         </span>
                                     )}
@@ -217,10 +228,11 @@ export default function TopGainersPage() {
 
                         {/* Botón refrescar con forceRefresh */}
                         <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                             onClick={() => loadData(selectedLimit, date, true)}
                             disabled={isLoading}
                             className="p-2.5 rounded-xl bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors border border-border/40 disabled:opacity-50"
-                            title="Refrescar datos en tiempo real"
+                            aria-label="Actualizar ranking" title="Actualizar ranking"
                         >
                             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-primary' : ''}`} />
                         </button>
@@ -241,12 +253,12 @@ export default function TopGainersPage() {
                                     {isLosers ? 'Mayor Caída' : 'Mayor Suba'}
                                 </span>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-lg font-black text-foreground truncate">{stats.leader.ticker}</span>
-                                    <span className={`inline-flex items-center gap-0.5 text-xs font-black px-1.5 py-0.5 rounded-md ${isLosers ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                                    <span className="text-lg font-black text-foreground break-words">{stats.leader.ticker}</span>
+                                    <span className={`inline-flex items-center gap-0.5 text-xs font-black px-1.5 py-0.5 rounded-md ${isLosers ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'}`}>
                                         {stats.leader.changePercent >= 0 ? '+' : ''}{stats.leader.changePercent.toFixed(2)}%
                                     </span>
                                 </div>
-                                <p className="text-[11px] text-muted-foreground/80 truncate">{stats.leader.companyName}</p>
+                                <p className="text-[11px] text-muted-foreground break-words">{stats.leader.companyName}</p>
                             </div>
                             <div className="flex-shrink-0">
                                 <AssetLogoImg src={stats.leader.logoUrl} ticker={stats.leader.ticker} name={stats.leader.companyName} />
@@ -260,13 +272,13 @@ export default function TopGainersPage() {
                                     Promedio TOP {stats.totalCount}
                                 </span>
                                 <div className="text-xl font-black num flex items-center gap-1.5">
-                                    <span className={stats.avgChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                                    <span className={stats.avgChange >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}>
                                         {stats.avgChange >= 0 ? '+' : ''}{stats.avgChange.toFixed(2)}%
                                     </span>
                                 </div>
-                                <p className="text-[11px] text-muted-foreground/80">Rendimiento ponderado del grupo</p>
+                                <p className="text-[11px] text-muted-foreground">Rendimiento ponderado del grupo</p>
                             </div>
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 ${isLosers ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'} shadow-2xs`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 ${isLosers ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-700 dark:text-emerald-400'} shadow-2xs`}>
                                 <Activity className="w-5 h-5" />
                             </div>
                         </div>
@@ -278,16 +290,16 @@ export default function TopGainersPage() {
                                     Mayor Volumen
                                 </span>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-lg font-black text-foreground truncate">{stats.topVol?.ticker || 'N/A'}</span>
+                                    <span className="text-lg font-black text-foreground break-words">{stats.topVol?.ticker || 'N/A'}</span>
                                     <span className="text-xs font-bold text-muted-foreground num">
                                         {stats.topVol?.volume >= 1_000_000
                                             ? `${(stats.topVol.volume / 1_000_000).toFixed(1)}M`
                                             : `${(stats.topVol.volume / 1_000).toFixed(1)}K`}
                                     </span>
                                 </div>
-                                <p className="text-[11px] text-muted-foreground/80 truncate">Acciones negociadas hoy</p>
+                                <p className="text-[12px] text-muted-foreground whitespace-normal">Acciones en la sesión de referencia</p>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                            <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
                                 <BarChart3 className="w-5 h-5" />
                             </div>
                         </div>
@@ -301,16 +313,16 @@ export default function TopGainersPage() {
                                 <div className="text-base font-bold text-foreground flex items-center gap-2">
                                     <span>503 activos</span>
                                     {isStale && (
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/20 font-medium">
                                             Cierre
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-[11px] text-muted-foreground/80">
-                                    {date ? `Jornada del ${date}` : 'Datos oficiales en tiempo real'}
+                                <p className="text-[11px] text-muted-foreground">
+                                    {date ? `Jornada del ${date}` : 'Sesión de referencia no informada'}
                                 </p>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                            <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
                                 <Layers className="w-5 h-5" />
                             </div>
                         </div>
@@ -327,10 +339,11 @@ export default function TopGainersPage() {
                             placeholder="Buscar por ticker o nombre de empresa..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-8 py-2 text-sm bg-background border border-border/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground/60 transition-all"
+                            className="w-full pl-9 pr-8 py-2 text-sm bg-background border border-border/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground transition-all"
                         />
                         {searchQuery && (
                             <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                                 onClick={() => setSearchQuery('')}
                                 className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
                             >
@@ -347,18 +360,21 @@ export default function TopGainersPage() {
                                 <ArrowUpDown className="w-3 h-3" /> Ordenar:
                             </span>
                             <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                                 onClick={() => setSortBy('change')}
                                 className={`px-2.5 py-1 rounded-lg transition-all ${sortBy === 'change' ? 'bg-card text-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                             >
                                 % Cambio
                             </button>
                             <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                                 onClick={() => setSortBy('volume')}
                                 className={`px-2.5 py-1 rounded-lg transition-all ${sortBy === 'volume' ? 'bg-card text-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                             >
                                 Volumen
                             </button>
                             <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                                 onClick={() => setSortBy('price')}
                                 className={`px-2.5 py-1 rounded-lg transition-all ${sortBy === 'price' ? 'bg-card text-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                             >
@@ -383,6 +399,7 @@ export default function TopGainersPage() {
                     <div className="py-20 text-center space-y-3 bg-card border border-border/50 rounded-2xl p-6">
                         <p className="text-sm font-medium text-destructive">No pudimos conectar con los rankings en este momento.</p>
                         <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                             onClick={() => loadData(selectedLimit)}
                             className="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-white hover:opacity-90 transition-opacity"
                         >
@@ -395,10 +412,38 @@ export default function TopGainersPage() {
                     </div>
                 ) : (
                     <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs">
-                        <div className="overflow-x-auto">
+                        {/* Mobile Cards (block md:hidden) */}
+                        <div className="block md:hidden p-3 space-y-3">
+                            {processedItems.map(item => {
+                                const isItemLocked = item.isLocked || (!hasPaidRankingAccess && item.rank > 5);
+                                if (isItemLocked) {
+                                    const showBannerAbove = !hasPaidRankingAccess && item.rank === 6;
+                                    return (
+                                        <LockedMobileCard
+                                            key={`locked-card-${item.rank}`}
+                                            item={item}
+                                            navigate={navigate}
+                                            showBannerAbove={showBannerAbove}
+                                            selectedLimit={selectedLimit}
+                                        />
+                                    );
+                                }
+                                return (
+                                    <RankingMobileCard
+                                        key={`mobile-card-${item.ticker}`}
+                                        item={item}
+                                        isLosers={isLosers}
+                                        navigate={navigate}
+                                    />
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop Table (hidden md:block) */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-left border-collapse table-auto">
                                 <thead>
-                                    <tr className="border-b border-border/40 text-[11.5px] font-bold text-muted-foreground/70 uppercase tracking-wider bg-secondary/20">
+                                    <tr className="border-b border-border/40 text-[11.5px] font-bold text-muted-foreground uppercase tracking-wider bg-secondary/20">
                                         <th className="py-3.5 px-4 w-14 text-center">#</th>
                                         <th className="py-3.5 px-4 min-w-[240px]">Activo</th>
                                         <th className="py-3.5 px-4 text-right min-w-[120px]">Precio</th>
@@ -420,7 +465,7 @@ export default function TopGainersPage() {
                                                          <tr className="bg-gradient-to-r from-emerald-500/10 via-card to-emerald-500/10 border-y-2 border-emerald-500/30">
                                                              <td colSpan={7} className="py-7 px-4 text-center">
                                                                  <div className="max-w-xl mx-auto flex flex-col items-center gap-3">
-                                                                     <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-md">
+                                                                     <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shadow-md">
                                                                          <Crown className="w-6 h-6" />
                                                                      </div>
                                                                      <div>
@@ -434,13 +479,13 @@ export default function TopGainersPage() {
                                                                      <button
                                                                          onClick={() => navigate('/pro')}
                                                                          className="mt-2 flex items-center justify-center gap-2 px-7 py-3 rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 active:scale-[0.98] transition-all"
-                                                                         style={{
+                                                                         style={{ minHeight: 44, minWidth: 44,
                                                                              background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                                                                              color: '#ffffff',
                                                                          }}
                                                                      >
                                                                          <Crown className="w-4 h-4 text-amber-300" />
-                                                                         <span>Activar Finix PRO — Desbloquear Todo</span>
+                                                                         <span>{freeAccess ? 'Creá tu cuenta y accedé gratis' : 'Ver disponibilidad de PRO'}</span>
                                                                      </button>
                                                                  </div>
                                                              </td>
@@ -451,25 +496,25 @@ export default function TopGainersPage() {
                                                                          onClick={() => navigate('/pro')}
                                                      >
                                                          <td className="py-4 px-4 text-center">
-                                                             <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded-lg text-muted-foreground/60">
+                                                             <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded-lg text-muted-foreground">
                                                                  {item.rank}
                                                              </span>
                                                          </td>
                                                          <td className="py-4 px-4">
                                                              <div className="flex items-center gap-3">
                                                                  <div className="w-8 h-8 rounded-xl bg-muted/60 flex items-center justify-center text-muted-foreground">
-                                                                     <Lock className="w-3.5 h-3.5 text-muted-foreground/80" />
+                                                                     <Lock className="w-3.5 h-3.5 text-muted-foreground" />
                                                                  </div>
                                                                  <div>
                                                                      <span className="font-bold text-foreground filter blur-xs">TICKER</span>
-                                                                     <p className="text-xs text-muted-foreground/60">Exclusivo PRO</p>
+                                                                     <p className="text-xs text-muted-foreground">Exclusivo PRO</p>
                                                                  </div>
                                                              </div>
                                                          </td>
-                                                         <td className="py-4 px-4 text-right text-muted-foreground/60 filter blur-xs font-mono">
+                                                         <td className="py-4 px-4 text-right text-muted-foreground filter blur-xs font-mono">
                                                              $***.**
                                                          </td>
-                                                         <td className="py-4 px-4 text-right text-muted-foreground/60 filter blur-xs font-mono">
+                                                         <td className="py-4 px-4 text-right text-muted-foreground filter blur-xs font-mono">
                                                              $***.**
                                                          </td>
                                                          <td className="py-4 px-4 text-right">
@@ -477,11 +522,12 @@ export default function TopGainersPage() {
                                                                  +*.**%
                                                              </span>
                                                          </td>
-                                                         <td className="py-4 px-4 text-right text-muted-foreground/60 filter blur-xs font-mono">
+                                                         <td className="py-4 px-4 text-right text-muted-foreground filter blur-xs font-mono">
                                                              ***K
                                                          </td>
                                                          <td className="py-4 px-4 text-center">
                                                              <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                                                                  onClick={(e) => {
                                                                      e.stopPropagation();
                                                                      navigate('/pro');
@@ -514,12 +560,12 @@ export default function TopGainersPage() {
                                                  {/* Rank */}
                                                  <td className="py-4 px-4 text-center">
                                                      <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-black rounded-lg ${item.rank === 1
-                                                         ? isLosers ? 'bg-rose-500/20 text-rose-400 font-black' : 'bg-emerald-500/20 text-emerald-400 font-black'
+                                                         ? isLosers ? 'bg-rose-500/20 text-rose-700 dark:text-rose-400 font-black' : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-black'
                                                          : item.rank === 2
-                                                             ? isLosers ? 'bg-rose-500/15 text-rose-400' : 'bg-emerald-500/15 text-emerald-400'
+                                                             ? isLosers ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
                                                              : item.rank === 3
-                                                                 ? isLosers ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'
-                                                                 : 'text-muted-foreground/60'
+                                                                 ? isLosers ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                                                 : 'text-muted-foreground'
                                                          }`}>
                                                          {item.rank}
                                                      </span>
@@ -535,7 +581,7 @@ export default function TopGainersPage() {
                                                                      {item.ticker}
                                                                  </span>
                                                              </div>
-                                                             <p className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-[320px]">
+                                                             <p className="text-xs text-muted-foreground break-words max-w-[320px]">
                                                                  {item.companyName || item.ticker}
                                                              </p>
                                                          </div>
@@ -556,12 +602,12 @@ export default function TopGainersPage() {
                                                  <td className="py-4 px-4 text-right">
                                                      <div className="inline-flex flex-col items-end gap-1">
                                                          {item.changePercent >= 0 ? (
-                                                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black text-emerald-400 bg-emerald-500/10 num">
+                                                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 num">
                                                                  <TrendingUp className="w-3 h-3 stroke-[2.5]" />
                                                                  +{item.changePercent.toFixed(2)}%
                                                              </span>
                                                          ) : (
-                                                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black text-rose-400 bg-rose-500/10 num">
+                                                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black text-rose-700 dark:text-rose-400 bg-rose-500/10 num">
                                                                  <TrendingDown className="w-3 h-3 stroke-[2.5]" />
                                                                  {item.changePercent.toFixed(2)}%
                                                              </span>
@@ -579,12 +625,13 @@ export default function TopGainersPage() {
                                                  {/* Volume */}
                                                  <td className="py-4 px-4 text-right num text-xs">
                                                      <span className="font-semibold text-foreground/90">{volM}</span>
-                                                     <span className="text-[10px] text-muted-foreground/60 block">acciones</span>
+                                                     <span className="text-[10px] text-muted-foreground block">acciones</span>
                                                  </td>
 
                                                  {/* Action */}
                                                  <td className="py-4 px-4 text-center">
                                                      <button
+                            style={{ minHeight: 44, minWidth: 44 }}
                                                          onClick={(e) => {
                                                              e.stopPropagation();
                                                              navigate(`/market?symbol=NASDAQ:${item.ticker}`);
@@ -604,6 +651,156 @@ export default function TopGainersPage() {
                     </div>
                 )}
             </div>
+        </div>
+    );
+}
+
+function RankingMobileCard({
+    item,
+    isLosers,
+    navigate,
+}: {
+    item: RankingItem;
+    isLosers: boolean;
+    navigate: (to: string) => void;
+}) {
+    const [expanded, setExpanded] = useState(false);
+    const volM = item.volume >= 1_000_000
+        ? `${(item.volume / 1_000_000).toFixed(1)}M`
+        : `${(item.volume / 1_000).toFixed(1)}K`;
+
+    return (
+        <div className="p-4 rounded-xl border border-border/50 bg-card hover:border-primary/40 transition-all space-y-3">
+            <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-black rounded-lg shrink-0 ${item.rank === 1
+                        ? isLosers ? 'bg-rose-500/20 text-rose-700 dark:text-rose-400' : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                        : item.rank === 2
+                            ? isLosers ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                            : item.rank === 3
+                                ? isLosers ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                : 'text-muted-foreground bg-muted/20'
+                    }`}>
+                        {item.rank}
+                    </span>
+                    <AssetLogoImg src={item.logoUrl} ticker={item.ticker} name={item.companyName} />
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-foreground text-sm">{item.ticker}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed break-words" title={item.companyName}>
+                            {item.companyName || item.ticker}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 w-full">
+                    <p className="font-bold text-foreground text-sm num">
+                        {formatCurrency(item.price, 'USD')}
+                    </p>
+                    <div className="mt-1">
+                        {item.changePercent >= 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-black text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 num">
+                                <TrendingUp className="w-3 h-3 stroke-[2.5]" />
+                                +{item.changePercent.toFixed(2)}%
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-black text-rose-700 dark:text-rose-400 bg-rose-500/10 num">
+                                <TrendingDown className="w-3 h-3 stroke-[2.5]" />
+                                {item.changePercent.toFixed(2)}%
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/30 text-xs">
+                <button
+                            style={{ minHeight: 44, minWidth: 44 }}
+                    type="button"
+                    onClick={() => setExpanded(e => !e)}
+                    className="text-muted-foreground hover:text-foreground font-medium flex items-center gap-1 py-1"
+                >
+                    {expanded ? 'Ocultar detalles ▲' : 'Ver volumen y cierre ▼'}
+                </button>
+                <button
+                            style={{ minHeight: 44, minWidth: 44 }}
+                    type="button"
+                    onClick={() => navigate(`/market?symbol=NASDAQ:${item.ticker}`)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 font-bold transition-colors"
+                >
+                    <span>Analizar</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+            </div>
+
+            {expanded && (
+                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-muted/20 text-xs text-muted-foreground">
+                    <div>
+                        <span className="block text-[11px] text-muted-foreground uppercase">Cierre previo</span>
+                        <strong className="text-foreground num font-semibold">{formatCurrency(item.previousClose, 'USD')}</strong>
+                    </div>
+                    <div>
+                        <span className="block text-[11px] text-muted-foreground uppercase">Volumen</span>
+                        <strong className="text-foreground num font-semibold">{volM} acciones</strong>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function LockedMobileCard({
+    item,
+    navigate,
+    showBannerAbove,
+    selectedLimit,
+}: {
+    item: RankingItem;
+    navigate: (to: string) => void;
+    showBannerAbove: boolean;
+    selectedLimit: number;
+}) {
+    const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
+    return (
+        <div className="space-y-3">
+            {showBannerAbove && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-card to-emerald-500/10 border-2 border-emerald-500/30 text-center space-y-2">
+                    <Crown className="w-6 h-6 mx-auto text-emerald-700 dark:text-emerald-400" />
+                    <h3 className="text-sm font-bold text-foreground">
+                        Posiciones 6 a {selectedLimit} exclusivas para Finix PRO
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                        Desbloqueá el ranking completo ampliado y métricas avanzadas.
+                    </p>
+                    <button
+                            style={{ minHeight: 44, minWidth: 44 }}
+                        onClick={() => navigate('/pro')}
+                        className="w-full py-2.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow-md hover:bg-emerald-500"
+                    >
+                        {freeAccess ? 'Creá tu cuenta y accedé gratis' : 'Ver disponibilidad de PRO'}
+                    </button>
+                </div>
+            )}
+            <button style={{ minHeight: 44, minWidth: 44 }} type="button" aria-label="Ver disponibilidad del ranking completo"
+                onClick={() => navigate('/pro')}
+                className="p-3.5 rounded-xl border border-border/40 bg-card/60 flex items-center justify-between cursor-pointer"
+            >
+                <div className="flex items-center gap-2.5">
+                    <span className="w-6 text-center text-xs font-bold text-muted-foreground">{item.rank}</span>
+                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
+                        <Lock className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                        <span className="font-bold text-foreground filter blur-xs text-sm">TICKER</span>
+                        <p className="text-[11px] text-muted-foreground">Exclusivo PRO</p>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <span className="filter blur-xs text-xs font-mono">$***.**</span>
+                    <span className="block filter blur-xs text-[11px] font-bold text-emerald-700 dark:text-emerald-400">+*.**%</span>
+                </div>
+            </button>
         </div>
     );
 }

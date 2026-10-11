@@ -1,0 +1,130 @@
+[
+  {
+    "width": 320,
+    "theme": "light",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 360,
+    "theme": "light",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 430,
+    "theme": "light",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 768,
+    "theme": "light",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 1024,
+    "theme": "light",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 1440,
+    "theme": "light",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 360,
+    "theme": "dark",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 430,
+    "theme": "dark",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 768,
+    "theme": "dark",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 1024,
+    "theme": "dark",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 1440,
+    "theme": "dark",
+    "initialInside": true,
+    "backgroundIsolated": true,
+    "returned": true,
+    "realWrites": 0
+  }
+]

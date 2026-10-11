@@ -1,3 +1,4 @@
+import { sectorLabel } from '@/lib/sector-labels';
 import { useEffect, useMemo, useState } from 'react';
 import {
     ArrowDownRight,
@@ -10,11 +11,14 @@ import {
     Minus,
     RefreshCw,
     Search,
+    GraduationCap,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { SymbolLogo } from '@/components/SymbolLogo';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { MarketHeader } from './MarketPrimitives';
+import { EduInfoBadge } from '@/components/education/EduInfoBadge';
 import './value-creation.css';
 
 type ValueStatus =
@@ -45,7 +49,7 @@ interface ValuePayload {
         destroysValueCount: number;
         equilibriumCount: number;
         medianSpread: number | null;
-        updatedAt: string;
+        updatedAt: string | null;
         stale: boolean;
     };
     methodology: {
@@ -182,19 +186,29 @@ export default function ValueCreationHeatmap({
                 icon={Building2}
                 description="S&P 500 · ROIC, WACC y retorno sobre el capital"
                 actions={
-                    <button
-                        type="button"
-                        className="market-icon-action"
-                        onClick={() => load(true)}
-                        disabled={refreshing}
-                        title="Actualizar datos"
-                        aria-label="Actualizar datos"
-                    >
-                        <RefreshCw
-                            size={17}
-                            className={refreshing ? 'animate-spin' : ''}
-                        />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <Link
+                            to="/educativa/analisis-fundamental/que-es-el-roic"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
+                            title="Aprender sobre ROIC y Creación de Valor"
+                        >
+                            <GraduationCap size={15} className="text-emerald-500" />
+                            <span className="hidden sm:inline">Guía ROIC vs WACC</span>
+                        </Link>
+                        <button
+                            type="button"
+                            className="market-icon-action"
+                            onClick={() => load(true)}
+                            disabled={refreshing}
+                            title="Actualizar datos"
+                            aria-label="Actualizar datos"
+                        >
+                            <RefreshCw
+                                size={17}
+                                className={refreshing ? 'animate-spin' : ''}
+                            />
+                        </button>
+                    </div>
                 }
             />
             <div className="market-overview">
@@ -271,7 +285,7 @@ export default function ValueCreationHeatmap({
                 >
                     <option value="ALL">Todos los sectores</option>
                     {sectors.map((value) => (
-                        <option key={value}>{value}</option>
+                        <option key={value} value={value}>{sectorLabel(value)}</option>
                     ))}
                 </select>
                 <div
@@ -346,14 +360,11 @@ export default function ValueCreationHeatmap({
                         adicional.
                     </p>
                     <p>
-                        Actualizado:{' '}
-                        {summary
-                            ? new Date(summary.updatedAt).toLocaleString(
-                                  'es-AR',
-                              )
-                            : '—'}{' '}
-                        · Tasa libre de riesgo {data?.methodology.riskFreeRate}%
-                        · ERP {data?.methodology.equityRiskPremium}%.
+                        {summary?.updatedAt && Number.isFinite(new Date(summary.updatedAt).getTime())
+                            ? `Actualizado: ${new Date(summary.updatedAt).toLocaleString('es-AR')}`
+                            : 'Fecha de actualización no informada'}{' '}
+                        · Tasa libre de riesgo: {percent(data?.methodology.riskFreeRate)}
+                        · Prima de riesgo de mercado (ERP): {percent(data?.methodology.equityRiskPremium)}.
                     </p>
                 </div>
             </footer>
@@ -432,7 +443,11 @@ function ValueTile({
             </div>
             <dl className="value-company__comparison">
                 <div>
-                    <dt>ROIC <span>Retorno del capital</span></dt>
+                    <dt className="flex items-center gap-1.5">
+                        <span>ROIC</span>
+                        <span>Retorno del capital</span>
+                        <EduInfoBadge term="roic" />
+                    </dt>
                     <dd>{percent(item.roic)}</dd>
                 </div>
                 <div>
@@ -450,7 +465,7 @@ function ValueTile({
                     <dd>{item.beta?.toFixed(2) ?? '—'}</dd>
                 </div>
             </dl>}
-            <footer className="value-company__sector">{item.sector || 'Sector no disponible'}</footer>
+            <footer className="value-company__sector">{sectorLabel(item.sector)}</footer>
         </article>
     );
 }

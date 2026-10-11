@@ -7,6 +7,7 @@ import {
     Tooltip as RechartsTooltip,
 } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { EduInfoBadge } from '@/components/education/EduInfoBadge';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#14b8a6', '#ef4444', '#6366f1', '#ec4899', '#84cc16', '#f97316'];
 
@@ -149,7 +150,10 @@ function DistributionCard({
         <Card className="border-border shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
             <CardHeader className="space-y-3">
                 <div>
-                    <CardTitle className="text-lg">{title}</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-1">
+                        <span>{title}</span>
+                        <EduInfoBadge term="diversificacion" />
+                    </CardTitle>
                     <CardDescription>{description}</CardDescription>
                 </div>
                 <p className="max-w-xl text-sm leading-relaxed text-foreground/85">{summary}</p>

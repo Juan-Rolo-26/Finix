@@ -1,0 +1,1566 @@
+[
+  {
+    "kind": "imagen",
+    "case": "horizontal",
+    "width": 320,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 1400,
+      "naturalHeight": 350,
+      "width": 288,
+      "height": 72,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "vertical",
+    "width": 320,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 350,
+      "naturalHeight": 1400,
+      "width": 198,
+      "height": 792,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "cuadrada",
+    "width": 320,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 600,
+      "naturalHeight": 600,
+      "width": 288,
+      "height": 288,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "extrema",
+    "width": 320,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 2000,
+      "naturalHeight": 100,
+      "width": 288,
+      "height": 14.390625,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "fallback",
+    "width": 320,
+    "theme": "light",
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/market/top-gainers",
+    "width": 320,
+    "theme": "light",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Finix · Inicio",
+        "x": 12,
+        "y": 4,
+        "width": 124,
+        "height": 48
+      },
+      {
+        "name": "Cambiar a tema oscuro",
+        "x": 120,
+        "y": 52,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Crear publicación",
+        "x": 168,
+        "y": 52,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Notificaciones",
+        "x": 216,
+        "y": 52,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Mi perfil",
+        "x": 264,
+        "y": 52,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Inicio",
+        "x": 4,
+        "y": 779,
+        "width": 48.796875,
+        "height": 117
+      },
+      {
+        "name": "Comunidades",
+        "x": 56.796875,
+        "y": 779,
+        "width": 48.8125,
+        "height": 117
+      },
+      {
+        "name": "Crear publicación",
+        "x": 109.609375,
+        "y": 779,
+        "width": 48,
+        "height": 48
+      },
+      {
+        "name": "Explorar",
+        "x": 161.609375,
+        "y": 779,
+        "width": 48.796875,
+        "height": 117
+      },
+      {
+        "name": "Mensajes",
+        "x": 214.40625,
+        "y": 779,
+        "width": 48.796875,
+        "height": 117
+      },
+      {
+        "name": "Más herramientas y opciones",
+        "x": 267.203125,
+        "y": 779,
+        "width": 48.796875,
+        "height": 117
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/info/contact",
+    "width": 320,
+    "theme": "light",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": [],
+    "controls": [],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/pro",
+    "width": 320,
+    "theme": "light",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Inicio",
+        "x": 20,
+        "y": -18777.109375,
+        "width": 89,
+        "height": 39
+      },
+      {
+        "name": "FINIX",
+        "x": 212,
+        "y": -18780,
+        "width": 88,
+        "height": 44.796875
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "horizontal",
+    "width": 390,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 1400,
+      "naturalHeight": 350,
+      "width": 358,
+      "height": 89.5,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "vertical",
+    "width": 390,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 350,
+      "naturalHeight": 1400,
+      "width": 198,
+      "height": 792,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "cuadrada",
+    "width": 390,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 600,
+      "naturalHeight": 600,
+      "width": 358,
+      "height": 358,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "extrema",
+    "width": 390,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 2000,
+      "naturalHeight": 100,
+      "width": 358,
+      "height": 17.890625,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "fallback",
+    "width": 390,
+    "theme": "light",
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/market/top-gainers",
+    "width": 390,
+    "theme": "light",
+    "scrollWidth": 390,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Finix · Inicio",
+        "x": 12,
+        "y": 4,
+        "width": 124,
+        "height": 48
+      },
+      {
+        "name": "Cambiar a tema oscuro",
+        "x": 190,
+        "y": 6,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Crear publicación",
+        "x": 238,
+        "y": 6,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Notificaciones",
+        "x": 286,
+        "y": 6,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Mi perfil",
+        "x": 334,
+        "y": 6,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Inicio",
+        "x": 4,
+        "y": 802.75,
+        "width": 62.796875,
+        "height": 93.25
+      },
+      {
+        "name": "Comunidades",
+        "x": 70.796875,
+        "y": 802.75,
+        "width": 62.8125,
+        "height": 93.25
+      },
+      {
+        "name": "Crear publicación",
+        "x": 137.609375,
+        "y": 802.75,
+        "width": 48,
+        "height": 48
+      },
+      {
+        "name": "Explorar",
+        "x": 189.609375,
+        "y": 802.75,
+        "width": 62.796875,
+        "height": 93.25
+      },
+      {
+        "name": "Mensajes",
+        "x": 256.40625,
+        "y": 802.75,
+        "width": 62.796875,
+        "height": 93.25
+      },
+      {
+        "name": "Más herramientas y opciones",
+        "x": 323.203125,
+        "y": 802.75,
+        "width": 62.796875,
+        "height": 93.25
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/info/contact",
+    "width": 390,
+    "theme": "light",
+    "scrollWidth": 390,
+    "bottom": true,
+    "clipped": [],
+    "controls": [],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/pro",
+    "width": 390,
+    "theme": "light",
+    "scrollWidth": 390,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Inicio",
+        "x": 20,
+        "y": -15204.109375,
+        "width": 89,
+        "height": 39
+      },
+      {
+        "name": "FINIX",
+        "x": 282,
+        "y": -15207,
+        "width": 88,
+        "height": 44.796875
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "horizontal",
+    "width": 430,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 1400,
+      "naturalHeight": 350,
+      "width": 398,
+      "height": 99.5,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "vertical",
+    "width": 430,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 350,
+      "naturalHeight": 1400,
+      "width": 198,
+      "height": 792,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "cuadrada",
+    "width": 430,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 600,
+      "naturalHeight": 600,
+      "width": 398,
+      "height": 398,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "extrema",
+    "width": 430,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 2000,
+      "naturalHeight": 100,
+      "width": 398,
+      "height": 19.890625,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "fallback",
+    "width": 430,
+    "theme": "light",
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/market/top-gainers",
+    "width": 430,
+    "theme": "light",
+    "scrollWidth": 430,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Finix · Inicio",
+        "x": 12,
+        "y": 6.296875,
+        "width": 124,
+        "height": 48
+      },
+      {
+        "name": "Cambiar a tema oscuro",
+        "x": 156.09375,
+        "y": 8.296875,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Racha Inversora: 4 días seguidos",
+        "x": 204.09375,
+        "y": 11.40625,
+        "width": 69.90625,
+        "height": 45.1875
+      },
+      {
+        "name": "Crear publicación",
+        "x": 278,
+        "y": 8.296875,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Notificaciones",
+        "x": 326,
+        "y": 8.296875,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Mi perfil",
+        "x": 374,
+        "y": 8.296875,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Inicio",
+        "x": 4,
+        "y": 826.5,
+        "width": 70.796875,
+        "height": 69.5
+      },
+      {
+        "name": "Comunidades",
+        "x": 78.796875,
+        "y": 826.5,
+        "width": 70.8125,
+        "height": 69.5
+      },
+      {
+        "name": "Crear publicación",
+        "x": 153.609375,
+        "y": 826.5,
+        "width": 48,
+        "height": 48
+      },
+      {
+        "name": "Explorar",
+        "x": 205.609375,
+        "y": 826.5,
+        "width": 70.796875,
+        "height": 69.5
+      },
+      {
+        "name": "Mensajes",
+        "x": 280.40625,
+        "y": 826.5,
+        "width": 70.796875,
+        "height": 69.5
+      },
+      {
+        "name": "Más herramientas y opciones",
+        "x": 355.203125,
+        "y": 826.5,
+        "width": 70.796875,
+        "height": 69.5
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/info/contact",
+    "width": 430,
+    "theme": "light",
+    "scrollWidth": 430,
+    "bottom": true,
+    "clipped": [],
+    "controls": [],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/pro",
+    "width": 430,
+    "theme": "light",
+    "scrollWidth": 430,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Inicio",
+        "x": 20,
+        "y": -13464.109375,
+        "width": 89,
+        "height": 39
+      },
+      {
+        "name": "FINIX",
+        "x": 322,
+        "y": -13467,
+        "width": 88,
+        "height": 44.796875
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "horizontal",
+    "width": 1440,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 1400,
+      "naturalHeight": 350,
+      "width": 1376,
+      "height": 344,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "vertical",
+    "width": 1440,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 350,
+      "naturalHeight": 1400,
+      "width": 198,
+      "height": 792,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "cuadrada",
+    "width": 1440,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 600,
+      "naturalHeight": 600,
+      "width": 600,
+      "height": 600,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "extrema",
+    "width": 1440,
+    "theme": "light",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 2000,
+      "naturalHeight": 100,
+      "width": 1376,
+      "height": 68.796875,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "fallback",
+    "width": 1440,
+    "theme": "light",
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/market/top-gainers",
+    "width": 1440,
+    "theme": "light",
+    "scrollWidth": 1440,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Inicio",
+        "x": 186.203125,
+        "y": -0.421875,
+        "width": 92,
+        "height": 55.84375
+      },
+      {
+        "name": "Menú desplegable de herramientas",
+        "x": 282.203125,
+        "y": -0.421875,
+        "width": 216,
+        "height": 55.84375
+      },
+      {
+        "name": "Portafolio",
+        "x": 502.203125,
+        "y": -0.421875,
+        "width": 145,
+        "height": 55.84375
+      },
+      {
+        "name": "Explorar",
+        "x": 651.203125,
+        "y": -0.421875,
+        "width": 129,
+        "height": 55.84375
+      },
+      {
+        "name": "Noticias",
+        "x": 784.203125,
+        "y": -0.421875,
+        "width": 127,
+        "height": 55.84375
+      },
+      {
+        "name": "Educativa",
+        "x": 915.203125,
+        "y": -0.421875,
+        "width": 149,
+        "height": 55.84375
+      },
+      {
+        "name": "Comunidades",
+        "x": 1068.203125,
+        "y": -0.421875,
+        "width": 200,
+        "height": 55.84375
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/info/contact",
+    "width": 1440,
+    "theme": "light",
+    "scrollWidth": 1440,
+    "bottom": true,
+    "clipped": [],
+    "controls": [],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/pro",
+    "width": 1440,
+    "theme": "light",
+    "scrollWidth": 1440,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Inicio",
+        "x": 186.203125,
+        "y": -0.421875,
+        "width": 92,
+        "height": 55.84375
+      },
+      {
+        "name": "Menú desplegable de herramientas",
+        "x": 282.203125,
+        "y": -0.421875,
+        "width": 213,
+        "height": 55.84375
+      },
+      {
+        "name": "Portafolio",
+        "x": 499.203125,
+        "y": -0.421875,
+        "width": 145,
+        "height": 55.84375
+      },
+      {
+        "name": "Explorar",
+        "x": 648.203125,
+        "y": -0.421875,
+        "width": 129,
+        "height": 55.84375
+      },
+      {
+        "name": "Noticias",
+        "x": 781.203125,
+        "y": -0.421875,
+        "width": 127,
+        "height": 55.84375
+      },
+      {
+        "name": "Educativa",
+        "x": 912.203125,
+        "y": -0.421875,
+        "width": 149,
+        "height": 55.84375
+      },
+      {
+        "name": "Comunidades",
+        "x": 1065.203125,
+        "y": -0.421875,
+        "width": 200,
+        "height": 55.84375
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "horizontal",
+    "width": 320,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 1400,
+      "naturalHeight": 350,
+      "width": 288,
+      "height": 72,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "vertical",
+    "width": 320,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 350,
+      "naturalHeight": 1400,
+      "width": 198,
+      "height": 792,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "cuadrada",
+    "width": 320,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 600,
+      "naturalHeight": 600,
+      "width": 288,
+      "height": 288,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "extrema",
+    "width": 320,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 2000,
+      "naturalHeight": 100,
+      "width": 288,
+      "height": 14.390625,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "fallback",
+    "width": 320,
+    "theme": "dark",
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/market/top-gainers",
+    "width": 320,
+    "theme": "dark",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Finix · Inicio",
+        "x": 12,
+        "y": 4,
+        "width": 124,
+        "height": 48
+      },
+      {
+        "name": "Cambiar a tema claro",
+        "x": 120,
+        "y": 52,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Crear publicación",
+        "x": 168,
+        "y": 52,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Notificaciones",
+        "x": 216,
+        "y": 52,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Mi perfil",
+        "x": 264,
+        "y": 52,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Inicio",
+        "x": 4,
+        "y": 779,
+        "width": 48.796875,
+        "height": 117
+      },
+      {
+        "name": "Comunidades",
+        "x": 56.796875,
+        "y": 779,
+        "width": 48.8125,
+        "height": 117
+      },
+      {
+        "name": "Crear publicación",
+        "x": 109.609375,
+        "y": 779,
+        "width": 48,
+        "height": 48
+      },
+      {
+        "name": "Explorar",
+        "x": 161.609375,
+        "y": 779,
+        "width": 48.796875,
+        "height": 117
+      },
+      {
+        "name": "Mensajes",
+        "x": 214.40625,
+        "y": 779,
+        "width": 48.796875,
+        "height": 117
+      },
+      {
+        "name": "Más herramientas y opciones",
+        "x": 267.203125,
+        "y": 779,
+        "width": 48.796875,
+        "height": 117
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/info/contact",
+    "width": 320,
+    "theme": "dark",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": [],
+    "controls": [],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/pro",
+    "width": 320,
+    "theme": "dark",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Inicio",
+        "x": 20,
+        "y": -18777.109375,
+        "width": 89,
+        "height": 39
+      },
+      {
+        "name": "FINIX",
+        "x": 212,
+        "y": -18780,
+        "width": 88,
+        "height": 44.796875
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "horizontal",
+    "width": 390,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 1400,
+      "naturalHeight": 350,
+      "width": 358,
+      "height": 89.5,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "vertical",
+    "width": 390,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 350,
+      "naturalHeight": 1400,
+      "width": 198,
+      "height": 792,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "cuadrada",
+    "width": 390,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 600,
+      "naturalHeight": 600,
+      "width": 358,
+      "height": 358,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "extrema",
+    "width": 390,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 2000,
+      "naturalHeight": 100,
+      "width": 358,
+      "height": 17.890625,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "fallback",
+    "width": 390,
+    "theme": "dark",
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/market/top-gainers",
+    "width": 390,
+    "theme": "dark",
+    "scrollWidth": 390,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Finix · Inicio",
+        "x": 12,
+        "y": 4,
+        "width": 124,
+        "height": 48
+      },
+      {
+        "name": "Cambiar a tema claro",
+        "x": 190,
+        "y": 6,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Crear publicación",
+        "x": 238,
+        "y": 6,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Notificaciones",
+        "x": 286,
+        "y": 6,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Mi perfil",
+        "x": 334,
+        "y": 6,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Inicio",
+        "x": 4,
+        "y": 802.75,
+        "width": 62.796875,
+        "height": 93.25
+      },
+      {
+        "name": "Comunidades",
+        "x": 70.796875,
+        "y": 802.75,
+        "width": 62.8125,
+        "height": 93.25
+      },
+      {
+        "name": "Crear publicación",
+        "x": 137.609375,
+        "y": 802.75,
+        "width": 48,
+        "height": 48
+      },
+      {
+        "name": "Explorar",
+        "x": 189.609375,
+        "y": 802.75,
+        "width": 62.796875,
+        "height": 93.25
+      },
+      {
+        "name": "Mensajes",
+        "x": 256.40625,
+        "y": 802.75,
+        "width": 62.796875,
+        "height": 93.25
+      },
+      {
+        "name": "Más herramientas y opciones",
+        "x": 323.203125,
+        "y": 802.75,
+        "width": 62.796875,
+        "height": 93.25
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/info/contact",
+    "width": 390,
+    "theme": "dark",
+    "scrollWidth": 390,
+    "bottom": true,
+    "clipped": [],
+    "controls": [],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/pro",
+    "width": 390,
+    "theme": "dark",
+    "scrollWidth": 390,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Inicio",
+        "x": 20,
+        "y": -15204.109375,
+        "width": 89,
+        "height": 39
+      },
+      {
+        "name": "FINIX",
+        "x": 282,
+        "y": -15207,
+        "width": 88,
+        "height": 44.796875
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "horizontal",
+    "width": 430,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 1400,
+      "naturalHeight": 350,
+      "width": 398,
+      "height": 99.5,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "vertical",
+    "width": 430,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 350,
+      "naturalHeight": 1400,
+      "width": 198,
+      "height": 792,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "cuadrada",
+    "width": 430,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 600,
+      "naturalHeight": 600,
+      "width": 398,
+      "height": 398,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "extrema",
+    "width": 430,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 2000,
+      "naturalHeight": 100,
+      "width": 398,
+      "height": 19.890625,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "fallback",
+    "width": 430,
+    "theme": "dark",
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/market/top-gainers",
+    "width": 430,
+    "theme": "dark",
+    "scrollWidth": 430,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Finix · Inicio",
+        "x": 12,
+        "y": 6.296875,
+        "width": 124,
+        "height": 48
+      },
+      {
+        "name": "Cambiar a tema claro",
+        "x": 156.09375,
+        "y": 8.296875,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Racha Inversora: 4 días seguidos",
+        "x": 204.09375,
+        "y": 11.40625,
+        "width": 69.90625,
+        "height": 45.1875
+      },
+      {
+        "name": "Crear publicación",
+        "x": 278,
+        "y": 8.296875,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Notificaciones",
+        "x": 326,
+        "y": 8.296875,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Mi perfil",
+        "x": 374,
+        "y": 8.296875,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "name": "Inicio",
+        "x": 4,
+        "y": 826.5,
+        "width": 70.796875,
+        "height": 69.5
+      },
+      {
+        "name": "Comunidades",
+        "x": 78.796875,
+        "y": 826.5,
+        "width": 70.8125,
+        "height": 69.5
+      },
+      {
+        "name": "Crear publicación",
+        "x": 153.609375,
+        "y": 826.5,
+        "width": 48,
+        "height": 48
+      },
+      {
+        "name": "Explorar",
+        "x": 205.609375,
+        "y": 826.5,
+        "width": 70.796875,
+        "height": 69.5
+      },
+      {
+        "name": "Mensajes",
+        "x": 280.40625,
+        "y": 826.5,
+        "width": 70.796875,
+        "height": 69.5
+      },
+      {
+        "name": "Más herramientas y opciones",
+        "x": 355.203125,
+        "y": 826.5,
+        "width": 70.796875,
+        "height": 69.5
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/info/contact",
+    "width": 430,
+    "theme": "dark",
+    "scrollWidth": 430,
+    "bottom": true,
+    "clipped": [],
+    "controls": [],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/pro",
+    "width": 430,
+    "theme": "dark",
+    "scrollWidth": 430,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Inicio",
+        "x": 20,
+        "y": -13464.109375,
+        "width": 89,
+        "height": 39
+      },
+      {
+        "name": "FINIX",
+        "x": 322,
+        "y": -13467,
+        "width": 88,
+        "height": 44.796875
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "horizontal",
+    "width": 1440,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 1400,
+      "naturalHeight": 350,
+      "width": 1376,
+      "height": 344,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "vertical",
+    "width": 1440,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 350,
+      "naturalHeight": 1400,
+      "width": 198,
+      "height": 792,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "cuadrada",
+    "width": 1440,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 600,
+      "naturalHeight": 600,
+      "width": 600,
+      "height": 600,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "imagen",
+    "case": "extrema",
+    "width": 1440,
+    "theme": "dark",
+    "dimensions": {
+      "fit": "contain",
+      "naturalWidth": 2000,
+      "naturalHeight": 100,
+      "width": 1376,
+      "height": 68.796875,
+      "alt": "Imagen en tamaño completo"
+    },
+    "result": "passed"
+  },
+  {
+    "kind": "fallback",
+    "width": 1440,
+    "theme": "dark",
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/market/top-gainers",
+    "width": 1440,
+    "theme": "dark",
+    "scrollWidth": 1440,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Inicio",
+        "x": 186.203125,
+        "y": -0.421875,
+        "width": 92,
+        "height": 55.84375
+      },
+      {
+        "name": "Menú desplegable de herramientas",
+        "x": 282.203125,
+        "y": -0.421875,
+        "width": 216,
+        "height": 55.84375
+      },
+      {
+        "name": "Portafolio",
+        "x": 502.203125,
+        "y": -0.421875,
+        "width": 145,
+        "height": 55.84375
+      },
+      {
+        "name": "Explorar",
+        "x": 651.203125,
+        "y": -0.421875,
+        "width": 129,
+        "height": 55.84375
+      },
+      {
+        "name": "Noticias",
+        "x": 784.203125,
+        "y": -0.421875,
+        "width": 127,
+        "height": 55.84375
+      },
+      {
+        "name": "Educativa",
+        "x": 915.203125,
+        "y": -0.421875,
+        "width": 149,
+        "height": 55.84375
+      },
+      {
+        "name": "Comunidades",
+        "x": 1068.203125,
+        "y": -0.421875,
+        "width": 200,
+        "height": 55.84375
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/info/contact",
+    "width": 1440,
+    "theme": "dark",
+    "scrollWidth": 1440,
+    "bottom": true,
+    "clipped": [],
+    "controls": [],
+    "result": "passed"
+  },
+  {
+    "kind": "zoom200",
+    "case": "/pro",
+    "width": 1440,
+    "theme": "dark",
+    "scrollWidth": 1440,
+    "bottom": true,
+    "clipped": [],
+    "controls": [
+      {
+        "name": "Inicio",
+        "x": 186.203125,
+        "y": -0.421875,
+        "width": 92,
+        "height": 55.84375
+      },
+      {
+        "name": "Menú desplegable de herramientas",
+        "x": 282.203125,
+        "y": -0.421875,
+        "width": 213,
+        "height": 55.84375
+      },
+      {
+        "name": "Portafolio",
+        "x": 499.203125,
+        "y": -0.421875,
+        "width": 145,
+        "height": 55.84375
+      },
+      {
+        "name": "Explorar",
+        "x": 648.203125,
+        "y": -0.421875,
+        "width": 129,
+        "height": 55.84375
+      },
+      {
+        "name": "Noticias",
+        "x": 781.203125,
+        "y": -0.421875,
+        "width": 127,
+        "height": 55.84375
+      },
+      {
+        "name": "Educativa",
+        "x": 912.203125,
+        "y": -0.421875,
+        "width": 149,
+        "height": 55.84375
+      },
+      {
+        "name": "Comunidades",
+        "x": 1065.203125,
+        "y": -0.421875,
+        "width": 200,
+        "height": 55.84375
+      }
+    ],
+    "result": "passed"
+  }
+]

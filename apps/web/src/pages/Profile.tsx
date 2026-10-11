@@ -10,6 +10,7 @@ import { SymbolLogo } from '@/components/SymbolLogo';
 import { UserConnectionsDialog, type ConnectionsListType } from '@/components/UserConnectionsDialog';
 import { resolveAssetInfo } from '@/lib/tradingview';
 import PostCard from '@/components/posts/PostCard';
+import { ImagePreviewButton } from '@/components/common/ImagePreviewButton';
 import type { Post } from '@/pages/Explore';
 import {
     User, MapPin, Briefcase, Calendar, Award, TrendingUp,
@@ -618,7 +619,7 @@ export default function Profile() {
 
     const buildFallback = (u: any): UserProfile => ({
         id: u.id || '1', username: u.username || 'Usuario', email: u.email || '',
-        bio: u.bio || 'Finix Investor', avatarUrl: u.avatarUrl,
+        bio: u.bio || 'Inversor de Finix', avatarUrl: u.avatarUrl,
         isInfluencer: false, isVerified: false, accountType: 'BASIC',
         isProfilePublic: true, showPortfolio: false, showStats: u.showStats ?? false, acceptingFollowers: u.acceptingFollowers ?? true,
         showExactReturns: u.showExactReturns ?? true,
@@ -1066,7 +1067,7 @@ export default function Profile() {
                     }}
                 >
                     {profile.bannerUrl && (
-                        <img src={resolveMediaUrl(profile.bannerUrl)} alt="Banner" className="w-full h-full object-cover" />
+                        <img src={resolveMediaUrl(profile.bannerUrl)} alt={`Banner de ${profile.username}`} className="w-full h-full object-cover" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
                     )}
                     {/* Overlay gradient */}
                     <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, hsl(var(--background) / 0.92) 100%)' }} />
@@ -1090,6 +1091,7 @@ export default function Profile() {
                             <span>{uploadingImage === 'banner' ? 'Subiendo...' : 'Cambiar banner'}</span>
                         </button>
                     )}
+                    {profile.bannerUrl && <ImagePreviewButton src={resolveMediaUrl(profile.bannerUrl)} alt={`Banner de ${profile.username}`} label="Ver banner completo" className="absolute top-20 right-4 z-20" />}
                 </div>
 
                 {/* Avatar + action buttons row */}
@@ -1144,17 +1146,18 @@ export default function Profile() {
                                     handleUploadImage('avatar');
                                 }}
                                 disabled={uploadingImage === 'avatar'}
-                                className="absolute bottom-0 right-0 w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer z-30"
+                                className="absolute top-[76px] right-0 w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-colors cursor-pointer z-30"
                                 style={{ background: PRIMARY, color: '#000', border: '2px solid hsl(var(--background))' }}
                                 title="Cambiar foto de perfil"
                             >
                                 {uploadingImage === 'avatar' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                             </button>
                         )}
+                        {profile.avatarUrl && <ImagePreviewButton src={resolveMediaUrl(profile.avatarUrl)} alt={`Foto de perfil de ${profile.username}`} label="Ver foto de perfil completa" className="mt-3 max-w-44" />}
                         {/* Verified badge */}
                         {profile.isVerified && (
                             <div
-                                className={`absolute ${isOwnProfile ? 'top-0 right-0' : 'bottom-1 right-1'} w-7 h-7 rounded-full flex items-center justify-center z-10 shadow-md`}
+                                className={`absolute ${isOwnProfile ? 'top-0 right-0' : 'top-[84px] right-1'} w-7 h-7 rounded-full flex items-center justify-center z-10 shadow-md`}
                                 style={{ background: PRIMARY, border: '2px solid hsl(var(--background))' }}
                                 title="Usuario verificado"
                             >

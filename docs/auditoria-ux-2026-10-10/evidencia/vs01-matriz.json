@@ -1,0 +1,866 @@
+[
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 360,
+    "scrollWidth": 360,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 360,
+    "scrollWidth": 360,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 768,
+    "scrollWidth": 768,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 768,
+    "scrollWidth": 768,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 1024,
+    "scrollWidth": 1024,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 1024,
+    "scrollWidth": 1024,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 1280,
+    "scrollWidth": 1280,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 1280,
+    "scrollWidth": 1280,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "light",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 360,
+    "scrollWidth": 360,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 360,
+    "scrollWidth": 360,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 768,
+    "scrollWidth": 768,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 768,
+    "scrollWidth": 768,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 1024,
+    "scrollWidth": 1024,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 1024,
+    "scrollWidth": 1024,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 1280,
+    "scrollWidth": 1280,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 1280,
+    "scrollWidth": 1280,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "login",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh"
+    ]
+  },
+  {
+    "phase": "vs01",
+    "name": "registro",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "dark",
+    "bottom": true,
+    "fields": [
+      {
+        "id": "auth-username",
+        "label": "Nombre de usuario",
+        "described": "auth-username-hint"
+      },
+      {
+        "id": "auth-email",
+        "label": "Correo electrónico",
+        "described": null
+      },
+      {
+        "id": "auth-password",
+        "label": "Contraseña",
+        "described": "auth-password-hint"
+      }
+    ],
+    "errors": [],
+    "writes": [
+      "/auth/refresh",
+      "/auth/refresh"
+    ]
+  }
+]

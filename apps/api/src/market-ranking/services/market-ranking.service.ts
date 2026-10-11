@@ -11,6 +11,7 @@ export interface TopGainersResponse {
     market: 'SP500';
     isStale?: boolean;
     updatedAt: string;
+    dataContext?: { queriedAt: string; referenceSession: string | null; source: string; priceUnit: string; volumeUnit: string; delay: string };
     items: Array<{
         rank: number;
         ticker: string;
@@ -368,6 +369,13 @@ export class MarketRankingService {
             market: 'SP500',
             isStale,
             updatedAt: rankings[0]?.updatedAt ? rankings[0].updatedAt.toISOString() : new Date().toISOString(),
+            dataContext: {
+                queriedAt: new Date().toISOString(),
+                referenceSession: rankings[0]?.marketTimestamp ? new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(rankings[0].marketTimestamp) : null,
+                source: this.provider.providerName,
+                priceUnit: 'USD por acción', volumeUnit: 'acciones negociadas en la sesión de referencia',
+                delay: 'Demora no informada por el proveedor; no implica cotización en tiempo real.',
+            },
             items: rankings.map(r => ({
                 rank: r.rank,
                 ticker: r.ticker,

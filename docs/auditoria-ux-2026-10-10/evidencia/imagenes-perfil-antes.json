@@ -1,0 +1,20 @@
+[
+  {
+    "kind": "horizontal",
+    "width": 320,
+    "theme": "light",
+    "scrollWidth": 320,
+    "bottom": true,
+    "errors": [],
+    "realWrites": 0
+  },
+  {
+    "kind": "horizontal",
+    "width": 320,
+    "theme": "dark",
+    "scrollWidth": 320,
+    "bottom": true,
+    "errors": [],
+    "realWrites": 0
+  }
+]

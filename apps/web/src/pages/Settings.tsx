@@ -1,3 +1,4 @@
+import WatchlistLimitsSummary from '@/components/watchlist/WatchlistLimitsSummary';
 import { formatArs } from '@/lib/plans';
 import FreeAccessNotice from '@/components/FreeAccessNotice';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
@@ -130,18 +131,21 @@ const ToggleRow = ({
     onChange: (v: boolean) => void;
     disabled?: boolean;
     icon?: React.ReactNode;
-}) => (
-    <div className={`flex items-center justify-between gap-4 rounded-xl border p-4 transition-all ${disabled ? 'border-border/30 opacity-50' : 'border-border/60 bg-card/20 hover:border-primary/30 hover:bg-card/40'}`}>
-        <div className="flex items-start gap-3">
-            {icon && <div className="mt-0.5 text-primary">{icon}</div>}
-            <div>
-                <p className="font-medium text-sm">{label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+}) => {
+    const id = `setting-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    return (
+        <div className={`flex items-center justify-between gap-4 rounded-xl border p-4 transition-all ${disabled ? 'border-border/30 opacity-50' : 'border-border/60 bg-card/20 hover:border-primary/30 hover:bg-card/40'}`}>
+            <div className="flex items-start gap-3">
+                {icon && <div className="mt-0.5 text-primary">{icon}</div>}
+                <div>
+                    <label htmlFor={id} className="font-medium text-sm cursor-pointer">{label}</label>
+                    <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+                </div>
             </div>
+            <Switch id={id} checked={checked} onCheckedChange={onChange} disabled={disabled} aria-label={label} />
         </div>
-        <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
-    </div>
-);
+    );
+};
 
 const SectionHeader = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => (
     <CardHeader className="pb-4">
@@ -1038,6 +1042,7 @@ export default function Settings() {
 
                 {/* ── SUSCRIPCIÓN ── */}
                 <TabsContent value="suscripcion" className="space-y-6">
+                    <WatchlistLimitsSummary />
                     {billingError && <div role="alert" className="rounded-xl border border-border bg-card p-4">{billingError}<button className="ml-3 text-primary underline" onClick={() => { void fetchBillingOverview(); }}>Reintentar</button></div>}
                     {!billingOverview && !billingError && <p role="status">Consultando tu suscripción…</p>}
                     {freeAccess && <p className="text-sm text-muted-foreground">Precios mensuales configurados: PRO {formatArs(proPriceArs)} · Creador {formatArs(creatorPriceArs)}. Hoy el acceso a estas funciones es gratuito temporalmente.</p>}
@@ -1316,7 +1321,7 @@ export default function Settings() {
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-border/40">
-                                {freeAccess && !creatorBilling ? <p className="text-sm font-medium">Creator está incluido gratis. Podés crear tu comunidad sin pagar.</p> : creatorBilling?.status === 'PENDING' ? (
+                                {freeAccess && !creatorBilling ? <p className="text-sm font-medium">Creador está incluido gratis. Podés crear tu comunidad sin pagar.</p> : creatorBilling?.status === 'PENDING' ? (
                                     <>
                                         <p className="text-sm text-muted-foreground font-medium">La autorización de pago todavía está pendiente.</p>
                                         <Button type="button" variant="destructive" size="sm" disabled={!!billingError || !creatorBilling} onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl shadow-xs">Cancelar solicitud</Button>
@@ -1420,6 +1425,8 @@ export default function Settings() {
                                         </p>
                                     </div>
                                     <Switch
+                                        id="privacy-exact-returns"
+                                        aria-label="Mostrar rendimiento exacto"
                                         checked={privacyForm.showExactReturns}
                                         onCheckedChange={(v) => {
                                             updatePrivacy('showExactReturns', v);
@@ -1482,7 +1489,7 @@ export default function Settings() {
                                 <div className="space-y-2">
                                     <Label>Idioma</Label>
                                     <Select value={prefs.language} onValueChange={(v) => updatePref('language', v)}>
-                                        <SelectTrigger className="bg-secondary/30"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger aria-label="Idioma" className="bg-secondary/30"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="es-AR">🇦🇷 Español (AR)</SelectItem>
                                             <SelectItem value="en-US">🇺🇸 Ingles (EE. UU.)</SelectItem>
@@ -1493,7 +1500,7 @@ export default function Settings() {
                                 <div className="space-y-2">
                                     <Label>Moneda</Label>
                                     <Select value={prefs.currency} onValueChange={(v) => updatePref('currency', v)}>
-                                        <SelectTrigger className="bg-secondary/30"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger aria-label="Moneda principal" className="bg-secondary/30"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="USD">💵 USD – Dólar</SelectItem>
                                             <SelectItem value="ARS">🇦🇷 ARS – Peso AR</SelectItem>
@@ -1506,7 +1513,7 @@ export default function Settings() {
                                 <div className="space-y-2">
                                     <Label>Tema</Label>
                                     <Select value={prefs.theme} onValueChange={(v) => updatePref('theme', v)}>
-                                        <SelectTrigger className="bg-secondary/30"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger aria-label="Tema visual" className="bg-secondary/30"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="dark">🌙 Oscuro</SelectItem>
                                             <SelectItem value="light">☀️ Claro</SelectItem>
@@ -1517,7 +1524,7 @@ export default function Settings() {
                                 <div className="space-y-2">
                                     <Label>Densidad de gráficos</Label>
                                     <Select value={prefs.chartDensity} onValueChange={(v) => updatePref('chartDensity', v)}>
-                                        <SelectTrigger className="bg-secondary/30"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger aria-label="Densidad de gráficos" className="bg-secondary/30"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="basic">Básica</SelectItem>
                                             <SelectItem value="normal">Normal</SelectItem>
@@ -1533,7 +1540,7 @@ export default function Settings() {
                                     Zona horaria
                                 </Label>
                                 <Select value={prefs.timezone} onValueChange={(v) => updatePref('timezone', v)}>
-                                    <SelectTrigger className="bg-secondary/30"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger aria-label="Zona horaria" className="bg-secondary/30"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="America/Argentina/Cordoba">🇦🇷 Argentina (Córdoba)</SelectItem>
                                         <SelectItem value="America/Argentina/Buenos_Aires">🇦🇷 Argentina (Buenos Aires)</SelectItem>
@@ -1607,6 +1614,8 @@ export default function Settings() {
                                         </div>
                                     </div>
                                     <Switch
+                                        id="investment-email-notifications"
+                                        aria-label="Notificaciones de inversión exclusivas por email"
                                         checked={settings?.investmentEmailNotifications ?? false}
                                         onCheckedChange={updateInvestmentEmailNotifications}
                                         disabled={isSavingInvestmentEmails || !isProActive}
@@ -1674,12 +1683,13 @@ export default function Settings() {
                                             type={show ? 'text' : 'password'}
                                             value={(passwordForm as any)[key]}
                                             onChange={(e) => setPasswordForm((p) => ({ ...p, [key]: e.target.value }))}
-                                            className="bg-secondary/30 pr-10"
+                                            className="bg-secondary/30 pr-12 min-h-[44px]"
                                         />
                                         <button
                                             type="button"
                                             onClick={toggle}
-                                            className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                                            aria-label={show ? `Ocultar ${label.toLowerCase()}` : `Mostrar ${label.toLowerCase()}`}
+                                            className="absolute right-0 top-0 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary rounded-r-md"
                                         >
                                             {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>

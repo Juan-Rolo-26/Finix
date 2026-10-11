@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Bell, Heart, MessageSquare, TrendingUp, UserPlus, Loader2, CheckCheck, Settings, ShieldAlert, Sparkles, Building2, Repeat } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
-import { type NotificationItem, groupNotificationsByDay } from '@/lib/notifications';
+import { type NotificationItem, groupNotificationsByDay, formatNotificationTime, notificationTimezone } from '@/lib/notifications';
 
 const CATEGORIES = [
     { id: 'ALL', label: 'Todas' },
@@ -120,10 +120,12 @@ export default function Notifications() {
         if (n.link) navigate(n.link);
     };
 
-    const groups = groupNotificationsByDay(notifications);
+    const timeZone = notificationTimezone();
+    const groups = groupNotificationsByDay(notifications, { timeZone });
 
     return (
         <div className="page-enter max-w-3xl mx-auto px-0 md:px-4 py-0 md:py-8 w-full flex flex-col min-h-screen">
+            <p className="px-4 md:px-0 pt-3 text-sm text-muted-foreground">Fecha y hora local: {timeZone}</p>
             {/* Header */}
             <div className="sticky top-0 z-30 pt-4 pb-3 px-4 md:px-0 md:pt-0" style={{ background: 'hsl(var(--background) / 0.85)', backdropFilter: 'blur(12px)' }}>
                 <div className="flex items-center justify-between mb-4">
@@ -269,10 +271,10 @@ export default function Notifications() {
                                                             {n.message}
                                                         </p>
                                                     )}
-                                                    <span className="text-[11px] mt-1.5 inline-block font-semibold"
+                                                    <time dateTime={n.createdAt} className="text-[13px] mt-1.5 inline-block font-semibold"
                                                         style={{ color: isUnread ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground) / 0.6)' }}>
-                                                        {n.timeLabel}
-                                                    </span>
+                                                        {formatNotificationTime(n.createdAt, timeZone)}
+                                                    </time>
                                                 </div>
 
                                                 {isUnread && (

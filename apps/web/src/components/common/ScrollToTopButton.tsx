@@ -29,13 +29,13 @@ export function ScrollToTopButton() {
         <AnimatePresence>
             {isVisible && (
                 <motion.button
-                    initial={{ opacity: 0, scale: 0.6, y: 15 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.6, y: 15 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     transition={{ type: 'spring', stiffness: 350, damping: 25 }}
                     onClick={scrollToTop}
                     type="button"
-                    className="fixed bottom-20 lg:bottom-7 right-5 lg:right-7 z-50 w-11 h-11 rounded-full border border-border/80 bg-card/90 dark:bg-card/85 text-foreground shadow-xl backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 active:scale-95 hover:border-primary/60 hover:text-primary group cursor-pointer select-none"
+                    className="fixed bottom-[calc(var(--finix-mobile-nav-height,60px)+env(safe-area-inset-bottom)+16px)] lg:bottom-7 right-5 lg:right-7 z-50 w-11 h-11 rounded-full border border-border/80 bg-card/90 dark:bg-card/85 text-foreground shadow-xl backdrop-blur-md flex items-center justify-center transition-all hover:border-primary/60 hover:text-primary group cursor-pointer select-none"
                     aria-label="Volver arriba"
                     title="Volver arriba"
                 >

@@ -12,8 +12,7 @@ interface MarketState {
     bgColor: string;
 }
 
-export function getWallStreetStatus(): MarketState {
-    const now = new Date();
+export function getWallStreetStatus(now = new Date()): MarketState {
     // Time in US Eastern (New York)
     const nyDateStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
     const nyDate = new Date(nyDateStr);
@@ -22,7 +21,11 @@ export function getWallStreetStatus(): MarketState {
     const minutes = nyDate.getMinutes();
     const timeInMinutes = hours * 60 + minutes;
 
-    const openTime = 9 * 60 + 30;  // 09:30 EST
+    const offsetName = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(now).find(part => part.type === 'timeZoneName')?.value;
+    const offsetHours = Number(offsetName?.match(/GMT(-?\d+)/)?.[1] ?? -5);
+    const openArt = `${String(9 - offsetHours - 3).padStart(2, '0')}:30`;
+    const closeArt = `${String(16 - offsetHours - 3).padStart(2, '0')}:00`;
+    const openTime = 9 * 60 + 30;  // 09:30 America/New_York
     const closeTime = 16 * 60;     // 16:00 EST
 
     const isWeekday = day >= 1 && day <= 5;
@@ -35,25 +38,20 @@ export function getWallStreetStatus(): MarketState {
 
         return {
             status: 'OPEN',
-            label: `Wall Street abierto · Cierra en ${timeLeftStr}`,
-            shortLabel: `WS Abierto · ${timeLeftStr}`,
-            detail: `Sesión regular en curso · Cierra a las 17:00 ARG / 16:00 EST (restan ${timeLeftStr})`,
+            label: `Horario regular · Cierra en ${timeLeftStr}`,
+            shortLabel: `Horario regular · ${timeLeftStr}`,
+            detail: `Horario regular estimado · Cierre ${closeArt} Argentina / 16:00 Nueva York (restan ${timeLeftStr}). No confirma feriados, cierres anticipados ni interrupciones.`,
             dotColor: 'bg-emerald-500',
             textColor: 'text-emerald-500 dark:text-emerald-400',
             bgColor: 'bg-emerald-500/10 border-emerald-500/25',
         };
     }
 
-    const isWeekend = day === 0 || day === 6 || (day === 5 && timeInMinutes >= closeTime);
-    const nextOpeningText = isWeekend
-        ? 'Próxima apertura lun 10:30 ARG'
-        : 'Próxima apertura 10:30 ARG';
-
     return {
         status: 'CLOSED',
-        label: `Mercado cerrado · ${nextOpeningText}`,
-        shortLabel: 'Cerrado · 10:30 ARG',
-        detail: `Sesión regular cerrada · La rueda de operaciones abre a las 10:30 hs ARG (09:30 EST).`,
+        label: `Fuera del horario regular · Apertura ${openArt} ARG`,
+        shortLabel: `Fuera de horario · ${openArt} ARG`,
+        detail: `Horario habitual: ${openArt}–${closeArt} Argentina, 09:30–16:00 Nueva York. No confirma la próxima sesión: feriados y cierres anticipados requieren el calendario de la bolsa.`,
         dotColor: 'bg-amber-500 dark:bg-amber-400',
         textColor: 'text-amber-700 dark:text-amber-400',
         bgColor: 'bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15',
@@ -90,7 +88,7 @@ export function MarketStatusPill({ className = '' }: { className?: string }) {
             <button
                 type="button"
                 onClick={() => setIsOpen(v => !v)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-semibold border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer select-none shadow-2xs backdrop-blur-xs ${state.bgColor} ${state.textColor} ${className}`}
+                className={`inline-flex min-h-[44px] items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-semibold border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer select-none shadow-2xs backdrop-blur-xs ${state.bgColor} ${state.textColor} ${className}`}
                 title={state.detail}
                 aria-label={`Estado del mercado: ${state.label}`}
             >
@@ -127,7 +125,7 @@ export function MarketStatusPill({ className = '' }: { className?: string }) {
                             <button
                                 type="button"
                                 onClick={() => setIsOpen(false)}
-                                className="text-muted-foreground hover:text-foreground"
+                                aria-label="Cerrar detalle del horario" className="min-h-[44px] min-w-[44px] text-muted-foreground hover:text-foreground"
                             >
                                 <X className="w-3.5 h-3.5" />
                             </button>
@@ -137,12 +135,12 @@ export function MarketStatusPill({ className = '' }: { className?: string }) {
                         </p>
                         <div className="pt-2 border-t border-border/50 text-[11px] text-muted-foreground space-y-1">
                             <div className="flex justify-between">
-                                <span>Horario Oficial (EST):</span>
+                                <span>Horario regular (Nueva York):</span>
                                 <strong className="text-foreground">09:30 - 16:00 hs</strong>
                             </div>
                             <div className="flex justify-between">
                                 <span>Horario Buenos Aires (ART):</span>
-                                <strong className="text-foreground">10:30 - 17:00 hs</strong>
+                                <strong className="text-foreground">Varía según la hora de Nueva York</strong>
                             </div>
                         </div>
                     </motion.div>
@@ -153,7 +151,7 @@ export function MarketStatusPill({ className = '' }: { className?: string }) {
 }
 
 export function FearAndGreedPill({ className = '' }: { className?: string }) {
-    const [fng, setFng] = useState<{ value: number; label: string }>({ value: 72, label: 'Codicia' });
+    const [fng, setFng] = useState<{ value: number; label: string } | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -162,8 +160,9 @@ export function FearAndGreedPill({ className = '' }: { className?: string }) {
         fetch('https://api.alternative.me/fng/?limit=1')
             .then(res => res.json())
             .then(data => {
-                if (isMounted && data?.data?.[0]?.value) {
+                if (isMounted && data?.data?.[0]?.value != null) {
                     const val = Number(data.data[0].value);
+                    if (!Number.isFinite(val) || val < 0 || val > 100) return;
                     let lbl = 'Neutral';
                     if (val >= 75) lbl = 'Codicia Extrema';
                     else if (val >= 55) lbl = 'Codicia';
@@ -188,6 +187,8 @@ export function FearAndGreedPill({ className = '' }: { className?: string }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
+    if (!fng) return <span role="status" className="text-xs text-muted-foreground">Índice cripto: sin datos disponibles</span>;
+
     const isGreed = fng.value >= 55;
     const isFear = fng.value <= 45;
 
@@ -202,7 +203,7 @@ export function FearAndGreedPill({ className = '' }: { className?: string }) {
             <button
                 type="button"
                 onClick={() => setIsOpen(v => !v)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-semibold border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer select-none shadow-2xs backdrop-blur-xs ${colorClass} ${className}`}
+                className={`inline-flex min-h-[44px] items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-semibold border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer select-none shadow-2xs backdrop-blur-xs ${colorClass} ${className}`}
                 title={`Índice Miedo y Codicia: ${fng.label} (${fng.value}/100)`}
             >
                 <Zap className="w-3.5 h-3.5 shrink-0" />
@@ -224,7 +225,7 @@ export function FearAndGreedPill({ className = '' }: { className?: string }) {
                         <div className="flex items-center justify-between font-bold text-foreground">
                             <span className="flex items-center gap-1.5">
                                 <TrendingUp className="w-4 h-4 text-primary" />
-                                Sentimiento de Mercado
+                                Sentimiento del mercado cripto
                             </span>
                             <span className="text-[10.5px] font-mono px-2 py-0.5 rounded-full bg-secondary font-bold">
                                 {fng.value}/100
@@ -240,7 +241,7 @@ export function FearAndGreedPill({ className = '' }: { className?: string }) {
                         </div>
 
                         <p className="text-muted-foreground leading-relaxed text-[11.5px]">
-                            Mide el sentimiento general del mercado entre pánico (0) y euforia compradora (100).
+                            Índice cripto de Alternative.me: escala de 0 a 100. No representa el mercado de acciones.
                         </p>
 
                         <div className="grid grid-cols-3 gap-1 pt-2 border-t border-border/50 text-[10px] text-center font-medium">

@@ -1,0 +1,1538 @@
+[
+  {
+    "id": "FINIX-16/17/18/20",
+    "criterion": "Menú visitante, destinos, aislamiento, teclado y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "light",
+      "sizes": [
+        {
+          "name": "Cerrar menú de herramientas",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "name": "Iniciar sesión",
+          "w": 139,
+          "h": 44
+        },
+        {
+          "name": "Crear cuenta",
+          "w": 139,
+          "h": 44
+        },
+        {
+          "name": "Buscador Inteligente IA...",
+          "w": 288,
+          "h": 46.796875
+        },
+        {
+          "name": "Mercado",
+          "w": 89.328125,
+          "h": 83.59375
+        },
+        {
+          "name": "Seguimiento",
+          "w": 89.328125,
+          "h": 83.59375
+        },
+        {
+          "name": "Educativa",
+          "w": 89.34375,
+          "h": 83.59375
+        },
+        {
+          "name": "Calendario",
+          "w": 89.328125,
+          "h": 83.59375
+        },
+        {
+          "name": "Portafolio",
+          "w": 89.328125,
+          "h": 83.59375
+        },
+        {
+          "name": "Noticias",
+          "w": 89.34375,
+          "h": 83.59375
+        },
+        {
+          "name": "Análisis",
+          "w": 89.328125,
+          "h": 83.59375
+        },
+        {
+          "name": "Comunidades",
+          "w": 89.328125,
+          "h": 83.59375
+        },
+        {
+          "name": "Planes PRO",
+          "w": 89.34375,
+          "h": 83.59375
+        },
+        {
+          "name": "Cambiar a modo oscuro",
+          "w": 288,
+          "h": 46.796875
+        },
+        {
+          "name": "Iniciar sesión en Finix",
+          "w": 288,
+          "h": 44.796875
+        }
+      ]
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-16/17/18/20",
+    "criterion": "Menú visitante, destinos, aislamiento, teclado y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 360,
+      "theme": "light",
+      "sizes": [
+        {
+          "name": "Cerrar menú de herramientas",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "name": "Iniciar sesión",
+          "w": 159,
+          "h": 44
+        },
+        {
+          "name": "Crear cuenta",
+          "w": 159,
+          "h": 44
+        },
+        {
+          "name": "Buscador Inteligente IA...",
+          "w": 328,
+          "h": 46.796875
+        },
+        {
+          "name": "Mercado",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Seguimiento",
+          "w": 102.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Educativa",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Calendario",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Portafolio",
+          "w": 102.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Noticias",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Análisis",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Comunidades",
+          "w": 102.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Planes PRO",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Cambiar a modo oscuro",
+          "w": 328,
+          "h": 46.796875
+        },
+        {
+          "name": "Iniciar sesión en Finix",
+          "w": 328,
+          "h": 44.796875
+        }
+      ]
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 360,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 360,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 360,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 360,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-16/17/18/20",
+    "criterion": "Menú visitante, destinos, aislamiento, teclado y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "light",
+      "sizes": [
+        {
+          "name": "Cerrar menú de herramientas",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "name": "Iniciar sesión",
+          "w": 174,
+          "h": 44
+        },
+        {
+          "name": "Crear cuenta",
+          "w": 174,
+          "h": 44
+        },
+        {
+          "name": "Buscador Inteligente IA...",
+          "w": 358,
+          "h": 46.796875
+        },
+        {
+          "name": "Mercado",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Seguimiento",
+          "w": 112.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Educativa",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Calendario",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Portafolio",
+          "w": 112.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Noticias",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Análisis",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Comunidades",
+          "w": 112.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Planes PRO",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Cambiar a modo oscuro",
+          "w": 358,
+          "h": 46.796875
+        },
+        {
+          "name": "Iniciar sesión en Finix",
+          "w": 358,
+          "h": 44.796875
+        }
+      ]
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-16/17/18/20",
+    "criterion": "Menú visitante, destinos, aislamiento, teclado y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "light",
+      "sizes": [
+        {
+          "name": "Cerrar menú de herramientas",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "name": "Iniciar sesión",
+          "w": 194,
+          "h": 44
+        },
+        {
+          "name": "Crear cuenta",
+          "w": 194,
+          "h": 44
+        },
+        {
+          "name": "Buscador Inteligente IA...",
+          "w": 398,
+          "h": 46.796875
+        },
+        {
+          "name": "Mercado",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Seguimiento",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Educativa",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Calendario",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Portafolio",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Noticias",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Análisis",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Comunidades",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Planes PRO",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Cambiar a modo oscuro",
+          "w": 398,
+          "h": 46.796875
+        },
+        {
+          "name": "Iniciar sesión en Finix",
+          "w": 398,
+          "h": 44.796875
+        }
+      ]
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-16/17/18/20",
+    "criterion": "Menú visitante, destinos, aislamiento, teclado y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "light",
+      "sizes": [
+        {
+          "name": "Cerrar menú de herramientas",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "name": "Iniciar sesión",
+          "w": 363,
+          "h": 44
+        },
+        {
+          "name": "Crear cuenta",
+          "w": 363,
+          "h": 44
+        },
+        {
+          "name": "Buscador Inteligente IA...",
+          "w": 736,
+          "h": 46.796875
+        },
+        {
+          "name": "Mercado",
+          "w": 238.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Seguimiento",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Educativa",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Calendario",
+          "w": 238.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Portafolio",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Noticias",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Análisis",
+          "w": 238.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Comunidades",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Planes PRO",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Cambiar a modo oscuro",
+          "w": 736,
+          "h": 46.796875
+        },
+        {
+          "name": "Iniciar sesión en Finix",
+          "w": 736,
+          "h": 44.796875
+        }
+      ]
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 1024,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 1024,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 1024,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 1024,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 1280,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 1280,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 1280,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 1280,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 1440,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 1440,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 1440,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 1440,
+      "theme": "light"
+    }
+  },
+  {
+    "id": "FINIX-16/17/18/20",
+    "criterion": "Menú visitante, destinos, aislamiento, teclado y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "dark",
+      "sizes": [
+        {
+          "name": "Cerrar menú de herramientas",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "name": "Iniciar sesión",
+          "w": 139,
+          "h": 44
+        },
+        {
+          "name": "Crear cuenta",
+          "w": 139,
+          "h": 44
+        },
+        {
+          "name": "Buscador Inteligente IA...",
+          "w": 288,
+          "h": 46.796875
+        },
+        {
+          "name": "Mercado",
+          "w": 89.328125,
+          "h": 83.59371948242188
+        },
+        {
+          "name": "Seguimiento",
+          "w": 89.328125,
+          "h": 83.59371948242188
+        },
+        {
+          "name": "Educativa",
+          "w": 89.34375,
+          "h": 83.59371948242188
+        },
+        {
+          "name": "Calendario",
+          "w": 89.328125,
+          "h": 83.59375
+        },
+        {
+          "name": "Portafolio",
+          "w": 89.328125,
+          "h": 83.59375
+        },
+        {
+          "name": "Noticias",
+          "w": 89.34375,
+          "h": 83.59375
+        },
+        {
+          "name": "Análisis",
+          "w": 89.328125,
+          "h": 83.59375
+        },
+        {
+          "name": "Comunidades",
+          "w": 89.328125,
+          "h": 83.59375
+        },
+        {
+          "name": "Planes PRO",
+          "w": 89.34375,
+          "h": 83.59375
+        },
+        {
+          "name": "Cambiar a modo claro",
+          "w": 288,
+          "h": 46.796875
+        },
+        {
+          "name": "Iniciar sesión en Finix",
+          "w": 288,
+          "h": 44.796875
+        }
+      ]
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-16/17/18/20",
+    "criterion": "Menú visitante, destinos, aislamiento, teclado y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 360,
+      "theme": "dark",
+      "sizes": [
+        {
+          "name": "Cerrar menú de herramientas",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "name": "Iniciar sesión",
+          "w": 159,
+          "h": 44
+        },
+        {
+          "name": "Crear cuenta",
+          "w": 159,
+          "h": 44
+        },
+        {
+          "name": "Buscador Inteligente IA...",
+          "w": 328,
+          "h": 46.796875
+        },
+        {
+          "name": "Mercado",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Seguimiento",
+          "w": 102.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Educativa",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Calendario",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Portafolio",
+          "w": 102.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Noticias",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Análisis",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Comunidades",
+          "w": 102.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Planes PRO",
+          "w": 102.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Cambiar a modo claro",
+          "w": 328,
+          "h": 46.796875
+        },
+        {
+          "name": "Iniciar sesión en Finix",
+          "w": 328,
+          "h": 44.796875
+        }
+      ]
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 360,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 360,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 360,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 360,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-16/17/18/20",
+    "criterion": "Menú visitante, destinos, aislamiento, teclado y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "dark",
+      "sizes": [
+        {
+          "name": "Cerrar menú de herramientas",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "name": "Iniciar sesión",
+          "w": 174,
+          "h": 44
+        },
+        {
+          "name": "Crear cuenta",
+          "w": 174,
+          "h": 44
+        },
+        {
+          "name": "Buscador Inteligente IA...",
+          "w": 358,
+          "h": 46.796875
+        },
+        {
+          "name": "Mercado",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Seguimiento",
+          "w": 112.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Educativa",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Calendario",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Portafolio",
+          "w": 112.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Noticias",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Análisis",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Comunidades",
+          "w": 112.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Planes PRO",
+          "w": 112.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Cambiar a modo claro",
+          "w": 358,
+          "h": 46.796875
+        },
+        {
+          "name": "Iniciar sesión en Finix",
+          "w": 358,
+          "h": 44.796875
+        }
+      ]
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-16/17/18/20",
+    "criterion": "Menú visitante, destinos, aislamiento, teclado y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "dark",
+      "sizes": [
+        {
+          "name": "Cerrar menú de herramientas",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "name": "Iniciar sesión",
+          "w": 194,
+          "h": 44
+        },
+        {
+          "name": "Crear cuenta",
+          "w": 194,
+          "h": 44
+        },
+        {
+          "name": "Buscador Inteligente IA...",
+          "w": 398,
+          "h": 46.796875
+        },
+        {
+          "name": "Mercado",
+          "w": 126,
+          "h": 83.59378051757812
+        },
+        {
+          "name": "Seguimiento",
+          "w": 126,
+          "h": 83.59378051757812
+        },
+        {
+          "name": "Educativa",
+          "w": 126,
+          "h": 83.59378051757812
+        },
+        {
+          "name": "Calendario",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Portafolio",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Noticias",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Análisis",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Comunidades",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Planes PRO",
+          "w": 126,
+          "h": 83.59375
+        },
+        {
+          "name": "Cambiar a modo claro",
+          "w": 398,
+          "h": 46.796875
+        },
+        {
+          "name": "Iniciar sesión en Finix",
+          "w": 398,
+          "h": 44.796875
+        }
+      ]
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-16/17/18/20",
+    "criterion": "Menú visitante, destinos, aislamiento, teclado y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "dark",
+      "sizes": [
+        {
+          "name": "Cerrar menú de herramientas",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "name": "Iniciar sesión",
+          "w": 363,
+          "h": 44
+        },
+        {
+          "name": "Crear cuenta",
+          "w": 363,
+          "h": 44
+        },
+        {
+          "name": "Buscador Inteligente IA...",
+          "w": 736,
+          "h": 46.796875
+        },
+        {
+          "name": "Mercado",
+          "w": 238.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Seguimiento",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Educativa",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Calendario",
+          "w": 238.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Portafolio",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Noticias",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Análisis",
+          "w": 238.65625,
+          "h": 83.59375
+        },
+        {
+          "name": "Comunidades",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Planes PRO",
+          "w": 238.671875,
+          "h": 83.59375
+        },
+        {
+          "name": "Cambiar a modo claro",
+          "w": 736,
+          "h": 46.796875
+        },
+        {
+          "name": "Iniciar sesión en Finix",
+          "w": 736,
+          "h": 44.796875
+        }
+      ]
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 1024,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 1024,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 1024,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 1024,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 1280,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 1280,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 1280,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 1280,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-05",
+    "criterion": "Acceso directo en navegación",
+    "result": "passed",
+    "detail": {
+      "width": 1440,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-03/13",
+    "criterion": "Datos y expansión del ranking",
+    "result": "passed",
+    "detail": {
+      "width": 1440,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-28",
+    "criterion": "Alias de planes conserva query/hash",
+    "result": "passed",
+    "detail": {
+      "width": 1440,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-06",
+    "criterion": "Contacto de acceso y ayuda enfoca formulario",
+    "result": "passed",
+    "detail": {
+      "width": 1440,
+      "theme": "dark"
+    }
+  },
+  {
+    "id": "FINIX-20",
+    "criterion": "Mensaje: foco, fondo aislado, envío pendiente, Escape y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "light",
+      "realWrites": 0
+    }
+  },
+  {
+    "id": "FINIX-20",
+    "criterion": "Mensaje: foco, fondo aislado, envío pendiente, Escape y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "light",
+      "realWrites": 0
+    }
+  },
+  {
+    "id": "FINIX-20",
+    "criterion": "Mensaje: foco, fondo aislado, envío pendiente, Escape y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "light",
+      "realWrites": 0
+    }
+  },
+  {
+    "id": "FINIX-20",
+    "criterion": "Mensaje: foco, fondo aislado, envío pendiente, Escape y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "light",
+      "realWrites": 0
+    }
+  },
+  {
+    "id": "FINIX-20",
+    "criterion": "Mensaje: foco, fondo aislado, envío pendiente, Escape y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 1440,
+      "theme": "light",
+      "realWrites": 0
+    }
+  },
+  {
+    "id": "FINIX-20",
+    "criterion": "Mensaje: foco, fondo aislado, envío pendiente, Escape y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 320,
+      "theme": "dark",
+      "realWrites": 0
+    }
+  },
+  {
+    "id": "FINIX-20",
+    "criterion": "Mensaje: foco, fondo aislado, envío pendiente, Escape y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 390,
+      "theme": "dark",
+      "realWrites": 0
+    }
+  },
+  {
+    "id": "FINIX-20",
+    "criterion": "Mensaje: foco, fondo aislado, envío pendiente, Escape y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 430,
+      "theme": "dark",
+      "realWrites": 0
+    }
+  },
+  {
+    "id": "FINIX-20",
+    "criterion": "Mensaje: foco, fondo aislado, envío pendiente, Escape y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 768,
+      "theme": "dark",
+      "realWrites": 0
+    }
+  },
+  {
+    "id": "FINIX-20",
+    "criterion": "Mensaje: foco, fondo aislado, envío pendiente, Escape y retorno",
+    "result": "passed",
+    "detail": {
+      "width": 1440,
+      "theme": "dark",
+      "realWrites": 0
+    }
+  }
+]

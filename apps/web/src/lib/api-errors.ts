@@ -1,6 +1,6 @@
 export async function readApiError(response: Response) {
     if (response.status === 502 || response.status === 503 || response.status === 504) {
-        return 'El servidor no está disponible temporalmente. Intenta de nuevo más tarde.';
+        return 'El servidor no está disponible temporalmente. Intentá de nuevo más tarde.';
     }
 
     try {
@@ -24,16 +24,26 @@ export function normalizeAuthError(message: string | null | undefined, fallback:
 
     const normalized = message.trim().toLowerCase();
 
+    if (normalized.includes('api key') || normalized.includes('apikey') || normalized.includes('invalid_client')) {
+        return 'El servicio de acceso no está disponible. Reintentá en unos minutos o contactá a soporte desde Ayuda.';
+    }
+    if (/failed to fetch|network|fetch failed|timeout|json|unexpected token/.test(normalized)) {
+        return 'No pudimos conectar con el servicio de acceso. Revisá tu conexión y reintentá.';
+    }
+
     if (
         normalized.includes('invalid login credentials') ||
         normalized.includes('invalid credentials') ||
-        normalized.includes('credenciales invalid')
+        normalized.includes('credenciales invalid') ||
+        normalized.includes('credenciales inválid') ||
+        normalized.includes('correo o la contrasena no son correctos') ||
+        normalized.includes('correo o la contraseña no son correctos')
     ) {
-        return 'El correo o la contrasena no son correctos.';
+        return 'El correo o la contraseña no son correctos. Revisalos o recuperá tu contraseña.';
     }
 
     if (normalized.includes('email not confirmed')) {
-        return 'Primero verifica tu correo para terminar de crear la cuenta.';
+        return 'Primero verificá tu correo para terminar de crear la cuenta.';
     }
 
     return message;

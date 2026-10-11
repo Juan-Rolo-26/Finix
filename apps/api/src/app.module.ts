@@ -33,6 +33,7 @@ import { MercadoPagoModule } from './mercadopago/mercadopago.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { FinanceModule } from './finance/finance.module';
 import { WatchlistModule } from './watchlist/watchlist.module';
+import { EducationModule } from './education/education.module';
 import { isLocalMode } from './config/local-mode';
 
 @Module({
@@ -86,6 +87,7 @@ import { isLocalMode } from './config/local-mode';
         AlertsModule,
         FinanceModule,
         WatchlistModule,
+        EducationModule,
     ],
     controllers: [],
     providers: [

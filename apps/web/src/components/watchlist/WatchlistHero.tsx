@@ -1,3 +1,5 @@
+import { WATCHLIST_PLAN_LIMITS } from '@finix/shared';
+import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { ArrowUpRight, Bookmark, Crown, Loader2, Plus, Search, Target, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -100,6 +102,7 @@ export default function WatchlistHero({ items, isPro, showWelcome, onDismissWelc
     onDismissWelcome: () => void;
     onAddAsset: (asset: Asset) => void;
 }) {
+    const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const navigate = useNavigate();
     const inputRef = useRef<HTMLInputElement>(null);
     return (
@@ -127,7 +130,7 @@ export default function WatchlistHero({ items, isPro, showWelcome, onDismissWelc
                         {showWelcome && <button type="button" className="watchlist-hero__dismiss" onClick={onDismissWelcome} aria-label="Cerrar aviso"><X size={15} /></button>}
                         {isPro ? <Target size={22} /> : <Crown size={22} />}
                         <h3>{isPro ? 'Tu estrategia empieza acá' : 'Dale más espacio a tus ideas'}</h3>
-                        <p>{isPro ? 'Organizá tus ideas en listas y configurá objetivos de precio para detectar oportunidades a tiempo.' : 'Tu plan Free incluye 1 lista y hasta 5 activos. Con Finix PRO podés crear listas ilimitadas y usar alertas avanzadas.'}</p>
+                        <p>{freeAccess ? `Durante el acceso bonificado tenés los límites de Creador: ${WATCHLIST_PLAN_LIMITS.CREATOR.maxWatchlists} listas y ${WATCHLIST_PLAN_LIMITS.CREATOR.maxItemsPerList} activos por lista. Necesitás una cuenta.` : `Límites habituales: Gratis, ${WATCHLIST_PLAN_LIMITS.FREE.maxWatchlists} lista y ${WATCHLIST_PLAN_LIMITS.FREE.maxItemsPerList} activos; PRO, ${WATCHLIST_PLAN_LIMITS.PRO.maxWatchlists} listas y ${WATCHLIST_PLAN_LIMITS.PRO.maxItemsPerList} activos por lista; Creador, ${WATCHLIST_PLAN_LIMITS.CREATOR.maxWatchlists} listas y ${WATCHLIST_PLAN_LIMITS.CREATOR.maxItemsPerList} activos por lista.`}</p>
                         <button type="button" className="watchlist-hero__tip-action" onClick={() => isPro ? inputRef.current?.focus() : navigate('/settings/plan')}>
                             {isPro ? 'Buscar un activo' : 'Conocer Finix PRO'}<ArrowUpRight size={16} />
                         </button>

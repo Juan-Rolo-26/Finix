@@ -5,7 +5,7 @@ import { InformationPageTabs } from '@/components/legal/InformationPageTabs';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const LAST_UPDATED = '15 de septiembre de 2026';
-const LEGAL_COMPANY_NAME = '[Razón social pendiente de configuración]';
+const LEGAL_COMPANY_NAME = 'Finix';
 const CONTACT_EMAIL = 'finiixarg@gmail.com';
 
 // ─── Section index ─────────────────────────────────────────────────────────────
@@ -79,13 +79,13 @@ function MobileToc({ activeId }: { activeId: string }) {
     return (
         <div className="relative lg:hidden mb-6">
             <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-card border border-border/60 text-base font-medium text-left cursor-pointer" aria-expanded={open}>
-                <span className="truncate text-foreground">{active?.title ?? 'Índice'}</span>
+                <span className="min-w-0 break-words text-foreground">{active?.title ?? 'Índice'}</span>
                 <ChevronDown className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && (
                 <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl bg-card border border-border/60 shadow-xl overflow-y-auto max-h-72">
                     {SECTIONS.map(s => (
-                        <a key={s.id} href={`#${s.id}`} className={`block px-4 py-2.5 text-sm transition-colors ${s.id === activeId ? 'text-primary font-semibold bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}`} onClick={() => setOpen(false)}>
+                        <a key={s.id} href={`#${s.id}`} className={`block min-h-11 px-4 py-2.5 text-sm transition-colors ${s.id === activeId ? 'text-primary font-semibold bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}`} onClick={() => setOpen(false)}>
                             {s.title}
                         </a>
                     ))}
@@ -134,9 +134,6 @@ export default function Privacy() {
                     </div>
                     <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-black tracking-tight mb-3">Política de Privacidad</h1>
                     <p className="text-sm text-muted-foreground/80 font-medium">Última actualización: {LAST_UPDATED}</p>
-                    <div className="mt-4 p-4 rounded-xl bg-muted/40 border border-border/40 text-sm text-muted-foreground">
-                        Este documento ha sido preparado con fines informativos y deberá ser revisado por un profesional legal antes de su publicación definitiva.
-                    </div>
                 </header>
 
                 <div className="info-page__grid flex gap-10">
@@ -186,9 +183,6 @@ export default function Privacy() {
                                 <p>
                                     Para consultas sobre privacidad, podés contactarnos en:{' '}
                                     <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>
-                                </p>
-                                <p className="text-xs text-muted-foreground/60">
-                                    [Completar con CUIT/CUIL, domicilio legal y datos de contacto del Delegado de Protección de Datos si corresponde, antes de publicar.]
                                 </p>
                             </Section>
 
@@ -317,9 +311,6 @@ export default function Privacy() {
                                     <li><strong>Consentimiento</strong>: cuando lo recabemos específicamente para una finalidad determinada</li>
                                     <li><strong>Obligación legal</strong>: cuando la normativa aplicable exija el tratamiento o la conservación de determinados datos</li>
                                 </ul>
-                                <p className="text-xs text-muted-foreground/60">
-                                    [Nota para revisión legal: Adaptar la base legal a la Ley 25.326 de Protección de Datos Personales de Argentina y a las normativas aplicables en otros países donde el servicio esté disponible.]
-                                </p>
                             </Section>
 
                             <Section id="proveedores" title="12. Proveedores de servicios">
@@ -354,9 +345,6 @@ export default function Privacy() {
                             <Section id="transferencias" title="13. Transferencias internacionales de datos">
                                 <p>
                                     Algunos de los proveedores utilizados por Finix pueden procesar datos en servidores ubicados fuera de Argentina u otros países de residencia del usuario. En esos casos, Finix procura que exista una base legal o contractual razonable para proteger los datos conforme a la normativa aplicable.
-                                </p>
-                                <p className="text-xs text-muted-foreground/60">
-                                    [Nota para revisión legal: Identificar los países donde cada proveedor procesa datos y las salvaguardias contractuales aplicables.]
                                 </p>
                             </Section>
 
@@ -452,9 +440,6 @@ export default function Privacy() {
                                 </p>
                                 <p>
                                     <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline font-semibold">{CONTACT_EMAIL}</a>
-                                </p>
-                                <p className="text-xs text-muted-foreground/60">
-                                    [Completar con domicilio legal y datos de contacto formales cuando estén disponibles.]
                                 </p>
                             </Section>
 

@@ -1,6 +1,6 @@
 import { TtlCache } from '../common/ttl-cache';
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { financialNumber, isCalendarDate, isVisibleEarnings, normalizeEarnings, earningsSurprise, formatEconomicEventDescription, formatEconomicEventTitle, formatEconomicEventSource, localizeEconomicEvent } from '@finix/shared';
+import { financialNumber, isCalendarDate, isVisibleEarnings, normalizeEarnings, normalizeEconomicSurprise, earningsSurprise, formatEconomicEventDescription, formatEconomicEventTitle, formatEconomicEventSource, localizeEconomicEvent } from '@finix/shared';
 import { PrismaService } from '../prisma.service';
 import {
     HomeCalendarResponse,
@@ -157,7 +157,7 @@ export class CalendarService {
                 previousValue: topUS.previousValue ?? undefined,
                 consensusValue: topUS.consensusValue ?? undefined,
                 actualValue: topUS.actualValue ?? undefined,
-                surprise: topUS.surprise ?? undefined,
+                surprise: normalizeEconomicSurprise(topUS).surprise,
                 expectedMarketEffect: topUS.expectedMarketEffect ?? undefined,
                 affectedAssets: topUS.affectedAssets ? this.parseAffectedAssets(topUS.affectedAssets) : undefined,
             });
@@ -180,7 +180,7 @@ export class CalendarService {
                 previousValue: topAR.previousValue ?? undefined,
                 consensusValue: topAR.consensusValue ?? undefined,
                 actualValue: topAR.actualValue ?? undefined,
-                surprise: topAR.surprise ?? undefined,
+                surprise: normalizeEconomicSurprise(topAR).surprise,
                 expectedMarketEffect: topAR.expectedMarketEffect ?? undefined,
                 affectedAssets: topAR.affectedAssets ? this.parseAffectedAssets(topAR.affectedAssets) : undefined,
             });
@@ -207,7 +207,7 @@ export class CalendarService {
                         previousValue: eco.previousValue ?? undefined,
                         consensusValue: eco.consensusValue ?? undefined,
                         actualValue: eco.actualValue ?? undefined,
-                        surprise: eco.surprise ?? undefined,
+                        surprise: normalizeEconomicSurprise(eco).surprise,
                         expectedMarketEffect: eco.expectedMarketEffect ?? undefined,
                         affectedAssets: eco.affectedAssets ? this.parseAffectedAssets(eco.affectedAssets) : undefined,
                     });
@@ -428,8 +428,8 @@ export class CalendarService {
             consensusValue: isProUser ? (e.consensusValue || undefined) : undefined,
             actualValue: isProUser ? (e.actualValue || undefined) : undefined,
             unit: e.unit || undefined,
-            surprise: isProUser ? (e.surprise ?? undefined) : undefined,
-            surprisePercent: isProUser ? (e.surprisePercent ?? undefined) : undefined,
+            surprise: isProUser ? normalizeEconomicSurprise(e).surprise : undefined,
+            surprisePercent: isProUser ? normalizeEconomicSurprise(e).surprisePercent : undefined,
             expectedMarketEffect: isProUser ? (e.expectedMarketEffect || undefined) : undefined,
             affectedAssets: isProUser && e.affectedAssets ? this.parseAffectedAssets(e.affectedAssets) : undefined,
             source: isProUser ? (formatEconomicEventSource(e.source) || undefined) : undefined,

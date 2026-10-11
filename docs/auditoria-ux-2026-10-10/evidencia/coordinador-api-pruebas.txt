@@ -1,0 +1,797 @@
+
+> api@1.0.0 pretest
+> npm run build -w @finix/shared && npm run build
+
+
+> @finix/shared@1.0.0 build
+> tsc
+
+
+> api@1.0.0 build
+> nest build
+
+
+> api@1.0.0 test
+> jest --runInBand && node --test ../../scripts/mail-provider.test.cjs ../../scripts/data-loading.test.cjs ../../scripts/economic-localization.test.cjs ../../scripts/financial-data.test.cjs ../../scripts/free-access.test.cjs ../../scripts/news-coverage.test.cjs ../../scripts/news-images.test.cjs ../../scripts/news-publication-images.test.cjs ../../scripts/news-spanish.test.cjs ../../scripts/performance-regression.test.cjs ../../scripts/plans.test.cjs ../../scripts/premarket-quotes.test.cjs ../../scripts/stripe-readiness.test.cjs ../../scripts/database/verify-backup.test.cjs ../../scripts/local-auth.test.cjs && node --require ts-node/register/transpile-only --test src/finance/ledger.spec.ts
+
+PASS src/market-ranking/market-ranking.service.spec.ts (20.48 s)
+[32m[Nest] 542864  - [39m10/11/2026, 2:02:30 AM [32m    LOG[39m [38;5;3m[MarketRankingService] [39m[32mStarting ranking execution for TOP_GAINERS on 2026-09-13...[39m
+[33m[Nest] 542864  - [39m10/11/2026, 2:02:30 AM [33m   WARN[39m [38;5;3m[MarketRankingService] [39m[33mFewer than 400 S&P 500 assets found. Syncing universe first...[39m
+[32m[Nest] 542864  - [39m10/11/2026, 2:02:30 AM [32m    LOG[39m [38;5;3m[MarketRankingService] [39m[32mSyncing S&P 500 universe...[39m
+[32m[Nest] 542864  - [39m10/11/2026, 2:02:30 AM [32m    LOG[39m [38;5;3m[MarketRankingService] [39m[32mSynced 6 new S&P 500 constituents in database.[39m
+[32m[Nest] 542864  - [39m10/11/2026, 2:02:30 AM [32m    LOG[39m [38;5;3m[MarketRankingService] [39m[32mRankings completed in 4ms. Top 5 Gainers & Top 5 Losers saved.[39m
+[32m[Nest] 542864  - [39m10/11/2026, 2:02:30 AM [32m    LOG[39m [38;5;3m[MarketRankingService] [39m[32mStarting ranking execution for TOP_GAINERS on 2026-09-13...[39m
+[33m[Nest] 542864  - [39m10/11/2026, 2:02:30 AM [33m   WARN[39m [38;5;3m[MarketRankingService] [39m[33mFewer than 400 S&P 500 assets found. Syncing universe first...[39m
+[32m[Nest] 542864  - [39m10/11/2026, 2:02:30 AM [32m    LOG[39m [38;5;3m[MarketRankingService] [39m[32mSyncing S&P 500 universe...[39m
+[32m[Nest] 542864  - [39m10/11/2026, 2:02:30 AM [32m    LOG[39m [38;5;3m[MarketRankingService] [39m[32mSynced 3 new S&P 500 constituents in database.[39m
+[32m[Nest] 542864  - [39m10/11/2026, 2:02:30 AM [32m    LOG[39m [38;5;3m[MarketRankingService] [39m[32mRankings completed in 1ms. Top 5 Gainers & Top 5 Losers saved.[39m
+PASS src/calendar/calendar.service.spec.ts
+PASS src/news/news-sync.service.spec.ts
+PASS src/news/news-image.util.spec.ts
+
+Test Suites: 4 passed, 4 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        26.209 s
+Ran all test suites.
+TAP version 13
+# Subtest: persistent Supabase connections reuse statements while configured/transaction modes remain available
+ok 1 - persistent Supabase connections reuse statements while configured/transaction modes remain available
+  ---
+  duration_ms: 2.949148
+  type: 'test'
+  ...
+# Subtest: session joins keep revocation, ownership, expiry, bans and changed plans effective on the next request
+ok 2 - session joins keep revocation, ownership, expiry, bans and changed plans effective on the next request
+  ---
+  duration_ms: 2.350168
+  type: 'test'
+  ...
+# Subtest: calendar starts DB and providers together, makes no forced second scan and preserves manual entries
+ok 3 - calendar starts DB and providers together, makes no forced second scan and preserves manual entries
+  ---
+  duration_ms: 15.808734
+  type: 'test'
+  ...
+# Subtest: empty home calendar renders live events without waiting for full-week persistence
+ok 4 - empty home calendar renders live events without waiting for full-week persistence
+  ---
+  duration_ms: 3.106444
+  type: 'test'
+  ...
+# [32m[Nest] 543662  - [39m10/11/2026, 2:02:37 AM [32m    LOG[39m [38;5;3m[CalendarProviderService] [39m[32mSuccessfully fetched 1 US earnings from TradingView Scanner.[39m
+# [32m[Nest] 543662  - [39m10/11/2026, 2:02:37 AM [32m    LOG[39m [38;5;3m[CalendarProviderService] [39m[32mSuccessfully fetched 1 US earnings from TradingView Scanner.[39m
+# [32m[Nest] 543662  - [39m10/11/2026, 2:02:37 AM [32m    LOG[39m [38;5;3m[CalendarProviderService] [39m[32mSuccessfully fetched 1 US earnings from TradingView Scanner.[39m
+# Subtest: concurrent earnings readers share one scan while filtering their own date range
+ok 5 - concurrent earnings readers share one scan while filtering their own date range
+  ---
+  duration_ms: 32.969435
+  type: 'test'
+  ...
+# Subtest: SQL joins preserve authenticated cursors, financial decimals and live session enforcement
+ok 6 - SQL joins preserve authenticated cursors, financial decimals and live session enforcement # SKIP
+  ---
+  duration_ms: 0.390648
+  type: 'test'
+  ...
+# Subtest: intact full artifact set passes the checksum gate
+ok 7 - intact full artifact set passes the checksum gate
+  ---
+  duration_ms: 172.328827
+  type: 'test'
+  ...
+# Subtest: corrupted artifact blocks progression
+ok 8 - corrupted artifact blocks progression
+  ---
+  duration_ms: 132.524385
+  type: 'test'
+  ...
+# Subtest: public-only backup cannot satisfy the production requirement
+ok 9 - public-only backup cannot satisfy the production requirement
+  ---
+  duration_ms: 184.145894
+  type: 'test'
+  ...
+# Subtest: a complete flag cannot hide a missing full database archive
+ok 10 - a complete flag cannot hide a missing full database archive
+  ---
+  duration_ms: 83.622694
+  type: 'test'
+  ...
+# Subtest: a manifest cannot read artifacts outside its backup directory
+ok 11 - a manifest cannot read artifacts outside its backup directory
+  ---
+  duration_ms: 106.690163
+  type: 'test'
+  ...
+# Subtest: Screenshot events have complete Spanish names and accurate descriptions
+ok 12 - Screenshot events have complete Spanish names and accurate descriptions
+  ---
+  duration_ms: 39.535463
+  type: 'test'
+  ...
+# Subtest: Unknown or partly translated provider text cannot leak English
+ok 13 - Unknown or partly translated provider text cannot leak English
+  ---
+  duration_ms: 34.273632
+  type: 'test'
+  ...
+# Subtest: Spanish explanations, regional context and translated qualifiers survive repeated formatting
+ok 14 - Spanish explanations, regional context and translated qualifiers survive repeated formatting
+  ---
+  duration_ms: 3.016587
+  type: 'test'
+  ...
+# Subtest: Read-time localization leaves provider identity, dates, URLs and financial figures intact
+ok 15 - Read-time localization leaves provider identity, dates, URLs and financial figures intact
+  ---
+  duration_ms: 2.391497
+  type: 'test'
+  ...
+# Subtest: FMP stable endpoints preserve fiscal years and zero ratios without confusing P/E with PEG
+ok 16 - FMP stable endpoints preserve fiscal years and zero ratios without confusing P/E with PEG
+  ---
+  duration_ms: 355.996766
+  type: 'test'
+  ...
+# Subtest: missing and malformed financial values are not coerced into zero
+ok 17 - missing and malformed financial values are not coerced into zero
+  ---
+  duration_ms: 1.349675
+  type: 'test'
+  ...
+# Subtest: comparisons use the displayed numbers and require a nonzero estimate
+ok 18 - comparisons use the displayed numbers and require a nonzero estimate
+  ---
+  duration_ms: 0.732652
+  type: 'test'
+  ...
+# Subtest: amounts retain their scale, losses and real zeros
+ok 19 - amounts retain their scale, losses and real zeros
+  ---
+  duration_ms: 0.409986
+  type: 'test'
+  ...
+# Subtest: financial statements omit empty periods and keep zero results and reported currencies
+ok 20 - financial statements omit empty periods and keep zero results and reported currencies
+  ---
+  duration_ms: 6.204116
+  type: 'test'
+  ...
+# [32m[Nest] 543676  - [39m10/11/2026, 2:02:37 AM [32m    LOG[39m [38;5;3m[MercadoPagoService] [39m[32mMercado Pago webhook received: topic=payment, paymentId=123[39m
+# Subtest: launch mode opens all platform features without rewriting accounts
+ok 21 - launch mode opens all platform features without rewriting accounts
+  ---
+  duration_ms: 3.521314
+  type: 'test'
+  ...
+# Subtest: both providers refuse new purchases before any provider or database call
+ok 22 - both providers refuse new purchases before any provider or database call
+  ---
+  duration_ms: 7.990192
+  type: 'test'
+  ...
+# Subtest: launch mode retains signed notifications for payments already in progress
+ok 23 - launch mode retains signed notifications for payments already in progress
+  ---
+  duration_ms: 4.774299
+  type: 'test'
+  ...
+# Subtest: free community access keeps private communities and administrative roles protected
+ok 24 - free community access keeps private communities and administrative roles protected
+  ---
+  duration_ms: 1.635857
+  type: 'test'
+  ...
+# Subtest: paid community plans can be joined free, without fabricating a successful payment
+ok 25 - paid community plans can be joined free, without fabricating a successful payment
+  ---
+  duration_ms: 1.158088
+  type: 'test'
+  ...
+# Subtest: joining during launch preserves existing paid memberships
+ok 26 - joining during launch preserves existing paid memberships
+  ---
+  duration_ms: 0.535683
+  type: 'test'
+  ...
+# Subtest: disabling launch mode restores the existing paywalls and saved overrides
+ok 27 - disabling launch mode restores the existing paywalls and saved overrides
+  ---
+  duration_ms: 0.964209
+  type: 'test'
+  ...
+# Subtest: Admin email delivery errors are returned instead of claiming a code was sent
+ok 28 - Admin email delivery errors are returned instead of claiming a code was sent
+  ---
+  duration_ms: 6.316122
+  type: 'test'
+  ...
+# Subtest: Google callback rejects a mismatched state before exchanging credentials
+ok 29 - Google callback rejects a mismatched state before exchanging credentials
+  ---
+  duration_ms: 22.585628
+  type: 'test'
+  ...
+# Subtest: Google callback checks nonce and verified email after library verification
+ok 30 - Google callback checks nonce and verified email after library verification
+  ---
+  duration_ms: 6.567782
+  type: 'test'
+  ...
+# Subtest: Imported Google identities keep the existing Finix ID and account relations
+ok 31 - Imported Google identities keep the existing Finix ID and account relations
+  ---
+  duration_ms: 1.076009
+  type: 'test'
+  ...
+# Subtest: Email coincidence cannot silently link Google to an existing account
+ok 32 - Email coincidence cannot silently link Google to an existing account
+  ---
+  duration_ms: 8.884849
+  type: 'test'
+  ...
+# Subtest: Both imported bcrypt and existing Argon2 passwords verify without conversion
+ok 33 - Both imported bcrypt and existing Argon2 passwords verify without conversion
+  ---
+  duration_ms: 752.645894
+  type: 'test'
+  ...
+# Subtest: Local rehearsal mode rejects remote databases and production
+ok 34 - Local rehearsal mode rejects remote databases and production
+  ---
+  duration_ms: 0.958202
+  type: 'test'
+  ...
+# Subtest: SMTP password is not used as Resend API key; configured SMTP gets authentication and payload
+ok 35 - SMTP password is not used as Resend API key; configured SMTP gets authentication and payload
+  ---
+  duration_ms: 7.236209
+  type: 'test'
+  ...
+# Subtest: explicit SMTP provider takes priority over a configured Resend key
+ok 36 - explicit SMTP provider takes priority over a configured Resend key
+  ---
+  duration_ms: 0.621707
+  type: 'test'
+  ...
+# Subtest: Resend key selects Resend and preserves reply-to and idempotency
+ok 37 - Resend key selects Resend and preserves reply-to and idempotency
+  ---
+  duration_ms: 0.953046
+  type: 'test'
+  ...
+# Subtest: invalid Resend credentials produce safe error, no fallback, no leaked provider body or OTP
+ok 38 - invalid Resend credentials produce safe error, no fallback, no leaked provider body or OTP
+  ---
+  duration_ms: 6.095764
+  type: 'test'
+  ...
+# Subtest: Resend transport exceptions do not reveal request credentials
+ok 39 - Resend transport exceptions do not reveal request credentials
+  ---
+  duration_ms: 2.130671
+  type: 'test'
+  ...
+# Subtest: SMTP failure does not fall back to success or expose secrets
+ok 40 - SMTP failure does not fall back to success or expose secrets
+  ---
+  duration_ms: 0.761958
+  type: 'test'
+  ...
+# Subtest: SMTP resolved rejection is still treated as failed delivery
+ok 41 - SMTP resolved rejection is still treated as failed delivery
+  ---
+  duration_ms: 0.5927
+  type: 'test'
+  ...
+# Subtest: production without a real provider fails before sending or logging mail
+ok 42 - production without a real provider fails before sending or logging mail
+  ---
+  duration_ms: 0.578047
+  type: 'test'
+  ...
+# Subtest: invalid provider configuration cannot silently choose another provider
+ok 43 - invalid provider configuration cannot silently choose another provider
+  ---
+  duration_ms: 5.611815
+  type: 'test'
+  ...
+# Subtest: validated local mode always uses Mailpit, even with real-provider settings present
+ok 44 - validated local mode always uses Mailpit, even with real-provider settings present
+  ---
+  duration_ms: 0.742122
+  type: 'test'
+  ...
+# Subtest: documented console fallback is confined to validated local mode
+ok 45 - documented console fallback is confined to validated local mode
+  ---
+  duration_ms: 0.466604
+  type: 'test'
+  ...
+# Subtest: local fallback cannot run with a remote database or production
+ok 46 - local fallback cannot run with a remote database or production
+  ---
+  duration_ms: 0.561999
+  type: 'test'
+  ...
+# Subtest: All visible categories have usable configured feeds, including dedicated feeds for sparse topics
+ok 47 - All visible categories have usable configured feeds, including dedicated feeds for sparse topics
+  ---
+  duration_ms: 2.393513
+  type: 'test'
+  ...
+# Subtest: Classification recognizes Spanish and English financial topics without substring false positives
+ok 48 - Classification recognizes Spanish and English financial topics without substring false positives
+  ---
+  duration_ms: 0.94096
+  type: 'test'
+  ...
+# Subtest: Classification honors disabled source policies and keeps daily and weekly scopes separate
+ok 49 - Classification honors disabled source policies and keeps daily and weekly scopes separate
+  ---
+  duration_ms: 0.731659
+  type: 'test'
+  ...
+# Subtest: A URL saved long ago in another category is reused without violating global uniqueness
+ok 50 - A URL saved long ago in another category is reused without violating global uniqueness
+  ---
+  duration_ms: 2.935204
+  type: 'test'
+  ...
+# Subtest: Unassigned cards recover distinct published stories while editorial drafts and inactive cards remain intact
+ok 51 - Unassigned cards recover distinct published stories while editorial drafts and inactive cards remain intact
+  ---
+  duration_ms: 16.484588
+  type: 'test'
+  ...
+# Subtest: Source outages and partial feeds retain prior stories without duplicates or editorial overrides
+ok 52 - Source outages and partial feeds retain prior stories without duplicates or editorial overrides
+  ---
+  duration_ms: 1.740592
+  type: 'test'
+  ...
+# Subtest: A database failure releases the sync lock so subsequent runs can recover
+ok 53 - A database failure releases the sync lock so subsequent runs can recover
+  ---
+  duration_ms: 0.899199
+  type: 'test'
+  ...
+# Subtest: Source setup retries after a temporary database failure and shares concurrent initialization
+ok 54 - Source setup retries after a temporary database failure and shares concurrent initialization
+  ---
+  duration_ms: 3.059889
+  type: 'test'
+  ...
+# Subtest: An echoed English title is not cached as Spanish and unavailable translations do not expose English descriptions
+ok 55 - An echoed English title is not cached as Spanish and unavailable translations do not expose English descriptions
+  ---
+  duration_ms: 6.773595
+  type: 'test'
+  ...
+# Subtest: Startup and recurring recovery fill stored stories before fetching only incomplete categories
+ok 56 - Startup and recurring recovery fill stored stories before fetching only incomplete categories
+  ---
+  duration_ms: 1.982384
+  type: 'test'
+  ...
+# [NewsFetcher] Se agregaron fotos relacionadas a 2 noticias
+# [NewsFetcher] Se agregaron fotos relacionadas a 1 noticias
+# [NewsFetcher] Se agregaron fotos relacionadas a 1 noticias
+# Subtest: RSS thumbnail and multiple media enclosures yield photos, never video or podcasts
+ok 57 - RSS thumbnail and multiple media enclosures yield photos, never video or podcasts
+  ---
+  duration_ms: 37.221706
+  type: 'test'
+  ...
+# Subtest: missing RSS photos are recovered from the original article and cached
+ok 58 - missing RSS photos are recovered from the original article and cached
+  ---
+  duration_ms: 15.212345
+  type: 'test'
+  ...
+# Subtest: source photos come first and text-only articles receive a related image automatically
+ok 59 - source photos come first and text-only articles receive a related image automatically
+  ---
+  duration_ms: 11.264996
+  type: 'test'
+  ...
+# Subtest: automatic metadata requests reject off-publisher links and unsafe redirects
+ok 60 - automatic metadata requests reject off-publisher links and unsafe redirects
+  ---
+  duration_ms: 4.431498
+  type: 'test'
+  ...
+# Subtest: publisher redirects resolve relative photos against the final article URL
+ok 61 - publisher redirects resolve relative photos against the final article URL
+  ---
+  duration_ms: 6.12178
+  type: 'test'
+  ...
+# Subtest: metadata alternatives and lazy article photos override invalid placeholders and navigation logos
+ok 62 - metadata alternatives and lazy article photos override invalid placeholders and navigation logos
+  ---
+  duration_ms: 7.493883
+  type: 'test'
+  ...
+# Subtest: API sources recover original photos first and add related photos to the remaining news
+ok 63 - API sources recover original photos first and add related photos to the remaining news
+  ---
+  duration_ms: 6.310475
+  type: 'test'
+  ...
+# [NewsFetcher] No se encontraron noticias con foto
+# Subtest: publishing text-only news does not require or invent a photo
+ok 64 - publishing text-only news does not require or invent a photo
+  ---
+  duration_ms: 2.552686
+  type: 'test'
+  ...
+# Subtest: publishing text-only news does not fetch a photograph
+ok 65 - publishing text-only news does not fetch a photograph
+  ---
+  duration_ms: 0.354476
+  type: 'test'
+  ...
+# Subtest: manual uploads allow missing photos in drafts and immediate publication
+ok 66 - manual uploads allow missing photos in drafts and immediate publication
+  ---
+  duration_ms: 1.124019
+  type: 'test'
+  ...
+# Subtest: manual upload persists the original photo rather than relying on a card fallback
+ok 67 - manual upload persists the original photo rather than relying on a card fallback
+  ---
+  duration_ms: 4.1994
+  type: 'test'
+  ...
+# Subtest: replacing a story does not borrow the photo from the previous story
+ok 68 - replacing a story does not borrow the photo from the previous story
+  ---
+  duration_ms: 0.665801
+  type: 'test'
+  ...
+# Subtest: editing the same story preserves an explicitly selected photo without scraping
+ok 69 - editing the same story preserves an explicitly selected photo without scraping
+  ---
+  duration_ms: 0.724997
+  type: 'test'
+  ...
+# Subtest: automatic persistence accepts photo-less news and preserves actual source photographs
+ok 70 - automatic persistence accepts photo-less news and preserves actual source photographs
+  ---
+  duration_ms: 3.78802
+  type: 'test'
+  ...
+# Subtest: updating duplicate news retains its original photo when the new source lacks a photo
+ok 71 - updating duplicate news retains its original photo when the new source lacks a photo
+  ---
+  duration_ms: 1.307685
+  type: 'test'
+  ...
+# Subtest: an original source photo replaces an illustration while custom photos remain unchanged
+ok 72 - an original source photo replaces an illustration while custom photos remain unchanged
+  ---
+  duration_ms: 1.585824
+  type: 'test'
+  ...
+# Subtest: the legacy manual import adds a related photo before creating a text-only article
+ok 73 - the legacy manual import adds a related photo before creating a text-only article
+  ---
+  duration_ms: 1.341269
+  type: 'test'
+  ...
+# Subtest: selection ranks ten localized stories by relevance and freshness regardless of photos
+ok 74 - selection ranks ten localized stories by relevance and freshness regardless of photos
+  ---
+  duration_ms: 0.97015
+  type: 'test'
+  ...
+# Subtest: a source outage does not create mock articles with generic stock photos
+ok 75 - a source outage does not create mock articles with generic stock photos
+  ---
+  duration_ms: 2.132935
+  type: 'test'
+  ...
+# [95m[Nest] 543802  - [39m10/11/2026, 2:02:39 AM [95m  DEBUG[39m [38;5;3m[NewsTranslationService] [39m[95mTranslation provider unavailable: Unavailable[39m
+# [95m[Nest] 543802  - [39m10/11/2026, 2:02:39 AM [95m  DEBUG[39m [38;5;3m[NewsTranslationService] [39m[95mTranslation provider unavailable: Unavailable[39m
+# [95m[Nest] 543802  - [39m10/11/2026, 2:02:39 AM [95m  DEBUG[39m [38;5;3m[NewsTranslationService] [39m[95mTranslation provider unavailable: Unavailable[39m
+# [95m[Nest] 543802  - [39m10/11/2026, 2:02:39 AM [95m  DEBUG[39m [38;5;3m[NewsTranslationService] [39m[95mTranslation provider unavailable: Unavailable[39m
+# [95m[Nest] 543802  - [39m10/11/2026, 2:02:39 AM [95m  DEBUG[39m [38;5;3m[NewsTranslationService] [39m[95mTranslation provider unavailable: Unavailable[39m
+# [95m[Nest] 543802  - [39m10/11/2026, 2:02:39 AM [95m  DEBUG[39m [38;5;3m[NewsTranslationService] [39m[95mTranslation provider unavailable: Unavailable[39m
+# Subtest: language validation checks actual text, short Spanish titles and mixed paragraphs
+ok 76 - language validation checks actual text, short Spanish titles and mixed paragraphs
+  ---
+  duration_ms: 9.409211
+  type: 'test'
+  ...
+# Subtest: Spanish source metadata, English echoes and failed providers cannot bypass validation
+ok 77 - Spanish source metadata, English echoes and failed providers cannot bypass validation
+  ---
+  duration_ms: 15.587777
+  type: 'test'
+  ...
+# Subtest: provider outages fail closed and concurrent/repeated requests share their retry backoff
+ok 78 - provider outages fail closed and concurrent/repeated requests share their retry backoff
+  ---
+  duration_ms: 4.512718
+  type: 'test'
+  ...
+# Subtest: public slots remove untranslated titles, omit English summaries and hide raw translation fields
+ok 79 - public slots remove untranslated titles, omit English summaries and hide raw translation fields
+  ---
+  duration_ms: 11.430831
+  type: 'test'
+  ...
+# Subtest: legacy news, ticker and trending formatter never exposes original English content
+ok 80 - legacy news, ticker and trending formatter never exposes original English content
+  ---
+  duration_ms: 6.537626
+  type: 'test'
+  ...
+# Subtest: every configured category expands to ten slots without overwriting existing assignments
+ok 81 - every configured category expands to ten slots without overwriting existing assignments
+  ---
+  duration_ms: 3.878507
+  type: 'test'
+  ...
+# Subtest: every category has a configured native Spanish feed as well as translation support
+ok 82 - every category has a configured native Spanish feed as well as translation support
+  ---
+  duration_ms: 0.378792
+  type: 'test'
+  ...
+# Subtest: an unavailable translation batch tries each provider once and yields no untranslated fields
+ok 83 - an unavailable translation batch tries each provider once and yields no untranslated fields
+  ---
+  duration_ms: 1.236729
+  type: 'test'
+  ...
+# Subtest: cache shares misses, evicts old keys and cannot restore data invalidated during a read
+ok 84 - cache shares misses, evicts old keys and cannot restore data invalidated during a read
+  ---
+  duration_ms: 4.31799
+  type: 'test'
+  ...
+# Subtest: community query count stays constant while permission and member roles remain correct
+ok 85 - community query count stays constant while permission and member roles remain correct
+  ---
+  duration_ms: 3.595984
+  type: 'test'
+  ...
+# Subtest: feed filters follows in SQL, bounds pages and isolates user caches
+ok 86 - feed filters follows in SQL, bounds pages and isolates user caches
+  ---
+  duration_ms: 1.966709
+  type: 'test'
+  ...
+# Subtest: notification cursors retain every record over successive pages
+ok 87 - notification cursors retain every record over successive pages
+  ---
+  duration_ms: 1.600673
+  type: 'test'
+  ...
+# Subtest: overlapping market requests share prices, retain observation times and retry failed history loads
+ok 88 - overlapping market requests share prices, retain observation times and retry failed history loads
+  ---
+  duration_ms: 16.351839
+  type: 'test'
+  ...
+# Subtest: movement pages use a relation predicate and deterministic bounded cursor queries
+ok 89 - movement pages use a relation predicate and deterministic bounded cursor queries
+  ---
+  duration_ms: 1.130895
+  type: 'test'
+  ...
+# Subtest: media validation only reads a file header, including short files
+ok 90 - media validation only reads a file header, including short files
+  ---
+  duration_ms: 61.874355
+  type: 'test'
+  ...
+# Subtest: news readers share populated category data and editorial changes invalidate every public view
+ok 91 - news readers share populated category data and editorial changes invalidate every public view
+  ---
+  duration_ms: 490.854236
+  type: 'test'
+  ...
+# Subtest: calendar home data is shared within a week and manual writes invalidate it
+ok 92 - calendar home data is shared within a week and manual writes invalidate it
+  ---
+  duration_ms: 44.011732
+  type: 'test'
+  ...
+# Subtest: payment provider timeout preserves unknown status and never grants access or retries a mutation
+ok 93 - payment provider timeout preserves unknown status and never grants access or retries a mutation
+  ---
+  duration_ms: 2.080815
+  type: 'test'
+  ...
+# Subtest: mp: a provider failure does not cancel the account or report success
+ok 94 - mp: a provider failure does not cancel the account or report success
+  ---
+  duration_ms: 2.949416
+  type: 'test'
+  ...
+# Subtest: mp: successful cancellation preserves the paid period and is idempotent
+ok 95 - mp: successful cancellation preserves the paid period and is idempotent
+  ---
+  duration_ms: 1.339276
+  type: 'test'
+  ...
+# Subtest: stripe: a provider failure does not cancel the account or report success
+ok 96 - stripe: a provider failure does not cancel the account or report success
+  ---
+  duration_ms: 0.253226
+  type: 'test'
+  ...
+# Subtest: stripe: successful cancellation preserves the paid period and is idempotent
+ok 97 - stripe: successful cancellation preserves the paid period and is idempotent
+  ---
+  duration_ms: 0.353878
+  type: 'test'
+  ...
+# Subtest: manually granted access is not downgraded when no billable subscription exists
+ok 98 - manually granted access is not downgraded when no billable subscription exists
+  ---
+  duration_ms: 0.569932
+  type: 'test'
+  ...
+# Subtest: canceling an unpaid pending request does not grant access from a future date
+ok 99 - canceling an unpaid pending request does not grant access from a future date
+  ---
+  duration_ms: 0.473466
+  type: 'test'
+  ...
+# Subtest: Stripe cancellation accepts both legacy and canonical plan names
+ok 100 - Stripe cancellation accepts both legacy and canonical plan names
+  ---
+  duration_ms: 5.79519
+  type: 'test'
+  ...
+# Subtest: public catalog exposes configured prices and actual watchlist limits
+ok 101 - public catalog exposes configured prices and actual watchlist limits
+  ---
+  duration_ms: 7.346832
+  type: 'test'
+  ...
+# Subtest: billing uses the Creator renewal date and never treats pending or canceled records as automatic billing
+ok 102 - billing uses the Creator renewal date and never treats pending or canceled records as automatic billing
+  ---
+  duration_ms: 3.091326
+  type: 'test'
+  ...
+# Subtest: explicit pre-market price and percentage take priority over the regular quote
+ok 103 - explicit pre-market price and percentage take priority over the regular quote
+  ---
+  duration_ms: 1.888081
+  type: 'test'
+  ...
+# Subtest: missing pre-market prices do not substitute the regular stock or ETF price
+ok 104 - missing pre-market prices do not substitute the regular stock or ETF price
+  ---
+  duration_ms: 0.519506
+  type: 'test'
+  ...
+# Subtest: a missing pre-market percentage does not borrow the regular percentage
+ok 105 - a missing pre-market percentage does not borrow the regular percentage
+  ---
+  duration_ms: 0.272559
+  type: 'test'
+  ...
+# Subtest: zero changes remain valid and invalid pre-market prices are unavailable
+ok 106 - zero changes remain valid and invalid pre-market prices are unavailable
+  ---
+  duration_ms: 0.487018
+  type: 'test'
+  ...
+# Subtest: older frozen snapshots preserve explicitly identified pre-market quotes
+ok 107 - older frozen snapshots preserve explicitly identified pre-market quotes
+  ---
+  duration_ms: 0.401813
+  type: 'test'
+  ...
+# Subtest: reference instruments remain labeled as references, with no fabricated pre-market quote
+ok 108 - reference instruments remain labeled as references, with no fabricated pre-market quote
+  ---
+  duration_ms: 0.304947
+  type: 'test'
+  ...
+# Subtest: a stale unavailable flag does not hide a valid explicit pre-market quote
+ok 109 - a stale unavailable flag does not hide a valid explicit pre-market quote
+  ---
+  duration_ms: 0.407892
+  type: 'test'
+  ...
+# [33m[Nest] 543923  - [39m10/11/2026, 2:02:39 AM [33m   WARN[39m [38;5;3m[StripeService] [39m[33mStripe no está disponible: revisá sus credenciales y la conexión.[39m
+# Subtest: Stripe availability shares concurrent checks and verifies credentials without charging
+ok 110 - Stripe availability shares concurrent checks and verifies credentials without charging
+  ---
+  duration_ms: 9.893938
+  type: 'test'
+  ...
+# Subtest: Invalid Stripe credentials disable checkout and permit recovery after the short cache expires
+ok 111 - Invalid Stripe credentials disable checkout and permit recovery after the short cache expires
+  ---
+  duration_ms: 4.353767
+  type: 'test'
+  ...
+# Subtest: Paused free access never probes Stripe or offers checkout
+ok 112 - Paused free access never probes Stripe or offers checkout
+  ---
+  duration_ms: 0.577306
+  type: 'test'
+  ...
+# Subtest: Public payment config reports a credential failure without exposing provider errors
+ok 113 - Public payment config reports a credential failure without exposing provider errors
+  ---
+  duration_ms: 0.308634
+  type: 'test'
+  ...
+1..113
+# tests 113
+# suites 0
+# pass 112
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 3524.071239
+TAP version 13
+# Subtest: cuotas: gasto único, redondeo exacto, pago parcial sin nuevo gasto
+ok 1 - cuotas: gasto único, redondeo exacto, pago parcial sin nuevo gasto
+  ---
+  duration_ms: 9.630372
+  type: 'test'
+  ...
+# Subtest: transferencia propia y aporte a inversión no son gasto ni ingreso
+ok 2 - transferencia propia y aporte a inversión no son gasto ni ingreso
+  ---
+  duration_ms: 0.291962
+  type: 'test'
+  ...
+# Subtest: devolución distribuye categorías y corrige deuda sin duplicar
+ok 3 - devolución distribuye categorías y corrige deuda sin duplicar
+  ---
+  duration_ms: 1.205116
+  type: 'test'
+  ...
+# Subtest: ARS y USD separados; cuotas no se saldan con pagos de otra moneda
+ok 4 - ARS y USD separados; cuotas no se saldan con pagos de otra moneda
+  ---
+  duration_ms: 0.523838
+  type: 'test'
+  ...
+# Subtest: pagos y devoluciones futuros no reescriben compromisos históricos
+ok 5 - pagos y devoluciones futuros no reescriben compromisos históricos
+  ---
+  duration_ms: 0.237157
+  type: 'test'
+  ...
+# Subtest: presupuesto mixto descuenta sólo el recurrente solapado; datos faltantes visibles
+ok 6 - presupuesto mixto descuenta sólo el recurrente solapado; datos faltantes visibles
+  ---
+  duration_ms: 0.63574
+  type: 'test'
+  ...
+# Subtest: fin de mes, cierre y primer vencimiento
+ok 7 - fin de mes, cierre y primer vencimiento
+  ---
+  duration_ms: 0.23048
+  type: 'test'
+  ...
+# Subtest: CSV argentino y anglosajón: BOM, comillas, multilinea, negativos y monedas
+ok 8 - CSV argentino y anglosajón: BOM, comillas, multilinea, negativos y monedas
+  ---
+  duration_ms: 1.307851
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 364.656253

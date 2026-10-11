@@ -16,6 +16,7 @@ import {
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
+import { isWatchlistEnabled } from '@/lib/featureFlags';
 import './global-search.css';
 
 // Búsquedas sugeridas "inteligentes"
@@ -202,7 +203,7 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                         {isLoading ? (
                             <div className="flex flex-col items-center justify-center py-10 gap-3">
                                 <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                                <span className="text-xs text-muted-foreground">Buscando inteligéntemente...</span>
+                                <span className="text-xs text-muted-foreground">Buscando...</span>
                             </div>
                         ) : query.length < 2 ? (
                             <div className="global-search-start p-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -278,18 +279,20 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                                                         </span>
                                                     </div>
                                                 </button>
-                                                <button
-                                                    type="button"
-                                                    title="Agregar a Seguimiento"
-                                                    aria-label={`Agregar ${r.name || r.symbol} a Seguimiento`}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setWatchlistAsset({ symbol: r.symbol, name: r.name });
-                                                    }}
-                                                    className="global-search-watchlist-button p-2 rounded-lg hover:bg-violet-500/20 text-muted-foreground hover:text-violet-400 transition-colors"
-                                                >
-                                                    <Bookmark className="w-4 h-4" />
-                                                </button>
+                                                {isWatchlistEnabled() && (
+                                                    <button
+                                                        type="button"
+                                                        title="Agregar a Seguimiento"
+                                                        aria-label={`Agregar ${r.name || r.symbol} a Seguimiento`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setWatchlistAsset({ symbol: r.symbol, name: r.name });
+                                                        }}
+                                                        className="global-search-watchlist-button p-2 rounded-lg hover:bg-violet-500/20 text-muted-foreground hover:text-violet-400 transition-colors"
+                                                    >
+                                                        <Bookmark className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         );
                                     }

@@ -1,0 +1,32 @@
+export const WATCHLIST_PLAN_LIMITS = {
+    FREE: {
+        maxWatchlists: 1,
+        maxItemsPerList: 5,
+        allowCustomTargets: true,
+        allowNotes: true,
+        maxNotesPerItem: 3,
+        allowCsvImport: false,
+        allowIdeaTracking: false,
+        allowAdvancedAlerts: false,
+    },
+    PRO: {
+        maxWatchlists: 25,
+        maxItemsPerList: 100,
+        allowCustomTargets: true,
+        allowNotes: true,
+        maxNotesPerItem: 50,
+        allowCsvImport: true,
+        allowIdeaTracking: true,
+        allowAdvancedAlerts: true,
+    },
+    CREATOR: {
+        maxWatchlists: 50,
+        maxItemsPerList: 200,
+        allowCustomTargets: true,
+        allowNotes: true,
+        maxNotesPerItem: 100,
+        allowCsvImport: true,
+        allowIdeaTracking: true,
+        allowAdvancedAlerts: true,
+    },
+};

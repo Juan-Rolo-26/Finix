@@ -179,7 +179,7 @@ export const es = {
         registerTitle: 'Crear Cuenta',
         forgotTitle: 'Recuperar Contraseña',
         loginDesc: 'Ingresa tus credenciales para continuar',
-        registerDesc: 'Regístrate gratis en menos de 1 minuto',
+        registerDesc: 'Registrate gratis en menos de 1 minuto',
         forgotDesc: 'Te enviaremos un código a tu correo',
         emailSentTitle: '¡Correo Enviado!',
         emailSentDesc: 'Hemos enviado un código de recuperación a',
@@ -194,7 +194,7 @@ export const es = {
         sendLinkBtn: 'Enviar Código',
         orContinue: 'O continúa con',
         noAccount: '¿No tienes una cuenta?',
-        register: 'Regístrate',
+        register: 'Registrate',
         hasAccount: '¿Ya tienes cuenta?',
         login: 'Inicia Sesión',
         backToLogin: 'Volver al Inicio de Sesión',
@@ -296,7 +296,7 @@ export const es = {
                 },
                 step2: {
                     title: 'Configura tu Perfil',
-                    desc: 'Define tu estrategia de inversion, intereses y nivel de experiencia para personalizar tu inicio.'
+                    desc: 'Definí tu estrategia de inversion, intereses y nivel de experiencia para personalizar tu inicio.'
                 },
                 step3: {
                     title: 'Carga tu Portafolio',
@@ -331,7 +331,7 @@ export const es = {
             pill: 'Únete a la Revolución',
             title: 'Comienza tu viaje',
             titleSuffix: 'financiero',
-            desc: 'Regístrate o inicia sesión en segundos. Todo listo para que inviertas y compartas sin fricción.',
+            desc: 'Registrate o iniciá sesión en segundos. Todo listo para que inviertas y compartas sin fricción.',
             benefits: {
                 analysis: {
                     title: 'Análisis en Tiempo Real',
@@ -419,7 +419,7 @@ export const es = {
         deletePortfolio: 'Eliminar Portafolio',
         createPortfolio: 'Crear Portafolio',
         createTitle: 'Crear Nuevo Portafolio',
-        createDesc: 'Define los parámetros de tu nuevo portafolio de inversión',
+        createDesc: 'Definí los parámetros de tu nuevo portafolio de inversión',
         form: {
             name: 'Nombre',
             namePlaceholder: 'Mi Portafolio de Largo Plazo',

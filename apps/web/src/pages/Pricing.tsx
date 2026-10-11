@@ -42,7 +42,7 @@ interface PlanItem {
 const PLANS: PlanItem[] = [
     {
         id: 'FREE',
-        title: 'Free',
+        title: 'Gratis',
         badge: undefined,
         description: 'Para empezar a descubrir el mundo de las inversiones.',
         icon: undefined,
@@ -64,21 +64,21 @@ const PLANS: PlanItem[] = [
         id: 'PRO',
         title: 'PRO',
         badge: 'MÁS ELEGIDO',
-        description: 'Para inversores que quieren maximizar retornos con la suite cuantitativa completa de Finix.',
+        description: 'Para inversores que buscan herramientas de análisis y seguimiento.',
         icon: Sparkles,
         priceAmount: '$6.300',
         priceCurrency: 'ARS/mes',
         priceNote: 'Precio mensual informado antes del checkout',
         features: [
-            { text: 'Todo lo del plan Free', included: true },
-            { text: 'Mercados en Vivo & Pre-Market: Cotizaciones en tiempo real y precios congelados a las 10:30 hs', included: true },
+            { text: 'Todo lo del plan Gratis', included: true },
+            { text: 'Mercados y Pre-Market: fuente y sesión de referencia visibles; corte a las 09:30 de Nueva York', included: true },
             { text: 'Mapa de Calor Institucional S&P 500 y CEDEARs con filtros sectoriales GICS', included: true },
             { text: 'Lentes Técnicas Semanales Multimétricas (MACD impulso, RSI Semanal 45/55, ADX)', included: true },
             { text: 'Portafolios múltiples ilimitados con retornos TWR y XIRR, Sharpe Ratio y Benchmark SPY', included: true },
-            { text: 'Modelos de Valuación Cuantitativa DCF de Fair Value y Mapa de Creación de Valor (ROIC vs WACC)', included: true },
-            { text: 'Histórico auditado de balances de 10 años y scores de calidad Piotroski / Altman', included: true },
+            { text: 'Modelos de Valuación Cuantitativa DCF del valor razonable y Mapa de Creación de Valor (ROIC vs WACC)', included: true },
+            { text: 'Histórico de balances según la cobertura de cada fuente y scores de calidad Piotroski / Altman', included: true },
             { text: 'Noticias financieras en vivo con análisis algorítmico de sentimiento e impacto por ticker', included: true },
-            { text: 'Calendario oficial TradingView con fechas ex-dividend y sorpresas de earnings', included: true },
+            { text: 'Calendario oficial TradingView con fechas ex-dividend y sorpresas de resultados', included: true },
         ],
     },
     {
@@ -105,7 +105,7 @@ const PLANS: PlanItem[] = [
 const FAQS = [
     [
         '¿Qué incluye el acceso gratuito temporal?',
-        'Actualmente, todas las herramientas avanzadas de Finix PRO y Creador están momentáneamente abiertas y 100% bonificadas para todos los usuarios. Podés disfrutar de todas las funcionalidades sin costo por tiempo limitado. Una vez finalizada esta etapa promocional de lanzamiento, el plan PRO volverá a requerir suscripción de pago.',
+        'Cuando el acceso bonificado está activo, podés usar PRO y Creador con una cuenta sin pagar. El estado vigente aparece arriba de los planes. La promoción no crea una suscripción ni activa renovaciones automáticas.',
     ],
     [
         '¿Cómo se abona un plan cuando esté disponible?',
@@ -134,6 +134,7 @@ export default function Pricing() {
     const location = useLocation();
     const [params] = useSearchParams();
     const limits = catalog?.planLimits;
+    const verified = !!catalog && !loading && !configError;
 
     const [openFaqs, setOpenFaqs] = useState<number[]>([0]);
 
@@ -163,14 +164,14 @@ export default function Pricing() {
     const capacity = (
         plan: FinixPlan,
         key: 'maxWatchlists' | 'maxItemsPerList' | 'maxNotesPerItem'
-    ) => limits?.[plan]?.[key]?.toLocaleString('es-AR') ?? '—';
+    ) => limits?.[plan]?.[key]?.toLocaleString('es-AR') ?? 'No informado';
 
     const yes = (
-        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary">
+        <span aria-label="Incluido" className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary">
             <Check size={15} />
         </span>
     );
-    const no = <span className="text-muted-foreground/60 font-semibold">—</span>;
+    const no = <span className="text-muted-foreground font-semibold">No incluido</span>;
 
     const rows = [
         { label: 'Portafolios personales', values: ['1', 'Ilimitados', 'Ilimitados'] },
@@ -297,33 +298,29 @@ export default function Pricing() {
                                     (catalog.purchasesPaused ||
                                         (!catalog.mercadoPagoAvailable && !catalog.stripeAvailable))));
 
-                        let displayPrice = plan.priceAmount;
-                        let displayCurrency = plan.priceCurrency;
-                        if (loading && plan.id !== 'FREE') {
-                            displayPrice = '…';
-                        } else if (plan.id === 'PRO') {
-                            if (catalog?.proPriceArs != null) {
-                                displayPrice = `$${catalog.proPriceArs.toLocaleString('es-AR')}`;
-                                displayCurrency = 'ARS/mes';
-                            } else if (catalog?.proPriceUsd != null && !catalog?.mercadoPagoAvailable) {
-                                displayPrice = `$${catalog.proPriceUsd.toFixed(2)}`;
-                                displayCurrency = 'USD/mes';
-                            } else {
-                                displayPrice = '$6.300';
-                                displayCurrency = 'ARS/mes';
-                            }
-                        } else if (plan.id === 'CREATOR' && catalog?.creatorPriceArs != null) {
-                            displayPrice = `$${catalog.creatorPriceArs.toLocaleString('es-AR')}`;
-                            displayCurrency = 'ARS/mes';
+                        let displayPrice = plan.id === 'FREE' ? '$0' : 'Precio no disponible';
+                        let displayCurrency = '';
+                        const habitual = plan.id === 'PRO' ? catalog?.proPriceArs : catalog?.creatorPriceArs;
+                        if (plan.id !== 'FREE' && loading) displayPrice = 'Consultando…';
+                        else if (plan.id !== 'FREE' && verified && catalog?.freeAccessEnabled) {
+                            displayPrice = 'Gratis'; displayCurrency = 'durante esta etapa';
+                        } else if (plan.id !== 'FREE' && verified && habitual != null) {
+                            displayPrice = `$${habitual.toLocaleString('es-AR')}`; displayCurrency = 'ARS/mes';
+                        } else if (plan.id === 'PRO' && verified && catalog?.proPriceUsd != null) {
+                            displayPrice = `$${catalog.proPriceUsd.toFixed(2)}`; displayCurrency = 'USD/mes';
                         }
 
                         let buttonLabel = '';
                         if (plan.id === 'FREE') {
                             buttonLabel = user ? 'Ir a mi inicio' : 'Crear cuenta gratis';
-                        } else if (!user) {
-                            buttonLabel = 'Iniciar sesión para comprar';
+                        } else if (!verified) {
+                            buttonLabel = 'Disponibilidad sin confirmar';
                         } else if (catalog?.freeAccessEnabled) {
-                            buttonLabel = `Usar ${plan.id === 'PRO' ? 'PRO' : 'Creador'} gratis`;
+                            buttonLabel = user ? `Usar ${plan.id === 'PRO' ? 'PRO' : 'Creador'} gratis` : 'Creá tu cuenta y accedé gratis';
+                        } else if (catalog?.purchasesPaused && !contracted && !included) {
+                            buttonLabel = 'Compras pausadas';
+                        } else if (!user) {
+                            buttonLabel = 'Iniciar sesión para elegir plan';
                         } else if (contracted) {
                             buttonLabel = `Gestionar plan ${plan.title}`;
                         } else if (included) {
@@ -339,10 +336,8 @@ export default function Pricing() {
                                 navigate(user ? '/dashboard' : '/auth?mode=register&redirect=%2Fdashboard');
                                 return;
                             }
-                            if (!user) {
-                                navigate('/auth?mode=login&redirect=%2Fpricing%23planes');
-                                return;
-                            }
+                            if (catalog?.freeAccessEnabled) { checkout.choose(plan.id); return; }
+                            if (!user) { checkout.choose(plan.id); return; }
                             if (contracted || included) {
                                 navigate('/settings?tab=suscripcion');
                                 return;
@@ -376,19 +371,20 @@ export default function Pricing() {
                                 {/* Price Box */}
                                 <div className="pricing-plan__price-box">
                                     <div className="pricing-plan__price">
-                                        <span className="pricing-plan__amount">{displayPrice}</span>
+                                        <span className={`pricing-plan__amount ${!verified && plan.id !== 'FREE' ? 'pricing-plan__amount--unknown' : ''}`}>{displayPrice}</span>
                                         {displayCurrency && (
                                             <span className="pricing-plan__period">{displayCurrency}</span>
                                         )}
                                     </div>
-                                    {plan.priceNote && (
+                                    {verified && plan.priceNote && (
                                         <div className="pricing-plan__price-note">
                                             <Tag size={13} className="shrink-0" />
-                                            <span>{plan.priceNote}</span>
+                                            <span>{catalog?.freeAccessEnabled ? 'Importe actual: ARS 0. Compras pausadas.' : plan.priceNote}</span>
                                         </div>
                                     )}
                                 </div>
 
+                                {verified && catalog?.freeAccessEnabled && habitual != null && plan.id !== 'FREE' && <p className="text-sm text-center text-muted-foreground">Precio habitual configurado: ARS {habitual.toLocaleString('es-AR')}/mes. Durante esta etapa no se cobra.</p>}
                                 {/* Action CTA Button */}
                                 <button
                                     type="button"
@@ -436,8 +432,8 @@ export default function Pricing() {
                             <Lock size={22} />
                         </div>
                         <div>
-                            <h3>Pagos 100% Seguros</h3>
-                            <p>Procesamiento encriptado de nivel bancario mediante Mercado Pago y Stripe.</p>
+                            <h3>Gestión de pagos</h3>
+                            <p>Consultá la disponibilidad de cada medio de pago y las condiciones antes de contratar.</p>
                         </div>
                     </div>
 
@@ -473,6 +469,9 @@ export default function Pricing() {
                         </p>
                     </div>
 
+                    <div className="pricing-comparison-mobile">
+                        {rows.map(row => <article key={row.label} className="pricing-comparison-benefit"><h3>{row.label}</h3><dl>{row.values.map((value,index) => <div key={PLANS[index].id}><dt>{PLAN_NAMES[PLANS[index].id]}</dt><dd>{value}</dd></div>)}</dl></article>)}
+                    </div>
                     <div className="pricing-table-wrap">
                         <table>
                             <thead>

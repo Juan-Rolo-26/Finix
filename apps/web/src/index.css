@@ -172,10 +172,10 @@
         --popover: 0 0% 100%;
         --popover-foreground: 222 26% 12%;
 
-        --primary: 152 75% 32%;
+        --primary: 152 75% 25%;
         --primary-foreground: 0 0% 100%;
-        --primary-hover: 152 75% 27%;
-        --primary-active: 152 75% 22%;
+        --primary-hover: 152 75% 24%;
+        --primary-active: 152 75% 20%;
         --primary-disabled: 152 30% 75%;
 
         --secondary: 214 26% 94%;
@@ -209,7 +209,7 @@
         --border: 214 22% 88%;
         --border-strong: 214 22% 76%;
         --input: 214 22% 88%;
-        --ring: 152 75% 32%;
+        --ring: 152 75% 29%;
 
         --gradient-hero: linear-gradient(135deg, hsl(210 38% 98%) 0%, hsl(0 0% 100%) 44%, hsl(215 65% 92%) 76%, hsl(152 38% 92%) 100%);
         --gradient-card: linear-gradient(155deg, hsl(0 0% 100% / 0.98) 0%, hsl(210 28% 98% / 0.96) 64%, hsl(215 68% 44% / 0.05) 100%);
@@ -1597,4 +1597,9 @@ body {
 @keyframes shimmer {
     0%   { background-position: -200% 0; }
     100% { background-position: 200% 0; }
+}
+/* Shared touch targets. Component layouts must wrap controls rather than shrink them. */
+button, [role='tab'], [role='switch'] {
+  min-width: 44px;
+  min-height: 44px;
 }

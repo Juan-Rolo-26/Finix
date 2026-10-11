@@ -1,3 +1,4 @@
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import {
     useState,
     useEffect,
@@ -544,6 +545,7 @@ function NewMessageModal({
     isSubmitting: boolean;
     errorMessage: string;
 }) {
+    const returnFocusRef = useRef(document.activeElement as HTMLElement | null);
     const [q, setQ] = useState('');
     const [results, setResults] = useState<MsgUser[]>([]);
     const [loading, setLoading] = useState(false);
@@ -628,34 +630,39 @@ function NewMessageModal({
     };
 
     return (
+        <DialogPrimitive.Root open onOpenChange={(open) => { if (!open && !isSubmitting) onClose(); }}><DialogPrimitive.Portal><DialogPrimitive.Overlay asChild>
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={onClose}
+            onClick={() => { if (!isSubmitting) onClose(); }}
         >
-            <motion.div
+            <DialogPrimitive.Content asChild aria-describedby={undefined} onOpenAutoFocus={(event) => { event.preventDefault(); inputRef.current?.focus(); }} onCloseAutoFocus={(event) => { event.preventDefault(); returnFocusRef.current?.focus(); }} onEscapeKeyDown={(event) => { if (isSubmitting) event.preventDefault(); }}><motion.div
                 initial={{ scale: 0.93, y: 24 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.93, y: 24 }}
                 transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-                className="bg-card border border-border/50 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="new-message-modal-title"
+                className="bg-card border border-border/50 rounded-3xl w-full max-w-lg max-h-[calc(100dvh-32px)] shadow-2xl overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
                     <div>
-                        <h2 className="font-bold text-lg">Nuevo mensaje o grupo</h2>
+                        <h2 id="new-message-modal-title" className="font-bold text-lg">Nuevo mensaje o grupo</h2>
                         <p className="text-xs text-muted-foreground mt-0.5">Seleccioná una o varias personas</p>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label="Cerrar ventana de nuevo mensaje"
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-secondary/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary"
                     >
-                        <X className="w-4 h-4" />
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -676,7 +683,7 @@ function NewMessageModal({
                                     type="button"
                                     onClick={() => toggleUser(selectedUser)}
                                     disabled={isSubmitting}
-                                    className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
+                                    className="inline-flex items-center gap-2 min-h-11 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
                                 >
                                     <span>@{selectedUser.username}</span>
                                     <X className="w-3 h-3" />
@@ -793,8 +800,8 @@ function NewMessageModal({
                         )}
                     </button>
                 </div>
-            </motion.div>
-        </motion.div>
+            </motion.div></DialogPrimitive.Content>
+        </motion.div></DialogPrimitive.Overlay></DialogPrimitive.Portal></DialogPrimitive.Root>
     );
 }
 

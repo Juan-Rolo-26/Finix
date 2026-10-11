@@ -1133,6 +1133,8 @@ const PortfolioPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
+                  aria-label={selectedPortfolio.modoSocial ? 'Portafolio público · cambiar a privado' : 'Portafolio privado · cambiar a público'}
+                  aria-pressed={selectedPortfolio.modoSocial}
                   onClick={() => updateVisibility(!selectedPortfolio.modoSocial)}
                   disabled={isUpdatingVisibility}
                   className="h-8.5 px-2.5 text-xs font-medium gap-1.5 border-border/60"
@@ -1577,7 +1579,7 @@ const PortfolioPage = () => {
                 {/* Cash Card */}
                 <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-card via-card to-emerald-500/[0.04] p-5 shadow-xs transition-all duration-200 hover:border-emerald-500/30 hover:shadow-md">
                   <div className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-emerald-500/10 blur-2xl" />
-                  
+
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs">

@@ -34,7 +34,7 @@ export function ChartLegend({ items, className, columns = 2, compact = false }: 
           key={item.label}
           role="listitem"
           className={cn(
-            'flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-background/40',
+            'flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-background/40',
             compact ? 'px-2.5 py-1.5' : 'px-3 py-2.5',
           )}
         >
@@ -56,18 +56,18 @@ export function ChartLegend({ items, className, columns = 2, compact = false }: 
               />
             )}
             <div className="min-w-0">
-              <span className={cn('block truncate text-foreground/90', compact ? 'text-xs' : 'text-sm')}>
+              <span className={cn('block break-words text-foreground', compact ? 'text-xs' : 'text-sm')}>
                 {item.label}
               </span>
               {item.description && (
-                <span className="block truncate text-[10px] text-muted-foreground">
+                <span className="block break-words text-xs text-muted-foreground">
                   {item.description}
                 </span>
               )}
             </div>
           </div>
           {item.value && (
-            <span className={cn('shrink-0 font-mono font-semibold text-muted-foreground', compact ? 'text-xs' : 'text-xs')}>
+            <span className="min-w-0 break-words text-xs font-mono font-semibold text-muted-foreground">
               {item.value}
             </span>
           )}

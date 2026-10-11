@@ -34,7 +34,7 @@ export function ChartErrorState({
         <button
           onClick={onRetry}
           aria-label="Reintentar carga de datos"
-          className="inline-flex items-center gap-2 h-8 px-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive/80 text-xs font-semibold hover:bg-destructive/15 transition-all"
+          className="inline-flex items-center gap-2 min-h-11 h-auto py-2 px-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive/80 text-sm font-semibold hover:bg-destructive/15 transition-all"
         >
           <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
           Reintentar

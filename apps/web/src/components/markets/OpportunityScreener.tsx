@@ -1,3 +1,4 @@
+import { sectorLabel } from '@/lib/sector-labels';
 import { useEffect, useMemo, useState } from 'react';
 import {
     Building2,
@@ -19,6 +20,7 @@ import { MarketChange, MarketHeader } from './MarketPrimitives';
 import { Button } from '@/components/ui/button';
 import { SymbolLogo } from '@/components/SymbolLogo';
 import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
+import { isWatchlistEnabled } from '@/lib/featureFlags';
 import './opportunities.css';
 
 type Category = 'ALL' | 'UNDERVALUED' | 'HEALTH' | 'GROWTH' | 'DIVIDEND';
@@ -401,14 +403,14 @@ export default function OpportunityScreener({
                     />
                 </label>
                 <select
-                    className="market-control"
+                    className="market-control opportunity-sector"
                     value={sector}
                     onChange={(event) => setSector(event.target.value)}
                     aria-label="Sector de oportunidades"
                 >
                     <option value="ALL">Todos los sectores</option>
                     {(data?.filters?.sectors || []).map((value: string) => (
-                        <option key={value}>{value}</option>
+                        <option key={value} value={value}>{sectorLabel(value)}</option>
                     ))}
                 </select>
                 <Button
@@ -582,7 +584,7 @@ function OpportunityTable({
                             <th scope="col" key={metric.label}>{metric.label}</th>
                         ))}
                         <th scope="col">Cobertura</th>
-                        <th scope="col"><span className="sr-only">Seguimiento</span></th>
+                        {isWatchlistEnabled() && <th scope="col"><span className="sr-only">Seguimiento</span></th>}
                     </tr>
                 </thead>
                 <tbody>
@@ -628,7 +630,7 @@ function OpportunityRow({
                     <span className="opportunities-company__name">
                         <strong>{item.ticker}</strong>
                         <span title={item.name}>{item.name}</span>
-                        <small>{item.sector || 'Sin sector'}</small>
+                        <small>{sectorLabel(item.sector)}</small>
                     </span>
                 </button>
             </th>
@@ -642,20 +644,22 @@ function OpportunityRow({
                 </td>
             ))}
             <td className="opportunities-coverage">{item.scoreCoverage ?? 0}%</td>
-            <td>
-                <button
-                    type="button"
-                    className="market-icon-action"
-                    title="Agregar a Seguimiento"
-                    aria-label={`Agregar ${item.ticker} a Seguimiento`}
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        onAddToWatchlist(item.ticker, item.name);
-                    }}
-                >
-                    <Bookmark size={16} />
-                </button>
-            </td>
+            {isWatchlistEnabled() && (
+                <td>
+                    <button
+                        type="button"
+                        className="market-icon-action"
+                        title="Agregar a Seguimiento"
+                        aria-label={`Agregar ${item.ticker} a Seguimiento`}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onAddToWatchlist(item.ticker, item.name);
+                        }}
+                    >
+                        <Bookmark size={16} />
+                    </button>
+                </td>
+            )}
         </tr>
     );
 }

@@ -29,44 +29,42 @@ interface NotificationGroup {
     items: NotificationItem[];
 }
 
-function formatDateKey(value: Date) {
-    const year = value.getFullYear();
-    const month = String(value.getMonth() + 1).padStart(2, '0');
-    const day = String(value.getDate()).padStart(2, '0');
+export const notificationTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    return `${year}-${month}-${day}`;
+export function notificationDateKey(value: Date, timeZone = notificationTimezone()) {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(value);
+    const part = (type: string) => parts.find(part => part.type === type)?.value;
+    return `${part('year')}-${part('month')}-${part('day')}`;
 }
 
-function formatDateLabel(value: Date) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+export function formatNotificationTime(value: string, timeZone = notificationTimezone()) {
+    const date = new Date(value);
+    if (!value || !Number.isFinite(date.getTime())) return 'Fecha no disponible';
+    return new Intl.DateTimeFormat('es-AR', { timeZone, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date);
+}
 
-    const target = new Date(value);
-    target.setHours(0, 0, 0, 0);
-
-    const diffDays = Math.round((today.getTime() - target.getTime()) / 86400000);
-
+function formatDateLabel(value: Date, timeZone: string, now: Date) {
+    // Compare local calendar days, independent of DST's 23/25-hour days.
+    const today = Date.parse(notificationDateKey(now, timeZone) + 'T00:00:00Z');
+    const target = Date.parse(notificationDateKey(value, timeZone) + 'T00:00:00Z');
+    const diffDays = Math.round((today - target) / 86400000);
     if (diffDays === 0) return 'Hoy';
     if (diffDays === 1) return 'Ayer';
-
-    const label = value.toLocaleDateString('es-AR', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'short',
-    });
-
+    const label = value.toLocaleDateString('es-AR', { timeZone, weekday: 'long', day: '2-digit', month: 'short' });
     return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-export function groupNotificationsByDay(notifications: NotificationItem[]): NotificationGroup[] {
+export function groupNotificationsByDay(notifications: NotificationItem[], options: { timeZone?: string; now?: Date } = {}): NotificationGroup[] {
+    const timeZone = options.timeZone || notificationTimezone();
+    const now = options.now || new Date();
     const groups: NotificationGroup[] = [];
     const byDay = new Map<string, NotificationGroup>();
 
     for (const notification of notifications) {
         const createdAt = notification.createdAt ? new Date(notification.createdAt) : null;
         const hasValidDate = createdAt instanceof Date && !Number.isNaN(createdAt.getTime());
-        const dateKey = hasValidDate ? formatDateKey(createdAt) : 'sin-fecha';
-        const label = hasValidDate ? formatDateLabel(createdAt) : 'Sin fecha';
+        const dateKey = hasValidDate ? notificationDateKey(createdAt, timeZone) : 'sin-fecha';
+        const label = hasValidDate ? formatDateLabel(createdAt, timeZone, now) : 'Sin fecha';
 
         let group = byDay.get(dateKey);
         if (!group) {

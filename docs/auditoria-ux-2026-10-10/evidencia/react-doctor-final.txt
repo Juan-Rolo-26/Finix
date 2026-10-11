@@ -1,0 +1,39 @@
+The `--diff` flag is deprecated; use `--scope changed` (add `--base <ref>` to pin the base) instead.
+✔ Select projects › admin, web
+Scanning changes: main → origin/main
+
+✔ Scanned 72 files in 16.7s
+
+React Doctor — Finix
+Score: 53 / 100 Critical
+
+12 issues
+Accessibility: 2 warnings
+Performance: 8 warnings
+Maintainability: 2 warnings
+
+⚠ Label missing associated control
+  react-doctor/label-has-associated-control
+  src/pages/EmailMarketing.tsx:1400
+⚠ transition: all animates everything ×6
+  react-doctor/no-transition-all
+  src/components/BottomNav.tsx:392
+  src/components/BottomNav.tsx:399
+  src/components/BottomNav.tsx:495
+  src/components/markets/ValueCreationHeatmap.tsx:190
+  src/components/posts/CreatePostModal.tsx:775
+  src/pages/TopGainersPage.tsx:673
+⚠ Intl formatter rebuilt each call
+  react-doctor/js-hoist-intl
+  src/components/common/MarketStatusPill.tsx:24
+⚠ React function has high control-flow complexity ×2
+  react-doctor/no-high-complexity-react-function
+  src/components/markets/ValueCreationHeatmap.tsx:100
+  src/pages/TopGainersPage.tsx:658
+⚠ Interaction on static element
+  react-doctor/no-static-element-interactions
+  src/components/posts/PostCard.tsx:205
+⚠ Repeated localStorage reads
+  react-doctor/js-cache-storage
+  src/pages/AuthCallback.tsx:30
+  Full diagnostics written to /tmp/react-doctor-fa9cf8ab-6561-4be3-b9c8-c3200c4811ce

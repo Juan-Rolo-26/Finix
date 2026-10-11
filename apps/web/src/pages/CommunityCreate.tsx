@@ -291,6 +291,7 @@ export default function CommunityCreate() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
                 <div className="flex items-center gap-3">
                     <button
+                        aria-label={currentStep === 0 ? 'Volver a Comunidades' : 'Volver al paso anterior'}
                         onClick={() => currentStep === 0 ? navigate('/comunidades') : setCurrentStep(s => s - 1)}
                         className="p-2 rounded-xl border hover:bg-muted transition-colors shrink-0"
                         style={{ borderColor: 'hsl(var(--border))' }}
@@ -392,17 +393,18 @@ export default function CommunityCreate() {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1">Nivel de Experiencia Recomendado</label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <label className="text-xs font-semibold block mb-1.5">Nivel de Experiencia Recomendado</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                                         {EXPERIENCE_LEVELS.map(lvl => (
                                             <button
                                                 key={lvl.key}
                                                 type="button"
                                                 onClick={() => setForm({ ...form, experienceLevel: lvl.label })}
-                                                className={`p-2.5 text-left rounded-xl border transition-all ${form.experienceLevel === lvl.label ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted'}`}
+                                                aria-pressed={form.experienceLevel === lvl.label}
+                                                className={`p-3 min-h-[64px] text-left rounded-xl border transition-all flex flex-col justify-start focus-visible:ring-2 focus-visible:ring-primary ${form.experienceLevel === lvl.label ? 'border-primary bg-primary/10 text-primary shadow-xs' : 'border-border hover:bg-muted'}`}
                                             >
-                                                <p className="text-xs font-bold">{lvl.label}</p>
-                                                <p className="text-[10px] text-muted-foreground line-clamp-1">{lvl.desc}</p>
+                                                <p className="text-xs font-bold leading-snug">{lvl.label}</p>
+                                                <p className="text-xs text-muted-foreground mt-1 leading-normal break-words">{lvl.desc}</p>
                                             </button>
                                         ))}
                                     </div>

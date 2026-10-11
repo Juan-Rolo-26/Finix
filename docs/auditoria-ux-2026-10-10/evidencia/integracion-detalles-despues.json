@@ -1,0 +1,978 @@
+[
+  {
+    "case": "lista",
+    "theme": "light",
+    "width": 320,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 320,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "light",
+    "width": 320,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "light",
+    "width": 360,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 360,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "light",
+    "width": 360,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "light",
+    "width": 390,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 390,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "light",
+    "width": 390,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "light",
+    "width": 430,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 430,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "light",
+    "width": 430,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "light",
+    "width": 768,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 768,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "light",
+    "width": 768,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "light",
+    "width": 1024,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 1024,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "light",
+    "width": 1024,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "light",
+    "width": 1280,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 1280,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "light",
+    "width": 1280,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "light",
+    "width": 1440,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 1440,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "light",
+    "width": 1440,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "dark",
+    "width": 320,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 320,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "dark",
+    "width": 320,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "dark",
+    "width": 360,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 360,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "dark",
+    "width": 360,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "dark",
+    "width": 390,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 390,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "dark",
+    "width": 390,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "dark",
+    "width": 430,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 430,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "dark",
+    "width": 430,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "dark",
+    "width": 768,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 768,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "dark",
+    "width": 768,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "dark",
+    "width": 1024,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 1024,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "dark",
+    "width": 1024,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "dark",
+    "width": 1280,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 1280,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "dark",
+    "width": 1280,
+    "clipped": []
+  },
+  {
+    "case": "lista",
+    "theme": "dark",
+    "width": 1440,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Color Verde Esmeralda",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Color Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 1440,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "dark",
+    "width": 1440,
+    "clipped": []
+  }
+]

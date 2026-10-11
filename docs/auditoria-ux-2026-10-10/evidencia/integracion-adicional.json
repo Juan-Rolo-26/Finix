@@ -1,0 +1,1314 @@
+[
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 320,
+    "theme": "light",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 320,
+    "theme": "light"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 320,
+    "theme": "light",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 320,
+    "theme": "light",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 360,
+    "theme": "light",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 360,
+    "theme": "light"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 360,
+    "theme": "light",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 360,
+    "theme": "light",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 390,
+    "theme": "light",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 390,
+    "theme": "light"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 390,
+    "theme": "light",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 390,
+    "theme": "light",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 430,
+    "theme": "light",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 430,
+    "theme": "light"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 430,
+    "theme": "light",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 430,
+    "theme": "light",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 768,
+    "theme": "light",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 768,
+    "theme": "light",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 768,
+    "theme": "light",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 1024,
+    "theme": "light",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 1024,
+    "theme": "light"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 1024,
+    "theme": "light",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 1024,
+    "theme": "light",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 1280,
+    "theme": "light",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 1280,
+    "theme": "light"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 1280,
+    "theme": "light",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 1280,
+    "theme": "light",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 1440,
+    "theme": "light",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 1440,
+    "theme": "light",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 1440,
+    "theme": "light",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 320,
+    "theme": "dark",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 320,
+    "theme": "dark"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 320,
+    "theme": "dark",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 320,
+    "theme": "dark",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 360,
+    "theme": "dark",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 360,
+    "theme": "dark"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 360,
+    "theme": "dark",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 360,
+    "theme": "dark",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 390,
+    "theme": "dark",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 390,
+    "theme": "dark"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 390,
+    "theme": "dark",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 390,
+    "theme": "dark",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 430,
+    "theme": "dark",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 430,
+    "theme": "dark"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 430,
+    "theme": "dark",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 430,
+    "theme": "dark",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 768,
+    "theme": "dark",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 768,
+    "theme": "dark",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 768,
+    "theme": "dark",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 1024,
+    "theme": "dark",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 1024,
+    "theme": "dark"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 1024,
+    "theme": "dark",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 1024,
+    "theme": "dark",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 1280,
+    "theme": "dark",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 1280,
+    "theme": "dark"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 1280,
+    "theme": "dark",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 1280,
+    "theme": "dark",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  },
+  {
+    "id": "FINIX-02/23",
+    "result": "passed",
+    "width": 1440,
+    "theme": "dark",
+    "names": [
+      "Resumen",
+      "Pre-Market",
+      "Mapa de Calor",
+      "Gráfico",
+      "Creación de valor",
+      "Oportunidades"
+    ],
+    "realWrites": 0
+  },
+  {
+    "id": "FINIX-14",
+    "result": "passed",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "id": "FINIX-15",
+    "result": "passed",
+    "width": 1440,
+    "theme": "dark",
+    "switches": [
+      {
+        "name": "Perfil público",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Aceptar seguidores",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar estadísticas",
+        "state": "false",
+        "height": 44
+      },
+      {
+        "name": "Mostrar actividad reciente",
+        "state": "true",
+        "height": 44
+      },
+      {
+        "name": "Mostrar rendimiento exacto",
+        "state": "true",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "id": "FINIX-25",
+    "result": "passed",
+    "width": 1440,
+    "theme": "dark",
+    "cards": [
+      {
+        "text": "Todos los niveles\n\nApto para cualquier interesado",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Principiante\n\nDesde cero, conceptos básicos",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Intermedio\n\nCon nociones de análisis",
+        "height": 64.5,
+        "clipped": false
+      },
+      {
+        "text": "Avanzado\n\nEstrategias complejas y derivados",
+        "height": 64.5,
+        "clipped": false
+      }
+    ]
+  }
+]

@@ -1,0 +1,130 @@
+[
+  {
+    "width": 320,
+    "theme": "light",
+    "before": {
+      "width": 112,
+      "height": 112
+    },
+    "after": {
+      "width": 112,
+      "height": 112
+    },
+    "spaceReserved": true,
+    "errorAccessible": true,
+    "focusReturned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "before": {
+      "width": 112,
+      "height": 112
+    },
+    "after": {
+      "width": 112,
+      "height": 112
+    },
+    "spaceReserved": true,
+    "errorAccessible": true,
+    "focusReturned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 430,
+    "theme": "light",
+    "before": {
+      "width": 112,
+      "height": 112
+    },
+    "after": {
+      "width": 112,
+      "height": 112
+    },
+    "spaceReserved": true,
+    "errorAccessible": true,
+    "focusReturned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 1440,
+    "theme": "light",
+    "before": {
+      "width": 112,
+      "height": 112
+    },
+    "after": {
+      "width": 112,
+      "height": 112
+    },
+    "spaceReserved": true,
+    "errorAccessible": true,
+    "focusReturned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "before": {
+      "width": 112,
+      "height": 112
+    },
+    "after": {
+      "width": 112,
+      "height": 112
+    },
+    "spaceReserved": true,
+    "errorAccessible": true,
+    "focusReturned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "before": {
+      "width": 112,
+      "height": 112
+    },
+    "after": {
+      "width": 112,
+      "height": 112
+    },
+    "spaceReserved": true,
+    "errorAccessible": true,
+    "focusReturned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 430,
+    "theme": "dark",
+    "before": {
+      "width": 112,
+      "height": 112
+    },
+    "after": {
+      "width": 112,
+      "height": 112
+    },
+    "spaceReserved": true,
+    "errorAccessible": true,
+    "focusReturned": true,
+    "realWrites": 0
+  },
+  {
+    "width": 1440,
+    "theme": "dark",
+    "before": {
+      "width": 112,
+      "height": 112
+    },
+    "after": {
+      "width": 112,
+      "height": 112
+    },
+    "spaceReserved": true,
+    "errorAccessible": true,
+    "focusReturned": true,
+    "realWrites": 0
+  }
+]

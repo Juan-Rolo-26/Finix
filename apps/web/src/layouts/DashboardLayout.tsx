@@ -41,7 +41,7 @@ export default function DashboardLayout() {
 
             {/* Preserve the mobile bars and their safe-area spacing. */}
             <div
-                className={`desktop-content flex-1 min-w-0 flex flex-col min-h-screen lg:pb-0 ${isMessages ? 'pt-0' : 'pt-[calc(52px+env(safe-area-inset-top))]'} pb-[calc(60px+env(safe-area-inset-bottom))]`}
+                className={`desktop-content flex-1 min-w-0 flex flex-col min-h-screen lg:pb-0 ${isMessages ? 'pt-0' : 'pt-[var(--finix-mobile-header-height,calc(52px+env(safe-area-inset-top)))]'} pb-[var(--finix-mobile-nav-height,calc(60px+env(safe-area-inset-bottom)))]`}
             >
                 <main
                     className="desktop-main flex-1 min-w-0 flex flex-col w-full max-w-full overflow-x-clip"

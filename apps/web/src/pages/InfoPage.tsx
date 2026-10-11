@@ -8,6 +8,7 @@ import {
   Building2,
   Globe2,
   Heart,
+  Mail,
   Rocket,
   Shield,
   TrendingUp,
@@ -18,7 +19,7 @@ import {
 import BackButton from '@/components/BackButton';
 import ContactFormSection from '@/components/ContactFormSection';
 
-type SectionKey = 'features' | 'how' | 'about';
+type SectionKey = 'features' | 'how' | 'about' | 'contact';
 
 type SectionMeta = {
   title: string;
@@ -68,6 +69,19 @@ const SECTION_META: Record<SectionKey, SectionMeta> = {
       { id: 'region', label: 'Región', value: 'Latinoamérica' },
       { id: 'mission', label: 'Misión', value: 'Democratizar la información financiera' },
       { id: 'status', label: 'Estado', value: 'Producto en desarrollo' },
+    ],
+  },
+  contact: {
+    title: 'Contactanos',
+    eyebrow: 'Soporte y contacto',
+    subtitle: 'Estamos para ayudarte con cualquier duda, consulta o propuesta.',
+    summary:
+      'Completá el formulario directo para contactarte con el equipo de Finix. También podés escribirnos por correo electrónico a finiixarg@gmail.com.',
+    icon: Mail,
+    stats: [
+      { id: 'channel', label: 'Canal directo', value: 'Formulario web' },
+      { id: 'email', label: 'Correo soporte', value: 'finiixarg@gmail.com' },
+      { id: 'response', label: 'Respuesta estimada', value: '24 a 48 hs hábiles' },
     ],
   },
 };
@@ -197,7 +211,7 @@ function SectionHero({ section }: { section: SectionMeta }) {
   return (
     <section className="grid gap-6 xl:grid-cols-12 xl:items-start">
       <motion.div variants={sectionVariants} className="space-y-5 xl:col-span-7">
-        <span className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+        <span className="inline-flex rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           {section.eyebrow}
         </span>
         <div className="space-y-3">
@@ -471,6 +485,21 @@ function AboutSection() {
   );
 }
 
+function ContactSection() {
+  return (
+    <section className="grid gap-6">
+      <motion.div variants={sectionVariants}>
+        <ContactFormSection
+          id="contacto"
+          title="Contactanos"
+          eyebrow="Formulario directo"
+          description="Mandanos tu consulta o mensaje y el equipo de Finix te responderá a la brevedad."
+        />
+      </motion.div>
+    </section>
+  );
+}
+
 export default function InfoPage() {
   const { section } = useParams<{ section?: string }>();
   const navigate = useNavigate();
@@ -480,16 +509,28 @@ export default function InfoPage() {
   const content = SECTION_META[activeSection];
 
   useEffect(() => {
-    if (!location.hash) {
-      return;
-    }
+    const focusTarget = () => {
+      const targetId = location.hash ? location.hash.slice(1) : (activeSection === 'contact' ? 'contacto' : null);
+      if (!targetId) {
+        return;
+      }
 
-    const id = location.hash.slice(1);
-    const frame = window.requestAnimationFrame(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const heading = element.querySelector('h1, h2, h3, [role="heading"]') as HTMLElement | null;
+        if (heading) {
+          heading.setAttribute('tabindex', '-1');
+          heading.focus({ preventScroll: true });
+        } else if (element instanceof HTMLElement) {
+          element.setAttribute('tabindex', '-1');
+          element.focus({ preventScroll: true });
+        }
+      }
+    };
 
-    return () => window.cancelAnimationFrame(frame);
+    const timer = setTimeout(focusTarget, 100);
+    return () => clearTimeout(timer);
   }, [location.hash, activeSection]);
 
   return (
@@ -554,6 +595,7 @@ export default function InfoPage() {
           {activeSection === 'features' ? <FeatureSection /> : null}
           {activeSection === 'how' ? <HowSection /> : null}
           {activeSection === 'about' ? <AboutSection /> : null}
+          {activeSection === 'contact' ? <ContactSection /> : null}
         </motion.div>
       </main>
     </div>

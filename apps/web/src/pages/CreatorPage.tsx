@@ -31,7 +31,10 @@ export default function CreatorPage() {
     const freeAccess = checkout.catalog?.freeAccessEnabled === true;
     const creatorPrice = checkout.catalog?.creatorPriceArs;
     const loadingCheckout = checkout.busy;
-    const handleCheckoutCreator = () => checkout.choose('CREATOR');
+    const handleCheckoutCreator = () => {
+        if (freeAccess && !user) navigate('/login?mode=register&redirect=%2Fcomunidades%2Fcrear');
+        else checkout.choose('CREATOR');
+    };
     const navigate = useNavigate();
     const user = useAuthStore(s => s.user);
     const isCreator = isCreatorUser(user);
@@ -133,7 +136,7 @@ export default function CreatorPage() {
                                 ) : (
                                     <Crown className="w-3.5 h-3.5 fill-black" />
                                 )}
-                                <span>Convertirme en Creator</span>
+                                <span>{freeAccess ? 'Creá tu cuenta y accedé gratis' : 'Ver disponibilidad de Creador'}</span>
                             </button>
                         )}
                     </div>
@@ -177,7 +180,7 @@ export default function CreatorPage() {
                     {/* Pre-title badge */}
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-6 shadow-sm">
                         <Sparkles className="w-3.5 h-3.5 fill-amber-400" />
-                        Finix Creator Program
+                        Programa de creadores de Finix
                     </div>
 
                     {/* Main Headline */}
@@ -197,7 +200,7 @@ export default function CreatorPage() {
                         {isCreator ? (
                             <Link
                                 to="/comunidades/crear"
-                                className="w-full sm:w-auto h-14 px-8 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 text-black shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                className="w-full sm:w-auto min-h-14 h-auto py-3 px-6 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 text-black shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
                             >
                                 <Crown className="w-5 h-5 fill-black" />
                                 <span>Crear mi Comunidad</span>
@@ -207,21 +210,21 @@ export default function CreatorPage() {
                             <button
                                 onClick={handleCheckoutCreator}
                                 disabled={loadingCheckout || checkout.loading || !checkout.catalog}
-                                className="w-full sm:w-auto h-14 px-8 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500 hover:from-amber-400 hover:to-emerald-400 text-black shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                                className="w-full sm:w-auto min-h-14 h-auto py-3 px-6 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500 hover:from-amber-400 hover:to-emerald-400 text-black shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                             >
                                 {loadingCheckout ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
                                 ) : (
                                     <Crown className="w-5 h-5 fill-black" />
                                 )}
-                                <span>Empezar como Creador</span>
+                                <span>{freeAccess ? 'Creá tu cuenta y accedé gratis' : 'Ver disponibilidad de Creador'}</span>
                                 <ArrowRight className="w-4 h-4" />
                             </button>
                         )}
 
                         <a
                             href="#calculadora"
-                            className="w-full sm:w-auto h-14 px-7 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 border border-border/80 bg-card/60 hover:bg-muted backdrop-blur-md transition-all hover:border-primary/50"
+                            className="w-full sm:w-auto min-h-14 h-auto py-3 px-6 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 border border-border/80 bg-card/60 hover:bg-muted backdrop-blur-md transition-all hover:border-primary/50"
                         >
                             <Sliders className="w-4 h-4 text-primary" />
                             <span>Calcular mis ingresos potenciales</span>
@@ -243,7 +246,7 @@ export default function CreatorPage() {
                                 <Coins className="w-4 h-4" />
                                 <span className="text-xs font-bold uppercase tracking-wider">Cobros en ARS</span>
                             </div>
-                            <p className="text-xs text-muted-foreground">Elegís si querés renovar automáticamente antes de pagar.</p>
+                            <p className="text-xs text-muted-foreground">{freeAccess ? 'Importe actual: ARS 0. Compras pausadas.' : checkout.catalog?.purchasesPaused ? 'Compras pausadas. Revisá la disponibilidad del plan.' : 'Elegís la renovación antes de confirmar un pago.'}</p>
                         </div>
 
                         <div className="p-3.5 rounded-2xl bg-card/40 border border-border/50 backdrop-blur-sm text-left">
@@ -400,7 +403,7 @@ export default function CreatorPage() {
                                             ) : (
                                                 <Crown className="w-4 h-4 fill-black" />
                                             )}
-                                            <span>Empezar a monetizar</span>
+                                            <span>{freeAccess ? 'Crear comunidad gratis' : 'Ver disponibilidad de Creador'}</span>
                                             <ArrowRight className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -421,7 +424,7 @@ export default function CreatorPage() {
                             Todo lo que necesitás para escalar tu comunidad financiera
                         </h2>
                         <p className="text-sm sm:text-base text-muted-foreground mt-3">
-                            Diseñado específicamente para el mercado financiero: olvídate de lidiar con bots de Telegram o transferencias desordenadas por WhatsApp.
+                            Diseñado específicamente para el mercado financiero: olvidate de lidiar con bots de Telegram o transferencias desordenadas por WhatsApp.
                         </p>
                     </div>
 
@@ -435,7 +438,7 @@ export default function CreatorPage() {
                                 <span>Perfil de Creador</span>
                             </h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                Tu perfil se destaca en discusiones, comentarios y rankings con el sello dorado oficial de Finix Creator, para identificar tu participación como creador. La verificación del perfil se gestiona por separado.
+                                Tu perfil se destaca en discusiones, comentarios y rankings con el sello dorado oficial de Finix Creador, para identificar tu participación como creador. La verificación del perfil se gestiona por separado.
                             </p>
                         </div>
 
@@ -516,7 +519,7 @@ export default function CreatorPage() {
                             </div>
 
                             <h3 className="text-2xl sm:text-4xl font-heading font-black tracking-tight mb-3">
-                                Comenzá hoy como Finix Creator
+                                Comenzá hoy como Finix Creador
                             </h3>
                             <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-6">
                                 {freeAccess ? 'Creá tu comunidad y compartí contenido sin pagar. Los cobros a miembros están pausados durante esta etapa.' : 'Creá tu comunidad, atraé miembros y cobrá cuotas mensuales con el respaldo de una plataforma institucional.'}
@@ -564,7 +567,7 @@ export default function CreatorPage() {
                             {isCreator ? (
                                 <Link
                                     to="/comunidades/crear"
-                                    className="w-full sm:w-auto h-14 px-8 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-amber-400 text-black shadow-xl shadow-amber-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                    className="w-full sm:w-auto min-h-14 h-auto py-3 px-6 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-amber-400 text-black shadow-xl shadow-amber-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
                                 >
                                     <Crown className="w-5 h-5 fill-black" />
                                     <span>Crear comunidad con mi acceso</span>
@@ -574,7 +577,7 @@ export default function CreatorPage() {
                                 <button
                                     onClick={handleCheckoutCreator}
                                     disabled={loadingCheckout || checkout.loading || !checkout.catalog}
-                                    className="w-full sm:w-auto h-14 px-8 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 hover:from-amber-400 hover:to-amber-200 text-black shadow-xl shadow-amber-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
+                                    className="w-full sm:w-auto min-h-14 h-auto py-3 px-6 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 hover:from-amber-400 hover:to-amber-200 text-black shadow-xl shadow-amber-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
                                 >
                                     {loadingCheckout ? (
                                         <div className="flex items-center gap-2">
@@ -595,7 +598,7 @@ export default function CreatorPage() {
 
                             <p className="text-[11px] text-muted-foreground mt-3 flex items-center gap-1.5">
                                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                Antes de pagar elegís si querés un mes sin renovación o el cobro automático mensual.
+                                {freeAccess ? 'Acceso gratuito con cuenta durante esta etapa; cobros a miembros pausados.' : checkout.catalog?.purchasesPaused ? 'Las compras están pausadas.' : 'Antes de pagar elegís el tipo de renovación.'}
                             </p>
                         </div>
                     </div>

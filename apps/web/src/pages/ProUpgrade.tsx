@@ -32,7 +32,7 @@ export default function ProUpgrade() {
         <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden">
             <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-4"><FreeAccessNotice /></div>
             {(checkout.configError || (checkout.error && !checkout.selectedPlan)) && <div role="alert" className="relative z-10 mx-auto max-w-6xl px-6 py-4">{checkout.configError || checkout.error}<button className="ml-3 text-primary underline" onClick={() => { void checkout.reload(); }}>Reintentar</button></div>}
-            {freeAccess && <p className="relative z-10 mx-auto px-6 pt-3 text-sm text-muted-foreground">Precio mensual configurado: {formatArs(proPriceArs)}. El acceso temporal no crea una suscripción.</p>}
+            {freeAccess && <p className="relative z-10 mx-auto px-6 pt-3 text-sm text-muted-foreground">Precio habitual configurado (importe actual: ARS 0): {formatArs(proPriceArs)}. El acceso temporal no crea una suscripción.</p>}
             {/* Background Effects */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full opacity-30"
@@ -43,7 +43,7 @@ export default function ProUpgrade() {
 
             {/* Header */}
             <header className="relative z-10 w-full max-w-5xl mx-auto px-6 py-8 flex items-center justify-between">
-                <button 
+                <button
                     onClick={() => navigate(-1)}
                     className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary/50 hover:bg-secondary border border-border/50 transition-colors"
                 >
@@ -55,11 +55,11 @@ export default function ProUpgrade() {
             {/* Main Content */}
             <main className="relative z-10 flex-1 flex items-center justify-center p-6">
                 <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
-                    
+
                     {/* Left Column (Copy) */}
-                    <motion.div 
-                        initial={{ opacity: 0, x: -30 }} 
-                        animate={{ opacity: 1, x: 0 }} 
+                    <motion.div
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.6 }}
                         className="space-y-8"
                     >
@@ -101,16 +101,16 @@ export default function ProUpgrade() {
                     </motion.div>
 
                     {/* Right Column (Pricing Card) */}
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 0.95 }} 
-                        animate={{ opacity: 1, scale: 1 }} 
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="relative"
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-primary/20 to-emerald-500/10 rounded-[3rem] blur-xl opacity-50" />
-                        
+
                         <div className="relative bg-card/60 backdrop-blur-2xl border border-border/50 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
-                            
+
                             <div className="flex justify-between items-start mb-6">
                                 <div>
                                     <h2 className="text-2xl font-bold">Finix Pro</h2>
@@ -121,18 +121,18 @@ export default function ProUpgrade() {
                                 </div>
                             </div>
 
-                            <div className="flex items-baseline gap-2 mb-1">
-                                <span className="text-5xl font-extrabold tracking-tighter">{freeAccess ? 'Gratis' : formatArs(proPriceArs)} </span>
+                            <div className="flex flex-wrap items-baseline gap-2 mb-1">
+                                <span className="text-2xl sm:text-5xl font-extrabold tracking-tighter">{freeAccess ? 'Gratis' : formatArs(proPriceArs)} </span>
                                 <span className="text-muted-foreground font-medium">{freeAccess ? 'durante esta etapa' : '/ mes'}</span>
                             </div>
                             <p className="text-xs text-emerald-400 font-semibold mb-6 flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5" /> {freeAccess ? 'Todas las funciones PRO están incluidas sin pagar.' : 'Elegí un pago mensual o la renovación automática con Mercado Pago.'}
+                                <Sparkles className="w-3.5 h-3.5" /> {freeAccess ? 'Todas las funciones PRO están incluidas sin pagar.' : !checkout.catalog ? 'Disponibilidad sin confirmar. Reintentá la consulta.' : checkout.catalog.purchasesPaused ? 'Las nuevas compras están pausadas.' : 'Elegí un pago mensual o renovación automática con Mercado Pago.'}
                             </p>
 
-                            <button 
+                            <button
                                 onClick={handleUpgrade}
-                                disabled={loading || checkout.loading || !checkout.catalog}
-                                className={`w-full py-4 px-6 rounded-2xl font-extrabold text-base sm:text-lg flex items-center justify-center gap-3 transition-all duration-200 ${
+                                disabled={loading || checkout.loading || !checkout.catalog || (checkout.catalog.purchasesPaused && !freeAccess && !hasPro)}
+                                className={`w-full min-h-11 h-auto whitespace-normal py-4 px-6 rounded-2xl font-extrabold text-base sm:text-lg flex items-center justify-center gap-3 transition-all duration-200 ${
                                     hasPro && !freeAccess
                                         ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                                         : 'bg-gradient-to-r from-emerald-600 via-primary to-emerald-500 hover:from-emerald-500 hover:to-primary text-white shadow-xl shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.01] active:scale-[0.99] border border-emerald-400/30 cursor-pointer'
@@ -143,9 +143,9 @@ export default function ProUpgrade() {
                                         <Loader2 className="w-5 h-5 animate-spin" />
                                         Conectando...
                                     </>
-                                ) : !user ? (
+                                ) : !checkout.catalog ? ('Disponibilidad sin confirmar') : checkout.catalog.purchasesPaused && !freeAccess && !hasPro ? ('Compras pausadas') : !user ? (
                                     <>
-                                        <span>{freeAccess ? 'Crear cuenta gratis' : 'Iniciar sesión para comprar'}</span>
+                                        <span>{freeAccess ? 'Creá tu cuenta y accedé gratis' : 'Iniciar sesión para elegir plan'}</span>
                                         <ArrowRight className="w-5 h-5" />
                                     </>
                                 ) : freeAccess ? ('Usar PRO gratis') : hasPro ? (
@@ -158,7 +158,7 @@ export default function ProUpgrade() {
                                 )}
                             </button>
                             <p className="text-center text-xs text-muted-foreground mt-4 mb-6 leading-relaxed">
-                                El pago se gestiona de forma segura con Mercado Pago. Podés elegir un mes por vez o renovar automáticamente desde <strong className="text-foreground">Configuración &gt; Planes PRO y Creador</strong>.
+                                {freeAccess ? "El acceso temporal es gratuito y no crea una suscripción." : !checkout.catalog ? "No pudimos confirmar los medios de pago. Reintentá la consulta." : checkout.catalog.purchasesPaused ? "Las nuevas compras están pausadas. Podés consultar tu plan en Configuración." : "Consultá los medios disponibles y sus condiciones antes de confirmar un pago."}
                             </p>
 
                             <div className="space-y-4 pt-6 border-t border-border/40">

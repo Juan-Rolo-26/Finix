@@ -1,0 +1,566 @@
+{
+  "fecha_utc": "2026-10-11T02:25:54.200712+00:00",
+  "base_url": "http://127.0.0.1:5183",
+  "fixture_scope": "API interceptada; cero escrituras, correos y compras reales; no prueba proveedor ni login real",
+  "ids": [
+    {
+      "id": "FINIX-01",
+      "titulo": "El acceso nuevo falla: API key is invalid",
+      "criterio_original": "Una sesión nueva puede entrar con credenciales válidas; credenciales incorrectas producen un mensaje específico; se conserva /messages como destino. Probar acceso por correo y Google por separado.",
+      "estado": "Bloqueado para validación real",
+      "resultado": "Contrato OTP, errores recuperables, Google no configurado y destino /messages pasaron con fixtures. Falta sesión NUEVA por correo y Google en entorno desplegado.",
+      "archivos": [
+        "AuthPage.tsx",
+        "AuthCallback.tsx",
+        "auth-navigation.ts",
+        "api-errors.ts"
+      ],
+      "evidencia": [
+        "vs01-criterios.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-02",
+      "titulo": "Las pestañas de Mercado se pisan y seleccionan otra sección",
+      "criterio_original": "A 320, 360 y 390 px se lee cada nombre completo; cada toque abre exactamente la sección indicada; selección y foco visibles.",
+      "estado": "Validado local",
+      "resultado": "Se seleccionaron las seis pestañas por su nombre y se verificó el panel y aria-selected; sin colisiones y 44 px.",
+      "archivos": [
+        "market.css",
+        "desktop-sections.css",
+        "Market/Analysis"
+      ],
+      "evidencia": [
+        "integracion-adicional.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-03",
+      "titulo": "Ranking móvil deja precios y acciones fuera de la vista inicial",
+      "criterio_original": "Datos esenciales y acción visibles juntos sin desplazamiento lateral; detalles disponibles mediante expansión; nombres y ticker completos.",
+      "estado": "Validado local",
+      "resultado": "Tarjetas móviles: precio, cambio, ticker, nombre y acción juntos; expansión por teclado. Tabla conservada en escritorio.",
+      "archivos": [
+        "TopGainersPage.tsx"
+      ],
+      "evidencia": [
+        "integracion-criterios.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-04",
+      "titulo": "Las tarjetas laterales del inicio casi borran la identidad del activo",
+      "criterio_original": "Ticker completo, nombre legible y valor visibles en 768, 1024 y 1440 px sin colisiones.",
+      "estado": "Validado local",
+      "resultado": "Identidad larga completa en tarjetas de inicio; 768/1024/1440 y restantes anchos sin overflow ni recorte crítico.",
+      "archivos": [
+        "TopGainersCard.tsx",
+        "TopLosersCard.tsx",
+        "layouts AG"
+      ],
+      "evidencia": [
+        "integracion-final-matriz.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-05",
+      "titulo": "La entrada Iniciar sesión desaparece en el encabezado intermedio",
+      "criterio_original": "Login disponible directamente en la navegación de todos los anchos; cuenta y notificaciones disponibles para usuarios autenticados.",
+      "estado": "Validado local",
+      "resultado": "Acceso directo para visitante en cada ancho; perfil/notificaciones de fixture autenticado; texto 200% no expulsa acciones del viewport.",
+      "archivos": [
+        "DesktopNavigation.tsx",
+        "MobileTopBar.tsx",
+        "BottomNav.tsx"
+      ],
+      "evidencia": [
+        "integracion-criterios.json",
+        "imagenes-zoom-criterios.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-06",
+      "titulo": "Contacto abre Características y el soporte no lleva al formulario",
+      "criterio_original": "Contacto desde login y Enviar consulta desde ayuda abren el formulario correcto y enfocan su encabezado.",
+      "estado": "Validado local",
+      "resultado": "Contacto desde login y Ayuda llega al formulario y enfoca el encabezado. No se envió consulta.",
+      "archivos": [
+        "ContactFormSection.tsx",
+        "InfoPage.tsx",
+        "Help.tsx",
+        "rutas AG"
+      ],
+      "evidencia": [
+        "integracion-criterios.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-07",
+      "titulo": "El acceso gratis y las llamadas a comprar se contradicen",
+      "criterio_original": "Mismo estado y CTA en todas las superficies; ningún visitante interpreta que necesita pagar durante la promoción.",
+      "estado": "Validado local",
+      "resultado": "Promoción ARS 0 y compras pausadas coherentes en Planes, paywall, PRO, Creador, Seguimiento y Ajustes. CTA visitante lleva a registro; cero checkout.",
+      "archivos": [
+        "Pricing.tsx",
+        "ProUpgrade.tsx",
+        "ProGate.tsx",
+        "CreatorPage.tsx",
+        "Settings.tsx"
+      ],
+      "evidencia": [
+        "vs03-criterios.json",
+        "integracion-superficies-final.json",
+        "aliases-final.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-08",
+      "titulo": "BXP muestra ROIC incompatible entre radar y detalle",
+      "criterio_original": "Métrica equivalente coherente entre pantallas; si cambia período/metodología, diferencia visible y explicada; moneda y escala explícitas.",
+      "estado": "Bloqueado para dato real BXP",
+      "resultado": "Unidades TV/FMP, caché, fórmulas y períodos corregidos y probados. UI identifica fuente/período/moneda. BXP real NO verificado por fixture: falta reconsulta autorizada y comparación de período/metodología.",
+      "archivos": [
+        "adaptadores/normalizador fundamental",
+        "value-creation.service.ts",
+        "AssetFundamentalPanel.tsx"
+      ],
+      "evidencia": [
+        "vs02-tests.txt",
+        "vs02-despues-matriz.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-09",
+      "titulo": "Las páginas legales publican notas y datos sin completar",
+      "criterio_original": "No quedan placeholders ni notas de edición en páginas públicas.",
+      "estado": "Validado local",
+      "resultado": "Términos, Privacidad y Cookies sin notas editoriales ni placeholders públicos; aliases comparten contenido. Datos legales ausentes omitidos por instrucción del titular; no implica aprobación jurídica.",
+      "archivos": [
+        "pages/legal/Terms.tsx",
+        "Privacy.tsx",
+        "Cookies.tsx"
+      ],
+      "evidencia": [
+        "vs05-despues-legales.json",
+        "aliases-final.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-10",
+      "titulo": "El error de disponibilidad de planes convive con precios y CTA",
+      "criterio_original": "Estado de error comprensible y recuperable, sin importes o acciones que aparenten estar confirmados.",
+      "estado": "Validado local",
+      "resultado": "503 de catálogo: sin precios inventados, CTA deshabilitado y reintento recupera catálogo de fixture.",
+      "archivos": [
+        "Pricing.tsx",
+        "pricing.css"
+      ],
+      "evidencia": [
+        "vs03-criterios.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-11",
+      "titulo": "Seguimiento promete listas ilimitadas y Planes fija límites",
+      "criterio_original": "Límites y beneficios iguales en seguimiento, planes, ayuda y ajustes.",
+      "estado": "Validado local",
+      "resultado": "Una configuración para API/UI: Gratis 1/5, PRO 25/100, Creador 50/200; promoción explica capacidad disponible. Ayuda y Ajustes coinciden.",
+      "archivos": [
+        "plan-limits.ts",
+        "watchlist.config.ts",
+        "WatchlistLimitsSummary.tsx",
+        "Help.tsx",
+        "Settings.tsx"
+      ],
+      "evidencia": [
+        "vs03-criterios.json",
+        "integracion-superficies-final.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-12",
+      "titulo": "La comparación de planes no cabe en celular",
+      "criterio_original": "Puede compararse el mismo beneficio entre planes sin perder el nombre de la herramienta.",
+      "estado": "Validado local",
+      "resultado": "Comparación por beneficio en móvil y tabla en escritorio. Nombre, valores y CTA completos sin scroll lateral.",
+      "archivos": [
+        "Pricing.tsx",
+        "pricing.css"
+      ],
+      "evidencia": [
+        "vs03-matriz.json",
+        "imagenes-zoom-criterios.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-13",
+      "titulo": "Titulares y nombres quedan cortados por alturas o ellipsis",
+      "criterio_original": "Todos los títulos y nombres críticos se leen completos a 320–1440 px; sin ocultar palabras por defecto.",
+      "estado": "Validado local",
+      "resultado": "Nombres largos de ranking/líder/inicio, títulos de noticias y gráficos, experiencia e índices legales completos. Texto 200% en ranking/planes/contacto. Citas tienen expansión explícita.",
+      "archivos": [
+        "TopGainersPage.tsx",
+        "cards",
+        "ChartLegend.tsx",
+        "PortfolioCharts.tsx",
+        "CommunityDetail.tsx",
+        "legales"
+      ],
+      "evidencia": [
+        "integracion-final-matriz.json",
+        "integracion-detalles-despues.json",
+        "legal-indice-despues.json",
+        "imagenes-zoom-criterios.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-14",
+      "titulo": "Publicaciones citadas recortan texto sin una expansión clara",
+      "criterio_original": "Siempre existe una acción clara para leer la totalidad, accesible por toque y teclado.",
+      "estado": "Validado local",
+      "resultado": "Leer más/Ver menos con aria-expanded/controls; teclado muestra la frase final de cita larga. Se probó SocialFeed real del inicio, además de PostCard.",
+      "archivos": [
+        "SocialFeed.tsx",
+        "PostCard.tsx"
+      ],
+      "evidencia": [
+        "integracion-adicional.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-15",
+      "titulo": "Iconos de navegación y controles carecen de nombre accesible",
+      "criterio_original": "Lectura asistida anuncia finalidad y estado de cada control; ningún botón, enlace o switch esencial queda sin nombre.",
+      "estado": "Validado local",
+      "resultado": "Tema, iconos, acciones, switches, color y visores con propósito/estado; labels asociados en nueva lista. Medidas y nombres del DOM guardados.",
+      "archivos": [
+        "MobileTopBar.tsx",
+        "switch.tsx",
+        "Portfolio.tsx",
+        "CommunityCreate.tsx",
+        "CreateEditWatchlistModal.tsx"
+      ],
+      "evidencia": [
+        "integracion-adicional.json",
+        "integracion-superficies-final.json",
+        "integracion-detalles-despues.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-16",
+      "titulo": "El menú móvil no ofrece la misma cobertura de herramientas",
+      "criterio_original": "Cada destino habilitado tiene un acceso visible en celular sin conocer su URL.",
+      "estado": "Validado local",
+      "resultado": "Menú visitante ofrece todos los destinos habilitados; cada enlace lleva al destino declarado y conserva acceso directo.",
+      "archivos": [
+        "BottomNav.tsx"
+      ],
+      "evidencia": [
+        "integracion-criterios.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-17",
+      "titulo": "El menú de visitante muestra acciones de una cuenta inexistente",
+      "criterio_original": "Un visitante nunca ve Cerrar sesión ni un perfil simulado como propio.",
+      "estado": "Validado local",
+      "resultado": "Visitante no ve Cerrar sesión ni perfil propio simulado; login/registro visibles. Sesión Creador usada sólo en fixture.",
+      "archivos": [
+        "BottomNav.tsx",
+        "navegación AG"
+      ],
+      "evidencia": [
+        "integracion-criterios.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-18",
+      "titulo": "Acciones pequeñas dificultan tocar sin equivocarse",
+      "criterio_original": "Acciones frecuentes con área táctil suficiente y sin áreas superpuestas; texto de botón completo.",
+      "estado": "Validado local",
+      "resultado": "Controles frecuentes >=44 px DOM. Pestañas, switches, acciones ranking y modales medidos. Barras 200% y Volver arriba sin superposición; cámara/avatar separados.",
+      "archivos": [
+        "MobileTopBar.tsx",
+        "BottomNav.tsx",
+        "index.css",
+        "ScrollToTopButton.tsx",
+        "Profile.tsx",
+        "watchlist modal"
+      ],
+      "evidencia": [
+        "integracion-superficies-final.json",
+        "integracion-criterios.json",
+        "imagenes-zoom-criterios.json",
+        "imagenes-perfil-despues.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-19",
+      "titulo": "Textos secundarios y algunos iconos tienen poca presencia visual",
+      "criterio_original": "Legibilidad comprobada en ambos temas y bajo brillo; informe de contraste adjunto al retest.",
+      "estado": "Validado local; pendiente dispositivo",
+      "resultado": "492 muestras de texto con color computado/alpha/opacidad y fondo realmente pintado: cero fallos de umbral. Claro/oscuro. Brillo bajo de pantalla física NO probado; queda pendiente del titular/coordinador.",
+      "archivos": [
+        "index.css",
+        "Pricing.tsx",
+        "cards",
+        "SocialFeed.tsx",
+        "InvestorQuote.tsx",
+        "DashboardFooter"
+      ],
+      "evidencia": [
+        "contraste-efectivo.json",
+        "contraste-dom.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-20",
+      "titulo": "Diálogos y paneles tienen comportamiento desigual",
+      "criterio_original": "Fondo no navegable en modal; cierre por Escape y botón con nombre; foco inicial y retorno verificados.",
+      "estado": "Validado local",
+      "resultado": "Más, nuevo mensaje, publicación, nueva lista y visores: portal/aislamiento, Tab/Shift+Tab, Escape, foco inicial y retorno. POST mantenido pendiente: Escape no cierra mensajes/publicación; error conserva texto. Viewport y scroll comprobados.",
+      "archivos": [
+        "BottomNav.tsx",
+        "Messages.tsx",
+        "CreatePostModal.tsx",
+        "PostCard.tsx",
+        "dialog.tsx",
+        "ImagePreviewButton.tsx",
+        "watchlist modal"
+      ],
+      "evidencia": [
+        "integracion-criterios.json",
+        "publicacion-despues-criterios.json",
+        "integracion-detalles-despues.json",
+        "imagenes-noticias.json",
+        "imagenes-perfil-despues.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-21",
+      "titulo": "Los formularios de acceso dependen de placeholders",
+      "criterio_original": "El campo mantiene identificación con datos cargados y autocompletado; error legible y asociado; reglas visibles en registro.",
+      "estado": "Validado local",
+      "resultado": "Labels persistentes/autocomplete, reglas antes de escribir, errores aria asociados, foco primer error y mostrar/ocultar por teclado.",
+      "archivos": [
+        "AuthPage.tsx",
+        "AuthField.tsx",
+        "api-errors.ts"
+      ],
+      "evidencia": [
+        "vs01-criterios.json",
+        "vs01-matriz.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-22",
+      "titulo": "El visitante puede empezar acciones que necesitan autenticación",
+      "criterio_original": "Usuario conoce el requisito antes de invertir esfuerzo y no pierde texto al entrar.",
+      "estado": "Validado local",
+      "resultado": "Visitante conoce el requisito de cuenta antes de escribir/publicar o crear lista; conserva destino al acceder. Sin persistir borradores privados ni enviar contenido real.",
+      "archivos": [
+        "AccountRequired.tsx",
+        "CreatePostWidget.tsx",
+        "CreatePostModal.tsx",
+        "CreateEditWatchlistModal.tsx"
+      ],
+      "evidencia": [
+        "vs01-criterios.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-23",
+      "titulo": "Faltan contexto temporal y unidades en algunos datos",
+      "criterio_original": "Cada dato permite entender de cuándo es y qué unidad usa; estados cerrado/demorado/sin datos coherentes.",
+      "estado": "Validado local",
+      "resultado": "Consulta, sesión, fuente, demora/unidades separadas; K/miles y M/millones. Pre-Market y creación de valor sin 1970 ni porcentajes sin base. NY con DST: apertura ART 10:30/11:30 según fecha; no certifica feriados ni próxima sesión.",
+      "archivos": [
+        "DataReferenceContext.tsx",
+        "servicios API",
+        "PremarketBrief.tsx",
+        "TopGainersPage.tsx",
+        "ValueCreationHeatmap.tsx",
+        "MarketStatusPill.tsx"
+      ],
+      "evidencia": [
+        "vs02-tests.txt",
+        "integracion-adicional.json",
+        "contexto-final.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-24",
+      "titulo": "Notificaciones agrupa fechas distintas de la fecha de cada evento",
+      "criterio_original": "El encabezado de día coincide con la fecha que ve el usuario en cada evento.",
+      "estado": "Validado local",
+      "resultado": "Grupo y evento usan createdAt y misma zona; Argentina 24/09 21:30; casos UTC/Tokio y DST NY pasaron.",
+      "archivos": [
+        "notifications.ts",
+        "Notifications.tsx"
+      ],
+      "evidencia": [
+        "vs04-tests.txt",
+        "vs04-despues-matriz.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-25",
+      "titulo": "Las tarjetas de nivel de experiencia cortan su explicación",
+      "criterio_original": "Nombre y explicación completos, selección legible y área táctil adecuada.",
+      "estado": "Validado local",
+      "resultado": "Cuatro tarjetas: nombre/explicación completos, altura natural ~64,5 px, selección y teclado. Ocho anchos, ambos temas.",
+      "archivos": [
+        "CommunityCreate.tsx",
+        "cambios AG conservados"
+      ],
+      "evidencia": [
+        "integracion-adicional.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-26",
+      "titulo": "El calendario muestra una sorpresa que no coincide con los valores visibles",
+      "criterio_original": "Sorpresa calculada de acuerdo con la definición mostrada y consistente con las cifras del evento.",
+      "estado": "Validado local",
+      "resultado": "Actual 50,1 menos estimado 55 = -4,9; porcentajes en pp. Valores faltantes/ceros y sorpresa heredada normalizados. No valida cifras externas.",
+      "archivos": [
+        "calendar.service.ts",
+        "financial-data.ts",
+        "CalendarPage.tsx"
+      ],
+      "evidencia": [
+        "vs02-tests.txt",
+        "vs02-despues-matriz.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-27",
+      "titulo": "Mezcla de idiomas y tratamientos",
+      "criterio_original": "Vocabulario y voz uniformes en todas las rutas, sin faltas ni controles sin traducir.",
+      "estado": "Validado local",
+      "resultado": "Planes, imagen/video, activo, etiqueta, Me gusta, valor razonable, Registrate/Creador y Buscando uniformados. Sectores traducidos sin alterar valores de API; tickers/siglas explicadas y conservadas.",
+      "archivos": [
+        "MobileTopBar.tsx",
+        "CreatePostWidget.tsx",
+        "SocialFeed.tsx",
+        "GlobalSearch.tsx",
+        "sector-labels.ts",
+        "markets",
+        "i18n/es.ts"
+      ],
+      "evidencia": [
+        "integracion-final-matriz.json",
+        "contexto-final.json",
+        "integracion-superficies-final.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-28",
+      "titulo": "Rutas informativas y de planes duplican la experiencia",
+      "criterio_original": "Misma información y acciones al entrar desde cualquier enlace antiguo o actual.",
+      "estado": "Validado local",
+      "resultado": "/pricing→/pro y /info/about→/about conservan query/hash; aliases legales dan mismo título y contenido. Se reprodujo y eliminó About duplicado.",
+      "archivos": [
+        "App.tsx",
+        "CanonicalPageRedirect"
+      ],
+      "evidencia": [
+        "aliases-final.json",
+        "integracion-criterios.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-29",
+      "titulo": "Páginas largas relegan el contenido y acciones principales",
+      "criterio_original": "Primer bloque comunica dónde está el usuario y su siguiente acción; pie y CTA alcanzables sin superposición.",
+      "estado": "Validado local",
+      "resultado": "Título/tarea antes de navegación expandida; pie y CTA alcanzables. Se repitieron los tres scrolls capturados antes del fin de animación; Control+End y captura al final pasaron.",
+      "archivos": [
+        "páginas informativas AG",
+        "DashboardLayout.tsx",
+        "barras/ScrollToTopButton.tsx"
+      ],
+      "evidencia": [
+        "integracion-final-matriz.json",
+        "vs03-matriz.json",
+        "vs05-despues-legales.json",
+        "scroll-final-retest.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    },
+    {
+      "id": "FINIX-30",
+      "titulo": "Las cifras decorativas del paywall parecen datos del producto",
+      "criterio_original": "El usuario distingue demostración de sus datos y de cotizaciones actuales.",
+      "estado": "Validado local",
+      "resultado": "Vista de ejemplo explícita, decoración aria-hidden/inert, sin cifras de rendimiento ni recomendaciones ficticias y CTA con fondo legible.",
+      "archivos": [
+        "ProGate.tsx",
+        "ilustración nativa conservada"
+      ],
+      "evidencia": [
+        "vs03-criterios.json",
+        "vs03-matriz.json"
+      ],
+      "pendiente_produccion": true,
+      "cerrado_en_produccion": false
+    }
+  ]
+}

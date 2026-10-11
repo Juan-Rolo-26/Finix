@@ -1,22 +1,19 @@
+import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 
+import { normalizeRedirectTarget } from '@/lib/auth-navigation';
 import { normalizeAuthError } from '@/lib/api-errors';
 import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import AuthField from '@/components/auth/AuthField';
 import BackButton from '@/components/BackButton';
 import { useTranslation } from '@/i18n';
 import {
-    Mail,
-    Lock,
-    User,
     ArrowRight,
     Loader2,
-    Eye,
-    EyeOff,
     TrendingUp,
     Users,
     BarChart3,
@@ -30,13 +27,6 @@ import {
 
 type AuthView = 'login' | 'register' | 'forgot';
 
-const normalizeRedirectTarget = (value?: string | null) => {
-    if (!value || !value.startsWith('/') || value.startsWith('//')) {
-        return '/dashboard';
-    }
-    return value;
-};
-
 const FeaturePill = ({ icon: Icon, label }: { icon: any; label: string }) => (
     <div className="auth-feature-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs">
         <Icon className="w-3 h-3 text-primary" />
@@ -46,6 +36,7 @@ const FeaturePill = ({ icon: Icon, label }: { icon: any; label: string }) => (
 
 export default function AuthPage() {
     const t = useTranslation();
+    const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const [searchParams] = useSearchParams();
     const mode = searchParams.get('mode');
     const redirectTarget = normalizeRedirectTarget(searchParams.get('redirect') || searchParams.get('returnUrl'));
@@ -58,11 +49,12 @@ export default function AuthPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [authError, setAuthError] = useState(
         callbackReason === 'google-auth-error'
-            ? callbackMessage || 'No se pudo iniciar sesión con Google.'
+            ? normalizeAuthError(callbackMessage, 'No se pudo iniciar sesión con Google. Reintentá o ingresá con correo.')
             : callbackReason === 'auth-failed'
                 ? 'No se pudo completar la sesión. Intentá nuevamente.'
                 : '',
     );
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [infoMessage, setInfoMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [email, setEmail] = useState('');
@@ -107,6 +99,7 @@ export default function AuthPage() {
 
     const clearMessages = () => {
         setAuthError('');
+        setFieldErrors({});
         setInfoMessage('');
         setSuccessMessage('');
     };
@@ -241,7 +234,7 @@ export default function AuthPage() {
             if (!response.ok) throw new Error(data?.message || 'No se pudo reenviar el código.');
             setSuccessMessage('Te reenviamos un nuevo código a tu correo.');
         } catch (err: any) {
-            setAuthError(err.message || 'Error al reenviar el código.');
+            setAuthError(normalizeAuthError(err.message, 'No se pudo reenviar el código. Reintentá.'));
         } finally {
             setIsLoading(false);
         }
@@ -295,8 +288,23 @@ export default function AuthPage() {
         setSuccessMessage(data.message || 'Tu contraseña fue actualizada con éxito. Ya podés iniciar sesión.');
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        const errors: Record<string, string> = {};
+        for (const input of Array.from(e.currentTarget.querySelectorAll('input'))) {
+            if (!input.validity.valid) errors[input.id] = input.validity.valueMissing ? 'Completá este campo.'
+                : input.type === 'email' ? 'Ingresá un correo válido.' : input.validationMessage;
+        }
+        if (view === 'register' && !/^[a-zA-Z0-9_]{3,20}$/.test(username.trim())) errors['auth-username'] = 'Usá entre 3 y 20 letras, números o guiones bajos.';
+        if (view !== 'forgot' && !loginCodeStep && password.length < 8) errors['auth-password'] = 'Usá al menos 8 caracteres.';
+        if (view === 'login' && loginCodeStep && loginCode.length !== 6) errors['auth-login-code'] = 'Ingresá los 6 dígitos del código.';
+        if (view === 'forgot' && forgotCodeStep && forgotCode.length !== 6) errors['auth-forgot-code'] = 'Ingresá los 6 dígitos del código.';
+        if (view === 'forgot' && forgotCodeStep && forgotNewPassword !== forgotConfirmPassword) errors['auth-confirm-password'] = 'Las contraseñas no coinciden.';
+        setFieldErrors(errors);
+        if (Object.keys(errors).length) {
+            document.getElementById(Object.keys(errors)[0])?.focus();
+            return;
+        }
         if (view === 'register' && username.trim().length < 3) {
             setAuthError('El nombre de usuario debe tener al menos 3 caracteres.');
             return;
@@ -344,7 +352,7 @@ export default function AuthPage() {
 
             await handleForgotPassword();
         } catch (error) {
-            setAuthError(error instanceof Error ? error.message : t.auth.errors.connectionError);
+            setAuthError(normalizeAuthError(error instanceof Error ? error.message : null, t.auth.errors.connectionError));
         } finally {
             setIsLoading(false);
         }
@@ -359,7 +367,7 @@ export default function AuthPage() {
     const description = view === 'login'
         ? (loginCodeStep ? 'Ingresá el código de verificación que enviamos a tu correo.' : 'Ingresá con tu correo y contraseña para entrar a Finix.')
         : view === 'register'
-            ? 'Creá tu cuenta y te mandamos un codigo de verificacion por correo.'
+            ? 'Creá tu cuenta y te mandamos un código de verificación por correo.'
             : (forgotCodeStep ? 'Ingresá el código de 6 dígitos que te enviamos y creá tu nueva contraseña.' : 'Te enviaremos un código para restablecer tu contraseña.');
 
     return (
@@ -470,7 +478,7 @@ export default function AuthPage() {
                             {planRequested && (
                                 <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3.5 text-xs text-primary font-bold flex items-center gap-2.5">
                                     <Sparkles className="w-4 h-4 shrink-0 text-primary" />
-                                    <span>Iniciá sesión o registrate para continuar con la suscripción a {planRequested === 'Creador' ? 'Finix Creador' : 'Finix PRO'}.</span>
+                                    <span>{freeAccess ? 'Creá tu cuenta o ingresá para acceder gratis durante esta etapa.' : `Ingresá o creá tu cuenta para consultar ${planRequested === 'Creador' ? 'Finix Creador' : 'Finix PRO'}.`}</span>
                                 </div>
                             )}
 
@@ -479,6 +487,7 @@ export default function AuthPage() {
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.5, ease: 'easeOut' }}
                                 onSubmit={handleSubmit}
+                                noValidate
                                 className="space-y-3"
                                 key={view}
                             >
@@ -495,136 +504,18 @@ export default function AuthPage() {
                                     </div>
                                 ) : null}
 
-                                {view === 'register' ? (
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                                        <Input
-                                            placeholder={t.auth.username}
-                                            className="pl-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
-                                            value={username}
-                                            onChange={(e) => setUsername(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                ) : null}
 
-                                {view === 'login' && loginCodeStep ? (
-                                    <div className="flex items-center justify-between text-xs text-muted-foreground bg-secondary/40 px-3.5 py-2.5 rounded-xl border border-input/40">
-                                        <span>Código enviado a: <strong className="text-foreground">{email}</strong></span>
-                                        <button type="button" onClick={() => { setLoginCodeStep(false); setLoginCode(''); }} className="text-primary hover:underline font-medium">Cambiar</button>
-                                    </div>
-                                ) : view === 'forgot' && forgotCodeStep ? (
-                                    <div className="flex items-center justify-between text-xs text-muted-foreground bg-secondary/40 px-3.5 py-2.5 rounded-xl border border-input/40">
-                                        <span>Código enviado a: <strong className="text-foreground">{email}</strong></span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setForgotCodeStep(false)}
-                                            className="text-primary hover:underline font-medium"
-                                        >
-                                            Cambiar
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="relative">
-                                        <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                                        <Input
-                                            type="email"
-                                            placeholder={t.auth.email}
-                                            className="pl-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                )}
-
-                                {view === 'login' && loginCodeStep ? (
-                                    <Input
-                                        inputMode="numeric"
-                                        placeholder="Código de 6 dígitos"
-                                        className="h-11 text-center text-lg tracking-[0.35em] font-mono font-bold bg-secondary/50 border-input/50 focus:border-primary/50"
-                                        value={loginCode}
-                                        onChange={(e) => setLoginCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        required
-                                        maxLength={6}
-                                        autoFocus
-                                    />
-                                ) : view !== 'forgot' ? (
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                                        <Input
-                                            type={showPassword ? 'text' : 'password'}
-                                            placeholder={t.auth.password}
-                                            className="pl-10 pr-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword((current) => !current)}
-                                            className="absolute right-3 top-3 text-muted-foreground hover:text-foreground focus:outline-none"
-                                        >
-                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                    </div>
-                                ) : null}
-
-                                {view === 'forgot' && forgotCodeStep ? (
-                                    <>
-                                        <div>
-                                            <Input
-                                                inputMode="numeric"
-                                                placeholder="Código de 6 dígitos"
-                                                className="h-11 text-center text-lg tracking-[0.35em] font-mono font-bold bg-secondary/50 border-input/50 focus:border-primary/50"
-                                                value={forgotCode}
-                                                onChange={(e) => setForgotCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                                required
-                                                maxLength={6}
-                                            />
-                                        </div>
-
-                                        <div className="relative">
-                                            <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                                            <Input
-                                                type={showPassword ? 'text' : 'password'}
-                                                placeholder="Nueva contraseña (mínimo 8 caracteres)"
-                                                className="pl-10 pr-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
-                                                value={forgotNewPassword}
-                                                onChange={(e) => setForgotNewPassword(e.target.value)}
-                                                required
-                                                minLength={8}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassword((current) => !current)}
-                                                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground focus:outline-none"
-                                            >
-                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                            </button>
-                                        </div>
-
-                                        <div className="relative">
-                                            <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                                            <Input
-                                                type={showForgotConfirmPassword ? 'text' : 'password'}
-                                                placeholder="Confirmar nueva contraseña"
-                                                className="pl-10 pr-10 h-11 bg-secondary/50 border-input/50 focus:border-primary/50"
-                                                value={forgotConfirmPassword}
-                                                onChange={(e) => setForgotConfirmPassword(e.target.value)}
-                                                required
-                                                minLength={8}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowForgotConfirmPassword((current) => !current)}
-                                                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground focus:outline-none"
-                                            >
-                                                {showForgotConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                            </button>
-                                        </div>
-                                    </>
-                                ) : null}
+                                {view === 'register' && <AuthField id="auth-username" label="Nombre de usuario" hint="Entre 3 y 20 letras, números o guiones bajos." autoComplete="username" value={username} onChange={e => setUsername(e.target.value)} required minLength={3} maxLength={20} pattern="[a-zA-Z0-9_]+" error={fieldErrors['auth-username']} formError={Boolean(authError)} />}
+                                {(view === 'login' && loginCodeStep) || (view === 'forgot' && forgotCodeStep) ? <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground rounded-xl bg-secondary/40 p-3">
+                                    <span className="break-all">Código enviado a: <strong>{email}</strong></span>
+                                    <button type="button" className="min-h-11 text-primary underline" onClick={() => { setLoginCodeStep(false); setForgotCodeStep(false); setLoginCode(''); }}>Cambiar correo</button>
+                                </div> : <AuthField id="auth-email" label="Correo electrónico" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required error={fieldErrors['auth-email']} formError={Boolean(authError)} />}
+                                {view === 'login' && loginCodeStep ? <AuthField id="auth-login-code" label="Código de verificación" hint="Ingresá los 6 dígitos que recibiste por correo." inputMode="numeric" autoComplete="one-time-code" value={loginCode} onChange={e => setLoginCode(e.target.value.replace(/\D/g, '').slice(0, 6))} required maxLength={6} pattern="[0-9]{6}" autoFocus error={fieldErrors['auth-login-code']} formError={Boolean(authError)} /> : view !== 'forgot' && <AuthField id="auth-password" label="Contraseña" hint={view === 'register' ? 'Al menos 8 caracteres. Elegí una contraseña que no uses en otro sitio.' : 'Después de la contraseña, verificaremos el acceso con un código por correo.'} type={showPassword ? 'text' : 'password'} autoComplete={view === 'register' ? 'new-password' : 'current-password'} value={password} onChange={e => setPassword(e.target.value)} required minLength={8} onToggle={() => setShowPassword(current => !current)} revealed={showPassword} error={fieldErrors['auth-password']} formError={Boolean(authError)} />}
+                                {view === 'forgot' && forgotCodeStep && <>
+                                    <AuthField id="auth-forgot-code" label="Código de recuperación" inputMode="numeric" autoComplete="one-time-code" value={forgotCode} onChange={e => setForgotCode(e.target.value.replace(/\D/g, '').slice(0, 6))} required maxLength={6} pattern="[0-9]{6}" error={fieldErrors['auth-forgot-code']} formError={Boolean(authError)} />
+                                    <AuthField id="auth-new-password" label="Nueva contraseña" hint="Usá al menos 8 caracteres." type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={forgotNewPassword} onChange={e => setForgotNewPassword(e.target.value)} required minLength={8} onToggle={() => setShowPassword(current => !current)} revealed={showPassword} error={fieldErrors['auth-new-password']} formError={Boolean(authError)} />
+                                    <AuthField id="auth-confirm-password" label="Confirmá la nueva contraseña" type={showForgotConfirmPassword ? 'text' : 'password'} autoComplete="new-password" value={forgotConfirmPassword} onChange={e => setForgotConfirmPassword(e.target.value)} required minLength={8} onToggle={() => setShowForgotConfirmPassword(current => !current)} revealed={showForgotConfirmPassword} error={fieldErrors['auth-confirm-password']} formError={Boolean(authError)} />
+                                </>}
 
                                 {view === 'login' ? (
                                     <div className="flex justify-end">
@@ -641,7 +532,7 @@ export default function AuthPage() {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full h-11 px-5 rounded-xl font-bold text-sm tracking-normal flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/30 active:scale-[0.99] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-emerald-400/25"
+                                    className="w-full min-h-11 h-auto py-3 px-5 rounded-xl font-bold text-sm tracking-normal flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/30 active:scale-[0.99] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-emerald-400/25"
                                     style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: '#ffffff' }}
                                 >
                                     {isLoading ? (
@@ -686,7 +577,7 @@ export default function AuthPage() {
                                 ) : null}
 
                                 {authError ? (
-                                    <p className="text-sm text-destructive font-medium text-center">{authError}</p>
+                                    <div id="auth-error" role="alert" className="text-sm text-destructive font-medium space-y-2"><p>{authError}</p><Link to="/help" className="underline">Ayuda con el acceso</Link></div>
                                 ) : null}
 
                                 {view !== 'forgot' ? (

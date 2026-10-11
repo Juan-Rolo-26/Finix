@@ -196,6 +196,7 @@ export class AdapterFinnhubService implements FundamentalProviderAdapter {
                 revenueGrowthCagr: cagrFromSeries(revenues, cagrYears),
             },
             meta: {
+                roic: { source: 'finnhub', period: 'TTM (últimos 12 meses)', asOf: null, unit: '%', formula: 'ROIC/ROI informado por Finnhub; fórmula y fecha fiscal exactas no informadas.' },
                 sector: profileRaw?.finnhubIndustry || null,
                 currency: profileRaw?.currency || null,
             },

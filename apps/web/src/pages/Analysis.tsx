@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-    Lock, Star, TrendingUp, DollarSign, Target, Briefcase, 
-    Activity, Users, LineChart, ShieldAlert, Zap, Compass, CheckCircle2, 
-    AlertTriangle, ArrowUpRight, ArrowDownRight, Search, 
+import {
+    Lock, Star, TrendingUp, DollarSign, Target, Briefcase,
+    Activity, Users, LineChart, ShieldAlert, Zap, Compass, CheckCircle2,
+    AlertTriangle, ArrowUpRight, ArrowDownRight, Search,
     Sparkles, Loader2, ArrowLeft, BarChart3,
     Building2, Scale, PieChart, Layers, Camera, HelpCircle,
-    Info, ChevronUp, RefreshCw
+    Info, ChevronUp, RefreshCw, BookOpen
 } from 'lucide-react';
-import { 
-    ResponsiveContainer, LineChart as RCLineChart, Line, 
-    XAxis, YAxis, Tooltip as RCTooltip, CartesianGrid 
+import {
+    ResponsiveContainer, LineChart as RCLineChart, Line,
+    XAxis, YAxis, Tooltip as RCTooltip, CartesianGrid
 } from 'recharts';
 import { useAuthStore, isProUser } from '@/stores/authStore';
 import { usePreferencesStore } from '@/stores/preferencesStore';
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { ProGate } from '@/components/ProGate';
 import TradingViewChart from '@/components/TradingViewChart';
 import { InvestorQuote } from '@/components/common/InvestorQuote';
+import { EduInfoBadge } from '@/components/education/EduInfoBadge';
 
 // Helper para formatear monedas y números grandes
 const formatCurrency = (val: number | null | undefined, compact = false) => {
@@ -83,7 +84,7 @@ function ProPaywallGate({ analysis }: { analysis: any }) {
     return (
         <div className="relative overflow-hidden rounded-3xl border border-primary/25 bg-card/60 backdrop-blur-md p-8 sm:p-12 text-center my-8 shadow-2xl">
             <div className="absolute inset-0 pointer-events-none">
-                <div 
+                <div
                     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full"
                     style={{ background: 'radial-gradient(circle, hsl(var(--primary)/0.15) 0%, transparent 70%)', filter: 'blur(70px)' }}
                 />
@@ -108,7 +109,7 @@ function ProPaywallGate({ analysis }: { analysis: any }) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left py-2">
                     <div className="flex items-center gap-2 text-xs font-medium text-foreground/90 bg-muted/30 p-2.5 rounded-xl border border-border/40">
-                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Fair Value & Supuestos DCF
+                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Valor razonable y supuestos DCF
                     </div>
                     <div className="flex items-center gap-2 text-xs font-medium text-foreground/90 bg-muted/30 p-2.5 rounded-xl border border-border/40">
                         <CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Gráficos de Ingresos & Márgenes
@@ -122,7 +123,7 @@ function ProPaywallGate({ analysis }: { analysis: any }) {
                 </div>
 
                 <div className="pt-2">
-                    <Button 
+                    <Button
                         onClick={() => navigate('/pro')}
                         className="h-12 px-8 rounded-full font-bold text-sm shadow-xl shadow-primary/25 bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-primary-foreground transition-all duration-300 transform hover:scale-105"
                     >
@@ -642,7 +643,7 @@ const METRIC_GUIDES: Record<string, MetricGuideInfo> = {
 
 function getMetricGuide(label: string): MetricGuideInfo {
     const cleanKey = label.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
+
     // Búsqueda directa
     if (METRIC_GUIDES[cleanKey]) {
         return METRIC_GUIDES[cleanKey];
@@ -729,11 +730,11 @@ function getMetricGuide(label: string): MetricGuideInfo {
 }
 
 // ─── SUB-COMPONENTE: TARJETA DE MÉTRICA INDIVIDUAL CON GUÍA DESPLEGABLE ────────
-function MetricBox({ label, value, unit = '', highlight = false, badge = '', tooltip = '' }: { 
-    label: string; 
-    value: any; 
-    unit?: string; 
-    highlight?: boolean; 
+function MetricBox({ label, value, unit = '', highlight = false, badge = '', tooltip = '' }: {
+    label: string;
+    value: any;
+    unit?: string;
+    highlight?: boolean;
     badge?: string;
     tooltip?: string;
 }) {
@@ -743,7 +744,7 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
     const guide = getMetricGuide(label);
 
     return (
-        <div 
+        <div
             onClick={() => setIsOpen(prev => !prev)}
             className={`relative rounded-2xl transition-all duration-300 overflow-hidden cursor-pointer group select-none ${
                 isOpen
@@ -758,8 +759,8 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
             {/* Top gradient accent line */}
             <div
                 className={`absolute top-0 left-0 right-0 h-[2.5px] transition-all duration-300 ${
-                    isOpen 
-                        ? 'opacity-100 bg-gradient-to-r from-primary via-emerald-400 to-teal-400' 
+                    isOpen
+                        ? 'opacity-100 bg-gradient-to-r from-primary via-emerald-400 to-teal-400'
                         : 'opacity-0 group-hover:opacity-70 bg-gradient-to-r from-transparent via-primary to-transparent'
                 }`}
             />
@@ -778,6 +779,7 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
                             >
                                 {label}
                             </span>
+                            <EduInfoBadge term={label} />
                         </div>
 
                         {/* ── Main value ── */}
@@ -914,18 +916,28 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
                                 </div>
                             </div>
 
-                            {/* Botón de cierre rápido al pie */}
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsOpen(false);
-                                }}
-                                className="w-full pt-1.5 pb-0.5 text-center text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider flex items-center justify-center gap-1 opacity-70 hover:opacity-100 cursor-pointer"
-                            >
-                                <ChevronUp className="w-3 h-3" />
-                                <span>Cerrar guía</span>
-                            </button>
+                            {/* Enlace a Biblioteca Educativa */}
+                            <div className="pt-2 flex items-center justify-between border-t border-border/30">
+                                <Link
+                                    to="/educativa"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:text-primary/80 transition-colors"
+                                >
+                                    <BookOpen className="w-3.5 h-3.5" />
+                                    <span>Ver más en la Academia Educativa →</span>
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsOpen(false);
+                                    }}
+                                    className="text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider flex items-center gap-1 opacity-70 hover:opacity-100 cursor-pointer"
+                                >
+                                    <ChevronUp className="w-3 h-3" />
+                                    <span>Cerrar</span>
+                                </button>
+                            </div>
 
                         </div>
                     </motion.div>
@@ -1035,7 +1047,7 @@ export default function Analysis() {
 
     // VISTA 1: CATÁLOGO / DIRECTORIO DE ANÁLISIS DISPONIBLES (si no hay slug)
     if (!slug) {
-        const filtered = catalog.filter(item => 
+        const filtered = catalog.filter(item =>
             (item.companyName || '').toLowerCase().includes(search.toLowerCase()) ||
             (item.ticker || '').toLowerCase().includes(search.toLowerCase()) ||
             (item.sector || '').toLowerCase().includes(search.toLowerCase())
@@ -1101,8 +1113,8 @@ export default function Analysis() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filtered.map((item) => (
-                            <motion.div 
-                                key={item.id} 
+                            <motion.div
+                                key={item.id}
                                 whileHover={{ y: -4 }}
                                 onClick={() => navigate(`/analysis/${item.slug || item.ticker?.toLowerCase()}`)}
                                 className="p-6 sm:p-8 rounded-3xl border border-border/60 bg-card/70 backdrop-blur-sm hover:border-primary/50 transition-all cursor-pointer space-y-6 shadow-sm hover:shadow-xl group"
@@ -1147,7 +1159,7 @@ export default function Analysis() {
                                     )}
                                     {item.estimatedFairValue && (
                                         <div>
-                                            <span className="text-muted-foreground block text-xs sm:text-sm font-bold uppercase tracking-wider">Fair Value</span>
+                                            <span className="text-muted-foreground block text-xs sm:text-sm font-bold uppercase tracking-wider">Valor razonable</span>
                                             <span className="font-black text-primary text-2xl sm:text-3xl block mt-1">${Number(item.estimatedFairValue).toFixed(2)}</span>
                                         </div>
                                     )}
@@ -1272,39 +1284,39 @@ export default function Analysis() {
 
                 {/* Métricas de Mercado y Liquidez */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 pt-2">
-                    <MetricBox 
-                        label="Cap. Mercado" 
-                        value={formatCurrency(a.marketCap, true)} 
-                        tooltip="Capitalización bursátil total" 
+                    <MetricBox
+                        label="Cap. Mercado"
+                        value={formatCurrency(a.marketCap, true)}
+                        tooltip="Capitalización bursátil total"
                     />
-                    <MetricBox 
-                        label="P/E Ratio" 
-                        value={a.peRatio ? Number(a.peRatio).toFixed(1) : null} 
-                        unit="x" 
-                        highlight 
-                        tooltip="Precio sobre Beneficios" 
+                    <MetricBox
+                        label="P/E Ratio"
+                        value={a.peRatio ? Number(a.peRatio).toFixed(1) : null}
+                        unit="x"
+                        highlight
+                        tooltip="Precio sobre Beneficios"
                     />
-                    <MetricBox 
-                        label="Vol. Hoy" 
-                        value={formatNumber(a.volume, true)} 
-                        tooltip="Acciones negociadas hoy" 
+                    <MetricBox
+                        label="Vol. Hoy"
+                        value={formatNumber(a.volume, true)}
+                        tooltip="Acciones negociadas hoy"
                     />
-                    <MetricBox 
-                        label="Vol. Prom. 30D" 
-                        value={formatNumber(a.avgVolume, true)} 
-                        tooltip="Volumen promedio diario de 30 días" 
+                    <MetricBox
+                        label="Vol. Prom. 30D"
+                        value={formatNumber(a.avgVolume, true)}
+                        tooltip="Volumen promedio diario de 30 días"
                     />
-                    <MetricBox 
-                        label="Vol. Relativo" 
-                        value={a.relativeVolume ? Number(a.relativeVolume).toFixed(2) : null} 
-                        unit="x" 
-                        highlight 
-                        tooltip="Volumen actual respecto al promedio" 
+                    <MetricBox
+                        label="Vol. Relativo"
+                        value={a.relativeVolume ? Number(a.relativeVolume).toFixed(2) : null}
+                        unit="x"
+                        highlight
+                        tooltip="Volumen actual respecto al promedio"
                     />
-                    <MetricBox 
-                        label="Beta (1A)" 
-                        value={a.beta ? Number(a.beta).toFixed(2) : null} 
-                        tooltip="Sensibilidad y volatilidad frente al mercado" 
+                    <MetricBox
+                        label="Beta (1A)"
+                        value={a.beta ? Number(a.beta).toFixed(2) : null}
+                        tooltip="Sensibilidad y volatilidad frente al mercado"
                     />
                 </div>
 
@@ -1330,7 +1342,7 @@ export default function Analysis() {
                             </div>
                         </div>
                         <div className="relative w-full h-3.5 rounded-full bg-muted overflow-hidden border border-border/40">
-                            <div 
+                            <div
                                 className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-500 rounded-full"
                                 style={{
                                     width: `${Math.max(5, Math.min(95, ((Number(a.currentPrice || a.low52w) - Number(a.low52w)) / (Number(a.high52w) - Number(a.low52w) || 1)) * 100))}%`
@@ -1418,7 +1430,7 @@ export default function Analysis() {
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                                 <div className="space-y-3.5">
                                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-black uppercase tracking-widest bg-primary/20 text-primary border border-primary/30">
-                                        <Target className="w-4 h-4" /> Fair Value & Valoración
+                                        <Target className="w-4 h-4" /> Valor razonable y valoración
                                     </div>
                                     <div className="text-5xl sm:text-7xl md:text-8xl font-black text-foreground tracking-tight">
                                         ${Number(a.estimatedFairValue).toFixed(2)}
@@ -1472,13 +1484,13 @@ export default function Analysis() {
                                 <MetricBox label="Rendimiento por Dividendo" value={a.dividendYield} unit="%" badge={Number(a.dividendYield) > 2 ? 'Con Dividendo' : undefined} tooltip="Rendimiento anual por dividendo" />
                                 <MetricBox label="P/E Histórico Prom." value={a.historicalAvgPe} unit="x" tooltip="Media histórica de valuación" />
                                 <MetricBox label="P/E Sectorial" value={a.sectorPe} unit="x" tooltip="Promedio ponderado del sector" />
-                                <MetricBox 
-                                    label="Prima / Descuento" 
-                                    value={a.valuationPremiumDiscount ? `${Number(a.valuationPremiumDiscount) > 0 ? '+' : ''}${Number(a.valuationPremiumDiscount).toFixed(1)}` : null} 
-                                    unit="%" 
-                                    highlight={Number(a.valuationPremiumDiscount) < 0} 
+                                <MetricBox
+                                    label="Prima / Descuento"
+                                    value={a.valuationPremiumDiscount ? `${Number(a.valuationPremiumDiscount) > 0 ? '+' : ''}${Number(a.valuationPremiumDiscount).toFixed(1)}` : null}
+                                    unit="%"
+                                    highlight={Number(a.valuationPremiumDiscount) < 0}
                                     badge={Number(a.valuationPremiumDiscount) < 0 ? 'Subvaluada' : 'Sobrevaluada'}
-                                    tooltip="Diferencia frente al Fair Value estimado" 
+                                    tooltip="Diferencia frente al valor razonable estimado"
                                 />
                             </div>
 
@@ -1612,7 +1624,7 @@ export default function Analysis() {
                                                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                                                 <XAxis dataKey="period" stroke={chartAxisStroke} fontSize={14} tickLine={false} />
                                                 <YAxis stroke={chartAxisStroke} fontSize={14} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
-                                                <RCTooltip 
+                                                <RCTooltip
                                                     contentStyle={chartTooltipStyle}
                                                     formatter={(val: any) => [`$${val.toLocaleString()} M`, 'Ingresos']}
                                                 />
@@ -1676,7 +1688,7 @@ export default function Analysis() {
                                                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                                                 <XAxis dataKey="period" stroke={chartAxisStroke} fontSize={14} tickLine={false} />
                                                 <YAxis stroke={chartAxisStroke} fontSize={14} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                                                <RCTooltip 
+                                                <RCTooltip
                                                     contentStyle={chartTooltipStyle}
                                                     formatter={(val: any) => [`${val}%`]}
                                                 />
@@ -1911,8 +1923,8 @@ export default function Analysis() {
 
                                 {/* Gráfico interactivo con datos actuales, como alternativa a la captura trazada */}
                                 {(!tech.chartSnapshotUrl || showLiveTechnicalChart) && (() => {
-                                const chartStorageId = tech.chartStorageId || (a.id 
-                                    ? `finix_analysis_${a.id}` 
+                                const chartStorageId = tech.chartStorageId || (a.id
+                                    ? `finix_analysis_${a.id}`
                                     : `finix_analysis_${(a.ticker || a.symbol || 'asset').toLowerCase().replace(/[^a-z0-9_]/g, '_')}`);
                                 const fullSymbol = a.symbol || (a.ticker ? `${a.exchange || 'NASDAQ'}:${a.ticker}` : 'NASDAQ:AAPL');
 
@@ -1954,8 +1966,8 @@ export default function Analysis() {
                                         </div>
 
                                         <div className="rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-card w-full min-h-[460px] sm:min-h-[680px] lg:min-h-[840px]">
-                                            <TradingViewChart 
-                                                symbol={fullSymbol} 
+                                            <TradingViewChart
+                                                symbol={fullSymbol}
                                                 height={840}
                                                 chartStorageId={chartStorageId}
                                                 loadLastChart={true}
@@ -2033,7 +2045,7 @@ export default function Analysis() {
                                                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                                                 <XAxis dataKey="date" stroke={chartAxisStroke} fontSize={14} tickLine={false} />
                                                 <YAxis stroke={chartAxisStroke} fontSize={14} tickLine={false} domain={['auto', 'auto']} tickFormatter={(v) => `$${v}`} />
-                                                <RCTooltip 
+                                                <RCTooltip
                                                     contentStyle={chartTooltipStyle}
                                                     formatter={(val: any) => [`$${val}`]}
                                                 />

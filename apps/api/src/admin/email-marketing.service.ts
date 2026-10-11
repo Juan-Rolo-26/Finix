@@ -18,19 +18,27 @@ export class EmailMarketingService {
     private readonly logger = new Logger(EmailMarketingService.name);
     constructor(private readonly prisma: PrismaService, private readonly mail: MailService) {}
     private recipientWhere(audience = 'PRO') {
-        const base = { status: 'ACTIVE', emailVerified: true, investmentEmailNotifications: true, OR: [{ emailPreferences: { is: null } }, { emailPreferences: { is: { marketing: true, analysis: true } } }] };
+        const notTest = { NOT: { email: { endsWith: '@example.test' } } };
+        const base = {
+            status: 'ACTIVE',
+            emailVerified: true,
+            investmentEmailNotifications: true,
+            ...notTest,
+            OR: [{ emailPreferences: { is: null } }, { emailPreferences: { is: { marketing: true, analysis: true } } }],
+        };
         return audience === 'ALL' ? base : { ...base, plan: 'PRO', subscriptionStatus: 'ACTIVE' };
     }
     async dashboard() {
-        const [campaigns, recipientCount, sent, failed, activeAlerts] = await Promise.all([
+        const [campaigns, recipientCount, allCount, sent, failed, activeAlerts] = await Promise.all([
             this.prisma.proEmailCampaign.findMany({ take: 30, orderBy: { createdAt: 'desc' } }),
-            this.prisma.user.count({ where: this.recipientWhere() }),
+            this.prisma.user.count({ where: this.recipientWhere('PRO') }),
+            this.prisma.user.count({ where: this.recipientWhere('ALL') }),
             this.prisma.emailCampaignRecipient.count({ where: { status: 'SENT' } }),
             this.prisma.emailCampaignRecipient.count({ where: { status: 'FAILED' } }),
             (this.prisma as any).marketAlert?.count({ where: { status: 'ACTIVE' } }) ?? 0,
         ]);
         return {
-            metrics: { recipientCount, sent, failed, activeAlerts },
+            metrics: { recipientCount, allCount, sent, failed, activeAlerts },
             campaigns,
             sendEnabled: process.env.EMAIL_SEND_ENABLED === 'true',
         };
@@ -78,7 +86,7 @@ export class EmailMarketingService {
         const input = parsed.data;
         const analysis = input.analysisId ? await this.prisma.assetAnalysis.findFirst({ where: { id: input.analysisId, status: 'PUBLISHED', isActive: true } }) : null;
         if (input.analysisId && !analysis) throw new BadRequestException('El analisis no esta publicado.');
-        return { input, html: renderCampaign({ ...input, title: input.title!, message: input.message! }, analysis) };
+        return { input, html: renderCampaign({ ...input, title: input.title!, message: input.message!, audience: input.audience }, analysis) };
     }
     async preview(raw: unknown) {
         const { html } = await this.prepare(raw);

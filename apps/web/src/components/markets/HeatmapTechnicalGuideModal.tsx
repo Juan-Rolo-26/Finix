@@ -18,7 +18,9 @@ import {
     Lightbulb,
     Scale,
     Target,
+    ArrowRight,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface HeatmapTechnicalGuideModalProps {
     open: boolean;
@@ -243,8 +245,18 @@ export default function HeatmapTechnicalGuideModal({
                                             <div className="w-[45%] bg-rose-500/80" />
                                         </div>
                                     </div>
-                                    <div className="text-[13px] p-2.5 rounded-xl bg-secondary/50 text-muted-foreground leading-relaxed">
-                                        <strong>Cómo usarlo:</strong> En velas semanales los extremos 30 y 70 tardan meses en llegar. Por eso, el umbral de 45 suele marcar correcciones sanas en papeles fuertes, y arriba de 55 conviene no perseguir precios.
+                                    <div className="text-[13px] p-2.5 rounded-xl bg-secondary/50 text-muted-foreground leading-relaxed flex flex-col gap-2">
+                                        <div>
+                                            <strong>Cómo usarlo:</strong> En velas semanales los extremos 30 y 70 tardan meses en llegar. Por eso, el umbral de 45 suele marcar correcciones sanas en papeles fuertes, y arriba de 55 conviene no perseguir precios.
+                                        </div>
+                                        <Link
+                                            to="/educativa/analisis-tecnico/que-es-el-rsi"
+                                            onClick={() => onOpenChange(false)}
+                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 pt-1"
+                                        >
+                                            <span>Ver guía completa del RSI con simulador interactivo</span>
+                                            <ArrowRight className="w-3.5 h-3.5" />
+                                        </Link>
                                     </div>
                                 </div>
 
@@ -272,8 +284,18 @@ export default function HeatmapTechnicalGuideModal({
                                             <div className="w-1/2 bg-rose-500/80" />
                                         </div>
                                     </div>
-                                    <div className="text-[13px] p-2.5 rounded-xl bg-secondary/50 text-muted-foreground leading-relaxed">
-                                        <strong>Cómo usarlo:</strong> El momento en que el histograma deja de caer y pasa a terreno positivo suele coincidir con el inicio de un nuevo tramo alcista con muy buena relación riesgo/retorno.
+                                    <div className="text-[13px] p-2.5 rounded-xl bg-secondary/50 text-muted-foreground leading-relaxed flex flex-col gap-2">
+                                        <div>
+                                            <strong>Cómo usarlo:</strong> El momento en que el histograma deja de caer y pasa a terreno positivo suele coincidir con el inicio de un nuevo tramo alcista con muy buena relación riesgo/retorno.
+                                        </div>
+                                        <Link
+                                            to="/educativa/analisis-tecnico/que-es-el-macd"
+                                            onClick={() => onOpenChange(false)}
+                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 pt-1"
+                                        >
+                                            <span>Ver guía interactiva del MACD en Academia</span>
+                                            <ArrowRight className="w-3.5 h-3.5" />
+                                        </Link>
                                     </div>
                                 </div>
 

@@ -1,3 +1,4 @@
+import { ImagePreviewButton } from '@/components/common/ImagePreviewButton';
 import { Clock, ExternalLink } from 'lucide-react';
 import { handleNewsImageError, resolveNewsImage } from '@/lib/newsImage';
 
@@ -63,6 +64,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
 
     if (variant === 'hero') {
         return (
+            <div className="flex h-full min-w-0 flex-col">
             <a
                 href={article.url}
                 target="_blank"
@@ -76,7 +78,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         src={imgSrc}
                         alt={article.title}
                         loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        className="w-full h-full object-contain"
                         referrerPolicy="no-referrer"
                         onError={(event) => handleNewsImageError(event, article.title, categoryName)}
                     />
@@ -143,11 +145,14 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                     </div>
                 </div>
             </a>
+            <ImagePreviewButton src={imgSrc} alt={article.title} className="mt-2" />
+            </div>
         );
     }
 
     if (variant === 'featured') {
         return (
+            <div className="flex h-full min-w-0 flex-col">
             <a
                 href={article.url}
                 target="_blank"
@@ -161,7 +166,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         src={imgSrc}
                         alt={article.title}
                         loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="w-full h-full object-contain"
                         referrerPolicy="no-referrer"
                         onError={(event) => handleNewsImageError(event, article.title, categoryName)}
                     />
@@ -192,11 +197,11 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                                 </span>
                             )}
                         </div>
-                        <h3 className="text-lg sm:text-xl font-bold leading-snug text-foreground group-hover:text-primary transition-colors text-balance line-clamp-3">
+                        <h3 className="text-lg sm:text-xl font-bold leading-snug text-foreground group-hover:text-primary transition-colors text-balance">
                             {article.title}
                         </h3>
                         {article.description && (
-                            <p className="text-xs sm:text-sm text-muted-foreground mt-2.5 line-clamp-3 leading-relaxed">
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-2.5 leading-relaxed line-clamp-3">
                                 {article.description}
                             </p>
                         )}
@@ -206,11 +211,14 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                     </div>
                 </div>
             </a>
+            <ImagePreviewButton src={imgSrc} alt={article.title} className="mt-2" />
+            </div>
         );
     }
 
     if (variant === 'banner') {
         return (
+            <div className="flex h-full min-w-0 flex-col">
             <a
                 href={article.url}
                 target="_blank"
@@ -225,7 +233,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         src={imgSrc}
                         alt={article.title}
                         loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        className="w-full h-full object-contain"
                         referrerPolicy="no-referrer"
                         onError={(event) => handleNewsImageError(event, article.title, categoryName)}
                     />
@@ -258,7 +266,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                             </span>
                         )}
                     </div>
-                    <h3 className="text-lg sm:text-xl font-bold leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors text-balance">
+                    <h3 className="text-lg sm:text-xl font-bold leading-snug text-foreground group-hover:text-primary transition-colors text-balance">
                         {article.title}
                     </h3>
                     {article.description && (
@@ -271,11 +279,14 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                     </div>
                 </div>
             </a>
+            <ImagePreviewButton src={imgSrc} alt={article.title} className="mt-2" />
+            </div>
         );
     }
 
     // Standard card
     return (
+        <div className="flex h-full min-w-0 flex-col">
         <a
             href={article.url}
             target="_blank"
@@ -289,7 +300,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                     src={imgSrc}
                     alt={article.title}
                     loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-contain"
                     referrerPolicy="no-referrer"
                     onError={(event) => handleNewsImageError(event, article.title, categoryName)}
                 />
@@ -318,7 +329,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                             </span>
                         )}
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold leading-snug text-foreground group-hover:text-primary transition-colors text-balance line-clamp-3">
+                    <h3 className="text-base sm:text-lg font-bold leading-snug text-foreground group-hover:text-primary transition-colors text-balance">
                         {article.title}
                     </h3>
                     {article.description && (
@@ -332,5 +343,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                 </div>
             </div>
         </a>
+        <ImagePreviewButton src={imgSrc} alt={article.title} className="mt-2" />
+        </div>
     );
 }

@@ -113,14 +113,14 @@ function ChartLegend({ items }: { items: LegendItem[] }) {
             {items.map((item) => (
                 <div
                     key={`${item.label}-${item.color}`}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/30 px-3 py-2"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/30 px-3 py-2"
                 >
                     <div className="flex min-w-0 items-center gap-2">
                         <span
                             className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
                             style={{ backgroundColor: item.color }}
                         />
-                        <span className="truncate text-sm text-foreground/90">{item.label}</span>
+                        <span className="break-words text-sm text-foreground">{item.label}</span>
                     </div>
                     <span className="flex-shrink-0 text-xs text-muted-foreground">{item.value}</span>
                 </div>

@@ -1,3 +1,4 @@
+import DataReferenceContext from './DataReferenceContext';
 import { useEffect, useState, useMemo } from 'react';
 import {
     Clock,
@@ -114,7 +115,7 @@ function formatChange(change: number | null): string {
     return `${changeFormatter.format(change)}%`;
 }
 
-function formatTime(value?: string): string {
+function formatTime(value?: string | null): string {
     if (!value || Number.isNaN(new Date(value).getTime()))
         return 'Sin actualizar';
     return timeFormatter.format(new Date(value));
@@ -259,6 +260,7 @@ export default function PremarketBrief({
                 });
                 if (!res.ok) throw new Error('Unavailable');
                 const next = await res.json();
+                if (!next?.session || !Array.isArray(next.indices)) throw new Error('Unavailable');
                 if (!controller.signal.aborted) {
                     setData(next);
                     setError(false);
@@ -328,9 +330,10 @@ export default function PremarketBrief({
 
     const isFrozen = Boolean(
         data &&
-        (data.isFrozenPremarket || data.session.status !== 'pre-market'),
+        (data.isFrozenPremarket || (data.updatedAt && allAssets.length > 0 && data.session.status !== 'pre-market')),
     );
     const sentiment = data?.session.sentiment || 'neutral';
+    const hasSentiment = stats.withQuote > 0 && Number.isFinite(data?.session.sentimentScore);
     const sentimentScore = Math.min(
         100,
         Math.max(0, data?.session.sentimentScore ?? 50),
@@ -372,14 +375,11 @@ export default function PremarketBrief({
                                     : 'Sin datos'
                                 : isFrozen
                                   ? 'Corte guardado'
-                                  : 'En vivo'}
+                                  : data.session?.status === 'closed' ? 'Mercado cerrado' : 'Datos del proveedor'}
                         </span>
                     </div>
                     <p className="premarket-header__date">
-                        {data &&
-                        !Number.isNaN(new Date(data.updatedAt).getTime())
-                            ? dateFormatter.format(new Date(data.updatedAt))
-                            : 'Cotizaciones de pre-apertura'}
+                        {data?.dataContext?.referenceSession ? `Sesión del corte: ${data.dataContext.referenceSession}` : data?.updatedAt && !Number.isNaN(new Date(data.updatedAt).getTime()) ? `Registro del corte: ${dateFormatter.format(new Date(data.updatedAt))}` : 'Sin corte bursátil guardado'}
                     </p>
                 </div>
                 <div className="premarket-header__timing">
@@ -388,13 +388,13 @@ export default function PremarketBrief({
                         <div>
                             <span>Corte de referencia</span>
                             <strong>
-                                10:30 <small>ART</small>
+                                09:30 <small>Nueva York</small>
                             </strong>
                         </div>
                     </div>
                     <span className="premarket-header__updated">
                         {data
-                            ? `${isFrozen ? 'Registro' : 'Actualizado'} ${formatTime(data.updatedAt)} ART`
+                            ? `${isFrozen ? 'Registro del corte' : 'Consulta'} ${formatTime(data.updatedAt)} ART`
                             : 'Esperando datos'}
                     </span>
                     <button
@@ -415,6 +415,7 @@ export default function PremarketBrief({
                 </div>
             </header>
 
+            <DataReferenceContext context={data?.dataContext} />
             <div className="premarket-overview">
                 <div
                     className={`premarket-sentiment premarket-sentiment--${sentiment}`}
@@ -424,25 +425,25 @@ export default function PremarketBrief({
                             <Activity size={16} /> Clima de mercado
                         </span>
                         <strong>
-                            {data ? sentimentLabel : 'Sin datos'}{' '}
-                            <span>{data ? `${sentimentScore}%` : ''}</span>
+                            {hasSentiment ? sentimentLabel : 'Sin datos'}{' '}
+                            <span>{hasSentiment ? `${sentimentScore}%` : ''}</span>
                         </strong>
                     </div>
-                    <meter
+                    {hasSentiment && <meter
                         className="sr-only"
                         aria-label="Clima de mercado"
                         min={0}
                         max={100}
                         value={data ? sentimentScore : 0}
                         aria-valuetext={data ? sentimentLabel : 'Sin datos'}
-                    />
+                    />}
                     <div
                         className="premarket-sentiment__track"
                         aria-hidden="true"
                     >
                         <span
                             style={{
-                                width: data ? `${sentimentScore}%` : '0%',
+                                width: hasSentiment ? `${sentimentScore}%` : '0%',
                             }}
                         />
                     </div>

@@ -38,6 +38,7 @@ import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { NOTIFICATION_HISTORY_DAYS, type NotificationItem, groupNotificationsByDay } from '../lib/notifications';
 import { usePreferencesStore } from '../stores/preferencesStore';
+import { isWatchlistEnabled } from '@/lib/featureFlags';
 
 /* ─── Brand token ─────────────────────────────────────────────── */
 const PRIMARY = 'hsl(var(--primary))';
@@ -314,7 +315,7 @@ export function Sidebar() {
             label: 'Mercados',
             links: [
                 { name: 'Mercado',     path: '/market',            icon: TrendingUp, badge: 0 },
-                { name: 'Seguimiento', path: '/market/seguimiento', icon: Bookmark,   badge: 0 },
+                ...(isWatchlistEnabled() ? [{ name: 'Seguimiento', path: '/market/seguimiento', icon: Bookmark, badge: 0 }] : []),
                 { name: 'Calendario',  path: '/calendario',        icon: Calendar,   badge: 0 },
                 { name: 'Portafolio',  path: '/portfolio',         icon: Briefcase,  badge: 0 },
                 // { name: 'Finanzas Personales', path: '/finanzas', icon: Wallet, badge: 0 },

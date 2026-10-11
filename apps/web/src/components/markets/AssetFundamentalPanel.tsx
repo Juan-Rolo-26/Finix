@@ -1,3 +1,4 @@
+import FinancialPriceHistory from '@/components/charts/financial/FinancialPriceHistory';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { financialNumber } from '@finix/shared';
 import {
@@ -16,6 +17,7 @@ import SymbolLogo from '@/components/SymbolLogo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
+import { isWatchlistEnabled } from '@/lib/featureFlags';
 
 function number(value: number | null | undefined, digits = 2) {
     if (
@@ -212,19 +214,8 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
     const hasBalance = hasValues([latestBalance.totalAssets, latestBalance.totalLiabilities, latestBalance.cashAndEquivalents, latestBalance.totalDebt]);
     const hasCash = hasValues([latestCash.operatingCashFlow, metrics.freeCashFlow, latestCash.freeCashFlow, metrics.netMargin, metrics.revenueGrowthCagr]);
     const source =
-        data.source?.providersTried?.join(', ') ||
-        'Alpha Vantage / fallback Finix';
+        data.instrument?.providerUsed || 'Fuente no informada';
     const alphaSpreadUrl = `https://www.alphaspread.com/security/${exchange}/${ticker.toLowerCase()}/discount-rate`;
-    const closes = candles.map((item) => Number(item.close));
-    const minClose = Math.min(...closes);
-    const maxClose = Math.max(...closes);
-    const chartPoints = closes
-        .map(
-            (value, index) =>
-                `${(index / Math.max(1, closes.length - 1)) * 100},${90 - ((value - minClose) / Math.max(0.0001, maxClose - minClose)) * 78}`,
-        )
-        .join(' ');
-
     return (
         <section className="market-fundamentals space-y-5">
             {error && (
@@ -254,16 +245,18 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setIsAddToWatchlistOpen(true)}
-                            className="market-icon-action"
-                            title="Agregar a seguimiento"
-                            aria-label="Agregar a seguimiento"
-                        >
-                            <Bookmark size={16} />
-                        </Button>
+                        {isWatchlistEnabled() && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsAddToWatchlistOpen(true)}
+                                className="market-icon-action"
+                                title="Agregar a seguimiento"
+                                aria-label="Agregar a seguimiento"
+                            >
+                                <Bookmark size={16} />
+                            </Button>
+                        )}
                         <Button
                             variant="outline"
                             size="sm"
@@ -281,18 +274,23 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                 </CardHeader>
                 <CardContent className="space-y-5 p-5">
                     {!hasMetrics && !hasIncome && !hasBalance && !hasCash && <p className="text-muted-foreground">No hay información financiera disponible para este activo.</p>}
+                    <div className="space-y-2 text-sm text-muted-foreground" aria-label="Fuente, período y unidades">
+                        <p>Fuente: {source}. Consulta: {data.source?.fetchedAt ? new Date(data.source.fetchedAt).toLocaleString('es-AR') : 'fecha no informada'}. {data.quality?.stale || data.source?.staleFromCache ? 'Datos guardados sin actualización reciente.' : ''}</p>
+                        <p>Moneda: {data.metricContext?.currency || 'no informada por la fuente'}. Escala: M = millones, B = mil millones, T = billones.</p>
+                        <p>ROIC: porcentaje · {data.metricContext?.roic?.period || 'período no informado'} · cierre fiscal: {data.metricContext?.roic?.asOf || 'fecha no informada'}. {data.metricContext?.roic?.formula || 'Fórmula no informada por este proveedor.'} El radar usa TradingView FQ; diferencias de fuente, fórmula y período pueden producir valores distintos.</p>
+                    </div>
                     {hasMetrics && <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
                         <Metric
                             label="Capitalización"
-                            value={compactMoney(metrics.marketCap)}
+                            value={compactMoney(metrics.marketCap, data.metricContext?.currency ?? null)}
                         />
                         <Metric
-                            label="Enterprise value"
-                            value={compactMoney(metrics.enterpriseValue)}
+                            label="Valor de la empresa"
+                            value={compactMoney(metrics.enterpriseValue, data.metricContext?.currency ?? null)}
                         />
                         <Metric label="P/E" value={number(metrics.peRatio)} />
                         <Metric
-                            label="ROE"
+                            label="ROE · retorno sobre el patrimonio"
                             value={
                                 metrics.roe == null
                                     ? '—'
@@ -300,7 +298,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                             }
                         />
                         <Metric
-                            label="ROIC"
+                            label="ROIC · retorno sobre el capital"
                             value={
                                 metrics.roic == null
                                     ? '—'
@@ -320,7 +318,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                     <Building2 className="h-4 w-4 text-emerald-500" />{' '}
                                     Estado de resultados
                                 </CardTitle>
-                                <p className="text-xs text-muted-foreground">{latestIncome.date || ''}{latestIncome.date ? ' · ' : ''}{latestIncome.currency || 'Moneda no informada'}</p>
+                                <p className="text-xs text-muted-foreground">{latestIncome.period || 'Período no informado'} · {latestIncome.date || ''}{latestIncome.date ? ' · ' : ''}{latestIncome.currency || 'Moneda no informada'}</p>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-2 text-[14px]">
                                 <Metric
@@ -347,7 +345,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                     <Wallet className="h-4 w-4 text-emerald-500" />{' '}
                                     Balance
                                 </CardTitle>
-                                <p className="text-xs text-muted-foreground">{latestBalance.date || ''}{latestBalance.date ? ' · ' : ''}{latestBalance.currency || 'Moneda no informada'}</p>
+                                <p className="text-xs text-muted-foreground">{latestBalance.period || 'Período no informado'} · {latestBalance.date || ''}{latestBalance.date ? ' · ' : ''}{latestBalance.currency || 'Moneda no informada'}</p>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-2 text-[14px]">
                                 <Metric
@@ -382,7 +380,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                     <Activity className="h-4 w-4 text-emerald-500" />{' '}
                                     Flujo y calidad
                                 </CardTitle>
-                                <p className="text-xs text-muted-foreground">{latestCash.date || ''}{latestCash.date ? ' · ' : ''}{latestCash.currency || 'Moneda no informada'}</p>
+                                <p className="text-xs text-muted-foreground">{latestCash.period || 'Período no informado'} · {latestCash.date || ''}{latestCash.date ? ' · ' : ''}{latestCash.currency || 'Moneda no informada'}</p>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-2 text-[14px]">
                                 <Metric
@@ -427,40 +425,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {candles.length > 1 ? (
-                                    <>
-                                        <div className="h-40 rounded-md bg-gradient-to-b from-emerald-500/10 to-transparent p-2">
-                                            <svg
-                                                viewBox="0 0 100 100"
-                                                preserveAspectRatio="none"
-                                                className="h-full w-full"
-                                            >
-                                                <polyline
-                                                    points={chartPoints}
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="1.5"
-                                                    vectorEffect="non-scaling-stroke"
-                                                    className="text-emerald-500"
-                                                />
-                                            </svg>
-                                        </div>
-                                        <div className="mt-2 flex justify-between text-[12px] text-muted-foreground">
-                                            <span>Mín. {money(minClose)}</span>
-                                            <span>Máx. {money(maxClose)}</span>
-                                            <span>
-                                                Último{' '}
-                                                {money(
-                                                    closes[closes.length - 1],
-                                                )}
-                                            </span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <p className="py-12 text-center text-[14px] text-muted-foreground">
-                                        No hay histórico disponible.
-                                    </p>
-                                )}
+                                <FinancialPriceHistory candles={candles} currency={data.metricContext?.currency} />
                             </CardContent>
                         </Card>
                         <Card className="market-financial-band">

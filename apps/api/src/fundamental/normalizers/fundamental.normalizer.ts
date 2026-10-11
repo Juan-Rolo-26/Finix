@@ -36,10 +36,11 @@ const statementFields = ['revenue', 'grossProfit', 'operatingIncome', 'netIncome
     'totalAssets', 'totalLiabilities', 'totalEquity', 'cashAndEquivalents', 'totalDebt',
     'operatingCashFlow', 'capex', 'freeCashFlow'] as const;
 
-function normalizeStatementArray(values: StatementPoint[] | undefined): StatementPoint[] {
+function normalizeStatementArray(values: StatementPoint[] | undefined, currency?: string | null): StatementPoint[] {
     if (!Array.isArray(values)) return [];
     return values.filter(item => isCalendarDate(item?.date)).map(item => ({
-        ...item, ...Object.fromEntries(statementFields.map(field => [field, financialNumber(item[field]) ?? null])),
+        ...item, currency: item.currency || currency || null,
+        ...Object.fromEntries(statementFields.map(field => [field, financialNumber(item[field]) ?? null])),
     })).filter(item => statementFields.some(field => item[field] !== null))
         .sort((a, b) => b.date.localeCompare(a.date));
 }
@@ -77,9 +78,9 @@ export function buildNormalizedResponse(params: {
     };
 
     const statements = {
-        incomeStatement: normalizeStatementArray(params.payload.statements.incomeStatement),
-        balanceSheet: normalizeStatementArray(params.payload.statements.balanceSheet),
-        cashFlow: normalizeStatementArray(params.payload.statements.cashFlow),
+        incomeStatement: normalizeStatementArray(params.payload.statements.incomeStatement, params.payload.meta?.currency),
+        balanceSheet: normalizeStatementArray(params.payload.statements.balanceSheet, params.payload.meta?.currency),
+        cashFlow: normalizeStatementArray(params.payload.statements.cashFlow, params.payload.meta?.currency),
         earnings: normalizeEarnings(params.payload.statements.earnings),
     };
 
@@ -99,6 +100,7 @@ export function buildNormalizedResponse(params: {
     const coverage = Math.round(((requiredFields.length - missingFields.length) / requiredFields.length) * 100);
 
     return {
+        metricContext: { currency: params.payload.meta?.currency || null, roic: params.payload.meta?.roic },
         instrument: {
             input: params.inputTicker,
             normalizedTicker: params.payload.instrument.normalizedTicker || params.resolved.normalizedTicker,

@@ -16,6 +16,7 @@ const AnalysisManagement = lazy(() => import('./pages/AnalysisManagement'));
 const MarketRankingsManagement = lazy(() => import('./pages/MarketRankingsManagement'));
 const CalendarManagement = lazy(() => import('./pages/CalendarManagement'));
 const EmailMarketing = lazy(() => import('./pages/EmailMarketing'));
+const EducationManagement = lazy(() => import('./pages/EducationManagement'));
 import { adminFetch, readAdminErrorMessage } from './lib/api';
 
 const RequireAdminAuth = ({ children }: { children: JSX.Element }) => {
@@ -107,6 +108,7 @@ export default function App() {
                 <Route path="/verifications" element={<VerificationsManagement />} />
                 <Route path="/reports" element={<ReportsList />} />
                 <Route path="/audit-logs" element={<AuditLogs />} />
+                <Route path="/educativa" element={<EducationManagement />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />

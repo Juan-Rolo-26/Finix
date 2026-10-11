@@ -1,0 +1,130 @@
+[
+  {
+    "view": "calendar",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 430,
+    "scrollWidth": 430,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "calendar",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "view": "fundamental",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "dark",
+    "bottom": true,
+    "errors": []
+  }
+]

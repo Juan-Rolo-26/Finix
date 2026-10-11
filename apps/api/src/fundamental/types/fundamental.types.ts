@@ -88,6 +88,10 @@ export interface FundamentalStatements {
 }
 
 export interface FundamentalResponse {
+    metricContext?: {
+        currency: string | null;
+        roic?: { source: string; period: string; asOf: string | null; unit: '%'; formula: string };
+    };
     instrument: NormalizedInstrument;
     statements: FundamentalStatements;
     metrics: FundamentalMetrics;
@@ -137,5 +141,6 @@ export interface ProviderFundamentalPayload {
     meta?: {
         sector?: string | null;
         currency?: string | null;
+        roic?: { source: string; period: string; asOf: string | null; unit: '%'; formula: string };
     };
 }

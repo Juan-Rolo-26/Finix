@@ -7,6 +7,7 @@ const InformationLayout = lazy(() => import('./layouts/InformationLayout'));
 import InstallBanner from './components/InstallBanner';
 const CookieConsent = lazy(() => import('./components/CookieConsent'));
 import { usePlatformAccessStore } from './stores/platformAccessStore';
+import { isWatchlistEnabled } from './lib/featureFlags';
 
 // ─── Lazy Loaded Pages ────────────────────────────────────────────────────────
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -44,6 +45,10 @@ const TopGainersPage = lazy(() => import('./pages/TopGainersPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const CreatorPage = lazy(() => import('./pages/CreatorPage'));
 const WatchlistPage = lazy(() => import('./pages/WatchlistPage'));
+const EducationHome = lazy(() => import('./pages/education/EducationHome'));
+const EducationCategoryPage = lazy(() => import('./pages/education/EducationCategoryPage'));
+const EducationArticlePage = lazy(() => import('./pages/education/EducationArticlePage'));
+const EducationLearningPathPage = lazy(() => import('./pages/education/EducationLearningPathPage').then(m => ({ default: m.EducationLearningPathPage })));
 
 // ─── Theme Applier ────────────────────────────────────────────────────────────
 
@@ -112,6 +117,11 @@ function RequireCommunityAccess({
     }
 
     return <>{children}</>;
+}
+
+function CanonicalPageRedirect({ pathname = '/pro' }: { pathname?: string }) {
+    const location = useLocation();
+    return <Navigate to={{ pathname, search: location.search, hash: location.hash }} replace />;
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -184,7 +194,10 @@ export default function App() {
 
                     {/* Info page: simple info with back button, no landing */}
                     <Route path="/info" element={<InfoPage />} />
+                    <Route path="/info/about" element={<CanonicalPageRedirect pathname="/about" />} />
                     <Route path="/info/:section" element={<InfoPage />} />
+                    <Route path="/contact" element={<Navigate to="/info/contact#contacto" replace />} />
+                    <Route path="/contacto" element={<Navigate to="/info/contact#contacto" replace />} />
 
                     {/* Dashboard Layout Routes */}
                     <Route
@@ -198,9 +211,19 @@ export default function App() {
                         <Route path="/social" element={<SocialDashboard />} />
                         <Route path="/explore" element={<Explore />} />
                         <Route path="/market" element={<Markets />} />
-                        <Route path="/mercado/seguimiento" element={<WatchlistPage />} />
-                        <Route path="/market/seguimiento" element={<WatchlistPage />} />
-                        <Route path="/market/watchlist" element={<WatchlistPage />} />
+                        {isWatchlistEnabled() ? (
+                            <>
+                                <Route path="/mercado/seguimiento" element={<WatchlistPage />} />
+                                <Route path="/market/seguimiento" element={<WatchlistPage />} />
+                                <Route path="/market/watchlist" element={<WatchlistPage />} />
+                            </>
+                        ) : (
+                            <>
+                                <Route path="/mercado/seguimiento" element={<Navigate to="/market" replace />} />
+                                <Route path="/market/seguimiento" element={<Navigate to="/market" replace />} />
+                                <Route path="/market/watchlist" element={<Navigate to="/market" replace />} />
+                            </>
+                        )}
                         <Route path="/mercado/mejores-rendimientos" element={<TopGainersPage />} />
                         <Route path="/market/top-gainers" element={<TopGainersPage />} />
                         <Route path="/calendario" element={<CalendarPage />} />
@@ -210,6 +233,10 @@ export default function App() {
                         <Route path="/analysis/:slug" element={<AnalysisPage />} />
                         <Route path="/analisis" element={<AnalysisPage />} />
                         <Route path="/analisis/:slug" element={<AnalysisPage />} />
+                        <Route path="/educativa" element={<EducationHome />} />
+                        <Route path="/educativa/rutas/:pathSlug" element={<EducationLearningPathPage />} />
+                        <Route path="/educativa/:categorySlug" element={<EducationCategoryPage />} />
+                        <Route path="/educativa/:categorySlug/:articleSlug" element={<EducationArticlePage />} />
                         <Route path="/profile/:username" element={<Profile />} />
 
                         {/* Protected Routes (require auth) */}
@@ -233,8 +260,8 @@ export default function App() {
                     {/* Info & Legal Routes */}
                     <Route element={<InformationLayout />}>
                         <Route path="/pro" element={<Pricing />} />
-                        {/* Alias kept for all existing upgrade buttons and deep links. */}
-                        <Route path="/pricing" element={<Pricing />} />
+                        {/* Canonical redirect: all pricing entries land on /pro */}
+                        <Route path="/pricing" element={<CanonicalPageRedirect />} />
                         <Route path="/payment-result" element={<PaymentResult />} />
                         <Route path="/creator" element={<CreatorPage />} />
                         <Route path="/creador" element={<CreatorPage />} />

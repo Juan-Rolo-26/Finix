@@ -41,7 +41,7 @@ export function TopLosersCard({
                     <div>
                         <h3 className="text-[14.5px] font-bold tracking-tight text-foreground">Peores rendimientos</h3>
                         {isStale && (
-                            <p className="text-[10.5px] font-medium text-muted-foreground/70">
+                            <p className="text-[10.5px] font-medium text-muted-foreground">
                                 Último cierre {date ? `(${date})` : ''}
                             </p>
                         )}
@@ -116,12 +116,6 @@ export function TopLosersCard({
                     <div className="space-y-0.5 flex-1 flex flex-col justify-between min-h-0">
                         {items.slice(0, 5).map((item, index) => {
                             const rank = item.rank || index + 1;
-                            const volFormatted = item.volume >= 1_000_000
-                                ? `${(item.volume / 1_000_000).toFixed(1)}M`
-                                : item.volume >= 1_000
-                                    ? `${(item.volume / 1_000).toFixed(1)}K`
-                                    : item.volume.toLocaleString();
-
                             const percentFormatted = item.changePercent > 0
                                 ? `-${item.changePercent.toFixed(2)}%`
                                 : `${item.changePercent.toFixed(2)}%`;
@@ -131,40 +125,37 @@ export function TopLosersCard({
                                     key={item.ticker}
                                     type="button"
                                     onClick={() => navigate(`/market?symbol=NASDAQ:${item.ticker}`)}
-                                    className="w-full flex-1 flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-transparent hover:bg-muted/50 transition-all group text-left cursor-pointer bg-transparent"
+                                    className="w-full flex-1 flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border border-transparent hover:bg-muted/50 transition-all group text-left cursor-pointer bg-transparent"
                                 >
-                                    {/* Left: Rank + Logo + Ticker/Name */}
-                                    <div className="flex items-center gap-2.5 min-w-0">
+                                    {/* Left: Rank + Logo + Ticker/Name (reserved min width) */}
+                                    <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                                         <span
                                             className="text-[13px] font-black w-4 text-center flex-shrink-0"
-                                            style={{ color: rank <= 3 ? 'hsl(0 72% 58%)' : 'hsl(var(--muted-foreground) / 0.65)' }}
+                                            style={{ color: rank <= 3 ? 'hsl(0 72% 58%)' : 'hsl(var(--muted-foreground))' }}
                                         >
                                             {rank}
                                         </span>
 
                                         <AssetLogoImg src={item.logoUrl} ticker={item.ticker} name={item.companyName} />
 
-                                        <div className="min-w-0 pr-1">
-                                            <p className="text-[14px] font-bold leading-tight group-hover:text-rose-400 transition-colors truncate">
+                                        <div className="min-w-0 flex-1 pr-1">
+                                            <p className="text-[13.5px] font-bold leading-tight group-hover:text-rose-400 transition-colors break-words">
                                                 {item.ticker}
                                             </p>
-                                            <p className="text-[11.5px] font-medium text-muted-foreground/70 truncate">
+                                            <p className="text-[11px] font-medium text-muted-foreground break-words" title={item.companyName || item.ticker}>
                                                 {item.companyName || item.ticker}
                                             </p>
                                         </div>
                                     </div>
 
-                                    {/* Right: Price + Volume + Percentage */}
-                                    <div className="text-right flex-shrink-0">
-                                        <p className="text-[14px] font-bold num text-foreground">
+                                    {/* Right: Price + Percentage (compact stack) */}
+                                    <div className="text-right flex-shrink-0 flex flex-col items-end justify-center min-w-[70px]">
+                                        <p className="text-[13px] font-bold num text-foreground leading-tight">
                                             {formatCurrency(item.price, 'USD')}
                                         </p>
-                                        <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                                            <span className="text-[11px] font-medium text-muted-foreground/60 num">
-                                                {volFormatted}
-                                            </span>
+                                        <div className="flex items-center justify-end gap-1 mt-0.5">
                                             <div
-                                                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[11px] font-extrabold num shadow-2xs"
+                                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10.5px] font-extrabold num shadow-2xs"
                                                 style={{
                                                     background: 'hsl(0 72% 55% / 0.14)',
                                                     color: 'hsl(0 72% 62%)',

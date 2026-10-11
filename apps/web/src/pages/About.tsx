@@ -171,8 +171,8 @@ export default function About() {
 
                         {/* ── Footer ── */}
                         <footer className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-                            <p>© 2026 Finix Network Inc. Todos los derechos reservados.</p>
-                            <div className="flex items-center gap-4">
+                            <p>© {new Date().getFullYear()} Finix. Todos los derechos reservados.</p>
+                            <div className="flex flex-wrap items-center justify-center gap-4">
                                 <a href="https://t.me/Finixcomunidad" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors font-medium text-sky-400">Telegram</a>
                                 <a href="https://instagram.com/finixarg_" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors font-medium text-pink-400">Instagram</a>
                                 <Link to="/terms" className="hover:text-foreground transition-colors">Términos</Link>

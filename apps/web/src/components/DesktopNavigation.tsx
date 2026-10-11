@@ -10,6 +10,7 @@ import {
     Check,
     ChevronDown,
     Flame,
+    GraduationCap,
     HelpCircle,
     LogOut,
     MessageSquare,
@@ -40,6 +41,7 @@ import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { cn } from '@/lib/utils';
 import { InvestorStreakPill } from '@/components/common/InvestorStreakPill';
 import { useInvestorStreak } from '@/hooks/useInvestorStreak';
+import { isWatchlistEnabled } from '@/lib/featureFlags';
 
 // Keep aliases in the same navigation group as their canonical Finix route.
 function sectionPath(path: string) {
@@ -53,6 +55,7 @@ function sectionPath(path: string) {
 }
 
 export function hasDesktopPageHero(path: string) {
+    if (!isWatchlistEnabled() && sectionPath(path) === '/market/seguimiento') return false;
     return sectionPath(path) === '/market/seguimiento' || path === '/news';
 }
 
@@ -102,6 +105,13 @@ const TOOLS_LIST = [
         path: '/mercado/mejores-rendimientos',
         icon: Flame,
         accent: 'text-orange-500 bg-orange-500/10 border-orange-500/25 group-hover:bg-orange-500/20 group-hover:border-orange-500/40',
+    },
+    {
+        title: 'Academia Educativa',
+        description: 'Biblioteca integral de conceptos, guías interactivas y rutas de aprendizaje.',
+        path: '/educativa',
+        icon: GraduationCap,
+        accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/40',
     },
 ];
 
@@ -167,7 +177,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                             <span className="desktop-tools-menu__label-pill">Finix Tools</span>
                                         </div>
                                         <div className="desktop-tools-menu__grid">
-                                            {TOOLS_LIST.map(tool => {
+                                            {TOOLS_LIST.filter(tool => tool.path !== '/market/seguimiento' || isWatchlistEnabled()).map(tool => {
                                                 const IconComponent = tool.icon;
                                                 return (
                                                     <DropdownMenuItem key={tool.path} asChild>
@@ -248,9 +258,17 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                         >
                             Noticias
                         </Link>
+                        <Link
+                            to="/educativa"
+                            className="hidden xl:inline-flex"
+                            aria-current={path.startsWith('/educativa') ? 'page' : undefined}
+                        >
+                            Educativa
+                        </Link>
                         {(hasCommunityAccess(user) || freeAccess) && (
                             <Link
                                 to="/comunidades"
+                                className="hidden xl:inline-flex"
                                 aria-current={path === '/comunidades' || path.startsWith('/comunidades/') ? 'page' : undefined}
                             >
                                 Comunidades
@@ -364,9 +382,9 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                             </div>
                         </>
                     ) : (
-                        <div className="desktop-header__actions desktop-header__actions--guest flex items-center gap-3">
+                        <div className="desktop-header__actions desktop-header__actions--guest flex items-center gap-2.5 sm:gap-3">
                             <Link to="/pricing#planes" className="desktop-plan-link text-sm font-semibold px-2 py-1 text-muted-foreground hover:text-foreground transition-colors">Planes</Link>
-                            <Link to="/login" className="desktop-plan" title="Iniciar sesión">Iniciar sesión</Link>
+                            <Link to="/login" className="desktop-auth-login" title="Iniciar sesión">Iniciar sesión</Link>
                         </div>
                     )}
                 </div>

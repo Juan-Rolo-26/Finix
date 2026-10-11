@@ -1,0 +1,51 @@
+[
+  {
+    "route": "terms",
+    "notes": [
+      "[Razón social pendiente de configuración]",
+      "[Nota para revisión legal: Completar con razón social, CUIT/CUIL o número de registro, domicilio legal y jurisdicción antes de publicar.]",
+      "[Razón social pendiente de configuración]",
+      "[Nota para revisión legal: Esta cláusula debe adaptarse a los límites que la legislación argentina y de cada jurisdicción aplicable establece para las exclusiones de responsabilidad en contratos con consumidores.]",
+      "[Jurisdicción pendiente de configuración]",
+      "[Nota para revisión legal: Definir jurisdicción aplicable, fuero competente y normas de defensa del consumidor relevantes para Argentina y para usuarios de otros países. Considerar la Ley 24.240 de Defensa del Consumidor.]",
+      "[Completar con domicilio legal y datos de contacto formales cuando estén disponibles.]"
+    ],
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "route": "privacy",
+    "notes": [
+      "[Razón social pendiente de configuración]",
+      "[Completar con CUIT/CUIL, domicilio legal y datos de contacto del Delegado de Protección de Datos si corresponde, antes de publicar.]",
+      "[Nota para revisión legal: Adaptar la base legal a la Ley 25.326 de Protección de Datos Personales de Argentina y a las normativas aplicables en otros países donde el servicio esté disponible.]",
+      "[Nota para revisión legal: Identificar los países donde cada proveedor procesa datos y las salvaguardias contractuales aplicables.]",
+      "[Completar con domicilio legal y datos de contacto formales cuando estén disponibles.]"
+    ],
+    "width": 320,
+    "scrollWidth": 320,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  },
+  {
+    "route": "terms",
+    "notes": [
+      "[Razón social pendiente de configuración]",
+      "[Nota para revisión legal: Completar con razón social, CUIT/CUIL o número de registro, domicilio legal y jurisdicción antes de publicar.]",
+      "[Razón social pendiente de configuración]",
+      "[Nota para revisión legal: Esta cláusula debe adaptarse a los límites que la legislación argentina y de cada jurisdicción aplicable establece para las exclusiones de responsabilidad en contratos con consumidores.]",
+      "[Jurisdicción pendiente de configuración]",
+      "[Nota para revisión legal: Definir jurisdicción aplicable, fuero competente y normas de defensa del consumidor relevantes para Argentina y para usuarios de otros países. Considerar la Ley 24.240 de Defensa del Consumidor.]",
+      "[Completar con domicilio legal y datos de contacto formales cuando estén disponibles.]"
+    ],
+    "width": 390,
+    "scrollWidth": 390,
+    "theme": "light",
+    "bottom": true,
+    "errors": []
+  }
+]

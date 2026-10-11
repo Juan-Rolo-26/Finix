@@ -1,3 +1,4 @@
+import type { DataReference } from './DataReferenceContext';
 export interface PremarketAsset {
     id: string;
     symbol: string;
@@ -17,7 +18,9 @@ export interface PremarketAsset {
 }
 
 export interface PremarketData {
-    updatedAt: string;
+    updatedAt: string | null;
+    dataContext?: DataReference;
+    refreshTime?: string;
     isFrozenPremarket?: boolean;
     session: {
         status: 'pre-market' | 'regular' | 'post-market' | 'closed';

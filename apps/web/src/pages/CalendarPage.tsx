@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
     Calendar as CalendarIcon,
     Loader2,
@@ -18,7 +18,7 @@ import {
     ListFilter,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import { formatFinancialAmount, financialNumber, isVisibleEarnings, normalizeEarnings, formatEconomicEventDescription, formatEconomicEventTitle, formatEconomicEventSource } from '@finix/shared';
+import { formatFinancialAmount, normalizeEconomicSurprise, financialNumber, isVisibleEarnings, normalizeEarnings, formatEconomicEventDescription, formatEconomicEventTitle, formatEconomicEventSource } from '@finix/shared';
 import { useAuthStore, isProUser } from '@/stores/authStore';
 import { ProGate } from '@/components/ProGate';
 import { AssetLogoImg } from '@/components/TopGainersCard';
@@ -185,11 +185,11 @@ function EarningsMetric({ label, actual, estimate, surprise, amount = false }: {
 }) {
     const value = actual ?? estimate;
     if (value === undefined) return null;
-    const format = amount ? formatFinancialAmount : (number: number) => '$' + number.toFixed(2);
+    const format = amount ? (value: number) => formatFinancialAmount(value).replace('$', '').replace('T', ' billones').replace('B', ' mil millones').replace('M', ' millones').replace('K', ' miles') : (value: number) => value.toFixed(2);
     const tone = surprise === undefined ? '' : surprise >= 0 ? 'calendar-positive' : 'calendar-negative';
     return (
         <div>
-            <dt>{label}{actual === undefined ? amount ? ' estimada' : ' estimado' : ''}</dt>
+            <dt>{label}{amount ? ' (moneda no informada)' : ' (por acción; moneda no informada)'}{actual === undefined ? amount ? ' estimada' : ' estimado' : ''}</dt>
             <dd className={'calendar-metric-primary ' + tone}>{format(value)}</dd>
             {actual !== undefined && estimate !== undefined && (
                 <dd className="calendar-metric-detail">Est. {format(estimate)}</dd>
@@ -466,7 +466,10 @@ export default function CalendarPage() {
                     centered
                     description={
                         <span className="calendar-subtitle">
-                            Economía, balances de EE. UU. y dividendos del S&amp;P 500.
+                            Economía, balances de EE. UU. y dividendos del S&amp;P 500.{' '}
+                            <Link to="/educativa/macroeconomia/inflacion-y-tasas-de-interes" className="text-primary hover:underline font-semibold inline-flex items-center gap-1">
+                                <span>Guía macro</span> &rarr;
+                            </Link>
                             <span>
                                 <Clock size={15} aria-hidden="true" /> Hora local:{' '}
                                 {userTimezoneShort}
@@ -683,7 +686,7 @@ export default function CalendarPage() {
                                     </span>
                                 </div>
                                 <div className="market-grid calendar-event-grid">
-                                    {day.economic.map((event) => {
+                                    {day.economic.map(normalizeEconomicSurprise).map((event) => {
                                         const impact = getImpactBadge(
                                             event.impactScore ?? event.marketImpactScore,
                                             event.importance,
@@ -736,7 +739,7 @@ export default function CalendarPage() {
                                                                     {event.actualValue}
                                                                     {event.unit
                                                                         ? ' ' + event.unit
-                                                                        : ''}
+                                                                        : ' (unidad no informada)'}
                                                                 </dd>
                                                             </div>
                                                         )}
@@ -749,7 +752,7 @@ export default function CalendarPage() {
                                                                         event.forecastValue}
                                                                     {event.unit
                                                                         ? ' ' + event.unit
-                                                                        : ''}
+                                                                        : ' (unidad no informada)'}
                                                                 </dd>
                                                             </div>
                                                         )}
@@ -760,13 +763,13 @@ export default function CalendarPage() {
                                                                     {event.previousValue}
                                                                     {event.unit
                                                                         ? ' ' + event.unit
-                                                                        : ''}
+                                                                        : ' (unidad no informada)'}
                                                                 </dd>
                                                             </div>
                                                         )}
                                                         {event.surprise != null && (
                                                             <div>
-                                                                <dt>Sorpresa</dt>
+                                                                <dt title="Actual menos estimado, en la unidad del evento; una diferencia de porcentajes se expresa en puntos porcentuales.">Sorpresa (actual − estimado)</dt>
                                                                 <dd
                                                                     className={
                                                                         event.surprise > 0
@@ -777,8 +780,8 @@ export default function CalendarPage() {
                                                                     {event.surprise > 0 ? '+' : ''}
                                                                     {event.surprise}
                                                                     {event.unit
-                                                                        ? ' ' + event.unit
-                                                                        : ''}
+                                                                        ? event.unit === '%' ? ' pp' : ' ' + event.unit
+                                                                        : ' (unidad no informada)'}
                                                                 </dd>
                                                             </div>
                                                         )}

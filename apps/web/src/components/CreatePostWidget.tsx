@@ -1,3 +1,4 @@
+import AccountRequired from '@/components/auth/AccountRequired';
 import { useState, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useAuthStore } from '../stores/authStore';
@@ -69,7 +70,7 @@ export default function CreatePostWidget({
     };
 
     const handleCreatePost = async () => {
-        if (!canPost) return;
+        if (!canPost || !useAuthStore.getState().user) return;
         setIsPosting(true);
         try {
             let mediaUrls: any[] = [];
@@ -114,6 +115,8 @@ export default function CreatePostWidget({
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCreatePost();
     };
+
+    if (!user) return <AccountRequired action={isReply ? 'responder' : 'publicar'} />;
 
     if (isReply) {
         return (
@@ -214,11 +217,11 @@ export default function CreatePostWidget({
                 {/* Bottom toolbar */}
                 <div className="flex flex-wrap items-center justify-between gap-2 px-2 sm:px-4 py-2 sm:py-2.5 border-t" style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
                     {/* Left tools */}
-                    <div className="flex items-center gap-0.5 sm:gap-1">
+                    <div className="flex flex-wrap items-center gap-0.5 sm:gap-1">
                         <input type="file" ref={fileRef} className="hidden" accept="image/*,video/*" onChange={handleImageSelect} />
-                        <ToolBtn icon={<ImageIcon className="w-4 h-4" />} label="Media" onClick={() => fileRef.current?.click()} />
-                        <ToolBtn icon={<BarChart2 className="w-4 h-4" />} label="Chart" onClick={() => { setContent(c => c + ' $'); textRef.current?.focus(); }} />
-                        <ToolBtn icon={<Hash className="w-4 h-4" />} label="Tag" onClick={() => { setContent(c => c + ' #'); textRef.current?.focus(); }} />
+                        <ToolBtn icon={<ImageIcon className="w-4 h-4" />} label="Imagen o video" onClick={() => fileRef.current?.click()} />
+                        <ToolBtn icon={<BarChart2 className="w-4 h-4" />} label="Activo" onClick={() => { setContent(c => c + ' $'); textRef.current?.focus(); }} />
+                        <ToolBtn icon={<Hash className="w-4 h-4" />} label="Etiqueta" onClick={() => { setContent(c => c + ' #'); textRef.current?.focus(); }} />
                         <ToolBtn icon={<Smile className="w-4 h-4" />} label="Emoji" onClick={() => { setContent(c => c + ' 🚀'); textRef.current?.focus(); }} />
                     </div>
 

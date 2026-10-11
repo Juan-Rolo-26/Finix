@@ -40,7 +40,7 @@ const DialogContent = React.forwardRef<
             ref={ref}
             className={cn(
                 // Layout
-                "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-lg " +
+                "fixed left-[50%] top-[50%] z-50 grid w-[calc(100vw_-_2rem)] max-w-lg " +
                 "max-h-[88vh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] " +
                 "gap-4 " +
                 // Surface

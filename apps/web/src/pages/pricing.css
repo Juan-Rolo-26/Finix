@@ -85,10 +85,7 @@
     margin-bottom: 16px;
 }
 .pricing-heading-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, #10b981 60%, #34d399 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: hsl(var(--primary));
 }
 .pricing-heading > p {
     color: hsl(var(--muted-foreground));
@@ -299,6 +296,7 @@
 }
 .pricing-plan__price {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     justify-content: center;
     gap: 4px;
@@ -337,7 +335,10 @@
     justify-content: center;
     gap: 8px;
     width: 100%;
-    height: 48px;
+    min-height: 48px;
+    height: auto;
+    padding: 12px 16px;
+    white-space: normal;
     border-radius: 9999px;
     font-size: 14px;
     font-weight: 700;
@@ -352,6 +353,7 @@
     transform: translateY(-1px);
 }
 .pricing-button svg {
+    flex-shrink: 0;
     transition: transform 0.18s ease;
 }
 .pricing-button:hover:not(:disabled) svg {
@@ -419,11 +421,11 @@
     color: hsl(var(--foreground) / 0.9);
 }
 .pricing-feature-item--disabled {
-    color: hsl(var(--muted-foreground) / 0.55);
+    color: hsl(var(--muted-foreground));
 }
 .pricing-feature-item--disabled .pricing-feature-text {
     text-decoration: line-through;
-    color: hsl(var(--muted-foreground) / 0.55);
+    color: hsl(var(--muted-foreground));
 }
 .pricing-feature-icon {
     display: flex;
@@ -664,3 +666,19 @@
         padding: 44px var(--desktop-gutter, 24px) 80px;
     }
 }
+
+.pricing-plan__amount--unknown { font-size: 24px; line-height: 1.3; }
+.pricing-comparison-mobile { display: none; }
+@media (max-width: 767px) {
+    .pricing-table-wrap { display: none; }
+    .pricing-comparison-mobile { display: grid; gap: 16px; }
+    .pricing-comparison-benefit { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 16px; padding: 16px; }
+    .pricing-comparison-benefit h3 { font-weight: 700; margin-bottom: 12px; }
+    .pricing-comparison-benefit dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .pricing-comparison-benefit dt { font-size: 12px; font-weight: 600; color: hsl(var(--muted-foreground)); margin-bottom: 8px; overflow-wrap: anywhere; }
+    .pricing-comparison-benefit dd { font-size: 14px; overflow-wrap: anywhere; }
+}
+
+/* Contrast measured against the painted backgrounds in both themes. */
+.pricing-popular-badge, .pricing-button--pro { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: hsl(var(--primary)); }
+.pricing-plan__price-note, .dark .pricing-plan__price-note { color: hsl(var(--muted-foreground)); }

@@ -103,7 +103,7 @@ function FeedTabs({ active, onChange }: { active: FeedTab; onChange: (t: FeedTab
                         key={tab.key}
                         type="button"
                         onClick={() => onChange(tab.key)}
-                        className="group relative flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full text-[12.5px] sm:text-[13px] font-semibold transition-all select-none flex-1 justify-center whitespace-nowrap cursor-pointer"
+                        className="group relative flex items-center gap-2 min-h-[44px] px-3 sm:px-4 py-2.5 rounded-full text-[12.5px] sm:text-[13px] font-semibold transition-all select-none flex-1 justify-center whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         style={{
                             color: isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
                         }}
@@ -279,7 +279,7 @@ function HeadlinesCard({
                 <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
                     <Newspaper className="w-8 h-8 text-muted-foreground/30 mb-2" />
                     <p className="text-[13px] font-semibold text-muted-foreground">Sin titulares publicados</p>
-                    <p className="text-[11.5px] text-muted-foreground/60 mt-0.5">El contenido se publica desde el panel editorial.</p>
+                    <p className="text-[11.5px] text-muted-foreground mt-0.5">El contenido se publica desde el panel editorial.</p>
                     <button
                         onClick={() => onNavigate('/news')}
                         className="mt-3 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-secondary/80 hover:bg-secondary text-foreground transition-colors"
@@ -319,10 +319,10 @@ function HeadlinesCard({
                                     >
                                         {item.category}
                                     </span>
-                                    <h4 className="text-[12.5px] font-bold leading-snug group-hover:text-primary transition-colors line-clamp-2 text-foreground">
+                                    <h4 className="text-[12.5px] font-bold leading-snug group-hover:text-primary transition-colors text-foreground">
                                         {item.title}
                                     </h4>
-                                    <span className="text-[11px] font-medium text-muted-foreground/70 shrink-0">
+                                    <span className="text-[11px] font-medium text-muted-foreground shrink-0">
                                         {formatHeadlineTime(item.publishedAt)}{item.sourceName ? ` · ${item.sourceName}` : ''}
                                     </span>
                                 </div>
@@ -527,14 +527,14 @@ export default function Dashboard() {
 
 function DashboardFooter() {
     return (
-        <footer className="dashboard-footer flex flex-col items-center justify-center text-center gap-3 px-4 pt-8 pb-8 mt-8 border-t border-border/40 w-full" style={{ color: 'hsl(var(--muted-foreground) / 0.7)' }}>
+        <footer className="dashboard-footer flex flex-col items-center justify-center text-center gap-3 px-4 pt-8 pb-8 mt-8 border-t border-border/40 w-full" style={{ color: 'hsl(var(--muted-foreground))' }}>
             {/* Redes Sociales / Comunidad */}
             <div className="flex items-center justify-center gap-2.5">
                 <a
                     href="https://t.me/Finixcomunidad"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/20 hover:text-sky-300 transition-all text-xs font-semibold shadow-2xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-400 hover:bg-sky-500/20 hover:text-sky-300 transition-all text-xs font-semibold shadow-2xs cursor-pointer"
                     title="Comunidad oficial en Telegram"
                 >
                     <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
@@ -546,7 +546,7 @@ function DashboardFooter() {
                     href="https://instagram.com/finixarg_"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 hover:bg-pink-500/20 hover:text-pink-300 transition-all text-xs font-semibold shadow-2xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-700 dark:text-pink-400 hover:bg-pink-500/20 hover:text-pink-300 transition-all text-xs font-semibold shadow-2xs cursor-pointer"
                     title="Instagram oficial"
                 >
                     <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
@@ -559,17 +559,17 @@ function DashboardFooter() {
             {/* Enlaces de información y legales */}
             <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs font-medium text-center">
                 <Link to="/about" className="hover:text-primary transition-colors">Sobre Finix</Link>
-                <span className="opacity-30">·</span>
+                <span aria-hidden="true" className="opacity-30">·</span>
                 <Link to="/help" className="hover:text-primary transition-colors">Ayuda</Link>
-                <span className="opacity-30">·</span>
+                <span aria-hidden="true" className="opacity-30">·</span>
                 <Link to="/terms" className="hover:text-primary transition-colors">Términos</Link>
-                <span className="opacity-30">·</span>
+                <span aria-hidden="true" className="opacity-30">·</span>
                 <Link to="/privacy" className="hover:text-primary transition-colors">Privacidad</Link>
-                <span className="opacity-30">·</span>
+                <span aria-hidden="true" className="opacity-30">·</span>
                 <Link to="/cookies" className="hover:text-primary transition-colors">Cookies</Link>
             </div>
 
-            <div className="w-full text-center text-xs opacity-50 font-medium">© 2026 Finix Network Inc.</div>
+            <div className="w-full text-center text-xs opacity-50 font-medium">© {new Date().getFullYear()} Finix.</div>
         </footer>
     );
 }

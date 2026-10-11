@@ -33,6 +33,15 @@ export function earningsSurprise(actual: unknown, estimate: unknown): number | u
     return financialNumber((result - forecast) / Math.abs(forecast) * 100);
 }
 
+/** Economic surprise is a difference in the event's original unit, not a percent. */
+export function normalizeEconomicSurprise<T extends { actualValue?: unknown; consensusValue?: unknown; forecastValue?: unknown; surprise?: unknown; surprisePercent?: unknown }>(event: T) {
+    const actual = financialNumber(event.actualValue);
+    const estimate = financialNumber(event.consensusValue ?? event.forecastValue);
+    const surprise = actual === undefined || estimate === undefined ? undefined : Number((actual - estimate).toFixed(4));
+    const surprisePercent = actual === undefined || estimate === undefined || estimate === 0 ? undefined : Number(((actual - estimate) / Math.abs(estimate) * 100).toFixed(4));
+    return { ...event, surprise, surprisePercent };
+}
+
 export function normalizeEarnings<T extends EarningsFinancialData>(event: T): T {
     const epsEstimate = financialNumber(event.epsEstimate);
     const revenueEstimate = financialNumber(event.revenueEstimate);

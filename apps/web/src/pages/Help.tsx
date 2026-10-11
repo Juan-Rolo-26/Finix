@@ -1,3 +1,4 @@
+import WatchlistLimitsSummary from '@/components/watchlist/WatchlistLimitsSummary';
 import { useState, useMemo, useEffect } from 'react';
 import { Search, HelpCircle, Mail, ChevronRight, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -18,6 +19,7 @@ interface FaqItem {
 }
 
 const FAQS: FaqItem[] = [
+    { id: 'pro-seguimiento-limites', categoryId: 'pro', question: '¿Cuántas listas y activos permite Seguimiento?', answer: <WatchlistLimitsSummary /> },
     // ── FINIX ──────────────────────────────────────────────────────────────
     {
         id: 'f-01', categoryId: 'finix',

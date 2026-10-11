@@ -1,0 +1,130 @@
+[
+  {
+    "case": "lista",
+    "theme": "light",
+    "width": 320,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Verde Esmeralda",
+        "w": 48.39999771118164,
+        "h": 48.4000244140625
+      },
+      {
+        "name": "Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 320,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "light",
+    "width": 320,
+    "clipped": [
+      "Corporación internacional de servicios financieros y tecnológicos",
+      "Referencia de la sesión de mercado anterior expresada en dólares estadounidenses"
+    ]
+  },
+  {
+    "case": "lista",
+    "theme": "dark",
+    "width": 320,
+    "initial": true,
+    "sizes": [
+      {
+        "name": "Verde Esmeralda",
+        "w": 48.39999771118164,
+        "h": 48.4000244140625
+      },
+      {
+        "name": "Azul",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Púrpura",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Ámbar",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Rosa",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cian",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "name": "Cancelar",
+        "w": 98,
+        "h": 44
+      },
+      {
+        "name": "Crear lista",
+        "w": 107,
+        "h": 44
+      },
+      {
+        "name": "Cerrar",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "scrollWidth": 320,
+    "bottom": true
+  },
+  {
+    "case": "leyenda",
+    "theme": "dark",
+    "width": 320,
+    "clipped": [
+      "Corporación internacional de servicios financieros y tecnológicos",
+      "Referencia de la sesión de mercado anterior expresada en dólares estadounidenses"
+    ]
+  }
+]

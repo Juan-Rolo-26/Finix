@@ -11,6 +11,7 @@ import { apiFetch } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { Bookmark, Plus, Check, Loader2 } from 'lucide-react';
 import SymbolLogo from '@/components/SymbolLogo';
+import { isWatchlistEnabled } from '@/lib/featureFlags';
 
 interface AddToWatchlistModalProps {
     symbol: string;
@@ -21,7 +22,7 @@ interface AddToWatchlistModalProps {
 }
 
 export default function AddToWatchlistModal(props: AddToWatchlistModalProps) {
-    if (!props.isOpen) return null;
+    if (!props.isOpen || !isWatchlistEnabled()) return null;
     return <WatchlistMembershipForm key={props.symbol.trim().toUpperCase()} {...props} />;
 }
 

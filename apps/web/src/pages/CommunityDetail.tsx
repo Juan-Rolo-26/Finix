@@ -16,6 +16,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import ReportModal from '@/components/ReportModal';
 import CommunityPaymentModal from '@/components/CommunityPaymentModal';
+import { ImagePreviewButton } from '@/components/common/ImagePreviewButton';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -381,7 +382,7 @@ function CreatePost({ communityId, plans, onCreated }: {
                             {image?.type.startsWith('video/') ? (
                                 <video src={preview} controls className="h-32 rounded-xl object-contain border border-border/30 bg-black/5" />
                             ) : (
-                                <img src={preview} alt="Preview" className="h-32 rounded-xl object-cover border border-border/30" />
+                                <img src={preview} alt="Vista previa de imagen adjunta" className="h-32 rounded-xl object-cover border border-border/30" />
                             )}
                             <button onClick={handleRemoveImage} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive rounded-full flex items-center justify-center text-white">
                                 <X className="w-3 h-3" />
@@ -641,6 +642,8 @@ export default function CommunityDetail(props?: {
     const [communityError, setCommunityError] = useState('');
     const [actionError, setActionError] = useState('');
     const [reloadKey, setReloadKey] = useState(0);
+    const [bannerError, setBannerError] = useState(false);
+    const [imageError, setImageError] = useState(false);
 
     useEffect(() => {
         if (!props?.community && paramId) {
@@ -776,8 +779,8 @@ export default function CommunityDetail(props?: {
             <div className="flex-shrink-0 relative">
                 {/* Banner */}
                 <div className="h-36 sm:h-52 relative overflow-hidden bg-slate-950">
-                    {community.bannerUrl ? (
-                        <img src={resolveMediaUrl(community.bannerUrl)} alt="" className="w-full h-full object-cover" />
+                    {community.bannerUrl && !bannerError ? (
+                        <img src={resolveMediaUrl(community.bannerUrl)} alt={`Banner de ${community.name}`} className="w-full h-full object-cover" onError={() => setBannerError(true)} />
                     ) : (
                         <div
                             className="w-full h-full relative"
@@ -805,8 +808,8 @@ export default function CommunityDetail(props?: {
                         {/* Avatar */}
                         <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 relative border-4 border-background"
                             style={{ background: 'linear-gradient(135deg, #064e3b 0%, #022c22 100%)' }}>
-                            {community.imageUrl ? (
-                                <img src={resolveMediaUrl(community.imageUrl)} alt="" className="w-full h-full object-cover" />
+                            {community.imageUrl && !imageError ? (
+                                <img src={resolveMediaUrl(community.imageUrl)} alt={`Imagen de ${community.name}`} className="w-full h-full object-contain" onError={() => setImageError(true)} />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-2xl sm:text-3xl font-black shadow-inner"
                                     style={{
@@ -851,6 +854,10 @@ export default function CommunityDetail(props?: {
                         </div>
                     </div>
 
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {community.bannerUrl && <ImagePreviewButton src={resolveMediaUrl(community.bannerUrl)} alt={`Banner de ${community.name}`} label="Ver banner completo" />}
+                        {community.imageUrl && <ImagePreviewButton src={resolveMediaUrl(community.imageUrl)} alt={`Imagen de ${community.name}`} label="Ver imagen de la comunidad completa" />}
+                    </div>
                     <div className="mt-2.5">
                         <h1 className="font-black text-lg sm:text-xl leading-tight break-words">{community.name}</h1>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -1061,10 +1068,10 @@ export default function CommunityDetail(props?: {
                                             </Avatar>
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-1">
-                                                    <span className="font-bold text-xs truncate text-foreground">@{community.creator.username}</span>
+                                                    <span className="min-w-0 break-words font-bold text-xs text-foreground">@{community.creator.username}</span>
                                                     {community.creator.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />}
                                                 </div>
-                                                <span className="text-[10px] text-muted-foreground block truncate">
+                                                <span className="text-xs text-muted-foreground block break-words">
                                                     {community.creator.title || 'Creador & Administrador'}
                                                 </span>
                                             </div>
@@ -1154,9 +1161,9 @@ export default function CommunityDetail(props?: {
                                             <FileText className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-semibold text-sm truncate">{r.title}</p>
+                                            <p className="font-semibold text-sm break-words">{r.title}</p>
                                             {r.description && (
-                                                <p className="text-[11px] truncate"
+                                                <p className="text-xs break-words"
                                                     style={{ color: 'hsl(var(--muted-foreground))' }}>{r.description}</p>
                                             )}
                                         </div>

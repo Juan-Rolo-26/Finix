@@ -22,14 +22,21 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────────
-       THREE-COLUMN GRID
+       DASHBOARD GRID — 2 columns between 1024-1279px, 3 columns at ≥1280px
     ───────────────────────────────────────────────────────────────────── */
     .finix-desktop-shell .desktop-social-grid {
         display: grid;
-        grid-template-columns: minmax(0, 2.2fr) minmax(220px, 0.85fr) minmax(220px, 0.85fr);
-        gap: clamp(12px, 1.2vw, 20px);
-        align-items: stretch;
+        grid-template-columns: minmax(0, 1.2fr) minmax(320px, 390px);
+        gap: clamp(14px, 1.4vw, 20px);
+        align-items: start;
         width: 100%;
+    }
+
+    @media (min-width: 1280px) {
+        .finix-desktop-shell .desktop-social-grid {
+            grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr) minmax(280px, 1fr);
+            align-items: stretch;
+        }
     }
 
     .finix-desktop-shell .desktop-social-feed {
@@ -45,21 +52,40 @@
     .finix-desktop-shell .desktop-social-sidebar {
         display: flex;
         flex-direction: column;
-        grid-row: 1;
-        position: sticky;
         top: 68px;
-        height: calc(100dvh - var(--dashboard-viewport-offset));
         min-height: 0;
         min-width: 0;
         width: 100%;
         max-width: 100%;
-        gap: 10px;
+        gap: 12px;
         padding: 0;
-        overflow: hidden;
     }
 
-    .finix-desktop-shell .desktop-social-sidebar--left  { grid-column: 2; }
-    .finix-desktop-shell .desktop-social-sidebar--right { grid-column: 3; }
+    @media (max-width: 1279px) {
+        .finix-desktop-shell .desktop-social-sidebar--left  {
+            grid-column: 2;
+            grid-row: 1;
+            position: static;
+            height: auto;
+        }
+        .finix-desktop-shell .desktop-social-sidebar--right {
+            grid-column: 2;
+            grid-row: 2;
+            position: static;
+            height: auto;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .finix-desktop-shell .desktop-social-sidebar {
+            position: sticky;
+            grid-row: 1;
+            height: calc(100dvh - var(--dashboard-viewport-offset));
+            overflow: hidden;
+        }
+        .finix-desktop-shell .desktop-social-sidebar--left  { grid-column: 2; }
+        .finix-desktop-shell .desktop-social-sidebar--right { grid-column: 3; }
+    }
 
     /* ─────────────────────────────────────────────────────────────────────
        SIDEBAR CARDS — Evenly fill available height

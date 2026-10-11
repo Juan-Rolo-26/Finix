@@ -41,7 +41,8 @@ export interface ValueCreationPayload {
     items: ValueCreationItem[];
 }
 
-const CACHE_KEY = 'market:value-creation:sp500:v1';
+// Previous snapshots used a magnitude heuristic that scaled low percentages incorrectly.
+const CACHE_KEY = 'market:value-creation:sp500:v2';
 const FRESH_FOR_MS = 12 * 60 * 60 * 1000;
 const STALE_FOR_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -248,7 +249,7 @@ export class ValueCreationService implements OnModuleInit {
                 riskFreeRate: 4.25,
                 equityRiskPremium: 4.5,
                 taxRateFallback: 21,
-                description: 'ROIC menos WACC. WACC estimado mediante CAPM, estructura de capital, coste de deuda e impuesto efectivo; los campos faltantes usan supuestos explícitos y conservadores.',
+                description: 'ROIC de TradingView en porcentaje, último trimestre fiscal (FQ); fecha fiscal exacta no informada por el scanner. No es directamente comparable con ROIC anual (FY) de otros proveedores: pueden usar fórmulas y períodos distintos. Spread = ROIC − WACC, en puntos porcentuales. WACC estimado por Finix mediante CAPM, deuda y tasa de impuesto; combina balance FQ y gastos TTM. Actualizado indica la consulta, no el cierre fiscal. Los campos faltantes usan los supuestos indicados.',
             },
             items,
         };
@@ -256,8 +257,9 @@ export class ValueCreationService implements OnModuleInit {
 
     private normalizePercent(value: number | null): number | null {
         if (value === null || !Number.isFinite(value) || Math.abs(value) > 300) return null;
-        const percent = Math.abs(value) <= 1.5 ? value * 100 : value;
-        return Number(percent.toFixed(2));
+        // TradingView RETURN_ON_INVESTED_CAPITAL is already expressed in percent.
+        // Units depend on the provider contract, never on the value's magnitude.
+        return Number(value.toFixed(2));
     }
 
     private clamp(value: number, min: number, max: number) {

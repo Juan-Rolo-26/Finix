@@ -1,0 +1,50 @@
+[
+  {
+    "route": "terms",
+    "width": 320,
+    "theme": "light",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": []
+  },
+  {
+    "route": "privacy",
+    "width": 320,
+    "theme": "light",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": []
+  },
+  {
+    "route": "cookies",
+    "width": 320,
+    "theme": "light",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": []
+  },
+  {
+    "route": "terms",
+    "width": 320,
+    "theme": "dark",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": []
+  },
+  {
+    "route": "privacy",
+    "width": 320,
+    "theme": "dark",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": []
+  },
+  {
+    "route": "cookies",
+    "width": 320,
+    "theme": "dark",
+    "scrollWidth": 320,
+    "bottom": true,
+    "clipped": []
+  }
+]

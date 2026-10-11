@@ -20,7 +20,17 @@ async function main() {
   ensure(privateRoot !== publicRoot && !privateRoot.startsWith(publicRoot + path.sep), 'Private storage must be outside public uploads');
   if (!(config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET)) ensure(process.env.FINIX_ALLOW_GOOGLE_DISABLED === 'true', 'Google credentials missing; configure them or explicitly set FINIX_ALLOW_GOOGLE_DISABLED=true');
   else ensure(config.GOOGLE_REDIRECT_URI === new URL('/api/auth/google/callback', config.FRONTEND_URL).toString() && config.GOOGLE_REDIRECT_URI.startsWith('https://'), 'Google production callback must match HTTPS frontend /api/auth/google/callback');
-  ensure(config.RESEND_API_KEY || (config.SMTP_PASS && !config.SMTP_PASS.includes('REPLACE')), 'Configure Resend before production authentication');
+  const mailProvider = (config.MAIL_PROVIDER || (config.RESEND_API_KEY ? 'resend' : config.SMTP_HOST ? 'smtp' : '')).trim().toLowerCase();
+  ensure(['resend', 'smtp'].includes(mailProvider), 'Configure MAIL_PROVIDER=resend or smtp for production authentication');
+  if (mailProvider === 'resend') ensure(config.RESEND_API_KEY && !/REPLACE|your_|changeme/i.test(config.RESEND_API_KEY), 'Configure RESEND_API_KEY; SMTP_PASS is not a Resend key');
+  else {
+    ensure(config.SMTP_HOST && !/REPLACE|your_|changeme/i.test(config.SMTP_HOST), 'Configure SMTP_HOST');
+    const smtpPort = Number(config.SMTP_PORT || 587);
+    ensure(Number.isInteger(smtpPort) && smtpPort >= 1 && smtpPort <= 65535, 'SMTP_PORT invalid');
+    ensure(Boolean(config.SMTP_USER) === Boolean(config.SMTP_PASS), 'SMTP_USER and SMTP_PASS must be configured together');
+    ensure(!config.SMTP_SECURE || ['true','false','1','0'].includes(config.SMTP_SECURE.toLowerCase()), 'SMTP_SECURE invalid');
+  }
+  ensure(config.EMAIL_FROM && !/REPLACE|your_|changeme/i.test(config.EMAIL_FROM), 'Configure EMAIL_FROM');
   for (const app of ['web', 'admin']) {
     const filename = process.env[`FINIX_${app.toUpperCase()}_ENV`];
     ensure(filename && fs.existsSync(filename), `Set FINIX_${app.toUpperCase()}_ENV`);

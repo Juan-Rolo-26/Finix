@@ -148,12 +148,13 @@ export function InvestorQuote({
                         className="flex flex-col items-center text-center"
                     >
                         {/* Circular Portrait with soft shadow & ring */}
-                        <div className="relative mb-3 group">
+                        <div className="relative mb-3 group w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-secondary flex items-center justify-center">
+                            <span aria-hidden="true" className="absolute text-lg font-semibold text-muted-foreground">{investor.name.split(' ').map(part => part[0]).slice(0, 2).join('')}</span>
                             <img
                                 src={investor.image}
                                 alt={investor.name}
                                 loading="lazy"
-                                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover shadow-lg ring-4 ring-card border-2 border-border/80 mx-auto transition-transform duration-300 group-hover:scale-105"
+                                className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover shadow-lg ring-4 ring-card border-2 border-border/80 mx-auto transition-transform duration-300 group-hover:scale-105"
                                 onError={(e) => {
                                     e.currentTarget.style.display = 'none';
                                 }}
@@ -164,7 +165,7 @@ export function InvestorQuote({
                         <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mb-1">
                             {investor.name}
                         </h3>
-                        <p className="text-xs sm:text-sm font-medium text-muted-foreground/80 mb-6">
+                        <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-6">
                             {investor.title}
                         </p>
 
@@ -218,4 +219,3 @@ export function InvestorQuote({
         </section>
     );
 }
-

@@ -1,0 +1,18 @@
+[
+  {
+    "width": 390,
+    "theme": "light",
+    "initialInside": false,
+    "backgroundIsolated": false,
+    "returned": false,
+    "realWrites": 0
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "initialInside": false,
+    "backgroundIsolated": false,
+    "returned": false,
+    "realWrites": 0
+  }
+]

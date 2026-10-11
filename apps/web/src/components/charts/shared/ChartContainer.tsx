@@ -5,7 +5,7 @@
  * All specific chart components should be wrapped in ChartContainer.
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Maximize2, Minimize2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ChartSkeleton } from './ChartSkeleton';
@@ -61,6 +61,31 @@ export function ChartContainer({
 }: ChartContainerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const syncFullscreen = () => {
+      const active = document.fullscreenElement === containerRef.current;
+      setIsFullscreen(active);
+      if (!active) fullscreenButtonRef.current?.focus();
+    };
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    return () => document.removeEventListener('fullscreenchange', syncFullscreen);
+  }, []);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (document.fullscreenElement === containerRef.current) void document.exitFullscreen();
+      else {
+        setIsFullscreen(false);
+        fullscreenButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, [isFullscreen]);
 
   const toggleFullscreen = useCallback(async () => {
     if (!allowFullscreen) return;
@@ -103,7 +128,7 @@ export function ChartContainer({
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-border/40 px-5 py-4 sm:px-6 sm:py-5">
         <div className="min-w-0">
-          <h3 className="text-[15px] font-bold tracking-tight text-foreground truncate" id={`chart-title-${title.replace(/\s+/g, '-').toLowerCase()}`}>
+          <h3 className="text-[15px] font-bold tracking-tight text-foreground break-words" id={`chart-title-${title.replace(/\s+/g, '-').toLowerCase()}`}>
             {title}
           </h3>
           {description && (
@@ -120,17 +145,18 @@ export function ChartContainer({
               onClick={onRetry}
               title="Actualizar datos"
               aria-label="Actualizar datos del gráfico"
-              className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-border/50 bg-background/50 text-muted-foreground hover:text-foreground hover:border-border transition-all"
+              className="inline-flex items-center justify-center w-11 h-11 rounded-lg border border-border/50 bg-background/50 text-muted-foreground hover:text-foreground hover:border-border transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
           )}
           {allowFullscreen && (
             <button
+              ref={fullscreenButtonRef}
               onClick={toggleFullscreen}
               title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
               aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
-              className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-border/50 bg-background/50 text-muted-foreground hover:text-foreground hover:border-border transition-all"
+              className="inline-flex items-center justify-center w-11 h-11 rounded-lg border border-border/50 bg-background/50 text-muted-foreground hover:text-foreground hover:border-border transition-all"
             >
               {isFullscreen
                 ? <Minimize2 className="w-3.5 h-3.5" />

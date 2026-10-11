@@ -4,7 +4,7 @@ import {
     Mail, Send, Eye, ImagePlus, Trash2, RefreshCw, Bell, AlertTriangle,
     CheckCircle2, Clock, Search,
     TrendingUp, Smartphone, Monitor, Shield, FileText, ChevronRight,
-    RotateCcw, Sliders, X, Sparkles, Building2, BarChart2
+    RotateCcw, Sliders, X, Sparkles, Building2, BarChart2, Users
 } from 'lucide-react';
 import { adminFetch, readAdminErrorMessage } from '../lib/api';
 import { TradingViewChartWidget } from '../components/TradingViewChartWidget';
@@ -363,13 +363,14 @@ export default function EmailMarketing() {
         setNotice('Vista previa actualizada');
     });
 
-    // Enviar campaña a PRO
+    // Enviar campaña
     const handleSendCampaign = (e: React.FormEvent) => {
         e.preventDefault();
-        const recipientCount = metrics.recipientCount || 0;
+        const activeCount = form.audience === 'ALL' ? (metrics.allCount ?? metrics.recipientCount ?? 0) : (metrics.recipientCount ?? 0);
+        const audienceLabel = form.audience === 'ALL' ? 'usuarios registrados' : 'usuarios PRO';
         const confirmMsg = form.scheduledAt
-            ? `¿Deseas programar el envío para el ${new Date(form.scheduledAt).toLocaleString()} a ${recipientCount} usuarios PRO elegibles?`
-            : `¿Confirmas el envío inmediato a ${recipientCount} usuarios PRO activos con consentimiento?`;
+            ? `¿Deseas programar el envío para el ${new Date(form.scheduledAt).toLocaleString()} a ${activeCount} ${audienceLabel}?`
+            : `¿Confirmas el envío inmediato a ${activeCount} ${audienceLabel} activos?`;
 
         if (!window.confirm(confirmMsg)) return;
 
@@ -649,6 +650,7 @@ export default function EmailMarketing() {
                     {/* Stat Cards */}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
                         {[
+                            { label: 'Destinatarios (Todos)', value: metrics.allCount ?? 0, icon: Users, color: 'text-emerald-400' },
                             { label: 'Destinatarios PRO', value: metrics.recipientCount ?? 0, icon: Shield, color: 'text-blue-400' },
                             { label: 'Emails Enviados', value: metrics.sent ?? 0, icon: CheckCircle2, color: 'text-emerald-400' },
                             { label: 'Envíos Fallidos', value: metrics.failed ?? 0, icon: AlertTriangle, color: 'text-rose-400' },
@@ -1393,6 +1395,53 @@ export default function EmailMarketing() {
                                 </div>
                             </div>
 
+                            {/* Audiencia Destinataria */}
+                            <div className="space-y-1.5">
+                                <label className={labelClass}>Audiencia Destinataria</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setForm(f => ({ ...f, audience: 'ALL' }));
+                                            setHtmlPreview('');
+                                        }}
+                                        className={`p-3 rounded-xl border text-left transition-all ${
+                                            form.audience === 'ALL'
+                                                ? 'border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary'
+                                                : 'border-border/80 bg-background text-muted-foreground hover:border-border'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                                            <Users className="w-3.5 h-3.5 text-primary" />
+                                            Todos los suscriptores
+                                        </div>
+                                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                                            {metrics.allCount ?? 0} suscriptores activos verificados
+                                        </div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setForm(f => ({ ...f, audience: 'PRO' }));
+                                            setHtmlPreview('');
+                                        }}
+                                        className={`p-3 rounded-xl border text-left transition-all ${
+                                            form.audience === 'PRO'
+                                                ? 'border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary'
+                                                : 'border-border/80 bg-background text-muted-foreground hover:border-border'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                                            <Shield className="w-3.5 h-3.5 text-blue-400" />
+                                            Solo Usuarios PRO
+                                        </div>
+                                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                                            {metrics.recipientCount ?? 0} usuarios PRO
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Programación */}
                             <div className="space-y-1">
                                 <label className={labelClass}>
@@ -1425,7 +1474,9 @@ export default function EmailMarketing() {
                                         className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md shadow-primary/20 disabled:opacity-40"
                                     >
                                         <Send className="w-4 h-4" />
-                                        {form.scheduledAt ? 'Programar Despacho' : `Enviar a ${metrics.recipientCount || 0} Usuarios PRO`}
+                                        {form.scheduledAt
+                                            ? 'Programar Despacho'
+                                            : `Enviar a ${form.audience === 'ALL' ? (metrics.allCount ?? 0) : (metrics.recipientCount ?? 0)} Usuarios (${form.audience === 'ALL' ? 'Todos' : 'PRO'})`}
                                     </button>
                                 </div>
                             </div>

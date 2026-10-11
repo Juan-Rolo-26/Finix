@@ -29,7 +29,7 @@ export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) 
             <button
                 type="button"
                 onClick={() => setIsOpen(v => !v)}
-                className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-[11.5px] font-bold border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer select-none shadow-2xs backdrop-blur-xs bg-amber-500/10 hover:bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 ${className}`}
+                className={`inline-flex min-h-11 min-w-11 items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-[11.5px] font-bold border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer select-none shadow-2xs backdrop-blur-xs bg-amber-500/10 hover:bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 ${className}`}
                 title={`Racha Inversora: ${streak} ${streak === 1 ? 'día seguido' : 'días seguidos'}`}
                 aria-label={`Racha Inversora: ${streak} ${streak === 1 ? 'día seguido' : 'días seguidos'}`}
             >

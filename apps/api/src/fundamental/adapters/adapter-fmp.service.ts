@@ -125,13 +125,16 @@ export class AdapterFMPService implements FundamentalProviderAdapter {
         const peRatio =
             toNumber(ratios?.priceToEarningsRatio ?? ratios?.priceEarningsRatio) ??
             toNumber(profile?.pe);
-        const roe = toNumber(ratios?.returnOnEquity) ?? toNumber(keyMetrics?.returnOnEquity ?? keyMetrics?.roe);
-        const roic = toNumber(ratios?.returnOnInvestedCapital) ?? toNumber(keyMetrics?.returnOnInvestedCapital ?? keyMetrics?.roic);
+        const roeRatio = toNumber(ratios?.returnOnEquity) ?? toNumber(keyMetrics?.returnOnEquity ?? keyMetrics?.roe);
+        const roicRatio = toNumber(ratios?.returnOnInvestedCapital) ?? toNumber(keyMetrics?.returnOnInvestedCapital ?? keyMetrics?.roic);
+        // FMP ratios are fractions, normalized once to the percentage contract.
+        const roe = roeRatio === null ? null : roeRatio * 100;
+        const roic = roicRatio === null ? null : roicRatio * 100;
         const debtToEquity =
             toNumber(ratios?.debtToEquityRatio ?? ratios?.debtEquityRatio) ??
             safeRatio(latestBalance?.totalDebt || null, latestBalance?.totalEquity || null);
         const netMargin =
-            toNumber(ratios?.netProfitMargin) ||
+            toNumber(ratios?.netProfitMargin) ??
             safeRatio(latestIncome?.netIncome || null, latestIncome?.revenue || null);
         const freeCashFlow = toNumber(latestCash?.freeCashFlow) || toNumber(keyMetrics?.freeCashFlow);
 
@@ -167,6 +170,12 @@ export class AdapterFMPService implements FundamentalProviderAdapter {
             meta: {
                 sector: profile?.sector || null,
                 currency: profile?.currency || null,
+                roic: {
+                    source: 'fmp', unit: '%',
+                    period: (toNumber(ratios?.returnOnInvestedCapital) !== null ? ratios?.period : keyMetrics?.period) || 'FY',
+                    asOf: (toNumber(ratios?.returnOnInvestedCapital) !== null ? ratios?.date : keyMetrics?.date) || null,
+                    formula: 'Beneficio operativo × (1 − tasa de impuesto) / capital invertido; ratio FMP × 100.',
+                },
             },
         };
     }

@@ -73,6 +73,7 @@ export default function ContactFormSection({
     return (
         <section
             id={id}
+            aria-labelledby={`${id}-heading`}
             className={cn(
                 'rounded-[32px] border border-primary/15 bg-card/75 p-6 shadow-[0_20px_60px_hsl(var(--background)/0.32)] backdrop-blur-xl md:p-8',
                 className,
@@ -88,7 +89,7 @@ export default function ContactFormSection({
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
                             {eyebrow}
                         </p>
-                        <h3 className="text-2xl font-semibold text-foreground md:text-3xl">{title}</h3>
+                        <h3 id={`${id}-heading`} tabIndex={-1} className="text-2xl font-semibold text-foreground md:text-3xl outline-none">{title}</h3>
                         <p className="max-w-xl text-sm leading-7 text-muted-foreground md:text-base">
                             {description}
                         </p>

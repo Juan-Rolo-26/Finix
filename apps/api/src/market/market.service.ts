@@ -1260,6 +1260,8 @@ export class MarketService {
     @Cron('0 30 10 * * 1-5', { timeZone: 'America/Argentina/Buenos_Aires' })
     async backupPremarketFreezeArt() {
         const session = this.getPremarketSessionInfo();
+        // During standard time, 10:30 ART precedes the New York opening.
+        if (session.isWeekend || session.status === 'pre-market') return;
         if (!this.premarketFrozenSession || this.premarketFrozenSession.dateKey !== session.dateKey) {
             console.log('[MarketService] Running backup ART premarket freeze (10:30 ART)...');
             await this.captureFinalPremarketSnapshot();
@@ -1284,7 +1286,7 @@ export class MarketService {
             const session = this.getPremarketSessionInfo();
             data.isFrozenPremarket = true;
             data.scheduledSnapshot = true;
-            data.session.label = 'Pre-Market Finalizado (10:30 hs)';
+            data.session.label = 'Pre-Market finalizado (09:30 Nueva York)';
             this.premarketFrozenSession = { dateKey: session.dateKey, data };
             this.dailyPremarket = data;
 
@@ -1445,14 +1447,20 @@ export class MarketService {
 
         const payload = {
             updatedAt: new Date().toISOString(),
+            dataContext: {
+                queriedAt: new Date().toISOString(), referenceSession: session.dateKey,
+                source: 'Fuente de cada activo; corte de Finix',
+                delay: 'Demora no informada por el proveedor.',
+                note: 'La consulta no es la fecha bursátil del dato. Cada activo informa moneda y fecha de cotización. El corte se fija a las 09:30 de Nueva York; su hora en Argentina cambia con el horario de verano de EE. UU.',
+            },
             dateKey: session.dateKey,
             scheduledSnapshot: forceRefresh,
-            refreshTime: '10:30',
-            refreshTimezone: 'America/Argentina/Buenos_Aires',
+            refreshTime: '09:30',
+            refreshTimezone: 'America/New_York',
             isFrozenPremarket: isPremarketPassed,
             session: {
                 ...session,
-                label: isPremarketPassed ? 'Pre-Market Finalizado (10:30 hs)' : session.label,
+                label: isPremarketPassed ? 'Pre-Market finalizado (09:30 Nueva York)' : session.label,
                 sentiment,
                 sentimentScore,
                 sentimentSummary,
@@ -1489,6 +1497,24 @@ export class MarketService {
             } catch { /* Primer inicio sin snapshot previo */ }
         }
 
+        // A weekend query cannot create a new trading-session snapshot.
+        // Preserve a recorded weekday cut, or report unavailable data.
+        if (session.isWeekend) {
+            const saved = this.dailyPremarket;
+            const reference = saved?.dateKey || saved?.session?.dateKey;
+            const day = reference ? new Date(reference + 'T12:00:00Z').getUTCDay() : NaN;
+            const usable = Number.isFinite(day) && day !== 0 && day !== 6;
+            return {
+                ...(usable ? saved : {}),
+                dateKey: usable ? reference : null,
+                updatedAt: usable ? saved.updatedAt : null,
+                isFrozenPremarket: usable,
+                session: { ...session, ...(usable ? { sentiment: saved.session?.sentiment, sentimentScore: saved.session?.sentimentScore, sentimentSummary: saved.session?.sentimentSummary } : {}) },
+                dataContext: { queriedAt: new Date().toISOString(), referenceSession: usable ? reference : null, source: usable ? 'Corte guardado de Finix' : 'Sin corte bursátil guardado', delay: 'Mercado cerrado. No se consultaron nuevas cotizaciones.', note: 'Fecha de referencia del corte guardado; la consulta de fin de semana no constituye una nueva sesión bursátil.' },
+                ...(!usable ? { indices: [], commodities: [], magnificent7: [], argentina: [], crypto: [], topGainers: [], topLosers: [] } : {}),
+            };
+        }
+
         // 2. Si ya pasó el horario de pre-market y tenemos datos congelados válidos para la fecha actual, los conservamos intactos
         if (!forceRefresh && isPremarketPassed && this.premarketFrozenSession && this.premarketFrozenSession.dateKey === session.dateKey) {
             const frozen = this.premarketFrozenSession.data;
@@ -1509,7 +1535,7 @@ export class MarketService {
                 isFrozenPremarket: true,
                 session: {
                     ...session,
-                    label: 'Pre-Market Finalizado (10:30 hs)',
+                    label: 'Pre-Market finalizado (09:30 Nueva York)',
                     sentiment: frozen.session.sentiment,
                     sentimentScore: frozen.session.sentimentScore,
                     sentimentSummary: frozen.session.sentimentSummary,
@@ -1527,7 +1553,7 @@ export class MarketService {
         if (isPremarketPassed) {
             const payload = await this.buildPremarketPayload(forceRefresh, true);
             payload.isFrozenPremarket = true;
-            payload.session.label = 'Pre-Market Finalizado (10:30 hs)';
+            payload.session.label = 'Pre-Market finalizado (09:30 Nueva York)';
             this.premarketFrozenSession = { dateKey: session.dateKey, data: payload };
             this.dailyPremarket = payload;
             try {

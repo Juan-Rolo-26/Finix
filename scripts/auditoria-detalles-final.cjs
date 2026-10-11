@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict'),{chromium}=require('playwright'),{writeFileSync,unlinkSync}=require('node:fs');
+const{setup,capture,BASE,OUT,widths}=require('./auditoria-ux-vscode.browser.cjs');
+const{integrationFixtures}=require('./auditoria-integracion-fixtures.cjs');
+const local='apps/web/auditoria-leyenda-local.html';
+(async()=>{const b=await chromium.launch({headless:true}),rows=[];try{
+ writeFileSync(local,`<!doctype html><html lang="es-AR"><div id="root"></div><script type="module">import React from 'react';import {createRoot} from 'react-dom/client';import '/src/index.css';import {ChartLegend} from '/src/components/charts/shared/ChartLegend.tsx';document.documentElement.className=new URLSearchParams(location.search).get('theme');createRoot(document.getElementById('root')).render(React.createElement('main',{style:{padding:16}},React.createElement('p',null,'Leyenda: fixture local, no datos financieros reales.'),React.createElement(ChartLegend,{items:[{label:'Corporación internacional de servicios financieros y tecnológicos',description:'Referencia de la sesión de mercado anterior expresada en dólares estadounidenses',color:'#117744',value:'USD 123.456,78'}]})));</script></html>`);
+ for(const theme of ['light','dark'])for(const width of widths){
+ const{page,errors}=await setup(b,{theme,width,guest:false});await integrationFixtures(page);
+ await page.goto(BASE+'/market/seguimiento');await page.getByRole('button',{name:'Nueva lista',exact:true}).first().click();const dlg=page.getByRole('dialog');await dlg.waitFor();await page.waitForTimeout(300);
+ const initial=await dlg.evaluate(el=>el.contains(document.activeElement));const sizes=await dlg.locator('button').evaluateAll(es=>es.map(el=>({name:el.getAttribute('aria-label')||el.innerText||el.title,w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height})));const r=await capture(page,`integracion-lista-${process.argv[2]||'antes'}-${width}-${theme}`);
+ if(process.argv[2]==='despues'){assert.ok(initial);assert.equal(r.scrollWidth,width);assert.ok(sizes.every(x=>x.name&&x.w>=43.9&&x.h>=43.9));for(let i=0;i<12;i++){await page.keyboard.press('Tab');assert.ok(await dlg.evaluate(el=>el.contains(document.activeElement)));}await page.keyboard.press('Escape');await dlg.waitFor({state:'hidden'});assert.ok(await page.getByRole('button',{name:'Nueva lista',exact:true}).first().evaluate(el=>el===document.activeElement));}
+ rows.push({case:'lista',theme,width,initial,sizes,...r});
+ await page.goto(BASE+'/auditoria-leyenda-local.html?theme='+theme);await page.getByRole('listitem').waitFor();const clips=await page.getByRole('listitem').locator('span').evaluateAll(es=>es.filter(el=>el.scrollWidth>el.clientWidth).map(el=>el.innerText));await capture(page,`integracion-leyenda-${process.argv[2]||'antes'}-${width}-${theme}`);if(process.argv[2]==='despues')assert.deepEqual(clips,[]);rows.push({case:'leyenda',theme,width,clipped:clips});
+ assert.deepEqual(errors,[]);writeFileSync(`${OUT}/integracion-detalles-${process.argv[2]||'antes'}.json`,JSON.stringify(rows,null,2));console.log(width,theme);await page.close();if(process.argv[2]!=='despues')break;
+ }
+}finally{unlinkSync(local);await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

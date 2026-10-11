@@ -26,16 +26,6 @@ export class MailService {
         return process.env.ADMIN_OWNER_EMAIL?.trim() || 'juanpablorolo2007@gmail.com';
     }
 
-    private getResendApiKey() {
-        const key = process.env.RESEND_API_KEY?.trim() || process.env.SMTP_PASS?.trim();
-        if (!key) {
-            throw new BadRequestException(
-                'Falta configurar RESEND_API_KEY para enviar correos desde Finix.',
-            );
-        }
-        return key;
-    }
-
     private getEmailFrom() {
         return process.env.EMAIL_FROM || 'Finix <onboarding@resend.dev>';
     }
@@ -96,83 +86,8 @@ export class MailService {
         replyTo?: string;
         idempotencyKey?: string;
     }) {
-        let resendKey = process.env.RESEND_API_KEY?.trim() || process.env.SMTP_PASS?.trim();
-        if (!resendKey) {
-            try {
-                const fs = require('fs');
-                const path = require('path');
-                const candidates = [
-                    path.resolve(process.cwd(), 'apps/api/.env'),
-                    path.resolve(process.cwd(), '.env'),
-                    path.resolve(__dirname, '../../../.env'),
-                ];
-                for (const p of candidates) {
-                    if (fs.existsSync(p)) {
-                        require('dotenv').config({ path: p, override: true });
-                        break;
-                    }
-                }
-                resendKey = process.env.RESEND_API_KEY?.trim() || process.env.SMTP_PASS?.trim();
-            } catch {}
-        }
-
-        // 1. Si está configurada la clave de Resend, enviamos por Resend real (incluso en local)
-        if (resendKey) {
-            let from = this.getEmailFrom();
-            if (from.includes('.test') || from.includes('local@')) {
-                from = 'Finix <onboarding@finixarg.com>';
-            }
-
-            try {
-                const response = await fetch('https://api.resend.com/emails', {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${resendKey}`,
-                        'Content-Type': 'application/json',
-                        ...(params.idempotencyKey ? { 'Idempotency-Key': params.idempotencyKey } : {}),
-                    },
-                    body: JSON.stringify({
-                        from,
-                        to: [params.to],
-                        subject: params.subject,
-                        text: params.text,
-                        html: params.html,
-                        reply_to: params.replyTo,
-                    }),
-                    signal: AbortSignal.timeout(15000),
-                });
-
-                const body = await response.json().catch(() => ({} as { message?: string; id?: string }));
-                if (!response.ok) {
-                    const errorMessage = typeof body.message === 'string' ? body.message : 'No se pudo enviar el correo.';
-                    this.logger.error(`Error sending email with Resend: ${errorMessage}`);
-                    // En desarrollo local, imprimimos en consola por si la cuenta de Resend rechaza el envío
-                    console.log(`\n==================================================`);
-                    console.log(`📧 [FINIX EMAIL - FALLBACK LOCAL POR ERROR RESEND]`);
-                    console.log(`Para: ${params.to}`);
-                    console.log(`Asunto: ${params.subject}`);
-                    console.log(`Contenido:\n${params.text}`);
-                    console.log(`==================================================\n`);
-                    throw new BadRequestException(errorMessage);
-                }
-
-                this.logger.log(`Email sent via Resend to ${params.to}: ${body.id ?? 'without-id'}`);
-                return body;
-            } catch (err: any) {
-                if (err instanceof BadRequestException) throw err;
-                this.logger.error(`Resend request failed: ${err.message}`);
-                throw new BadRequestException('No se pudo conectar con el servicio de correo Resend.');
-            }
-        }
-
-        // 2. Si no hay RESEND_API_KEY: en local imprimimos el código en consola para no bloquear el desarrollo
-        console.log(`\n==================================================`);
-        console.log(`📧 [FINIX EMAIL - MODO LOCAL (CÓDIGO DE VERIFICACIÓN)]`);
-        console.log(`Para: ${params.to}`);
-        console.log(`Asunto: ${params.subject}`);
-        console.log(`Contenido:\n${params.text}`);
-        console.log(`==================================================\n`);
-
+        // Local rehearsals must never deliver OTPs to a real provider, even if
+        // production credentials are present in the developer environment.
         if (isLocalMode()) {
             try {
                 const nodemailer = require('nodemailer');
@@ -184,13 +99,98 @@ export class MailService {
                     text: params.text, html: params.html, replyTo: params.replyTo,
                 });
                 return { id: result.messageId };
-            } catch (smtpErr: any) {
-                this.logger.warn(`Mailpit local SMTP no disponible (${smtpErr.message}), pero el correo fue impreso en consola.`);
+            } catch {
+                // Deliberate development-only fallback. isLocalMode() rejects
+                // production and remote databases before this branch is reached.
+                this.logger.warn('Mailpit local no disponible; correo disponible en la consola local.');
+                console.log(`[FINIX EMAIL - SOLO LOCAL]\nPara: ${params.to}\nAsunto: ${params.subject}\n${params.text}`);
                 return { id: 'mock-local-console' };
             }
         }
 
-        throw new BadRequestException('Falta configurar RESEND_API_KEY para enviar correos desde Finix.');
+        const configuredProvider = process.env.MAIL_PROVIDER?.trim().toLowerCase();
+        if (configuredProvider && !['resend', 'smtp'].includes(configuredProvider)) {
+            throw new BadRequestException('La configuración del servicio de correo no está disponible.');
+        }
+        // Backwards compatible detection, without treating an SMTP password as
+        // a Resend API token. Explicit MAIL_PROVIDER takes priority outside local.
+        const resendKey = process.env.RESEND_API_KEY?.trim();
+        const smtpHost = process.env.SMTP_HOST?.trim();
+        const provider = configuredProvider || (resendKey ? 'resend' : smtpHost ? 'smtp' : undefined);
+
+        if (provider === 'resend') {
+            if (!resendKey) {
+                throw new BadRequestException('La configuración del servicio de correo no está disponible.');
+            }
+            let from = this.getEmailFrom();
+            if (from.includes('.test') || from.includes('local@')) {
+                from = 'Finix <onboarding@finixarg.com>';
+            }
+            try {
+                const response = await fetch('https://api.resend.com/emails', {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${resendKey}`,
+                        'Content-Type': 'application/json',
+                        ...(params.idempotencyKey ? { 'Idempotency-Key': params.idempotencyKey } : {}),
+                    },
+                    body: JSON.stringify({
+                        from, to: [params.to], subject: params.subject,
+                        text: params.text, html: params.html, reply_to: params.replyTo,
+                    }),
+                    signal: AbortSignal.timeout(15000),
+                });
+                if (!response.ok) {
+                    // Provider messages can contain email addresses or submitted
+                    // content. Log only a status, never body/token/OTP.
+                    this.logger.error(`El proveedor de correo Resend rechazó el envío (HTTP ${response.status}).`);
+                    throw new BadRequestException('No se pudo enviar el correo. Intentá nuevamente más tarde.');
+                }
+                const body = await response.json().catch(() => ({} as { id?: string }));
+                this.logger.log('Correo enviado mediante Resend.');
+                return { id: typeof body.id === 'string' ? body.id : undefined };
+            } catch (error: unknown) {
+                if (error instanceof BadRequestException) throw error;
+                this.logger.error('No se pudo conectar con el proveedor de correo Resend.');
+                throw new BadRequestException('No se pudo enviar el correo. Intentá nuevamente más tarde.');
+            }
+        }
+
+        if (provider === 'smtp') {
+            const port = Number(process.env.SMTP_PORT || 587);
+            const secureSetting = process.env.SMTP_SECURE?.trim().toLowerCase();
+            const user = process.env.SMTP_USER?.trim();
+            const pass = process.env.SMTP_PASS;
+            if (!smtpHost || !Number.isInteger(port) || port < 1 || port > 65535 ||
+                (secureSetting && !['true', 'false'].includes(secureSetting)) ||
+                (!!user !== !!pass)) {
+                throw new BadRequestException('La configuración del servicio de correo no está disponible.');
+            }
+            try {
+                const nodemailer = require('nodemailer');
+                const transport = nodemailer.createTransport({
+                    host: smtpHost, port,
+                    secure: secureSetting ? secureSetting === 'true' : port === 465,
+                    ...(user && pass ? { auth: { user, pass } } : {}),
+                    connectionTimeout: 15000, greetingTimeout: 15000, socketTimeout: 15000,
+                });
+                const result = await transport.sendMail({
+                    from: this.getEmailFrom(), to: params.to, subject: params.subject,
+                    text: params.text, html: params.html, replyTo: params.replyTo,
+                });
+                // SMTP can resolve with every recipient rejected; this must not
+                // be presented as a delivered login code.
+                if (!result.accepted?.length || result.rejected?.length) {
+                    throw new Error('SMTP rejected delivery');
+                }
+                this.logger.log('Correo aceptado por el proveedor SMTP.');
+                return { id: result.messageId };
+            } catch {
+                this.logger.error('El proveedor de correo SMTP no aceptó el envío.');
+                throw new BadRequestException('No se pudo enviar el correo. Intentá nuevamente más tarde.');
+            }
+        }
+        throw new BadRequestException('La configuración del servicio de correo no está disponible.');
     }
 
     private async sendCodeEmail(params: {

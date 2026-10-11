@@ -86,7 +86,7 @@ function EmptyFeed() {
             </div>
             <div className="text-center space-y-1.5 max-w-[240px]">
                 <p className="text-[15px] font-semibold">El feed está vacío</p>
-                <p className="text-[12.5px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground) / 0.7)' }}>
+                <p className="text-[12.5px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     Sé el primero en publicar o seguí a otros traders para ver su actividad
                 </p>
             </div>
@@ -162,10 +162,10 @@ function ActionBtn({
         <button
             aria-label={label}
             onClick={onClick}
-            className={`group/action flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[12px] font-medium transition-all duration-150 ${className}`}
-            style={{ color: active ? activeColor : 'hsl(var(--muted-foreground) / 0.55)' }}
+            className={`group/action flex min-h-11 min-w-11 items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[12px] font-medium transition-all duration-150 ${className}`}
+            style={{ color: active ? activeColor : 'hsl(var(--muted-foreground))' }}
             onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = hoverColor ?? 'hsl(var(--foreground))'; (e.currentTarget as HTMLElement).style.background = 'hsl(var(--secondary) / 0.6)'; }}
-            onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground) / 0.55)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+            onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
             <span className="transition-transform duration-150 group-hover/action:scale-110">{icon}</span>
             {(count ?? 0) > 0 && <span className="num">{count}</span>}
@@ -228,7 +228,7 @@ export default function SocialFeed({ initialPosts, isLoading = false, onPostCrea
                             key={f.key}
                             type="button"
                             onClick={() => setActiveFilter(f.key)}
-                            className={`px-3 py-1 rounded-full text-[12px] font-semibold whitespace-nowrap border transition-all duration-150 cursor-pointer ${
+                            className={`shrink-0 px-3 py-1 min-h-11 min-w-11 rounded-full text-[12px] font-semibold whitespace-nowrap border transition-all duration-150 cursor-pointer ${
                                 isSelected
                                     ? 'bg-primary text-primary-foreground border-primary shadow-xs'
                                     : 'bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/80 border-border/50'
@@ -253,7 +253,7 @@ export default function SocialFeed({ initialPosts, isLoading = false, onPostCrea
                             <button
                                 type="button"
                                 onClick={() => setActiveFilter('all')}
-                                className="mt-2 px-3 py-1 rounded-full text-xs font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20"
+                                className="mt-2 min-h-11 min-w-11 px-3 py-1 rounded-full text-xs font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20"
                             >
                                 Mostrar todos
                             </button>
@@ -288,6 +288,7 @@ function FeedItem({ post }: { post: Post }) {
 }
 
 function FeedItemContent({ post }: { post: Post }) {
+    const [quoteExpanded, setQuoteExpanded] = useState(false);
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const authorUsername = post.author?.username || 'Usuario';
@@ -386,9 +387,9 @@ function FeedItemContent({ post }: { post: Post }) {
     return (
         <article
             className="rounded-2xl transition-all duration-200 cursor-pointer"
-            style={{ 
-                background: 'hsl(var(--card))', 
-                border: `1px solid ${typeConfig ? typeConfig.color : 'hsl(var(--border) / 0.45)'}` 
+            style={{
+                background: 'hsl(var(--card))',
+                border: `1px solid ${typeConfig ? typeConfig.color : 'hsl(var(--border) / 0.45)'}`
             }}
             onMouseEnter={e => {
                 if (!typeConfig) (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border) / 0.75)';
@@ -442,7 +443,7 @@ function FeedItemContent({ post }: { post: Post }) {
                                     </span>
                                 )}
                             </div>
-                            <span className="text-[10.5px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>
+                            <span className="text-[10.5px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                 {safeFormatDistance(post.createdAt)}
                             </span>
                         </div>
@@ -452,18 +453,19 @@ function FeedItemContent({ post }: { post: Post }) {
                     <div className="flex items-center gap-0.5 flex-shrink-0">
                         <button
                             onClick={e => { e.stopPropagation(); handleSave(); }}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg transition-all hover:bg-primary/10"
-                            style={{ color: isSaved ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground) / 0.4)' }}
-                            title={isSaved ? 'Guardado' : 'Guardar'}
+                            className="w-11 h-11 min-w-11 min-h-11 flex items-center justify-center rounded-lg transition-all hover:bg-primary/10"
+                            style={{ color: isSaved ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}
+                            aria-label={isSaved ? 'Quitar de guardados' : 'Guardar publicación'} title={isSaved ? 'Guardado' : 'Guardar'}
                         >
                             <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current' : ''}`} />
                         </button>
 
                         <div className="relative">
                             <button
+                                aria-label="Más acciones de la publicación" aria-expanded={showMenu}
                                 onClick={e => { e.stopPropagation(); setShowMenu(p => !p); }}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg transition-all hover:bg-secondary/60"
-                                style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}
+                                className="w-11 h-11 min-w-11 min-h-11 flex items-center justify-center rounded-lg transition-all hover:bg-secondary/60"
+                                style={{ color: 'hsl(var(--muted-foreground))' }}
                             >
                                 <MoreHorizontal className="w-3.5 h-3.5" />
                             </button>
@@ -580,10 +582,8 @@ function FeedItemContent({ post }: { post: Post }) {
 
                     {/* Quoted post */}
                     {post.quotedPost && (
-                        <button
-                            type="button"
-                            onClick={e => { e.stopPropagation(); navigate(`/posts/${post.quotedPost!.id}`); }}
-                            className="w-full text-left rounded-xl p-3.5 transition-all hover:opacity-80"
+                        <div
+                            className="w-full text-left rounded-xl p-3.5"
                             style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border) / 0.35)' }}
                         >
                             <div className="flex items-center gap-2 mb-2">
@@ -594,19 +594,22 @@ function FeedItemContent({ post }: { post: Post }) {
                                     </AvatarFallback>
                                 </Avatar>
                                 <span className="text-[11.5px] font-semibold">{post.quotedPost.author?.username || 'Usuario'}</span>
-                                <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }}>
+                                <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                     · {safeFormatDistance(post.quotedPost.createdAt)}
                                 </span>
                             </div>
-                            <p className="text-[12.5px] leading-relaxed line-clamp-2" style={{ color: 'hsl(var(--foreground) / 0.75)' }}>
+                            <p id={`feed-quote-${post.id}`} className={`text-sm leading-relaxed ${quoteExpanded ? '' : 'line-clamp-2'}`} style={{ color: 'hsl(var(--foreground))' }}>
                                 {post.quotedPost.content || ''}
                             </p>
-                        </button>
+                            <button type="button" aria-expanded={quoteExpanded} aria-controls={`feed-quote-${post.id}`} onClick={e => { e.stopPropagation(); setQuoteExpanded(value => !value); }} className="min-h-11 min-w-11 px-3 py-2 text-sm font-semibold text-primary focus-visible:ring-2 focus-visible:ring-primary rounded-lg">
+                                {quoteExpanded ? 'Ver menos' : 'Leer más'}
+                            </button>
+                        </div>
                     )}
                 </div>
 
                 {/* ── Actions ─── */}
-                <div className="flex items-center gap-0.5 pt-2.5 -mx-1.5"
+                <div className="flex flex-wrap items-center gap-1.5 pt-2.5"
                     style={{ borderTop: '1px solid hsl(var(--border) / 0.25)' }}
                     onClick={e => e.stopPropagation()}>
 
@@ -628,7 +631,7 @@ function FeedItemContent({ post }: { post: Post }) {
                             activeColor="hsl(0 68% 54%)"
                             hoverColor="hsl(0 68% 54%)"
                             onClick={handleLike}
-                            label="Like"
+                            label="Me gusta"
                         />
                     </div>
 
@@ -681,7 +684,7 @@ function FeedItemContent({ post }: { post: Post }) {
                                 <Repeat2 className="w-3.5 h-3.5" />
                                 {isReposted ? 'Quitar repost' : 'Repost simple'}
                             </button>
-                            <div className="flex items-center gap-2 text-[10px] font-medium" style={{ color: 'hsl(var(--muted-foreground) / 0.45)' }}>
+                            <div className="flex items-center gap-2 text-[10px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                 <div className="flex-1 h-px" style={{ background: 'hsl(var(--border) / 0.3)' }} />
                                 O citar publicación
                                 <div className="flex-1 h-px" style={{ background: 'hsl(var(--border) / 0.3)' }} />

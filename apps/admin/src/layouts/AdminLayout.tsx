@@ -1,6 +1,6 @@
 import { Suspense, useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Shield, LayoutDashboard, Users, FileText, AlertTriangle, LogOut, Menu, ScrollText, Newspaper, BadgeCheck, Sun, Moon, BarChart, Globe, Star, BarChart2, TrendingUp, Calendar, Mail } from 'lucide-react';
+import { Shield, LayoutDashboard, Users, FileText, AlertTriangle, LogOut, Menu, ScrollText, Newspaper, BadgeCheck, Sun, Moon, BarChart, Globe, Star, BarChart2, TrendingUp, Calendar, Mail, GraduationCap } from 'lucide-react';
 import { adminFetch } from '../lib/api';
 
 export default function AdminLayout() {
@@ -29,6 +29,7 @@ export default function AdminLayout() {
     const links = [
         { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
         { name: 'Estadísticas', path: '/statistics', icon: BarChart },
+        { name: 'Gestión Educativa', path: '/educativa', icon: GraduationCap },
         { name: 'Usuarios', path: '/users', icon: Users },
         { name: 'Usuarios PRO', path: '/pro-users', icon: Star },
         { name: 'Email & Alertas', path: '/email-alertas', icon: Mail },

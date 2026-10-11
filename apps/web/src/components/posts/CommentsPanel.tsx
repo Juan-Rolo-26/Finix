@@ -68,6 +68,7 @@ function CommentItem({
     const [replies, setReplies] = useState<Comment[]>(comment.replies || []);
     const [showReplies, setShowReplies] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
 
     const isOwner = currentUserId === comment.author.id;
 
@@ -121,8 +122,8 @@ function CommentItem({
             <div className="flex gap-3 py-2">
                 {/* Avatar */}
                 <Link to={`/profile/${comment.author.username}`} className="shrink-0">
-                    {comment.author.avatarUrl ? (
-                        <img src={resolveMediaUrl(comment.author.avatarUrl)} alt={comment.author.username} className="w-8 h-8 rounded-full object-cover" />
+                    {comment.author.avatarUrl && !avatarError ? (
+                        <img src={resolveMediaUrl(comment.author.avatarUrl)} alt={comment.author.username} className="w-8 h-8 rounded-full object-cover" onError={() => setAvatarError(true)} />
                     ) : (
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center text-black text-xs font-bold">
                             {comment.author.username[0].toUpperCase()}
@@ -143,38 +144,46 @@ function CommentItem({
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-3 mt-1 ml-1">
-                        <span className="text-xs text-muted-foreground">{timeAgo(comment.createdAt)}</span>
+                    <div className="flex items-center gap-2 mt-1.5 ml-1 flex-wrap">
+                        <span className="text-xs text-muted-foreground mr-1">{timeAgo(comment.createdAt)}</span>
                         <button
+                            type="button"
                             onClick={handleLike}
-                            className={`flex items-center gap-1 text-xs transition-colors ${liked ? 'text-red-400' : 'text-muted-foreground hover:text-foreground'}`}
+                            aria-label={liked ? `Quitar me gusta, ${likesCount} me gusta` : `Me gusta al comentario, ${likesCount} me gusta`}
+                            className={`min-h-[44px] min-w-[44px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors hover:bg-secondary/40 focus-visible:ring-2 focus-visible:ring-primary ${liked ? 'text-red-400' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                            <Heart className={`w-3 h-3 ${liked ? 'fill-red-400' : ''}`} />
-                            {likesCount > 0 && likesCount}
+                            <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-red-400' : ''}`} />
+                            {likesCount > 0 && <span>{likesCount}</span>}
                         </button>
                         {currentUserId && (
                             <button
+                                type="button"
                                 onClick={() => setShowReply(!showReply)}
-                                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                aria-label="Responder a este comentario"
+                                className="min-h-[44px] min-w-[44px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                             >
-                                <Reply className="w-3 h-3" />
+                                <Reply className="w-3.5 h-3.5" />
                                 Responder
                             </button>
                         )}
                         {isOwner ? (
                             <button
+                                type="button"
                                 onClick={handleDelete}
-                                className="text-xs text-red-400/60 hover:text-red-400 transition-colors"
+                                aria-label="Eliminar comentario"
+                                className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-lg text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors focus-visible:ring-2 focus-visible:ring-red-500"
                             >
-                                <Trash2 className="w-3 h-3" />
+                                <Trash2 className="w-3.5 h-3.5" />
                             </button>
                         ) : (
                             currentUserId && (
                                 <button
+                                    type="button"
                                     onClick={() => setShowReportModal(true)}
-                                    className="text-xs text-muted-foreground hover:text-red-400 transition-colors"
+                                    aria-label="Reportar comentario"
+                                    className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-lg text-xs text-muted-foreground hover:text-red-400 hover:bg-secondary/40 transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                                 >
-                                    <Flag className="w-3 h-3" />
+                                    <Flag className="w-3.5 h-3.5" />
                                 </button>
                             )
                         )}

@@ -1,0 +1,22 @@
+TAP version 13
+# Subtest: ALL excludes opt-outs and test accounts
+ok 1 - ALL excludes opt-outs and test accounts
+  ---
+  duration_ms: 1.538912
+  type: 'test'
+  ...
+# Subtest: PRO excludes opt-outs and test accounts
+ok 2 - PRO excludes opt-outs and test accounts
+  ---
+  duration_ms: 0.384404
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1210.097289

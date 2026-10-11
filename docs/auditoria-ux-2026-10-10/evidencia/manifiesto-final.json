@@ -1,0 +1,266 @@
+{
+  "generatedAt": "2026-10-11T02:26:49.919Z",
+  "baseURL": "http://127.0.0.1:5183",
+  "widths": [
+    320,
+    360,
+    390,
+    430,
+    768,
+    1024,
+    1280,
+    1440
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "fixtureOnly": true,
+  "realWrites": 0,
+  "realEmails": 0,
+  "realPurchases": 0,
+  "deployed": false,
+  "validadoLocal": 27,
+  "bloqueadosDatosReales": [
+    "FINIX-01",
+    "FINIX-08"
+  ],
+  "pendienteDispositivo": [
+    "FINIX-19"
+  ],
+  "files": [
+    {
+      "file": "integracion-final-matriz.json",
+      "count": 224,
+      "sha256": "ddf51ef6abc8762c2b6cd7c5af2753c7d522d96ec6fda415c3cd2d76255f9ee2"
+    },
+    {
+      "file": "integracion-superficies-final.json",
+      "count": 96,
+      "sha256": "008d6261d607850234eb478d7919ec4da954e13e79eeeafcd1fad86557e905cd"
+    },
+    {
+      "file": "integracion-criterios.json",
+      "count": 84,
+      "sha256": "787b251a5fc30d47f136a401bde033e1299a6a3f0f1ac4f4acf323fe5a700260"
+    },
+    {
+      "file": "integracion-adicional.json",
+      "count": 64,
+      "sha256": "f1edbe57424e71021c6213ffa110a2212bc05bbc34f6e2707924e164962432f7"
+    },
+    {
+      "file": "publicacion-despues-criterios.json",
+      "count": 16,
+      "sha256": "ad08858d80285869b707134af6294435f3186129fdfdd17a93cf462cb6638e61"
+    },
+    {
+      "file": "integracion-detalles-despues.json",
+      "count": 32,
+      "sha256": "e202413265fb3fc339964d514503b77cf656190cf50b6c7d237a38829b25df4a"
+    },
+    {
+      "file": "aliases-final.json",
+      "count": 16,
+      "sha256": "74a4c589434afdd6e96a3c7c23971d5715fcc98e52e341d35b56e739f98d751a"
+    },
+    {
+      "file": "contexto-final.json",
+      "count": 16,
+      "sha256": "221066dcf88f00343bb050eb0e659e3fa112bbb6276c0d904eb6b66d1d985beb"
+    },
+    {
+      "file": "imagenes-zoom-criterios.json",
+      "count": 64,
+      "sha256": "d0a6f7d3e6fbf18e203a6d9bcc6c023e6ae6355ee5d56494c52451f6ae1fd079"
+    },
+    {
+      "file": "imagenes-perfil-despues.json",
+      "count": 32,
+      "sha256": "75df06b3bce4b390793e798e7e840cfcaa2c51eb712c2cc56da0129331bf98ce"
+    },
+    {
+      "file": "imagenes-noticias.json",
+      "count": 40,
+      "sha256": "3d3f37d24b55357b1569895d006164d049eb76123ae19097ec0653cf46da69ef"
+    },
+    {
+      "file": "imagenes-comunidad-despues.json",
+      "count": 32,
+      "sha256": "8736657f3a25e3093ddeba932df762a3aa81e33bb37156ca8f689e3e3a766d1a"
+    },
+    {
+      "file": "imagenes-fallback-final.json",
+      "count": 8,
+      "sha256": "5bc5f858be132bcaac5ea4fbb654a0cfb25fb5cff0dc3414b594bb519a1ee413"
+    },
+    {
+      "file": "vs03-matriz.json",
+      "count": 48,
+      "sha256": "fa5b65c71ef75b5d0900f646dda841f9594e286d16807bfc659c9cbe081f0ae3"
+    },
+    {
+      "file": "vs05-despues-legales.json",
+      "count": 48,
+      "sha256": "e8a0d41a71be94a6a9b5cf098c4c8784048684a5a4fc905f822b5d6fcdc03b62"
+    },
+    {
+      "file": "legal-indice-despues.json",
+      "count": 48,
+      "sha256": "eb6560ee029e16145f752d97774dd4f98ff68247cd4ee9a52085edb6d257f956"
+    },
+    {
+      "file": "imagenes-despues-graficos.json",
+      "count": 16,
+      "sha256": "f382ddded2b70ea35ee297c98cdf32764f7079273d97eaa011a70641541e597e"
+    },
+    {
+      "file": "contraste-efectivo.json",
+      "count": 492,
+      "sha256": "bb3bf1deb93b1e3c987b8f9eddcf2f6bcb7a6f3f42f5f861362ef5f5679e232d"
+    },
+    {
+      "file": "scroll-final-retest.json",
+      "count": 3,
+      "sha256": "11c895082f3e578951e75d5eb3a1d806caa3812fa24d4147664d98b004a25f5d"
+    }
+  ],
+  "snapshot": [
+    {
+      "file": "apps/web/src/App.tsx",
+      "sha256": "b3e0da1bb0a821090ad9ef668df9177d6afea7c3785eb60242f0710d9b8f47fc"
+    },
+    {
+      "file": "apps/web/src/components/MobileTopBar.tsx",
+      "sha256": "fff3e56b7fb7000c2238ee84e3964fb4ff28c95f9ebf4fc2d9cab3a4a3114f08"
+    },
+    {
+      "file": "apps/web/src/components/BottomNav.tsx",
+      "sha256": "238737f13461424e64900a7977c35bee1965aa2815e6c8ac4acbefecdb10419b"
+    },
+    {
+      "file": "apps/web/src/components/common/ImagePreviewButton.tsx",
+      "sha256": "f709cffa7562f2d026153b90b094033cd56d7fb34ee1d4a9fe6a59f98597fccb"
+    },
+    {
+      "file": "apps/web/src/components/common/ScrollToTopButton.tsx",
+      "sha256": "cd7e2f782bbd9cbc0877b5b94645bcb383a97091931d482aafff5f179f8c3860"
+    },
+    {
+      "file": "apps/web/src/components/posts/PostCard.tsx",
+      "sha256": "dcff546b7b6dfb98976dcabd0079110957604baa074251160f93d504d0848f7b"
+    },
+    {
+      "file": "apps/web/src/components/posts/CreatePostModal.tsx",
+      "sha256": "dbe3ad42420b5573fad4fed4ffec26c11a092723230c06cdc24a44a5299129cb"
+    },
+    {
+      "file": "apps/web/src/components/watchlist/CreateEditWatchlistModal.tsx",
+      "sha256": "12d23546f8620a6fd1646e9daff152e67c4101c68f1b6f1e775a8427f2368e60"
+    },
+    {
+      "file": "apps/web/src/components/news/NewsCard.tsx",
+      "sha256": "6f763b4394984614c69e65d1e804a86d9ae33e9378bcda2f1a106f0460b8edf6"
+    },
+    {
+      "file": "apps/web/src/components/ui/dialog.tsx",
+      "sha256": "38819450c98ea62d0b6cc186d31cce604266e7a6ae55e461a3ded0a206dc2164"
+    },
+    {
+      "file": "apps/web/src/components/charts/shared/ChartLegend.tsx",
+      "sha256": "6900b6197d15a1f9676b2acad5cf405b4894cb56a6de7f195de91ce5759e0c4d"
+    },
+    {
+      "file": "apps/web/src/components/portfolio/PortfolioCharts.tsx",
+      "sha256": "f8302f59d21dc3762d0fb07330c6bb596494d6eb76cdff456577e9b8aee009c8"
+    },
+    {
+      "file": "apps/web/src/components/markets/ValueCreationHeatmap.tsx",
+      "sha256": "d5734d000b866df69e0cde568e5296851cc24b7a3ae25d05f5a32b082280971e"
+    },
+    {
+      "file": "apps/web/src/components/markets/OpportunityScreener.tsx",
+      "sha256": "da59bbf04ad8f9d222cf770038ccdc049ce4955d841c37c68884136bca816817"
+    },
+    {
+      "file": "apps/web/src/components/markets/value-creation.css",
+      "sha256": "e03a0c3fbb4eecc940271c426258a54ea13ae7d6917997c65e17ad370fdedd06"
+    },
+    {
+      "file": "apps/web/src/components/markets/market.css",
+      "sha256": "0e8dfa0aa20de0e59c2461830f5176f014e03b1a2d41dd83dfbafb5c1d9553fe"
+    },
+    {
+      "file": "apps/web/src/components/markets/PremarketBrief.tsx",
+      "sha256": "0918bd871282812f26e1da42822db9b171d6e982af7317a8dd424937c2cf2cb1"
+    },
+    {
+      "file": "apps/web/src/components/common/MarketStatusPill.tsx",
+      "sha256": "1330e56fa1404196d74522fb9b18cb73f7cac8d50503dfb8d01171bc8bbf72cf"
+    },
+    {
+      "file": "apps/web/src/components/watchlist/WatchlistLimitsSummary.tsx",
+      "sha256": "45d7637684b04c73222c3f9410e871970fef8f60064935eb5c4f637e7e8e8511"
+    },
+    {
+      "file": "apps/web/src/pages/TopGainersPage.tsx",
+      "sha256": "53552cfddc747ce7f3e625aa88931c9532fde6f5868cf5cf5f3c7815f8211ee5"
+    },
+    {
+      "file": "apps/web/src/pages/Messages.tsx",
+      "sha256": "4277fc03b68de2f81ce37459b4ff1aa0219ee875a78fb435dfca3bf61aefcc70"
+    },
+    {
+      "file": "apps/web/src/pages/Profile.tsx",
+      "sha256": "da1bee3709bde7dd232d9b3ab41a2241f294c1dc943993cef6aadb00bff167f7"
+    },
+    {
+      "file": "apps/web/src/pages/CommunityDetail.tsx",
+      "sha256": "37a5d8ee0bb5678afc468813d0b32d9777a7866b7f0646d1584f3b73248c2e05"
+    },
+    {
+      "file": "apps/web/src/pages/Pricing.tsx",
+      "sha256": "97153fe0baaf567028583a27af2f15e6ffded934ac8aa95c7a0911eab9425032"
+    },
+    {
+      "file": "apps/web/src/pages/ProUpgrade.tsx",
+      "sha256": "3297e827e7d397c09ca287d36718bcf64beb520c26a2bb0f0ca264e9e020b458"
+    },
+    {
+      "file": "apps/web/src/pages/CreatorPage.tsx",
+      "sha256": "f21d2570c1351c961f0456aec442c8d70c16e73f557b3cf68da5d257d1c8f4ec"
+    },
+    {
+      "file": "apps/web/src/pages/About.tsx",
+      "sha256": "8de56bb05f9f123635aff2a54ac66e1fc5ebdce062d452343d29bd614bb3cfdc"
+    },
+    {
+      "file": "apps/web/src/pages/legal/Terms.tsx",
+      "sha256": "e2d6f7e175e26f2d05100d65fd4ced4815cf7c7d96e7f485914d26df720ed104"
+    },
+    {
+      "file": "apps/web/src/pages/legal/Privacy.tsx",
+      "sha256": "d0992d3a0ba2764be85a18cee132040a0cd743dac14060028fccbdbd4664f66d"
+    },
+    {
+      "file": "apps/web/src/pages/legal/Cookies.tsx",
+      "sha256": "19b091208f2ecac4fdcb3d6a3b3694d2863acd0ea5a404f1844ab7cc3ae5f1b6"
+    },
+    {
+      "file": "apps/web/src/layouts/DashboardLayout.tsx",
+      "sha256": "882603ec304f712753078a448270962ae9018680a68c0286c11dc1a016db0a79"
+    },
+    {
+      "file": "apps/web/src/lib/sector-labels.ts",
+      "sha256": "83a50803eb041575ccbb3932b3a99f19c89d914f282815da0699a2e4142cdb4a"
+    },
+    {
+      "file": "apps/web/src/lib/featureFlags.ts",
+      "sha256": "29cf774811826811891223ff9d0e754f4d13151bc09c19028be88e70cdb0bf41"
+    }
+  ],
+  "pngCount": 2518,
+  "buildSha256": "82da7cea214f1b79b4cb959f7cf66f44fe21d3fceabee09c3033df922949a23c",
+  "reactDoctorSha256": "fe32105d3d23a37def81ac1fb858efbe10cd0b2fcedf1ae22dca181f21af55fb",
+  "historicalExceptions": "Tres bottom:false de matrices anteriores reemplazados por scroll-final-retest. Clamps de citas se expanden en integracion-adicional. Matrices de intentos anteriores no sustituyen los últimos retests."
+}
