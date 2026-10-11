@@ -41,7 +41,7 @@ import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { cn } from '@/lib/utils';
 import { InvestorStreakPill } from '@/components/common/InvestorStreakPill';
 import { useInvestorStreak } from '@/hooks/useInvestorStreak';
-import { isWatchlistEnabled } from '@/lib/featureFlags';
+import { isWatchlistEnabled, isEducationEnabled } from '@/lib/featureFlags';
 
 // Keep aliases in the same navigation group as their canonical Finix route.
 function sectionPath(path: string) {
@@ -177,7 +177,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                             <span className="desktop-tools-menu__label-pill">Finix Tools</span>
                                         </div>
                                         <div className="desktop-tools-menu__grid">
-                                            {TOOLS_LIST.filter(tool => tool.path !== '/market/seguimiento' || isWatchlistEnabled()).map(tool => {
+                                            {TOOLS_LIST.filter(tool => (tool.path !== '/market/seguimiento' || isWatchlistEnabled()) && (tool.path !== '/educativa' || isEducationEnabled())).map(tool => {
                                                 const IconComponent = tool.icon;
                                                 return (
                                                     <DropdownMenuItem key={tool.path} asChild>
@@ -258,13 +258,15 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                         >
                             Noticias
                         </Link>
-                        <Link
-                            to="/educativa"
-                            className="hidden xl:inline-flex"
-                            aria-current={path.startsWith('/educativa') ? 'page' : undefined}
-                        >
-                            Educativa
-                        </Link>
+                        {isEducationEnabled() && (
+                            <Link
+                                to="/educativa"
+                                className="hidden xl:inline-flex"
+                                aria-current={path.startsWith('/educativa') ? 'page' : undefined}
+                            >
+                                Educativa
+                            </Link>
+                        )}
                         {(hasCommunityAccess(user) || freeAccess) && (
                             <Link
                                 to="/comunidades"

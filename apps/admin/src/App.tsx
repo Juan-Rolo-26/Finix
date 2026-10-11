@@ -108,7 +108,11 @@ export default function App() {
                 <Route path="/verifications" element={<VerificationsManagement />} />
                 <Route path="/reports" element={<ReportsList />} />
                 <Route path="/audit-logs" element={<AuditLogs />} />
-                <Route path="/educativa" element={<EducationManagement />} />
+                {import.meta.env.VITE_ENABLE_EDUCATION === 'true' ? (
+                    <Route path="/educativa" element={<EducationManagement />} />
+                ) : (
+                    <Route path="/educativa" element={<Navigate to="/dashboard" replace />} />
+                )}
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />

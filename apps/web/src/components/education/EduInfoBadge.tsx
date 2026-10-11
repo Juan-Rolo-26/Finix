@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Info } from 'lucide-react';
+import { isEducationEnabled } from '@/lib/featureFlags';
 
 const GLOSSARY_LINKS: Record<string, string> = {
     roic: '/educativa/analisis-fundamental/que-es-el-roic',
@@ -71,6 +72,10 @@ export function EduInfoBadge({
     title?: string;
     className?: string;
 }) {
+    if (!isEducationEnabled()) {
+        return null;
+    }
+
     const key = term.toLowerCase().replace(/[^a-z0-9_]/g, '');
     const targetUrl = GLOSSARY_LINKS[key] || `/educativa?search=${encodeURIComponent(term)}`;
 

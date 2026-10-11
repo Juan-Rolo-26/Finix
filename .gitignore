@@ -37,11 +37,13 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# ─── Testing ──────────────────────────────────────────────────────────────────
+# ─── Testing & Evidence ─────────────────────────────────────────────────────────
 coverage/
 .nyc_output/
 playwright-report/
 test-results/
+docs/**/evidencia/
+evidencia/
 
 # ─── OS / Editor ──────────────────────────────────────────────────────────────
 .DS_Store

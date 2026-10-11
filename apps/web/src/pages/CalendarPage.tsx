@@ -23,6 +23,7 @@ import { useAuthStore, isProUser } from '@/stores/authStore';
 import { ProGate } from '@/components/ProGate';
 import { AssetLogoImg } from '@/components/TopGainersCard';
 import { MarketHeader, MarketChange } from '@/components/markets/MarketPrimitives';
+import { isEducationEnabled } from '@/lib/featureFlags';
 import './calendar.css';
 
 interface CalendarEvent {
@@ -467,9 +468,11 @@ export default function CalendarPage() {
                     description={
                         <span className="calendar-subtitle">
                             Economía, balances de EE. UU. y dividendos del S&amp;P 500.{' '}
-                            <Link to="/educativa/macroeconomia/inflacion-y-tasas-de-interes" className="text-primary hover:underline font-semibold inline-flex items-center gap-1">
-                                <span>Guía macro</span> &rarr;
-                            </Link>
+                            {isEducationEnabled() && (
+                                <Link to="/educativa/macroeconomia/inflacion-y-tasas-de-interes" className="text-primary hover:underline font-semibold inline-flex items-center gap-1">
+                                    <span>Guía macro</span> &rarr;
+                                </Link>
+                            )}
                             <span>
                                 <Clock size={15} aria-hidden="true" /> Hora local:{' '}
                                 {userTimezoneShort}

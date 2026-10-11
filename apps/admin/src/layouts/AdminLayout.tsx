@@ -25,11 +25,12 @@ export default function AdminLayout() {
     };
 
     const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));
+    const isEducationAdminEnabled = import.meta.env.VITE_ENABLE_EDUCATION === 'true';
 
     const links = [
         { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
         { name: 'Estadísticas', path: '/statistics', icon: BarChart },
-        { name: 'Gestión Educativa', path: '/educativa', icon: GraduationCap },
+        ...(isEducationAdminEnabled ? [{ name: 'Gestión Educativa', path: '/educativa', icon: GraduationCap }] : []),
         { name: 'Usuarios', path: '/users', icon: Users },
         { name: 'Usuarios PRO', path: '/pro-users', icon: Star },
         { name: 'Email & Alertas', path: '/email-alertas', icon: Mail },

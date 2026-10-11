@@ -7,7 +7,7 @@ const InformationLayout = lazy(() => import('./layouts/InformationLayout'));
 import InstallBanner from './components/InstallBanner';
 const CookieConsent = lazy(() => import('./components/CookieConsent'));
 import { usePlatformAccessStore } from './stores/platformAccessStore';
-import { isWatchlistEnabled } from './lib/featureFlags';
+import { isWatchlistEnabled, isEducationEnabled } from './lib/featureFlags';
 
 // ─── Lazy Loaded Pages ────────────────────────────────────────────────────────
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -233,10 +233,19 @@ export default function App() {
                         <Route path="/analysis/:slug" element={<AnalysisPage />} />
                         <Route path="/analisis" element={<AnalysisPage />} />
                         <Route path="/analisis/:slug" element={<AnalysisPage />} />
-                        <Route path="/educativa" element={<EducationHome />} />
-                        <Route path="/educativa/rutas/:pathSlug" element={<EducationLearningPathPage />} />
-                        <Route path="/educativa/:categorySlug" element={<EducationCategoryPage />} />
-                        <Route path="/educativa/:categorySlug/:articleSlug" element={<EducationArticlePage />} />
+                        {isEducationEnabled() ? (
+                            <>
+                                <Route path="/educativa" element={<EducationHome />} />
+                                <Route path="/educativa/rutas/:pathSlug" element={<EducationLearningPathPage />} />
+                                <Route path="/educativa/:categorySlug" element={<EducationCategoryPage />} />
+                                <Route path="/educativa/:categorySlug/:articleSlug" element={<EducationArticlePage />} />
+                            </>
+                        ) : (
+                            <>
+                                <Route path="/educativa" element={<Navigate to="/dashboard" replace />} />
+                                <Route path="/educativa/*" element={<Navigate to="/dashboard" replace />} />
+                            </>
+                        )}
                         <Route path="/profile/:username" element={<Profile />} />
 
                         {/* Protected Routes (require auth) */}

@@ -32,7 +32,7 @@ import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { hasCommunityAccess, useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
 import { cn } from '../lib/utils';
-import { isWatchlistEnabled } from '@/lib/featureFlags';
+import { isWatchlistEnabled, isEducationEnabled } from '@/lib/featureFlags';
 
 const PRIMARY = 'hsl(var(--primary))';
 
@@ -118,12 +118,12 @@ export function BottomNav() {
         location.pathname === p ||
         (p !== '/dashboard' && location.pathname.startsWith(`${p}/`));
 
-    const moreActive = ['/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', '/educativa', '/profile', '/settings', '/notifications'].some(p => isActive(p));
+    const moreActive = ['/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', ...(isEducationEnabled() ? ['/educativa'] : []), '/profile', '/settings', '/notifications'].some(p => isActive(p));
 
     const moreLinks = [
         { label: 'Mercado',   path: '/market',   icon: TrendingUp  },
         ...(isWatchlistEnabled() ? [{ label: 'Seguimiento', path: '/market/seguimiento', icon: Bookmark }] : []),
-        { label: 'Educativa', path: '/educativa', icon: GraduationCap },
+        ...(isEducationEnabled() ? [{ label: 'Educativa', path: '/educativa', icon: GraduationCap }] : []),
         { label: 'Calendario', path: '/calendario', icon: Calendar },
         { label: 'Portafolio',path: '/portfolio', icon: Briefcase   },
         { label: 'Noticias',  path: '/news',     icon: Newspaper   },

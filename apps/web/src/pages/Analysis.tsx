@@ -21,6 +21,7 @@ import { ProGate } from '@/components/ProGate';
 import TradingViewChart from '@/components/TradingViewChart';
 import { InvestorQuote } from '@/components/common/InvestorQuote';
 import { EduInfoBadge } from '@/components/education/EduInfoBadge';
+import { isEducationEnabled } from '@/lib/featureFlags';
 
 // Helper para formatear monedas y números grandes
 const formatCurrency = (val: number | null | undefined, compact = false) => {
@@ -918,14 +919,16 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
 
                             {/* Enlace a Biblioteca Educativa */}
                             <div className="pt-2 flex items-center justify-between border-t border-border/30">
-                                <Link
-                                    to="/educativa"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:text-primary/80 transition-colors"
-                                >
-                                    <BookOpen className="w-3.5 h-3.5" />
-                                    <span>Ver más en la Academia Educativa →</span>
-                                </Link>
+                                {isEducationEnabled() ? (
+                                    <Link
+                                        to="/educativa"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:text-primary/80 transition-colors"
+                                    >
+                                        <BookOpen className="w-3.5 h-3.5" />
+                                        <span>Ver más en la Academia Educativa →</span>
+                                    </Link>
+                                ) : <div />}
                                 <button
                                     type="button"
                                     onClick={(e) => {

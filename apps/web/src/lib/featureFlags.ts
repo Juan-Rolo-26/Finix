@@ -34,3 +34,19 @@ export function isWatchlistEnabled(): boolean {
 
     return false;
 }
+
+/**
+ * Determina si la sección Educativa está activa.
+ *
+ * Comportamiento:
+ * - Oculta completamente por defecto (para producción VPS y repositorios públicos/GitHub).
+ * - No elimina el código ni los componentes subyacentes.
+ * - Puede activarse cuando se desee definiendo VITE_ENABLE_EDUCATION="true" en .env.
+ */
+export function isEducationEnabled(): boolean {
+    if (import.meta.env.VITE_ENABLE_EDUCATION === 'true') {
+        return true;
+    }
+    return false;
+}
+

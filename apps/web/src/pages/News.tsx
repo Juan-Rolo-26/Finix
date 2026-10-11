@@ -9,6 +9,7 @@ import type { NewsSlotData } from '@/components/news/NewsCard';
 import { ProGate } from '@/components/ProGate';
 import { DesktopNews, DesktopNewsHero } from '@/components/news/DesktopNews';
 import { InvestorQuote } from '@/components/common/InvestorQuote';
+import { isEducationEnabled } from '@/lib/featureFlags';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -254,21 +255,23 @@ export default function NewsPage() {
                         <span>Actualizar</span>
                     </button>
                     {/* Educational Shortcuts */}
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs">
-                        <span className="text-muted-foreground font-medium flex items-center gap-1">
-                            <GraduationCap className="w-3.5 h-3.5 text-primary" />
-                            Conceptos clave:
-                        </span>
-                        <Link to="/educativa/macroeconomia/inflacion-y-tasas-de-interes" className="px-2.5 py-1 rounded-lg bg-card/80 border border-border/70 hover:border-primary/50 text-foreground font-medium transition-colors">
-                            Inflación y Tasas Fed
-                        </Link>
-                        <Link to="/educativa/fundamentos/que-son-los-cedears" className="px-2.5 py-1 rounded-lg bg-card/80 border border-border/70 hover:border-primary/50 text-foreground font-medium transition-colors">
-                            CEDEARs y Dólar CCL
-                        </Link>
-                        <Link to="/educativa/fundamentos/que-son-los-etfs" className="px-2.5 py-1 rounded-lg bg-card/80 border border-border/70 hover:border-primary/50 text-foreground font-medium transition-colors">
-                            ETFs (SPY / QQQ)
-                        </Link>
-                    </div>
+                    {isEducationEnabled() && (
+                        <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs">
+                            <span className="text-muted-foreground font-medium flex items-center gap-1">
+                                <GraduationCap className="w-3.5 h-3.5 text-primary" />
+                                Conceptos clave:
+                            </span>
+                            <Link to="/educativa/macroeconomia/inflacion-y-tasas-de-interes" className="px-2.5 py-1 rounded-lg bg-card/80 border border-border/70 hover:border-primary/50 text-foreground font-medium transition-colors">
+                                Inflación y Tasas Fed
+                            </Link>
+                            <Link to="/educativa/fundamentos/que-son-los-cedears" className="px-2.5 py-1 rounded-lg bg-card/80 border border-border/70 hover:border-primary/50 text-foreground font-medium transition-colors">
+                                CEDEARs y Dólar CCL
+                            </Link>
+                            <Link to="/educativa/fundamentos/que-son-los-etfs" className="px-2.5 py-1 rounded-lg bg-card/80 border border-border/70 hover:border-primary/50 text-foreground font-medium transition-colors">
+                                ETFs (SPY / QQQ)
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
                 {/* Category tabs */}
