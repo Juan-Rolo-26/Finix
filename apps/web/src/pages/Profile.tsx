@@ -1153,7 +1153,6 @@ export default function Profile() {
                                 {uploadingImage === 'avatar' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                             </button>
                         )}
-                        {profile.avatarUrl && <ImagePreviewButton src={resolveMediaUrl(profile.avatarUrl)} alt={`Foto de perfil de ${profile.username}`} label="Ver foto de perfil completa" className="mt-3 max-w-44" />}
                         {/* Verified badge */}
                         {profile.isVerified && (
                             <div

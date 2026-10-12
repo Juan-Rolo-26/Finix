@@ -35,12 +35,11 @@ import { isWatchlistEnabled, isEducationEnabled } from '@/lib/featureFlags';
 
 const PRIMARY = 'hsl(var(--primary))';
 
-/* ── 4 main tabs + 1 create slot ──────────────────────────────── */
+/* ── 3 main tabs + 1 create slot + more button ────────────────── */
 const mainTabs = [
     { path: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
     { path: '/comunidades', label: 'Comunidad', shortLabel: 'Grupos', icon: Users },
     // CENTER: create button
-    { path: '/explore', label: 'Explorar', icon: Compass },
     { path: '/messages', label: 'Mensajes', icon: MessageSquare },
 ];
 
@@ -117,9 +116,10 @@ export function BottomNav() {
         location.pathname === p ||
         (p !== '/dashboard' && location.pathname.startsWith(`${p}/`));
 
-    const moreActive = ['/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', ...(isEducationEnabled() ? ['/educativa'] : []), '/profile', '/settings', '/notifications'].some(p => isActive(p));
+    const moreActive = ['/explore', '/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', ...(isEducationEnabled() ? ['/educativa'] : []), '/profile', '/settings', '/notifications'].some(p => isActive(p));
 
     const moreLinks = [
+        { label: 'Explorar',  path: '/explore',  icon: Compass     },
         { label: 'Mercado',   path: '/market',   icon: TrendingUp  },
         ...(isWatchlistEnabled() ? [{ label: 'Seguimiento', path: '/market/seguimiento', icon: Bookmark }] : []),
         ...(isEducationEnabled() ? [{ label: 'Educativa', path: '/educativa', icon: GraduationCap }] : []),
@@ -134,8 +134,9 @@ export function BottomNav() {
         ] : []),
     ];
 
-    const LEFT_TABS = visibleMainTabs.slice(0, 2);
-    const RIGHT_TABS = visibleMainTabs.slice(2);
+    const splitIndex = hasCommunityAccess(user) ? 2 : 1;
+    const LEFT_TABS = visibleMainTabs.slice(0, splitIndex);
+    const RIGHT_TABS = visibleMainTabs.slice(splitIndex);
 
     return (
         <>
