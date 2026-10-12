@@ -117,7 +117,7 @@ export default function EducationCategoryPage() {
             </header>
 
             {/* Articles Grid */}
-            <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-6">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {filteredArticles.map((art: any) => (
                         <Link
@@ -166,7 +166,7 @@ export default function EducationCategoryPage() {
                         </Link>
                     ))}
                 </div>
-            </main>
+            </div>
         </div>
     );
 }

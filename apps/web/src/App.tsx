@@ -48,7 +48,6 @@ const WatchlistPage = lazy(() => import('./pages/WatchlistPage'));
 const EducationHome = lazy(() => import('./pages/education/EducationHome'));
 const EducationCategoryPage = lazy(() => import('./pages/education/EducationCategoryPage'));
 const EducationArticlePage = lazy(() => import('./pages/education/EducationArticlePage'));
-const EducationLearningPathPage = lazy(() => import('./pages/education/EducationLearningPathPage').then(m => ({ default: m.EducationLearningPathPage })));
 
 // ─── Theme Applier ────────────────────────────────────────────────────────────
 
@@ -236,7 +235,8 @@ export default function App() {
                         {isEducationEnabled() ? (
                             <>
                                 <Route path="/educativa" element={<EducationHome />} />
-                                <Route path="/educativa/rutas/:pathSlug" element={<EducationLearningPathPage />} />
+                                <Route path="/educativa/rutas" element={<Navigate to="/educativa" replace />} />
+                                <Route path="/educativa/rutas/*" element={<Navigate to="/educativa" replace />} />
                                 <Route path="/educativa/:categorySlug" element={<EducationCategoryPage />} />
                                 <Route path="/educativa/:categorySlug/:articleSlug" element={<EducationArticlePage />} />
                             </>

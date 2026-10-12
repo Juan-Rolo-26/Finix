@@ -24,6 +24,7 @@ import { ProGate } from '@/components/ProGate';
 import { AssetLogoImg } from '@/components/TopGainersCard';
 import { MarketHeader, MarketChange } from '@/components/markets/MarketPrimitives';
 import { isEducationEnabled } from '@/lib/featureFlags';
+import { TV_SYMBOL_SLUGS } from '@/lib/tv-slugs.const';
 import './calendar.css';
 
 interface CalendarEvent {
@@ -219,6 +220,179 @@ function getWeekStartForOffset(offsetWeeks: number): string {
     return `${year}-${month}-${date}`;
 }
 
+const PROMINENT_ADDITIONAL_TICKERS = new Set([
+    'TSM', 'ASML', 'ARM', 'BABA', 'PDD', 'JD', 'BIDU', 'NVO', 'AZN', 'SAP', 'SONY', 'TM', 'MELI', 'GLOB',
+    'SPOT', 'PLTR', 'COIN', 'UBER', 'DASH', 'CRWD', 'SNOW', 'RBLX', 'SOFI', 'HOOD', 'RIVN', 'LCID',
+    'SE', 'SHOP', 'SQ', 'NET', 'DDOG', 'MDB', 'PANW', 'FTNT', 'ZS', 'TTD', 'ROKU', 'PINS', 'SNAP',
+    'AFRM', 'UPST', 'ENPH', 'FSLR', 'SEDG', 'LI', 'NIO', 'XPEV', 'DELL', 'SMCI', 'MRVL', 'ON', 'MCHP',
+    'NTES', 'BILI', 'TME', 'CPNG', 'NU', 'PBR', 'VALE', 'ITUB', 'BBD',
+]);
+
+function isPreferredOrDerivative(ticker: string, companyName?: string): boolean {
+    const t = String(ticker || '').toUpperCase().trim();
+    const name = String(companyName || '').toLowerCase();
+
+    // Suffixes: /P, /PR, -P, -PR, .PR, /WS, /WT, /W, /U, /UN, /RT, ^
+    if (/[/._-](P|PR|WS|WT|W|U|UN|RT)[A-Z0-9]*$/i.test(t)) return true;
+    if (/\^/.test(t)) return true;
+    if (/\.PR[A-Z0-9]*$/i.test(t)) return true;
+
+    // Descriptive name keywords indicative of preferred series or depositary shares
+    if (
+        name.includes('depositary share') ||
+        name.includes('depositary shs') ||
+        name.includes('preferred stock') ||
+        name.includes('preferred share') ||
+        name.includes('non-cumulative preferred') ||
+        name.includes('cumulative preferred') ||
+        name.includes('perp pfd') ||
+        name.includes('pfd shs') ||
+        name.includes('pfd reg') ||
+        name.includes('warrant') ||
+        name.includes('debenture') ||
+        /\bseries\s+[a-z0-9]+/i.test(name) ||
+        /\bclass\s+[a-z0-9]+\s+preferred/i.test(name)
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+function getBaseTicker(ticker: string): string {
+    const raw = String(ticker || '').toUpperCase().trim();
+    if (raw === 'BRK-B' || raw === 'BRK.B' || raw === 'BRK/B') return 'BRK-B';
+    if (raw === 'BF-B' || raw === 'BF.B' || raw === 'BF/B') return 'BF-B';
+    if (raw === 'GOOG' || raw === 'GOOGL') return 'GOOGL';
+    if (raw === 'FOX' || raw === 'FOXA') return 'FOXA';
+    if (raw === 'NWS' || raw === 'NWSA') return 'NWSA';
+
+    const stripped = raw
+        .replace(/[/._-](P|PR|WS|WT|W|U|UN|RT)[A-Z0-9]*$/i, '')
+        .replace(/[/._-].*$/, '')
+        .replace(/\^.*$/, '')
+        .trim();
+
+    return stripped || raw;
+}
+
+function cleanCompanyName(name: string): string {
+    if (!name) return '';
+    return name
+        .replace(/\s+(Depositary\s+Shs|Depositary\s+Shares|Depositary\s+Receipts).*$/i, '')
+        .replace(/\s+\d+(\.\d+)?\s*%\s+(Non-Cum|Cum|Perp|Red).*$/i, '')
+        .replace(/\s+(Non-Cum|Cum|Perp|Red|Fixed|Floating).*$/i, '')
+        .replace(/\s+Preferred\s+Stock.*$/i, '')
+        .replace(/\s+Pfd\s+.*$/i, '')
+        .trim();
+}
+
+function filterAndDeduplicateEarnings(days: CalendarDay[]): CalendarDay[] {
+    const allEarnings: {
+        dayIndex: number;
+        event: EarningsEvent;
+        baseTicker: string;
+        isPreferred: boolean;
+    }[] = [];
+
+    days.forEach((day, dayIndex) => {
+        day.earningsEvents.forEach((event) => {
+            const rawTicker = event.ticker.toUpperCase().trim();
+            const base = getBaseTicker(rawTicker);
+            const isPref = isPreferredOrDerivative(rawTicker, event.companyName);
+
+            const cleanBase = base.replace(/\./g, '-');
+            const isSP500 = Boolean(TV_SYMBOL_SLUGS[cleanBase] || TV_SYMBOL_SLUGS[cleanBase.replace('-', '.')]);
+            const isProminent = PROMINENT_ADDITIONAL_TICKERS.has(cleanBase);
+            const isLargeCap = typeof event.marketCap === 'number' && event.marketCap >= 1e10;
+            const isHighImpact = (event.earningsImpactScore ?? 0) >= 55;
+
+            // Descartar derivados/series preferidas que no pertenezcan a empresas clave
+            if (isPref && !isSP500 && !isProminent) {
+                return;
+            }
+
+            // Conservar exclusivamente empresas de S&P 500 y las más conocidas restantes
+            if (isSP500 || isProminent || isLargeCap || isHighImpact) {
+                allEarnings.push({ dayIndex, event, baseTicker: cleanBase, isPreferred: isPref });
+            }
+        });
+    });
+
+    // Deduplicación estricta: un solo balance principal por empresa en toda la semana (agrupado por baseTicker)
+    const bestByBaseTicker = new Map<string, {
+        dayIndex: number;
+        event: EarningsEvent;
+        baseTicker: string;
+        isPreferred: boolean;
+    }>();
+
+    for (const item of allEarnings) {
+        const key = item.baseTicker;
+        const existing = bestByBaseTicker.get(key);
+
+        if (!existing) {
+            bestByBaseTicker.set(key, item);
+        } else {
+            // Prioridad absoluta a la acción ordinaria (common stock) sobre acciones preferidas / derivados
+            if (existing.isPreferred && !item.isPreferred) {
+                bestByBaseTicker.set(key, item);
+                continue;
+            } else if (!existing.isPreferred && item.isPreferred) {
+                continue;
+            }
+
+            // Prioridad al que tenga resultados publicados (actualEps o actualRevenue)
+            const itemReported = item.event.actualEps != null || item.event.actualRevenue != null;
+            const existingReported = existing.event.actualEps != null || existing.event.actualRevenue != null;
+            if (itemReported && !existingReported) {
+                bestByBaseTicker.set(key, item);
+            } else if (!itemReported && existingReported) {
+                // Conservar existente
+            } else {
+                // Prioridad a fecha CONFIRMED sobre ESTIMATED
+                const itemConfirmed = item.event.dateStatus === 'CONFIRMED';
+                const existingConfirmed = existing.event.dateStatus === 'CONFIRMED';
+                if (itemConfirmed && !existingConfirmed) {
+                    bestByBaseTicker.set(key, item);
+                } else if (!itemConfirmed && existingConfirmed) {
+                    // Conservar existente
+                } else {
+                    // Prioridad a estimaciones completas y mayor impacto
+                    const itemCompleteness = (item.event.epsEstimate != null ? 1 : 0) + (item.event.revenueEstimate != null ? 1 : 0);
+                    const existingCompleteness = (existing.event.epsEstimate != null ? 1 : 0) + (existing.event.revenueEstimate != null ? 1 : 0);
+                    if (itemCompleteness > existingCompleteness) {
+                        bestByBaseTicker.set(key, item);
+                    } else if (itemCompleteness === existingCompleteness) {
+                        if ((item.event.earningsImpactScore ?? 0) > (existing.event.earningsImpactScore ?? 0)) {
+                            bestByBaseTicker.set(key, item);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    const dayEarningsMap = new Map<number, EarningsEvent[]>();
+    for (let i = 0; i < days.length; i++) {
+        dayEarningsMap.set(i, []);
+    }
+    for (const item of bestByBaseTicker.values()) {
+        const ev = { ...item.event };
+        // Si el evento era de una serie preferida pero es el único que tenemos, normalizar al ticker principal y nombre limpio
+        if (item.isPreferred) {
+            ev.ticker = item.baseTicker;
+            ev.companyName = cleanCompanyName(ev.companyName) || ev.companyName;
+        }
+        dayEarningsMap.get(item.dayIndex)?.push(ev);
+    }
+
+    return days.map((day, i) => ({
+        ...day,
+        earningsEvents: dayEarningsMap.get(i) || [],
+    }));
+}
+
 function formatDateLabel(dateStr: string): string {
     if (!dateStr) return '';
     const [y, m, d] = dateStr.split('-').map(Number);
@@ -289,11 +463,12 @@ export default function CalendarPage() {
             });
             if (!res.ok) throw new Error('Error loading calendar');
             const data: CalendarWeekData = await res.json();
-            data.days = data.days.map(day => ({
+            const mappedDays = data.days.map(day => ({
                 ...day,
                 earningsEvents: day.earningsEvents.map(normalizeEarnings).filter(isVisibleEarnings),
                 dividendEvents: day.dividendEvents.filter(event => financialNumber(event.amount) !== undefined),
             }));
+            data.days = filterAndDeduplicateEarnings(mappedDays);
             if (!request.signal.aborted) {
                 setCalendarData(data);
                 setRefreshFailed(false);
@@ -596,7 +771,7 @@ export default function CalendarPage() {
                     <div className="calendar-earnings-toolbar">
                         <span>
                             Balances EE. UU.{' '}
-                            <span className="calendar-muted">· Publicados y pendientes</span>
+                            <span className="calendar-muted">· S&amp;P 500 y empresas principales</span>
                         </span>
                         <label className="calendar-sort">
                             <ListFilter size={18} aria-hidden="true" />
@@ -685,7 +860,7 @@ export default function CalendarPage() {
                                         {day.economic.length +
                                             day.earnings.length +
                                             day.dividends.length}{' '}
-                                        eventos
+                                        {day.economic.length + day.earnings.length + day.dividends.length === 1 ? 'evento' : 'eventos'}
                                     </span>
                                 </div>
                                 <div className="market-grid calendar-event-grid">
@@ -839,6 +1014,8 @@ export default function CalendarPage() {
                                                   : outcome === 'MIXTO'
                                                     ? 'amber'
                                                     : 'blue';
+                                        const cleanTicker = earn.ticker.toUpperCase().replace(/\./g, '-').trim();
+                                        const isSP500 = Boolean(TV_SYMBOL_SLUGS[cleanTicker] || TV_SYMBOL_SLUGS[cleanTicker.replace('-', '.')]);
                                         return (
                                             <article
                                                 key={earn.id}
@@ -849,6 +1026,11 @@ export default function CalendarPage() {
                                                         <Clock size={14} />
                                                         {timing}
                                                     </span>
+                                                    {isSP500 && (
+                                                        <span className="calendar-badge calendar-badge--blue" title="Componente del S&P 500">
+                                                            S&amp;P 500
+                                                        </span>
+                                                    )}
                                                     {reported ? (
                                                         <span
                                                             className={

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 
 export interface WeekDayStatus {
@@ -10,6 +10,7 @@ export interface WeekDayStatus {
     isPast: boolean;
     isFuture: boolean;
     isActive: boolean;
+    isPartOfCurrentStreak: boolean;
 }
 
 export interface StreakMilestone {
@@ -29,6 +30,7 @@ export const STREAK_MILESTONES: StreakMilestone[] = [
 ];
 
 export interface StreakData {
+    version: 2;
     streak: number;
     longestStreak: number;
     lastActiveDate: string;
@@ -50,11 +52,121 @@ export function diffCalendarDays(dateStrA: string, dateStrB: string): number {
     return Math.round((utc2 - utc1) / (1000 * 60 * 60 * 24));
 }
 
-function getStorageKey(userId?: string | null): string {
-    return userId ? `finix_streak_${userId}` : 'finix_investor_streak';
+/**
+ * Computes unbroken consecutive days active backwards from anchorDateStr.
+ */
+export function computeConsecutiveStreak(activeDatesSet: Set<string>, anchorDateStr: string): number {
+    if (!activeDatesSet.has(anchorDateStr)) return 0;
+    let count = 1;
+    const [y, m, d] = anchorDateStr.split('-').map(Number);
+    const curDate = new Date(y, m - 1, d);
+    while (true) {
+        curDate.setDate(curDate.getDate() - 1);
+        const prevKey = getLocalDateKey(curDate);
+        if (activeDatesSet.has(prevKey)) {
+            count += 1;
+        } else {
+            break;
+        }
+    }
+    return count;
 }
 
-function calculateCurrentWeek(activeDatesSet: Set<string>, todayStr: string, now: Date = new Date()): WeekDayStatus[] {
+/**
+ * Computes the historical longest consecutive streak across all recorded active dates.
+ */
+export function computeLongestStreak(activeDates: string[], currentStreak: number, existingLongest: number = 0): number {
+    if (activeDates.length === 0) return Math.max(1, currentStreak, existingLongest);
+    const sorted = Array.from(new Set(activeDates)).sort();
+    let maxRun = Math.max(currentStreak, existingLongest, 1);
+    let currentRun = 1;
+    for (let i = 1; i < sorted.length; i++) {
+        const diff = diffCalendarDays(sorted[i - 1], sorted[i]);
+        if (diff === 1) {
+            currentRun += 1;
+            if (currentRun > maxRun) maxRun = currentRun;
+        } else if (diff > 1) {
+            currentRun = 1;
+        }
+    }
+    return Math.max(maxRun, currentStreak);
+}
+
+function getStorageKey(userId?: string | null): string {
+    return userId ? `finix_streak_user_${userId}` : 'finix_streak_guest';
+}
+
+function sanitizeStreakData(rawObj: any, todayStr: string): StreakData {
+    if (rawObj && rawObj.version === 2) {
+        const activeDates: string[] = Array.isArray(rawObj.activeDates)
+            ? (Array.from(new Set<string>(rawObj.activeDates.filter((d: any): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))))).sort()
+            : [];
+        if (!activeDates.includes(todayStr)) {
+            activeDates.push(todayStr);
+            activeDates.sort();
+        }
+        const set = new Set(activeDates);
+        const streak = computeConsecutiveStreak(set, todayStr);
+        const longestStreak = computeLongestStreak(activeDates, streak, typeof rawObj.longestStreak === 'number' ? rawObj.longestStreak : streak);
+        return {
+            version: 2,
+            streak,
+            longestStreak,
+            lastActiveDate: todayStr,
+            activeDates: activeDates.slice(-90),
+        };
+    }
+
+    // Legacy unversioned data or corrupted mock data:
+    // In legacy data, rawObj might have fake dates from the old `streak: 4` mock fallback.
+    // If the streak broke, or if unversioned, only retain true contiguous activity ending at lastDate.
+    let activeDates: string[] = [];
+    let realChain = 1;
+    const lastDate = typeof rawObj?.lastActiveDate === 'string' ? rawObj.lastActiveDate : todayStr;
+
+    if (Array.isArray(rawObj?.activeDates) && rawObj.activeDates.length > 0) {
+        const validDates: string[] = rawObj.activeDates.filter((d: any) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d));
+        const set = new Set(validDates);
+        realChain = computeConsecutiveStreak(set, lastDate);
+        if (realChain > 1) {
+            // Keep genuine contiguous chain
+            const chainDates: string[] = [];
+            const [y, m, d] = lastDate.split('-').map(Number);
+            const anchor = new Date(y, m - 1, d);
+            for (let i = 0; i < realChain; i++) {
+                const cur = new Date(anchor);
+                cur.setDate(anchor.getDate() - i);
+                chainDates.unshift(getLocalDateKey(cur));
+            }
+            activeDates = chainDates;
+        } else {
+            // Fresh or broken legacy streak: start cleanly today
+            activeDates = [todayStr];
+        }
+    } else {
+        activeDates = [todayStr];
+    }
+
+    if (!activeDates.includes(todayStr)) {
+        activeDates.push(todayStr);
+        activeDates.sort();
+    }
+
+    const set = new Set(activeDates);
+    const streak = computeConsecutiveStreak(set, todayStr);
+    const legacyLongest = realChain > 1 && typeof rawObj?.longestStreak === 'number' ? rawObj.longestStreak : streak;
+    const longestStreak = computeLongestStreak(activeDates, streak, legacyLongest);
+
+    return {
+        version: 2,
+        streak,
+        longestStreak,
+        lastActiveDate: todayStr,
+        activeDates: activeDates.slice(-90),
+    };
+}
+
+function calculateCurrentWeek(activeDatesSet: Set<string>, todayStr: string, currentStreak: number, now: Date = new Date()): WeekDayStatus[] {
     const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
     const diffToMonday = day === 0 ? -6 : 1 - day;
     const monday = new Date(now);
@@ -71,6 +183,18 @@ function calculateCurrentWeek(activeDatesSet: Set<string>, todayStr: string, now
         { label: 'D', fullLabel: 'Domingo' },
     ];
 
+    // Compute streak active range: dates backwards from today for `currentStreak` days
+    const streakDatesSet = new Set<string>();
+    if (currentStreak > 0) {
+        const [y, m, d] = todayStr.split('-').map(Number);
+        const anchor = new Date(y, m - 1, d);
+        for (let s = 0; s < currentStreak; s++) {
+            const cur = new Date(anchor);
+            cur.setDate(anchor.getDate() - s);
+            streakDatesSet.add(getLocalDateKey(cur));
+        }
+    }
+
     return dayMeta.map((meta, i) => {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
@@ -79,6 +203,7 @@ function calculateCurrentWeek(activeDatesSet: Set<string>, todayStr: string, now
         const isPast = dateStr < todayStr;
         const isFuture = dateStr > todayStr;
         const isActive = activeDatesSet.has(dateStr);
+        const isPartOfCurrentStreak = streakDatesSet.has(dateStr);
 
         return {
             label: meta.label,
@@ -89,91 +214,62 @@ function calculateCurrentWeek(activeDatesSet: Set<string>, todayStr: string, now
             isPast,
             isFuture,
             isActive,
+            isPartOfCurrentStreak,
         };
     });
 }
 
 function readAndProcessStreak(userId?: string | null): StreakData {
+    const today = getLocalDateKey();
     if (typeof window === 'undefined') {
-        const today = getLocalDateKey();
-        return { streak: 1, longestStreak: 1, lastActiveDate: today, activeDates: [today] };
+        return { version: 2, streak: 1, longestStreak: 1, lastActiveDate: today, activeDates: [today] };
     }
 
     const key = getStorageKey(userId);
-    const fallbackKey = 'finix_investor_streak';
-    const raw = localStorage.getItem(key) || localStorage.getItem(fallbackKey);
-    const today = getLocalDateKey();
+    let raw = localStorage.getItem(key);
 
-    let data: Partial<StreakData> = {};
+    // If new user session has no entry yet, check if there's a guest check-in from today to carry over
+    if (!raw && userId) {
+        const guestRaw = localStorage.getItem('finix_streak_guest');
+        if (guestRaw) {
+            try {
+                const parsedGuest = JSON.parse(guestRaw);
+                if (parsedGuest && parsedGuest.lastActiveDate === today) {
+                    raw = guestRaw;
+                    localStorage.removeItem('finix_streak_guest');
+                }
+            } catch { }
+        }
+    }
+
+    // Also check legacy keys if no current key
+    if (!raw) {
+        const legacyUserKey = userId ? `finix_streak_${userId}` : null;
+        if (legacyUserKey && localStorage.getItem(legacyUserKey)) {
+            raw = localStorage.getItem(legacyUserKey);
+            localStorage.removeItem(legacyUserKey);
+        } else if (!userId && localStorage.getItem('finix_investor_streak')) {
+            raw = localStorage.getItem('finix_investor_streak');
+            localStorage.removeItem('finix_investor_streak');
+        }
+    }
+
+    let parsed: any = null;
     if (raw) {
         try {
-            data = JSON.parse(raw);
+            parsed = JSON.parse(raw);
         } catch { }
     }
 
-    let streak = typeof data.streak === 'number' && data.streak > 0 ? data.streak : 4;
-    let longestStreak = typeof data.longestStreak === 'number' ? data.longestStreak : streak;
-    let lastDate = data.lastActiveDate || (data as any).lastDate;
-    let activeDates: string[] = Array.isArray(data.activeDates) ? [...data.activeDates] : [];
-
-    // If activeDates is empty (migration from legacy format), construct active dates backward from lastDate
-    if (activeDates.length === 0 && lastDate) {
-        const anchor = new Date(lastDate + 'T12:00:00');
-        for (let i = 0; i < streak; i++) {
-            const prev = new Date(anchor);
-            prev.setDate(anchor.getDate() - i);
-            activeDates.unshift(getLocalDateKey(prev));
-        }
-    }
-
-    if (!lastDate) {
-        // Initializing fresh user
-        lastDate = today;
-        streak = Math.max(1, streak);
-        activeDates = [today];
-    } else if (lastDate === today) {
-        // Already recorded today
-        if (!activeDates.includes(today)) {
-            activeDates.push(today);
-        }
-    } else {
-        const diff = diffCalendarDays(lastDate, today);
-        if (diff === 1) {
-            // Consecutive day: increment streak
-            streak += 1;
-            longestStreak = Math.max(longestStreak, streak);
-            lastDate = today;
-            if (!activeDates.includes(today)) {
-                activeDates.push(today);
-            }
-        } else if (diff > 1) {
-            // Broken streak: resets to 1
-            streak = 1;
-            lastDate = today;
-            if (!activeDates.includes(today)) {
-                activeDates.push(today);
-            }
-        }
-    }
-
-    // Keep active dates clean and sorted (last 60 days max)
-    const uniqueDates = Array.from(new Set(activeDates)).sort().slice(-60);
-
-    const result: StreakData = {
-        streak,
-        longestStreak: Math.max(longestStreak, streak),
-        lastActiveDate: lastDate,
-        activeDates: uniqueDates,
-    };
+    const processed = sanitizeStreakData(parsed, today);
 
     try {
-        localStorage.setItem(key, JSON.stringify(result));
-        if (key !== fallbackKey) {
-            localStorage.setItem(fallbackKey, JSON.stringify(result));
-        }
+        localStorage.setItem(key, JSON.stringify(processed));
+        // Remove global legacy key to prevent data leaks between different users
+        localStorage.removeItem('finix_investor_streak');
     } catch { }
 
-    return result;
+    return processed;
 }
 
 export function useInvestorStreak() {
@@ -191,7 +287,7 @@ export function useInvestorStreak() {
         refreshStreak();
 
         const handleStorage = (e: StorageEvent) => {
-            if (e.key === getStorageKey(userId) || e.key === 'finix_investor_streak') {
+            if (e.key === getStorageKey(userId) || e.key === 'finix_streak_updated') {
                 refreshStreak();
             }
         };
@@ -209,9 +305,9 @@ export function useInvestorStreak() {
         };
     }, [userId, refreshStreak]);
 
-    const activeSet = new Set(streakData.activeDates);
-    const todayStr = getLocalDateKey();
-    const weekDays = calculateCurrentWeek(activeSet, todayStr);
+    const activeSet = useMemo(() => new Set(streakData.activeDates), [streakData.activeDates]);
+    const todayStr = useMemo(() => getLocalDateKey(), []);
+    const weekDays = useMemo(() => calculateCurrentWeek(activeSet, todayStr, streakData.streak), [activeSet, todayStr, streakData.streak]);
 
     const currentStreak = streakData.streak;
     const nextMilestone = STREAK_MILESTONES.find(m => m.targetDays > currentStreak) || STREAK_MILESTONES[STREAK_MILESTONES.length - 1];

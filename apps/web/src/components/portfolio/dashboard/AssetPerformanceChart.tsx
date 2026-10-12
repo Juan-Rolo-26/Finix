@@ -4,7 +4,6 @@ import {
     BarChart,
     CartesianGrid,
     Cell,
-    Legend,
     ReferenceLine,
     ResponsiveContainer,
     Tooltip as RechartsTooltip,
@@ -99,7 +98,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         <span className="block text-xs text-muted-foreground">{item.asset}</span>
                     </span>
                     <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-secondary text-muted-foreground">
-                        Peso: {item.weight.toFixed(1)}%
+                        Peso: {formatPercent(item.weight, 1)}
                     </span>
                 </div>
 
@@ -131,8 +130,8 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
     return (
         <Card className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 shadow-sm overflow-hidden flex flex-col', className)}>
             <CardHeader className="px-4 py-5 sm:px-6 sm:py-6 border-b border-border/40 text-center">
-                <div className="flex flex-col items-center justify-center gap-4 text-center">
-                    <div className="flex flex-col items-center text-center">
+                <div className="flex min-w-0 w-full flex-col items-center justify-center gap-4 text-center">
+                    <div className="flex min-w-0 w-full flex-col items-center text-center">
                         <CardTitle className="text-2xl font-bold tracking-tight flex items-center justify-center gap-2.5 text-center">
                             <BarChart3 className="w-5 h-5 text-primary" />
                             Rendimiento por Activo
@@ -143,10 +142,10 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                     </div>
 
                     {/* Selector de modo de vista */}
-                    <div className="flex max-w-full items-center justify-center gap-1 overflow-x-auto p-1 rounded-xl bg-secondary/50 border border-border/40">
+                    <div className="flex w-full max-w-full items-center justify-start sm:justify-center gap-1 overflow-x-auto p-1 rounded-xl bg-secondary/50 border border-border/40">
                         <button
                             onClick={() => setViewMode('PERFORMANCE')} aria-pressed={viewMode === 'PERFORMANCE'}
-                            className={`flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                            className={`flex shrink-0 items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
                                 viewMode === 'PERFORMANCE'
                                     ? 'bg-card text-foreground shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -157,7 +156,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         </button>
                         <button
                             onClick={() => setViewMode('WEIGHT')} aria-pressed={viewMode === 'WEIGHT'}
-                            className={`flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                            className={`flex shrink-0 items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
                                 viewMode === 'WEIGHT'
                                     ? 'bg-card text-foreground shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -168,7 +167,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         </button>
                         <button
                             onClick={() => setViewMode('LIST')} aria-pressed={viewMode === 'LIST'}
-                            className={`flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                            className={`flex shrink-0 items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
                                 viewMode === 'LIST'
                                     ? 'bg-card text-foreground shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -218,13 +217,18 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         </div>
                     </div>
                 ) : viewMode === 'PERFORMANCE' ? (
-                    <div className="h-[320px] min-h-[320px] flex-1 w-full overflow-x-auto sm:min-h-[390px]">
+                    <div className="min-w-0 w-full">
+                      <div className="mb-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-muted-foreground" aria-label="Leyenda del gráfico">
+                        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />Retorno del activo (%)</span>
+                        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-sky-400" />Aporte a la cartera (%)</span>
+                      </div>
+                      <div className="h-[320px] min-h-[320px] w-full overflow-x-auto sm:min-h-[390px]" role="region" aria-label="Rendimiento por activo; desplazamiento horizontal" tabIndex={0}>
                       <div className="h-full" style={{ minWidth: Math.max(280, safeData.length * 96) }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                             accessibilityLayer
                                 data={safeData}
-                                margin={{ top: 20, right: 16, bottom: 8, left: -10 }}
+                                margin={{ top: 20, right: 16, bottom: 8, left: 0 }}
                                 barGap={8}
                                 maxBarSize={48}
                                 barCategoryGap={safeData.length === 1 ? '58%' : safeData.length <= 2 ? '42%' : '20%'}
@@ -257,23 +261,13 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                     tickLine={false}
                                     tick={{ ...CHART_AXIS_TICK, fontSize: 13 }}
                                     width={52}
-                                    tickFormatter={(val: number) => `${val >= 0 ? '+' : ''}${val}%`}
+                                    tickFormatter={(val: number) => formatPercent(val, 1, true)}
                                     domain={yDomain}
                                     orientation="left"
                                 />
                                 {/* Línea cero como eje base firme */}
                                 <ReferenceLine y={0} stroke="rgba(148, 163, 184, 0.45)" strokeWidth={1.5} />
 
-                                <Legend
-                                    verticalAlign="top"
-                                    align="left"
-                                    iconType="circle"
-                                    wrapperStyle={{
-                                        paddingBottom: 16,
-                                        fontSize: '12px',
-                                        fontWeight: 600,
-                                    }}
-                                />
                                 <RechartsTooltip content={renderTooltip} cursor={{ fill: 'hsl(var(--foreground) / 0.04)' }} />
 
                                 {/* Barra de Retorno */}
@@ -302,12 +296,14 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                             </BarChart>
                         </ResponsiveContainer>
                       </div>
+                      </div>
+                      {safeData.length > 2 && <p className="mt-2 text-xs text-muted-foreground sm:hidden">Deslizá el gráfico para ver todos los activos.</p>}
                     </div>
                 ) : viewMode === 'WEIGHT' ? (
                     <div className="min-h-[300px] w-full flex flex-col justify-center gap-4 px-1 sm:min-h-[340px] sm:px-4">
                         {safeData.map((item) => (
                             <div key={item.asset} className="space-y-1.5">
-                                <div className="flex items-center justify-between text-xs sm:text-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
                                     <span className="font-heading font-black text-foreground flex min-w-0 items-center gap-2">
                                         <SymbolLogo symbol={item.symbol} size={24} className="shrink-0" />
                                         <span className="truncate">{item.name}</span>
@@ -320,7 +316,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                             </span>
                                         </span>
                                         <span className="font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/25">
-                                            {item.weight.toFixed(1)}%
+                                            {formatPercent(item.weight, 1)}
                                         </span>
                                     </div>
                                 </div>
@@ -349,7 +345,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                         <SymbolLogo symbol={item.symbol} size={34} className="shrink-0" />
                                         <div className="min-w-0 flex-1">
                                             <div className="font-bold text-foreground text-sm leading-tight truncate">{item.name}</div>
-                                            <div className="text-xs text-muted-foreground">{item.asset} · {item.weight.toFixed(1)}% del portafolio</div>
+                                            <div className="text-xs text-muted-foreground">{item.asset} · {formatPercent(item.weight, 1)} del portafolio</div>
                                         </div>
                                     </div>
                                     {/* Bottom row: retorno + aporte side by side */}
@@ -367,7 +363,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                             </div>
                                         </div>
                                         <span className="font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/25 text-xs shrink-0">
-                                            {item.weight.toFixed(1)}%
+                                            {formatPercent(item.weight, 1)}
                                         </span>
                                     </div>
                                 </div>

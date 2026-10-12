@@ -3,6 +3,20 @@ import { PrismaService } from '../prisma.service';
 import { CreateArticleDto, UpdateArticleDto } from './dto/article.dto';
 import { CreateCategoryDto, CreateSubcategoryDto } from './dto/category.dto';
 import { SEED_CATEGORIES, SEED_ARTICLES, SEED_LEARNING_PATHS } from './education-seed.data';
+import { EDUCATION_BASELINE_ARTICLES } from './education-baseline.data';
+
+const canonical = (v: any): any =>
+    Array.isArray(v)
+        ? v.map(canonical)
+        : v && typeof v === 'object' && !(v instanceof Date)
+        ? Object.fromEntries(Object.keys(v).sort().map(k => [k, canonical(v[k])]))
+        : v;
+
+const COMPARE_FIELDS = [
+    'title', 'summary', 'content', 'level', 'isFeatured', 'readTimeMinutes',
+    'order', 'formula', 'interactiveWidget', 'keyTakeaways', 'commonMistakes',
+    'prosCons', 'practicalExample', 'sources'
+];
 
 @Injectable()
 export class EducationService implements OnModuleInit {
@@ -64,44 +78,78 @@ export class EducationService implements OnModuleInit {
                 if (!categoryId) continue;
                 const subcategoryId = art.subcategorySlug ? subcategoryMap.get(art.subcategorySlug) : null;
 
-                const createdArticle = await this.prisma.educationArticle.upsert({
+                const existing = await this.prisma.educationArticle.findUnique({
                     where: { slug: art.slug },
-                    update: {},
-                    create: {
-                        title: art.title,
-                        slug: art.slug,
-                        summary: art.summary,
-                        content: art.content,
-                        categoryId,
-                        subcategoryId,
-                        level: art.level as any,
-                        status: 'PUBLISHED',
-                        isFeatured: art.isFeatured,
-                        readTimeMinutes: art.readTimeMinutes,
-                        order: art.order,
-                        formula: art.formula,
-                        interactiveWidget: art.interactiveWidget,
-                        keyTakeaways: art.keyTakeaways as any,
-                        commonMistakes: art.commonMistakes as any,
-                        prosCons: art.prosCons as any,
-                        practicalExample: art.practicalExample,
-                        sources: art.sources as any,
-                    },
                 });
-                articleMap.set(art.slug, createdArticle.id);
+
+                let articleId: string;
+                if (!existing) {
+                    const created = await this.prisma.educationArticle.create({
+                        data: {
+                            title: art.title,
+                            slug: art.slug,
+                            summary: art.summary,
+                            content: art.content,
+                            categoryId,
+                            subcategoryId,
+                            level: art.level as any,
+                            status: 'PUBLISHED',
+                            isFeatured: art.isFeatured,
+                            readTimeMinutes: art.readTimeMinutes,
+                            order: art.order,
+                            formula: art.formula,
+                            interactiveWidget: art.interactiveWidget,
+                            keyTakeaways: art.keyTakeaways as any,
+                            commonMistakes: art.commonMistakes as any,
+                            prosCons: art.prosCons as any,
+                            practicalExample: art.practicalExample,
+                            sources: art.sources as any,
+                        },
+                    });
+                    articleId = created.id;
+                } else {
+                    articleId = existing.id;
+                    // PRESERVAR ESTRICTAMENTE EDICIONES Y STATUS DEL TITULAR/ADMIN:
+                    // 1. Si el artículo NO está en PUBLISHED (ej: DRAFT o ARCHIVED), no tocar.
+                    if (existing.status === 'PUBLISHED') {
+                        const baselineArt = (EDUCATION_BASELINE_ARTICLES as any[]).find(b => b.slug === art.slug);
+                        if (baselineArt) {
+                            const dataToUpdate: Record<string, any> = {};
+                            for (const field of COMPARE_FIELDS) {
+                                const dbVal = canonical((existing as any)[field] ?? null);
+                                const baseVal = canonical(baselineArt[field] ?? null);
+                                const newVal = canonical((art as any)[field] ?? null);
+
+                                const dbStr = JSON.stringify(dbVal);
+                                const baseStr = JSON.stringify(baseVal);
+                                const newStr = JSON.stringify(newVal);
+
+                                // Si el campo en DB coincide con el baseline original (intacto, no modificado por admin)
+                                // y el nuevo valor del seed es diferente, actualizar ese campo específico.
+                                if (dbStr === baseStr && dbStr !== newStr) {
+                                    dataToUpdate[field] = (art as any)[field];
+                                }
+                            }
+
+                            if (Object.keys(dataToUpdate).length > 0) {
+                                await this.prisma.educationArticle.update({
+                                    where: { id: existing.id },
+                                    data: dataToUpdate,
+                                }).catch((err) => {
+                                    this.logger.warn(`No se pudo actualizar artículo ${art.slug}: ${err.message}`);
+                                });
+                            }
+                        }
+                    }
+                }
+                articleMap.set(art.slug, articleId);
             }
 
             // 3. Learning Paths
             for (const path of SEED_LEARNING_PATHS) {
                 const createdPath = await this.prisma.educationLearningPath.upsert({
                     where: { slug: path.slug },
-                    update: {
-                        title: path.title,
-                        description: path.description,
-                        level: path.level as any,
-                        icon: path.icon,
-                        order: path.order,
-                    },
+                    update: {},
                     create: {
                         title: path.title,
                         slug: path.slug,
@@ -125,7 +173,7 @@ export class EducationService implements OnModuleInit {
                                 articleId,
                             },
                         },
-                        update: { order: i + 1 },
+                        update: {},
                         create: {
                             pathId: createdPath.id,
                             articleId,
@@ -216,7 +264,7 @@ export class EducationService implements OnModuleInit {
         page?: number;
     }) {
         const page = Math.max(1, Number(query.page) || 1);
-        const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
+        const limit = Math.min(200, Math.max(1, Number(query.limit) || 100));
         const skip = (page - 1) * limit;
 
         const where: any = {
@@ -236,12 +284,66 @@ export class EducationService implements OnModuleInit {
             where.isFeatured = true;
         }
         if (query.search?.trim()) {
-            const term = query.search.trim();
-            where.OR = [
-                { title: { contains: term, mode: 'insensitive' } },
-                { summary: { contains: term, mode: 'insensitive' } },
-                { content: { contains: term, mode: 'insensitive' } },
-            ];
+            const rawTerm = query.search.trim();
+            const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const normalizedTerm = normalize(rawTerm);
+            const terms = new Set<string>([rawTerm, normalizedTerm]);
+            const lowerNorm = normalizedTerm.toLowerCase();
+
+            if (lowerNorm === 'pe' || lowerNorm === 'p-e' || lowerNorm === 'p/e' || lowerNorm === 'per') {
+                terms.add('PER');
+                terms.add('P/E');
+                terms.add('Price to Earnings');
+                terms.add('precio beneficio');
+            }
+            if (lowerNorm.includes('media movil') || lowerNorm.includes('sma') || lowerNorm.includes('ema') || lowerNorm.includes('200') || lowerNorm.includes('20')) {
+                terms.add('Medias Móviles');
+                terms.add('SMA');
+                terms.add('EMA');
+                terms.add('media móvil');
+                terms.add('media movil');
+            }
+            if (lowerNorm === 'rsi') {
+                terms.add('RSI');
+                terms.add('Fuerza Relativa');
+                terms.add('Wilder');
+            }
+            if (lowerNorm === 'macd') {
+                terms.add('MACD');
+                terms.add('Convergencia/Divergencia');
+            }
+            if (lowerNorm === 'dcf') {
+                terms.add('DCF');
+                terms.add('Descuento de Flujos');
+                terms.add('Fair Value');
+            }
+            if (lowerNorm === 'roic') {
+                terms.add('ROIC');
+                terms.add('Capital Invertido');
+            }
+            if (lowerNorm === 'cedear' || lowerNorm === 'cedears') {
+                terms.add('CEDEAR');
+                terms.add('CEDEARs');
+                terms.add('ratio de conversión');
+            }
+            if (lowerNorm === 'mep' || lowerNorm === 'ccl') {
+                terms.add('MEP');
+                terms.add('CCL');
+                terms.add('Dólar');
+            }
+            if (lowerNorm === 'bonos' || lowerNorm === 'tir' || lowerNorm === 'duration') {
+                terms.add('Bonos');
+                terms.add('TIR');
+                terms.add('Duration');
+            }
+
+            const conditions: any[] = [];
+            for (const t of terms) {
+                conditions.push({ title: { contains: t, mode: 'insensitive' } });
+                conditions.push({ summary: { contains: t, mode: 'insensitive' } });
+                conditions.push({ content: { contains: t, mode: 'insensitive' } });
+            }
+            where.OR = conditions;
         }
 
         const [items, total] = await Promise.all([
@@ -302,7 +404,7 @@ export class EducationService implements OnModuleInit {
             },
         });
 
-        if (!article || (article.status !== 'PUBLISHED' && !userId)) {
+        if (!article || article.status !== 'PUBLISHED') {
             throw new NotFoundException('Artículo no encontrado');
         }
 
@@ -327,7 +429,7 @@ export class EducationService implements OnModuleInit {
         const previous = currentIndex > 0 ? siblings[currentIndex - 1] : null;
         const next = currentIndex >= 0 && currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : null;
 
-        // User progress if logged in
+        // User progress if logged in (strictly read-only: no lastReadAt mutations on consultation)
         let userProgress: any = null;
         if (userId) {
             userProgress = await this.prisma.educationUserProgress.findUnique({
@@ -336,22 +438,6 @@ export class EducationService implements OnModuleInit {
                         userId,
                         articleId: article.id,
                     },
-                },
-            });
-            // Update last read time
-            await this.prisma.educationUserProgress.upsert({
-                where: {
-                    userId_articleId: {
-                        userId,
-                        articleId: article.id,
-                    },
-                },
-                update: { lastReadAt: new Date() },
-                create: {
-                    userId,
-                    articleId: article.id,
-                    isCompleted: false,
-                    lastReadAt: new Date(),
                 },
             });
         }

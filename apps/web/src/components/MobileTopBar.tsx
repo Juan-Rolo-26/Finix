@@ -136,12 +136,6 @@ export function MobileTopBar() {
                 ) : (
                     <div className="flex items-center gap-1.5 ml-1">
                         <button
-                            onClick={() => navigate('/pricing#planes')}
-                            className="px-2 min-h-11 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
-                        >
-                            Planes
-                        </button>
-                        <button
                             onClick={() => navigate('/login')}
                             className="px-2.5 min-h-11 rounded-xl text-xs font-bold transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-primary"
                             style={{

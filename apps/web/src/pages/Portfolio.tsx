@@ -184,19 +184,29 @@ function fmtCurrency(amount: number, currency = "USD") {
   return formatter.format(safe);
 }
 
-function fmtPct(value: number) {
+const PORTFOLIO_DECIMAL_FORMATTERS = {
+  1: new Intl.NumberFormat("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+  2: new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  4: new Intl.NumberFormat("es-AR", { minimumFractionDigits: 4, maximumFractionDigits: 4 }),
+};
+const PORTFOLIO_COMPACT_FORMATTERS = {
+  USD: new Intl.NumberFormat("es-AR", { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 2 }),
+  ARS: new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", currencyDisplay: "code", notation: "compact", maximumFractionDigits: 2 }),
+};
+function fmtDecimal(value: number, digits: 1 | 2 | 4 = 2) {
+  return PORTFOLIO_DECIMAL_FORMATTERS[digits].format(Number.isFinite(value) ? value : 0);
+}
+function fmtPct(value: number, digits: 1 | 2 = 2) {
   const safe = typeof value === "number" && Number.isFinite(value) ? value : 0;
-  return `${safe >= 0 ? "+" : ""}${safe.toFixed(2)}%`;
+  return `${safe >= 0 ? "+" : ""}${fmtDecimal(safe, digits)}%`;
 }
 
 function fmtCompact(value: number, currency = "USD") {
   const safe = typeof value === "number" && Number.isFinite(value) ? value : 0;
   const currencyCode = currency === "USD MEP" ? "USD" : currency.toUpperCase();
-  const abs = Math.abs(safe);
-  const sign = safe < 0 ? "-" : "";
-  if (abs >= 1_000_000) return `${sign}${currencyCode} ${(abs / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `${sign}${currencyCode} ${(abs / 1_000).toFixed(1)}K`;
-  return fmtCurrency(safe, currencyCode);
+  if (Math.abs(safe) < 1_000) return fmtCurrency(safe, currencyCode);
+  const formatter = PORTFOLIO_COMPACT_FORMATTERS[currencyCode as keyof typeof PORTFOLIO_COMPACT_FORMATTERS] ?? PORTFOLIO_COMPACT_FORMATTERS.USD;
+  return formatter.format(safe);
 }
 
 function fmtArs(amount: number, maximumFractionDigits = 0) {
@@ -319,7 +329,7 @@ function AssetRow({
       <div className="w-full md:w-auto min-w-0 flex items-center justify-between md:justify-start">
         <AssetRowInfo
           symbol={symbol}
-          subtext={`${asset.cantidad.toFixed(4)} unid. · PPC ${fmtCurrency(asset.ppc, currency)}${
+          subtext={`${fmtDecimal(asset.cantidad, 4)} unid. · PPC ${fmtCurrency(asset.ppc, currency)}${
             asset.cedearRatio ? ` · Ratio ${asset.cedearRatio}:1` : ''
           }`}
           size="md"
@@ -340,7 +350,7 @@ function AssetRow({
               CEDEAR: {fmtArs(asset.cedearPriceArs)}
               {typeof cedearChange === 'number' && (
                 <span className={cedearChange >= 0 ? " text-emerald-400 ml-1" : " text-red-400 ml-1"}>
-                  ({cedearChange >= 0 ? "+" : ""}{cedearChange.toFixed(1)}%)
+                  ({fmtPct(cedearChange, 1)})
                 </span>
               )}
             </span>
@@ -350,7 +360,7 @@ function AssetRow({
 
       {/* 2: Weight bar */}
       <div className="hidden md:flex flex-col items-end gap-1 w-full">
-        <span className="text-[11px] text-muted-foreground font-semibold tabular-nums">{weight.toFixed(1)}%</span>
+        <span className="text-[11px] text-muted-foreground font-semibold tabular-nums">{fmtDecimal(weight, 1)}%</span>
         <div className="w-full h-1.5 rounded-full bg-border/50 overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary"
@@ -364,7 +374,7 @@ function AssetRow({
         <p className="text-[13px] font-semibold tabular-nums text-foreground">{fmtCurrency(price, currency)}</p>
         {typeof dailyChange === 'number' ? (
           <p className={cn("text-[10px] font-semibold tabular-nums flex items-center justify-end gap-0.5", dailyChange >= 0 ? "text-emerald-500" : "text-red-500")}>
-            {dailyChange >= 0 ? "+" : ""}{dailyChange.toFixed(2)}%
+            {fmtPct(dailyChange)}
           </p>
         ) : (
           <p className="text-[10px] text-muted-foreground font-medium">cotización</p>
@@ -386,7 +396,7 @@ function AssetRow({
             <div className="flex items-center justify-end gap-1.5 mt-0.5">
               {typeof cedearChange === 'number' && (
                 <span className={cn("text-[10px] font-semibold tabular-nums", cedearChange >= 0 ? "text-emerald-500" : "text-red-500")}>
-                  {cedearChange >= 0 ? "+" : ""}{cedearChange.toFixed(2)}%
+                  {fmtPct(cedearChange)}
                 </span>
               )}
               {Boolean(asset.cedearRatio) && (
@@ -414,7 +424,7 @@ function AssetRow({
           {fmtPct(pct)}
         </p>
         {asset.cedearTotalValuationArs && !hideValues ? (
-          <p className="text-[10px] text-muted-foreground font-medium tabular-nums mt-0.5" title={`Valuación en pesos argentinos (${asset.cedearQuantity ? `${asset.cedearQuantity.toFixed(2)} CEDEARs` : ''})`}>
+          <p className="text-[10px] text-muted-foreground font-medium tabular-nums mt-0.5" title={`Valuación en pesos argentinos (${asset.cedearQuantity ? `${fmtDecimal(asset.cedearQuantity)} CEDEARs` : ''})`}>
             ≈ {fmtArs(asset.cedearTotalValuationArs)}
           </p>
         ) : null}
@@ -460,7 +470,7 @@ function MovementRow({ movement, currency }: { movement: Movement; currency: str
       {/* Asset info with logo + exchange + name */}
       <AssetRowInfo
         symbol={symbol}
-        subtext={`${new Date(movement.fecha).toLocaleDateString("es-AR")} · ${movement.cantidad.toFixed(4)} × ${fmtCurrency(movement.precio, currency)}`}
+        subtext={`${new Date(movement.fecha).toLocaleDateString("es-AR")} · ${fmtDecimal(movement.cantidad, 4)} × ${fmtCurrency(movement.precio, currency)}`}
         size="sm"
         className="flex-1 min-w-0"
       />
@@ -1598,7 +1608,7 @@ const PortfolioPage = () => {
 
                     {totalValue > 0 && (
                       <Badge variant="outline" className="border-emerald-500/25 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-lg">
-                        {((cashBalance / totalValue) * 100).toFixed(1)}% cartera
+                        {fmtDecimal((cashBalance / totalValue) * 100, 1)}% cartera
                       </Badge>
                     )}
                   </div>

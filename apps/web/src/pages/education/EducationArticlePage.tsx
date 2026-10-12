@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo, Fragment } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import {
     GraduationCap, Clock, ArrowLeft, ArrowRight, CheckCircle2,
     Sparkles, ChevronRight,
-    ArrowUp, BookOpen, AlertCircle, AlignLeft
+    ArrowUp, BookOpen, AlertCircle, AlignLeft, ExternalLink
 } from 'lucide-react';
+import { renderEducationText as renderMarkdownText, EducationTextBlock, EducationTable } from '@/components/education/EducationText';
 import { apiFetch } from '@/lib/api';
-import { useAuthStore } from '@/stores/authStore';
 import { EducationalWidgetContainer } from '@/components/education/InteractiveWidgets';
 
 interface TocItem {
@@ -16,14 +16,9 @@ interface TocItem {
 
 export default function EducationArticlePage() {
     const { articleSlug } = useParams<{ categorySlug?: string; articleSlug: string }>();
-    const navigate = useNavigate();
-    const { user } = useAuthStore();
 
     const [article, setArticle] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [isCompleted, setIsCompleted] = useState(false);
-    const [savingProgress, setSavingProgress] = useState(false);
-    const [scrollProgress, setScrollProgress] = useState(0);
     const [activeHeadingId, setActiveHeadingId] = useState<string>('');
 
     // Extract table of contents headings
@@ -155,17 +150,6 @@ export default function EducationArticlePage() {
     }, [tocItems]);
 
     useEffect(() => {
-        const handleScroll = () => {
-            const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-            if (totalHeight > 0) {
-                setScrollProgress(Math.min(100, Math.max(0, (window.scrollY / totalHeight) * 100)));
-            }
-        };
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    useEffect(() => {
         let mounted = true;
         const load = async () => {
             setLoading(true);
@@ -174,7 +158,6 @@ export default function EducationArticlePage() {
                 if (res.ok && mounted) {
                     const data = await res.json();
                     setArticle(data);
-                    setIsCompleted(Boolean(data.userProgress?.isCompleted));
                 }
             } catch (err) {
                 console.error(err);
@@ -188,31 +171,10 @@ export default function EducationArticlePage() {
         return () => { mounted = false; };
     }, [articleSlug]);
 
-    const handleToggleComplete = async () => {
-        if (!user) {
-            navigate('/auth?tab=register');
-            return;
-        }
-
-        const next = !isCompleted;
-        setIsCompleted(next);
-        setSavingProgress(true);
-        try {
-            await apiFetch(`/education/articles/${articleSlug}/progress`, {
-                method: 'POST',
-                body: JSON.stringify({ isCompleted: next }),
-            });
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setSavingProgress(false);
-        }
-    };
-
     if (loading) {
         return (
             <div className="min-h-screen bg-background text-muted-foreground flex items-center justify-center">
-                Cargando lección educativa...
+                Cargando artículo educativo...
             </div>
         );
     }
@@ -234,14 +196,8 @@ export default function EducationArticlePage() {
 
     return (
         <div className="min-h-screen bg-background text-foreground pb-24">
-            {/* TOP NAVIGATION BREADCRUMB WITH READING PROGRESS */}
+            {/* TOP NAVIGATION BREADCRUMB */}
             <div className="border-b border-border/70 bg-card/40 sticky top-14 z-30 backdrop-blur-md px-4 py-3 relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-border/30">
-                    <div
-                        className="h-full bg-primary transition-all duration-150"
-                        style={{ width: `${scrollProgress}%` }}
-                    />
-                </div>
                 <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 text-xs pt-0.5">
                     <div className="flex items-center gap-1.5 overflow-hidden text-muted-foreground">
                         <Link to="/educativa" className="hover:text-primary transition-colors flex items-center gap-1 shrink-0">
@@ -261,19 +217,9 @@ export default function EducationArticlePage() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                        <button
-                            type="button"
-                            onClick={handleToggleComplete}
-                            disabled={savingProgress}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                                isCompleted
-                                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                                    : 'border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground'
-                            }`}
-                        >
-                            <CheckCircle2 className={`w-3.5 h-3.5 ${isCompleted ? 'text-emerald-500' : ''}`} />
-                            {isCompleted ? 'Completado' : 'Marcar Leído'}
-                        </button>
+                        <span className="text-[11px] font-semibold text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-lg">
+                            Consulta Libre
+                        </span>
                     </div>
                 </div>
             </div>
@@ -323,7 +269,7 @@ export default function EducationArticlePage() {
                     </aside>
 
                     {/* CENTRAL ZONE: ARTICLE CONTENT */}
-                    <main className="lg:col-span-6 space-y-8 min-w-0">
+                    <div className="lg:col-span-6 space-y-8 min-w-0">
                         {/* Header Details */}
                         <div className="space-y-4 border-b border-border/70 pb-6">
                             <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -355,7 +301,7 @@ export default function EducationArticlePage() {
                                         <summary className="flex items-center justify-between text-xs font-bold text-foreground cursor-pointer list-none">
                                             <span className="flex items-center gap-2">
                                                 <AlignLeft className="w-4 h-4 text-primary" />
-                                                Índice de esta lección ({tocItems.length} secciones)
+                                                Índice del artículo ({tocItems.length} secciones)
                                             </span>
                                             <ChevronRight className="w-4 h-4 text-muted-foreground group-open:rotate-90 transition-transform" />
                                         </summary>
@@ -408,11 +354,12 @@ export default function EducationArticlePage() {
                         <div className="prose prose-zinc dark:prose-invert max-w-none text-foreground/90 text-sm sm:text-base leading-relaxed space-y-4">
                             {article.content.split('\n\n').map((block: string, idx: number) => {
                                 if (block.startsWith('### ')) {
-                                    const title = block.replace('### ', '').trim();
+                                    const [heading, ...remainingLines] = block.split('\n');
+                                    const title = heading.replace('### ', '').trim();
                                     const id = 'sec-' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `sec-${idx}`;
                                     return (
+                                        <Fragment key={idx}>
                                         <h3
-                                            key={idx}
                                             id={id}
                                             className="text-lg sm:text-xl font-bold text-foreground mt-8 mb-3 scroll-mt-24 flex items-center justify-between group border-b border-border/40 pb-2"
                                         >
@@ -425,24 +372,63 @@ export default function EducationArticlePage() {
                                                 #
                                             </a>
                                         </h3>
+                                        {remainingLines.join('\n').trim() && <EducationTextBlock text={remainingLines.join('\n').trim()} />}
+                                        </Fragment>
                                     );
                                 }
                                 if (block.startsWith('---')) {
                                     return <hr key={idx} className="border-border/60 my-6" />;
                                 }
-                                if (block.startsWith('| ')) {
-                                    return (
-                                        <div key={idx} className="overflow-x-auto my-4 rounded-xl border border-border">
-                                            <pre className="p-3 text-xs font-mono bg-muted/40 text-foreground">
-                                                {block}
-                                            </pre>
-                                        </div>
-                                    );
+                                if (/^\s*\|/.test(block)) {
+                                    return <EducationTable key={idx} text={block} />;
+                                }
+                                if (block.startsWith('![')) {
+                                    const match = block.match(/!\[(.*?)\]\((.*?)\)/);
+                                    if (match) {
+                                        const alt = match[1];
+                                        const src = match[2];
+                                        const remaining = block.replace(/!\[.*?\]\(.*?\)/, '').trim();
+                                        const caption = remaining ? remaining.replace(/^\*+|\*+$/g, '') : alt;
+                                        return (
+                                            <figure key={idx} className="my-6 space-y-2">
+                                                <div className="rounded-2xl overflow-hidden border border-border/80 bg-card shadow-xs group">
+                                                    <a
+                                                        href={src}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="block cursor-zoom-in"
+                                                        title="Tocar para ver en tamaño completo"
+                                                    >
+                                                        <img
+                                                            src={src}
+                                                            alt={alt}
+                                                            loading="lazy"
+                                                            className="w-full h-auto max-h-[460px] object-contain mx-auto bg-card hover:scale-[1.01] transition-transform"
+                                                        />
+                                                    </a>
+                                                    <div className="p-2.5 bg-muted/50 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground px-3">
+                                                        <span className="truncate">{alt}</span>
+                                                        <a
+                                                            href={src}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 text-primary hover:underline font-bold shrink-0 ml-2"
+                                                        >
+                                                            Ampliar imagen ↗
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                {caption && (
+                                                    <figcaption className="text-xs text-muted-foreground leading-relaxed px-1 text-center italic">
+                                                        {renderMarkdownText(caption)}
+                                                    </figcaption>
+                                                )}
+                                            </figure>
+                                        );
+                                    }
                                 }
                                 return (
-                                    <p key={idx} className="leading-relaxed whitespace-pre-line">
-                                        {block}
-                                    </p>
+<EducationTextBlock key={idx} text={block} />
                                 );
                             })}
                         </div>
@@ -458,7 +444,7 @@ export default function EducationArticlePage() {
                                     {article.keyTakeaways.map((item: string, i: number) => (
                                         <li key={i} className="flex items-start gap-2">
                                             <span className="text-emerald-500 font-bold">•</span>
-                                            <span>{item}</span>
+                                            <span>{renderMarkdownText(item)}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -476,7 +462,7 @@ export default function EducationArticlePage() {
                                     {article.commonMistakes.map((item: string, i: number) => (
                                         <li key={i} className="flex items-start gap-2">
                                             <span className="text-rose-500 font-bold">•</span>
-                                            <span>{item}</span>
+                                            <span>{renderMarkdownText(item)}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -488,9 +474,27 @@ export default function EducationArticlePage() {
                             <div className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-2 text-xs text-muted-foreground">
                                 <span className="font-bold text-foreground block">Fuentes y Bibliografía:</span>
                                 <ul className="list-disc pl-4 space-y-1">
-                                    {article.sources.map((s: any, i: number) => (
-                                        <li key={i}>{s.title || s}</li>
-                                    ))}
+                                    {article.sources.map((s: any, i: number) => {
+                                        if (typeof s === 'string') {
+                                            return <li key={i}>{renderMarkdownText(s)}</li>;
+                                        }
+                                        if (s?.url) {
+                                            return (
+                                                <li key={i}>
+                                                    <a
+                                                        href={s.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-primary hover:underline font-medium inline-flex items-center gap-1"
+                                                    >
+                                                        {s.title || s.url}
+                                                        <ExternalLink className="w-3 h-3 opacity-70" />
+                                                    </a>
+                                                </li>
+                                            );
+                                        }
+                                        return <li key={i}>{renderMarkdownText(s?.title || '')}</li>;
+                                    })}
                                 </ul>
                             </div>
                         )}
@@ -503,7 +507,7 @@ export default function EducationArticlePage() {
                                     className="p-4 rounded-xl border border-border hover:border-primary/50 bg-card hover:bg-muted/40 transition-all text-left space-y-1"
                                 >
                                     <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
-                                        <ArrowLeft className="w-3 h-3" /> Lección Anterior
+                                        <ArrowLeft className="w-3 h-3" /> Artículo anterior
                                     </span>
                                     <span className="text-xs font-bold text-foreground block truncate">
                                         {article.navigation.previous.title}
@@ -517,7 +521,7 @@ export default function EducationArticlePage() {
                                     className="p-4 rounded-xl border border-border hover:border-primary/50 bg-card hover:bg-muted/40 transition-all text-right space-y-1"
                                 >
                                     <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center justify-end gap-1">
-                                        Siguiente Lección <ArrowRight className="w-3 h-3" />
+                                        Artículo siguiente <ArrowRight className="w-3 h-3" />
                                     </span>
                                     <span className="text-xs font-bold text-foreground block truncate">
                                         {article.navigation.next.title}
@@ -530,7 +534,7 @@ export default function EducationArticlePage() {
                         <div className="p-4 rounded-xl bg-muted/30 border border-border/60 text-center text-xs text-muted-foreground leading-relaxed">
                             El contenido publicado en esta sección tiene fines exclusivamente informativos y educativos. No constituye asesoramiento financiero ni recomendación de inversión.
                         </div>
-                    </main>
+                    </div>
 
                     {/* RIGHT SIDEBAR: READING SUMMARY & FAST LINKS */}
                     <aside className="hidden lg:block lg:col-span-3 sticky top-28 space-y-6">
@@ -571,32 +575,39 @@ export default function EducationArticlePage() {
                             </div>
                         )}
 
-                        <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-4">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                Estado de Lectura
+                        <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-3.5">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                <BookOpen className="w-3.5 h-3.5 text-primary" />
+                                Ficha Técnica
                             </h4>
 
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2.5 rounded-xl ${isCompleted ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'}`}>
-                                    <CheckCircle2 className="w-5 h-5" />
+                            <div className="space-y-2 text-xs">
+                                <div className="flex items-center justify-between py-1 border-b border-border/50">
+                                    <span className="text-muted-foreground">Categoría</span>
+                                    <span className="font-semibold text-foreground">{article.category?.name || 'General'}</span>
                                 </div>
-                                <div className="space-y-0.5">
-                                    <div className="text-xs font-bold text-foreground">
-                                        {isCompleted ? 'Lección completada' : 'Pendiente de lectura'}
-                                    </div>
-                                    <div className="text-[11px] text-muted-foreground">
-                                        {article.readTimeMinutes} minutos estimados
-                                    </div>
+                                <div className="flex items-center justify-between py-1 border-b border-border/50">
+                                    <span className="text-muted-foreground">Subcategoría</span>
+                                    <span className="font-semibold text-foreground">{article.subcategory?.name || 'General'}</span>
+                                </div>
+                                <div className="flex items-center justify-between py-1 border-b border-border/50">
+                                    <span className="text-muted-foreground">Nivel</span>
+                                    <span className="font-semibold text-foreground">
+                                        {article.level === 'BEGINNER' ? 'Principiante' : article.level === 'INTERMEDIATE' ? 'Intermedio' : 'Avanzado'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between py-1">
+                                    <span className="text-muted-foreground">Lectura</span>
+                                    <span className="font-semibold text-foreground">{article.readTimeMinutes} min</span>
                                 </div>
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={handleToggleComplete}
-                                className="w-full py-2 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-all shadow-xs"
+                            <Link
+                                to={`/educativa/${article.category?.slug}`}
+                                className="block w-full py-2 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold text-center transition-colors"
                             >
-                                {isCompleted ? 'Volver a marcar pendiente' : 'Marcar como aprendido'}
-                            </button>
+                                Ver categoría completa
+                            </Link>
                         </div>
 
                         {/* Related Articles */}

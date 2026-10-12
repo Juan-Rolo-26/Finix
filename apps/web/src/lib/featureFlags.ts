@@ -39,14 +39,31 @@ export function isWatchlistEnabled(): boolean {
  * Determina si la sección Educativa está activa.
  *
  * Comportamiento:
- * - Oculta completamente por defecto (para producción VPS y repositorios públicos/GitHub).
- * - No elimina el código ni los componentes subyacentes.
- * - Puede activarse cuando se desee definiendo VITE_ENABLE_EDUCATION="true" en .env.
+ * - En local (Vite DEV o hostname localhost/127.0.0.1): ACTIVA por defecto.
+ * - Al deployar / build de producción en VPS: DESACTIVADA por defecto.
+ * - Puede forzarse explícitamente definiendo VITE_ENABLE_EDUCATION="true" o "false" en .env.
  */
 export function isEducationEnabled(): boolean {
+    if (import.meta.env.VITE_ENABLE_EDUCATION === 'false') {
+        return false;
+    }
     if (import.meta.env.VITE_ENABLE_EDUCATION === 'true') {
         return true;
     }
+
+    // Activa por defecto en desarrollo local Vite
+    if (import.meta.env.DEV) {
+        return true;
+    }
+
+    // Verificación adicional de ejecución local en navegador
+    if (typeof window !== 'undefined') {
+        const host = window.location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') {
+            return true;
+        }
+    }
+
     return false;
 }
 

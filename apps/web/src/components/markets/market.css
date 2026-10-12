@@ -1144,3 +1144,105 @@
         font-size: 14px;
     }
 }
+
+/* ==========================================================================
+   DESKTOP DENSITY ENHANCEMENTS (>=1024px)
+   Aligned with Rava / AlphaSpread / Investing financial density standards.
+   Optimizes vertical whitespace, aligns quotes and provides high data density
+   while strictly preserving FINIX branding, light/dark themes, and mobile layout.
+   ========================================================================== */
+@media (min-width: 1024px) {
+    .market-shell {
+        padding: 16px 24px 28px;
+    }
+
+    .market-stack {
+        gap: 20px;
+    }
+
+    .market-header {
+        flex-direction: row !important;
+        align-items: flex-end !important;
+        justify-content: space-between !important;
+        text-align: left !important;
+        padding-bottom: 12px !important;
+        margin-bottom: 16px !important;
+        gap: 16px;
+    }
+
+    .market-header__text {
+        align-items: flex-start !important;
+        text-align: left !important;
+        margin-inline: 0 !important;
+    }
+
+    .market-eyebrow {
+        justify-content: flex-start !important;
+        text-align: left !important;
+        font-size: 11px;
+    }
+
+    .market-header h1 {
+        text-align: left !important;
+        font-size: 22px !important;
+        margin-top: 2px;
+    }
+
+    .market-header__description {
+        text-align: left !important;
+        justify-content: flex-start !important;
+        margin-inline: 0 !important;
+        font-size: 13px !important;
+        margin-top: 2px;
+    }
+
+    .market-header__actions {
+        justify-content: flex-end !important;
+        width: auto !important;
+        margin-top: 0 !important;
+    }
+
+    .market-card,
+    .market-quote-card {
+        min-height: auto !important;
+        padding: 14px 16px !important;
+    }
+
+    .market-card__value {
+        margin-block: 10px 4px !important;
+        font-size: 24px !important;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .market-quote-card__quote {
+        margin-top: 10px !important;
+    }
+
+    .market-quote-card__price {
+        font-size: 24px !important;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .market-quote-card__footer {
+        margin-top: 8px !important;
+        padding-top: 8px !important;
+    }
+
+    .market-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+        gap: 12px !important;
+    }
+
+    .market-dollar-grid {
+        gap: 12px !important;
+    }
+
+    .dollar-card {
+        padding: 12px 14px !important;
+        gap: 8px !important;
+    }
+
+    .dollar-card__rate-val {
+        font-size: 17px !important;
+    }
+}

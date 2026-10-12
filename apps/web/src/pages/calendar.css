@@ -478,17 +478,122 @@
     outline: 2px solid hsl(var(--primary));
     outline-offset: 3px;
 }
-@container (max-width: 599px) {
-    .calendar-tabs > button {
+@media (max-width: 768px) {
+    .calendar-view .calendar-tabs {
+        display: flex;
+        width: 100%;
+        margin-bottom: 16px;
+        padding: 4px;
+        box-sizing: border-box;
+    }
+    .calendar-view .calendar-tabs > button {
+        flex: 1 1 0;
+        min-width: 0;
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        padding: 7px 6px;
         gap: 6px;
-        font-size: 14px;
+        font-size: 13px;
+    }
+    .calendar-view .calendar-tabs > button > svg {
+        display: none;
+    }
+    .calendar-week-controls {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
+    .calendar-week-label {
+        align-items: flex-start;
+        text-align: left;
+    }
+    .calendar-week-buttons {
+        gap: 6px;
+    }
+    .calendar-filters {
+        width: 100%;
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 6px;
+        padding-bottom: 6px;
+        margin-bottom: 16px;
+    }
+    .calendar-filters::-webkit-scrollbar {
+        display: none;
+    }
+    .calendar-filters button {
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding: 5px 12px;
+        font-size: 12px;
+    }
+    .calendar-earnings-toolbar {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .calendar-sort {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .calendar-sort select {
+        flex: 1;
+        max-width: none;
+    }
+    .calendar-day-count {
+        width: 100%;
+        margin-left: 29px;
+    }
+}
+
+@container (max-width: 599px) {
+    .calendar-view .calendar-tabs {
+        display: flex;
+        width: 100%;
+    }
+    .calendar-tabs > button {
+        flex: 1 1 0;
+        min-width: 0;
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        gap: 6px;
+        font-size: 13px;
     }
     .calendar-tabs > button > svg {
         display: none;
     }
     .calendar-week-controls {
-        justify-content: center;
         width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .calendar-filters {
+        width: 100%;
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 6px;
+    }
+    .calendar-filters::-webkit-scrollbar {
+        display: none;
+    }
+    .calendar-filters button {
+        flex-shrink: 0;
+        white-space: nowrap;
     }
     .calendar-view .market-header__actions {
         width: 100%;

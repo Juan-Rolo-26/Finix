@@ -8,7 +8,7 @@ interface InvestorStreakPillProps {
 }
 
 export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) {
-    const { streak, weekDays, nextMilestone, progressPercent, isTodayActive } = useInvestorStreak();
+    const { streak, longestStreak, weekDays, nextMilestone, progressPercent, isTodayActive, recordCheckIn } = useInvestorStreak();
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -24,11 +24,20 @@ export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) 
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
+    const handleToggle = () => {
+        if (!isOpen) {
+            recordCheckIn();
+        }
+        setIsOpen(v => !v);
+    };
+
+    const activeWeekDaysCount = weekDays.filter(d => d.isActive).length;
+
     return (
         <div ref={containerRef} className="relative inline-block">
             <button
                 type="button"
-                onClick={() => setIsOpen(v => !v)}
+                onClick={handleToggle}
                 className={`inline-flex min-h-11 min-w-11 items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-[11.5px] font-bold border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer select-none shadow-2xs backdrop-blur-xs bg-amber-500/10 hover:bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 ${className}`}
                 title={`Racha Inversora: ${streak} ${streak === 1 ? 'día seguido' : 'días seguidos'}`}
                 aria-label={`Racha Inversora: ${streak} ${streak === 1 ? 'día seguido' : 'días seguidos'}`}
@@ -78,7 +87,9 @@ export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) 
                         <p className="text-muted-foreground text-[11px] sm:text-[11.5px] leading-relaxed">
                             {streak >= 7
                                 ? '¡Excelente constancia! Analizar mercados e ideas a diario fortalece el criterio y la disciplina de los mejores inversores.'
-                                : '¡Gran disciplina! Ingresar a diario para analizar mercados, portafolios e ideas construye el hábito de los mejores inversores.'}
+                                : streak >= 3
+                                    ? '¡Gran disciplina! Ingresar a diario para analizar mercados, portafolios e ideas construye el hábito de los mejores inversores.'
+                                    : '¡Primer paso dado! Analizar mercados y portafolios cada día construye la disciplina de los mejores inversores.'}
                         </p>
 
                         {/* Weekly streak real calendar */}
@@ -87,11 +98,17 @@ export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) 
                                 <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
                                     <Calendar className="w-3 h-3 text-muted-foreground" /> Esta semana
                                 </span>
-                                <span className="text-[10px] text-muted-foreground font-medium">Meta: 7 días</span>
+                                <span className="text-[10px] text-muted-foreground font-medium">
+                                    {activeWeekDaysCount}/7 días activos
+                                </span>
                             </div>
                             <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
                                 {weekDays.map((d, i) => (
-                                    <div key={i} className="flex flex-col items-center gap-1" title={`${d.fullLabel} (${d.dateStr})`}>
+                                    <div
+                                        key={i}
+                                        className="flex flex-col items-center gap-1"
+                                        title={`${d.fullLabel} (${d.dateStr}) - ${d.isActive ? 'Activo' : d.isToday ? 'Hoy' : d.isPast ? 'Sin actividad' : 'Próximo'}`}
+                                    >
                                         <div
                                             className={`w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-bold text-[9.5px] sm:text-[10px] transition-all ${
                                                 d.isActive
@@ -138,6 +155,12 @@ export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) 
                                     style={{ width: `${Math.max(5, progressPercent)}%` }}
                                 />
                             </div>
+                            {longestStreak > streak && (
+                                <div className="text-[10px] text-muted-foreground/80 flex items-center justify-between pt-1 border-t border-amber-500/10">
+                                    <span>Récord personal:</span>
+                                    <span className="font-semibold text-amber-600 dark:text-amber-400">🔥 {longestStreak} {longestStreak === 1 ? 'día' : 'días'}</span>
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 )}

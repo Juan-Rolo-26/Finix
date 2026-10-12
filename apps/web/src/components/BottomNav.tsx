@@ -26,7 +26,6 @@ import {
     Receipt,
     GraduationCap,
     Bookmark,
-    Sparkles,
 } from 'lucide-react';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { hasCommunityAccess, useAuthStore } from '../stores/authStore';
@@ -39,7 +38,7 @@ const PRIMARY = 'hsl(var(--primary))';
 /* ── 4 main tabs + 1 create slot ──────────────────────────────── */
 const mainTabs = [
     { path: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
-    { path: '/comunidades', label: 'Comunidades', icon: Users },
+    { path: '/comunidades', label: 'Comunidad', shortLabel: 'Grupos', icon: Users },
     // CENTER: create button
     { path: '/explore', label: 'Explorar', icon: Compass },
     { path: '/messages', label: 'Mensajes', icon: MessageSquare },
@@ -129,7 +128,6 @@ export function BottomNav() {
         { label: 'Noticias',  path: '/news',     icon: Newspaper   },
         { label: 'Análisis',  path: '/analysis', icon: AreaChart   },
         { label: 'Comunidades', path: '/comunidades', icon: Users },
-        { label: 'Planes PRO', path: '/pricing#planes', icon: Sparkles },
         ...(user ? [
             { label: 'Mi Perfil', path: '/profile', icon: User },
             { label: 'Ajustes',   path: '/settings', icon: Settings },
@@ -158,7 +156,7 @@ export function BottomNav() {
             >
                 <div className="flex items-stretch justify-around min-h-[60px] py-1 px-1 gap-1">
                     {/* Left tabs */}
-                    {LEFT_TABS.map(({ path, label, icon: Icon }) => {
+                    {LEFT_TABS.map(({ path, label, shortLabel, icon: Icon }) => {
                         const active = isActive(path);
                         return (
                             <Link
@@ -187,10 +185,17 @@ export function BottomNav() {
                                     style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                                 />
                                 <span
-                                    className="text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full break-words text-center leading-tight"
+                                    className="text-[9px] min-[360px]:text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full truncate text-center leading-tight whitespace-nowrap"
                                     style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                                 >
-                                    {label}
+                                    {shortLabel ? (
+                                        <>
+                                            <span className="hidden min-[360px]:inline">{label}</span>
+                                            <span className="min-[360px]:hidden">{shortLabel}</span>
+                                        </>
+                                    ) : (
+                                        label
+                                    )}
                                 </span>
                             </Link>
                         );
@@ -241,7 +246,7 @@ export function BottomNav() {
                                     style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                                 />
                                 <span
-                                    className="text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full break-words text-center leading-tight"
+                                    className="text-[9px] min-[360px]:text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full truncate text-center leading-tight whitespace-nowrap"
                                     style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                                 >
                                     {label}
@@ -285,7 +290,7 @@ export function BottomNav() {
                             style={{ color: moreActive || isMoreOpen ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                         />
                         <span
-                            className="text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full break-words text-center leading-tight"
+                            className="text-[9px] min-[360px]:text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full truncate text-center leading-tight whitespace-nowrap"
                             style={{ color: moreActive || isMoreOpen ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                         >
                             Más

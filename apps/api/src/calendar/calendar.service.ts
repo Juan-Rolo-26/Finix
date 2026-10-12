@@ -380,19 +380,135 @@ export class CalendarService {
         }
 
 
-        dbEarnings = dbEarnings.map(normalizeEarnings).filter(isVisibleEarnings);
+        const prominentTickers = new Set([
+            'TSM', 'ASML', 'ARM', 'BABA', 'PDD', 'JD', 'BIDU', 'NVO', 'AZN', 'SAP', 'SONY', 'TM', 'MELI', 'GLOB',
+            'SPOT', 'PLTR', 'COIN', 'UBER', 'DASH', 'CRWD', 'SNOW', 'RBLX', 'SOFI', 'HOOD', 'RIVN', 'LCID',
+            'SE', 'SHOP', 'SQ', 'NET', 'DDOG', 'MDB', 'PANW', 'FTNT', 'ZS', 'TTD', 'ROKU', 'PINS', 'SNAP',
+            'AFRM', 'UPST', 'ENPH', 'FSLR', 'SEDG', 'LI', 'NIO', 'XPEV', 'DELL', 'SMCI', 'MRVL', 'ON', 'MCHP',
+            'NTES', 'BILI', 'TME', 'CPNG', 'NU', 'PBR', 'VALE', 'ITUB', 'BBD',
+        ]);
+
+        const isPreferredOrDerivative = (ticker: string, companyName?: string): boolean => {
+            const t = String(ticker || '').toUpperCase().trim();
+            const name = String(companyName || '').toLowerCase();
+            if (/[/._-](P|PR|WS|WT|W|U|UN|RT)[A-Z0-9]*$/i.test(t)) return true;
+            if (/\^/.test(t)) return true;
+            if (/\.PR[A-Z0-9]*$/i.test(t)) return true;
+            if (
+                name.includes('depositary share') ||
+                name.includes('depositary shs') ||
+                name.includes('preferred stock') ||
+                name.includes('preferred share') ||
+                name.includes('non-cumulative preferred') ||
+                name.includes('cumulative preferred') ||
+                name.includes('perp pfd') ||
+                name.includes('pfd shs') ||
+                name.includes('pfd reg') ||
+                name.includes('warrant') ||
+                name.includes('debenture') ||
+                /\bseries\s+[a-z0-9]+/i.test(name) ||
+                /\bclass\s+[a-z0-9]+\s+preferred/i.test(name)
+            ) {
+                return true;
+            }
+            return false;
+        };
+
+        const getBaseTicker = (ticker: string): string => {
+            const raw = String(ticker || '').toUpperCase().trim();
+            if (raw === 'BRK-B' || raw === 'BRK.B' || raw === 'BRK/B') return 'BRK-B';
+            if (raw === 'BF-B' || raw === 'BF.B' || raw === 'BF/B') return 'BF-B';
+            if (raw === 'GOOG' || raw === 'GOOGL') return 'GOOGL';
+            if (raw === 'FOX' || raw === 'FOXA') return 'FOXA';
+            if (raw === 'NWS' || raw === 'NWSA') return 'NWSA';
+            const stripped = raw
+                .replace(/[/._-](P|PR|WS|WT|W|U|UN|RT)[A-Z0-9]*$/i, '')
+                .replace(/[/._-].*$/, '')
+                .replace(/\^.*$/, '')
+                .trim();
+            return stripped || raw;
+        };
+
+        const cleanCompanyName = (name: string): string => {
+            if (!name) return '';
+            return name
+                .replace(/\s+(Depositary\s+Shs|Depositary\s+Shares|Depositary\s+Receipts).*$/i, '')
+                .replace(/\s+\d+(\.\d+)?\s*%\s+(Non-Cum|Cum|Perp|Red).*$/i, '')
+                .replace(/\s+(Non-Cum|Cum|Perp|Red|Fixed|Floating).*$/i, '')
+                .replace(/\s+Preferred\s+Stock.*$/i, '')
+                .replace(/\s+Pfd\s+.*$/i, '')
+                .trim();
+        };
+
+        dbEarnings = dbEarnings.map(normalizeEarnings).filter(isVisibleEarnings).filter(e => {
+            const raw = String(e.ticker || '').toUpperCase().trim();
+            const base = getBaseTicker(raw).replace(/\./g, '-');
+            const isPref = isPreferredOrDerivative(raw, e.companyName);
+            const isSP500 = this.providerService.isSP500Constituent(base);
+            const isProminent = prominentTickers.has(base);
+            const isLargeCap = typeof e.marketCap === 'number' && e.marketCap >= 1e10;
+            const isHighImpact = (e.earningsImpactScore ?? 0) >= 55;
+
+            if (isPref && !isSP500 && !isProminent) return false;
+            return isSP500 || isProminent || isLargeCap || isHighImpact;
+        });
+
+        // Exactly ONE principal earnings event per company across the week
+        const bestEarningsByTicker = new Map<string, { event: any; isPreferred: boolean; baseTicker: string }>();
+        for (const e of dbEarnings) {
+            const raw = String(e.ticker || '').toUpperCase().trim();
+            const base = getBaseTicker(raw).replace(/\./g, '-');
+            const isPref = isPreferredOrDerivative(raw, e.companyName);
+            const existing = bestEarningsByTicker.get(base);
+            if (!existing) {
+                bestEarningsByTicker.set(base, { event: e, isPreferred: isPref, baseTicker: base });
+            } else {
+                if (existing.isPreferred && !isPref) {
+                    bestEarningsByTicker.set(base, { event: e, isPreferred: isPref, baseTicker: base });
+                    continue;
+                } else if (!existing.isPreferred && isPref) {
+                    continue;
+                }
+
+                const eReported = e.actualEps != null || e.actualRevenue != null;
+                const existingReported = existing.event.actualEps != null || existing.event.actualRevenue != null;
+                if (eReported && !existingReported) {
+                    bestEarningsByTicker.set(base, { event: e, isPreferred: isPref, baseTicker: base });
+                } else if (!eReported && existingReported) {
+                    // Keep existing
+                } else {
+                    const eConfirmed = e.dateStatus === 'CONFIRMED';
+                    const existingConfirmed = existing.event.dateStatus === 'CONFIRMED';
+                    if (eConfirmed && !existingConfirmed) {
+                        bestEarningsByTicker.set(base, { event: e, isPreferred: isPref, baseTicker: base });
+                    } else if (!eConfirmed && existingConfirmed) {
+                        // Keep existing
+                    } else if ((e.earningsImpactScore ?? 0) > (existing.event.earningsImpactScore ?? 0)) {
+                        bestEarningsByTicker.set(base, { event: e, isPreferred: isPref, baseTicker: base });
+                    }
+                }
+            }
+        }
+        dbEarnings = Array.from(bestEarningsByTicker.values()).map(item => {
+            const ev = { ...item.event };
+            if (item.isPreferred) {
+                ev.ticker = item.baseTicker;
+                ev.companyName = cleanCompanyName(ev.companyName) || ev.companyName;
+            }
+            return ev;
+        }).sort((a, b) =>
+            a.date.localeCompare(b.date) || (b.earningsImpactScore ?? 0) - (a.earningsImpactScore ?? 0));
         dbDividends = dbDividends.filter(event =>
             event.ticker?.trim() && (isCalendarDate(event.exDate) || isCalendarDate(event.paymentDate)) &&
             financialNumber(event.amount) !== undefined && financialNumber(event.amount)! >= 0);
 
-        // Deduplicate stored records too, preserving the first (persisted) event.
         const uniqueEvents = <T,>(events: T[], key: (event: T) => string): T[] =>
             Array.from(events.reduce((map, event) => {
                 const id = key(event);
                 if (!map.has(id)) map.set(id, event);
                 return map;
             }, new Map<string, T>()).values());
-        dbEarnings = uniqueEvents(dbEarnings, (e: { ticker: string; date: string }) => `${tickerKey(e.ticker)}|${e.date}`);
+
         const dividendDisplayDate = (d: any) =>
             d.paymentDate && (isAll || (d.paymentDate >= mondayStr && d.paymentDate <= sundayStr))
                 ? d.paymentDate : d.exDate;

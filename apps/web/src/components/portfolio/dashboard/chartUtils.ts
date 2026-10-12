@@ -54,12 +54,22 @@ export function formatCompactCurrency(value: number, currency = 'USD') {
     return formatter.format(safe);
 }
 
+const DASHBOARD_NUMBER_FORMATTERS = new Map<number, Intl.NumberFormat>();
+export function formatNumber(value: number, fractionDigits = 1) {
+    const digits = Math.min(20, Math.max(0, Math.trunc(fractionDigits)));
+    let formatter = DASHBOARD_NUMBER_FORMATTERS.get(digits);
+    if (!formatter) {
+        formatter = new Intl.NumberFormat('es-AR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+        DASHBOARD_NUMBER_FORMATTERS.set(digits, formatter);
+    }
+    return formatter.format(Number.isFinite(value) ? value : 0);
+}
 export function formatPercent(value: number, fractionDigits = 1, signed = false) {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
-        return signed ? '+0.0%' : '0.0%';
+        return `${signed ? '+' : ''}${formatNumber(0, fractionDigits)}%`;
     }
     const sign = signed && value > 0 ? '+' : '';
-    return `${sign}${value.toFixed(fractionDigits)}%`;
+    return `${sign}${formatNumber(value, fractionDigits)}%`;
 }
 
 export function formatChartDate(value: string, range?: string) {

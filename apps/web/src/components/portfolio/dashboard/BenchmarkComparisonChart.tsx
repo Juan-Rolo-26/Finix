@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { Trophy, TrendingUp, TrendingDown, Target, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CHART_AXIS_TICK, formatChartDate, formatPercent } from './chartUtils';
+import { CHART_AXIS_TICK, formatChartDate, formatPercent, formatNumber } from './chartUtils';
 import { TIME_RANGES, TIME_RANGE_LABELS, TIME_RANGE_SHORT_LABELS, type ComparisonDatum, type TimeRange } from './mockData';
 
 interface BenchmarkComparisonChartProps {
@@ -67,7 +67,7 @@ function BenchmarkTooltip({ active, payload, label, range }: any) {
                         color: isOutperforming ? '#34d399' : '#fb7185',
                     }}
                 >
-                    {spread == null ? 'Sin benchmark' : (isOutperforming ? `+${spread.toFixed(1)} pts` : `${spread.toFixed(1)} pts`)}
+                    {spread == null ? 'Sin benchmark' : (isOutperforming ? `+${formatNumber(spread)} pts` : `${formatNumber(spread)} pts`)}
                 </span>
             </div>
 
@@ -83,7 +83,7 @@ function BenchmarkTooltip({ active, payload, label, range }: any) {
                             {formatPercent(pReturn, 1, true)}
                         </span>
                         <span style={{ color: 'rgba(148,163,184,0.6)', fontSize: '11px', marginLeft: '6px' }}>
-                            ({portfolio.toFixed(1)})
+                            ({formatNumber(portfolio)})
                         </span>
                     </div>
                 </div>
@@ -99,7 +99,7 @@ function BenchmarkTooltip({ active, payload, label, range }: any) {
                             {spReturn == null ? 'N/D' : formatPercent(spReturn, 1, true)}
                         </span>
                         <span style={{ color: 'rgba(148,163,184,0.6)', fontSize: '11px', marginLeft: '6px' }}>
-                            {sp500 == null ? '' : `(${sp500.toFixed(1)})`}
+                            {sp500 == null ? '' : `(${formatNumber(sp500)})`}
                         </span>
                     </div>
                 </div>
@@ -121,11 +121,11 @@ function BenchmarkTooltip({ active, payload, label, range }: any) {
                     <span>SPY todavía no tiene datos para este período</span>
                 ) : isOutperforming ? (
                     <>
-                        <span style={{ fontWeight: 600 }}>Superando al índice por {spread.toFixed(1)} pts</span>
+                        <span style={{ fontWeight: 600 }}>Superando al índice por {formatNumber(spread)} pts</span>
                     </>
                 ) : (
                     <>
-                        <span>Por debajo del índice por {Math.abs(spread).toFixed(1)} pts</span>
+                        <span>Por debajo del índice por {formatNumber(Math.abs(spread))} pts</span>
                     </>
                 )}
             </div>
@@ -215,11 +215,11 @@ export function BenchmarkComparisonChart({
         <div role="region" aria-label="Comparación del portafolio con S&P 500" aria-busy={loading} className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-sm flex flex-col justify-between text-center', className)}>
             {/* Header */}
             <div className="border-b border-border/40 px-6 py-6 sm:px-7 sm:py-7 text-center">
-                <div className="flex flex-col items-center justify-center gap-6 text-center">
+                <div className="flex min-w-0 w-full flex-col items-center justify-center gap-6 text-center">
                     {/* Top Row: Title, Subtitle, Badges & Range Selector */}
-                    <div className="flex flex-col items-center justify-center gap-4 text-center">
-                        <div className="space-y-1.5 flex flex-col items-center text-center">
-                            <div className="flex items-center justify-center gap-2">
+                    <div className="flex min-w-0 w-full flex-col items-center justify-center gap-4 text-center">
+                        <div className="space-y-1.5 flex min-w-0 w-full flex-col items-center text-center">
+                            <div className="flex flex-wrap items-center justify-center gap-2">
                                 <p className="text-sm font-semibold text-muted-foreground text-center">
                                     Benchmark Comparativo
                                 </p>
@@ -243,7 +243,7 @@ export function BenchmarkComparisonChart({
                         </div>
 
                         {/* Badges & Range Switcher */}
-                        <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="flex min-w-0 w-full flex-col items-center justify-center gap-3">
                             <div className="flex flex-wrap items-center justify-center gap-2">
                                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-foreground/90">
                                     <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_#10b981]" style={{ backgroundColor: PORTFOLIO_COLOR }} />
@@ -262,7 +262,7 @@ export function BenchmarkComparisonChart({
                             </div>
 
                             {/* Range switcher pills */}
-                            <div className="flex max-w-full items-center justify-start gap-1 overflow-x-auto rounded-xl border border-border/50 bg-background/50 p-1 sm:justify-center">
+                            <div className="flex w-full max-w-full items-center justify-start gap-1 overflow-x-auto rounded-xl border border-border/50 bg-background/50 p-1 sm:justify-center">
                                 {TIME_RANGES.map((range) => (
                                     <button
                                         key={range}
@@ -298,7 +298,7 @@ export function BenchmarkComparisonChart({
                                 )}
                             </div>
                             <p className={cn('mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums text-center', summary.isPortfolioInactive ? 'text-muted-foreground' : (isOutperforming ? 'text-emerald-500' : 'text-rose-500'))}>
-                                {!summary.hasBenchmark ? '—' : `${isOutperforming ? '+' : ''}${summary.spread?.toFixed(1)} pts`}
+                                {!summary.hasBenchmark ? '—' : `${isOutperforming ? '+' : ''}${formatNumber(summary.spread ?? 0)} pts`}
                             </p>
                             <p className="mt-1.5 text-sm text-muted-foreground font-medium text-center">
                                 {!summary.hasBenchmark ? 'Esperando datos reales de SPY' : (isOutperforming ? 'Superando al benchmark' : 'Por debajo del benchmark')}
@@ -314,7 +314,7 @@ export function BenchmarkComparisonChart({
                                 {summary.leader}
                             </p>
                             <p className="mt-1.5 text-sm text-muted-foreground font-medium text-center">
-                                {!summary.hasBenchmark ? 'Sin comparación disponible' : (isOutperforming ? `Ventaja de +${summary.spread?.toFixed(1)} pts` : `Diferencia de ${Math.abs(summary.spread ?? 0).toFixed(1)} pts`)}
+                                {!summary.hasBenchmark ? 'Sin comparación disponible' : (isOutperforming ? `Ventaja de +${formatNumber(summary.spread ?? 0)} pts` : `Diferencia de ${formatNumber(Math.abs(summary.spread ?? 0))} pts`)}
                             </p>
                         </div>
 
@@ -399,7 +399,7 @@ export function BenchmarkComparisonChart({
                             tickMargin={7}
                             tickCount={6}
                             domain={chartDomain}
-                            tickFormatter={(v: number) => (Number.isFinite(v) ? v.toFixed(1) : '100')}
+                            tickFormatter={(v: number) => (Number.isFinite(v) ? formatNumber(v) : '100')}
                         />
 
                         <RechartsTooltip
