@@ -1,0 +1,389 @@
+{
+  "checks": [
+    {
+      "width": 320,
+      "theme": "light",
+      "id": "compuesto",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "id": "objetivos",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "id": "inflacion",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "id": "comisiones",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "id": "escenarios",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "id": "tasas",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "id": "prestamos",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "id": "operacion",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "id": "compuesto",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "id": "objetivos",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "id": "inflacion",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "id": "comisiones",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "id": "escenarios",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "id": "tasas",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "id": "prestamos",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "id": "operacion",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "id": "compuesto",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "id": "objetivos",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "id": "inflacion",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "id": "comisiones",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "id": "escenarios",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "id": "tasas",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "id": "prestamos",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "id": "operacion",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "id": "compuesto",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "id": "objetivos",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "id": "inflacion",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "id": "comisiones",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "id": "escenarios",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "id": "tasas",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "id": "prestamos",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "id": "operacion",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "id": "compuesto",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "id": "objetivos",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "id": "inflacion",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "id": "comisiones",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "id": "escenarios",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "id": "tasas",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "id": "prestamos",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "id": "operacion",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "id": "compuesto",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "id": "objetivos",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "id": "inflacion",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "id": "comisiones",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "id": "escenarios",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "id": "tasas",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "id": "prestamos",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "id": "operacion",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "id": "compuesto",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "id": "objetivos",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "id": "inflacion",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "id": "comisiones",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "id": "escenarios",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "id": "tasas",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "id": "prestamos",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "id": "operacion",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "id": "compuesto",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "id": "objetivos",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "id": "inflacion",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "id": "comisiones",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "id": "escenarios",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "id": "tasas",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "id": "prestamos",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "id": "operacion",
+      "passed": true
+    }
+  ],
+  "interactions": "search, empty, validation, zero rate, save, reload, load, delete, CSV, mobile navigation passed"
+}

@@ -14,7 +14,10 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const CommunityInvite = lazy(() => import('./pages/CommunityInvite'));
+const PostDetail = lazy(() => import('./pages/PostDetail'));
 const SocialDashboard = lazy(() => import('./pages/Dashboard'));
+const FinancialLaboratory = lazy(() => import('./pages/FinancialLaboratory'));
 const FinanceWorkspace = lazy(() => import('./pages/FinanceWorkspace'));
 
 const PortfolioPage = lazy(() => import('./pages/Portfolio'));
@@ -111,6 +114,8 @@ function RequireCommunityAccess({
 }) {
     const { user } = useAuthStore();
 
+    const accessLoaded = usePlatformAccessStore(state => state.loaded);
+    if (!accessLoaded) return <div role="status" className="p-8 text-center text-muted-foreground">Cargando acceso a comunidades…</div>;
     if (creatorOnly ? !hasCommunityCreatorAccess(user) : !hasCommunityAccess(user)) {
         return <Navigate to={creatorOnly ? '/creator' : '/settings/plan'} replace />;
     }
@@ -208,6 +213,9 @@ export default function App() {
                     >
                         <Route path="/dashboard" element={<SocialDashboard />} />
                         <Route path="/social" element={<SocialDashboard />} />
+                        <Route path="/posts/:id" element={<PostDetail />} />
+                        <Route path="/post/:id" element={<PostDetail />} />
+                        <Route path="/comunidades/invite/:code" element={<CommunityInvite />} />
                         <Route path="/explore" element={<Explore />} />
                         <Route path="/market" element={<Markets />} />
                         {isWatchlistEnabled() ? (
@@ -227,6 +235,7 @@ export default function App() {
                         <Route path="/market/top-gainers" element={<TopGainersPage />} />
                         <Route path="/calendario" element={<CalendarPage />} />
                         <Route path="/calendar" element={<CalendarPage />} />
+                        <Route path="/laboratorio" element={<FinancialLaboratory />} />
                         <Route path="/news" element={<NewsPage />} />
                         <Route path="/analysis" element={<AnalysisPage />} />
                         <Route path="/analysis/:slug" element={<AnalysisPage />} />
@@ -260,10 +269,10 @@ export default function App() {
                         <Route path="/comunidades" element={<RequireAuth><RequireCommunityAccess><Comunidades /></RequireCommunityAccess></RequireAuth>} />
                         <Route path="/comunidades/crear" element={<RequireAuth><RequireCommunityAccess creatorOnly><CommunityCreate /></RequireCommunityAccess></RequireAuth>} />
                         <Route path="/comunidades/:id" element={<RequireAuth><RequireCommunityAccess><CommunityDetail /></RequireCommunityAccess></RequireAuth>} />
-                        <Route path="/comunidades/:id/admin" element={<RequireAuth><RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
-                        <Route path="/comunidades/:id/moderacion" element={<RequireAuth><RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
-                        <Route path="/comunidades/:id/admin/finanzas" element={<RequireAuth><RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
-                        <Route path="/comunidades/:id/admin/configuracion" element={<RequireAuth><RequireCommunityAccess creatorOnly><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
+                        <Route path="/comunidades/:id/admin" element={<RequireAuth><RequireCommunityAccess><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
+                        <Route path="/comunidades/:id/moderacion" element={<RequireAuth><RequireCommunityAccess><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
+                        <Route path="/comunidades/:id/admin/finanzas" element={<RequireAuth><RequireCommunityAccess><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
+                        <Route path="/comunidades/:id/admin/configuracion" element={<RequireAuth><RequireCommunityAccess><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
                     </Route>
 
                     {/* Info & Legal Routes */}

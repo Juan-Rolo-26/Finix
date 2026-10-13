@@ -232,7 +232,7 @@ export class StripeService {
             }),
             this.prisma.community.findUnique({
                 where: { id: communityId },
-                select: { id: true, name: true, creatorId: true, privacyType: true, maxMembers: true },
+                select: { id: true, name: true, creatorId: true, privacyType: true, maxMembers: true, status: true },
             }),
             this.prisma.communityPlan.findUnique({
                 where: { id: planId }
@@ -240,7 +240,11 @@ export class StripeService {
         ]);
 
         if (!user) throw new NotFoundException('Usuario no encontrado');
-        if (!community || !plan) throw new NotFoundException('Comunidad o plan no encontrado');
+        if (!community || community.status !== 'PUBLISHED' || !plan) throw new NotFoundException('Comunidad o plan no encontrado');
+        if (community.privacyType === 'PRIVATE') {
+            const approval = await this.prisma.communityJoinRequest.findUnique({ where: { communityId_userId: { communityId, userId } } });
+            if (approval?.status !== 'APPROVED') throw new BadRequestException('Solicitá ingreso y esperá la aprobación del creador.');
+        }
         if (plan.communityId !== community.id) throw new BadRequestException('El plan no pertenece a esta comunidad.');
         if (community.creatorId === userId) throw new BadRequestException('Ya sos el creador de esta comunidad.');
 

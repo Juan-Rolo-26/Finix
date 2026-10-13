@@ -352,7 +352,9 @@ export default function EducationArticlePage() {
 
                         {/* BODY CONTENT (MARKDOWN) */}
                         <div className="prose prose-zinc dark:prose-invert max-w-none text-foreground/90 text-sm sm:text-base leading-relaxed space-y-4">
-                            {article.content.split('\n\n').map((block: string, idx: number) => {
+                            {article.content.split('\n\n').map((block: string, idx: number, blocks: string[]) => {
+                                const previousCaption = blocks[idx - 1]?.match(/^!\[([^\]]*)\]\(/)?.[1];
+                                if (previousCaption && block.trim() === previousCaption) return null;
                                 if (block.startsWith('### ')) {
                                     const [heading, ...remainingLines] = block.split('\n');
                                     const title = heading.replace('### ', '').trim();
@@ -407,7 +409,7 @@ export default function EducationArticlePage() {
                                                         />
                                                     </a>
                                                     <div className="p-2.5 bg-muted/50 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground px-3">
-                                                        <span className="truncate">{alt}</span>
+                                                        <span className="truncate">Gráfico educativo</span>
                                                         <a
                                                             href={src}
                                                             target="_blank"

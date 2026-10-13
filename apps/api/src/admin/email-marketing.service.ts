@@ -19,6 +19,10 @@ export class EmailMarketingService {
     constructor(private readonly prisma: PrismaService, private readonly mail: MailService) {}
     private recipientWhere(audience = 'PRO') {
         const notTest = { NOT: { email: { endsWith: '@example.test' } } };
+        if (audience === 'OFFICIAL') return {
+            status: 'ACTIVE', emailVerified: true, ...notTest,
+            OR: [{ emailPreferences: { is: null } }, { emailPreferences: { is: { marketing: true, product: true } } }],
+        };
         const base = {
             status: 'ACTIVE',
             emailVerified: true,
@@ -128,7 +132,10 @@ export class EmailMarketingService {
     private signature(userId: string) { return createHmac('sha256', process.env.JWT_SECRET!).update('email-unsubscribe:' + userId).digest('hex'); }
     async unsubscribe(userId: string, signature: string) {
         if (!z.string().uuid().safeParse(userId).success || !/^[a-f0-9]{64}$/.test(signature || '') || !timingSafeEqual(Buffer.from(signature), Buffer.from(this.signature(userId)))) throw new BadRequestException('Enlace invalido.');
-        await this.prisma.user.updateMany({ where: { id: userId }, data: { investmentEmailNotifications: false } });
+        await this.prisma.$transaction(async tx => {
+            await tx.user.updateMany({ where: { id: userId }, data: { investmentEmailNotifications: false } });
+            await tx.emailPreference.upsert({ where: { userId }, create: { userId, marketing: false, product: false }, update: { marketing: false, product: false } });
+        });
         return 'Suscripcion a comunicaciones de inversion cancelada.';
     }
     @Interval(5000)

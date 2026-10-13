@@ -1,0 +1,363 @@
+[
+  {
+    "type": "home",
+    "theme": "light",
+    "width": 390,
+    "articles": 43,
+    "errors": [],
+    "scrollWidth": 390
+  },
+  {
+    "type": "home",
+    "theme": "light",
+    "width": 1440,
+    "articles": 43,
+    "errors": [],
+    "scrollWidth": 1440
+  },
+  {
+    "type": "home",
+    "theme": "dark",
+    "width": 390,
+    "articles": 43,
+    "errors": [],
+    "scrollWidth": 390
+  },
+  {
+    "type": "home",
+    "theme": "dark",
+    "width": 1440,
+    "articles": 43,
+    "errors": [],
+    "scrollWidth": 1440
+  },
+  {
+    "type": "search",
+    "query": "PE",
+    "links": [
+      {
+        "href": "/educativa/analisis-fundamental/que-es-el-per",
+        "text": "Análisis Fundamental\nPrincipiante\n¿Qué es el PER o Ratio P/E (Price to Earnings)?\n\nEl PER indica cuántos años de beneficios anuales está pagando el inversor al comprar una acción, o cuántas veces sus ganancias anuales cotiza la empresa.\n\n2 min de lectura\nConsultar"
+      }
+    ]
+  },
+  {
+    "type": "search",
+    "query": "P-E",
+    "links": [
+      {
+        "href": "/educativa/analisis-fundamental/que-es-el-per",
+        "text": "Análisis Fundamental\nPrincipiante\n¿Qué es el PER o Ratio P/E (Price to Earnings)?\n\nEl PER indica cuántos años de beneficios anuales está pagando el inversor al comprar una acción, o cuántas veces sus ganancias anuales cotiza la empresa.\n\n2 min de lectura\nConsultar"
+      },
+      {
+        "href": "/educativa/analisis-fundamental/eps-beneficio-por-accion",
+        "text": "Análisis Fundamental\nIntermedio\nEPS o beneficio por acción: básico, diluido y estimado\n\nEPS expresa resultado contable por acción. Distinguir período, moneda, ajustes y dilución es necesario para leer P/E.\n\n2 min de lectura\nConsultar"
+      }
+    ]
+  },
+  {
+    "type": "search",
+    "query": "RSI",
+    "links": [
+      {
+        "href": "/educativa/analisis-tecnico/que-es-el-rsi",
+        "text": "Análisis Técnico\nIntermedio\n¿Qué es el RSI (Índice de Fuerza Relativa)?\n\nEl RSI es un oscilador de momentum que mide la velocidad y la magnitud de los movimientos recientes de precio para evaluar condiciones de sobrecompra o sobreventa.\n\n3 min de lectura\nConsultar"
+      }
+    ]
+  },
+  {
+    "type": "search",
+    "query": "MACD",
+    "links": [
+      {
+        "href": "/educativa/analisis-tecnico/que-es-el-macd",
+        "text": "Análisis Técnico\nIntermedio\n¿Qué es el MACD (Convergencia/Divergencia de Medias Móviles)?\n\nEl MACD combina seguimiento de tendencia y momentum mediante el cruce de medias móviles exponenciales y un histograma de aceleración.\n\n2 min de lectura\nConsultar"
+      }
+    ]
+  },
+  {
+    "type": "search",
+    "query": "media móvil 20",
+    "links": [
+      {
+        "href": "/educativa/analisis-tecnico/medias-moviles-sma-ema",
+        "text": "Análisis Técnico\nPrincipiante\nMedias Móviles (SMA y EMA): Tendencias y Cruces Clave\n\nSuavizan el ruido diario del precio para identificar la dirección dominante y niveles dinámicos de soporte y resistencia.\n\n3 min de lectura\nConsultar"
+      }
+    ]
+  },
+  {
+    "type": "search",
+    "query": "media 200",
+    "links": [
+      {
+        "href": "/educativa/analisis-tecnico/medias-moviles-sma-ema",
+        "text": "Análisis Técnico\nPrincipiante\nMedias Móviles (SMA y EMA): Tendencias y Cruces Clave\n\nSuavizan el ruido diario del precio para identificar la dirección dominante y niveles dinámicos de soporte y resistencia.\n\n3 min de lectura\nConsultar"
+      }
+    ]
+  },
+  {
+    "type": "search",
+    "query": "ROA",
+    "links": [
+      {
+        "href": "/educativa/analisis-fundamental/que-es-el-roe-retorno-patrimonio",
+        "text": "Análisis Fundamental\nPrincipiante\n¿Qué es el ROE (Return on Equity)?\n\nEl ROE mide la rentabilidad del capital accionario, complementado rigurosamente por el ROA (retorno sobre activos) y el ROCE (retorno sobre capital empleado) para detectar distorsiones por deuda.\n\n2 min de lectura\nConsultar"
+      }
+    ]
+  },
+  {
+    "type": "search",
+    "query": "ROCE",
+    "links": [
+      {
+        "href": "/educativa/analisis-fundamental/que-es-el-roe-retorno-patrimonio",
+        "text": "Análisis Fundamental\nPrincipiante\n¿Qué es el ROE (Return on Equity)?\n\nEl ROE mide la rentabilidad del capital accionario, complementado rigurosamente por el ROA (retorno sobre activos) y el ROCE (retorno sobre capital empleado) para detectar distorsiones por deuda.\n\n2 min de lectura\nConsultar"
+      }
+    ]
+  },
+  {
+    "type": "search",
+    "query": "ARR",
+    "links": [
+      {
+        "href": "/educativa/analisis-fundamental/capitalizacion-y-enterprise-value",
+        "text": "Análisis Fundamental\nPrincipiante\nCapitalización Bursátil y Enterprise Value (EV)\n\nDiferencia fundamental entre el valor del capital accionario (Market Cap) y el valor de la empresa completa (Enterprise Value), integrando métricas de escala recurrente como ARR.\n\n2 min de lectura\nConsultar"
+      },
+      {
+        "href": "/educativa/analisis-fundamental/negocio-directivos-y-estructura-accionaria",
+        "text": "Análisis Fundamental\nIntermedio\nNegocio, directivos, accionistas y métricas de contexto\n\nCómo interpretar CEO, empleados, cuota de mercado, ARR, acciones en circulación, flotante y tenencias institucionales o de directivos.\n\n2 min de lectura\nConsultar"
+      }
+    ]
+  },
+  {
+    "type": "search",
+    "query": "insiders",
+    "links": [
+      {
+        "href": "/educativa/analisis-fundamental/negocio-directivos-y-estructura-accionaria",
+        "text": "Análisis Fundamental\nIntermedio\nNegocio, directivos, accionistas y métricas de contexto\n\nCómo interpretar CEO, empleados, cuota de mercado, ARR, acciones en circulación, flotante y tenencias institucionales o de directivos.\n\n2 min de lectura\nConsultar"
+      }
+    ]
+  },
+  {
+    "type": "search",
+    "query": "prueba ácida",
+    "links": [
+      {
+        "href": "/educativa/analisis-fundamental/deuda-solvencia-cobertura",
+        "text": "Análisis Fundamental\nIntermedio\nDeuda, Apalancamiento y Cobertura de Intereses\n\nMétricas cuantitativas para evaluar la solvencia de largo plazo, el apalancamiento financiero y la liquidez de corto plazo frente a compromisos inmediatos.\n\n2 min de lectura\nConsultar"
+      }
+    ]
+  },
+  {
+    "type": "search",
+    "query": "RSI inexistente",
+    "links": []
+  },
+  {
+    "type": "navigation",
+    "searchRestored": true
+  },
+  {
+    "type": "legacy-route",
+    "redirected": true
+  },
+  {
+    "type": "article",
+    "slug": "que-es-el-roe-retorno-patrimonio",
+    "theme": "light",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [],
+    "headings": [
+      "ROE, ROA y ROCE: tres denominadores distintos\n#",
+      "Fórmulas y período\n#",
+      "Ejemplo ilustrativo\n#",
+      "DuPont y apalancamiento\n#",
+      "Límites\n#"
+    ]
+  },
+  {
+    "type": "article",
+    "slug": "que-es-el-flujo-de-caja-libre",
+    "theme": "light",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [],
+    "headings": [
+      "Beneficio contable, CFO y CapEx\n#",
+      "Métricas que muestra FINIX\n#",
+      "Ejemplo ilustrativo\n#",
+      "Límites de interpretación\n#"
+    ]
+  },
+  {
+    "type": "article",
+    "slug": "deuda-solvencia-cobertura",
+    "theme": "light",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [],
+    "headings": [
+      "Balance, liquidez y solvencia\n#",
+      "Fórmulas y unidades\n#",
+      "Ejemplo ilustrativo\n#",
+      "Cómo leerlos\n#"
+    ]
+  },
+  {
+    "type": "article",
+    "slug": "wacc-y-spread-creacion-valor",
+    "theme": "light",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [],
+    "headings": [
+      "¿Qué es el WACC y por qué determina el valor?\n#",
+      "El Spread de Creación de Valor\n#",
+      "Consideración Rigurosa sobre el Foso Defensivo (Economic Moat)\n#",
+      "Supuestos, unidades y límites\n#"
+    ]
+  },
+  {
+    "type": "article",
+    "slug": "negocio-directivos-y-estructura-accionaria",
+    "theme": "light",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [],
+    "headings": [
+      "La ficha del negocio\n#",
+      "Cuota de mercado\n#",
+      "ARR e ingresos reconocidos\n#",
+      "Acciones en circulación y flotante\n#",
+      "Tenencia institucional y de directivos\n#",
+      "Qué no se puede inferir\n#"
+    ]
+  },
+  {
+    "type": "article",
+    "slug": "medias-moviles-sma-ema",
+    "theme": "light",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [
+      {
+        "src": "/images/education/sma-ema.png",
+        "loaded": true
+      }
+    ],
+    "headings": [
+      "¿Qué son las Medias Móviles?\n#",
+      "Tipos Principales: SMA vs EMA\n#",
+      "Períodos Clave en el Mercado\n#",
+      "Cruces Tradicionales\n#",
+      "Cálculo e interpretación\n#"
+    ]
+  },
+  {
+    "type": "article",
+    "slug": "que-es-el-roe-retorno-patrimonio",
+    "theme": "dark",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [],
+    "headings": [
+      "ROE, ROA y ROCE: tres denominadores distintos\n#",
+      "Fórmulas y período\n#",
+      "Ejemplo ilustrativo\n#",
+      "DuPont y apalancamiento\n#",
+      "Límites\n#"
+    ]
+  },
+  {
+    "type": "article",
+    "slug": "que-es-el-flujo-de-caja-libre",
+    "theme": "dark",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [],
+    "headings": [
+      "Beneficio contable, CFO y CapEx\n#",
+      "Métricas que muestra FINIX\n#",
+      "Ejemplo ilustrativo\n#",
+      "Límites de interpretación\n#"
+    ]
+  },
+  {
+    "type": "article",
+    "slug": "deuda-solvencia-cobertura",
+    "theme": "dark",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [],
+    "headings": [
+      "Balance, liquidez y solvencia\n#",
+      "Fórmulas y unidades\n#",
+      "Ejemplo ilustrativo\n#",
+      "Cómo leerlos\n#"
+    ]
+  },
+  {
+    "type": "article",
+    "slug": "wacc-y-spread-creacion-valor",
+    "theme": "dark",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [],
+    "headings": [
+      "¿Qué es el WACC y por qué determina el valor?\n#",
+      "El Spread de Creación de Valor\n#",
+      "Consideración Rigurosa sobre el Foso Defensivo (Economic Moat)\n#",
+      "Supuestos, unidades y límites\n#"
+    ]
+  },
+  {
+    "type": "article",
+    "slug": "negocio-directivos-y-estructura-accionaria",
+    "theme": "dark",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [],
+    "headings": [
+      "La ficha del negocio\n#",
+      "Cuota de mercado\n#",
+      "ARR e ingresos reconocidos\n#",
+      "Acciones en circulación y flotante\n#",
+      "Tenencia institucional y de directivos\n#",
+      "Qué no se puede inferir\n#"
+    ]
+  },
+  {
+    "type": "article",
+    "slug": "medias-moviles-sma-ema",
+    "theme": "dark",
+    "errors": [],
+    "width": 320,
+    "scrollWidth": 320,
+    "images": [
+      {
+        "src": "/images/education/sma-ema.png",
+        "loaded": true
+      }
+    ],
+    "headings": [
+      "¿Qué son las Medias Móviles?\n#",
+      "Tipos Principales: SMA vs EMA\n#",
+      "Períodos Clave en el Mercado\n#",
+      "Cruces Tradicionales\n#",
+      "Cálculo e interpretación\n#"
+    ]
+  }
+]

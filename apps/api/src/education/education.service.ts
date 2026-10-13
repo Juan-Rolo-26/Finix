@@ -1,3 +1,4 @@
+import { TECHNICAL_IMAGES } from './technical-images.data';
 import { Injectable, Logger, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateArticleDto, UpdateArticleDto } from './dto/article.dto';
@@ -11,6 +12,13 @@ const canonical = (v: any): any =>
         : v && typeof v === 'object' && !(v instanceof Date)
         ? Object.fromEntries(Object.keys(v).sort().map(k => [k, canonical(v[k])]))
         : v;
+
+// Extract the first safe Markdown image without sending article bodies in lists.
+const withCoverImage = <T extends { content?: string }>(article: T) => {
+    const { content, ...summary } = article;
+    const image = content?.match(/!\[([^\]]*)\]\((\/images\/education\/[^\s)]+)\)/);
+    return { ...summary, coverImage: image ? { src: image[2], alt: image[1] } : undefined };
+};
 
 const COMPARE_FIELDS = [
     'title', 'summary', 'content', 'level', 'isFeatured', 'readTimeMinutes',
@@ -112,6 +120,11 @@ export class EducationService implements OnModuleInit {
                     // PRESERVAR ESTRICTAMENTE EDICIONES Y STATUS DEL TITULAR/ADMIN:
                     // 1. Si el artículo NO está en PUBLISHED (ej: DRAFT o ARCHIVED), no tocar.
                     if (existing.status === 'PUBLISHED') {
+                        const illustration = TECHNICAL_IMAGES[art.slug];
+                        // Add the missing illustration without replacing an editor's own text.
+                        if (illustration && !existing.content.includes('![')) {
+                            await this.prisma.educationArticle.update({ where: { id: existing.id }, data: { content: illustration + existing.content } });
+                        }
                         const baselineArt = (EDUCATION_BASELINE_ARTICLES as any[]).find(b => b.slug === art.slug);
                         if (baselineArt) {
                             const dataToUpdate: Record<string, any> = {};
@@ -224,6 +237,7 @@ export class EducationService implements OnModuleInit {
                                 slug: true,
                                 title: true,
                                 summary: true,
+                        content: true,
                                 level: true,
                                 readTimeMinutes: true,
                                 interactiveWidget: true,
@@ -240,6 +254,7 @@ export class EducationService implements OnModuleInit {
                         slug: true,
                         title: true,
                         summary: true,
+                        content: true,
                         level: true,
                         readTimeMinutes: true,
                         interactiveWidget: true,
@@ -251,7 +266,13 @@ export class EducationService implements OnModuleInit {
         });
 
         if (!category) throw new NotFoundException('Categoría no encontrada');
-        return category;
+        return {
+            ...category,
+            articles: category.articles.map(withCoverImage),
+            subcategories: category.subcategories.map(sub => ({
+                ...sub, articles: sub.articles.map(withCoverImage),
+            })),
+        };
     }
 
     async getArticles(query: {
@@ -357,6 +378,8 @@ export class EducationService implements OnModuleInit {
                     slug: true,
                     title: true,
                     summary: true,
+                    content: true,
+                    formula: true,
                     level: true,
                     readTimeMinutes: true,
                     interactiveWidget: true,
@@ -371,7 +394,7 @@ export class EducationService implements OnModuleInit {
         ]);
 
         return {
-            items,
+            items: items.map(withCoverImage),
             pagination: {
                 total,
                 page,

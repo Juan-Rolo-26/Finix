@@ -1,0 +1,20 @@
+[
+  {
+    "theme": "light",
+    "mobilePlanes": false,
+    "desktopPlanes": true,
+    "categoryArticles": 17,
+    "beginnerArticles": 5,
+    "resetArticles": 43,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "mobilePlanes": false,
+    "desktopPlanes": true,
+    "categoryArticles": 17,
+    "beginnerArticles": 5,
+    "resetArticles": 43,
+    "errors": []
+  }
+]

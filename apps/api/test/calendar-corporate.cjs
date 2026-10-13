@@ -61,10 +61,11 @@ async function main() {
         assert.equal(liveUpcoming.time, undefined, 'A timing category is not an exact release time');
 
         const distributions = [
-            { ticker: 'AAPL', companyName: 'Apple', exDate: '2026-10-06', paymentDate: '2026-10-07', amount: 0 },
+            { ticker: 'AAPL', companyName: 'Apple', exDate: '2026-10-06', paymentDate: '2026-10-07', amount: 0.2 },
             { ticker: 'AAPL', companyName: 'Apple', exDate: '2026-10-08', paymentDate: '2026-10-09', amount: 0.3 },
         ];
         const completeProvider = {
+            isSP500Constituent: () => true,
             getUpcomingEconomicEvents: async () => [],
             getEconomicFeedStatus: () => ({ status: 'READY' }),
             fetchTradingViewSP500Earnings: async () => [{ ...reported, ticker: 'aapl', date: '2026-10-06', time: undefined }],
@@ -84,8 +85,10 @@ async function main() {
         assert.equal(fullEarnings[0].time, undefined, 'Scanner records must not expose previously assumed release times');
         assert.equal(fullDividends.length, 2, 'Distinct distributions of one company must not disappear');
         assert.equal(fullWeek.categories.dividends, 2);
-        assert.equal(fullDividends[0].amount, 0);
-        assert.equal(fullDividends[0].id, 'existing-dividend');
+        assert.equal(fullDividends[0].amount, 0.2);
+        assert.equal(fullDividends[0].id, 'duplicate');
+        assert.equal(fullWeek.days.find(day => day.date === '2026-10-06').dividendEvents.length, 1);
+        assert.equal(fullWeek.days.find(day => day.date === '2026-10-07').dividendEvents.length, 0, 'Payment is not a second ex-dividend event');
         assert.equal(fullDividends[1].id, 'dividend-AAPL-2026-10-08-2026-10-09-0.3');
         assert.equal(new Set(fullDividends.map(event => event.id)).size, 2);
         const macro = fullWeek.days.flatMap(day => day.economicEvents)[0];
@@ -122,7 +125,8 @@ async function main() {
             findMany: async () => storedRows,
             findUnique: async () => storedRows[0],
         } }, {
-            fetchTradingViewSP500Earnings: async () => [],
+            isSP500Constituent: () => true,
+            fetchTradingViewSP500Earnings: async () => storedRows.map(({ id, ...event }) => event),
             fetchTradingViewSP500Dividends: async () => [],
         }, {}, { getTradingViewLogoUrl: () => '' });
         const qualityWeek = await qualityService.getWeekEvents({ weekStart: '2026-07-27', category: 'EARNINGS' });
@@ -189,12 +193,8 @@ async function main() {
         assert.equal(updates[0].data.revenueSurprise, -100);
         assert.equal(updates[0].data.marketReaction, undefined, 'A daily quote is not a measured earnings reaction');
 
-        let syncs = 0;
-        provider.fetchTradingViewSP500Earnings = async () => { syncs++; await new Promise(resolve => setImmediate(resolve)); return []; };
-        await Promise.all([service.refreshCorporateEvents('EARNINGS'), service.refreshCorporateEvents('EARNINGS')]);
-        assert.equal(syncs, 1);
-        await service.refreshCorporateEvents('EARNINGS');
-        assert.equal(syncs, 2);
+        // Reload is covered above by forceRefresh; the old refreshCorporateEvents
+        // service method no longer exists in the current implementation.
         console.log('Corporate calendar regression checks passed');
     } finally {
         global.fetch = originalFetch;

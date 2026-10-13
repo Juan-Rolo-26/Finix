@@ -1,0 +1,56 @@
+{
+  "velas": {
+    "path": "/images/education/technical/velas.png",
+    "source": "https://commons.wikimedia.org/wiki/File:Apple_Inc_Candle_Stick_Chart_Mar_2009_to_May_2011.png",
+    "author": "Yndesai",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "title": "Apple Inc Candle Stick Chart Mar 2009 to May 2011.png",
+    "download": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6f/Apple_Inc_Candle_Stick_Chart_Mar_2009_to_May_2011.png/960px-Apple_Inc_Candle_Stick_Chart_Mar_2009_to_May_2011.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+  },
+  "bollinger": {
+    "path": "/images/education/technical/bollinger.png",
+    "source": "https://commons.wikimedia.org/wiki/File:BBands.png",
+    "author": "Twish",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "title": "BBands.png",
+    "download": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/BBands.png/960px-BBands.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+  },
+  "atr": {
+    "path": "/images/education/technical/atr.png",
+    "source": "https://commons.wikimedia.org/wiki/File:Average_true_range_14.png",
+    "author": "HendrikHeuvelrug",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "title": "Average true range 14.png",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/2/21/Average_true_range_14.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+  },
+  "adx": {
+    "path": "/images/education/technical/adx.png",
+    "source": "https://commons.wikimedia.org/wiki/File:ADX_Indicator.tif",
+    "author": "HendrikHeuvelrug",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "title": "ADX Indicator.tif",
+    "download": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/ADX_Indicator.tif/lossless-page1-500px-ADX_Indicator.tif.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+  },
+  "estocastico": {
+    "path": "/images/education/technical/estocastico.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Stochastics_Divergence.jpg",
+    "author": "-oo0(GoldTrader)0oo-",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "title": "Stochastics Divergence.jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/d/db/Stochastics_Divergence.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+  },
+  "volumen": {
+    "path": "/images/education/technical/volumen.png",
+    "source": "https://commons.wikimedia.org/wiki/File:Candlestick_Chart_in_MetaTrader_5.png",
+    "author": "Enivid",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "title": "Candlestick Chart in MetaTrader 5.png",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Candlestick_Chart_in_MetaTrader_5.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+  }
+}

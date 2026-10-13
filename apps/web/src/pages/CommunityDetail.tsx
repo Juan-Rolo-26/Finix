@@ -1,6 +1,7 @@
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
+import CommentsPanel from '@/components/posts/CommentsPanel';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, Users, Crown, Lock, BadgeCheck, MessageCircle,
@@ -53,7 +54,7 @@ interface CommunityEvent {
 
 interface CommunityResource {
     id: string; title: string; description?: string; resourceUrl: string;
-    isPublic: boolean; requiredTierLevel: number;
+    isPublic: boolean; requiredTierLevel: number; isLocked?: boolean;
     author?: { id: string; username: string };
 }
 
@@ -68,7 +69,7 @@ function fmtDate(iso: string) {
     return new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 function fmtDateTime(iso: string) {
-    return new Date(iso).toLocaleString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 }
 
 const TABS = [
@@ -127,14 +128,23 @@ function PostCard({ post, community, onDelete }: {
     post: Post; community: Community; onDelete: (id: string) => void;
 }) {
     const { user } = useAuthStore();
-    const [liked, setLiked] = useState(false);
+    const [liked, setLiked] = useState(Boolean((post as any).isLiked));
     const [likeCount, setLikeCount] = useState(post._count.likes);
     const [showMenu, setShowMenu] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [likeError, setLikeError] = useState('');
+    const [showComments, setShowComments] = useState(false);
+    const [commentCount, setCommentCount] = useState(post._count.comments);
+    const [saved, setSaved] = useState(Boolean((post as any).isSaved));
+    const [saving, setSaving] = useState(false);
+    const save = async () => { if (saving) return; setSaving(true); setLikeError(''); try {
+        const response = await apiFetch(`/posts/${post.id}/save`, { method: 'POST' });
+        const data = await response.json(); if (!response.ok) throw new Error(data.message || 'No se pudo guardar.');
+        setSaved(Boolean(data.saved));
+    } catch (e) { setLikeError((e as Error).message); } finally { setSaving(false); } };
     const liking = useRef(false);
 
-    const canDelete = user?.id === post.author.id || user?.id === community.creator.id;
+    const canDelete = user?.id === post.author.id || user?.id === community.creator.id || Boolean(community.canModerate);
 
     const handleLike = async () => {
         if (liking.current) return;
@@ -210,7 +220,7 @@ function PostCard({ post, community, onDelete }: {
                                     className="absolute right-0 top-8 z-10 rounded-xl shadow-xl overflow-hidden w-36"
                                     style={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))' }}>
                                     <button
-                                        onClick={() => { onDelete(post.id); setShowMenu(false); }}
+                                        onClick={() => { if (confirm('¿Eliminar esta publicación?')) onDelete(post.id); setShowMenu(false); }}
                                         className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-medium hover:bg-destructive/10 transition-colors text-destructive">
                                         <Trash2 className="w-3.5 h-3.5" /> Eliminar
                                     </button>
@@ -273,17 +283,18 @@ function PostCard({ post, community, onDelete }: {
                     <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
                     {likeCount > 0 && likeCount}
                 </button>
-                <button className="flex items-center gap-1.5 text-[12px] font-medium transition-colors"
+                <button onClick={() => setShowComments(v => !v)} aria-expanded={showComments} aria-label="Comentarios" className="flex items-center gap-1.5 text-[12px] font-medium transition-colors"
                     style={{ color: 'hsl(var(--muted-foreground))' }}>
                     <MessageCircle className="w-4 h-4" />
-                    {post._count.comments > 0 && post._count.comments}
+                    {commentCount > 0 && commentCount}
                 </button>
-                <button className="flex items-center gap-1.5 text-[12px] font-medium transition-colors ml-auto"
+                <button onClick={() => void save()} disabled={saving} aria-pressed={saved} aria-label={saved ? "Quitar de guardados" : "Guardar publicación"} className="flex items-center gap-1.5 text-[12px] font-medium transition-colors ml-auto"
                     style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    <Bookmark className="w-4 h-4" />
+                    <Bookmark className={`w-4 h-4 ${saved ? "fill-current text-primary" : ""}`} />
                 </button>
             </div>
 
+            {showComments && <CommentsPanel postId={post.id} currentUserId={user?.id} onCountChange={setCommentCount} />}
             {showReportModal && (
                 <ReportModal
                     isOpen={showReportModal}
@@ -308,6 +319,7 @@ function CreatePost({ communityId, plans, onCreated }: {
     const [visibility, setVisibility] = useState('PUBLIC');
     const [tierLevel, setTierLevel] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [publishError, setPublishError] = useState('');
     const [image, setImage] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
@@ -327,14 +339,14 @@ function CreatePost({ communityId, plans, onCreated }: {
 
     const handleSubmit = async () => {
         if (!content.trim() && !image) return;
-        setLoading(true);
+        setLoading(true); setPublishError('');
         try {
             let mediaUrls: any[] = [];
             if (image) {
                 const formData = new FormData();
                 formData.append('files', image);
                 const up = await apiFetch('/posts/upload-media', { method: 'POST', headers: {}, body: formData });
-                if (!up.ok) throw new Error('Upload failed');
+                if (!up.ok) throw new Error('No se pudo subir la imagen.');
                 mediaUrls = await up.json();
             }
 
@@ -348,18 +360,20 @@ function CreatePost({ communityId, plans, onCreated }: {
                     mediaUrls: mediaUrls.length ? mediaUrls : undefined
                 }),
             });
+            if (!res.ok) { const data = await res.json().catch(() => ({})); throw new Error(data.message || 'No se pudo publicar.'); }
             if (res.ok) {
                 const post = await res.json();
                 onCreated(post);
                 setContent('');
                 handleRemoveImage();
             }
-        } finally { setLoading(false); }
+        } catch (e) { setPublishError((e as Error).message); } finally { setLoading(false); }
     };
 
     return (
         <div className="rounded-2xl p-4 space-y-3"
             style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
+            {publishError && <p role="alert" className="text-sm text-destructive">{publishError}</p>}
             <div className="flex items-start gap-3">
                 <Avatar className="h-8 w-8 shrink-0 mt-0.5">
                     <AvatarImage src={user?.avatarUrl} />
@@ -448,6 +462,13 @@ function SubscribeModal({ community, onClose, onJoined, onSelectPaidPlan }: {
 
     const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const freePlan = community.plans.find(p => Number(p.price) === 0) || (freeAccess ? community.plans[0] : undefined);
+    const privateAccess = community.privacyType === 'PRIVATE' && (community as any).joinRequestStatus !== 'APPROVED';
+    const [requestSent, setRequestSent] = useState((community as any).joinRequestStatus === 'PENDING');
+    const [requestNote, setRequestNote] = useState('');
+    const sendRequest = async () => { setLoading(true); setError(''); try {
+        const response = await apiFetch(`/communities/${community.id}/join-requests`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ note: requestNote }) });
+        const data = await response.json(); if (!response.ok) throw new Error(data.message || 'No se pudo enviar.'); setRequestSent(true);
+    } catch (e) { setError((e as Error).message); } finally { setLoading(false); } };
     const paidPlans = freeAccess ? [] : community.plans.filter(p => Number(p.price) > 0);
 
     const handleJoinFree = async () => {
@@ -521,8 +542,9 @@ function SubscribeModal({ community, onClose, onJoined, onSelectPaidPlan }: {
                 </div>
 
                 <div className="p-6 space-y-3 max-h-[70vh] overflow-y-auto">
+                    {privateAccess && <div className="space-y-3"><p className="text-sm text-muted-foreground">El creador debe aprobar tu ingreso a esta comunidad privada.</p><label className="block text-sm">Mensaje para el creador (opcional)<textarea maxLength={1000} className="mt-2 w-full rounded-xl border border-border bg-background p-3" value={requestNote} onChange={e => setRequestNote(e.target.value)} /></label><button className="min-h-11 w-full rounded-xl bg-primary px-4 text-primary-foreground disabled:opacity-50" disabled={loading || requestSent} onClick={() => void sendRequest()}>{requestSent ? "Solicitud enviada: pendiente de aprobación" : "Solicitar ingreso"}</button></div>}
                     {/* Free plan */}
-                    {freePlan && (
+                    {!privateAccess && freePlan && (
                         <div className="rounded-xl p-4 space-y-3"
                             style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}>
                             <div className="flex items-center justify-between">
@@ -550,7 +572,7 @@ function SubscribeModal({ community, onClose, onJoined, onSelectPaidPlan }: {
                     )}
 
                     {/* Paid plans */}
-                    {paidPlans.map(plan => (
+                    {!privateAccess && paidPlans.map(plan => (
                         <div key={plan.id} className="rounded-xl p-4 space-y-3"
                             style={{
                                 background: 'hsl(var(--primary)/0.06)',
@@ -623,13 +645,14 @@ export default function CommunityDetail(props?: {
     onRefresh?: (c: Community) => void;
 }) {
     const { id: paramId } = useParams<{ id: string }>();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const [community, setCommunity] = useState<Community | null>(props?.community || null);
     const [loading, setLoading] = useState(!props?.community);
     const [activeTab, setActiveTab] = useState('feed');
     const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
-    const [showSubscribe, setShowSubscribe] = useState(false);
+    const [showSubscribe, setShowSubscribe] = useState(searchParams.get('plan') === '1');
     const [showCardPayment, setShowCardPayment] = useState(false);
     const [selectedPaidPlan, setSelectedPaidPlan] = useState<any>(null);
     const [posts, setPosts] = useState<Post[]>([]);
@@ -676,14 +699,15 @@ export default function CommunityDetail(props?: {
             if (cursor) params.set('cursor', cursor);
             if (sectionId) params.set('sectionId', sectionId);
             const res = await apiFetch(`/communities/${community.id}/posts?${params}`);
+            if (!res.ok) { const error = await res.json().catch(() => ({})); throw new Error(error.message || 'No se pudieron cargar las publicaciones.'); }
             if (res.ok) {
                 const data = await res.json();
                 const list = Array.isArray(data) ? data : (data.posts || []);
-                if (cursor) setPosts(prev => [...prev, ...list]);
+                if (cursor) setPosts(prev => [...prev, ...list.filter((item: Post) => !prev.some(p => p.id === item.id))]);
                 else setPosts(list);
-                setHasMore(data.hasMore || false);
+                setHasMore(Array.isArray(data) ? list.length === 20 : Boolean(data.hasMore));
             }
-        } finally { setPostsLoading(false); }
+        } catch (e) { setActionError((e as Error).message); } finally { setPostsLoading(false); }
     }, [community?.id]);
 
     const loadTab = useCallback(async (tab: string) => {
@@ -691,9 +715,11 @@ export default function CommunityDetail(props?: {
         try {
             if (tab === 'eventos') {
                 const res = await apiFetch(`/communities/${community.id}/events`);
+                if (!res.ok) throw new Error('No se pudieron cargar los eventos.');
                 if (res.ok) setEvents(await res.json());
             } else if (tab === 'recursos') {
                 const res = await apiFetch(`/communities/${community.id}/resources`);
+                if (!res.ok) throw new Error('No se pudieron cargar los recursos.');
                 if (res.ok) setResources(await res.json());
             } else if (tab === 'miembros') {
                 const res = await apiFetch(`/communities/${community.id}/members?limit=30`);
@@ -703,13 +729,13 @@ export default function CommunityDetail(props?: {
                 }
             }
             setTabLoaded(prev => ({ ...prev, [tab]: true }));
-        } catch { }
+        } catch (e) { setActionError((e as Error).message); }
     }, [community?.id, tabLoaded]);
 
     useEffect(() => {
         if (community) {
-            loadPosts(activeTab === 'exclusivo' ? 'exclusive' : 'all', undefined, selectedSectionId);
-            if (!['feed', 'exclusivo'].includes(activeTab)) loadTab(activeTab);
+            if (['feed', 'exclusivo'].includes(activeTab)) void loadPosts(activeTab === 'exclusivo' ? 'exclusive' : 'all', undefined, selectedSectionId);
+            else void loadTab(activeTab);
         }
     }, [activeTab, selectedSectionId, community, loadPosts, loadTab]);
 
@@ -1023,7 +1049,7 @@ export default function CommunityDetail(props?: {
 
                                     {hasMore && (
                                         <button
-                                            onClick={() => loadPosts(activeTab === 'exclusivo' ? 'exclusive' : 'all', posts[posts.length - 1]?.createdAt)}
+                                            onClick={() => loadPosts(activeTab === 'exclusivo' ? 'exclusive' : 'all', posts[posts.length - 1]?.id)}
                                             className="w-full py-3 text-xs font-bold rounded-xl border border-border/50 hover:bg-muted/50 transition-colors"
                                             style={{ background: 'hsl(var(--card))', color: 'hsl(var(--foreground))' }}>
                                             Cargar más publicaciones
@@ -1167,7 +1193,7 @@ export default function CommunityDetail(props?: {
                                                     style={{ color: 'hsl(var(--muted-foreground))' }}>{r.description}</p>
                                             )}
                                         </div>
-                                        {!r.isPublic && r.requiredTierLevel > 0 && !isMember ? (
+                                        {r.isLocked || !r.resourceUrl ? (
                                             <Lock className="w-4 h-4 flex-shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }} />
                                         ) : (
                                             <a href={r.resourceUrl} target="_blank" rel="noopener noreferrer"

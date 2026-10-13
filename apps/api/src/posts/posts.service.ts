@@ -4,6 +4,8 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
+import { CommunityPermissionsService } from '../communities/community-permissions.service';
+import { queueOfficialPost } from './official-post-email';
 import { TtlCache } from '../common/ttl-cache';
 import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -125,7 +127,20 @@ export class PostsService {
         private prisma: PrismaService,
         private notificationsService: NotificationsService,
         private mailService: MailService,
+        private communityPermissions: CommunityPermissionsService,
     ) { }
+
+    private async assertPostAccess(postId: string, userId?: string, interaction = false) {
+        const post = await this.prisma.post.findUnique({ where: { id: postId } });
+        if (!post || post.deletedAt || post.visibility !== 'VISIBLE') throw new NotFoundException('Publicación no disponible.');
+        if (!post.communityId) return;
+        const access = await this.communityPermissions.canAccessCommunity(userId, post.communityId);
+        const elevated = ['OWNER', 'ADMIN', 'MODERATOR'].includes(access.role || '');
+        if (!elevated && (!access.canView || (interaction && !access.isMember) ||
+            (post.targetVisibility !== 'PUBLIC' && !access.isMember) || access.tierLevel < post.requiredTierLevel)) {
+            throw new ForbiddenException('Unite a la comunidad y al nivel requerido para acceder.');
+        }
+    }
 
     private async getActorUsername(userId: string) {
         const actor = await this.prisma.user.findUnique({
@@ -240,7 +255,8 @@ export class PostsService {
             }
         }
 
-        const post = await this.prisma.post.create({
+        const post = await this.prisma.$transaction(async tx => {
+        const created = await tx.post.create({
             data: {
                 authorId: userId,
                 content,
@@ -263,6 +279,9 @@ export class PostsService {
                 quotedPostId: dto.quotedPostId || null,
             },
             include: POST_INCLUDE(userId),
+        });
+        await queueOfficialPost(tx, created);
+        return created;
         });
 
         this.clearFeedCache();
@@ -419,6 +438,7 @@ export class PostsService {
     // ── GET ONE ───────────────────────────────────────────────────────────────
 
     async getPostById(postId: string, userId?: string) {
+        await this.assertPostAccess(postId, userId, false);
         const post = await this.prisma.post.findUnique({
             where: { id: postId },
             include: {
@@ -502,6 +522,7 @@ export class PostsService {
     // ── LIKE / UNLIKE ─────────────────────────────────────────────────────────
 
     async toggleLike(postId: string, userId: string) {
+        await this.assertPostAccess(postId, userId, true);
         const post = await this.prisma.post.findUnique({
             where: { id: postId },
             select: {
@@ -540,14 +561,16 @@ export class PostsService {
     // ── COMMENT ───────────────────────────────────────────────────────────────
 
     async addComment(postId: string, userId: string, content: string, parentId?: string) {
+        await this.assertPostAccess(postId, userId, true);
         const post = await this.prisma.post.findUnique({
             where: { id: postId },
             select: {
                 id: true,
-                authorId: true,
+                authorId: true, isCommentsDisabled: true,
             },
         });
         if (!post) throw new NotFoundException('Post no encontrado');
+        if (post.isCommentsDisabled) throw new ForbiddenException('Los comentarios están desactivados en esta publicación.');
 
         const sanitized = sanitize(content);
         if (!sanitized) throw new BadRequestException('El comentario no puede estar vacío');
@@ -608,6 +631,7 @@ export class PostsService {
     }
 
     async getComments(postId: string, userId?: string, cursor?: string, limit = 20) {
+        await this.assertPostAccess(postId, userId, false);
         const post = await this.prisma.post.findUnique({ where: { id: postId }, select: { id: true } });
         if (!post) throw new NotFoundException('Post no encontrado');
 
@@ -698,6 +722,7 @@ export class PostsService {
     // ── REPOST ────────────────────────────────────────────────────────────────
 
     async toggleRepost(postId: string, userId: string, comment?: string) {
+        await this.assertPostAccess(postId, userId, true);
         const post = await this.prisma.post.findUnique({
             where: { id: postId },
             select: {
@@ -751,6 +776,7 @@ export class PostsService {
             if (existing) {
                 await tx.save.delete({ where: { userId_postId: { userId, postId } } });
             } else {
+                await this.assertPostAccess(postId, userId, true);
                 await tx.save.create({ data: { userId, postId } });
             }
 
@@ -776,7 +802,10 @@ export class PostsService {
         const hasMore = saves.length > limit;
         const items = hasMore ? saves.slice(0, limit) : saves;
         return {
-            posts: items.map((s) => enrichPost(s.post, userId)),
+            posts: await Promise.all(items.map(async s => {
+                try { await this.assertPostAccess(s.postId, userId); return enrichPost(s.post, userId); }
+                catch { return { id: s.postId, content: '', media: [], isLocked: true, type: 'post', author: { id: '', username: 'Contenido restringido', avatarUrl: null, isVerified: false }, createdAt: s.createdAt, likesCount: 0, commentsCount: 0, repostsCount: 0, likedByMe: false, repostedByMe: false, savedByMe: true }; }
+            })),
             nextCursor: hasMore ? items[items.length - 1].postId : null,
             hasMore,
         };
@@ -803,7 +832,7 @@ export class PostsService {
         if (!user) throw new NotFoundException('Usuario no encontrado');
 
         const posts = await this.prisma.post.findMany({
-            where: { authorId: user.id, parentId: null, visibility: 'VISIBLE', deletedAt: null },
+            where: { authorId: user.id, communityId: null, parentId: null, visibility: 'VISIBLE', deletedAt: null },
             take: limit + 1,
             ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
             orderBy: { createdAt: 'desc' },
@@ -825,13 +854,13 @@ export class PostsService {
         const skip = (page - 1) * limit;
         const [posts, total] = await Promise.all([
             this.prisma.post.findMany({
-                where: { parentId: null, visibility: 'VISIBLE', deletedAt: null },
+                where: { parentId: null, communityId: null, visibility: 'VISIBLE', deletedAt: null },
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
                 include: POST_INCLUDE(viewerId),
             }),
-            this.prisma.post.count({ where: { parentId: null, visibility: 'VISIBLE', deletedAt: null } }),
+            this.prisma.post.count({ where: { parentId: null, communityId: null, visibility: 'VISIBLE', deletedAt: null } }),
         ]);
         return {
             posts: posts.map((post) => enrichPost(post, viewerId)),

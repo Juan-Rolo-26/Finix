@@ -14,7 +14,7 @@ function EmptyChart({ children }: { children: React.ReactNode }) {
 }
 
 const EMPTY_RETURNS: MonthlyReturn[] = [];
-type MonthlyReturn = { monthKey: string; label: string; value: number };
+type MonthlyReturn = { monthKey: string; label: string; value: number; isPartial?: boolean };
 
 export function MonthlyReturnChart({ returns = EMPTY_RETURNS, totalReturn, loading = false, hidden = false }: {
     returns?: MonthlyReturn[];
@@ -40,7 +40,7 @@ export function MonthlyReturnChart({ returns = EMPTY_RETURNS, totalReturn, loadi
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><TrendingUp className="h-6 w-6" /></span>
                     <div>
                         <h4 className="text-xl font-bold tracking-tight sm:text-2xl">Rendimiento mensual</h4>
-                        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Variación de la cartera por mes, descontando aportes y retiros.</p>
+                        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Variación de la cartera por mes, descontando aportes y retiros. El mes en curso se actualiza desde la primera medición.</p>
                     </div>
                 </div>
                 {totalReturn && totalReturn !== '—' && <div className="rounded-2xl border border-border bg-secondary/30 px-4 py-3">
@@ -58,7 +58,7 @@ export function MonthlyReturnChart({ returns = EMPTY_RETURNS, totalReturn, loadi
                                     <XAxis dataKey="monthKey" axisLine={false} tickLine={false} interval={0} tickMargin={12} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 13 }} tickFormatter={monthLabel} />
                                     <YAxis domain={domain} width={62} axisLine={false} tickLine={false} tickCount={5} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 13 }} tickFormatter={v => pct(v)} />
                                     <ReferenceLine y={0} stroke="hsl(var(--muted-foreground) / 0.45)" />
-                                    <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={{ fill: 'hsl(var(--primary) / 0.06)' }} formatter={(value: number) => [pct(value, true), 'Rendimiento']} labelFormatter={key => monthLabel(String(key))} />
+                                    <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={{ fill: 'hsl(var(--primary) / 0.06)' }} formatter={(value: number) => [pct(value, true), 'Rendimiento']} labelFormatter={key => `${monthLabel(String(key))}${data.find(p => p.monthKey === key)?.isPartial ? " · en curso" : ""}`} />
                                     <Bar dataKey="value" maxBarSize={52} radius={6} isAnimationActive={false}>
                                         {data.map(p => <Cell key={p.monthKey} fill={p.value < 0 ? '#f43f5e' : '#10b981'} />)}
                                         <LabelList dataKey="value" position="top" formatter={(v: number) => pct(v, true)} style={{ fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 700 }} />
@@ -68,11 +68,12 @@ export function MonthlyReturnChart({ returns = EMPTY_RETURNS, totalReturn, loadi
                         </div>
                     </div>
                 </div>
+                {data.some(p => p.isPartial) && <p className="mt-3 text-sm text-muted-foreground">Mes en curso: rendimiento acumulado hasta la última medición disponible.</p>}
                 <details className="mt-4 text-sm">
                     <summary className="w-fit cursor-pointer rounded-lg py-2 font-semibold text-muted-foreground hover:text-foreground">Ver rendimientos por mes</summary>
                     <div className="mt-2 overflow-x-auto rounded-xl border border-border">
                         <table className="w-full text-left"><thead className="bg-secondary/40"><tr><th className="px-4 py-3">Mes</th><th className="px-4 py-3 text-right">Rendimiento</th></tr></thead><tbody>
-                            {data.map(p => <tr key={p.monthKey} className="border-t border-border"><td className="px-4 py-3">{monthLabel(p.monthKey)}</td><td className={cn('px-4 py-3 text-right font-semibold tabular-nums', p.value < 0 ? 'text-rose-500' : 'text-emerald-600')}>{pct(p.value, true)}</td></tr>)}
+                            {data.map(p => <tr key={p.monthKey} className="border-t border-border"><td className="px-4 py-3">{monthLabel(p.monthKey)}{p.isPartial && <span className="ml-2 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">En curso</span>}</td><td className={cn('px-4 py-3 text-right font-semibold tabular-nums', p.value < 0 ? 'text-rose-500' : 'text-emerald-600')}>{pct(p.value, true)}</td></tr>)}
                         </tbody></table>
                     </div>
                 </details>

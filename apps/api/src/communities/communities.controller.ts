@@ -282,6 +282,10 @@ export class CommunitiesController {
     // ─── Invites ──────────────────────────────────────────────────────────────
 
     @UseGuards(JwtAuthGuard)
+    @Get(':id/invites')
+    listInvites(@Param('id') id: string, @Request() req: any) { return this.communitiesService.listInvites(id, req.user.id); }
+
+    @UseGuards(JwtAuthGuard)
     @Post(':id/invites')
     createInvite(@Param('id') id: string, @Request() req: any, @Body() dto: CreateInviteDto) {
         return this.communitiesService.createInvite(id, req.user.id, dto);

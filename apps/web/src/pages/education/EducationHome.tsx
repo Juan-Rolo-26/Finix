@@ -6,6 +6,7 @@ import {
     Clock, Compass, HelpCircle
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { EducationCover, type EducationCoverImage } from '@/components/education/EducationCover';
 import { searchEducationArticles } from '@/lib/educationSearch';
 
 interface Category {
@@ -28,6 +29,7 @@ interface Article {
     formula?: string;
     interactiveWidget?: string;
     isFeatured: boolean;
+    coverImage?: EducationCoverImage;
     category?: { id: string; name: string; slug: string; icon: string };
     subcategory?: { id: string; name: string; slug: string };
 }
@@ -64,7 +66,10 @@ export default function EducationHome() {
             setLoading(true);
             try {
                 // Fetch categories
-                const catRes = await apiFetch('/education/categories');
+                const [catRes, firstArtRes] = await Promise.all([
+                    apiFetch('/education/categories'),
+                    apiFetch('/education/articles?limit=200&page=1'),
+                ]);
                 if (catRes.ok && mounted) {
                     setCategories(await catRes.json());
                 }
@@ -74,7 +79,7 @@ export default function EducationHome() {
                 let page = 1;
                 let totalPages = 1;
                 do {
-                    const artRes = await apiFetch(`/education/articles?limit=50&page=${page}`);
+                    const artRes = page === 1 ? firstArtRes : await apiFetch(`/education/articles?limit=200&page=${page}`);
                     if (!artRes.ok) break;
                     const data = await artRes.json();
                     const items: Article[] = data.items || [];
@@ -184,6 +189,7 @@ export default function EducationHome() {
                         Consultá conceptos, fórmulas, indicadores y métricas de mercado con rigor técnico institucional. Libre acceso y sin registro requerido.
                     </p>
 
+                    <Link to="/laboratorio" className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/25 bg-card px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary">Probá los conceptos en el Laboratorio <ArrowRight className="h-4 w-4 shrink-0" /></Link>
                     {/* BUSCADOR INSTANTÁNEO */}
                     <div className="max-w-2xl mx-auto relative pt-2">
                         <div className="relative flex items-center shadow-md shadow-black/5 rounded-2xl bg-card border border-border/80 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary transition-all">
@@ -356,6 +362,7 @@ export default function EducationHome() {
                                     className="group p-5 rounded-2xl border border-border/80 bg-card hover:border-primary/50 hover:shadow-md transition-all flex flex-col justify-between"
                                 >
                                     <div className="space-y-3">
+                                        <EducationCover image={art.coverImage} />
                                         <div className="flex items-center justify-between gap-2">
                                             <span className="text-[11px] font-bold text-primary flex items-center gap-1 truncate">
                                                 <IconComp className="w-3.5 h-3.5 shrink-0" />

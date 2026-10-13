@@ -205,3 +205,27 @@ test('profile and private metrics delegate monthly returns to the same engine in
     }
     assert.deepEqual(calls, [['p', 'u', 'ARS'], ['p', 'u', 'ARS']]);
 });
+
+
+test('current month appears from its first funded valuation, with no invented gain', async () => {
+    const { engine } = service([tx('BUY', 0, 1000, 10)]);
+    const months = await engine.getReturns('p', 'u');
+    assert.equal(months.length, 1);
+    assert.equal(months[0].monthKey, '2026-10');
+    assert.equal(months[0].value, 0);
+    assert.equal(months[0].isPartial, true);
+});
+
+test('a single day of measured gains already appears in the current month', async () => {
+    const months = await service([tx('BUY', 1, 1000, 10)], { price: 110 }).engine.getReturns('p', 'u');
+    assert.equal(months.at(-1).value, 10);
+    assert.equal(months.at(-1).isPartial, true);
+});
+
+test('an unmeasured opening from an earlier month is not reported as a monthly return', async () => {
+    const { engine } = service([]);
+    engine.getPerformance = async () => ({ insufficientData: true, markers: [], series: [
+        { date: '2026-09-30T18:00:00Z', value: 1000, invested: 1000, returnPct: 0 },
+    ] });
+    assert.deepEqual(await engine.getReturns('p', 'u'), []);
+});

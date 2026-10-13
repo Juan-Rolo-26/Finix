@@ -124,7 +124,7 @@ export class CommunityPermissionsService {
 
         const member = await this.prisma.communityMember.findUnique({
             where: { communityId_userId: { communityId, userId } },
-            select: { role: true, subscriptionStatus: true, paymentStatus: true },
+            select: { role: true, subscriptionStatus: true, paymentStatus: true, expiresAt: true },
         });
         if (!isCommunityMembershipActive(member)) return null;
         return member.role;
@@ -233,7 +233,7 @@ export class CommunityPermissionsService {
 
         if (!userId) {
             return {
-                canView: false,
+                canView: community.status === 'PUBLISHED' && community.privacyType === 'PUBLIC' && community.showContentBeforeJoin,
                 isMember: false,
                 role: null,
                 tierLevel: 0,
@@ -262,7 +262,7 @@ export class CommunityPermissionsService {
         const isActive = isCommunityMembershipActive(member);
         const tierLevel = isActive ? (isFreeAccessEnabled() ? Number.MAX_SAFE_INTEGER : member?.plan?.tierLevel ?? 0) : 0;
 
-        const canView = isActive || community.privacyType === 'PUBLIC' || community.showContentBeforeJoin;
+        const canView = community.status === 'PUBLISHED' && (isActive || (community.privacyType === 'PUBLIC' && community.showContentBeforeJoin));
 
         return {
             canView,

@@ -1,3 +1,4 @@
+import { EducationCover } from '@/components/education/EducationCover';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
@@ -85,11 +86,11 @@ export default function EducationCategoryPage() {
 
                     {/* Subcategories Tabs */}
                     {category.subcategories?.length > 0 && (
-                        <div className="flex items-center gap-2 overflow-x-auto pt-3 pb-1">
+                        <div className="flex flex-wrap items-center gap-2 pt-3 pb-1">
                             <button
                                 type="button"
                                 onClick={() => setActiveSubcategory('ALL')}
-                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                className={`shrink-0 min-h-11 max-w-full px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-normal text-left ${
                                     activeSubcategory === 'ALL'
                                         ? 'bg-primary text-primary-foreground shadow-xs'
                                         : 'bg-muted/60 text-muted-foreground hover:text-foreground'
@@ -102,7 +103,7 @@ export default function EducationCategoryPage() {
                                     key={sub.id}
                                     type="button"
                                     onClick={() => setActiveSubcategory(sub.slug)}
-                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                    className={`shrink-0 min-h-11 max-w-full px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-normal text-left ${
                                         activeSubcategory === sub.slug
                                             ? 'bg-primary text-primary-foreground shadow-xs'
                                             : 'bg-muted/60 text-muted-foreground hover:text-foreground'
@@ -126,6 +127,7 @@ export default function EducationCategoryPage() {
                             className="group p-5 rounded-2xl border border-border/80 bg-card hover:border-primary/50 hover:shadow-lg transition-all flex flex-col justify-between"
                         >
                             <div className="space-y-3">
+                                <EducationCover image={art.coverImage} />
                                 <div className="flex items-center justify-between text-[11px]">
                                     <span className="font-semibold text-primary px-2.5 py-0.5 rounded-full bg-primary/10">
                                         {art.subcategory?.name || category.name}

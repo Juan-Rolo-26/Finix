@@ -79,9 +79,8 @@ async function main() {
         assert.equal(macro.find(event => event.id === 'manual-macro').title, 'Índice de precios al consumidor (IPC)');
         assert.equal(live[0].title, 'Consumer Price Index', 'Provider identity must stay unchanged');
         assert.equal(week.economicData.excludedLegacyEvents, 1);
-        assert.equal(earnings.length, 1);
-        assert.equal(earnings[0].id, 'manual-earnings');
-        assert.equal(week.categories.all, 3);
+        assert.equal(earnings.length, 0, 'Manual and orphaned stored balances are not TradingView events');
+        assert.equal(week.categories.all, 2);
         assert.equal(week.categories.us, 1);
         assert.equal(week.categories.ar, 1);
         const home = await service.getHomeEvents();

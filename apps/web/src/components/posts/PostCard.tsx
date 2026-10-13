@@ -480,6 +480,8 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
 
     // ── Render ───────────────────────────────────────────────────────────────
 
+    if ((post as any).isLocked) return <article className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">Esta publicación guardada requiere una membresía activa en su comunidad.<button disabled={isSavingPost} onClick={async () => { setIsSavingPost(true); try { const res = await apiFetch(`/posts/${post.id}/save`, { method: "POST" }); if (!res.ok) throw new Error(); onDeleted(post.id); } catch { setSaveError("No se pudo quitar de guardados."); } finally { setIsSavingPost(false); } }} className="mt-3 block text-primary underline">Quitar de guardados</button>{saveError && <p role="alert">{saveError}</p>}</article>;
+
     return (
         <motion.article
             layout

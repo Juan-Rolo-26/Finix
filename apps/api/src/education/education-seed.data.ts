@@ -1,3 +1,5 @@
+import { TECHNICAL_IMAGES } from './technical-images.data';
+import { ASSET_CATEGORY, EDUCATION_EXPANSION } from './education-expansion.data';
 // Auto-generated & verified Education Seed Data for Finix
 export interface SeedCategory {
     name: string;
@@ -1530,6 +1532,14 @@ export const SEED_ARTICLES: SeedArticle[] = [
     ]
   }
 ];
+
+for (const article of SEED_ARTICLES) {
+    const illustration = TECHNICAL_IMAGES[article.slug];
+    if (illustration && !article.content.includes('![')) article.content = illustration + article.content;
+}
+
+SEED_CATEGORIES.push(ASSET_CATEGORY);
+SEED_ARTICLES.push(...EDUCATION_EXPANSION);
 
 export const SEED_LEARNING_PATHS: SeedLearningPath[] = [
     {

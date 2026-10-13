@@ -1,3 +1,4 @@
+import CommunityStudioTools from '@/components/CommunityStudioTools';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
@@ -10,7 +11,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
-import { useAuthStore, isCreatorUser } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function CommunityAdmin() {
     const { id } = useParams<{ id: string }>();
@@ -19,7 +20,7 @@ export default function CommunityAdmin() {
 
     const [community, setCommunity] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'posts' | 'sections' | 'members' | 'moderation' | 'finance' | 'settings'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'posts' | 'sections' | 'members' | 'moderation' | 'finance' | 'settings' | 'tools'>('overview');
 
     // Overview data
     const [analytics, setAnalytics] = useState<any>(null);
@@ -78,9 +79,9 @@ export default function CommunityAdmin() {
     const [isDeleting, setIsDeleting] = useState(false);
 
     // Load initial community data
-    const fetchCommunity = useCallback(async () => {
+    const fetchCommunity = useCallback(async (showLoading = true) => {
         if (!id) return;
-        setLoading(true);
+        if (showLoading) setLoading(true);
         try {
             const res = await apiFetch(`/communities/${id}`);
             if (res.ok) {
@@ -116,7 +117,8 @@ export default function CommunityAdmin() {
 
     // Check creator permissions
     useEffect(() => {
-        if (community && !community.canManage && !isCreatorUser(user)) {
+        if (community && !community.canManage && community.canModerate) setActiveTab(current => ['posts', 'moderation'].includes(current) ? current : 'moderation');
+        if (community && !community.canManage && !community.canModerate) {
             navigate(`/comunidades/${community.slug || community.id}`);
         }
     }, [community, user, navigate]);
@@ -407,10 +409,11 @@ export default function CommunityAdmin() {
         { key: 'posts', label: 'Publicaciones', icon: FileText },
         { key: 'sections', label: 'Secciones', icon: FolderKanban },
         { key: 'members', label: 'Miembros', icon: Users },
+        { key: 'tools', label: 'Acceso y contenido', icon: FolderKanban },
         { key: 'moderation', label: 'Moderación', icon: ShieldAlert },
         { key: 'finance', label: 'Finanzas & Pagos', icon: CreditCard },
         { key: 'settings', label: 'Configuración', icon: Settings },
-    ];
+    ].filter(item => community.canManage || ['posts', 'moderation'].includes(item.key));
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -485,6 +488,7 @@ export default function CommunityAdmin() {
                 {/* Main Content Area */}
                 <div className="md:col-span-3 space-y-6">
                     {/* TAB: OVERVIEW */}
+                    {activeTab === 'tools' && community.canManage && <CommunityStudioTools community={community} onRefresh={() => void fetchCommunity(false)} />}
                     {activeTab === 'overview' && (
                         <div className="space-y-6">
                             {loadingAnalytics && (

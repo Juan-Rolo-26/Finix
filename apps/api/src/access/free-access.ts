@@ -19,5 +19,6 @@ export function getAccessMode() {
 /** Temporary memberships must stop granting paid access when launch mode ends. */
 export function isCommunityMembershipActive(member: any): boolean {
     return Boolean(member && member.subscriptionStatus === 'ACTIVE'
+        && (!member.expiresAt || new Date(member.expiresAt).getTime() > Date.now())
         && (member.paymentStatus !== 'FREE_ACCESS' || isFreeAccessEnabled()));
 }

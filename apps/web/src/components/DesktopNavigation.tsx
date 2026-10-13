@@ -11,6 +11,7 @@ import {
     ChevronDown,
     Flame,
     GraduationCap,
+    FlaskConical,
     HelpCircle,
     LogOut,
     MessageSquare,
@@ -64,6 +65,7 @@ export function DesktopSectionNav() {
 }
 
 const TOOLS_LIST = [
+    { title: 'Laboratorio Financiero', description: 'Calculadoras y simuladores de aportes, objetivos, tasas y costos.', path: '/laboratorio', icon: FlaskConical, accent: 'text-sky-500 bg-sky-500/10 border-sky-500/25 group-hover:bg-sky-500/20 group-hover:border-sky-500/40' },
     {
         title: 'Mercado en Vivo',
         description: 'Cotizaciones, índices globales y variaciones en tiempo real.',
@@ -108,7 +110,7 @@ const TOOLS_LIST = [
     },
     {
         title: 'Academia Educativa',
-        description: 'Biblioteca integral de conceptos, guías interactivas y rutas de aprendizaje.',
+        description: 'Conceptos, indicadores y herramientas de análisis explicados.',
         path: '/educativa',
         icon: GraduationCap,
         accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/40',
@@ -137,7 +139,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
         path.startsWith('/market') ||
         path.startsWith('/mercado') ||
         path.startsWith('/analysis') ||
-        path === '/calendario';
+        path === '/calendario' || path === '/laboratorio';
 
     return (
         <header className="desktop-header hidden lg:block" aria-label="Navegación de escritorio">

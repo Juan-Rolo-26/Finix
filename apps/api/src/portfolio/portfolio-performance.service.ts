@@ -821,13 +821,17 @@ export class PortfolioPerformanceService {
         // Use the same historical closes and flow-adjusted returns as the
         // portfolio/benchmark curves, never today's quote for a past month.
         const performance = await this.getPerformance(portfolioId, userId, 'ALL', currency);
-        if (performance.insufficientData) return [];
-        const months = new Map<string, { factor: number; observations: number; hasBalance: boolean }>();
+        // A funded opening valuation is enough to display the current month at
+        // 0%. Missing price history still produces no usable series.
+        if (performance.insufficientData && performance.series.length !== 1) return [];
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const months = new Map<string, { factor: number; observations: number; hasBalance: boolean; hasOpeningCapital: boolean }>();
         const movementMonths = new Set((performance.markers ?? []).map(marker => marker.date.slice(0, 7)));
         for (const point of performance.series) {
             const key = point.date.slice(0, 7);
-            const month = months.get(key) ?? { factor: 1, observations: 0, hasBalance: false };
+            const month = months.get(key) ?? { factor: 1, observations: 0, hasBalance: false, hasOpeningCapital: false };
             month.hasBalance ||= point.value > 1e-6;
+            month.hasOpeningCapital ||= point.value > 1e-6 && point.invested > 1e-6;
             if ('dailyReturn' in point && typeof point.dailyReturn === 'number' && Number.isFinite(point.dailyReturn)) {
                 month.factor *= Math.max(0, 1 + point.dailyReturn / 100);
                 month.observations += 1;
@@ -835,10 +839,11 @@ export class PortfolioPerformanceService {
             months.set(key, month);
         }
         return [...months.entries()]
-            .filter(([key, month]) => month.observations > 0 && (month.hasBalance || movementMonths.has(key) || Math.abs(month.factor - 1) > 1e-8))
+            .filter(([key, month]) => (month.observations > 0 && (month.hasBalance || movementMonths.has(key) || Math.abs(month.factor - 1) > 1e-8))
+                || (key === currentMonth && month.hasOpeningCapital))
             .map(([monthKey, month]) => {
                 const [year, monthNumber] = monthKey.split('-').map(Number);
-                return { monthKey, label: MONTH_LABELS_ES[monthNumber - 1], year, month: monthNumber,
+                return { monthKey, label: MONTH_LABELS_ES[monthNumber - 1], year, month: monthNumber, isPartial: monthKey === currentMonth,
                     value: Number(((month.factor - 1) * 100).toFixed(4)) };
             });
     }

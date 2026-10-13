@@ -514,17 +514,21 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                     const companyName = row.d[1] || ticker;
                     const yieldVal = row.d[3] != null ? Number(row.d[3]) : undefined;
                     const amount = financialNumber(row.d[4]);
-                    if (amount === undefined || amount < 0) continue;
+                    if (amount === undefined || amount <= 0) continue;
                     const exTimestamp = Number(row.d[5]); // epoch seconds
                     const payTimestamp = Number(row.d[6]); // epoch seconds
                     const marketCap = row.d[7] != null ? Number(row.d[7]) : undefined;
                     const logoid = row.d[8];
 
-                    const exDate = Number.isFinite(exTimestamp) && exTimestamp > 0
-                        ? new Date(exTimestamp * 1000).toISOString().substring(0, 10) : undefined;
-                    const paymentDate = Number.isFinite(payTimestamp) && payTimestamp > 0
-                        ? new Date(payTimestamp * 1000).toISOString().substring(0, 10) : undefined;
-                    if (!exDate && !paymentDate) continue;
+                    const validDate = (epoch: number): string | undefined => {
+                        const date = new Date(epoch * 1000);
+                        if (!Number.isFinite(epoch) || epoch <= 0 || !Number.isFinite(date.getTime())) return undefined;
+                        const value = date.toISOString().slice(0, 10);
+                        return isCalendarDate(value) ? value : undefined;
+                    };
+                    const exDate = validDate(exTimestamp);
+                    const paymentDate = validDate(payTimestamp);
+                    if (!exDate) continue;
 
                     const logoUrl = logoid
                         ? `https://s3-symbol-logo.tradingview.com/${logoid}--big.svg`
@@ -543,15 +547,15 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                         sourceType: 'AUTOMATIC',
                         isPublished: true,
                     };
-                    const key = `${ticker}|${event.exDate}|${event.paymentDate}|${event.amount ?? ''}`;
+                    const key = `${normalizedTicker}|${event.exDate}`;
                     fetchedByKey.set(key, event);
                 }
 
                 const fetchedList = Array.from(fetchedByKey.values());
 
                 fetchedList.sort((a, b) => {
-                    const dateA = a.paymentDate || a.exDate;
-                    const dateB = b.paymentDate || b.exDate;
+                    const dateA = a.exDate;
+                    const dateB = b.exDate;
                     return dateA.localeCompare(dateB) || ((b.marketCap || 0) - (a.marketCap || 0));
                 });
                 this.tvDividendsCache = { data: fetchedList, fetchedAt: now };
@@ -568,12 +572,7 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
         if (options?.from && options?.to) {
             const fromDate = options.from;
             const toDate = options.to;
-            const filtered = allDividends.filter(d => {
-                const targetDate = d.paymentDate || d.exDate;
-                return (d.paymentDate && d.paymentDate >= fromDate && d.paymentDate <= toDate) ||
-                       (d.exDate && d.exDate >= fromDate && d.exDate <= toDate) ||
-                       (targetDate >= fromDate && targetDate <= toDate);
-            });
+            const filtered = allDividends.filter(d => d.exDate >= fromDate && d.exDate <= toDate);
             return filtered;
         }
 

@@ -267,6 +267,7 @@ interface CommentsPanelProps {
 export default function CommentsPanel({ postId, currentUserId, onCountChange }: CommentsPanelProps) {
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
+    const [submitError, setSubmitError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -306,13 +307,14 @@ export default function CommentsPanel({ postId, currentUserId, onCountChange }: 
 
     const handleSubmit = async () => {
         if (!newComment.trim() || !currentUserId) return;
-        setIsSubmitting(true);
+        setIsSubmitting(true); setSubmitError('');
         try {
             const res = await apiFetch(`/posts/${postId}/comment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: newComment }),
             });
+            if (!res.ok) { const data = await res.json().catch(() => ({})); throw new Error(data.message || 'No se pudo publicar el comentario.'); }
             if (res.ok) {
                 const comment = await res.json();
                 const enriched = { ...comment, replies: [] };
@@ -320,7 +322,7 @@ export default function CommentsPanel({ postId, currentUserId, onCountChange }: 
                 setNewComment('');
                 applyCountDelta(1);
             }
-        } catch { }
+        } catch (e) { setSubmitError((e as Error).message || 'No se pudo publicar el comentario.'); }
         setIsSubmitting(false);
     };
 
@@ -344,6 +346,7 @@ export default function CommentsPanel({ postId, currentUserId, onCountChange }: 
             exit={{ opacity: 0, height: 0 }}
             className="border-t border-border/30 px-4 py-3 space-y-3"
         >
+            {submitError && <p role="alert" className="text-sm text-destructive">{submitError}</p>}
             {/* Input */}
             {currentUserId && (
                 <div className="flex gap-2">

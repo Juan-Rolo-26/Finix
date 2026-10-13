@@ -25,6 +25,7 @@ import {
     Calendar,
     Receipt,
     GraduationCap,
+    FlaskConical,
     Bookmark,
 } from 'lucide-react';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
@@ -116,9 +117,10 @@ export function BottomNav() {
         location.pathname === p ||
         (p !== '/dashboard' && location.pathname.startsWith(`${p}/`));
 
-    const moreActive = ['/explore', '/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', ...(isEducationEnabled() ? ['/educativa'] : []), '/profile', '/settings', '/notifications'].some(p => isActive(p));
+    const moreActive = ['/laboratorio', '/explore', '/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', ...(isEducationEnabled() ? ['/educativa'] : []), '/profile', '/settings', '/notifications'].some(p => isActive(p));
 
     const moreLinks = [
+        { label: 'Laboratorio Financiero', path: '/laboratorio', icon: FlaskConical },
         { label: 'Explorar',  path: '/explore',  icon: Compass     },
         { label: 'Mercado',   path: '/market',   icon: TrendingUp  },
         ...(isWatchlistEnabled() ? [{ label: 'Seguimiento', path: '/market/seguimiento', icon: Bookmark }] : []),

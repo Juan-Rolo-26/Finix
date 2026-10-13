@@ -1,3 +1,4 @@
+import { CommunityPermissionsService } from '../communities/community-permissions.service';
 import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
 import { PostsController } from './posts.controller';
@@ -8,7 +9,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
     imports: [MulterModule.register({}), NotificationsModule],
     controllers: [PostsController],
-    providers: [PostsService, OptionalJwtAuthGuard],
+    providers: [PostsService, OptionalJwtAuthGuard, CommunityPermissionsService],
     exports: [PostsService],
 })
 export class PostsModule { }

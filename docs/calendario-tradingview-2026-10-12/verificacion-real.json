@@ -1,0 +1,44 @@
+{
+  "checkedAt": "2026-10-12T23:35:46.656Z",
+  "earnings": 1890,
+  "dividends": 466,
+  "source": "TradingView Scanner direct vs FINIX local HTTP",
+  "samples": [
+    {
+      "ticker": "AAPL",
+      "reportDate": "2026-07-30",
+      "actualEps": 2.02,
+      "epsEstimate": 1.891883,
+      "actualRevenue": 109417000000,
+      "revenueEstimate": 109038899874,
+      "exDate": "2026-08-10",
+      "amount": 0.27,
+      "paymentDate": "2026-08-13"
+    },
+    {
+      "ticker": "NVDA",
+      "reportDate": "2026-08-26",
+      "actualEps": 2.223888,
+      "epsEstimate": 2.093637,
+      "actualRevenue": 96221000000,
+      "revenueEstimate": 92270936574,
+      "exDate": "2026-09-10",
+      "amount": 0.25,
+      "paymentDate": "2026-10-01"
+    },
+    {
+      "ticker": "JPM",
+      "reportDate": "2026-07-14",
+      "actualEps": 7.7,
+      "epsEstimate": 5.586276,
+      "actualRevenue": 57347000000,
+      "revenueEstimate": 50720644720,
+      "exDate": "2026-10-06",
+      "amount": 1.65,
+      "paymentDate": "2026-10-31"
+    }
+  ],
+  "duplicateEarnings": 0,
+  "duplicateDividends": 0,
+  "incorrectDividendDates": 0
+}

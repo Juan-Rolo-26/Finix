@@ -97,16 +97,13 @@ export class CalendarService {
         }
         economicEvents = [...merged.values()].sort((a, b) => b.marketImpactScore - a.marketImpactScore || a.date.localeCompare(b.date));
         const earningsKey = (event: any) => `${event.ticker.trim().toUpperCase().replace(/\./g, '-')}|${event.date}`;
-        const mergedEarnings = new Map<string, (typeof earningsEvents)[number]>(
-            earningsEvents.filter(event => !isLegacyEarningsTemplate(event)).map(event => [earningsKey(event), event]));
-        for (const event of liveEarnings) {
-            const key = earningsKey(event);
-            const previous = mergedEarnings.get(key);
-            if (previous?.sourceType === 'MANUAL') continue;
-            const availableFields = Object.fromEntries(Object.entries(event).filter(([, value]) => value !== undefined));
-            mergedEarnings.set(key, { ...previous, ...availableFields, id: previous?.id || `earnings-${key}` } as any);
-        }
-        earningsEvents = [...mergedEarnings.values()].map(normalizeEarnings).filter(isVisibleEarnings)
+        // Stored rows supply IDs only. Financial fields always belong to the
+        // current TradingView release, never to an older or manual record.
+        const storedEarnings = new Map<string, any>(earningsEvents.map(event => [earningsKey(event), event]));
+        earningsEvents = liveEarnings.map(event => ({
+            ...event, id: storedEarnings.get(earningsKey(event))?.id || `earnings-${earningsKey(event)}`,
+        })) as any;
+        earningsEvents = earningsEvents.map(normalizeEarnings).filter(isVisibleEarnings)
             .sort((a, b) => b.earningsImpactScore - a.earningsImpactScore || a.date.localeCompare(b.date));
         const selectedCards: HomeCalendarEventCard[] = [];
 
@@ -327,21 +324,10 @@ export class CalendarService {
                 a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
         }
 
-        if (params.category !== 'US' && params.category !== 'AR' && params.category !== 'DIVIDEND') {
-            const existingByKey = new Map<string, number>(dbEarnings.map((e, index) => [`${tickerKey(e.ticker)}|${e.date}`, index]));
-            for (const event of tvEarnings) {
-                const key = `${tickerKey(event.ticker)}|${event.date}`;
-                const index = existingByKey.get(key);
-                if (index === undefined) {
-                    existingByKey.set(key, dbEarnings.length);
-                    dbEarnings.push(event as any);
-                } else if (dbEarnings[index].sourceType !== 'MANUAL') {
-                    const availableFields = Object.fromEntries(Object.entries(event).filter(([, value]) => value !== undefined));
-                    dbEarnings[index] = { ...dbEarnings[index], ...availableFields } as any;
-                }
-            }
-            dbEarnings.sort((a, b) => a.date.localeCompare(b.date) || b.earningsImpactScore - a.earningsImpactScore);
-        }
+        const storedEarnings = new Map<string, any>(dbEarnings.map(event => [`${tickerKey(event.ticker)}|${event.date}`, event]));
+        dbEarnings = tvEarnings.map(event => ({
+            ...event, id: storedEarnings.get(`${tickerKey(event.ticker)}|${event.date}`)?.id,
+        })) as any;
 
         // Fetch S&P 500 dividends from DB or TradingView.
         let dbDividends: any[] = [];
@@ -364,19 +350,12 @@ export class CalendarService {
                 // Table might not exist yet
             }
 
-            const dividendKey = (d: any) => `${String(d.ticker).trim().toUpperCase().replace(/\./g, '-')}|${d.exDate || ''}|${d.paymentDate || ''}|${d.amount ?? ''}`;
-            const existingByKey = new Map(dbDividends.map((d, index) => [dividendKey(d), index]));
-            for (const event of tvDivs) {
-                const key = dividendKey(event);
-                const index = existingByKey.get(key);
-                if (index === undefined) {
-                    existingByKey.set(key, dbDividends.length);
-                    dbDividends.push(event as any);
-                } else if (dbDividends[index].sourceType !== 'MANUAL') {
-                    dbDividends[index] = { ...dbDividends[index], ...event };
-                }
-            }
-            dbDividends.sort((a, b) => (a.paymentDate || a.exDate).localeCompare(b.paymentDate || b.exDate));
+            // One distribution per symbol/ex-date. Corrections to payment date
+            // or amount replace the record rather than creating another event.
+            const dividendKey = (d: any) => `${tickerKey(String(d.ticker))}|${d.exDate || ''}`;
+            const storedDividends = new Map(dbDividends.map(event => [dividendKey(event), event]));
+            dbDividends = tvDivs.map(event => ({ ...event, id: storedDividends.get(dividendKey(event))?.id }));
+
         }
 
 
@@ -453,18 +432,18 @@ export class CalendarService {
             return isSP500 || isProminent || isLargeCap || isHighImpact;
         });
 
-        // Exactly ONE principal earnings event per company across the week
+        // One principal earnings event per company and release date.
         const bestEarningsByTicker = new Map<string, { event: any; isPreferred: boolean; baseTicker: string }>();
         for (const e of dbEarnings) {
             const raw = String(e.ticker || '').toUpperCase().trim();
             const base = getBaseTicker(raw).replace(/\./g, '-');
             const isPref = isPreferredOrDerivative(raw, e.companyName);
-            const existing = bestEarningsByTicker.get(base);
+            const existing = bestEarningsByTicker.get(`${base}|${e.date}`);
             if (!existing) {
-                bestEarningsByTicker.set(base, { event: e, isPreferred: isPref, baseTicker: base });
+                bestEarningsByTicker.set(`${base}|${e.date}`, { event: e, isPreferred: isPref, baseTicker: base });
             } else {
                 if (existing.isPreferred && !isPref) {
-                    bestEarningsByTicker.set(base, { event: e, isPreferred: isPref, baseTicker: base });
+                    bestEarningsByTicker.set(`${base}|${e.date}`, { event: e, isPreferred: isPref, baseTicker: base });
                     continue;
                 } else if (!existing.isPreferred && isPref) {
                     continue;
@@ -473,18 +452,18 @@ export class CalendarService {
                 const eReported = e.actualEps != null || e.actualRevenue != null;
                 const existingReported = existing.event.actualEps != null || existing.event.actualRevenue != null;
                 if (eReported && !existingReported) {
-                    bestEarningsByTicker.set(base, { event: e, isPreferred: isPref, baseTicker: base });
+                    bestEarningsByTicker.set(`${base}|${e.date}`, { event: e, isPreferred: isPref, baseTicker: base });
                 } else if (!eReported && existingReported) {
                     // Keep existing
                 } else {
                     const eConfirmed = e.dateStatus === 'CONFIRMED';
                     const existingConfirmed = existing.event.dateStatus === 'CONFIRMED';
                     if (eConfirmed && !existingConfirmed) {
-                        bestEarningsByTicker.set(base, { event: e, isPreferred: isPref, baseTicker: base });
+                        bestEarningsByTicker.set(`${base}|${e.date}`, { event: e, isPreferred: isPref, baseTicker: base });
                     } else if (!eConfirmed && existingConfirmed) {
                         // Keep existing
                     } else if ((e.earningsImpactScore ?? 0) > (existing.event.earningsImpactScore ?? 0)) {
-                        bestEarningsByTicker.set(base, { event: e, isPreferred: isPref, baseTicker: base });
+                        bestEarningsByTicker.set(`${base}|${e.date}`, { event: e, isPreferred: isPref, baseTicker: base });
                     }
                 }
             }
@@ -499,8 +478,9 @@ export class CalendarService {
         }).sort((a, b) =>
             a.date.localeCompare(b.date) || (b.earningsImpactScore ?? 0) - (a.earningsImpactScore ?? 0));
         dbDividends = dbDividends.filter(event =>
-            event.ticker?.trim() && (isCalendarDate(event.exDate) || isCalendarDate(event.paymentDate)) &&
-            financialNumber(event.amount) !== undefined && financialNumber(event.amount)! >= 0);
+            event.ticker?.trim() && isCalendarDate(event.exDate) &&
+            (isAll || (event.exDate >= mondayStr && event.exDate <= sundayStr)) &&
+            financialNumber(event.amount) !== undefined && financialNumber(event.amount)! > 0);
 
         const uniqueEvents = <T,>(events: T[], key: (event: T) => string): T[] =>
             Array.from(events.reduce((map, event) => {
@@ -509,14 +489,9 @@ export class CalendarService {
                 return map;
             }, new Map<string, T>()).values());
 
-        const dividendDisplayDate = (d: any) =>
-            d.paymentDate && (isAll || (d.paymentDate >= mondayStr && d.paymentDate <= sundayStr))
-                ? d.paymentDate : d.exDate;
-        dbDividends.sort((a, b) =>
-            (dividendDisplayDate(a) || '').localeCompare(dividendDisplayDate(b) || ''));
-        // Different distributions of the same company must remain visible.
-        dbDividends = uniqueEvents(dbDividends, d =>
-            `${tickerKey(d.ticker)}|${d.exDate || ''}|${d.paymentDate || ''}|${d.amount ?? ''}`);
+        const dividendDisplayDate = (d: any) => d.exDate;
+        dbDividends.sort((a, b) => a.exDate.localeCompare(b.exDate));
+        dbDividends = uniqueEvents(dbDividends, d => `${tickerKey(d.ticker)}|${d.exDate}`);
 
         const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         const shortNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
@@ -607,7 +582,7 @@ export class CalendarService {
             const allDatesSet = new Set<string>([
                 ...dbEconomic.map(e => e.date),
                 ...dbEarnings.map(e => e.date),
-                ...dbDividends.map(d => d.paymentDate || d.exDate).filter(Boolean),
+                ...dbDividends.map(d => d.exDate).filter(Boolean),
             ]);
             const sortedDates = Array.from(allDatesSet).sort();
 
@@ -1672,7 +1647,12 @@ export class CalendarService {
         const eco = await this.prisma.marketCalendarEvent.findUnique({ where: { id } });
         if (eco) return eco.eventType === 'ECONOMIC' ? localizeEconomicEvent(eco) : eco;
         const earn = await this.prisma.marketEarningsEvent.findUnique({ where: { id } });
-        if (earn && !isLegacyEarningsTemplate(earn) && isVisibleEarnings(earn)) return normalizeEarnings(earn);
+        if (earn) {
+            const current = await this.providerService.fetchTradingViewSP500Earnings({ from: earn.date, to: earn.date });
+            const match = current.find(event => event.ticker.trim().toUpperCase().replace(/\./g, '-') ===
+                earn.ticker.trim().toUpperCase().replace(/\./g, '-') && event.date === earn.date);
+            if (match && isVisibleEarnings(match)) return { ...normalizeEarnings(match), id: earn.id };
+        }
         throw new NotFoundException('Evento no encontrado');
     }
 

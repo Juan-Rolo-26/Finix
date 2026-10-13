@@ -1,0 +1,502 @@
+[
+  {
+    "width": 320,
+    "theme": "light",
+    "checks": [
+      {
+        "text": "Todas las categorías (43)",
+        "width": 178,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Fundamentos de Inversión",
+        "width": 183,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Fundamental",
+        "width": 154,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Técnico",
+        "width": 124,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Macroeconomía y Mercados",
+        "width": 195,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Estrategias y Gestión del Riesgo",
+        "width": 217,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      }
+    ],
+    "errors": [],
+    "scrollWidth": 320
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "checks": [
+      {
+        "text": "Todas las categorías (43)",
+        "width": 178,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Fundamentos de Inversión",
+        "width": 183,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Fundamental",
+        "width": 154,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Técnico",
+        "width": 124,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Macroeconomía y Mercados",
+        "width": 195,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Estrategias y Gestión del Riesgo",
+        "width": 217,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      }
+    ],
+    "errors": [],
+    "scrollWidth": 390
+  },
+  {
+    "width": 500,
+    "theme": "light",
+    "checks": [
+      {
+        "text": "Todas las categorías (43)",
+        "width": 178,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Fundamentos de Inversión",
+        "width": 183,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Fundamental",
+        "width": 154,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Técnico",
+        "width": 124,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Macroeconomía y Mercados",
+        "width": 195,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Estrategias y Gestión del Riesgo",
+        "width": 217,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      }
+    ],
+    "errors": [],
+    "scrollWidth": 500
+  },
+  {
+    "width": 768,
+    "theme": "light",
+    "checks": [
+      {
+        "text": "Todas las categorías (43)",
+        "width": 178,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Fundamentos de Inversión",
+        "width": 183,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Fundamental",
+        "width": 154,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Técnico",
+        "width": 124,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Macroeconomía y Mercados",
+        "width": 195,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Estrategias y Gestión del Riesgo",
+        "width": 217,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      }
+    ],
+    "errors": [],
+    "scrollWidth": 768
+  },
+  {
+    "width": 1440,
+    "theme": "light",
+    "checks": [
+      {
+        "text": "Todas las categorías (43)",
+        "width": 178,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Fundamentos de Inversión",
+        "width": 183,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Fundamental",
+        "width": 154,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Técnico",
+        "width": 124,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Macroeconomía y Mercados",
+        "width": 195,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Estrategias y Gestión del Riesgo",
+        "width": 217,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      }
+    ],
+    "errors": [],
+    "scrollWidth": 1440
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "checks": [
+      {
+        "text": "Todas las categorías (43)",
+        "width": 178,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Fundamentos de Inversión",
+        "width": 183,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Fundamental",
+        "width": 154,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Técnico",
+        "width": 124,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Macroeconomía y Mercados",
+        "width": 195,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Estrategias y Gestión del Riesgo",
+        "width": 217,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      }
+    ],
+    "errors": [],
+    "scrollWidth": 320
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "checks": [
+      {
+        "text": "Todas las categorías (43)",
+        "width": 178,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Fundamentos de Inversión",
+        "width": 183,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Fundamental",
+        "width": 154,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Técnico",
+        "width": 124,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Macroeconomía y Mercados",
+        "width": 195,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Estrategias y Gestión del Riesgo",
+        "width": 217,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      }
+    ],
+    "errors": [],
+    "scrollWidth": 390
+  },
+  {
+    "width": 500,
+    "theme": "dark",
+    "checks": [
+      {
+        "text": "Todas las categorías (43)",
+        "width": 178,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Fundamentos de Inversión",
+        "width": 183,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Fundamental",
+        "width": 154,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Técnico",
+        "width": 124,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Macroeconomía y Mercados",
+        "width": 195,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Estrategias y Gestión del Riesgo",
+        "width": 217,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      }
+    ],
+    "errors": [],
+    "scrollWidth": 500
+  },
+  {
+    "width": 768,
+    "theme": "dark",
+    "checks": [
+      {
+        "text": "Todas las categorías (43)",
+        "width": 178,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Fundamentos de Inversión",
+        "width": 183,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Fundamental",
+        "width": 154,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Técnico",
+        "width": 124,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Macroeconomía y Mercados",
+        "width": 195,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Estrategias y Gestión del Riesgo",
+        "width": 217,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      }
+    ],
+    "errors": [],
+    "scrollWidth": 768
+  },
+  {
+    "width": 1440,
+    "theme": "dark",
+    "checks": [
+      {
+        "text": "Todas las categorías (43)",
+        "width": 178,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Fundamentos de Inversión",
+        "width": 183,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Fundamental",
+        "width": 154,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Análisis Técnico",
+        "width": 124,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Macroeconomía y Mercados",
+        "width": 195,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      },
+      {
+        "text": "Estrategias y Gestión del Riesgo",
+        "width": 217,
+        "height": 44,
+        "textInside": true,
+        "overlap": false
+      }
+    ],
+    "errors": [],
+    "scrollWidth": 1440
+  }
+]

@@ -2,7 +2,7 @@ import { type ReactNode } from 'react';
 
 /** Small, safe Markdown subset used by the reference library; never injects HTML. */
 export function renderEducationText(text: string): ReactNode {
-  const pattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/(?!\/)[^\s)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*]+)\*/g;
+  const pattern = /\[([^\]]+)\]\((https?:\/\/(?:[^\s()]|\([^\s()]*\))+|\/(?!\/)(?:[^\s()]|\([^\s()]*\))+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*]+)\*/g;
   const result: ReactNode[] = [];
   let cursor = 0;
   for (const match of text.matchAll(pattern)) {
@@ -18,7 +18,7 @@ export function renderEducationText(text: string): ReactNode {
     } else if (match[4]) {
       result.push(<code key={index} className="rounded bg-muted px-1 py-0.5 text-[0.9em]">{match[4]}</code>);
     } else {
-      result.push(<em key={index}>{match[5]}</em>);
+      result.push(<em key={index}>{renderEducationText(match[5])}</em>);
     }
     cursor = index + match[0].length;
   }

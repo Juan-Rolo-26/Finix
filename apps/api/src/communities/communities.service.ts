@@ -91,14 +91,14 @@ export class CommunitiesService {
         return communities.map(community => {
             const isOwner = Boolean(userId && community.creatorId === userId);
             if (userId && (isOwner || admin)) return {
-                ...community, isMember: true, membership: { role: isOwner ? 'OWNER' : 'ADMIN' },
+                ...community, paymentGatewayConfig: undefined, isMember: true, membership: { role: isOwner ? 'OWNER' : 'ADMIN' },
                 tierLevel: 999, canManage: true, canModerate: true, isOwner,
             };
             const membership = byCommunity.get(community.id) ?? null;
             const active = Boolean(userId && this.isMembershipActive(membership));
             const role = active ? membership?.role : null;
             return {
-                ...community, isMember: active, membership,
+                ...community, paymentGatewayConfig: undefined, isMember: active, membership,
                 tierLevel: active ? (isFreeAccessEnabled() ? Number.MAX_SAFE_INTEGER : membership?.plan?.tierLevel ?? 0) : 0,
                 canManage: role === 'OWNER' || role === 'ADMIN',
                 canModerate: role === 'OWNER' || role === 'ADMIN' || role === 'MODERATOR', isOwner: false,
@@ -194,7 +194,12 @@ export class CommunitiesService {
         });
 
         if (!community) throw new NotFoundException('Comunidad no encontrada');
-        return this.enrichWithMembership(community, userId, actor);
+        if (community.status !== 'PUBLISHED' && community.creatorId !== userId && !this.permissions.isPlatformAdmin(actor)) {
+            throw new NotFoundException('Comunidad no disponible.');
+        }
+        const enriched = await this.enrichWithMembership(community, userId, actor);
+        const request = userId ? await this.prisma.communityJoinRequest.findUnique({ where: { communityId_userId: { communityId: community.id, userId } }, select: { status: true } }) : null;
+        return { ...enriched, joinRequestStatus: request?.status ?? null };
     }
 
     // ─── My Communities ───────────────────────────────────────────────────────
@@ -226,7 +231,7 @@ export class CommunitiesService {
         });
 
         return memberships.filter(m => this.isMembershipActive(m)).map(m => ({
-            ...m.community,
+            ...m.community, paymentGatewayConfig: undefined,
             membership: m,
             isMember: true,
             tierLevel: isFreeAccessEnabled() ? Number.MAX_SAFE_INTEGER : m.plan?.tierLevel ?? 0,
@@ -247,8 +252,9 @@ export class CommunitiesService {
             uniqueSlug = `${baseSlug}-${counter++}`;
         }
 
+        const community = await this.prisma.$transaction(async tx => {
         // 3. Create Community
-        const community = await this.prisma.community.create({
+        const created = await tx.community.create({
             data: {
                 creatorId: userId,
                 slug: uniqueSlug,
@@ -276,10 +282,10 @@ export class CommunitiesService {
             { name: 'Análisis', description: 'Tesis e informes financieros', icon: 'BarChart3', order: 1 },
             { name: 'Noticias', description: 'Novedades y actualidad de mercado', icon: 'Newspaper', order: 2 },
         ];
-        await this.prisma.communitySection.createMany({
+        await tx.communitySection.createMany({
             data: defaultSections.map(s => ({
                 ...s,
-                communityId: community.id,
+                communityId: created.id,
                 visibility: 'PUBLIC',
                 isActive: true,
             })),
@@ -287,9 +293,9 @@ export class CommunitiesService {
 
         // 5. Create Plans
         if (dto.plans && Array.isArray(dto.plans) && dto.plans.length > 0) {
-            await this.prisma.communityPlan.createMany({
+            await tx.communityPlan.createMany({
                 data: dto.plans.map((plan: any) => ({
-                    communityId: community.id,
+                    communityId: created.id,
                     name: plan.name,
                     price: plan.price || 0,
                     interval: plan.interval || 'monthly',
@@ -299,9 +305,9 @@ export class CommunitiesService {
             });
         } else {
             // Default free plan
-            await this.prisma.communityPlan.create({
+            await tx.communityPlan.create({
                 data: {
-                    communityId: community.id,
+                    communityId: created.id,
                     name: 'Gratis',
                     price: 0,
                     interval: 'monthly',
@@ -312,14 +318,14 @@ export class CommunitiesService {
         }
 
         // 6. Creator auto-joins as OWNER
-        const firstPlan = await this.prisma.communityPlan.findFirst({
-            where: { communityId: community.id },
+        const firstPlan = await tx.communityPlan.findFirst({
+            where: { communityId: created.id },
             orderBy: { price: 'asc' },
         });
         if (firstPlan) {
-            await this.prisma.communityMember.create({
+            await tx.communityMember.create({
                 data: {
-                    communityId: community.id,
+                    communityId: created.id,
                     userId,
                     planId: firstPlan.id,
                     role: 'OWNER',
@@ -328,6 +334,9 @@ export class CommunitiesService {
                 },
             });
         }
+
+        return created;
+        });
 
         // Audit Log
         await this.createAuditLog(community.id, userId, 'COMMUNITY_CREATED', community.id, { name: community.name });
@@ -358,7 +367,7 @@ export class CommunitiesService {
     }
 
     async update(id: string, userId: string, dto: any) {
-        await this.permissions.assertCanManageCommunity(id, userId);
+        await this.permissions.assertCanEditCommunity(id, userId);
 
         const dataToUpdate: Prisma.CommunityUpdateInput = {
             ...(dto.name && { name: dto.name }),
@@ -402,11 +411,12 @@ export class CommunitiesService {
 
     async remove(id: string, userId: string) {
         await this.permissions.assertCanEditCommunity(id, userId);
+        if (await this.prisma.communityPayment.count({ where: { communityId: id } })) throw new BadRequestException('Esta comunidad tiene pagos registrados. Archivala para conservar el historial.');
 
         await this.prisma.$transaction([
             this.prisma.communityMember.deleteMany({ where: { communityId: id } }),
             this.prisma.communityPlan.deleteMany({ where: { communityId: id } }),
-            this.prisma.communitySection.deleteMany({ where: { communityId: id } }),
+
             this.prisma.communityResource.deleteMany({ where: { communityId: id } }),
             this.prisma.communityEvent.deleteMany({ where: { communityId: id } }),
             this.prisma.communityJoinRequest.deleteMany({ where: { communityId: id } }),
@@ -414,6 +424,7 @@ export class CommunitiesService {
             this.prisma.communityReport.deleteMany({ where: { communityId: id } }),
             this.prisma.communityAuditLog.deleteMany({ where: { communityId: id } }),
             this.prisma.post.deleteMany({ where: { communityId: id } }),
+            this.prisma.communitySection.deleteMany({ where: { communityId: id } }),
             this.prisma.community.delete({ where: { id } }),
         ]);
 
@@ -425,6 +436,8 @@ export class CommunitiesService {
     async listSections(communityId: string, userId?: string) {
         const access = await this.permissions.canAccessCommunity(userId, communityId);
         const where: Prisma.CommunitySectionWhereInput = { communityId };
+        if (!['OWNER', 'ADMIN', 'MODERATOR'].includes(access.role || '')) where.isActive = true;
+        if (!access.isMember) where.visibility = 'PUBLIC';
         if (!access.canView && !access.isMember) {
             where.isActive = true;
             where.visibility = 'PUBLIC';
@@ -462,7 +475,7 @@ export class CommunitiesService {
         await this.permissions.assertCanManageCommunity(communityId, userId);
 
         const section = await this.prisma.communitySection.update({
-            where: { id: sectionId },
+            where: { id: sectionId, communityId },
             data: {
                 ...(dto.name && { name: dto.name }),
                 ...(dto.description !== undefined && { description: dto.description }),
@@ -480,6 +493,8 @@ export class CommunitiesService {
     async deleteSection(communityId: string, sectionId: string, userId: string) {
         await this.permissions.assertCanManageCommunity(communityId, userId);
 
+        const section = await this.prisma.communitySection.findFirst({ where: { id: sectionId, communityId } });
+        if (!section) throw new NotFoundException('Sección no encontrada.');
         // Disassociate posts before deleting
         await this.prisma.post.updateMany({
             where: { sectionId },
@@ -528,18 +543,18 @@ export class CommunitiesService {
             where.requiredTierLevel = { gt: 0 };
         }
 
-        if (cursor) {
-            where.createdAt = { lt: new Date(cursor) };
-        }
+        const pagination: Pick<Prisma.PostFindManyArgs, 'cursor' | 'skip'> = cursor ? { cursor: { id: String(cursor) }, skip: 1 } : {};
 
         const posts = await this.prisma.post.findMany({
-            where,
-            take: Math.min(Number(limit) || 20, 50),
+            where, ...pagination,
+            take: Math.min(Math.max(Math.floor(Number(limit) || 20), 1), 50),
             orderBy: [
                 { isPinned: 'desc' },
-                { createdAt: 'desc' },
+                { createdAt: 'desc' }, { id: 'desc' },
             ],
             include: {
+                likes: userId ? { where: { userId }, select: { userId: true } } : false,
+                saves: userId ? { where: { userId }, select: { userId: true } } : false,
                 author: {
                     select: {
                         id: true, username: true, avatarUrl: true, isVerified: true,
@@ -560,7 +575,8 @@ export class CommunitiesService {
             const isCreatorOrAdmin = community.canManage;
             const hasTier = myTier >= (p.requiredTierLevel ?? 0);
             const isMembersOnly = p.targetVisibility === 'MEMBERS' && !community.isMember;
-            const isLocked = !isAuthor && !isCreatorOrAdmin && (!hasTier || isMembersOnly);
+            const access = community.isMember || (community.privacyType === 'PUBLIC' && community.showContentBeforeJoin);
+            const isLocked = !isAuthor && !isCreatorOrAdmin && (!access || !hasTier || isMembersOnly || (p.targetVisibility === 'PREMIUM_TIER' && !community.isMember));
 
             if (isLocked) {
                 return {
@@ -573,6 +589,9 @@ export class CommunitiesService {
 
             return {
                 ...p,
+                isLiked: Boolean((p as any).likes?.length),
+                isSaved: Boolean((p as any).saves?.length),
+                saves: undefined, likes: undefined,
                 isLocked: false,
             };
         });
@@ -590,6 +609,12 @@ export class CommunitiesService {
             throw new ForbiddenException('Debes unirte a la comunidad para poder publicar.');
         }
 
+        if (!content.trim() && !dto.mediaUrls?.length) throw new BadRequestException('Agregá texto o una imagen.');
+        if (dto.sectionId) {
+            const section = await this.prisma.communitySection.findFirst({ where: { id: dto.sectionId, communityId, isActive: true } });
+            if (!section) throw new BadRequestException('La sección no pertenece a esta comunidad.');
+            if (section.visibility !== 'PUBLIC' && !community.isMember) throw new ForbiddenException('Esta sección es exclusiva para miembros.');
+        }
         // Only managers can pin posts on creation
         const isPinned = dto.isPinned && community.canModerate;
 
@@ -605,7 +630,7 @@ export class CommunitiesService {
                 isPinned: Boolean(isPinned),
                 pinnedAt: isPinned ? new Date() : null,
                 media: dto.mediaUrls?.length
-                    ? { create: dto.mediaUrls.map((m: any) => ({ url: m.url })) }
+                    ? { create: dto.mediaUrls.map((m: any, order: number) => ({ url: m.url, mediaType: m.mediaType || 'image', order })) }
                     : undefined,
             },
             include: {
@@ -631,7 +656,7 @@ export class CommunitiesService {
         await this.permissions.assertCanModerateCommunity(communityId, userId);
 
         const post = await this.prisma.post.update({
-            where: { id: postId },
+            where: { id: postId, communityId, deletedAt: null },
             data: {
                 isPinned,
                 pinnedAt: isPinned ? new Date() : null,
@@ -645,7 +670,7 @@ export class CommunitiesService {
     async deletePost(communityId: string, postId: string, userId: string) {
         await this.permissions.assertCanViewCommunities(userId);
         const post = await this.prisma.post.findUnique({ where: { id: postId } });
-        if (!post) throw new NotFoundException('Publicación no encontrada.');
+        if (!post || post.communityId !== communityId) throw new NotFoundException('Publicación no encontrada.');
 
         const isAuthor = post.authorId === userId;
         if (!isAuthor) {
@@ -665,6 +690,8 @@ export class CommunitiesService {
 
     async getMembers(communityId: string, query: any, userId: string) {
         await this.permissions.assertCanViewCommunities(userId);
+        const access = await this.permissions.canAccessCommunity(userId, communityId);
+        if (!access.canView && !access.isMember) throw new ForbiddenException('Unite a la comunidad para ver sus miembros.');
         const { limit = 20, offset = 0, search, role } = query;
         const where: Prisma.CommunityMemberWhereInput = {
             communityId,
@@ -741,67 +768,37 @@ export class CommunitiesService {
 
     // ─── Free Join & Leave ───────────────────────────────────────────────────
 
+    private async activateMembership(tx: Prisma.TransactionClient, communityId: string, userId: string, planId?: string) {
+        await tx.$queryRaw`SELECT id FROM "Community" WHERE id = ${communityId} FOR UPDATE`;
+        const community = await tx.community.findUnique({ where: { id: communityId }, include: { plans: { orderBy: { price: 'asc' } } } });
+        if (!community || community.status !== 'PUBLISHED') throw new NotFoundException('Comunidad no disponible.');
+        const existing = await tx.communityMember.findUnique({ where: { communityId_userId: { communityId, userId } } });
+        if (this.isMembershipActive(existing)) return existing;
+        const plan = planId ? community.plans.find(p => p.id === planId) :
+            community.plans.find(p => Number(p.price) === 0) || (isFreeAccessEnabled() ? community.plans[0] : null);
+        if (!plan) throw new BadRequestException('Esta comunidad requiere una membresía paga. Elegí un plan y usá el checkout.');
+        if (!isFreeAccessEnabled() && Number(plan.price) > 0) throw new BadRequestException('Este plan requiere pago mediante checkout.');
+        if (community.maxMembers && await tx.communityMember.count({ where: { communityId, subscriptionStatus: 'ACTIVE' } }) >= community.maxMembers) {
+            throw new BadRequestException('La comunidad alcanzó su límite de miembros.');
+        }
+        const data = { planId: plan.id, role: 'MEMBER', subscriptionStatus: 'ACTIVE',
+            paymentStatus: Number(plan.price) > 0 ? 'FREE_ACCESS' : 'SUCCEEDED', expiresAt: null,
+            stripePaymentId: null, stripeSubscriptionId: null };
+        return tx.communityMember.upsert({ where: { communityId_userId: { communityId, userId } },
+            create: { communityId, userId, ...data }, update: data });
+    }
+
     async joinFree(userId: string, communityId: string, planId?: string) {
         await this.permissions.assertCanViewCommunities(userId);
-        const community = await this.prisma.community.findUnique({
-            where: { id: communityId },
-            include: { plans: true },
-        });
-        if (!community) throw new NotFoundException('Comunidad no encontrada');
-
-        if (community.privacyType === 'PRIVATE') {
-            throw new ForbiddenException('Esta comunidad es privada. Debes enviar una solicitud de ingreso.');
-        }
-
-        const freeAccess = isFreeAccessEnabled();
-        // Do not overwrite an existing paid membership or provider identifiers.
-        if (freeAccess) {
-            const existing = await this.prisma.communityMember.findUnique({
-                where: { communityId_userId: { communityId, userId } },
-            });
-            if (this.isMembershipActive(existing)) return existing;
-        }
-
-        let chosenPlan: any;
-        if (planId) {
-            chosenPlan = community.plans.find(p => p.id === planId);
-            if (!chosenPlan) throw new NotFoundException('Plan no encontrado');
-            if (!freeAccess && Number(chosenPlan.price) > 0) {
-                throw new BadRequestException('Este plan requiere pago. Utiliza el checkout de suscripción.');
+        return this.prisma.$transaction(async tx => {
+            const community = await tx.community.findUnique({ where: { id: communityId } });
+            if (!community || community.status !== 'PUBLISHED') throw new NotFoundException('Comunidad no disponible.');
+            if (community.privacyType === 'PRIVATE' && community.creatorId !== userId) {
+                const approved = await tx.communityJoinRequest.findUnique({ where: { communityId_userId: { communityId, userId } } });
+                if (approved?.status !== 'APPROVED') throw new ForbiddenException('Esta comunidad es privada. Enviá una solicitud de ingreso.');
             }
-        } else {
-            chosenPlan = community.plans.find(p => Number(p.price) === 0)
-                || (freeAccess ? community.plans[0] : null);
-            if (!chosenPlan) {
-                throw new BadRequestException('Esta comunidad es exclusivamente paga. Requiere suscripción.');
-            }
-        }
-
-        const paymentStatus = freeAccess && Number(chosenPlan.price) > 0 ? 'FREE_ACCESS' : 'SUCCEEDED';
-        const member = await this.prisma.communityMember.upsert({
-            where: { communityId_userId: { communityId, userId } },
-            update: {
-                planId: chosenPlan.id,
-                subscriptionStatus: 'ACTIVE',
-                paymentStatus,
-            },
-            create: {
-                communityId,
-                userId,
-                planId: chosenPlan.id,
-                role: 'MEMBER',
-                subscriptionStatus: 'ACTIVE',
-                paymentStatus,
-            },
+            return this.activateMembership(tx, communityId, userId, planId);
         });
-
-        // Boost popularity score
-        await this.prisma.community.update({
-            where: { id: communityId },
-            data: { popularityScore: { increment: 2 } },
-        });
-
-        return member;
     }
 
     async leave(userId: string, communityId: string) {
@@ -812,7 +809,8 @@ export class CommunitiesService {
             throw new ForbiddenException('El creador no puede abandonar su propia comunidad.');
         }
 
-        await this.stripeService.cancelCommunitySubscription(userId, communityId);
+        const membership = await this.prisma.communityMember.findUnique({ where: { communityId_userId: { communityId, userId } } });
+        if (membership?.stripeSubscriptionId) await this.stripeService.cancelCommunitySubscription(userId, communityId);
 
         await this.prisma.communityMember.updateMany({
             where: { communityId, userId },
@@ -831,6 +829,11 @@ export class CommunitiesService {
             include: { plans: true },
         });
         if (!community) throw new NotFoundException('Comunidad no encontrada');
+        if (community.status !== 'PUBLISHED') throw new BadRequestException('La comunidad no está publicada.');
+        if (community.privacyType === 'PRIVATE' && community.creatorId !== userId) {
+            const approval = await this.prisma.communityJoinRequest.findUnique({ where: { communityId_userId: { communityId, userId } } });
+            if (approval?.status !== 'APPROVED') throw new ForbiddenException('Esta comunidad requiere una solicitud aprobada.');
+        }
 
         const plan = community.plans.find(p => p.id === planId);
         if (!plan) throw new NotFoundException('Plan no encontrado');
@@ -853,211 +856,6 @@ export class CommunitiesService {
     async processCardPayment(userId: string, communityId: string, dto: PayWithCardDto) {
         await this.permissions.assertCanViewCommunities(userId);
         throw new BadRequestException('Los pagos con tarjeta se procesan exclusivamente mediante el checkout seguro de Mercado Pago.');
-        const { planId, cardNumber, cardholderName, expiryDate, cvc } = dto;
-
-        const community = await this.prisma.community.findUnique({
-            where: { id: communityId },
-            include: { plans: true },
-        });
-        if (!community) throw new NotFoundException('Comunidad no encontrada.');
-
-        const plan = community.plans.find(p => p.id === planId);
-        if (!plan) throw new NotFoundException('Plan no encontrado.');
-
-        if (Number(plan.price) === 0) {
-            const member = await this.joinFree(userId, communityId, planId);
-            return { success: true, freeJoined: true, member };
-        }
-
-        // Clean card number & validation
-        const cleanNumber = String(cardNumber || '').replace(/\D/g, '');
-        if (cleanNumber.length < 13 || cleanNumber.length > 19) {
-            throw new BadRequestException('Número de tarjeta inválido. Debe contener entre 13 y 19 dígitos.');
-        }
-
-        // Detect brand (Visa starts with 4, Mastercard starts with 51-55 or 2221-2720)
-        let brand = 'VISA';
-        if (/^4/.test(cleanNumber)) {
-            brand = 'VISA';
-        } else if (/^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[01]|2720)/.test(cleanNumber)) {
-            brand = 'MASTERCARD';
-        } else if (/^3[47]/.test(cleanNumber)) {
-            brand = 'AMEX';
-        } else {
-            brand = (dto.brand || 'VISA').toUpperCase();
-        }
-
-        // Luhn algorithm check
-        let sum = 0;
-        let shouldDouble = false;
-        for (let i = cleanNumber.length - 1; i >= 0; i--) {
-            let digit = parseInt(cleanNumber.charAt(i), 10);
-            if (shouldDouble) {
-                digit *= 2;
-                if (digit > 9) digit -= 9;
-            }
-            sum += digit;
-            shouldDouble = !shouldDouble;
-        }
-        if (sum % 10 !== 0) {
-            throw new BadRequestException('El número de tarjeta ingresado no es válido (verificación Luhn falló).');
-        }
-
-        // Expiration date check (MM/YY or MM/YYYY)
-        const parts = String(expiryDate || '').split(/[\/\-]/);
-        if (parts.length !== 2) {
-            throw new BadRequestException('Fecha de vencimiento inválida. Usa formato MM/AA.');
-        }
-        const expMonth = parseInt(parts[0].trim(), 10);
-        let expYear = parseInt(parts[1].trim(), 10);
-        if (expYear < 100) expYear += 2000;
-
-        if (isNaN(expMonth) || expMonth < 1 || expMonth > 12) {
-            throw new BadRequestException('Mes de vencimiento inválido (1 a 12).');
-        }
-
-        const now = new Date();
-        const expiryEndOfMonth = new Date(expYear, expMonth, 0, 23, 59, 59);
-        if (expiryEndOfMonth < now) {
-            throw new BadRequestException('La tarjeta se encuentra vencida.');
-        }
-
-        // CVC check
-        const cleanCvc = String(cvc || '').trim();
-        if (cleanCvc.length < 3 || cleanCvc.length > 4) {
-            throw new BadRequestException('El código de seguridad (CVC/CVV) debe tener 3 o 4 dígitos.');
-        }
-
-        // Name check
-        if (!cardholderName || cardholderName.trim().length < 3) {
-            throw new BadRequestException('Nombre del titular de la tarjeta requerido.');
-        }
-
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { id: true, username: true, email: true },
-        });
-        if (!user) throw new NotFoundException('Usuario no encontrado.');
-
-        const priceNum = Number(plan.price);
-        const commissionAmount = priceNum * 0.05; // 5% Finix fee
-        const creatorAmount = priceNum * 0.95;    // 95% Net Creator payout
-        const last4 = cleanNumber.slice(-4);
-        const providerPaymentId = `pay_${brand.toLowerCase()}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-
-        const periodDays = (plan.interval === 'yearly' || plan.interval === 'year') ? 365 : 30;
-        const expiresAt = new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000);
-
-        // Atomic transaction: Create payment, upsert membership with ACTIVE status, audit log
-        const result = await this.prisma.$transaction(async (tx) => {
-            const payment = await tx.communityPayment.create({
-                data: {
-                    communityId,
-                    userId,
-                    creatorId: community.creatorId,
-                    amount: new Prisma.Decimal(priceNum),
-                    commissionAmount: new Prisma.Decimal(commissionAmount),
-                    creatorAmount: new Prisma.Decimal(creatorAmount),
-                    stripePaymentId: providerPaymentId,
-                    status: 'SUCCEEDED',
-                    billingType: plan.interval || 'monthly',
-                },
-            });
-
-            const member = await tx.communityMember.upsert({
-                where: { communityId_userId: { communityId, userId } },
-                update: {
-                    subscriptionStatus: 'ACTIVE',
-                    paymentStatus: 'SUCCEEDED',
-                    planId: plan.id,
-                    stripePaymentId: providerPaymentId,
-                    expiresAt,
-                },
-                create: {
-                    communityId,
-                    userId,
-                    subscriptionStatus: 'ACTIVE',
-                    paymentStatus: 'SUCCEEDED',
-                    planId: plan.id,
-                    stripePaymentId: providerPaymentId,
-                    expiresAt,
-                    role: 'MEMBER',
-                },
-            });
-
-            await tx.communityAuditLog.create({
-                data: {
-                    communityId,
-                    actorId: userId,
-                    action: 'MEMBER_SUBSCRIBED',
-                    targetId: plan.id,
-                    metadata: JSON.stringify({
-                        amount: priceNum,
-                        planName: plan.name,
-                        brand,
-                        last4,
-                        paymentId: payment.id,
-                    }),
-                },
-            });
-
-            return { payment, member };
-        });
-
-        // Notify community creator
-        try {
-            await this.prisma.notification.create({
-                data: {
-                    userId: community.creatorId,
-                    type: 'COMMUNITY_NEW_SUBSCRIBER',
-                    title: '¡Nuevo miembro suscriptor!',
-                    message: `@${user.username} se suscribió a "${plan.name}" en tu comunidad con tarjeta ${brand} (•••• ${last4}).`,
-                    link: `/comunidades/${community.slug || community.id}`,
-                    entityType: 'COMMUNITY',
-                    entityId: community.id,
-                    actorId: user.id,
-                },
-            });
-        } catch (e) {
-            // non-blocking
-        }
-
-        // Notify Admin about the new community subscription payment
-        try {
-            this.mailService.sendAdminAlert({
-                eventType: 'PAYMENT_RECEIVED',
-                title: `Pago Recibido: Membresía a "${community.name}" ($${priceNum} USD)`,
-                badgeText: 'PAGO MEMBRESÍA',
-                badgeColor: '#10b981',
-                summary: `@${user.username} ha pagado una membresía con tarjeta ${brand} (•••• ${last4}).`,
-                details: [
-                    { label: 'Comunidad', value: community.name },
-                    { label: 'Plan', value: plan.name },
-                    { label: 'Monto Total', value: `$${priceNum.toFixed(2)} USD` },
-                    { label: 'Comisión Finix (10%)', value: `$${commissionAmount.toFixed(2)} USD` },
-                    { label: 'Creador (90%)', value: `$${creatorAmount.toFixed(2)} USD` },
-                    { label: 'Usuario', value: `@${user.username} (${user.email})` },
-                    { label: 'Tarjeta', value: `${brand} •••• ${last4}` },
-                    { label: 'Titular', value: cardholderName },
-                ],
-                actionUrl: `${(this.mailService?.getAppUrl ? this.mailService.getAppUrl() : (process.env.FRONTEND_URL || 'https://finixarg.com'))}/comunidades/${community.slug || community.id}`,
-                actionLabel: 'Ver Comunidad en Finix',
-            });
-        } catch (e) {
-            // non-blocking
-        }
-
-        return {
-            success: true,
-            message: `¡Pago exitoso con ${brand}! Tu suscripción a ${plan.name} está activa.`,
-            paymentId: result.payment.id,
-            brand,
-            last4,
-            planName: plan.name,
-            amount: priceNum,
-            expiresAt,
-            member: result.member,
-        };
     }
 
     async cancelSubscription(userId: string, communityId: string) {
@@ -1089,7 +887,7 @@ export class CommunitiesService {
     async createJoinRequest(communityId: string, userId: string, note?: string) {
         await this.permissions.assertCanViewCommunities(userId);
         const community = await this.prisma.community.findUnique({ where: { id: communityId } });
-        if (!community) throw new NotFoundException('Comunidad no encontrada.');
+        if (!community || community.status !== 'PUBLISHED') throw new NotFoundException('Comunidad no disponible.');
 
         const existingMember = await this.prisma.communityMember.findUnique({
             where: { communityId_userId: { communityId, userId } },
@@ -1119,37 +917,26 @@ export class CommunitiesService {
 
     async reviewJoinRequest(communityId: string, requestId: string, status: string, reviewerId: string) {
         await this.permissions.assertCanManageCommunity(communityId, reviewerId);
-
-        const request = await this.prisma.communityJoinRequest.findUnique({
-            where: { id: requestId },
+        if (!['APPROVED', 'REJECTED'].includes(status)) throw new BadRequestException('Estado inválido.');
+        return this.prisma.$transaction(async tx => {
+            const request = await tx.communityJoinRequest.findFirst({ where: { id: requestId, communityId } });
+            if (!request) throw new NotFoundException('Solicitud no encontrada.');
+            const claim = await tx.communityJoinRequest.updateMany({ where: { id: requestId, communityId, status: 'PENDING' }, data: { status, reviewedById: reviewerId } });
+            if (!claim.count) throw new BadRequestException('Esta solicitud ya fue revisada.');
+            let paymentRequired = false;
+            if (status === 'APPROVED') {
+                const freePlan = await tx.communityPlan.findFirst({ where: { communityId, price: 0 } });
+                if (freePlan || isFreeAccessEnabled()) await this.activateMembership(tx, communityId, request.userId, freePlan?.id);
+                else paymentRequired = true;
+            }
+            return { success: true, status, paymentRequired };
         });
-        if (!request) throw new NotFoundException('Solicitud no encontrada.');
+    }
 
-        await this.prisma.communityJoinRequest.update({
-            where: { id: requestId },
-            data: { status, reviewedById: reviewerId },
-        });
-
-        if (status === 'APPROVED') {
-            const firstPlan = await this.prisma.communityPlan.findFirst({
-                where: { communityId },
-                orderBy: { price: 'asc' },
-            });
-            await this.prisma.communityMember.upsert({
-                where: { communityId_userId: { communityId, userId: request.userId } },
-                update: { subscriptionStatus: 'ACTIVE', role: 'MEMBER', planId: firstPlan?.id },
-                create: {
-                    communityId,
-                    userId: request.userId,
-                    planId: firstPlan?.id,
-                    role: 'MEMBER',
-                    subscriptionStatus: 'ACTIVE',
-                    paymentStatus: 'SUCCEEDED',
-                },
-            });
-        }
-
-        return { success: true, status };
+    async listInvites(communityId: string, userId: string) {
+        await this.permissions.assertCanManageCommunity(communityId, userId);
+        const invites = await this.prisma.communityInvite.findMany({ where: { communityId }, orderBy: { createdAt: 'desc' } });
+        return invites.map(invite => ({ ...invite, inviteUrl: `${this.mailService.getAppUrl()}/comunidades/invite/${invite.code}` }));
     }
 
     // ─── Invites ──────────────────────────────────────────────────────────────
@@ -1205,32 +992,27 @@ export class CommunitiesService {
 
     async acceptInvite(code: string, userId: string) {
         await this.permissions.assertCanViewCommunities(userId);
-        const invite = await this.getInvite(code);
-
-        const firstPlan = await this.prisma.communityPlan.findFirst({
-            where: { communityId: invite.communityId },
-            orderBy: { price: 'asc' },
+        return this.prisma.$transaction(async tx => {
+            await tx.$queryRaw`SELECT id FROM "CommunityInvite" WHERE code = ${code} FOR UPDATE`;
+            const invite = await tx.communityInvite.findUnique({ where: { code } });
+            if (!invite) throw new NotFoundException('Invitación no válida.');
+            const existing = await tx.communityMember.findUnique({ where: { communityId_userId: { communityId: invite.communityId, userId } } });
+            if (this.isMembershipActive(existing)) return existing;
+            if ((invite.expiresAt && invite.expiresAt <= new Date()) || (invite.maxUses && invite.usedCount >= invite.maxUses)) throw new BadRequestException('La invitación expiró o alcanzó su límite.');
+            const community = await tx.community.findUnique({ where: { id: invite.communityId }, include: { plans: true } });
+            if (!community || community.status !== 'PUBLISHED') throw new BadRequestException('La comunidad no está publicada.');
+            if (!isFreeAccessEnabled() && !community.plans.some(p => Number(p.price) === 0)) {
+                const approval = await tx.communityJoinRequest.findUnique({ where: { communityId_userId: { communityId: invite.communityId, userId } } });
+                if (approval?.status !== 'APPROVED') {
+                    await tx.communityJoinRequest.upsert({ where: { communityId_userId: { communityId: invite.communityId, userId } }, create: { communityId: invite.communityId, userId, status: 'APPROVED', reviewedById: invite.createdById }, update: { status: 'APPROVED', reviewedById: invite.createdById } });
+                    await tx.communityInvite.update({ where: { id: invite.id }, data: { usedCount: { increment: 1 } } });
+                }
+                return { paymentRequired: true, communityId: community.id };
+            }
+            const member = await this.activateMembership(tx, invite.communityId, userId);
+            await tx.communityInvite.update({ where: { id: invite.id }, data: { usedCount: { increment: 1 } } });
+            return member;
         });
-
-        const member = await this.prisma.communityMember.upsert({
-            where: { communityId_userId: { communityId: invite.communityId, userId } },
-            update: { subscriptionStatus: 'ACTIVE', role: 'MEMBER' },
-            create: {
-                communityId: invite.communityId,
-                userId,
-                planId: firstPlan?.id,
-                role: 'MEMBER',
-                subscriptionStatus: 'ACTIVE',
-                paymentStatus: 'SUCCEEDED',
-            },
-        });
-
-        await this.prisma.communityInvite.update({
-            where: { id: invite.id },
-            data: { usedCount: { increment: 1 } },
-        });
-
-        return member;
     }
 
     // ─── Moderation & Reports ─────────────────────────────────────────────────
@@ -1269,7 +1051,7 @@ export class CommunitiesService {
         if (!report) throw new NotFoundException('Reporte no encontrado.');
 
         const updated = await this.prisma.communityReport.update({
-            where: { id: reportId },
+            where: { id: reportId, communityId },
             data: {
                 status: dto.status || 'RESOLVED',
                 actionTaken: dto.actionTaken || 'NONE',
@@ -1311,7 +1093,10 @@ export class CommunitiesService {
     async deletePlan(communityId: string, planId: string, userId: string) {
         await this.permissions.assertCanManagePayments(communityId, userId);
 
-        await this.prisma.communityPlan.delete({ where: { id: planId } });
+        if (await this.prisma.communityMember.count({ where: { communityId, planId, subscriptionStatus: 'ACTIVE' } })) {
+            throw new BadRequestException('Este plan tiene miembros activos. Cambiá sus membresías antes de eliminarlo.');
+        }
+        await this.prisma.communityPlan.delete({ where: { id: planId, communityId } });
         await this.createAuditLog(communityId, userId, 'PLAN_DELETED', planId);
 
         return { success: true };
@@ -1329,10 +1114,10 @@ export class CommunitiesService {
             orderBy: { createdAt: 'desc' },
         });
 
-        return resources.map(r => ({
-            ...r,
-            isLocked: !community.canManage && myTier < r.requiredTierLevel,
-        }));
+        return resources.map(r => {
+            const isLocked = !community.canManage && ((!r.isPublic && !community.isMember) || myTier < r.requiredTierLevel || (!community.isMember && (community.privacyType !== 'PUBLIC' || !community.showContentBeforeJoin)));
+            return { ...r, resourceUrl: isLocked ? null : r.resourceUrl, isLocked };
+        });
     }
 
     async createResource(communityId: string, userId: string, dto: any) {
@@ -1353,7 +1138,7 @@ export class CommunitiesService {
 
     async deleteResource(communityId: string, resourceId: string, userId: string) {
         await this.permissions.assertCanManageCommunity(communityId, userId);
-        await this.prisma.communityResource.delete({ where: { id: resourceId } });
+        await this.prisma.communityResource.delete({ where: { id: resourceId, communityId } });
         return { success: true };
     }
 
@@ -1368,21 +1153,23 @@ export class CommunitiesService {
             orderBy: { eventDate: 'asc' },
         });
 
-        return events.map(e => ({
-            ...e,
-            isLocked: !community.canManage && myTier < e.requiredTierLevel,
-        }));
+        return events.map(e => {
+            const isLocked = !community.canManage && (!community.isMember || myTier < e.requiredTierLevel);
+            return { ...e, link: isLocked ? null : e.link, isLocked };
+        });
     }
 
     async createEvent(communityId: string, userId: string, dto: any) {
         await this.permissions.assertCanManageCommunity(communityId, userId);
 
+        if (!Number.isFinite(new Date(dto.date).getTime())) throw new BadRequestException('Fecha de evento inválida.');
         return this.prisma.communityEvent.create({
             data: {
                 communityId,
                 title: dto.title,
                 description: dto.description,
                 eventDate: new Date(dto.date),
+                requiredTierLevel: dto.requiredTierLevel ?? 0,
                 link: dto.link,
             },
         });
@@ -1390,7 +1177,7 @@ export class CommunitiesService {
 
     async deleteEvent(communityId: string, eventId: string, userId: string) {
         await this.permissions.assertCanManageCommunity(communityId, userId);
-        await this.prisma.communityEvent.delete({ where: { id: eventId } });
+        await this.prisma.communityEvent.delete({ where: { id: eventId, communityId } });
         return { success: true };
     }
 

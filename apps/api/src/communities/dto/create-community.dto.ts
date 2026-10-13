@@ -1,8 +1,10 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsIn, Min, IsInt, IsArray, ValidateNested, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsIn, Min, IsInt, IsArray, ValidateNested, MaxLength, IsUrl, ValidateIf, IsNotEmpty, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CommunityPlanDto {
     @IsString()
+    @IsNotEmpty()
+    @MaxLength(120)
     name: string;
 
     @IsNumber()
@@ -24,6 +26,8 @@ export class CommunityPlanDto {
 
 export class CreateCommunityDto {
     @IsString()
+    @IsNotEmpty()
+    @MaxLength(120)
     name: string;
 
     @IsString()
@@ -147,6 +151,17 @@ export class UpdateCommunityDto {
     maxMembers?: number;
 }
 
+export class CommunityPostMediaDto {
+    @IsString()
+    @MaxLength(2048)
+    @Matches(/^(https?:\/\/|\/(?:api\/)?uploads\/|\/images\/)/)
+    url: string;
+
+    @IsOptional()
+    @IsIn(['image', 'video'])
+    mediaType?: string;
+}
+
 export class CreateCommunityPostDto {
     @IsString()
     @MaxLength(1000)
@@ -155,7 +170,8 @@ export class CreateCommunityPostDto {
     @IsArray()
     @IsOptional()
     @ValidateNested({ each: true })
-    mediaUrls?: Record<string, string>[];
+    @Type(() => CommunityPostMediaDto)
+    mediaUrls?: CommunityPostMediaDto[];
 
     @IsString()
     @IsOptional()
@@ -177,6 +193,8 @@ export class CreateCommunityPostDto {
 
 export class CreateCommunityResourceDto {
     @IsString()
+    @IsNotEmpty()
+    @MaxLength(160)
     title: string;
 
     @IsString()
@@ -184,6 +202,7 @@ export class CreateCommunityResourceDto {
     description?: string;
 
     @IsString()
+    @IsUrl({ protocols: ['https', 'http'], require_protocol: true })
     resourceUrl: string;
 
     @IsBoolean()
@@ -196,7 +215,13 @@ export class CreateCommunityResourceDto {
 }
 
 export class CreateEventDto {
+    @IsInt()
+    @Min(0)
+    @IsOptional()
+    requiredTierLevel?: number;
     @IsString()
+    @IsNotEmpty()
+    @MaxLength(160)
     title: string;
 
     @IsString()
@@ -208,6 +233,8 @@ export class CreateEventDto {
 
     @IsString()
     @IsOptional()
+    @ValidateIf(o => Boolean(o.link))
+    @IsUrl({ protocols: ['https', 'http'], require_protocol: true })
     link?: string;
 }
 
@@ -215,6 +242,8 @@ export class CreateEventDto {
 
 export class CreateSectionDto {
     @IsString()
+    @IsNotEmpty()
+    @MaxLength(120)
     name: string;
 
     @IsString()
@@ -320,6 +349,7 @@ export class CreateInviteDto {
 
     @IsInt()
     @IsOptional()
+    @Min(1)
     expiresInDays?: number;
 }
 
