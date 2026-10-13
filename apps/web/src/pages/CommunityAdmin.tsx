@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import CommunityStudioTools from '@/components/CommunityStudioTools';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -14,6 +16,8 @@ import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function CommunityAdmin() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { user } = useAuthStore();
@@ -425,7 +429,7 @@ export default function CommunityAdmin() {
                         onClick={() => navigate(`/comunidades/${community.slug || community.id}`)}
                         className="p-2 rounded-xl border hover:bg-muted transition-colors"
                         style={{ borderColor: 'hsl(var(--border))' }}
-                        title="Volver a la comunidad"
+                        title={finixUi("Volver a la comunidad")}
                     >
                         <ArrowLeft className="w-4 h-4" />
                     </button>
@@ -434,17 +438,14 @@ export default function CommunityAdmin() {
                             <h1 className="text-xl font-bold">{community.name}</h1>
                             <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
                                 style={{ background: 'hsl(var(--primary)/0.1)', color: 'hsl(var(--primary))' }}>
-                                Creator Studio
-                            </span>
+                                {" "}<FinixUiText text={"Creator Studio"} />{" "}</span>
                             {community.status === 'DRAFT' && (
                                 <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-500/10 text-amber-500">
-                                    Borrador
-                                </span>
+                                    {" "}<FinixUiText text={"Borrador"} />{" "}</span>
                             )}
                         </div>
                         <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                            @{community.slug || community.id} · {community._count?.members || 0} miembros
-                        </p>
+                            @{community.slug || community.id} · {community._count?.members || 0} {" "}<FinixUiText text={"miembros"} />{" "}</p>
                     </div>
                 </div>
 
@@ -455,8 +456,7 @@ export default function CommunityAdmin() {
                         className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border hover:bg-muted transition-colors"
                         style={{ borderColor: 'hsl(var(--border))' }}
                     >
-                        <ExternalLink className="w-3.5 h-3.5" /> Ver comunidad pública
-                    </Link>
+                        <ExternalLink className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Ver comunidad pública"} />{" "}</Link>
                 </div>
             </div>
 
@@ -479,7 +479,7 @@ export default function CommunityAdmin() {
                                 }}
                             >
                                 <Icon className="w-4 h-4 shrink-0" />
-                                <span>{item.label}</span>
+                                <span>{<FinixUiText text={item.label} />}</span>
                             </button>
                         );
                     })}
@@ -497,63 +497,63 @@ export default function CommunityAdmin() {
                             <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                                 <div className="p-4 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                                     <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        <span>Miembros Totales</span>
+                                        <span>{""}<FinixUiText text={"Miembros Totales"} />{""}</span>
                                         <Users className="w-4 h-4 text-primary" />
                                     </div>
                                     <p className="text-2xl font-bold mt-2">{analytics?.membersCount ?? community._count?.members ?? 0}</p>
-                                    <span className="text-[11px] text-emerald-500 font-medium">+{analytics?.newMembersThisMonth ?? 0} este mes</span>
+                                    <span className="text-[11px] text-emerald-500 font-medium">+{analytics?.newMembersThisMonth ?? 0} {" "}<FinixUiText text={"este mes"} />{""}</span>
                                 </div>
 
                                 <div className="p-4 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                                     <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        <span>Miembros de Pago</span>
+                                        <span>{""}<FinixUiText text={"Miembros de Pago"} />{""}</span>
                                         <UserCheck className="w-4 h-4 text-emerald-500" />
                                     </div>
                                     <p className="text-2xl font-bold mt-2">{analytics?.activePaidMembers ?? 0}</p>
-                                    <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>Suscripciones activas</span>
+                                    <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"Suscripciones activas"} />{""}</span>
                                 </div>
 
                                 <div className="p-4 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                                     <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        <span>MRR Estimado</span>
+                                        <span>{""}<FinixUiText text={"MRR Estimado"} />{""}</span>
                                         <DollarSign className="w-4 h-4 text-emerald-500" />
                                     </div>
                                     <p className="text-2xl font-bold mt-2">${analytics?.monthlyRecurringRevenue?.toFixed(2) ?? '0.00'}</p>
-                                    <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>Ingreso mensual recurrente</span>
+                                    <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"Ingreso mensual recurrente"} />{""}</span>
                                 </div>
 
                                 <div className="p-4 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                                     <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        <span>Ingresos Netos Totales</span>
+                                        <span>{""}<FinixUiText text={"Ingresos Netos Totales"} />{""}</span>
                                         <TrendingUp className="w-4 h-4 text-primary" />
                                     </div>
                                     <p className="text-2xl font-bold mt-2">${analytics?.netCreatorRevenue?.toFixed(2) ?? '0.00'}</p>
-                                    <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>Neto después de comisiones</span>
+                                    <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"Neto después de comisiones"} />{""}</span>
                                 </div>
 
                                 <div className="p-4 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                                     <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        <span>Publicaciones</span>
+                                        <span>{""}<FinixUiText text={"Publicaciones"} />{""}</span>
                                         <FileText className="w-4 h-4 text-primary" />
                                     </div>
                                     <p className="text-2xl font-bold mt-2">{analytics?.postsCount ?? community._count?.posts ?? 0}</p>
-                                    <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>En todas las secciones</span>
+                                    <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"En todas las secciones"} />{""}</span>
                                 </div>
 
                                 <div className="p-4 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                                     <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        <span>Tasa de Crecimiento</span>
+                                        <span>{""}<FinixUiText text={"Tasa de Crecimiento"} />{""}</span>
                                         <BarChart3 className="w-4 h-4 text-emerald-500" />
                                     </div>
                                     <p className="text-2xl font-bold mt-2">+{analytics?.memberGrowthRate ?? 0}%</p>
-                                    <span className="text-[11px] text-emerald-500 font-medium">Comparado al mes anterior</span>
+                                    <span className="text-[11px] text-emerald-500 font-medium">{""}<FinixUiText text={"Comparado al mes anterior"} />{""}</span>
                                 </div>
                             </div>
 
                             {/* Plans breakdown */}
                             {analytics?.plans?.length > 0 && (
                                 <div className="p-5 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-                                    <h3 className="text-sm font-bold mb-3">Distribución por Planes</h3>
+                                    <h3 className="text-sm font-bold mb-3">{""}<FinixUiText text={"Distribución por Planes"} />{""}</h3>
                                     <div className="space-y-2">
                                         {analytics.plans.map((p: any) => (
                                             <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
@@ -563,7 +563,7 @@ export default function CommunityAdmin() {
                                                         ${p.price}/{p.interval === 'monthly' ? 'mes' : 'año'}
                                                     </p>
                                                 </div>
-                                                <span className="text-xs font-bold">{p.membersCount} miembros</span>
+                                                <span className="text-xs font-bold">{p.membersCount} {" "}<FinixUiText text={"miembros"} />{""}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -573,7 +573,7 @@ export default function CommunityAdmin() {
                             {/* Recent Audit Log */}
                             {analytics?.recentAudit?.length > 0 && (
                                 <div className="p-5 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-                                    <h3 className="text-sm font-bold mb-3">Registro de Actividad Administrativa</h3>
+                                    <h3 className="text-sm font-bold mb-3">{""}<FinixUiText text={"Registro de Actividad Administrativa"} />{""}</h3>
                                     <div className="space-y-2">
                                         {analytics.recentAudit.map((log: any) => (
                                             <div key={log.id} className="flex items-center justify-between text-xs py-2 border-b last:border-0"
@@ -583,7 +583,7 @@ export default function CommunityAdmin() {
                                                         {log.action}
                                                     </span>
                                                     <span style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                        por @{log.actor?.username || 'admin'}
+                                                        {" "}<FinixUiText text={"por @"} />{""}{log.actor?.username || 'admin'}
                                                     </span>
                                                 </div>
                                                 <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -605,32 +605,30 @@ export default function CommunityAdmin() {
                             )}
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-base font-bold">Secciones de la Comunidad</h2>
+                                    <h2 className="text-base font-bold">{""}<FinixUiText text={"Secciones de la Comunidad"} />{""}</h2>
                                     <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        Organiza tus publicaciones por temáticas para facilitar la lectura de tus miembros.
-                                    </p>
+                                        {" "}<FinixUiText text={"Organiza tus publicaciones por temáticas para facilitar la lectura de tus miembros."} />{" "}</p>
                                 </div>
                                 <button
                                     onClick={() => setShowCreateSection(true)}
                                     className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl btn-primary-glow"
                                     style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}
                                 >
-                                    <Plus className="w-4 h-4" /> Nueva sección
-                                </button>
+                                    <Plus className="w-4 h-4" /> {" "}<FinixUiText text={"Nueva sección"} />{" "}</button>
                             </div>
 
                             {/* Create Section Modal */}
                             {showCreateSection && (
                                 <form onSubmit={handleCreateSection} className="p-4 rounded-2xl border space-y-3"
                                     style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Crear nueva sección</h3>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-primary">{""}<FinixUiText text={"Crear nueva sección"} />{""}</h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
-                                            <label className="text-[11px] font-medium block mb-1">Nombre</label>
+                                            <label className="text-[11px] font-medium block mb-1">{""}<FinixUiText text={"Nombre"} />{""}</label>
                                             <input
                                                 type="text"
                                                 required
-                                                placeholder="Ej: Análisis Fundamental"
+                                                placeholder={finixUi("Ej: Análisis Fundamental")}
                                                 value={newSection.name}
                                                 onChange={e => setNewSection(s => ({ ...s, name: e.target.value }))}
                                                 className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
@@ -638,24 +636,24 @@ export default function CommunityAdmin() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-[11px] font-medium block mb-1">Visibilidad</label>
+                                            <label className="text-[11px] font-medium block mb-1">{""}<FinixUiText text={"Visibilidad"} />{""}</label>
                                             <select
                                                 value={newSection.visibility}
                                                 onChange={e => setNewSection(s => ({ ...s, visibility: e.target.value }))}
                                                 className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
                                                 style={{ borderColor: 'hsl(var(--border))' }}
                                             >
-                                                <option value="PUBLIC">Pública</option>
-                                                <option value="MEMBERS_ONLY">Solo Miembros</option>
-                                                <option value="PREMIUM">Solo Planes de Pago</option>
+                                                <option value="PUBLIC">{""}<FinixUiText text={"Pública"} />{""}</option>
+                                                <option value="MEMBERS_ONLY">{""}<FinixUiText text={"Solo Miembros"} />{""}</option>
+                                                <option value="PREMIUM">{""}<FinixUiText text={"Solo Planes de Pago"} />{""}</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[11px] font-medium block mb-1">Descripción</label>
+                                        <label className="text-[11px] font-medium block mb-1">{""}<FinixUiText text={"Descripción"} />{""}</label>
                                         <input
                                             type="text"
-                                            placeholder="Breve descripción del propósito de esta sección"
+                                            placeholder={finixUi("Breve descripción del propósito de esta sección")}
                                             value={newSection.description}
                                             onChange={e => setNewSection(s => ({ ...s, description: e.target.value }))}
                                             className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
@@ -668,15 +666,13 @@ export default function CommunityAdmin() {
                                             onClick={() => setShowCreateSection(false)}
                                             className="px-3 py-1.5 text-xs font-medium rounded-xl hover:bg-muted"
                                         >
-                                            Cancelar
-                                        </button>
+                                            {" "}<FinixUiText text={"Cancelar"} />{" "}</button>
                                         <button
                                             type="submit"
                                             className="px-4 py-1.5 text-xs font-semibold rounded-xl"
                                             style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}
                                         >
-                                            Crear Sección
-                                        </button>
+                                            {" "}<FinixUiText text={"Crear Sección"} />{" "}</button>
                                     </div>
                                 </form>
                             )}
@@ -710,7 +706,7 @@ export default function CommunityAdmin() {
                                                 onClick={() => handleMoveSection(idx, 'up')}
                                                 className="p-1.5 rounded-lg border hover:bg-muted disabled:opacity-30"
                                                 style={{ borderColor: 'hsl(var(--border))' }}
-                                                title="Mover arriba"
+                                                title={finixUi("Mover arriba")}
                                             >
                                                 ↑
                                             </button>
@@ -719,7 +715,7 @@ export default function CommunityAdmin() {
                                                 onClick={() => handleMoveSection(idx, 'down')}
                                                 className="p-1.5 rounded-lg border hover:bg-muted disabled:opacity-30"
                                                 style={{ borderColor: 'hsl(var(--border))' }}
-                                                title="Mover abajo"
+                                                title={finixUi("Mover abajo")}
                                             >
                                                 ↓
                                             </button>
@@ -727,7 +723,7 @@ export default function CommunityAdmin() {
                                                 onClick={() => handleDeleteSection(section.id)}
                                                 className="p-1.5 rounded-lg border text-red-500 hover:bg-red-500/10 ml-2"
                                                 style={{ borderColor: 'hsl(var(--border))' }}
-                                                title="Eliminar sección"
+                                                title={finixUi("Eliminar sección")}
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" />
                                             </button>
@@ -746,10 +742,9 @@ export default function CommunityAdmin() {
                             )}
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-base font-bold">Gestión de Publicaciones</h2>
+                                    <h2 className="text-base font-bold">{""}<FinixUiText text={"Gestión de Publicaciones"} />{""}</h2>
                                     <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        Administra, fija y modera las publicaciones de tu comunidad.
-                                    </p>
+                                        {" "}<FinixUiText text={"Administra, fija y modera las publicaciones de tu comunidad."} />{" "}</p>
                                 </div>
                             </div>
 
@@ -768,8 +763,7 @@ export default function CommunityAdmin() {
                                                 </span>
                                                 {post.isPinned && (
                                                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-500 flex items-center gap-1">
-                                                        <Pin className="w-3 h-3" /> Fijada
-                                                    </span>
+                                                        <Pin className="w-3 h-3" /> {" "}<FinixUiText text={"Fijada"} />{" "}</span>
                                                 )}
                                                 {post.section && (
                                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium">
@@ -795,7 +789,7 @@ export default function CommunityAdmin() {
                                                 onClick={() => handleDeletePost(post.id)}
                                                 className="p-1.5 rounded-xl border text-red-500 hover:bg-red-500/10"
                                                 style={{ borderColor: 'hsl(var(--border))' }}
-                                                title="Eliminar publicación"
+                                                title={finixUi("Eliminar publicación")}
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -804,8 +798,7 @@ export default function CommunityAdmin() {
                                 ))}
                                 {posts.length === 0 && (
                                     <div className="text-center py-12 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        No hay publicaciones en esta comunidad todavía.
-                                    </div>
+                                        {" "}<FinixUiText text={"No hay publicaciones en esta comunidad todavía."} />{" "}</div>
                                 )}
                             </div>
                         </div>
@@ -819,15 +812,14 @@ export default function CommunityAdmin() {
                             )}
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
-                                    <h2 className="text-base font-bold">Gestión de Miembros</h2>
+                                    <h2 className="text-base font-bold">{""}<FinixUiText text={"Gestión de Miembros"} />{""}</h2>
                                     <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        Administra permisos, roles de moderación y acceso a la comunidad.
-                                    </p>
+                                        {" "}<FinixUiText text={"Administra permisos, roles de moderación y acceso a la comunidad."} />{" "}</p>
                                 </div>
                                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
                                     <input
                                         type="text"
-                                        placeholder="Buscar por username..."
+                                        placeholder={finixUi("Buscar por username...")}
                                         value={memberSearch}
                                         onChange={e => setMemberSearch(e.target.value)}
                                         className="flex-1 sm:w-48 px-3 py-1.5 text-xs rounded-xl border bg-background"
@@ -839,9 +831,9 @@ export default function CommunityAdmin() {
                                         className="px-3 py-1.5 text-xs rounded-xl border bg-background"
                                         style={{ borderColor: 'hsl(var(--border))' }}
                                     >
-                                        <option value="">Todos los roles</option>
-                                        <option value="MODERATOR">Moderadores</option>
-                                        <option value="MEMBER">Miembros</option>
+                                        <option value="">{""}<FinixUiText text={"Todos los roles"} />{""}</option>
+                                        <option value="MODERATOR">{""}<FinixUiText text={"Moderadores"} />{""}</option>
+                                        <option value="MEMBER">{""}<FinixUiText text={"Miembros"} />{""}</option>
                                     </select>
                                 </div>
                             </div>
@@ -871,12 +863,12 @@ export default function CommunityAdmin() {
                                                         </span>
                                                         {m.plan && (
                                                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium truncate max-w-[120px]">
-                                                                Plan: {m.plan.name}
+                                                                {" "}<FinixUiText text={"Plan:"} />{" "}{m.plan.name}
                                                             </span>
                                                         )}
                                                     </div>
                                                     <span className="text-[10px] block" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                        Miembro desde {new Date(m.joinedAt).toLocaleDateString('es-AR')}
+                                                        {" "}<FinixUiText text={"Miembro desde"} />{" "}{new Date(m.joinedAt).toLocaleDateString('es-AR')}
                                                     </span>
                                                 </div>
                                             </div>
@@ -889,22 +881,20 @@ export default function CommunityAdmin() {
                                                             className="px-2.5 py-1 text-xs font-semibold rounded-xl border hover:bg-muted"
                                                             style={{ borderColor: 'hsl(var(--border))' }}
                                                         >
-                                                            Quitar Moderador
-                                                        </button>
+                                                            {" "}<FinixUiText text={"Quitar Moderador"} />{" "}</button>
                                                     ) : (
                                                         <button
                                                             onClick={() => handleRoleChange(m.userId, 'MODERATOR')}
                                                             className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-xl border text-indigo-500 hover:bg-indigo-500/10"
                                                             style={{ borderColor: 'hsl(var(--border))' }}
                                                         >
-                                                            <Shield className="w-3 h-3" /> Hacer Moderador
-                                                        </button>
+                                                            <Shield className="w-3 h-3" /> {" "}<FinixUiText text={"Hacer Moderador"} />{" "}</button>
                                                     )}
                                                     <button
                                                         onClick={() => handleRemoveMember(m.userId)}
                                                         className="p-1.5 rounded-xl border text-red-500 hover:bg-red-500/10"
                                                         style={{ borderColor: 'hsl(var(--border))' }}
-                                                        title="Expulsar miembro"
+                                                        title={finixUi("Expulsar miembro")}
                                                     >
                                                         <UserMinus className="w-3.5 h-3.5" />
                                                     </button>
@@ -925,24 +915,21 @@ export default function CommunityAdmin() {
                             )}
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
-                                    <h2 className="text-base font-bold">Cola de Moderación</h2>
+                                    <h2 className="text-base font-bold">{""}<FinixUiText text={"Cola de Moderación"} />{""}</h2>
                                     <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        Revisa reportes enviados por miembros de la comunidad sobre spam, acoso o contenido inapropiado.
-                                    </p>
+                                        {" "}<FinixUiText text={"Revisa reportes enviados por miembros de la comunidad sobre spam, acoso o contenido inapropiado."} />{" "}</p>
                                 </div>
                                 <div className="flex items-center gap-1 bg-muted p-1 rounded-xl self-start sm:self-auto">
                                     <button
                                         onClick={() => setReportStatus('PENDING')}
                                         className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${reportStatus === 'PENDING' ? 'bg-background shadow text-foreground' : 'text-muted-foreground'}`}
                                     >
-                                        Pendientes
-                                    </button>
+                                        {" "}<FinixUiText text={"Pendientes"} />{" "}</button>
                                     <button
                                         onClick={() => setReportStatus('RESOLVED')}
                                         className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${reportStatus === 'RESOLVED' ? 'bg-background shadow text-foreground' : 'text-muted-foreground'}`}
                                     >
-                                        Resueltos
-                                    </button>
+                                        {" "}<FinixUiText text={"Resueltos"} />{" "}</button>
                                 </div>
                             </div>
 
@@ -958,7 +945,7 @@ export default function CommunityAdmin() {
                                                 <span className="text-xs font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full">
                                                     {report.reason}
                                                 </span>
-                                                <span className="text-xs font-semibold">Tipo: {report.targetType}</span>
+                                                <span className="text-xs font-semibold">{""}<FinixUiText text={"Tipo:"} />{" "}{report.targetType}</span>
                                             </div>
                                             <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                                 {new Date(report.createdAt).toLocaleString('es-AR')}
@@ -973,7 +960,7 @@ export default function CommunityAdmin() {
 
                                         <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
                                             <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                Reportado por @{report.reporter?.username || 'usuario'}
+                                                {" "}<FinixUiText text={"Reportado por @"} />{""}{report.reporter?.username || 'usuario'}
                                             </span>
 
                                             {report.status === 'PENDING' && (
@@ -983,14 +970,12 @@ export default function CommunityAdmin() {
                                                         className="px-3 py-1.5 text-xs font-semibold rounded-xl border hover:bg-muted"
                                                         style={{ borderColor: 'hsl(var(--border))' }}
                                                     >
-                                                        Descartar
-                                                    </button>
+                                                        {" "}<FinixUiText text={"Descartar"} />{" "}</button>
                                                     <button
                                                         onClick={() => handleResolveReport(report.id, 'DELETED', 'RESOLVED')}
                                                         className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-red-500 text-white hover:bg-red-600"
                                                     >
-                                                        Eliminar Contenido
-                                                    </button>
+                                                        {" "}<FinixUiText text={"Eliminar Contenido"} />{" "}</button>
                                                 </div>
                                             )}
                                         </div>
@@ -999,7 +984,7 @@ export default function CommunityAdmin() {
 
                                 {reports.length === 0 && (
                                     <div className="text-center py-12 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        No hay reportes {reportStatus === 'PENDING' ? 'pendientes' : 'resueltos'}.
+                                        {" "}<FinixUiText text={"No hay reportes"} />{" "}{reportStatus === 'PENDING' ? 'pendientes' : 'resueltos'}.
                                     </div>
                                 )}
                             </div>
@@ -1013,26 +998,25 @@ export default function CommunityAdmin() {
                                 <div className="flex justify-center py-2"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
                             )}
                             <div>
-                                <h2 className="text-base font-bold">Finanzas y Pasarela de Pagos</h2>
+                                <h2 className="text-base font-bold">{""}<FinixUiText text={"Finanzas y Pasarela de Pagos"} />{""}</h2>
                                 <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                    Configura tu pasarela de cobro para recibir pagos de tus miembros y supervisa tus ingresos y comisiones.
-                                </p>
+                                    {" "}<FinixUiText text={"Configura tu pasarela de cobro para recibir pagos de tus miembros y supervisa tus ingresos y comisiones."} />{" "}</p>
                             </div>
 
                             {/* Resumen de ingresos */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="p-4 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-                                    <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Ingresos Brutos</span>
+                                    <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"Ingresos Brutos"} />{""}</span>
                                     <p className="text-2xl font-bold mt-1 text-primary">${finances?.summary?.gross?.toFixed(2) ?? '0.00'}</p>
                                 </div>
                                 <div className="p-4 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-                                    <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Comisión Finix (10%)</span>
+                                    <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"Comisión Finix (10%)"} />{""}</span>
                                     <p className="text-2xl font-bold mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                         ${finances?.summary?.commissions?.toFixed(2) ?? '0.00'}
                                     </p>
                                 </div>
                                 <div className="p-4 rounded-2xl border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-                                    <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Ingresos Netos del Creador</span>
+                                    <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"Ingresos Netos del Creador"} />{""}</span>
                                     <p className="text-2xl font-bold mt-1 text-emerald-500">${finances?.summary?.net?.toFixed(2) ?? '0.00'}</p>
                                 </div>
                             </div>
@@ -1047,10 +1031,9 @@ export default function CommunityAdmin() {
                                             <CreditCard className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <h3 className="text-sm font-bold">Pasarela de Cobro para Miembros</h3>
+                                            <h3 className="text-sm font-bold">{""}<FinixUiText text={"Pasarela de Cobro para Miembros"} />{""}</h3>
                                             <p className="text-xs text-muted-foreground">
-                                                Elegí cómo querés que tus miembros te paguen las membresías de la comunidad.
-                                            </p>
+                                                {" "}<FinixUiText text={"Elegí cómo querés que tus miembros te paguen las membresías de la comunidad."} />{" "}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -1069,8 +1052,7 @@ export default function CommunityAdmin() {
                                     {/* Selector de Proveedor */}
                                     <div>
                                         <label className="text-xs font-bold block mb-2 text-foreground">
-                                            Método de Cobro Principal
-                                        </label>
+                                            {" "}<FinixUiText text={"Método de Cobro Principal"} />{" "}</label>
                                         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                             {[
                                                 { id: 'stripe', title: 'Stripe Global', desc: 'Tarjetas Visa, Mastercard, AMEX (USD)', icon: Globe },
@@ -1110,16 +1092,15 @@ export default function CommunityAdmin() {
                                         <div className="p-4 rounded-xl border border-border/70 bg-background/50 space-y-3">
                                             <div className="flex items-center gap-2">
                                                 <Globe className="w-4 h-4 text-primary" />
-                                                <h4 className="text-xs font-bold text-primary uppercase tracking-wider">Configuración de Stripe</h4>
+                                                <h4 className="text-xs font-bold text-primary uppercase tracking-wider">{""}<FinixUiText text={"Configuración de Stripe"} />{""}</h4>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div>
                                                     <label className="text-[11px] font-semibold block mb-1 text-muted-foreground">
-                                                        Stripe Account ID o Email de Cuenta
-                                                    </label>
+                                                        {" "}<FinixUiText text={"Stripe Account ID o Email de Cuenta"} />{" "}</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="acct_1XXXXXXXXX o creador@stripe.com"
+                                                        placeholder={finixUi("acct_1XXXXXXXXX o creador@stripe.com")}
                                                         value={gatewayForm.stripeAccountId || ''}
                                                         onChange={e => setGatewayForm({ ...gatewayForm, stripeAccountId: e.target.value })}
                                                         className="w-full px-3 py-2 text-xs rounded-xl border bg-background text-foreground"
@@ -1128,11 +1109,10 @@ export default function CommunityAdmin() {
                                                 </div>
                                                 <div>
                                                     <label className="text-[11px] font-semibold block mb-1 text-muted-foreground">
-                                                        Stripe Publishable Key (Opcional)
-                                                    </label>
+                                                        {" "}<FinixUiText text={"Stripe Publishable Key (Opcional)"} />{" "}</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="pk_live_..."
+                                                        placeholder={finixUi("pk_live_...")}
                                                         value={gatewayForm.stripePublishableKey || ''}
                                                         onChange={e => setGatewayForm({ ...gatewayForm, stripePublishableKey: e.target.value })}
                                                         className="w-full px-3 py-2 text-xs rounded-xl border bg-background text-foreground font-mono"
@@ -1147,16 +1127,15 @@ export default function CommunityAdmin() {
                                         <div className="p-4 rounded-xl border border-border/70 bg-background/50 space-y-3">
                                             <div className="flex items-center gap-2">
                                                 <Wallet className="w-4 h-4 text-emerald-400" />
-                                                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Configuración de Mercado Pago</h4>
+                                                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">{""}<FinixUiText text={"Configuración de Mercado Pago"} />{""}</h4>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div>
                                                     <label className="text-[11px] font-semibold block mb-1 text-muted-foreground">
-                                                        Public Key de Mercado Pago
-                                                    </label>
+                                                        {" "}<FinixUiText text={"Public Key de Mercado Pago"} />{" "}</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="APP_USR-XXXXXX o TEST-XXXXXX"
+                                                        placeholder={finixUi("APP_USR-XXXXXX o TEST-XXXXXX")}
                                                         value={gatewayForm.mpPublicKey || ''}
                                                         onChange={e => setGatewayForm({ ...gatewayForm, mpPublicKey: e.target.value })}
                                                         className="w-full px-3 py-2 text-xs rounded-xl border bg-background text-foreground font-mono"
@@ -1165,11 +1144,10 @@ export default function CommunityAdmin() {
                                                 </div>
                                                 <div>
                                                     <label className="text-[11px] font-semibold block mb-1 text-muted-foreground">
-                                                        Email de tu Cuenta Mercado Pago
-                                                    </label>
+                                                        {" "}<FinixUiText text={"Email de tu Cuenta Mercado Pago"} />{" "}</label>
                                                     <input
                                                         type="email"
-                                                        placeholder="creador@mercadopago.com"
+                                                        placeholder={finixUi("creador@mercadopago.com")}
                                                         value={gatewayForm.mpEmail || ''}
                                                         onChange={e => setGatewayForm({ ...gatewayForm, mpEmail: e.target.value })}
                                                         className="w-full px-3 py-2 text-xs rounded-xl border bg-background text-foreground"
@@ -1184,16 +1162,15 @@ export default function CommunityAdmin() {
                                         <div className="p-4 rounded-xl border border-border/70 bg-background/50 space-y-3">
                                             <div className="flex items-center gap-2">
                                                 <Building2 className="w-4 h-4 text-primary" />
-                                                <h4 className="text-xs font-bold text-primary uppercase tracking-wider">Datos para Transferencia Bancaria (CBU / Alias)</h4>
+                                                <h4 className="text-xs font-bold text-primary uppercase tracking-wider">{""}<FinixUiText text={"Datos para Transferencia Bancaria (CBU / Alias)"} />{""}</h4>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                                 <div>
                                                     <label className="text-[11px] font-semibold block mb-1 text-muted-foreground">
-                                                        Alias Bancario / CVU
-                                                    </label>
+                                                        {" "}<FinixUiText text={"Alias Bancario / CVU"} />{" "}</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="MI.COMUNIDAD.MP"
+                                                        placeholder={finixUi("MI.COMUNIDAD.MP")}
                                                         value={gatewayForm.alias || ''}
                                                         onChange={e => setGatewayForm({ ...gatewayForm, alias: e.target.value })}
                                                         className="w-full px-3 py-2 text-xs rounded-xl border bg-background text-foreground uppercase font-bold"
@@ -1202,12 +1179,11 @@ export default function CommunityAdmin() {
                                                 </div>
                                                 <div>
                                                     <label className="text-[11px] font-semibold block mb-1 text-muted-foreground">
-                                                        CBU o CVU (22 dígitos)
-                                                    </label>
+                                                        {" "}<FinixUiText text={"CBU o CVU (22 dígitos)"} />{" "}</label>
                                                     <input
                                                         type="text"
                                                         maxLength={22}
-                                                        placeholder="00000031000XXXXXXXXXXX"
+                                                        placeholder={finixUi("00000031000XXXXXXXXXXX")}
                                                         value={gatewayForm.cbu || ''}
                                                         onChange={e => setGatewayForm({ ...gatewayForm, cbu: e.target.value })}
                                                         className="w-full px-3 py-2 text-xs rounded-xl border bg-background text-foreground font-mono"
@@ -1216,11 +1192,10 @@ export default function CommunityAdmin() {
                                                 </div>
                                                 <div>
                                                     <label className="text-[11px] font-semibold block mb-1 text-muted-foreground">
-                                                        Banco o Billetera
-                                                    </label>
+                                                        {" "}<FinixUiText text={"Banco o Billetera"} />{" "}</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="Mercado Pago / Santander / Brubank"
+                                                        placeholder={finixUi("Mercado Pago / Santander / Brubank")}
                                                         value={gatewayForm.bankName || ''}
                                                         onChange={e => setGatewayForm({ ...gatewayForm, bankName: e.target.value })}
                                                         className="w-full px-3 py-2 text-xs rounded-xl border bg-background text-foreground"
@@ -1231,11 +1206,10 @@ export default function CommunityAdmin() {
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div>
                                                     <label className="text-[11px] font-semibold block mb-1 text-muted-foreground">
-                                                        Nombre del Titular de la Cuenta
-                                                    </label>
+                                                        {" "}<FinixUiText text={"Nombre del Titular de la Cuenta"} />{" "}</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="Nombre y Apellido"
+                                                        placeholder={finixUi("Nombre y Apellido")}
                                                         value={gatewayForm.holderName || ''}
                                                         onChange={e => setGatewayForm({ ...gatewayForm, holderName: e.target.value })}
                                                         className="w-full px-3 py-2 text-xs rounded-xl border bg-background text-foreground"
@@ -1244,11 +1218,10 @@ export default function CommunityAdmin() {
                                                 </div>
                                                 <div>
                                                     <label className="text-[11px] font-semibold block mb-1 text-muted-foreground">
-                                                        CUIT / CUIL
-                                                    </label>
+                                                        {" "}<FinixUiText text={"CUIT / CUIL"} />{" "}</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="20-XXXXXXXX-X"
+                                                        placeholder={finixUi("20-XXXXXXXX-X")}
                                                         value={gatewayForm.cuit || ''}
                                                         onChange={e => setGatewayForm({ ...gatewayForm, cuit: e.target.value })}
                                                         className="w-full px-3 py-2 text-xs rounded-xl border bg-background text-foreground font-mono"
@@ -1263,22 +1236,20 @@ export default function CommunityAdmin() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                                         <div>
                                             <label className="text-xs font-bold block mb-1 text-foreground">
-                                                Moneda de Cobro Predeterminada
-                                            </label>
+                                                {" "}<FinixUiText text={"Moneda de Cobro Predeterminada"} />{" "}</label>
                                             <select
                                                 value={gatewayForm.currency || 'USD'}
                                                 onChange={e => setGatewayForm({ ...gatewayForm, currency: e.target.value })}
                                                 className="w-full px-3 py-2 text-xs rounded-xl border bg-background text-foreground"
                                                 style={{ borderColor: 'hsl(var(--border))' }}
                                             >
-                                                <option value="USD">USD ($ Dólares Estadounidenses) - Internacional</option>
-                                                <option value="ARS">ARS ($ Pesos Argentinos) - Mercado Pago / Local</option>
+                                                <option value="USD">{""}<FinixUiText text={"USD ($ Dólares Estadounidenses) - Internacional"} />{""}</option>
+                                                <option value="ARS">{""}<FinixUiText text={"ARS ($ Pesos Argentinos) - Mercado Pago / Local"} />{""}</option>
                                             </select>
                                         </div>
                                         <div>
                                             <label className="text-xs font-bold block mb-1 text-foreground">
-                                                Estado de Cobros
-                                            </label>
+                                                {" "}<FinixUiText text={"Estado de Cobros"} />{" "}</label>
                                             <div className="flex items-center gap-3 mt-2">
                                                 <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold">
                                                     <input
@@ -1287,7 +1258,7 @@ export default function CommunityAdmin() {
                                                         onChange={e => setGatewayForm({ ...gatewayForm, isEnabled: e.target.checked })}
                                                         className="w-4 h-4 rounded border-border text-emerald-500 focus:ring-emerald-500"
                                                     />
-                                                    <span>Habilitar pasarela y aceptar pagos de nuevos miembros</span>
+                                                    <span>{""}<FinixUiText text={"Habilitar pasarela y aceptar pagos de nuevos miembros"} />{""}</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -1297,7 +1268,7 @@ export default function CommunityAdmin() {
                                     {gatewaySuccess && (
                                         <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2 animate-in fade-in duration-200">
                                             <CheckCircle2 className="w-4 h-4 shrink-0" />
-                                            <span>¡Pasarela de pagos configurada con éxito! Tus miembros ya pueden pagar sus membresías.</span>
+                                            <span>{""}<FinixUiText text={"¡Pasarela de pagos configurada con éxito! Tus miembros ya pueden pagar sus membresías."} />{""}</span>
                                         </div>
                                     )}
 
@@ -1308,24 +1279,23 @@ export default function CommunityAdmin() {
                                             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] transition-all disabled:opacity-50 shadow-md shadow-emerald-500/20"
                                         >
                                             {savingGateway && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                                            Guardar Pasarela de Pago
-                                        </button>
+                                            {" "}<FinixUiText text={"Guardar Pasarela de Pago"} />{" "}</button>
                                     </div>
                                 </form>
                             </div>
 
                             {/* HISTORIAL DE TRANSACCIONES */}
                             <div className="space-y-2">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Historial de Transacciones</h3>
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-primary">{""}<FinixUiText text={"Historial de Transacciones"} />{""}</h3>
                                 <div className="rounded-2xl border overflow-x-auto" style={{ borderColor: 'hsl(var(--border))' }}>
                                     <table className="w-full text-xs text-left min-w-[500px]">
                                         <thead className="bg-muted/50 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
                                             <tr>
-                                                <th className="p-3">Fecha</th>
-                                                <th className="p-3">Usuario</th>
-                                                <th className="p-3">Monto</th>
-                                                <th className="p-3">Neto Creador</th>
-                                                <th className="p-3">Estado</th>
+                                                <th className="p-3">{""}<FinixUiText text={"Fecha"} />{""}</th>
+                                                <th className="p-3">{""}<FinixUiText text={"Usuario"} />{""}</th>
+                                                <th className="p-3">{""}<FinixUiText text={"Monto"} />{""}</th>
+                                                <th className="p-3">{""}<FinixUiText text={"Neto Creador"} />{""}</th>
+                                                <th className="p-3">{""}<FinixUiText text={"Estado"} />{""}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y" style={{ borderColor: 'hsl(var(--border))' }}>
@@ -1345,8 +1315,7 @@ export default function CommunityAdmin() {
                                             {(!finances?.payments || finances.payments.length === 0) && (
                                                 <tr>
                                                     <td colSpan={5} className="p-8 text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                        No hay pagos registrados todavía.
-                                                    </td>
+                                                        {" "}<FinixUiText text={"No hay pagos registrados todavía."} />{" "}</td>
                                                 </tr>
                                             )}
                                         </tbody>
@@ -1361,11 +1330,11 @@ export default function CommunityAdmin() {
                         <div className="space-y-8">
                             <form onSubmit={handleSaveSettings} className="p-6 rounded-2xl border space-y-4"
                                 style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-                                <h2 className="text-base font-bold">Configuración General</h2>
+                                <h2 className="text-base font-bold">{""}<FinixUiText text={"Configuración General"} />{""}</h2>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs font-semibold block mb-1">Nombre de la Comunidad</label>
+                                        <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Nombre de la Comunidad"} />{""}</label>
                                         <input
                                             type="text"
                                             required
@@ -1376,7 +1345,7 @@ export default function CommunityAdmin() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-semibold block mb-1">Handle / Slug</label>
+                                        <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Handle / Slug"} />{""}</label>
                                         <input
                                             type="text"
                                             value={settingsForm.slug || ''}
@@ -1388,7 +1357,7 @@ export default function CommunityAdmin() {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1">Descripción</label>
+                                    <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Descripción"} />{""}</label>
                                     <textarea
                                         rows={3}
                                         value={settingsForm.description || ''}
@@ -1400,7 +1369,7 @@ export default function CommunityAdmin() {
 
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div>
-                                        <label className="text-xs font-semibold block mb-1">Categoría</label>
+                                        <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Categoría"} />{""}</label>
                                         <input
                                             type="text"
                                             value={settingsForm.category || ''}
@@ -1410,37 +1379,37 @@ export default function CommunityAdmin() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-semibold block mb-1">Privacidad</label>
+                                        <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Privacidad"} />{""}</label>
                                         <select
                                             value={settingsForm.privacyType || 'PUBLIC'}
                                             onChange={e => setSettingsForm({ ...settingsForm, privacyType: e.target.value })}
                                             className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
                                             style={{ borderColor: 'hsl(var(--border))' }}
                                         >
-                                            <option value="PUBLIC">Pública</option>
-                                            <option value="PRIVATE">Privada (Requiere aprobación)</option>
-                                            <option value="EXCLUSIVE">Exclusiva (Solo pago)</option>
+                                            <option value="PUBLIC">{""}<FinixUiText text={"Pública"} />{""}</option>
+                                            <option value="PRIVATE">{""}<FinixUiText text={"Privada (Requiere aprobación)"} />{""}</option>
+                                            <option value="EXCLUSIVE">{""}<FinixUiText text={"Exclusiva (Solo pago)"} />{""}</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs font-semibold block mb-1">Estado</label>
+                                        <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Estado"} />{""}</label>
                                         <select
                                             value={settingsForm.status || 'PUBLISHED'}
                                             onChange={e => setSettingsForm({ ...settingsForm, status: e.target.value })}
                                             className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
                                             style={{ borderColor: 'hsl(var(--border))' }}
                                         >
-                                            <option value="PUBLISHED">Publicada</option>
-                                            <option value="DRAFT">Borrador</option>
+                                            <option value="PUBLISHED">{""}<FinixUiText text={"Publicada"} />{""}</option>
+                                            <option value="DRAFT">{""}<FinixUiText text={"Borrador"} />{""}</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1">Reglas de la Comunidad</label>
+                                    <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Reglas de la Comunidad"} />{""}</label>
                                     <textarea
                                         rows={3}
-                                        placeholder="Pautas de convivencia, normas de participación, etc."
+                                        placeholder={finixUi("Pautas de convivencia, normas de participación, etc.")}
                                         value={settingsForm.rules || ''}
                                         onChange={e => setSettingsForm({ ...settingsForm, rules: e.target.value })}
                                         className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
@@ -1457,15 +1426,13 @@ export default function CommunityAdmin() {
                                         className="rounded border"
                                     />
                                     <label htmlFor="showContentBeforeJoin" className="text-xs font-medium cursor-pointer">
-                                        Mostrar vista previa del contenido antes de unirse
-                                    </label>
+                                        {" "}<FinixUiText text={"Mostrar vista previa del contenido antes de unirse"} />{" "}</label>
                                 </div>
 
                                 <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
                                     {settingsSuccess ? (
                                         <span className="text-xs text-emerald-500 font-semibold flex items-center gap-1">
-                                            <Check className="w-4 h-4" /> Cambios guardados correctamente
-                                        </span>
+                                            <Check className="w-4 h-4" /> {" "}<FinixUiText text={"Cambios guardados correctamente"} />{" "}</span>
                                     ) : <div />}
 
                                     <button
@@ -1475,8 +1442,7 @@ export default function CommunityAdmin() {
                                         style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}
                                     >
                                         {savingSettings && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                                        Guardar Configuración
-                                    </button>
+                                        {" "}<FinixUiText text={"Guardar Configuración"} />{" "}</button>
                                 </div>
                             </form>
 
@@ -1484,15 +1450,14 @@ export default function CommunityAdmin() {
                             <div className="p-6 rounded-2xl border border-red-500/30 bg-red-500/5 space-y-4">
                                 <div className="flex items-center gap-2 text-red-500">
                                     <AlertTriangle className="w-5 h-5" />
-                                    <h3 className="text-sm font-bold">Zona de Peligro</h3>
+                                    <h3 className="text-sm font-bold">{""}<FinixUiText text={"Zona de Peligro"} />{""}</h3>
                                 </div>
                                 <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                    Eliminar la comunidad borrará de manera irreversible todas las secciones, miembros, suscripciones e historial asociado.
-                                </p>
+                                    {" "}<FinixUiText text={"Eliminar la comunidad borrará de manera irreversible todas las secciones, miembros, suscripciones e historial asociado."} />{" "}</p>
 
                                 <div className="space-y-2 pt-2">
                                     <label className="text-xs font-semibold block text-red-500">
-                                        Para confirmar, escribe "{community.name}":
+                                        {" "}<FinixUiText text={"Para confirmar, escribe \""} />{""}{community.name}":
                                     </label>
                                     <input
                                         type="text"

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { hasCommunityAccess, hasCommunityCreatorAccess, useAuthStore } from './stores/authStore';
@@ -55,7 +57,9 @@ const EducationArticlePage = lazy(() => import('./pages/education/EducationArtic
 // ─── Theme Applier ────────────────────────────────────────────────────────────
 
 function ThemeApplier() {
-    const { theme } = usePreferencesStore();
+    const theme = usePreferencesStore(state => state.theme);
+    const language = usePreferencesStore(state => state.language);
+    useEffect(() => { document.documentElement.lang = language === 'en-US' ? 'en' : 'es'; }, [language]);
 
     useEffect(() => {
         const root = document.documentElement;
@@ -101,7 +105,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 function AccessGuard({ children }: { children: React.ReactNode }) {
     const accessLoaded = usePlatformAccessStore(state => state.loaded);
     const location = useLocation();
-    if (!accessLoaded && location.pathname !== '/dashboard') return <div className="min-h-screen grid place-items-center" role="status">Cargando Finix…</div>;
+    if (!accessLoaded && location.pathname !== '/dashboard') return <div className="min-h-screen grid place-items-center" role="status">{""}<FinixUiText text={"Cargando Finix…"} />{""}</div>;
     return <>{children}</>;
 }
 
@@ -115,7 +119,7 @@ function RequireCommunityAccess({
     const { user } = useAuthStore();
 
     const accessLoaded = usePlatformAccessStore(state => state.loaded);
-    if (!accessLoaded) return <div role="status" className="p-8 text-center text-muted-foreground">Cargando acceso a comunidades…</div>;
+    if (!accessLoaded) return <div role="status" className="p-8 text-center text-muted-foreground">{""}<FinixUiText text={"Cargando acceso a comunidades…"} />{""}</div>;
     if (creatorOnly ? !hasCommunityCreatorAccess(user) : !hasCommunityAccess(user)) {
         return <Navigate to={creatorOnly ? '/creator' : '/settings/plan'} replace />;
     }
@@ -131,6 +135,8 @@ function CanonicalPageRedirect({ pathname = '/pro' }: { pathname?: string }) {
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const loadAccess = usePlatformAccessStore(state => state.load);
     const { token, user, syncFromSession } = useAuthStore();
 
@@ -153,7 +159,7 @@ export default function App() {
                         <div
                             className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin"
                             role="status"
-                            aria-label="Cargando"
+                            aria-label={finixUi("Cargando")}
                         />
                     </div>
                 }

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useRef } from 'react';
 import { Flame, Calendar, Award, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +10,8 @@ interface InvestorStreakPillProps {
 }
 
 export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { streak, longestStreak, weekDays, nextMilestone, progressPercent, isTodayActive, recordCheckIn } = useInvestorStreak();
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -47,8 +51,7 @@ export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) 
                     {streak} {streak === 1 ? 'día de racha' : 'días de racha'}
                 </span>
                 <span className="tracking-tight whitespace-nowrap xs:hidden font-black">
-                    {streak}d
-                </span>
+                    {streak}{""}<FinixUiText text={"d"} />{" "}</span>
             </button>
 
             <AnimatePresence>
@@ -67,7 +70,7 @@ export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) 
                                     <Flame className="w-4 h-4 fill-amber-500" />
                                 </span>
                                 <div>
-                                    <h4 className="text-sm font-bold leading-tight">Racha Inversora</h4>
+                                    <h4 className="text-sm font-bold leading-tight">{""}<FinixUiText text={"Racha Inversora"} />{""}</h4>
                                     <span className="text-[11px] font-semibold text-amber-500">
                                         🔥 {streak} {streak === 1 ? 'día consecutivo' : 'días consecutivos'}
                                     </span>
@@ -77,7 +80,7 @@ export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) 
                                 type="button"
                                 onClick={() => setIsOpen(false)}
                                 className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md"
-                                aria-label="Cerrar modal"
+                                aria-label={finixUi("Cerrar modal")}
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -96,11 +99,9 @@ export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) 
                         <div className="pt-2 border-t border-border/50">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
-                                    <Calendar className="w-3 h-3 text-muted-foreground" /> Esta semana
-                                </span>
+                                    <Calendar className="w-3 h-3 text-muted-foreground" /> {" "}<FinixUiText text={"Esta semana"} />{" "}</span>
                                 <span className="text-[10px] text-muted-foreground font-medium">
-                                    {activeWeekDaysCount}/7 días activos
-                                </span>
+                                    {activeWeekDaysCount}{""}<FinixUiText text={"/7 días activos"} />{" "}</span>
                             </div>
                             <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
                                 {weekDays.map((d, i) => (
@@ -139,11 +140,10 @@ export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) 
                             <div className="flex items-center justify-between">
                                 <span className="flex items-center gap-1.5 font-bold text-foreground/90">
                                     <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                    <span>Próximo logro:</span>
+                                    <span>{""}<FinixUiText text={"Próximo logro:"} />{""}</span>
                                 </span>
                                 <span className="text-[10.5px] font-semibold text-amber-600 dark:text-amber-400">
-                                    {streak}/{nextMilestone.targetDays} días
-                                </span>
+                                    {streak}/{nextMilestone.targetDays} {" "}<FinixUiText text={"días"} />{" "}</span>
                             </div>
                             <p className="text-muted-foreground text-[11px] leading-tight">
                                 <strong>{nextMilestone.badgeName}</strong> ({nextMilestone.description}).
@@ -157,7 +157,7 @@ export function InvestorStreakPill({ className = '' }: InvestorStreakPillProps) 
                             </div>
                             {longestStreak > streak && (
                                 <div className="text-[10px] text-muted-foreground/80 flex items-center justify-between pt-1 border-t border-amber-500/10">
-                                    <span>Récord personal:</span>
+                                    <span>{""}<FinixUiText text={"Récord personal:"} />{""}</span>
                                     <span className="font-semibold text-amber-600 dark:text-amber-400">🔥 {longestStreak} {longestStreak === 1 ? 'día' : 'días'}</span>
                                 </div>
                             )}

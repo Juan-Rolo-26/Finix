@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useEffect, useState } from 'react';
 import { Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -88,16 +89,15 @@ export default function PWAInstallPrompt() {
                             <Download className="w-6 h-6" />
                         </div>
                         <div>
-                            <h3 className="font-bold text-sm">Instalar Finix</h3>
-                            <p className="text-xs text-muted-foreground">Accede rápido a tus finanzas sociales con un toque.</p>
+                            <h3 className="font-bold text-sm">{""}<FinixUiText text={"Instalar Finix"} />{""}</h3>
+                            <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Accede rápido a tus finanzas sociales con un toque."} />{""}</p>
                         </div>
                     </div>
                     <button 
                         onClick={handleInstall}
                         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2.5 rounded-lg text-sm transition-colors mt-1"
                     >
-                        Crear acceso directo
-                    </button>
+                        {" "}<FinixUiText text={"Crear acceso directo"} />{" "}</button>
                 </motion.div>
             )}
         </AnimatePresence>

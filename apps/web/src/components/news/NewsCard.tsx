@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { ImagePreviewButton } from '@/components/common/ImagePreviewButton';
 import { Clock, ExternalLink } from 'lucide-react';
 import { handleNewsImageError, resolveNewsImage } from '@/lib/newsImage';
@@ -141,8 +142,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         className="flex items-center gap-1.5 mt-4 text-xs font-semibold opacity-90 group-hover:opacity-100 transition-opacity"
                         style={{ color: '#ffffff' }}
                     >
-                        <ExternalLink className="w-3.5 h-3.5" /> Leer nota completa
-                    </div>
+                        <ExternalLink className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Leer nota completa"} />{" "}</div>
                 </div>
             </a>
             <ImagePreviewButton src={imgSrc} alt={article.title} className="mt-2" />
@@ -207,8 +207,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         )}
                     </div>
                     <div className="flex items-center gap-1.5 mt-4 text-xs font-semibold text-primary group-hover:underline">
-                        <ExternalLink className="w-3.5 h-3.5" /> Leer nota
-                    </div>
+                        <ExternalLink className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Leer nota"} />{" "}</div>
                 </div>
             </a>
             <ImagePreviewButton src={imgSrc} alt={article.title} className="mt-2" />
@@ -275,8 +274,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                         </p>
                     )}
                     <div className="flex items-center gap-1.5 mt-3 text-xs font-semibold text-primary">
-                        <ExternalLink className="w-3.5 h-3.5" /> Leer nota completa
-                    </div>
+                        <ExternalLink className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Leer nota completa"} />{" "}</div>
                 </div>
             </a>
             <ImagePreviewButton src={imgSrc} alt={article.title} className="mt-2" />
@@ -339,8 +337,7 @@ export function NewsCard({ slot, variant = 'standard', categoryColor, categoryNa
                     )}
                 </div>
                 <div className="flex items-center gap-1.5 mt-3 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ExternalLink className="w-3 h-3" /> Leer nota
-                </div>
+                    <ExternalLink className="w-3 h-3" /> {" "}<FinixUiText text={"Leer nota"} />{" "}</div>
             </div>
         </a>
         <ImagePreviewButton src={imgSrc} alt={article.title} className="mt-2" />

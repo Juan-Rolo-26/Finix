@@ -1,3 +1,4 @@
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /**
  * ChartContainer.tsx — Base chart wrapper for Finix charts library.
  *
@@ -59,6 +60,8 @@ export function ChartContainer({
   chartHeight = 360,
   ariaLabel,
 }: ChartContainerProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
@@ -143,8 +146,8 @@ export function ChartContainer({
           {onRetry && !loading && (
             <button
               onClick={onRetry}
-              title="Actualizar datos"
-              aria-label="Actualizar datos del gráfico"
+              title={finixUi("Actualizar datos")}
+              aria-label={finixUi("Actualizar datos del gráfico")}
               className="inline-flex items-center justify-center w-11 h-11 rounded-lg border border-border/50 bg-background/50 text-muted-foreground hover:text-foreground hover:border-border transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5" />

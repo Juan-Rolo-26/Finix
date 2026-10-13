@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LockKeyhole, Loader2, UserPlus, UserRoundCheck, Users } from 'lucide-react';
@@ -147,7 +148,7 @@ export function UserConnectionsDialog({
                 <DialogHeader className="border-b border-border/70 px-5 pb-4 pt-5 text-left sm:px-6">
                     <DialogTitle className="flex items-center gap-2 text-lg">
                         <Users className="h-5 w-5 text-primary" />
-                        {title} de @{username}
+                        {title} {" "}<FinixUiText text={"de @"} />{""}{username}
                     </DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
@@ -178,17 +179,16 @@ export function UserConnectionsDialog({
                 <div className="max-h-[min(60vh,440px)] min-h-48 overflow-y-auto p-3 sm:p-4" role="tabpanel">
                     {loading ? (
                         <div className="flex min-h-40 items-center justify-center text-sm text-muted-foreground">
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Cargando {title.toLowerCase()}…
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {" "}<FinixUiText text={"Cargando"} />{" "}{title.toLowerCase()}…
                         </div>
                     ) : canView === false ? (
                         <div className="flex min-h-40 flex-col items-center justify-center px-5 text-center">
                             <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
                                 <LockKeyhole className="h-5 w-5" />
                             </div>
-                            <p className="text-sm font-semibold text-foreground">Esta lista es privada</p>
+                            <p className="text-sm font-semibold text-foreground">{""}<FinixUiText text={"Esta lista es privada"} />{""}</p>
                             <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted-foreground">
-                                Solo la persona dueña del perfil y sus seguidores pueden verla.
-                            </p>
+                                {" "}<FinixUiText text={"Solo la persona dueña del perfil y sus seguidores pueden verla."} />{" "}</p>
                         </div>
                     ) : error && users.length === 0 ? (
                         <div className="flex min-h-40 flex-col items-center justify-center text-center">
@@ -198,8 +198,7 @@ export function UserConnectionsDialog({
                                 onClick={() => setReloadVersion((version) => version + 1)}
                                 className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10"
                             >
-                                Reintentar
-                            </button>
+                                {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
                         </div>
                     ) : users.length === 0 ? (
                         <div className="flex min-h-40 flex-col items-center justify-center text-center">
@@ -276,7 +275,7 @@ export function UserConnectionsDialog({
                     )}
                     {total !== null && canView && users.length > 0 && (
                         <p className="pt-3 text-center text-[11px] text-muted-foreground">
-                            {users.length.toLocaleString('es-AR')} de {total.toLocaleString('es-AR')}
+                            {users.length.toLocaleString('es-AR')} {" "}<FinixUiText text={"de"} />{" "}{total.toLocaleString('es-AR')}
                         </p>
                     )}
                 </div>

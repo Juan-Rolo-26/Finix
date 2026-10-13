@@ -1,3 +1,4 @@
+import { useTranslation } from '@/i18n';
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import {
@@ -118,6 +119,7 @@ const TOOLS_LIST = [
 ];
 
 export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }) {
+    const { ui } = useTranslation();
     const location = useLocation();
     const user = useAuthStore(state => state.user);
     const [failedAvatar, setFailedAvatar] = useState<string | null>(null);
@@ -133,7 +135,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
     const isPro = isProUser(user) || user?.plan === 'PRO';
     const plan = isPro
         ? 'Finix PRO'
-        : (freeAccess ? 'Acceso Libre' : (PLAN_NAMES[subscribedPlan(user)] || 'Finix Free'));
+        : (freeAccess ? ui("Acceso Libre") : (PLAN_NAMES[subscribedPlan(user)] || 'Finix Free'));
 
     const isToolsActive =
         path.startsWith('/market') ||
@@ -142,29 +144,28 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
         path === '/calendario' || path === '/laboratorio';
 
     return (
-        <header className="desktop-header hidden lg:block" aria-label="Navegación de escritorio">
+        <header className="desktop-header hidden lg:block" aria-label={ui("Navegación de escritorio")}>
             <div className="desktop-header__inner">
                 <div className="desktop-header__left">
-                    <Link to="/dashboard" className="desktop-brand" aria-label="Finix, inicio">
+                    <Link to="/dashboard" className="desktop-brand" aria-label={ui("Finix, inicio")}>
                         <img src="/logo-small.webp" alt="" />
-                        <span>FINIX</span>
+                        <span>{ui("FINIX")}</span>
                     </Link>
 
-                    <nav className="desktop-primary-nav" aria-label="Navegación principal">
+                    <nav className="desktop-primary-nav" aria-label={ui("Navegación principal")}>
                         <Link
                             to="/dashboard"
                             aria-current={path === '/dashboard' || path === '/social' ? 'page' : undefined}
                         >
-                            Inicio
-                        </Link>
+                            {ui("Inicio")}</Link>
 
                         <DropdownMenu>
                             <DropdownMenuTrigger
                                 className="desktop-tools-trigger"
                                 data-active={isToolsActive}
-                                aria-label="Menú desplegable de herramientas"
+                                aria-label={ui("Menú desplegable de herramientas")}
                             >
-                                <span>Herramientas</span>
+                                <span>{ui("Herramientas")}</span>
                                 <ChevronDown size={14} className="opacity-70 transition-transform duration-200" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
@@ -175,7 +176,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                 <div className="desktop-tools-menu__layout">
                                     <div>
                                         <div className="desktop-tools-menu__label">
-                                            <span>Investigación y Valoración</span>
+                                            <span>{ui("Investigación y Valoración")}</span>
                                             <span className="desktop-tools-menu__label-pill">Finix Tools</span>
                                         </div>
                                         <div className="desktop-tools-menu__grid">
@@ -189,10 +190,10 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                                             </span>
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-center justify-between gap-1">
-                                                                    <strong>{tool.title}</strong>
+                                                                    <strong>{ui(tool.title)}</strong>
                                                                     <ArrowRight size={13} className="text-muted-foreground/40 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150" />
                                                                 </div>
-                                                                <small>{tool.description}</small>
+                                                                <small>{ui(tool.description)}</small>
                                                             </div>
                                                         </Link>
                                                     </DropdownMenuItem>
@@ -207,33 +208,30 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                             <div className="flex items-center justify-between">
                                                 <span className="desktop-tools-promo__badge">
                                                     <Sparkles size={11} className="mr-1" />
-                                                    FINIX PRO
-                                                </span>
-                                                <span className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider">Plan</span>
+                                                    {ui("FINIX PRO")}</span>
+                                                <span className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider">{ui("Plan")}</span>
                                             </div>
                                             <h3 className="desktop-tools-promo__title">
-                                                Lleva tus inversiones al siguiente nivel
-                                            </h3>
+                                                {ui("Lleva tus inversiones al siguiente nivel")}</h3>
                                             <p className="desktop-tools-promo__desc">
-                                                Accedé a herramientas institucionales diseñadas para inversores exigentes:
-                                            </p>
+                                                {ui("Accedé a herramientas institucionales diseñadas para inversores exigentes:")}</p>
                                             <ul className="desktop-tools-promo__features">
                                                 <li>
                                                     <Check size={13} />
-                                                    <span>Watchlists y alertas de precios</span>
+                                                    <span>{ui("Watchlists y alertas de precios")}</span>
                                                 </li>
                                                 <li>
                                                     <Check size={13} />
-                                                    <span>Valuación DCF y múltiplos reales</span>
+                                                    <span>{ui("Valuación DCF y múltiplos reales")}</span>
                                                 </li>
                                                 <li>
                                                     <Check size={13} />
-                                                    <span>Comunidades privadas y salas</span>
+                                                    <span>{ui("Comunidades privadas y salas")}</span>
                                                 </li>
                                             </ul>
                                         </div>
                                         <Link to="/pricing#planes" className="desktop-tools-promo__cta">
-                                            <span>Explorar funcionalidades PRO</span>
+                                            <span>{ui("Explorar funcionalidades PRO")}</span>
                                             <ArrowRight size={14} />
                                         </Link>
                                     </div>
@@ -245,29 +243,25 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                             to="/portfolio"
                             aria-current={path === '/portfolio' ? 'page' : undefined}
                         >
-                            Portafolio
-                        </Link>
+                            {ui("Portafolio")}</Link>
 
                         <Link
                             to="/explore"
                             aria-current={path === '/explore' || path.startsWith('/explore/') ? 'page' : undefined}
                         >
-                            Explorar
-                        </Link>
+                            {ui("Explorar")}</Link>
                         <Link
                             to="/news"
                             aria-current={path === '/news' ? 'page' : undefined}
                         >
-                            Noticias
-                        </Link>
+                            {ui("Noticias")}</Link>
                         {isEducationEnabled() && (
                             <Link
                                 to="/educativa"
                                 className="hidden xl:inline-flex"
                                 aria-current={path.startsWith('/educativa') ? 'page' : undefined}
                             >
-                                Educativa
-                            </Link>
+                                {ui("Educativa")}</Link>
                         )}
                         {(hasCommunityAccess(user) || freeAccess) && (
                             <Link
@@ -275,16 +269,15 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                 className="hidden xl:inline-flex"
                                 aria-current={path === '/comunidades' || path.startsWith('/comunidades/') ? 'page' : undefined}
                             >
-                                Comunidades
-                            </Link>
+                                {ui("Comunidades")}</Link>
                         )}
                     </nav>
                 </div>
 
                 <div className="desktop-header__right">
-                    <button type="button" className="desktop-search" onClick={onOpenSearch} aria-label="Buscar en Finix">
+                    <button type="button" className="desktop-search" onClick={onOpenSearch} aria-label={ui("Buscar en Finix")}>
                         <Search size={15} className="shrink-0 text-primary" />
-                        <span className="truncate">Buscar activos…</span>
+                        <span className="truncate">{ui("Buscar activos…")}</span>
                         <kbd className="hidden xl:inline-block">Ctrl K</kbd>
                     </button>
                     {user ? (
@@ -292,24 +285,22 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                             <div className="hidden 2xl:flex items-center shrink-0">
                                 <InvestorStreakPill />
                             </div>
-                            <Link to="/pricing#planes" className="desktop-plan shrink-0" title="Planes y precios">
+                            <Link to="/pricing#planes" className="desktop-plan shrink-0" title={ui("Planes y precios")}>
                                 <Sparkles size={13} className="shrink-0" />
-                                Planes
-                            </Link>
+                                {ui("Planes")}</Link>
                             <div className="desktop-header__actions shrink-0">
-                                <Link to="/messages" className="desktop-icon-button" aria-label={messages > 0 ? `Mensajes, ${messages} sin leer` : 'Mensajes'}><MessageSquare size={18} />{messages > 0 && <span className="desktop-nav-dot" />}</Link>
-                                <Link to="/notifications" className="desktop-icon-button" aria-label={notifications > 0 ? `Notificaciones, ${notifications} sin leer` : 'Notificaciones'}><Bell size={18} />{notifications > 0 && <span className="desktop-nav-dot" />}</Link>
+                                <Link to="/messages" className="desktop-icon-button" aria-label={messages > 0 ? `${ui("Mensajes")}, ${messages} ${ui("sin leer")}` : ui("Mensajes")}><MessageSquare size={18} />{messages > 0 && <span className="desktop-nav-dot" />}</Link>
+                                <Link to="/notifications" className="desktop-icon-button" aria-label={notifications > 0 ? `${ui("Notificaciones")}, ${notifications} ${ui("sin leer")}` : ui("Notificaciones")}><Bell size={18} />{notifications > 0 && <span className="desktop-nav-dot" />}</Link>
                                 <DropdownMenu>
-                                    <DropdownMenuTrigger className="desktop-account-trigger" aria-label="Mi cuenta"><span className="desktop-account-avatar">{user?.avatarUrl && user.avatarUrl !== failedAvatar ? <img src={resolveMediaUrl(user.avatarUrl)} alt="" onError={() => setFailedAvatar(user.avatarUrl || null)} /> : <User size={19} />}</span><ChevronDown size={12} /></DropdownMenuTrigger>
+                                    <DropdownMenuTrigger className="desktop-account-trigger" aria-label={ui("Mi cuenta")}><span className="desktop-account-avatar">{user?.avatarUrl && user.avatarUrl !== failedAvatar ? <img src={resolveMediaUrl(user.avatarUrl)} alt="" onError={() => setFailedAvatar(user.avatarUrl || null)} /> : <User size={19} />}</span><ChevronDown size={12} /></DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" sideOffset={12} className="desktop-account-menu">
                                         <DropdownMenuLabel className="p-3 pb-2.5">
                                             <div className="flex items-center justify-between gap-2 mb-1">
                                                 <span className="desktop-account-name font-semibold text-[13.5px] text-foreground tracking-tight truncate">
-                                                    {user?.username || 'Mi cuenta'}
+                                                    {user?.username || ui("Mi cuenta")}
                                                 </span>
                                                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/25 shrink-0">
-                                                    🔥 {streak}d
-                                                </span>
+                                                    🔥 {streak}{ui("d")}</span>
                                             </div>
                                             <div className="flex items-center gap-1.5">
                                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
@@ -324,7 +315,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                                 <span className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-500/10 text-blue-500 dark:text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors shrink-0">
                                                     <User size={13} />
                                                 </span>
-                                                <span className="font-medium text-[13px]">Mi perfil</span>
+                                                <span className="font-medium text-[13px]">{ui("Mi perfil")}</span>
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
@@ -332,7 +323,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                                 <span className="flex items-center justify-center w-6 h-6 rounded-md bg-violet-500/10 text-violet-500 dark:text-violet-400 group-hover:bg-violet-500 group-hover:text-white transition-colors shrink-0">
                                                     <Settings size={13} />
                                                 </span>
-                                                <span className="font-medium text-[13px]">Configuraciones</span>
+                                                <span className="font-medium text-[13px]">{ui("Configuraciones")}</span>
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
@@ -340,7 +331,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                                 <span className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors shrink-0">
                                                     <Briefcase size={13} />
                                                 </span>
-                                                <span className="font-medium text-[13px]">Mi plan y facturación</span>
+                                                <span className="font-medium text-[13px]">{ui("Mi plan y facturación")}</span>
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
@@ -348,7 +339,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                                 <span className="flex items-center justify-center w-6 h-6 rounded-md bg-amber-500/10 text-amber-500 dark:text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-colors shrink-0">
                                                     <Plus size={13} />
                                                 </span>
-                                                <span className="font-medium text-[13px]">Crear publicación</span>
+                                                <span className="font-medium text-[13px]">{ui("Crear publicación")}</span>
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
@@ -356,14 +347,14 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                             <span className="flex items-center justify-center w-6 h-6 rounded-md bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors shrink-0">
                                                 {isLight ? <Moon size={13} /> : <Sun size={13} />}
                                             </span>
-                                            <span className="font-medium text-[13px]">{isLight ? 'Modo oscuro' : 'Modo claro'}</span>
+                                            <span className="font-medium text-[13px]">{isLight ? ui("Modo oscuro") : ui("Modo claro")}</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
                                             <Link to="/help" className="flex items-center gap-2.5 py-2 cursor-pointer group">
                                                 <span className="flex items-center justify-center w-6 h-6 rounded-md bg-sky-500/10 text-sky-500 dark:text-sky-400 group-hover:bg-sky-500 group-hover:text-white transition-colors shrink-0">
                                                     <HelpCircle size={13} />
                                                 </span>
-                                                <span className="font-medium text-[13px]">Ayuda</span>
+                                                <span className="font-medium text-[13px]">{ui("Ayuda")}</span>
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
@@ -371,7 +362,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                                 <span className="flex items-center justify-center w-6 h-6 rounded-md bg-teal-500/10 text-teal-500 dark:text-teal-400 group-hover:bg-teal-500 group-hover:text-white transition-colors shrink-0">
                                                     <Users size={13} />
                                                 </span>
-                                                <span className="font-medium text-[13px]">Sobre Finix</span>
+                                                <span className="font-medium text-[13px]">{ui("Sobre Finix")}</span>
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
@@ -379,7 +370,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                             <span className="flex items-center justify-center w-6 h-6 rounded-md bg-rose-500/10 text-rose-500 dark:text-rose-400 group-hover:bg-rose-500 group-hover:text-white transition-colors shrink-0">
                                                 <LogOut size={13} />
                                             </span>
-                                            <span className="font-medium text-[13px]">Cerrar sesión</span>
+                                            <span className="font-medium text-[13px]">{ui("Cerrar sesión")}</span>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -387,8 +378,8 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                         </>
                     ) : (
                         <div className="desktop-header__actions desktop-header__actions--guest flex items-center gap-2.5 sm:gap-3">
-                            <Link to="/pricing#planes" className="desktop-plan-link text-sm font-semibold px-2 py-1 text-muted-foreground hover:text-foreground transition-colors">Planes</Link>
-                            <Link to="/login" className="desktop-auth-login" title="Iniciar sesión">Iniciar sesión</Link>
+                            <Link to="/pricing#planes" className="desktop-plan-link text-sm font-semibold px-2 py-1 text-muted-foreground hover:text-foreground transition-colors">{ui("Planes")}</Link>
+                            <Link to="/login" className="desktop-auth-login" title={ui("Iniciar sesión")}>{ui("Iniciar sesión")}</Link>
                         </div>
                     )}
                 </div>

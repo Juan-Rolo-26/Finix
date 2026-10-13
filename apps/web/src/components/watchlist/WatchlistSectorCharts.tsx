@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useMemo } from 'react';
 import SymbolLogo from '@/components/SymbolLogo';
 import {
@@ -108,16 +109,13 @@ export default function WatchlistSectorCharts({ items, onItemClick }: WatchlistS
                                 </div>
                                 <div>
                                     <h4 className="text-base font-bold text-foreground">
-                                        Distribución por Sector
-                                    </h4>
+                                        {" "}<FinixUiText text={"Distribución por Sector"} />{" "}</h4>
                                     <p className="text-xs text-muted-foreground">
-                                        Concentración de empresas en tu seguimiento
-                                    </p>
+                                        {" "}<FinixUiText text={"Concentración de empresas en tu seguimiento"} />{" "}</p>
                                 </div>
                             </div>
                             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-secondary text-foreground">
-                                {sectorStats.length} sectores
-                            </span>
+                                {sectorStats.length} {" "}<FinixUiText text={"sectores"} />{" "}</span>
                         </div>
 
                         {/* Multi-segment visual progress bar */}
@@ -182,73 +180,62 @@ export default function WatchlistSectorCharts({ items, onItemClick }: WatchlistS
                                 </div>
                                 <div>
                                     <h4 className="text-base font-bold text-foreground">
-                                        Pipeline de Análisis
-                                    </h4>
+                                        {" "}<FinixUiText text={"Pipeline de Análisis"} />{" "}</h4>
                                     <p className="text-xs text-muted-foreground">
-                                        Estado de avance de tus tesis de inversión
-                                    </p>
+                                        {" "}<FinixUiText text={"Estado de avance de tus tesis de inversión"} />{" "}</p>
                                 </div>
                             </div>
                             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-secondary text-foreground font-mono">
-                                {items.length} total
-                            </span>
+                                {items.length} {" "}<FinixUiText text={"total"} />{" "}</span>
                         </div>
 
                         {/* Status Grid Cards */}
                         <div className="grid grid-cols-2 gap-3 my-4">
                             <div className="p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 flex flex-col justify-between">
                                 <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                                    Investigando
-                                </span>
+                                    {" "}<FinixUiText text={"Investigando"} />{" "}</span>
                                 <div className="text-2xl font-black font-mono text-foreground mt-2">
                                     {statusStats.RESEARCHING || 0}
                                 </div>
                                 <span className="text-[11px] text-muted-foreground mt-1">
-                                    Tesis en desarrollo
-                                </span>
+                                    {" "}<FinixUiText text={"Tesis en desarrollo"} />{" "}</span>
                             </div>
 
                             <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 flex flex-col justify-between">
                                 <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
-                                    Esperando Precio
-                                </span>
+                                    {" "}<FinixUiText text={"Esperando Precio"} />{" "}</span>
                                 <div className="text-2xl font-black font-mono text-foreground mt-2">
                                     {statusStats.WAITING_PRICE || 0}
                                 </div>
                                 <span className="text-[11px] text-muted-foreground mt-1">
-                                    Cerca de punto de entrada
-                                </span>
+                                    {" "}<FinixUiText text={"Cerca de punto de entrada"} />{" "}</span>
                             </div>
 
                             <div className="p-4 rounded-xl border border-purple-500/20 bg-purple-500/5 flex flex-col justify-between">
                                 <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
-                                    Resultados
-                                </span>
+                                    {" "}<FinixUiText text={"Resultados"} />{" "}</span>
                                 <div className="text-2xl font-black font-mono text-foreground mt-2">
                                     {statusStats.EARNINGS || 0}
                                 </div>
                                 <span className="text-[11px] text-muted-foreground mt-1">
-                                    Siguiendo balances trimestrales
-                                </span>
+                                    {" "}<FinixUiText text={"Siguiendo balances trimestrales"} />{" "}</span>
                             </div>
 
                             <div className="p-4 rounded-xl border border-border/60 bg-secondary/30 flex flex-col justify-between">
                                 <span className="text-xs font-semibold text-muted-foreground">
-                                    Descartadas
-                                </span>
+                                    {" "}<FinixUiText text={"Descartadas"} />{" "}</span>
                                 <div className="text-2xl font-black font-mono text-foreground mt-2">
                                     {statusStats.DISCARDED || 0}
                                 </div>
                                 <span className="text-[11px] text-muted-foreground mt-1">
-                                    Sin convicción actual
-                                </span>
+                                    {" "}<FinixUiText text={"Sin convicción actual"} />{" "}</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-border/40 text-xs text-muted-foreground flex items-center gap-1.5">
                         <CheckCircle2 size={14} className="text-primary shrink-0" />
-                        <span>Organiza tus activos asignándoles un estado en la ficha técnica.</span>
+                        <span>{""}<FinixUiText text={"Organiza tus activos asignándoles un estado en la ficha técnica."} />{""}</span>
                     </div>
                 </div>
             </div>
@@ -262,28 +249,22 @@ export default function WatchlistSectorCharts({ items, onItemClick }: WatchlistS
                         </div>
                         <div>
                             <h4 className="text-base font-bold text-foreground">
-                                Ranking de Potencial de Suba (Target Price Upside)
-                            </h4>
+                                {" "}<FinixUiText text={"Ranking de Potencial de Suba (Target Price Upside)"} />{" "}</h4>
                             <p className="text-xs text-muted-foreground">
-                                Distancia porcentual entre la cotización de mercado y tu precio objetivo fijado
-                            </p>
+                                {" "}<FinixUiText text={"Distancia porcentual entre la cotización de mercado y tu precio objetivo fijado"} />{" "}</p>
                         </div>
                     </div>
                     <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-secondary text-muted-foreground">
-                        {upsideRanking.length} con objetivo
-                    </span>
+                        {upsideRanking.length} {" "}<FinixUiText text={"con objetivo"} />{" "}</span>
                 </div>
 
                 {upsideRanking.length === 0 ? (
                     <div className="p-8 text-center border border-dashed border-border/60 rounded-xl">
                         <Target size={28} className="mx-auto text-muted-foreground/40 mb-2" />
                         <p className="text-sm font-semibold text-foreground">
-                            Aún no definiste precios objetivo
-                        </p>
+                            {" "}<FinixUiText text={"Aún no definiste precios objetivo"} />{" "}</p>
                         <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                            Hacé clic en cualquier activo de tu lista y configurá un precio objetivo para
-                            visualizar el ranking de potencial de suba aquí.
-                        </p>
+                            {" "}<FinixUiText text={"Hacé clic en cualquier activo de tu lista y configurá un precio objetivo para visualizar el ranking de potencial de suba aquí."} />{" "}</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -306,7 +287,7 @@ export default function WatchlistSectorCharts({ items, onItemClick }: WatchlistS
                                                 </span>
                                             </div>
                                             <div className="text-xs text-muted-foreground line-clamp-1">
-                                                Objetivo: ${item.targetPrice?.toFixed(2)}
+                                                {" "}<FinixUiText text={"Objetivo: $"} />{""}{item.targetPrice?.toFixed(2)}
                                             </div>
                                         </div>
                                     </div>
@@ -334,8 +315,7 @@ export default function WatchlistSectorCharts({ items, onItemClick }: WatchlistS
                                         >
                                             {isPositive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
                                             {isPositive ? '+' : ''}
-                                            {item.upside.toFixed(1)}% Potencial
-                                        </span>
+                                            {item.upside.toFixed(1)}{""}<FinixUiText text={"% Potencial"} />{" "}</span>
                                     </div>
                                 </div>
                             );

@@ -1,3 +1,4 @@
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import React, { ReactNode, useMemo } from 'react';
 import {
     PieChart,
@@ -145,6 +146,8 @@ export const AllocationChart = ({
     data: Record<string, number>;
     totalValue: number;
 } & BaseChartProps) => {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const chartData = useMemo(() => {
         const safeTotal = totalValue > 0
             ? totalValue
@@ -168,7 +171,7 @@ export const AllocationChart = ({
 
     return (
         <ChartShell
-            title="Distribucion de Activos"
+            title={finixUi("Distribucion de Activos")}
             description="Composicion por clase de activo"
             embedded={embedded}
         >
@@ -221,6 +224,8 @@ export const TopAssetsChart = ({
     data: Record<string, number>;
     totalValue: number;
 } & BaseChartProps) => {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const chartData = useMemo(() => {
         const safeTotal = totalValue > 0
             ? totalValue
@@ -246,7 +251,7 @@ export const TopAssetsChart = ({
 
     return (
         <ChartShell
-            title="Top 5 Activos"
+            title={finixUi("Top 5 Activos")}
             description="Mayor peso en el portafolio"
             embedded={embedded}
         >
@@ -312,6 +317,8 @@ export const CapitalEvolutionChart = ({
 }: {
     movements: Array<{ fecha: string; total: number; tipoMovimiento: string }>;
 } & BaseChartProps) => {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const chartData = useMemo(() => {
         const sorted = [...movements].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
@@ -332,7 +339,7 @@ export const CapitalEvolutionChart = ({
 
     return (
         <ChartShell
-            title="Evolucion de Capital Invertido"
+            title={finixUi("Evolucion de Capital Invertido")}
             description="Crecimiento acumulado de compras y ventas"
             embedded={embedded}
         >

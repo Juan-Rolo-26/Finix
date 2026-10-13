@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import WatchlistLimitsSummary from '@/components/watchlist/WatchlistLimitsSummary';
 import { useState, useMemo, useEffect } from 'react';
 import { Search, HelpCircle, Mail, ChevronRight, X } from 'lucide-react';
@@ -155,14 +157,14 @@ const FAQS: FaqItem[] = [
         question: '¿Qué contenido está prohibido?',
         answer: (
             <ul className="list-disc pl-4 space-y-1">
-                <li>Información falsa, engañosa o presentada como certeza cuando no lo es</li>
-                <li>Promesas de rentabilidades garantizadas o recomendaciones de inversión presentadas como personalizadas</li>
-                <li>Manipulación de mercado, pump &amp; dump o esquemas similares</li>
-                <li>Spam, phishing, malware o contenido malicioso</li>
-                <li>Suplantación de identidad o fraude</li>
-                <li>Acoso, amenazas, discriminación o abuso hacia otros usuarios</li>
-                <li>Contenido que infrinja derechos de terceros</li>
-                <li>Promoción de actividades ilegales</li>
+                <li>{""}<FinixUiText text={"Información falsa, engañosa o presentada como certeza cuando no lo es"} />{""}</li>
+                <li>{""}<FinixUiText text={"Promesas de rentabilidades garantizadas o recomendaciones de inversión presentadas como personalizadas"} />{""}</li>
+                <li>{""}<FinixUiText text={"Manipulación de mercado, pump &amp; dump o esquemas similares"} />{""}</li>
+                <li>{""}<FinixUiText text={"Spam, phishing, malware o contenido malicioso"} />{""}</li>
+                <li>{""}<FinixUiText text={"Suplantación de identidad o fraude"} />{""}</li>
+                <li>{""}<FinixUiText text={"Acoso, amenazas, discriminación o abuso hacia otros usuarios"} />{""}</li>
+                <li>{""}<FinixUiText text={"Contenido que infrinja derechos de terceros"} />{""}</li>
+                <li>{""}<FinixUiText text={"Promoción de actividades ilegales"} />{""}</li>
             </ul>
         ),
     },
@@ -198,11 +200,11 @@ const FAQS: FaqItem[] = [
         question: '¿Qué funcionalidades incluye Finix Pro?',
         answer: (
             <ul className="list-disc pl-4 space-y-1">
-                <li>Rankings ampliados de mejores y peores rendimientos (Top 10, Top 25, Top 50)</li>
-                <li>Estimaciones de consenso y métricas de sorpresa en resultados trimestrales</li>
-                <li>Acceso a análisis avanzados de empresas y activos</li>
-                <li>Insignia PRO en el perfil</li>
-                <li>Acceso prioritario a nuevas funcionalidades</li>
+                <li>{""}<FinixUiText text={"Rankings ampliados de mejores y peores rendimientos (Top 10, Top 25, Top 50)"} />{""}</li>
+                <li>{""}<FinixUiText text={"Estimaciones de consenso y métricas de sorpresa en resultados trimestrales"} />{""}</li>
+                <li>{""}<FinixUiText text={"Acceso a análisis avanzados de empresas y activos"} />{""}</li>
+                <li>{""}<FinixUiText text={"Insignia PRO en el perfil"} />{""}</li>
+                <li>{""}<FinixUiText text={"Acceso prioritario a nuevas funcionalidades"} />{""}</li>
             </ul>
         ),
     },
@@ -292,11 +294,11 @@ const FAQS: FaqItem[] = [
         question: '¿Cómo puedo proteger mi cuenta?',
         answer: (
             <ul className="list-disc pl-4 space-y-1">
-                <li>Usá una contraseña única y difícil de adivinar para Finix</li>
-                <li>No compartas tus credenciales con nadie</li>
-                <li>Cerrá sesión si usás dispositivos compartidos</li>
-                <li>Si notás actividad sospechosa, cambiá tu contraseña de inmediato</li>
-                <li>Verificá que el sitio que visitás sea el oficial de Finix</li>
+                <li>{""}<FinixUiText text={"Usá una contraseña única y difícil de adivinar para Finix"} />{""}</li>
+                <li>{""}<FinixUiText text={"No compartas tus credenciales con nadie"} />{""}</li>
+                <li>{""}<FinixUiText text={"Cerrá sesión si usás dispositivos compartidos"} />{""}</li>
+                <li>{""}<FinixUiText text={"Si notás actividad sospechosa, cambiá tu contraseña de inmediato"} />{""}</li>
+                <li>{""}<FinixUiText text={"Verificá que el sitio que visitás sea el oficial de Finix"} />{""}</li>
             </ul>
         ),
     },
@@ -360,6 +362,8 @@ function FaqAccordion({ faq }: { faq: FaqItem }) {
 
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function Help() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -390,21 +394,21 @@ export default function Help() {
     return (
         <div className="info-page min-h-screen finix-unified-bg text-foreground font-sans selection:bg-primary/30">
             {/* ── Navbar ── */}
-            <nav aria-label="Volver a Finix" className={`info-page__mobile-nav fixed top-0 w-full z-50 border-b transition-all ${scrolled ? 'border-border/50 bg-background/80 backdrop-blur-xl' : 'border-transparent bg-transparent'}`}>
+            <nav aria-label={finixUi("Volver a Finix")} className={`info-page__mobile-nav fixed top-0 w-full z-50 border-b transition-all ${scrolled ? 'border-border/50 bg-background/80 backdrop-blur-xl' : 'border-transparent bg-transparent'}`}>
                 <div className="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
                     <button
                         onClick={() => navigate(-1)}
                         className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label="Volver"
+                        aria-label={finixUi("Volver")}
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="hidden sm:inline">Volver</span>
+                        <span className="hidden sm:inline">{""}<FinixUiText text={"Volver"} />{""}</span>
                     </button>
                     <Link to="/dashboard" className="flex items-center gap-3 group cursor-pointer">
                         <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border border-black/20 dark:border-white/30 bg-white dark:bg-zinc-900 shadow-2xs transition-transform group-hover:scale-105">
-                            <img src="/logo-small.webp" alt="Finix" className="h-5 w-5 object-contain" />
+                            <img src="/logo-small.webp" alt={finixUi("Finix")} className="h-5 w-5 object-contain" />
                         </div>
-                        <span className="font-heading font-black text-xl tracking-tight text-foreground">Finix</span>
+                        <span className="font-heading font-black text-xl tracking-tight text-foreground">{""}<FinixUiText text={"Finix"} />{""}</span>
                     </Link>
                 </div>
             </nav>
@@ -419,11 +423,9 @@ export default function Help() {
                         <HelpCircle className="w-6 h-6" />
                     </div>
                     <h1 className="text-3xl sm:text-4xl font-heading font-black tracking-tight">
-                        Centro de Ayuda
-                    </h1>
+                        {" "}<FinixUiText text={"Centro de Ayuda"} />{" "}</h1>
                     <p className="text-muted-foreground text-sm sm:text-base">
-                        Encontrá respuestas sobre Finix, sus funcionalidades, tu cuenta y el funcionamiento de la plataforma.
-                    </p>
+                        {" "}<FinixUiText text={"Encontrá respuestas sobre Finix, sus funcionalidades, tu cuenta y el funcionamiento de la plataforma."} />{" "}</p>
 
                     {/* ── Search ── */}
                     <div className="relative max-w-lg mx-auto pt-2">
@@ -432,14 +434,14 @@ export default function Help() {
                             type="search"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            placeholder="Buscar preguntas (ej: contraseña, portafolio, pro, comunidad...)"
-                            aria-label="Buscar preguntas frecuentes"
+                            placeholder={finixUi("Buscar preguntas (ej: contraseña, portafolio, pro, comunidad...)")}
+                            aria-label={finixUi("Buscar preguntas frecuentes")}
                             className="w-full pl-11 pr-10 py-3 rounded-2xl bg-card border border-border/80 focus:border-primary focus:ring-1 focus:ring-primary text-sm transition-all shadow-sm outline-none"
                         />
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                aria-label="Limpiar búsqueda"
+                                aria-label={finixUi("Limpiar búsqueda")}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                             >
                                 <X className="w-4 h-4" />
@@ -453,7 +455,7 @@ export default function Help() {
                         {/* ── Category filters ── */}
                         <div
                             role="tablist"
-                            aria-label="Categorías de ayuda"
+                            aria-label={finixUi("Categorías de ayuda")}
                             className="flex flex-row flex-wrap gap-2 lg:flex-col lg:gap-1 pb-3 lg:pb-0 mb-6 lg:mb-0 overflow-x-auto scrollbar-hide"
                         >
                             {CATEGORIES.map(cat => {
@@ -471,7 +473,7 @@ export default function Help() {
                                         }`}
                                     >
                                         <span role="img" aria-hidden="true" className="lg:hidden">{cat.icon}</span>
-                                        {cat.label}
+                                        {<FinixUiText text={cat.label} />}
                                     </button>
                                 );
                             })}
@@ -481,8 +483,7 @@ export default function Help() {
                         {/* ── FAQ results info ── */}
                         {searchQuery && (
                             <p className="text-xs text-muted-foreground mb-4">
-                                {filteredFaqs.length} resultado{filteredFaqs.length !== 1 ? 's' : ''} para &ldquo;{searchQuery}&rdquo;
-                            </p>
+                                {filteredFaqs.length} {" "}<FinixUiText text={"resultado"} />{""}{filteredFaqs.length !== 1 ? 's' : ''} {" "}<FinixUiText text={"para &ldquo;"} />{""}{searchQuery}{""}<FinixUiText text={"&rdquo;"} />{" "}</p>
                         )}
 
                         {/* ── FAQ list ── */}
@@ -490,14 +491,12 @@ export default function Help() {
                             {filteredFaqs.length === 0 ? (
                                 <div className="text-center py-16 rounded-3xl bg-card border border-border/60">
                                     <p className="text-sm font-semibold text-muted-foreground mb-2">
-                                        No encontramos resultados para tu búsqueda.
-                                    </p>
+                                        {" "}<FinixUiText text={"No encontramos resultados para tu búsqueda."} />{" "}</p>
                                     <button
                                         onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}
                                         className="text-xs font-bold text-primary hover:underline"
                                     >
-                                        Restablecer filtros
-                                    </button>
+                                        {" "}<FinixUiText text={"Restablecer filtros"} />{" "}</button>
                                 </div>
                             ) : (
                                 filteredFaqs.map(faq => (
@@ -511,8 +510,7 @@ export default function Help() {
                         {/* ── Financial disclaimer ── */}
                         <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-5 mb-10">
                             <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 leading-relaxed">
-                                ⚠️ <strong>Aviso importante:</strong> Finix ofrece información general, herramientas y contenido educativo relacionados con finanzas y mercados. La información disponible no constituye asesoramiento financiero, recomendación de inversión, ni una invitación a comprar o vender activos. Las decisiones de inversión son responsabilidad exclusiva del usuario y pueden implicar pérdidas.
-                            </p>
+                                ⚠️ <strong>{""}<FinixUiText text={"Aviso importante:"} />{""}</strong> {" "}<FinixUiText text={"Finix ofrece información general, herramientas y contenido educativo relacionados con finanzas y mercados. La información disponible no constituye asesoramiento financiero, recomendación de inversión, ni una invitación a comprar o vender activos. Las decisiones de inversión son responsabilidad exclusiva del usuario y pueden implicar pérdidas."} />{" "}</p>
                         </div>
 
                         {/* ── Contact card ── */}
@@ -523,12 +521,11 @@ export default function Help() {
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-primary text-xs font-bold uppercase tracking-wider">
                                     <Mail className="w-4 h-4" />
-                                    <span>¿No encontraste lo que buscabas?</span>
+                                    <span>{""}<FinixUiText text={"¿No encontraste lo que buscabas?"} />{""}</span>
                                 </div>
-                                <h2 className="text-xl font-heading font-bold">Contactar a Finix</h2>
+                                <h2 className="text-xl font-heading font-bold">{""}<FinixUiText text={"Contactar a Finix"} />{""}</h2>
                                 <p className="text-sm text-muted-foreground max-w-md">
-                                    Nuestro equipo responde generalmente en menos de 24 horas hábiles. Describí tu consulta con el mayor detalle posible.
-                                </p>
+                                    {" "}<FinixUiText text={"Nuestro equipo responde generalmente en menos de 24 horas hábiles. Describí tu consulta con el mayor detalle posible."} />{" "}</p>
                             </div>
                             <div className="flex flex-col items-stretch gap-2 sm:items-end shrink-0">
                                 <Link
@@ -536,14 +533,13 @@ export default function Help() {
                                     className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
                                 >
                                     <Mail className="w-4 h-4" />
-                                    Enviar consulta
-                                </Link>
+                                    {" "}<FinixUiText text={"Enviar consulta"} />{" "}</Link>
                                 <a
                                     href={`mailto:${CONTACT_EMAIL}?subject=Consulta%20sobre%20Finix`}
                                     className="text-xs text-muted-foreground text-center sm:text-right hover:text-primary transition-colors"
                                     aria-label={`Enviar un correo a ${CONTACT_EMAIL}`}
                                 >
-                                    También podés escribir a {CONTACT_EMAIL}
+                                    {" "}<FinixUiText text={"También podés escribir a"} />{" "}{CONTACT_EMAIL}
                                 </a>
                             </div>
                         </div>
@@ -553,11 +549,11 @@ export default function Help() {
 
                         {/* ── Footer ── */}
                         <footer className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-                            <p>© {new Date().getFullYear()} Finix. Todos los derechos reservados.</p>
+                            <p>© {new Date().getFullYear()} {" "}<FinixUiText text={"Finix. Todos los derechos reservados."} />{""}</p>
                             <div className="flex flex-wrap items-center justify-center gap-4">
-                                <Link to="/terms" className="hover:text-foreground transition-colors">Términos</Link>
-                                <Link to="/privacy" className="hover:text-foreground transition-colors">Privacidad</Link>
-                                <Link to="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>
+                                <Link to="/terms" className="hover:text-foreground transition-colors">{""}<FinixUiText text={"Términos"} />{""}</Link>
+                                <Link to="/privacy" className="hover:text-foreground transition-colors">{""}<FinixUiText text={"Privacidad"} />{""}</Link>
+                                <Link to="/cookies" className="hover:text-foreground transition-colors">{""}<FinixUiText text={"Cookies"} />{""}</Link>
                             </div>
                         </footer>
                     </div>
@@ -568,7 +564,7 @@ export default function Help() {
             {showBackTop && (
                 <button
                     onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                    aria-label="Volver arriba"
+                    aria-label={finixUi("Volver arriba")}
                     className="fixed bottom-6 right-6 z-50 w-10 h-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:opacity-90 transition-all"
                 >
                     <ArrowUp className="w-4 h-4" />

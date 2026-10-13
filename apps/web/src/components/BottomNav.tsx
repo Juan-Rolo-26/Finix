@@ -1,3 +1,4 @@
+import { useTranslation } from '@/i18n';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -45,30 +46,33 @@ const mainTabs = [
 ];
 
 export function FinanceMobileNav({ location, navigate }: { location: ReturnType<typeof useLocation>; navigate: ReturnType<typeof useNavigate> }) {
+    const { ui } = useTranslation();
     const items = [
-        { label: 'Inicio', path: '/finanzas', icon: LayoutDashboard },
-        { label: 'Movimientos', path: '/finanzas/movimientos', icon: Receipt },
-        { label: 'Informes', path: '/finanzas/analytics', icon: AreaChart },
-        { label: 'Perfil', path: '/profile', icon: User },
+        { label: ui("Inicio"), path: '/finanzas', icon: LayoutDashboard },
+        { label: ui("Movimientos"), path: '/finanzas/movimientos', icon: Receipt },
+        { label: ui("Informes"), path: '/finanzas/analytics', icon: AreaChart },
+        { label: ui("Perfil"), path: '/profile', icon: User },
     ];
     const active = (path: string) => path === '/finanzas' ? location.pathname === path : location.pathname.startsWith(path);
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label="Navegación de finanzas">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label={ui("Navegación de finanzas")}>
             <div className="mx-auto grid h-[68px] max-w-lg grid-cols-5 items-center px-2">
-                {items.slice(0, 2).map(({ label, path, icon: Icon }) => <FinanceMobileNavItem key={path} label={label} path={path} Icon={Icon} isActive={active(path)} onNavigate={navigate} />)}
-                <button type="button" onClick={() => navigate('/finanzas/movimientos?new=expense')} className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-95" aria-label="Agregar movimiento"><Plus className="h-5 w-5" /></button>
-                {items.slice(2).map(({ label, path, icon: Icon }) => <FinanceMobileNavItem key={path} label={label} path={path} Icon={Icon} isActive={active(path)} onNavigate={navigate} />)}
+                {items.slice(0, 2).map(({ label, path, icon: Icon }) => <FinanceMobileNavItem key={path} label={ui(label)} path={path} Icon={Icon} isActive={active(path)} onNavigate={navigate} />)}
+                <button type="button" onClick={() => navigate('/finanzas/movimientos?new=expense')} className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-95" aria-label={ui("Agregar movimiento")}><Plus className="h-5 w-5" /></button>
+                {items.slice(2).map(({ label, path, icon: Icon }) => <FinanceMobileNavItem key={path} label={ui(label)} path={path} Icon={Icon} isActive={active(path)} onNavigate={navigate} />)}
             </div>
         </nav>
     );
 }
 
 function FinanceMobileNavItem({ label, path, Icon, isActive, onNavigate }: { label: string; path: string; Icon: ComponentType<{ className?: string }>; isActive: boolean; onNavigate: (path: string) => void }) {
-    return <button type="button" onClick={() => onNavigate(path)} className={cn('flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-semibold transition-colors', isActive ? 'text-primary' : 'text-muted-foreground')} aria-current={isActive ? 'page' : undefined}><Icon className="h-5 w-5" /><span>{label}</span></button>;
+    const { ui } = useTranslation();
+    return <button type="button" onClick={() => onNavigate(path)} className={cn('flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-semibold transition-colors', isActive ? 'text-primary' : 'text-muted-foreground')} aria-current={isActive ? 'page' : undefined}><Icon className="h-5 w-5" /><span>{ui(label)}</span></button>;
 }
 
 export function BottomNav() {
+    const { ui } = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
     const { logout, user } = useAuthStore();
@@ -120,16 +124,16 @@ export function BottomNav() {
     const moreActive = ['/laboratorio', '/explore', '/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', ...(isEducationEnabled() ? ['/educativa'] : []), '/profile', '/settings', '/notifications'].some(p => isActive(p));
 
     const moreLinks = [
-        { label: 'Laboratorio Financiero', path: '/laboratorio', icon: FlaskConical },
-        { label: 'Explorar',  path: '/explore',  icon: Compass     },
-        { label: 'Mercado',   path: '/market',   icon: TrendingUp  },
-        ...(isWatchlistEnabled() ? [{ label: 'Seguimiento', path: '/market/seguimiento', icon: Bookmark }] : []),
+        { label: ui("Laboratorio Financiero"), path: '/laboratorio', icon: FlaskConical },
+        { label: ui("Explorar"),  path: '/explore',  icon: Compass     },
+        { label: ui("Mercado"),   path: '/market',   icon: TrendingUp  },
+        ...(isWatchlistEnabled() ? [{ label: ui("Seguimiento"), path: '/market/seguimiento', icon: Bookmark }] : []),
         ...(isEducationEnabled() ? [{ label: 'Educativa', path: '/educativa', icon: GraduationCap }] : []),
-        { label: 'Calendario', path: '/calendario', icon: Calendar },
-        { label: 'Portafolio',path: '/portfolio', icon: Briefcase   },
-        { label: 'Noticias',  path: '/news',     icon: Newspaper   },
-        { label: 'Análisis',  path: '/analysis', icon: AreaChart   },
-        { label: 'Comunidades', path: '/comunidades', icon: Users },
+        { label: ui("Calendario"), path: '/calendario', icon: Calendar },
+        { label: ui("Portafolio"),path: '/portfolio', icon: Briefcase   },
+        { label: ui("Noticias"),  path: '/news',     icon: Newspaper   },
+        { label: ui("Análisis"),  path: '/analysis', icon: AreaChart   },
+        { label: ui("Comunidades"), path: '/comunidades', icon: Users },
         ...(user ? [
             { label: 'Mi Perfil', path: '/profile', icon: User },
             { label: 'Ajustes',   path: '/settings', icon: Settings },
@@ -165,7 +169,7 @@ export function BottomNav() {
                             <Link
                                 key={path}
                                 to={path}
-                                aria-label={label}
+                                aria-label={ui(label)}
                                 aria-current={active ? 'page' : undefined}
                                 className="relative flex flex-col items-center justify-center min-w-0 flex-1 min-h-12 h-auto rounded-xl touch-manipulation px-1 focus-visible:ring-2 focus-visible:ring-primary"
                             >
@@ -193,11 +197,11 @@ export function BottomNav() {
                                 >
                                     {shortLabel ? (
                                         <>
-                                            <span className="hidden min-[360px]:inline">{label}</span>
-                                            <span className="min-[360px]:hidden">{shortLabel}</span>
+                                            <span className="hidden min-[360px]:inline">{ui(label)}</span>
+                                            <span className="min-[360px]:hidden">{ui(shortLabel)}</span>
                                         </>
                                     ) : (
-                                        label
+                                        ui(label)
                                     )}
                                 </span>
                             </Link>
@@ -213,7 +217,7 @@ export function BottomNav() {
                             marginBottom: '2px',
                         }}
                         onClick={() => navigate('/explore?create=true')}
-                        aria-label="Crear publicación"
+                        aria-label={ui("Crear publicación")}
                     >
                         <Plus className="w-5 h-5" style={{ color: 'hsl(var(--primary-foreground))' }} />
                     </button>
@@ -226,7 +230,7 @@ export function BottomNav() {
                             <Link
                                 key={path}
                                 to={path}
-                                aria-label={label}
+                                aria-label={ui(label)}
                                 aria-current={active ? 'page' : undefined}
                                 className="relative flex flex-col items-center justify-center min-w-0 flex-1 min-h-12 h-auto rounded-xl touch-manipulation px-1 focus-visible:ring-2 focus-visible:ring-primary"
                             >
@@ -252,7 +256,7 @@ export function BottomNav() {
                                     className="text-[9px] min-[360px]:text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full truncate text-center leading-tight whitespace-nowrap"
                                     style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                                 >
-                                    {label}
+                                    {ui(label)}
                                 </span>
                                 {badge > 0 && (
                                     <motion.span
@@ -296,8 +300,7 @@ export function BottomNav() {
                             className="text-[9px] min-[360px]:text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full truncate text-center leading-tight whitespace-nowrap"
                             style={{ color: moreActive || isMoreOpen ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                         >
-                            Más
-                        </span>
+                            {ui("Más")}</span>
                     </button>
                 </div>
             </nav>
@@ -402,15 +405,13 @@ export function BottomNav() {
                                             onClick={() => setIsMoreOpen(false)}
                                             className="flex items-center justify-center gap-1.5 py-2.5 px-3 min-h-[44px] rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-md shadow-primary/20 hover:opacity-95 transition-all focus-visible:ring-2 focus-visible:ring-primary"
                                         >
-                                            Iniciar sesión
-                                        </Link>
+                                            {ui("Iniciar sesión")}</Link>
                                         <Link
                                             to="/login?mode=signup"
                                             onClick={() => setIsMoreOpen(false)}
                                             className="flex items-center justify-center gap-1.5 py-2.5 px-3 min-h-[44px] rounded-xl bg-secondary text-foreground font-semibold text-xs border border-border hover:bg-secondary/80 transition-all focus-visible:ring-2 focus-visible:ring-primary"
                                         >
-                                            Crear cuenta
-                                        </Link>
+                                            {ui("Crear cuenta")}</Link>
                                     </div>
                                 )}
 
@@ -456,7 +457,7 @@ export function BottomNav() {
                                                 <div className="w-8 h-8 rounded-full flex items-center justify-center border border-black/30 dark:border-white/35 bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs">
                                                     <Icon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                                 </div>
-                                                <span className="text-[11px] font-semibold text-center">{label}</span>
+                                                <span className="text-[11px] font-semibold text-center">{ui(label)}</span>
                                             </button>
                                         );
                                     })}
@@ -481,7 +482,7 @@ export function BottomNav() {
                                             ? <Moon className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
                                             : <Sun className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
                                         }
-                                        {isLight ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+                                        {isLight ? ui("Cambiar a modo oscuro") : ui("Cambiar a modo claro")}
                                     </button>
 
                                     {/* Auth action */}
@@ -497,16 +498,14 @@ export function BottomNav() {
                                             onClick={() => { logout(); setIsMoreOpen(false); }}
                                         >
                                             <LogOut className="w-4 h-4" />
-                                            Cerrar sesión
-                                        </button>
+                                            {ui("Cerrar sesión")}</button>
                                     ) : (
                                         <Link
                                             to="/login"
                                             onClick={() => setIsMoreOpen(false)}
                                             className="w-full flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] rounded-xl text-[13px] font-bold text-primary-foreground bg-primary transition-all focus-visible:ring-2 focus-visible:ring-primary"
                                         >
-                                            Iniciar sesión en Finix
-                                        </Link>
+                                            {ui("Iniciar sesión en Finix")}</Link>
                                     )}
                                 </div>
                             </div>

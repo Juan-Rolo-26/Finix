@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '@/lib/api';
 import SymbolLogo from '@/components/SymbolLogo';
@@ -145,8 +146,7 @@ export default function WatchlistValueCreation({
                 <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-xs flex flex-col justify-between">
                     <div className="flex items-center justify-between text-muted-foreground mb-3">
                         <span className="text-xs font-semibold uppercase tracking-wider">
-                            Crean Valor Económico
-                        </span>
+                            {" "}<FinixUiText text={"Crean Valor Económico"} />{" "}</span>
                         <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                             <TrendingUp size={16} />
                         </div>
@@ -159,16 +159,14 @@ export default function WatchlistValueCreation({
                             </span>
                         </div>
                         <p className="text-xs font-semibold text-emerald-500 mt-1 flex items-center gap-1">
-                            <CheckCircle2 size={13} /> {stats.creatingPct}% de tu seguimiento
-                        </p>
+                            <CheckCircle2 size={13} /> {stats.creatingPct}{""}<FinixUiText text={"% de tu seguimiento"} />{" "}</p>
                     </div>
                 </div>
 
                 <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-xs flex flex-col justify-between">
                     <div className="flex items-center justify-between text-muted-foreground mb-3">
                         <span className="text-xs font-semibold uppercase tracking-wider">
-                            Spread Promedio (ROIC - WACC)
-                        </span>
+                            {" "}<FinixUiText text={"Spread Promedio (ROIC - WACC)"} />{" "}</span>
                         <div
                             className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                                 stats.avgSpread >= 0
@@ -189,16 +187,14 @@ export default function WatchlistValueCreation({
                             {stats.avgSpread.toFixed(2)}%
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Retorno sobre el costo de capital
-                        </p>
+                            {" "}<FinixUiText text={"Retorno sobre el costo de capital"} />{" "}</p>
                     </div>
                 </div>
 
                 <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-xs flex flex-col justify-between">
                     <div className="flex items-center justify-between text-muted-foreground mb-3">
                         <span className="text-xs font-semibold uppercase tracking-wider">
-                            Destruyen Valor
-                        </span>
+                            {" "}<FinixUiText text={"Destruyen Valor"} />{" "}</span>
                         <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
                             <TrendingDown size={16} />
                         </div>
@@ -208,25 +204,21 @@ export default function WatchlistValueCreation({
                             {stats.destroying}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Empresas con ROIC menor a su WACC
-                        </p>
+                            {" "}<FinixUiText text={"Empresas con ROIC menor a su WACC"} />{" "}</p>
                     </div>
                 </div>
 
                 <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-xs flex flex-col justify-between">
                     <div className="flex items-center justify-between text-muted-foreground mb-3">
                         <span className="text-xs font-semibold uppercase tracking-wider">
-                            Concepto Financiero
-                        </span>
+                            {" "}<FinixUiText text={"Concepto Financiero"} />{" "}</span>
                         <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                             <HelpCircle size={16} />
                         </div>
                     </div>
                     <div>
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                            Si <strong>ROIC &gt; WACC</strong>, la empresa genera rentabilidad por
-                            encima de lo que le cuesta fondearse, expandiendo el valor intrínseco.
-                        </p>
+                            {" "}<FinixUiText text={"Si"} />{" "}<strong>{""}<FinixUiText text={"ROIC &gt; WACC"} />{""}</strong>{""}<FinixUiText text={", la empresa genera rentabilidad por encima de lo que le cuesta fondearse, expandiendo el valor intrínseco."} />{" "}</p>
                     </div>
                 </div>
             </div>
@@ -262,14 +254,14 @@ export default function WatchlistValueCreation({
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
                 >
                     <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
-                    <span>Actualizar métricas</span>
+                    <span>{""}<FinixUiText text={"Actualizar métricas"} />{""}</span>
                 </button>
             </div>
 
             {error && (
                 <div role="alert" className="p-3.5 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive text-xs font-semibold flex items-center justify-between">
                     <span>{error}</span>
-                    <button type="button" onClick={() => void loadData(true)} className="underline cursor-pointer">Reintentar</button>
+                    <button type="button" onClick={() => void loadData(true)} className="underline cursor-pointer">{""}<FinixUiText text={"Reintentar"} />{""}</button>
                 </div>
             )}
 
@@ -279,13 +271,13 @@ export default function WatchlistValueCreation({
                     <table className="w-full text-left border-collapse text-sm">
                         <thead>
                             <tr className="border-b border-border/60 bg-secondary/30 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                <th className="px-5 py-3.5">Empresa / Ticker</th>
-                                <th className="px-4 py-3.5">Sector</th>
-                                <th className="px-4 py-3.5 text-right">ROIC</th>
-                                <th className="px-4 py-3.5 text-right">WACC</th>
-                                <th className="px-4 py-3.5 text-right">Spread Económico</th>
-                                <th className="px-4 py-3.5 text-center">Diagnóstico</th>
-                                <th className="px-4 py-3.5 text-right">Acción</th>
+                                <th className="px-5 py-3.5">{""}<FinixUiText text={"Empresa / Ticker"} />{""}</th>
+                                <th className="px-4 py-3.5">{""}<FinixUiText text={"Sector"} />{""}</th>
+                                <th className="px-4 py-3.5 text-right">{""}<FinixUiText text={"ROIC"} />{""}</th>
+                                <th className="px-4 py-3.5 text-right">{""}<FinixUiText text={"WACC"} />{""}</th>
+                                <th className="px-4 py-3.5 text-right">{""}<FinixUiText text={"Spread Económico"} />{""}</th>
+                                <th className="px-4 py-3.5 text-center">{""}<FinixUiText text={"Diagnóstico"} />{""}</th>
+                                <th className="px-4 py-3.5 text-right">{""}<FinixUiText text={"Acción"} />{""}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border/40">
@@ -294,15 +286,14 @@ export default function WatchlistValueCreation({
                                     <td colSpan={7} className="text-center py-12 text-muted-foreground">
                                         <div className="flex items-center justify-center gap-2">
                                             <Loader2 size={16} className="animate-spin text-primary" />
-                                            <span>Calculando ROIC, WACC y creación de valor...</span>
+                                            <span>{""}<FinixUiText text={"Calculando ROIC, WACC y creación de valor..."} />{""}</span>
                                         </div>
                                     </td>
                                 </tr>
                             ) : filtered.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="text-center py-12 text-muted-foreground">
-                                        No hay activos en tu seguimiento que coincidan con este filtro.
-                                    </td>
+                                        {" "}<FinixUiText text={"No hay activos en tu seguimiento que coincidan con este filtro."} />{" "}</td>
                                 </tr>
                             ) : (
                                 filtered.map((item) => {
@@ -356,16 +347,13 @@ export default function WatchlistValueCreation({
                                             <td className="px-4 py-3.5 text-center">
                                                 {item.status === 'CREA_VALOR' ? (
                                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                                                        <ShieldCheck size={13} /> Crea Valor
-                                                    </span>
+                                                        <ShieldCheck size={13} /> {" "}<FinixUiText text={"Crea Valor"} />{" "}</span>
                                                 ) : item.status === 'DESTRUYE_VALOR' ? (
                                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
-                                                        <AlertTriangle size={13} /> Destruye Valor
-                                                    </span>
+                                                        <AlertTriangle size={13} /> {" "}<FinixUiText text={"Destruye Valor"} />{" "}</span>
                                                 ) : (
                                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                                                        <Minus size={13} /> Equilibrio
-                                                    </span>
+                                                        <Minus size={13} /> {" "}<FinixUiText text={"Equilibrio"} />{" "}</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3.5 text-right">
@@ -373,7 +361,7 @@ export default function WatchlistValueCreation({
                                                     type="button"
                                                     className="text-xs font-bold text-muted-foreground group-hover:text-primary transition-colors inline-flex items-center gap-1"
                                                 >
-                                                    <span>Detalle</span>
+                                                    <span>{""}<FinixUiText text={"Detalle"} />{""}</span>
                                                     <ExternalLink size={13} />
                                                 </button>
                                             </td>

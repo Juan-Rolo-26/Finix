@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /**
  * PortfolioTreemap.tsx — Portfolio allocation treemap using Apache ECharts.
  *
@@ -38,6 +40,8 @@ export function PortfolioTreemap({
   currency = 'USD',
   className,
 }: PortfolioTreemapProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const chartRef = useRef<HTMLDivElement>(null);
   const echartsInstanceRef = useRef<ECharts | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -224,7 +228,7 @@ export function PortfolioTreemap({
 
   return (
     <ChartContainer
-      title="Mapa de Posiciones"
+      title={finixUi("Mapa de Posiciones")}
       description="Tamaño = peso en portafolio · Color = rendimiento acumulado"
       loading={loading}
       error={error}
@@ -235,7 +239,7 @@ export function PortfolioTreemap({
       className={className}
       footer={
         <div className="flex flex-wrap items-center gap-2 text-[11px]">
-          <span className="text-muted-foreground font-medium mr-1">Rendimiento:</span>
+          <span className="text-muted-foreground font-medium mr-1">{""}<FinixUiText text={"Rendimiento:"} />{""}</span>
           {colorLegend.map((item) => (
             <span key={item.label} className="flex items-center gap-1">
               <span
@@ -254,7 +258,7 @@ export function PortfolioTreemap({
         className="w-full"
         style={{ height: '380px' }}
         role="img"
-        aria-label="Treemap del portafolio"
+        aria-label={finixUi("Treemap del portafolio")}
       />
     </ChartContainer>
   );

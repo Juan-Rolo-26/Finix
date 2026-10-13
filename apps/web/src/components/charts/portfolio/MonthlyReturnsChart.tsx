@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /**
  * MonthlyReturnsChart.tsx — Monthly returns bar chart
  *
@@ -63,6 +65,8 @@ export function MonthlyReturnsChart({
   onRetry,
   className,
 }: MonthlyReturnsChartProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const byYear = useMemo(() => groupReturnsByYear(data ?? []), [data]);
   const availableYears = useMemo(() => Array.from(byYear.keys()).sort((a, b) => b - a), [byYear]);
 
@@ -93,7 +97,7 @@ export function MonthlyReturnsChart({
 
   return (
     <ChartContainer
-      title="Retornos Mensuales"
+      title={finixUi("Retornos Mensuales")}
       description="Rendimiento porcentual mensual. Composición anualizada con interés compuesto."
       loading={loading}
       error={error}
@@ -104,7 +108,7 @@ export function MonthlyReturnsChart({
       ariaLabel="Gráfico de retornos mensuales"
       className={className}
       headerActions={
-        <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1" role="group" aria-label="Seleccionar año">
+        <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1" role="group" aria-label={finixUi("Seleccionar año")}>
           {availableYears.map((year) => (
             <button
               key={year}
@@ -127,7 +131,7 @@ export function MonthlyReturnsChart({
       {/* Annual return badge */}
       {annualReturn !== null && (
         <div className="px-5 py-3 sm:px-6 border-b border-border/20 flex items-center gap-3">
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Retorno {selectedYear}</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{""}<FinixUiText text={"Retorno"} />{" "}{selectedYear}</span>
           <span
             className={cn(
               'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-black tabular-nums border',
@@ -138,7 +142,7 @@ export function MonthlyReturnsChart({
           >
             {formatPercentage(annualReturn)}
           </span>
-          <span className="text-[10px] text-muted-foreground">(compuesto)</span>
+          <span className="text-[10px] text-muted-foreground">{""}<FinixUiText text={"(compuesto)"} />{""}</span>
         </div>
       )}
 

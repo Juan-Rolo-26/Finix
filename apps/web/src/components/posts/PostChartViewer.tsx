@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import React, { useState, useEffect, useRef } from 'react';
 import { FinixChartState, ChartAnalysisVersionEntity } from '@/lib/chart/finix-chart-types';
 import { getChartVersion, forkChartAnalysis } from '@/lib/chart/finix-chart-api';
@@ -20,6 +22,8 @@ export const PostChartViewer: React.FC<PostChartViewerProps> = ({
     authorUsername,
     height = 520,
 }) => {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [versionData, setVersionData] = useState<ChartAnalysisVersionEntity | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(!directChartState && !!versionId);
     const [isVisible, setIsVisible] = useState(false);
@@ -112,8 +116,7 @@ export const PostChartViewer: React.FC<PostChartViewerProps> = ({
                     className="w-full rounded-2xl bg-card/40 border border-border/40 flex items-center justify-center animate-pulse"
                 >
                     <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
-                        <BarChart2 className="w-4 h-4 text-primary" /> Cargando análisis técnico...
-                    </div>
+                        <BarChart2 className="w-4 h-4 text-primary" /> {" "}<FinixUiText text={"Cargando análisis técnico..."} />{" "}</div>
                 </div>
             ) : isLoading ? (
                 <div
@@ -121,9 +124,7 @@ export const PostChartViewer: React.FC<PostChartViewerProps> = ({
                     className="w-full rounded-2xl bg-card/40 border border-border/40 flex items-center justify-center"
                 >
                     <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
-                        <Loader2 className="w-4 h-4 animate-spin text-primary" /> Restaurando gráfico y
-                        drawings...
-                    </div>
+                        <Loader2 className="w-4 h-4 animate-spin text-primary" /> {" "}<FinixUiText text={"Restaurando gráfico y drawings..."} />{" "}</div>
                 </div>
             ) : (
                 <div className="relative group">
@@ -141,7 +142,7 @@ export const PostChartViewer: React.FC<PostChartViewerProps> = ({
                                 onClick={handleFork}
                                 disabled={isForking || forkSuccess}
                                 className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-background/80 hover:bg-background text-emerald-400 border border-emerald-500/30 rounded-lg shadow-md backdrop-blur-sm transition-all"
-                                title="Copiar este análisis a mis gráficos"
+                                title={finixUi("Copiar este análisis a mis gráficos")}
                             >
                                 {isForking ? (
                                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -157,7 +158,7 @@ export const PostChartViewer: React.FC<PostChartViewerProps> = ({
                             type="button"
                             onClick={() => setIsFullscreenOpen(true)}
                             className="p-1.5 bg-background/80 hover:bg-background text-foreground border border-border/60 rounded-lg shadow-md backdrop-blur-sm transition-all"
-                            title="Ver en pantalla completa"
+                            title={finixUi("Ver en pantalla completa")}
                         >
                             <Maximize2 className="w-3.5 h-3.5" />
                         </button>
@@ -177,7 +178,7 @@ export const PostChartViewer: React.FC<PostChartViewerProps> = ({
                                         </span>
                                         {authorUsername && (
                                             <span className="text-xs text-muted-foreground font-normal">
-                                                Análisis por @{authorUsername}
+                                                {" "}<FinixUiText text={"Análisis por @"} />{""}{authorUsername}
                                             </span>
                                         )}
                                     </div>
@@ -188,8 +189,7 @@ export const PostChartViewer: React.FC<PostChartViewerProps> = ({
                                             disabled={isForking || forkSuccess}
                                             className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl transition-all"
                                         >
-                                            <Share2 className="w-3.5 h-3.5" /> Copiar análisis
-                                        </button>
+                                            <Share2 className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Copiar análisis"} />{" "}</button>
                                     )}
                                 </DialogTitle>
                             </DialogHeader>

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import DataReferenceContext, { type DataReference } from '@/components/markets/DataReferenceContext';
 import React, { useState, useEffect, useMemo } from 'react';
@@ -40,6 +42,8 @@ interface RankingItem {
 type SortField = 'change' | 'volume' | 'price';
 
 export default function TopGainersPage() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const navigate = useNavigate();
     const { user } = useAuthStore();
@@ -145,7 +149,7 @@ export default function TopGainersPage() {
                             style={{ minHeight: 44, minWidth: 44 }}
                             onClick={() => navigate(-1)}
                             className="p-2 rounded-xl bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                            title="Volver"
+                            title={finixUi("Volver")}
                         >
                             <ArrowLeft className="w-4 h-4" />
                         </button>
@@ -163,17 +167,16 @@ export default function TopGainersPage() {
                                     ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
                                     : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
                                     }`}>
-                                    S&P 500
-                                </span>
+                                    {" "}<FinixUiText text={"S&P 500"} />{" "}</span>
                             </div>
                             <p className="text-[12px] text-muted-foreground mt-0.5">
                                 {isLosers
                                     ? 'Acciones con mayor retroceso porcentual diario del índice S&P 500.'
                                     : 'Acciones con mayor avance porcentual diario del índice S&P 500.'}
-                                {date && <span className="ml-1.5 font-semibold text-foreground">· Fecha del ranking: {date}</span>}
+                                {date && <span className="ml-1.5 font-semibold text-foreground">{""}<FinixUiText text={"· Fecha del ranking:"} />{" "}{date}</span>}
                             </p>
                             <DataReferenceContext context={dataContext} />
-                            <p className="text-xs text-muted-foreground">Escala de volumen: K = miles; M = millones de acciones.</p>
+                            <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Escala de volumen: K = miles; M = millones de acciones."} />{""}</p>
                         </div>
                     </div>
 
@@ -189,8 +192,7 @@ export default function TopGainersPage() {
                                     }`}
                             >
                                 <TrendingUp className="w-3.5 h-3.5" />
-                                Mejores
-                            </button>
+                                {" "}<FinixUiText text={"Mejores"} />{" "}</button>
                             <button
                             style={{ minHeight: 44, minWidth: 44 }}
                                 onClick={() => setSearchParams({ tab: 'losers' })}
@@ -200,8 +202,7 @@ export default function TopGainersPage() {
                                     }`}
                             >
                                 <TrendingDown className="w-3.5 h-3.5" />
-                                Peores
-                            </button>
+                                {" "}<FinixUiText text={"Peores"} />{" "}</button>
                         </div>
 
                         {/* Selector de Top limit */}
@@ -216,11 +217,10 @@ export default function TopGainersPage() {
                                         : 'text-muted-foreground hover:text-foreground'
                                         }`}
                                 >
-                                    <span>TOP {limit}</span>
+                                    <span>{""}<FinixUiText text={"TOP"} />{" "}{limit}</span>
                                     {limit > 5 && !hasPaidRankingAccess && (
                                         <span className="text-[9px] font-black uppercase tracking-wider px-1 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-400 border border-amber-500/30 inline-flex items-center gap-0.5">
-                                            <Crown className="w-2.5 h-2.5" /> PRO
-                                        </span>
+                                            <Crown className="w-2.5 h-2.5" /> {" "}<FinixUiText text={"PRO"} />{" "}</span>
                                     )}
                                 </button>
                             ))}
@@ -232,7 +232,7 @@ export default function TopGainersPage() {
                             onClick={() => loadData(selectedLimit, date, true)}
                             disabled={isLoading}
                             className="p-2.5 rounded-xl bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors border border-border/40 disabled:opacity-50"
-                            aria-label="Actualizar ranking" title="Actualizar ranking"
+                            aria-label={finixUi("Actualizar ranking")} title={finixUi("Actualizar ranking")}
                         >
                             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-primary' : ''}`} />
                         </button>
@@ -269,14 +269,14 @@ export default function TopGainersPage() {
                         <div className="bg-card/70 border border-border/50 rounded-2xl p-4.5 backdrop-blur-xs flex items-center justify-between gap-3 shadow-xs">
                             <div className="space-y-1">
                                 <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                                    Promedio TOP {stats.totalCount}
+                                    {" "}<FinixUiText text={"Promedio TOP"} />{" "}{stats.totalCount}
                                 </span>
                                 <div className="text-xl font-black num flex items-center gap-1.5">
                                     <span className={stats.avgChange >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}>
                                         {stats.avgChange >= 0 ? '+' : ''}{stats.avgChange.toFixed(2)}%
                                     </span>
                                 </div>
-                                <p className="text-[11px] text-muted-foreground">Rendimiento ponderado del grupo</p>
+                                <p className="text-[11px] text-muted-foreground">{""}<FinixUiText text={"Rendimiento ponderado del grupo"} />{""}</p>
                             </div>
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 ${isLosers ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-700 dark:text-emerald-400'} shadow-2xs`}>
                                 <Activity className="w-5 h-5" />
@@ -287,8 +287,7 @@ export default function TopGainersPage() {
                         <div className="bg-card/70 border border-border/50 rounded-2xl p-4.5 backdrop-blur-xs flex items-center justify-between gap-3 shadow-xs">
                             <div className="space-y-1 min-w-0">
                                 <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                                    Mayor Volumen
-                                </span>
+                                    {" "}<FinixUiText text={"Mayor Volumen"} />{" "}</span>
                                 <div className="flex items-center gap-2">
                                     <span className="text-lg font-black text-foreground break-words">{stats.topVol?.ticker || 'N/A'}</span>
                                     <span className="text-xs font-bold text-muted-foreground num">
@@ -297,7 +296,7 @@ export default function TopGainersPage() {
                                             : `${(stats.topVol.volume / 1_000).toFixed(1)}K`}
                                     </span>
                                 </div>
-                                <p className="text-[12px] text-muted-foreground whitespace-normal">Acciones en la sesión de referencia</p>
+                                <p className="text-[12px] text-muted-foreground whitespace-normal">{""}<FinixUiText text={"Acciones en la sesión de referencia"} />{""}</p>
                             </div>
                             <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border border-black/30 dark:border-white/35 text-emerald-600 dark:text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
                                 <BarChart3 className="w-5 h-5" />
@@ -308,14 +307,12 @@ export default function TopGainersPage() {
                         <div className="bg-card/70 border border-border/50 rounded-2xl p-4.5 backdrop-blur-xs flex items-center justify-between gap-3 shadow-xs">
                             <div className="space-y-1">
                                 <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                                    Universo S&P 500
-                                </span>
+                                    {" "}<FinixUiText text={"Universo S&P 500"} />{" "}</span>
                                 <div className="text-base font-bold text-foreground flex items-center gap-2">
-                                    <span>503 activos</span>
+                                    <span>{""}<FinixUiText text={"503 activos"} />{""}</span>
                                     {isStale && (
                                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/20 font-medium">
-                                            Cierre
-                                        </span>
+                                            {" "}<FinixUiText text={"Cierre"} />{" "}</span>
                                     )}
                                 </div>
                                 <p className="text-[11px] text-muted-foreground">
@@ -336,7 +333,7 @@ export default function TopGainersPage() {
                         <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input
                             type="text"
-                            placeholder="Buscar por ticker o nombre de empresa..."
+                            placeholder={finixUi("Buscar por ticker o nombre de empresa...")}
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             className="w-full pl-9 pr-8 py-2 text-sm bg-background border border-border/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground transition-all"
@@ -357,35 +354,30 @@ export default function TopGainersPage() {
                         {/* Sort Selector */}
                         <div className="flex items-center gap-1.5 bg-secondary/50 p-1 rounded-xl border border-border/40 text-xs font-semibold">
                             <span className="text-[11px] text-muted-foreground px-2 flex items-center gap-1">
-                                <ArrowUpDown className="w-3 h-3" /> Ordenar:
-                            </span>
+                                <ArrowUpDown className="w-3 h-3" /> {" "}<FinixUiText text={"Ordenar:"} />{" "}</span>
                             <button
                             style={{ minHeight: 44, minWidth: 44 }}
                                 onClick={() => setSortBy('change')}
                                 className={`px-2.5 py-1 rounded-lg transition-all ${sortBy === 'change' ? 'bg-card text-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                             >
-                                % Cambio
-                            </button>
+                                {" "}<FinixUiText text={"% Cambio"} />{" "}</button>
                             <button
                             style={{ minHeight: 44, minWidth: 44 }}
                                 onClick={() => setSortBy('volume')}
                                 className={`px-2.5 py-1 rounded-lg transition-all ${sortBy === 'volume' ? 'bg-card text-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                             >
-                                Volumen
-                            </button>
+                                {" "}<FinixUiText text={"Volumen"} />{" "}</button>
                             <button
                             style={{ minHeight: 44, minWidth: 44 }}
                                 onClick={() => setSortBy('price')}
                                 className={`px-2.5 py-1 rounded-lg transition-all ${sortBy === 'price' ? 'bg-card text-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                             >
-                                Precio
-                            </button>
+                                {" "}<FinixUiText text={"Precio"} />{" "}</button>
                         </div>
 
                         {/* Counter */}
                         <div className="text-xs text-muted-foreground font-medium pl-1">
-                            Mostrando <strong className="text-foreground">{processedItems.length}</strong> de {items.length} activos
-                        </div>
+                            {" "}<FinixUiText text={"Mostrando"} />{" "}<strong className="text-foreground">{processedItems.length}</strong> {" "}<FinixUiText text={"de"} />{" "}{items.length} {" "}<FinixUiText text={"activos"} />{" "}</div>
                     </div>
                 </div>
 
@@ -393,22 +385,21 @@ export default function TopGainersPage() {
                 {isLoading ? (
                     <div className="py-24 flex flex-col items-center justify-center space-y-3 bg-card/40 rounded-2xl border border-border/40">
                         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                        <p className="text-sm font-medium text-muted-foreground">Obteniendo rankings del S&P 500...</p>
+                        <p className="text-sm font-medium text-muted-foreground">{""}<FinixUiText text={"Obteniendo rankings del S&P 500..."} />{""}</p>
                     </div>
                 ) : isError ? (
                     <div className="py-20 text-center space-y-3 bg-card border border-border/50 rounded-2xl p-6">
-                        <p className="text-sm font-medium text-destructive">No pudimos conectar con los rankings en este momento.</p>
+                        <p className="text-sm font-medium text-destructive">{""}<FinixUiText text={"No pudimos conectar con los rankings en este momento."} />{""}</p>
                         <button
                             style={{ minHeight: 44, minWidth: 44 }}
                             onClick={() => loadData(selectedLimit)}
                             className="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-white hover:opacity-90 transition-opacity"
                         >
-                            Reintentar
-                        </button>
+                            {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
                     </div>
                 ) : processedItems.length === 0 ? (
                     <div className="py-20 text-center bg-card border border-border/50 rounded-2xl p-6">
-                        <p className="text-sm font-medium text-muted-foreground">No se encontraron activos que coincidan con la búsqueda.</p>
+                        <p className="text-sm font-medium text-muted-foreground">{""}<FinixUiText text={"No se encontraron activos que coincidan con la búsqueda."} />{""}</p>
                     </div>
                 ) : (
                     <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs">
@@ -445,12 +436,12 @@ export default function TopGainersPage() {
                                 <thead>
                                     <tr className="border-b border-border/40 text-[11.5px] font-bold text-muted-foreground uppercase tracking-wider bg-secondary/20">
                                         <th className="py-3.5 px-4 w-14 text-center">#</th>
-                                        <th className="py-3.5 px-4 min-w-[240px]">Activo</th>
-                                        <th className="py-3.5 px-4 text-right min-w-[120px]">Precio</th>
-                                        <th className="py-3.5 px-4 text-right min-w-[120px]">Cierre Prev.</th>
-                                        <th className="py-3.5 px-4 text-right min-w-[160px]">Cambio</th>
-                                        <th className="py-3.5 px-4 text-right min-w-[120px]">Volumen</th>
-                                        <th className="py-3.5 px-4 text-center w-20">Acción</th>
+                                        <th className="py-3.5 px-4 min-w-[240px]">{""}<FinixUiText text={"Activo"} />{""}</th>
+                                        <th className="py-3.5 px-4 text-right min-w-[120px]">{""}<FinixUiText text={"Precio"} />{""}</th>
+                                        <th className="py-3.5 px-4 text-right min-w-[120px]">{""}<FinixUiText text={"Cierre Prev."} />{""}</th>
+                                        <th className="py-3.5 px-4 text-right min-w-[160px]">{""}<FinixUiText text={"Cambio"} />{""}</th>
+                                        <th className="py-3.5 px-4 text-right min-w-[120px]">{""}<FinixUiText text={"Volumen"} />{""}</th>
+                                        <th className="py-3.5 px-4 text-center w-20">{""}<FinixUiText text={"Acción"} />{""}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/20 text-sm">
@@ -470,11 +461,9 @@ export default function TopGainersPage() {
                                                                      </div>
                                                                      <div>
                                                                          <h3 className="text-base sm:text-lg font-black text-foreground">
-                                                                             Posiciones 6 a {selectedLimit} exclusivas para Finix PRO
-                                                                         </h3>
+                                                                             {" "}<FinixUiText text={"Posiciones 6 a"} />{" "}{selectedLimit} {" "}<FinixUiText text={"exclusivas para Finix PRO"} />{" "}</h3>
                                                                          <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-lg leading-relaxed">
-                                                                             El Top 5 de ganadores y perdedores es 100% gratuito. Desbloqueá el ranking completo ampliado (hasta 50 activos), métricas avanzadas y análisis en tiempo real con tu membresía PRO.
-                                                                         </p>
+                                                                             {" "}<FinixUiText text={"El Top 5 de ganadores y perdedores es 100% gratuito. Desbloqueá el ranking completo ampliado (hasta 50 activos), métricas avanzadas y análisis en tiempo real con tu membresía PRO."} />{" "}</p>
                                                                      </div>
                                                                      <button
                                                                          onClick={() => navigate('/pro')}
@@ -506,8 +495,8 @@ export default function TopGainersPage() {
                                                                      <Lock className="w-3.5 h-3.5 text-muted-foreground" />
                                                                  </div>
                                                                  <div>
-                                                                     <span className="font-bold text-foreground filter blur-xs">TICKER</span>
-                                                                     <p className="text-xs text-muted-foreground">Exclusivo PRO</p>
+                                                                     <span className="font-bold text-foreground filter blur-xs">{""}<FinixUiText text={"TICKER"} />{""}</span>
+                                                                     <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Exclusivo PRO"} />{""}</p>
                                                                  </div>
                                                              </div>
                                                          </td>
@@ -523,8 +512,7 @@ export default function TopGainersPage() {
                                                              </span>
                                                          </td>
                                                          <td className="py-4 px-4 text-right text-muted-foreground filter blur-xs font-mono">
-                                                             ***K
-                                                         </td>
+                                                             {" "}<FinixUiText text={"***K"} />{" "}</td>
                                                          <td className="py-4 px-4 text-center">
                                                              <button
                             style={{ minHeight: 44, minWidth: 44 }}
@@ -533,7 +521,7 @@ export default function TopGainersPage() {
                                                                      navigate('/pro');
                                                                  }}
                                                                  className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors"
-                                                                 title="Desbloquear con PRO"
+                                                                 title={finixUi("Desbloquear con PRO")}
                                                              >
                                                                  <Lock className="w-3.5 h-3.5" />
                                                              </button>
@@ -625,7 +613,7 @@ export default function TopGainersPage() {
                                                  {/* Volume */}
                                                  <td className="py-4 px-4 text-right num text-xs">
                                                      <span className="font-semibold text-foreground/90">{volM}</span>
-                                                     <span className="text-[10px] text-muted-foreground block">acciones</span>
+                                                     <span className="text-[10px] text-muted-foreground block">{""}<FinixUiText text={"acciones"} />{""}</span>
                                                  </td>
 
                                                  {/* Action */}
@@ -637,7 +625,7 @@ export default function TopGainersPage() {
                                                              navigate(`/market?symbol=NASDAQ:${item.ticker}`);
                                                          }}
                                                          className="p-2 rounded-xl hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                                                         title="Ver gráfico y análisis"
+                                                         title={finixUi("Ver gráfico y análisis")}
                                                      >
                                                          <ExternalLink className="w-4 h-4" />
                                                      </button>
@@ -729,7 +717,7 @@ function RankingMobileCard({
                     onClick={() => navigate(`/market?symbol=NASDAQ:${item.ticker}`)}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 font-bold transition-colors"
                 >
-                    <span>Analizar</span>
+                    <span>{""}<FinixUiText text={"Analizar"} />{""}</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                 </button>
             </div>
@@ -737,12 +725,12 @@ function RankingMobileCard({
             {expanded && (
                 <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-muted/20 text-xs text-muted-foreground">
                     <div>
-                        <span className="block text-[11px] text-muted-foreground uppercase">Cierre previo</span>
+                        <span className="block text-[11px] text-muted-foreground uppercase">{""}<FinixUiText text={"Cierre previo"} />{""}</span>
                         <strong className="text-foreground num font-semibold">{formatCurrency(item.previousClose, 'USD')}</strong>
                     </div>
                     <div>
-                        <span className="block text-[11px] text-muted-foreground uppercase">Volumen</span>
-                        <strong className="text-foreground num font-semibold">{volM} acciones</strong>
+                        <span className="block text-[11px] text-muted-foreground uppercase">{""}<FinixUiText text={"Volumen"} />{""}</span>
+                        <strong className="text-foreground num font-semibold">{volM} {" "}<FinixUiText text={"acciones"} />{""}</strong>
                     </div>
                 </div>
             )}
@@ -761,6 +749,8 @@ function LockedMobileCard({
     showBannerAbove: boolean;
     selectedLimit: number;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     return (
         <div className="space-y-3">
@@ -768,11 +758,9 @@ function LockedMobileCard({
                 <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-card to-emerald-500/10 border-2 border-emerald-500/30 text-center space-y-2">
                     <Crown className="w-6 h-6 mx-auto text-emerald-700 dark:text-emerald-400" />
                     <h3 className="text-sm font-bold text-foreground">
-                        Posiciones 6 a {selectedLimit} exclusivas para Finix PRO
-                    </h3>
+                        {" "}<FinixUiText text={"Posiciones 6 a"} />{" "}{selectedLimit} {" "}<FinixUiText text={"exclusivas para Finix PRO"} />{" "}</h3>
                     <p className="text-xs text-muted-foreground">
-                        Desbloqueá el ranking completo ampliado y métricas avanzadas.
-                    </p>
+                        {" "}<FinixUiText text={"Desbloqueá el ranking completo ampliado y métricas avanzadas."} />{" "}</p>
                     <button
                             style={{ minHeight: 44, minWidth: 44 }}
                         onClick={() => navigate('/pro')}
@@ -782,7 +770,7 @@ function LockedMobileCard({
                     </button>
                 </div>
             )}
-            <button style={{ minHeight: 44, minWidth: 44 }} type="button" aria-label="Ver disponibilidad del ranking completo"
+            <button style={{ minHeight: 44, minWidth: 44 }} type="button" aria-label={finixUi("Ver disponibilidad del ranking completo")}
                 onClick={() => navigate('/pro')}
                 className="p-3.5 rounded-xl border border-border/40 bg-card/60 flex items-center justify-between cursor-pointer"
             >
@@ -792,8 +780,8 @@ function LockedMobileCard({
                         <Lock className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                        <span className="font-bold text-foreground filter blur-xs text-sm">TICKER</span>
-                        <p className="text-[11px] text-muted-foreground">Exclusivo PRO</p>
+                        <span className="font-bold text-foreground filter blur-xs text-sm">{""}<FinixUiText text={"TICKER"} />{""}</span>
+                        <p className="text-[11px] text-muted-foreground">{""}<FinixUiText text={"Exclusivo PRO"} />{""}</p>
                     </div>
                 </div>
                 <div className="text-right">

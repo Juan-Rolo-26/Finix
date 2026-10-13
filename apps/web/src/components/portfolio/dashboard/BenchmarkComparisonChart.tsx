@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useId, useMemo, useState } from 'react';
 import {
     Area,
@@ -76,8 +78,7 @@ function BenchmarkTooltip({ active, payload, label, range }: any) {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f8fafc', fontSize: '12px', fontWeight: 500 }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: PORTFOLIO_COLOR, display: 'inline-block', flexShrink: 0, boxShadow: '0 0 8px rgba(16,185,129,0.8)' }} />
-                        Portafolio
-                    </span>
+                        {" "}<FinixUiText text={"Portafolio"} />{" "}</span>
                     <div style={{ textAlign: 'right' }}>
                         <span style={{ color: pReturn >= 0 ? '#34d399' : '#f87171', fontWeight: 700, fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
                             {formatPercent(pReturn, 1, true)}
@@ -92,8 +93,7 @@ function BenchmarkTooltip({ active, payload, label, range }: any) {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f8fafc', fontSize: '12px', fontWeight: 500 }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: SP500_COLOR, display: 'inline-block', flexShrink: 0, boxShadow: '0 0 8px rgba(56,189,248,0.8)' }} />
-                        S&amp;P 500 (SPY)
-                    </span>
+                        {" "}<FinixUiText text={"S&amp;P 500 (SPY)"} />{" "}</span>
                     <div style={{ textAlign: 'right' }}>
                         <span style={{ color: spReturn == null ? '#94a3b8' : spReturn >= 0 ? '#38bdf8' : '#f87171', fontWeight: 700, fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
                             {spReturn == null ? 'N/D' : formatPercent(spReturn, 1, true)}
@@ -118,14 +118,14 @@ function BenchmarkTooltip({ active, payload, label, range }: any) {
                 }}
             >
                 {spread == null ? (
-                    <span>SPY todavía no tiene datos para este período</span>
+                    <span>{""}<FinixUiText text={"SPY todavía no tiene datos para este período"} />{""}</span>
                 ) : isOutperforming ? (
                     <>
-                        <span style={{ fontWeight: 600 }}>Superando al índice por {formatNumber(spread)} pts</span>
+                        <span style={{ fontWeight: 600 }}>{""}<FinixUiText text={"Superando al índice por"} />{" "}{formatNumber(spread)} {" "}<FinixUiText text={"pts"} />{""}</span>
                     </>
                 ) : (
                     <>
-                        <span>Por debajo del índice por {formatNumber(Math.abs(spread))} pts</span>
+                        <span>{""}<FinixUiText text={"Por debajo del índice por"} />{" "}{formatNumber(Math.abs(spread))} {" "}<FinixUiText text={"pts"} />{""}</span>
                     </>
                 )}
             </div>
@@ -141,6 +141,8 @@ export function BenchmarkComparisonChart({
     loading = false,
     className,
 }: BenchmarkComparisonChartProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const rawId = useId();
     const gradPortfolioId = `bcp-p-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
     const gradSp500Id = `bcp-sp-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
@@ -212,7 +214,7 @@ export function BenchmarkComparisonChart({
     const metricCardClass = 'min-w-0 rounded-2xl border border-border/50 bg-background/70 px-4 py-3.5 shadow-xs backdrop-blur-md transition-all hover:border-border/80';
 
     return (
-        <div role="region" aria-label="Comparación del portafolio con S&P 500" aria-busy={loading} className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-sm flex flex-col justify-between text-center', className)}>
+        <div role="region" aria-label={finixUi("Comparación del portafolio con S&P 500")} aria-busy={loading} className={cn('min-w-0 rounded-[22px] border border-border/50 bg-card/80 overflow-hidden shadow-sm flex flex-col justify-between text-center', className)}>
             {/* Header */}
             <div className="border-b border-border/40 px-6 py-6 sm:px-7 sm:py-7 text-center">
                 <div className="flex min-w-0 w-full flex-col items-center justify-center gap-6 text-center">
@@ -221,16 +223,13 @@ export function BenchmarkComparisonChart({
                         <div className="space-y-1.5 flex min-w-0 w-full flex-col items-center text-center">
                             <div className="flex flex-wrap items-center justify-center gap-2">
                                 <p className="text-sm font-semibold text-muted-foreground text-center">
-                                    Benchmark Comparativo
-                                </p>
+                                    {" "}<FinixUiText text={"Benchmark Comparativo"} />{" "}</p>
                                 <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                                     <Target className="w-3 h-3 text-sky-400" />
-                                    Base 100
-                                </span>
+                                    {" "}<FinixUiText text={"Base 100"} />{" "}</span>
                             </div>
                             <h3 className="text-xl font-extrabold tracking-tight sm:text-2xl text-foreground text-center">
-                                Portafolio vs S&P 500
-                            </h3>
+                                {" "}<FinixUiText text={"Portafolio vs S&P 500"} />{" "}</h3>
                             <p className="text-base text-muted-foreground max-w-xl text-center mx-auto">
                                 {loading
                                     ? 'Cargando comparación con datos reales…'
@@ -247,15 +246,13 @@ export function BenchmarkComparisonChart({
                             <div className="flex flex-wrap items-center justify-center gap-2">
                                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-foreground/90">
                                     <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_#10b981]" style={{ backgroundColor: PORTFOLIO_COLOR }} />
-                                    Portafolio
-                                    <span className={cn('font-bold tabular-nums', summary.portfolioReturn >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
+                                    {" "}<FinixUiText text={"Portafolio"} />{" "}<span className={cn('font-bold tabular-nums', summary.portfolioReturn >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
                                         {summary.hasData ? formatPercent(summary.portfolioReturn, 1, true) : '—'}
                                     </span>
                                 </span>
                                 <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-foreground/90">
                                     <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_#38bdf8]" style={{ backgroundColor: SP500_COLOR }} />
-                                    S&P 500 (SPY)
-                                <span className={cn('font-bold tabular-nums', summary.sp500Return == null ? 'text-muted-foreground' : summary.sp500Return >= 0 ? 'text-sky-500' : 'text-rose-500')}>
+                                    {" "}<FinixUiText text={"S&P 500 (SPY)"} />{" "}<span className={cn('font-bold tabular-nums', summary.sp500Return == null ? 'text-muted-foreground' : summary.sp500Return >= 0 ? 'text-sky-500' : 'text-rose-500')}>
                                         {summary.sp500Return == null ? 'N/D' : formatPercent(summary.sp500Return, 1, true)}
                                     </span>
                                 </span>
@@ -288,7 +285,7 @@ export function BenchmarkComparisonChart({
                     <div className="grid gap-3 sm:grid-cols-3 w-full">
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
                             <div className="flex items-center justify-center gap-1.5 text-muted-foreground w-full">
-                                <span className="text-sm font-semibold text-center">Diferencia de rendimiento</span>
+                                <span className="text-sm font-semibold text-center">{""}<FinixUiText text={"Diferencia de rendimiento"} />{""}</span>
                                 {!summary.hasBenchmark ? (
                                     <Target className="w-4 h-4 text-muted-foreground/60" />
                                 ) : isOutperforming ? (
@@ -307,7 +304,7 @@ export function BenchmarkComparisonChart({
 
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
                             <div className="flex items-center justify-center gap-1.5 text-muted-foreground w-full">
-                                <span className="text-sm font-semibold text-center">Líder del período</span>
+                                <span className="text-sm font-semibold text-center">{""}<FinixUiText text={"Líder del período"} />{""}</span>
                                 <Trophy className={cn('w-4 h-4', summary.isPortfolioInactive ? 'text-muted-foreground/60' : (isOutperforming ? 'text-amber-400' : 'text-sky-400'))} />
                             </div>
                             <p className="mt-2 text-xl sm:text-2xl font-extrabold leading-none tracking-tight text-foreground truncate text-center">
@@ -320,15 +317,14 @@ export function BenchmarkComparisonChart({
 
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
                             <div className="flex items-center justify-center gap-1.5 text-muted-foreground w-full">
-                                <span className="text-sm font-semibold text-center">Base normalizada</span>
+                                <span className="text-sm font-semibold text-center">{""}<FinixUiText text={"Base normalizada"} />{""}</span>
                                 <HelpCircle className="w-4 h-4 text-muted-foreground/50" />
                             </div>
                             <p className="mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight tabular-nums text-foreground/90 text-center">
                                 {summary.hasData ? '100.0' : '—'}
                             </p>
                             <p className="mt-1.5 text-sm text-muted-foreground font-medium text-center">
-                                Punto de partida comparativo
-                            </p>
+                                {" "}<FinixUiText text={"Punto de partida comparativo"} />{" "}</p>
                         </div>
                     </div>
                 </div>
@@ -338,11 +334,10 @@ export function BenchmarkComparisonChart({
             <div className="px-6 pt-4 pb-2 sm:px-7 text-center">
                 <div className="flex flex-col items-center justify-center text-center gap-1">
                     <span className="text-sm font-semibold text-muted-foreground/70 text-center">
-                        Evolución temporal · {TIME_RANGE_LABELS[activeRange]}
+                        {" "}<FinixUiText text={"Evolución temporal ·"} />{" "}{TIME_RANGE_LABELS[activeRange]}
                     </span>
                     <span className="text-sm text-muted-foreground text-center">
-                        Línea sólida: Portafolio · Línea punteada: S&P 500 (SPY)
-                    </span>
+                        {" "}<FinixUiText text={"Línea sólida: Portafolio · Línea punteada: S&P 500 (SPY)"} />{" "}</span>
                 </div>
             </div>
 

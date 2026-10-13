@@ -1,3 +1,4 @@
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /** ChartLegend.tsx — Reusable chart legend component */
 import { cn } from '@/lib/utils';
 
@@ -17,6 +18,8 @@ interface ChartLegendProps {
 }
 
 export function ChartLegend({ items, className, columns = 2, compact = false }: ChartLegendProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const gridClass = {
     1: 'grid-cols-1',
     2: 'grid-cols-1 sm:grid-cols-2',
@@ -26,7 +29,7 @@ export function ChartLegend({ items, className, columns = 2, compact = false }: 
   return (
     <div
       role="list"
-      aria-label="Leyenda del gráfico"
+      aria-label={finixUi("Leyenda del gráfico")}
       className={cn('grid gap-2', gridClass, className)}
     >
       {items.map((item) => (

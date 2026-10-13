@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /**
  * DividendChart.tsx — Dividend income history bar chart
  *
@@ -59,6 +61,8 @@ function DividendTooltip({ active, payload, label, currency }: any) {
 }
 
 export function DividendChart({ data, loading, error, onRetry, currency = 'USD', className }: DividendChartProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
 
   const monthlyData = useMemo(() => data?.byMonth ?? [], [data]);
@@ -68,7 +72,7 @@ export function DividendChart({ data, loading, error, onRetry, currency = 'USD',
 
   return (
     <ChartContainer
-      title="Dividendos e Ingresos"
+      title={finixUi("Dividendos e Ingresos")}
       description="Dividendos cobrados por período"
       loading={loading}
       error={error}
@@ -79,7 +83,7 @@ export function DividendChart({ data, loading, error, onRetry, currency = 'USD',
       ariaLabel="Gráfico de dividendos"
       className={className}
       headerActions={
-        <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1" role="group" aria-label="Vista de dividendos">
+        <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1" role="group" aria-label={finixUi("Vista de dividendos")}>
           {([
             { key: 'monthly', label: 'Por mes' },
             { key: 'byAsset', label: 'Por activo' },
@@ -105,19 +109,19 @@ export function DividendChart({ data, loading, error, onRetry, currency = 'USD',
       {/* Stats strip */}
       <div className="px-5 py-3 sm:px-6 border-b border-border/20 grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Total cobrado</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{""}<FinixUiText text={"Total cobrado"} />{""}</span>
           <span className="mt-1 text-sm font-black tabular-nums text-emerald-400">{formatCurrency(data?.totalReceived ?? 0, currency)}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Yield estimado</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{""}<FinixUiText text={"Yield estimado"} />{""}</span>
           <span className="mt-1 text-sm font-black tabular-nums text-sky-400">{formatPercentage(data?.estimatedYield ?? 0, 1)}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Activos pagadores</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{""}<FinixUiText text={"Activos pagadores"} />{""}</span>
           <span className="mt-1 text-sm font-black text-foreground">{data?.byAsset?.length ?? 0}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Pagos registrados</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{""}<FinixUiText text={"Pagos registrados"} />{""}</span>
           <span className="mt-1 text-sm font-black text-foreground">{data?.confirmed?.length ?? 0}</span>
         </div>
       </div>

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
@@ -15,6 +17,8 @@ interface TocItem {
 }
 
 export default function EducationArticlePage() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { articleSlug } = useParams<{ categorySlug?: string; articleSlug: string }>();
 
     const [article, setArticle] = useState<any>(null);
@@ -174,8 +178,7 @@ export default function EducationArticlePage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-background text-muted-foreground flex items-center justify-center">
-                Cargando artículo educativo...
-            </div>
+                {" "}<FinixUiText text={"Cargando artículo educativo..."} />{" "}</div>
         );
     }
 
@@ -183,13 +186,12 @@ export default function EducationArticlePage() {
         return (
             <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-6 space-y-4">
                 <GraduationCap className="w-12 h-12 text-muted-foreground" />
-                <h2 className="text-xl font-bold">Artículo no encontrado</h2>
+                <h2 className="text-xl font-bold">{""}<FinixUiText text={"Artículo no encontrado"} />{""}</h2>
                 <Link
                     to="/educativa"
                     className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-xs"
                 >
-                    Volver a Educativa
-                </Link>
+                    {" "}<FinixUiText text={"Volver a Educativa"} />{" "}</Link>
             </div>
         );
     }
@@ -201,8 +203,7 @@ export default function EducationArticlePage() {
                 <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 text-xs pt-0.5">
                     <div className="flex items-center gap-1.5 overflow-hidden text-muted-foreground">
                         <Link to="/educativa" className="hover:text-primary transition-colors flex items-center gap-1 shrink-0">
-                            <GraduationCap className="w-3.5 h-3.5" /> Educativa
-                        </Link>
+                            <GraduationCap className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Educativa"} />{" "}</Link>
                         <span>/</span>
                         <Link
                             to={`/educativa/${article.category?.slug}`}
@@ -218,8 +219,7 @@ export default function EducationArticlePage() {
 
                     <div className="flex items-center gap-2 shrink-0">
                         <span className="text-[11px] font-semibold text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-lg">
-                            Consulta Libre
-                        </span>
+                            {" "}<FinixUiText text={"Consulta Libre"} />{" "}</span>
                     </div>
                 </div>
             </div>
@@ -235,21 +235,20 @@ export default function EducationArticlePage() {
                                 {article.category?.name}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                Conceptos relacionados y artículos de esta categoría.
-                            </p>
+                                {" "}<FinixUiText text={"Conceptos relacionados y artículos de esta categoría."} />{" "}</p>
                             <div className="pt-2 border-t border-border/60">
                                 <Link
                                     to={`/educativa/${article.category?.slug}`}
                                     className="text-xs font-semibold text-primary hover:underline flex items-center justify-between"
                                 >
-                                    Ver todos los conceptos <ChevronRight className="w-3.5 h-3.5" />
+                                    {" "}<FinixUiText text={"Ver todos los conceptos"} />{" "}<ChevronRight className="w-3.5 h-3.5" />
                                 </Link>
                             </div>
                         </div>
 
                         {/* Category Fast Switcher */}
                         <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-2 text-xs">
-                            <h4 className="font-bold text-foreground mb-2">Otras Categorías</h4>
+                            <h4 className="font-bold text-foreground mb-2">{""}<FinixUiText text={"Otras Categorías"} />{""}</h4>
                             {[
                                 { name: 'Fundamentos', slug: 'fundamentos' },
                                 { name: 'Análisis Fundamental', slug: 'analisis-fundamental' },
@@ -278,11 +277,10 @@ export default function EducationArticlePage() {
                                     article.level === 'INTERMEDIATE' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
                                     'bg-purple-500/10 text-purple-600 dark:text-purple-400'
                                 }`}>
-                                    Nivel: {article.level === 'BEGINNER' ? 'Principiante' : article.level === 'INTERMEDIATE' ? 'Intermedio' : 'Avanzado'}
+                                    {" "}<FinixUiText text={"Nivel:"} />{" "}{article.level === 'BEGINNER' ? 'Principiante' : article.level === 'INTERMEDIATE' ? 'Intermedio' : 'Avanzado'}
                                 </span>
                                 <span className="text-muted-foreground flex items-center gap-1">
-                                    <Clock className="w-3.5 h-3.5" /> {article.readTimeMinutes} min de lectura
-                                </span>
+                                    <Clock className="w-3.5 h-3.5" /> {article.readTimeMinutes} {" "}<FinixUiText text={"min de lectura"} />{" "}</span>
                             </div>
 
                             <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight leading-tight">
@@ -301,8 +299,7 @@ export default function EducationArticlePage() {
                                         <summary className="flex items-center justify-between text-xs font-bold text-foreground cursor-pointer list-none">
                                             <span className="flex items-center gap-2">
                                                 <AlignLeft className="w-4 h-4 text-primary" />
-                                                Índice del artículo ({tocItems.length} secciones)
-                                            </span>
+                                                {" "}<FinixUiText text={"Índice del artículo ("} />{""}{tocItems.length} {" "}<FinixUiText text={"secciones)"} />{" "}</span>
                                             <ChevronRight className="w-4 h-4 text-muted-foreground group-open:rotate-90 transition-transform" />
                                         </summary>
                                         <div className="pt-3 space-y-1 text-xs border-t border-border/50 mt-3">
@@ -332,8 +329,7 @@ export default function EducationArticlePage() {
                             <section className="space-y-2">
                                 <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5 mb-1">
                                     <Sparkles className="w-3.5 h-3.5" />
-                                    Laboratorio Interactivo Finix
-                                </div>
+                                    {" "}<FinixUiText text={"Laboratorio Interactivo Finix"} />{" "}</div>
                                 <EducationalWidgetContainer widgetKey={article.interactiveWidget} />
                             </section>
                         )}
@@ -342,8 +338,7 @@ export default function EducationArticlePage() {
                         {article.formula && (
                             <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-100 shadow-sm space-y-2">
                                 <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">
-                                    Fórmula Matemática
-                                </span>
+                                    {" "}<FinixUiText text={"Fórmula Matemática"} />{" "}</span>
                                 <pre className="font-mono text-xs sm:text-sm whitespace-pre-wrap text-emerald-300 leading-relaxed overflow-x-auto">
                                     {article.formula}
                                 </pre>
@@ -369,7 +364,7 @@ export default function EducationArticlePage() {
                                             <a
                                                 href={`#${id}`}
                                                 className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity text-sm font-mono font-normal"
-                                                title="Enlace a esta sección"
+                                                title={finixUi("Enlace a esta sección")}
                                             >
                                                 #
                                             </a>
@@ -399,7 +394,7 @@ export default function EducationArticlePage() {
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="block cursor-zoom-in"
-                                                        title="Tocar para ver en tamaño completo"
+                                                        title={finixUi("Tocar para ver en tamaño completo")}
                                                     >
                                                         <img
                                                             src={src}
@@ -409,15 +404,14 @@ export default function EducationArticlePage() {
                                                         />
                                                     </a>
                                                     <div className="p-2.5 bg-muted/50 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground px-3">
-                                                        <span className="truncate">Gráfico educativo</span>
+                                                        <span className="truncate">{""}<FinixUiText text={"Gráfico educativo"} />{""}</span>
                                                         <a
                                                             href={src}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="inline-flex items-center gap-1 text-primary hover:underline font-bold shrink-0 ml-2"
                                                         >
-                                                            Ampliar imagen ↗
-                                                        </a>
+                                                            {" "}<FinixUiText text={"Ampliar imagen ↗"} />{" "}</a>
                                                     </div>
                                                 </div>
                                                 {caption && (
@@ -440,8 +434,7 @@ export default function EducationArticlePage() {
                             <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-3">
                                 <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
                                     <CheckCircle2 className="w-4 h-4 shrink-0" />
-                                    Puntos Clave para Recordar
-                                </div>
+                                    {" "}<FinixUiText text={"Puntos Clave para Recordar"} />{" "}</div>
                                 <ul className="space-y-2 text-xs sm:text-sm text-foreground/90">
                                     {article.keyTakeaways.map((item: string, i: number) => (
                                         <li key={i} className="flex items-start gap-2">
@@ -458,8 +451,7 @@ export default function EducationArticlePage() {
                             <div className="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/20 space-y-3">
                                 <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-sm">
                                     <AlertCircle className="w-4 h-4 shrink-0" />
-                                    Errores Frecuentes al Interpretar
-                                </div>
+                                    {" "}<FinixUiText text={"Errores Frecuentes al Interpretar"} />{" "}</div>
                                 <ul className="space-y-2 text-xs sm:text-sm text-foreground/90">
                                     {article.commonMistakes.map((item: string, i: number) => (
                                         <li key={i} className="flex items-start gap-2">
@@ -474,7 +466,7 @@ export default function EducationArticlePage() {
                         {/* SOURCES & BIBLIOGRAPHY */}
                         {Array.isArray(article.sources) && article.sources.length > 0 && (
                             <div className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-2 text-xs text-muted-foreground">
-                                <span className="font-bold text-foreground block">Fuentes y Bibliografía:</span>
+                                <span className="font-bold text-foreground block">{""}<FinixUiText text={"Fuentes y Bibliografía:"} />{""}</span>
                                 <ul className="list-disc pl-4 space-y-1">
                                     {article.sources.map((s: any, i: number) => {
                                         if (typeof s === 'string') {
@@ -509,8 +501,7 @@ export default function EducationArticlePage() {
                                     className="p-4 rounded-xl border border-border hover:border-primary/50 bg-card hover:bg-muted/40 transition-all text-left space-y-1"
                                 >
                                     <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
-                                        <ArrowLeft className="w-3 h-3" /> Artículo anterior
-                                    </span>
+                                        <ArrowLeft className="w-3 h-3" /> {" "}<FinixUiText text={"Artículo anterior"} />{" "}</span>
                                     <span className="text-xs font-bold text-foreground block truncate">
                                         {article.navigation.previous.title}
                                     </span>
@@ -523,7 +514,7 @@ export default function EducationArticlePage() {
                                     className="p-4 rounded-xl border border-border hover:border-primary/50 bg-card hover:bg-muted/40 transition-all text-right space-y-1"
                                 >
                                     <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center justify-end gap-1">
-                                        Artículo siguiente <ArrowRight className="w-3 h-3" />
+                                        {" "}<FinixUiText text={"Artículo siguiente"} />{" "}<ArrowRight className="w-3 h-3" />
                                     </span>
                                     <span className="text-xs font-bold text-foreground block truncate">
                                         {article.navigation.next.title}
@@ -534,8 +525,7 @@ export default function EducationArticlePage() {
 
                         {/* LEGAL DISCLAIMER */}
                         <div className="p-4 rounded-xl bg-muted/30 border border-border/60 text-center text-xs text-muted-foreground leading-relaxed">
-                            El contenido publicado en esta sección tiene fines exclusivamente informativos y educativos. No constituye asesoramiento financiero ni recomendación de inversión.
-                        </div>
+                            {" "}<FinixUiText text={"El contenido publicado en esta sección tiene fines exclusivamente informativos y educativos. No constituye asesoramiento financiero ni recomendación de inversión."} />{" "}</div>
                     </div>
 
                     {/* RIGHT SIDEBAR: READING SUMMARY & FAST LINKS */}
@@ -545,8 +535,7 @@ export default function EducationArticlePage() {
                             <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-3">
                                 <div className="flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-wider">
                                     <AlignLeft className="w-3.5 h-3.5 text-primary" />
-                                    Índice de Contenido
-                                </div>
+                                    {" "}<FinixUiText text={"Índice de Contenido"} />{" "}</div>
                                 <nav className="space-y-1 text-xs">
                                     {tocItems.map((item, idx) => {
                                         const isActive = activeHeadingId === item.id;
@@ -580,27 +569,26 @@ export default function EducationArticlePage() {
                         <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-3.5">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                                 <BookOpen className="w-3.5 h-3.5 text-primary" />
-                                Ficha Técnica
-                            </h4>
+                                {" "}<FinixUiText text={"Ficha Técnica"} />{" "}</h4>
 
                             <div className="space-y-2 text-xs">
                                 <div className="flex items-center justify-between py-1 border-b border-border/50">
-                                    <span className="text-muted-foreground">Categoría</span>
+                                    <span className="text-muted-foreground">{""}<FinixUiText text={"Categoría"} />{""}</span>
                                     <span className="font-semibold text-foreground">{article.category?.name || 'General'}</span>
                                 </div>
                                 <div className="flex items-center justify-between py-1 border-b border-border/50">
-                                    <span className="text-muted-foreground">Subcategoría</span>
+                                    <span className="text-muted-foreground">{""}<FinixUiText text={"Subcategoría"} />{""}</span>
                                     <span className="font-semibold text-foreground">{article.subcategory?.name || 'General'}</span>
                                 </div>
                                 <div className="flex items-center justify-between py-1 border-b border-border/50">
-                                    <span className="text-muted-foreground">Nivel</span>
+                                    <span className="text-muted-foreground">{""}<FinixUiText text={"Nivel"} />{""}</span>
                                     <span className="font-semibold text-foreground">
                                         {article.level === 'BEGINNER' ? 'Principiante' : article.level === 'INTERMEDIATE' ? 'Intermedio' : 'Avanzado'}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between py-1">
-                                    <span className="text-muted-foreground">Lectura</span>
-                                    <span className="font-semibold text-foreground">{article.readTimeMinutes} min</span>
+                                    <span className="text-muted-foreground">{""}<FinixUiText text={"Lectura"} />{""}</span>
+                                    <span className="font-semibold text-foreground">{article.readTimeMinutes} {" "}<FinixUiText text={"min"} />{""}</span>
                                 </div>
                             </div>
 
@@ -608,16 +596,14 @@ export default function EducationArticlePage() {
                                 to={`/educativa/${article.category?.slug}`}
                                 className="block w-full py-2 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold text-center transition-colors"
                             >
-                                Ver categoría completa
-                            </Link>
+                                {" "}<FinixUiText text={"Ver categoría completa"} />{" "}</Link>
                         </div>
 
                         {/* Related Articles */}
                         {Array.isArray(article.relatedArticles) && article.relatedArticles.length > 0 && (
                             <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-3">
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                    Conceptos Relacionados
-                                </h4>
+                                    {" "}<FinixUiText text={"Conceptos Relacionados"} />{" "}</h4>
                                 <div className="space-y-2">
                                     {article.relatedArticles.map((rel: any) => (
                                         <Link
@@ -637,8 +623,7 @@ export default function EducationArticlePage() {
                             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                             className="w-full py-2 px-3 rounded-xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
                         >
-                            <ArrowUp className="w-3.5 h-3.5" /> Volver arriba
-                        </button>
+                            <ArrowUp className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Volver arriba"} />{" "}</button>
                     </aside>
                 </div>
             </div>

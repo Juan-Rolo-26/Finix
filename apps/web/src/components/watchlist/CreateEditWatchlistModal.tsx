@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import AccountRequired from '@/components/auth/AccountRequired';
 import React, { useState, useEffect, useRef } from 'react';
@@ -34,6 +36,8 @@ export default function CreateEditWatchlistModal({
     watchlist,
     onSuccess,
 }: CreateEditWatchlistModalProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const user = useAuthStore(state => state.user);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -128,12 +132,12 @@ export default function CreateEditWatchlistModal({
                     )}
 
                     <div className="space-y-1.5">
-                        <label htmlFor="watchlist-name" className="text-xs font-bold text-foreground">Nombre de la lista *</label>
+                        <label htmlFor="watchlist-name" className="text-xs font-bold text-foreground">{""}<FinixUiText text={"Nombre de la lista *"} />{""}</label>
                         <input
                             id="watchlist-name"
                             type="text"
                             required
-                            placeholder="Ej. CEDEARs de dividendos, Semiconductores, Value..."
+                            placeholder={finixUi("Ej. CEDEARs de dividendos, Semiconductores, Value...")}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             className="w-full h-10 rounded-xl border border-border/60 bg-background/80 px-3 text-xs text-foreground outline-none focus:border-emerald-500 transition-colors"
@@ -141,11 +145,11 @@ export default function CreateEditWatchlistModal({
                     </div>
 
                     <div className="space-y-1.5">
-                        <label htmlFor="watchlist-description" className="text-xs font-bold text-foreground">Descripción (opcional)</label>
+                        <label htmlFor="watchlist-description" className="text-xs font-bold text-foreground">{""}<FinixUiText text={"Descripción (opcional)"} />{""}</label>
                         <textarea
                             id="watchlist-description"
                             rows={2}
-                            placeholder="Notas generales o criterios de selección para esta lista..."
+                            placeholder={finixUi("Notas generales o criterios de selección para esta lista...")}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             className="w-full rounded-xl border border-border/60 bg-background/80 p-3 text-xs text-foreground outline-none focus:border-emerald-500 transition-colors resize-none"
@@ -153,7 +157,7 @@ export default function CreateEditWatchlistModal({
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-foreground">Color distintivo</label>
+                        <label className="text-xs font-bold text-foreground">{""}<FinixUiText text={"Color distintivo"} />{""}</label>
                         <div className="flex flex-wrap items-center gap-2 pt-1">
                             {COLORS.map((c) => (
                                 <button
@@ -178,8 +182,7 @@ export default function CreateEditWatchlistModal({
                             onClick={onClose}
                             className="h-10 px-5 rounded-xl text-sm font-semibold text-muted-foreground border border-border/60 bg-secondary/40 hover:bg-secondary/70 hover:text-foreground transition-all active:scale-[0.98]"
                         >
-                            Cancelar
-                        </button>
+                            {" "}<FinixUiText text={"Cancelar"} />{" "}</button>
                         <button
                             type="submit"
                             disabled={saving || !name.trim()}

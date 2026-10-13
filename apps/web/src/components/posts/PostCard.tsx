@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useEffect, useRef, useState, memo } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Link, useNavigate } from 'react-router-dom';
@@ -129,6 +131,8 @@ function MediaCarousel({
     validateChart?: boolean;
     onInvalidChart?: () => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [idx, setIdx] = useState(0);
     const [playing, setPlaying] = useState(true);
     const [muted, setMuted] = useState(true);
@@ -168,8 +172,8 @@ function MediaCarousel({
             {failedMedia.includes(current.url) ? (
                 <div role="status" className="flex h-full min-h-40 flex-col items-center justify-center gap-3 bg-secondary p-6 text-center text-muted-foreground">
                     <ImageIcon className="h-7 w-7" />
-                    <p className="text-sm">Este archivo no está disponible.</p>
-                    <button type="button" className="text-sm text-primary underline" onClick={() => setFailedMedia(previous => previous.filter(url => url !== current.url))}>Reintentar</button>
+                    <p className="text-sm">{""}<FinixUiText text={"Este archivo no está disponible."} />{""}</p>
+                    <button type="button" className="text-sm text-primary underline" onClick={() => setFailedMedia(previous => previous.filter(url => url !== current.url))}>{""}<FinixUiText text={"Reintentar"} />{""}</button>
                 </div>
             ) : isVideo ? (
                 <div className="relative h-full">
@@ -205,7 +209,7 @@ function MediaCarousel({
                 <div className="relative h-full cursor-zoom-in" onClick={() => setIsZoomed(true)}>
                     <img
                         src={resolveMediaUrl(current.url)}
-                        alt="Imagen adjunta a la publicación"
+                        alt={finixUi("Imagen adjunta a la publicación")}
                         className="w-full h-full object-contain"
                         loading="lazy"
                         onLoad={validateChart ? (event) => {
@@ -218,7 +222,7 @@ function MediaCarousel({
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setIsZoomed(true); }}
                         className="absolute top-2 right-2 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-opacity opacity-0 group-hover:opacity-100 focus-visible:opacity-100 shadow-md"
-                        aria-label="Ampliar imagen"
+                        aria-label={finixUi("Ampliar imagen")}
                     >
                         <Maximize2 className="w-4 h-4" />
                     </button>
@@ -230,7 +234,7 @@ function MediaCarousel({
                 <DialogPrimitive.Root open onOpenChange={setIsZoomed}><DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-[200] bg-black/90" /><DialogPrimitive.Content
                     role="dialog"
                     aria-modal="true"
-                    aria-label="Vista ampliada de la imagen"
+                    aria-label={finixUi("Vista ampliada de la imagen")}
                     aria-describedby={undefined}
                     onCloseAutoFocus={event => { event.preventDefault(); zoomTriggerRef.current?.focus(); }}
                     className="fixed inset-0 z-[201] backdrop-blur-md flex items-center justify-center p-4 sm:p-8"
@@ -240,13 +244,13 @@ function MediaCarousel({
                         type="button"
                         onClick={() => setIsZoomed(false)}
                         className="absolute top-4 right-4 z-50 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-white"
-                        aria-label="Cerrar imagen ampliada"
+                        aria-label={finixUi("Cerrar imagen ampliada")}
                     >
                         <X className="w-5 h-5" />
                     </button>
                     <img
                         src={resolveMediaUrl(current.url)}
-                        alt="Imagen en tamaño completo"
+                        alt={finixUi("Imagen en tamaño completo")}
                         className="max-w-full max-h-[88vh] object-contain rounded-lg shadow-2xl select-none"
                         onClick={(e) => e.stopPropagation()}
                     />
@@ -260,7 +264,7 @@ function MediaCarousel({
                         <button
                             type="button"
                             onClick={prev}
-                            aria-label="Imagen anterior"
+                            aria-label={finixUi("Imagen anterior")}
                             className="absolute left-2 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/70 backdrop-blur-xs flex items-center justify-center text-white transition-opacity hover:bg-black/90 focus-visible:opacity-100"
                         >
                             <ChevronLeft className="w-5 h-5" />
@@ -270,7 +274,7 @@ function MediaCarousel({
                         <button
                             type="button"
                             onClick={next}
-                            aria-label="Siguiente imagen"
+                            aria-label={finixUi("Siguiente imagen")}
                             className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/70 backdrop-blur-xs flex items-center justify-center text-white transition-opacity hover:bg-black/90 focus-visible:opacity-100"
                         >
                             <ChevronRight className="w-5 h-5" />
@@ -480,7 +484,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
 
     // ── Render ───────────────────────────────────────────────────────────────
 
-    if ((post as any).isLocked) return <article className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">Esta publicación guardada requiere una membresía activa en su comunidad.<button disabled={isSavingPost} onClick={async () => { setIsSavingPost(true); try { const res = await apiFetch(`/posts/${post.id}/save`, { method: "POST" }); if (!res.ok) throw new Error(); onDeleted(post.id); } catch { setSaveError("No se pudo quitar de guardados."); } finally { setIsSavingPost(false); } }} className="mt-3 block text-primary underline">Quitar de guardados</button>{saveError && <p role="alert">{saveError}</p>}</article>;
+    if ((post as any).isLocked) return <article className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">{""}<FinixUiText text={"Esta publicación guardada requiere una membresía activa en su comunidad."} />{""}<button disabled={isSavingPost} onClick={async () => { setIsSavingPost(true); try { const res = await apiFetch(`/posts/${post.id}/save`, { method: "POST" }); if (!res.ok) throw new Error(); onDeleted(post.id); } catch { setSaveError("No se pudo quitar de guardados."); } finally { setIsSavingPost(false); } }} className="mt-3 block text-primary underline">{""}<FinixUiText text={"Quitar de guardados"} />{""}</button>{saveError && <p role="alert">{saveError}</p>}</article>;
 
     return (
         <motion.article
@@ -518,7 +522,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span>{timeAgo(post.createdAt)}</span>
-                            {post.contentEditedAt && <span>· editado</span>}
+                            {post.contentEditedAt && <span>{""}<FinixUiText text={"· editado"} />{""}</span>}
                             {typeBadge && (
                                 <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-semibold ${typeBadge.color}`}>
                                     <typeBadge.icon className="w-3 h-3" />
@@ -553,8 +557,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                                         onClick={() => { setIsEditing(true); setShowMenu(false); }}
                                         className="flex items-center gap-2 w-full px-4 py-2.5 text-sm hover:bg-secondary/50 transition-colors"
                                     >
-                                        <Edit3 className="w-4 h-4" /> Editar
-                                    </button>
+                                        <Edit3 className="w-4 h-4" /> {" "}<FinixUiText text={"Editar"} />{" "}</button>
                                 )}
                                 {isOwner && (
                                     <button
@@ -562,23 +565,20 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                                         className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[12.5px] font-medium transition-colors hover:bg-red-500/10"
                                         style={{ color: 'hsl(0 68% 55%)' }}
                                     >
-                                        <Trash2 className="w-4 h-4" /> Eliminar
-                                    </button>
+                                        <Trash2 className="w-4 h-4" /> {" "}<FinixUiText text={"Eliminar"} />{" "}</button>
                                 )}
                                 {!isOwner && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setShowReportModal(true); setShowMenu(false); }}
                                         className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-orange-400 hover:bg-orange-400/10 transition-colors"
                                     >
-                                        <Flag className="w-4 h-4" /> Reportar
-                                    </button>
+                                        <Flag className="w-4 h-4" /> {" "}<FinixUiText text={"Reportar"} />{" "}</button>
                                 )}
                                 <button
                                     onClick={() => { handleShare(); setShowMenu(false); }}
                                     className="flex items-center gap-2 w-full px-4 py-2.5 text-sm hover:bg-secondary/50 transition-colors"
                                 >
-                                    <Share2 className="w-4 h-4" /> Copiar enlace
-                                </button>
+                                    <Share2 className="w-4 h-4" /> {" "}<FinixUiText text={"Copiar enlace"} />{" "}</button>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -603,7 +603,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                             title="Seguir en Mis listas"
                         >
                             <Bookmark className="w-3 h-3" />
-                            <span>Seguir</span>
+                            <span>{""}<FinixUiText text={"Seguir"} />{""}</span>
                         </button>
                     )}
                     {post.analysisType && (
@@ -613,7 +613,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                     )}
                     {post.riskLevel && (
                         <span className={`text-xs px-2 py-1 rounded-lg capitalize ${RISK_COLOR[post.riskLevel] || ''}`}>
-                            Riesgo {post.riskLevel === 'low' ? 'Bajo' : post.riskLevel === 'medium' ? 'Medio' : 'Alto'}
+                            {" "}<FinixUiText text={"Riesgo"} />{" "}{post.riskLevel === 'low' ? 'Bajo' : post.riskLevel === 'medium' ? 'Medio' : 'Alto'}
                         </span>
                     )}
                 </div>
@@ -666,7 +666,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                         />
                         <p className="text-right text-[11px] text-muted-foreground">{editContent.length}/1000</p>
                         <div className="flex gap-2 justify-end">
-                            <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                            <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>{""}<FinixUiText text={"Cancelar"} />{""}</Button>
                             <Button size="sm" onClick={handleSaveEdit} disabled={isSavingEdit}>
                                 {isSavingEdit ? 'Guardando...' : 'Guardar'}
                             </Button>
@@ -712,8 +712,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                                 <span className="text-xs text-muted-foreground">{timeAgo(post.quotedPost.createdAt)}</span>
                             </div>
                             <span className="text-xs font-medium text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded">
-                                Cita
-                            </span>
+                                {" "}<FinixUiText text={"Cita"} />{" "}</span>
                         </div>
                         <p className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${isQuotedExpanded ? '' : 'line-clamp-3'} mb-2`}>
                             {post.quotedPost.content}
@@ -745,8 +744,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                                 />
                                 <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                     <span className="text-xs font-semibold text-white bg-black/70 px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-xs">
-                                        <Maximize2 className="w-3.5 h-3.5" /> Ampliar imagen
-                                    </span>
+                                        <Maximize2 className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Ampliar imagen"} />{" "}</span>
                                 </div>
                             </button>
                         )}
@@ -756,8 +754,8 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                                 onClick={() => navigate(`/posts/${post.quotedPost!.id}`)}
                                 className="text-xs font-semibold text-primary hover:text-primary-hover flex items-center gap-1.5 py-2 px-3 rounded-lg hover:bg-primary/10 transition-colors focus-visible:ring-2 focus-visible:ring-primary min-h-[44px]"
                             >
-                                <span>Ver publicación completa</span>
-                                <span aria-hidden="true">&rarr;</span>
+                                <span>{""}<FinixUiText text={"Ver publicación completa"} />{""}</span>
+                                <span aria-hidden="true">{""}<FinixUiText text={"&rarr;"} />{""}</span>
                             </button>
                         </div>
                     </div>
@@ -771,7 +769,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                         <div className="relative rounded-xl overflow-hidden border border-border/50 bg-black/20 group">
                             <img src={tradingViewUrl} alt="TradingView Chart" className="w-full h-auto object-contain max-h-[460px]" loading="lazy" />
                             <a href={tradingViewUrl} target="_blank" rel="noreferrer" className="absolute bottom-3 right-3 flex flex-row items-center gap-2 p-2 rounded-lg bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm shadow-xl">
-                                <span className="text-xs font-semibold">TradingView</span>
+                                <span className="text-xs font-semibold">{""}<FinixUiText text={"TradingView"} />{""}</span>
                                 <ExternalLink className="w-4 h-4" />
                             </a>
                         </div>
@@ -783,8 +781,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
                             className="inline-flex items-center gap-2 rounded-lg border border-blue-400/30 bg-blue-400/10 px-3 py-2 text-sm text-blue-300 hover:bg-blue-400/20 transition-colors"
                         >
                             <BarChart2 className="w-4 h-4" />
-                            Ver gráfico en TradingView
-                            <ExternalLink className="w-3.5 h-3.5" />
+                            {" "}<FinixUiText text={"Ver gráfico en TradingView"} />{" "}<ExternalLink className="w-3.5 h-3.5" />
                         </a>
                     )}
                 </div>
@@ -1002,8 +999,7 @@ const PostCard = function PostCard({ post, currentUserId, onUpdated, onDeleted }
 
                             <div className="flex gap-3 pt-2">
                                 <Button variant="outline" onClick={() => setShowRepostModal(false)} className="flex-1 rounded-xl h-11 border-border/50">
-                                    Cancelar
-                                </Button>
+                                    {" "}<FinixUiText text={"Cancelar"} />{" "}</Button>
                                 <Button
                                     onClick={handleRepost}
                                     className={`flex-1 rounded-xl h-11 font-bold shadow-glow ${reposted ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-gradient-to-r from-primary to-emerald-400 text-black'}`}

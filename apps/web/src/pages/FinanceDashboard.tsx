@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -37,6 +39,8 @@ function categoryIcon(categoryKey: string) {
 }
 
 export default function FinanceDashboard() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const navigate = useNavigate();
     const [period, setPeriod] = useState<FinancePeriod>('1A');
     const currency = useFinancePreferences((state) => state.currency);
@@ -56,7 +60,7 @@ export default function FinanceDashboard() {
 
     return (
         <FinancePageFrame
-            title="Resumen financiero"
+            title={finixUi("Resumen financiero")}
             description="Una lectura clara de tu liquidez, patrimonio y proximos compromisos."
             onAction={() => navigate('/finanzas/movimientos?new=expense')}
             actionLabel="Nuevo movimiento"
@@ -65,11 +69,10 @@ export default function FinanceDashboard() {
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Vista consolidada · {snapshot.accounts.length} cuentas · {loading ? 'Sincronizando...' : error ? 'Revisa tu conexion' : 'Al dia'}
+                    {" "}<FinixUiText text={"Vista consolidada ·"} />{" "}{snapshot.accounts.length} {" "}<FinixUiText text={"cuentas ·"} />{" "}{loading ? 'Sincronizando...' : error ? 'Revisa tu conexion' : 'Al dia'}
                 </span>
                 <Link to="/finanzas/configuracion" className="font-bold text-emerald-400 hover:text-emerald-300 transition-colors">
-                    Personalizar resumen
-                </Link>
+                    {" "}<FinixUiText text={"Personalizar resumen"} />{" "}</Link>
             </div>
 
             {/* Main grid: Chart + Distribucion */}
@@ -79,30 +82,30 @@ export default function FinanceDashboard() {
                     <div className="flex flex-col gap-5 border-b border-border/50 p-5 sm:p-7">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                             <div>
-                                <p className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">Patrimonio neto</p>
+                                <p className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">{""}<FinixUiText text={"Patrimonio neto"} />{""}</p>
                                 <div className="mt-2 flex flex-wrap items-end gap-3">
                                     <p className="text-4xl font-black tracking-tight text-foreground sm:text-5xl">
                                         <FinanceAmount value={display(snapshot.netWorth)} currency={currency} />
                                     </p>
                                     <FinanceDelta value={snapshot.netWorthChange} className="mb-1.5" />
                                 </div>
-                                <p className="mt-1.5 text-sm text-muted-foreground">Evolucion calculada a partir de tus saldos y movimientos.</p>
+                                <p className="mt-1.5 text-sm text-muted-foreground">{""}<FinixUiText text={"Evolucion calculada a partir de tus saldos y movimientos."} />{""}</p>
                             </div>
                             <PeriodSelector value={period} onChange={setPeriod} />
                         </div>
                         <NetWorthChart points={chartPoints} />
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 text-xs text-muted-foreground sm:px-7">
-                        <span>Ultima actualizacion: {snapshot.meta?.updatedAt ? new Date(snapshot.meta.updatedAt).toLocaleString('es-AR') : '—'}</span>
+                        <span>{""}<FinixUiText text={"Ultima actualizacion:"} />{" "}{snapshot.meta?.updatedAt ? new Date(snapshot.meta.updatedAt).toLocaleString('es-AR') : '—'}</span>
                         <Link to="/finanzas/analytics" className="font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1">
-                            Analisis completo <ChevronRight className="w-3.5 h-3.5" />
+                            {" "}<FinixUiText text={"Analisis completo"} />{" "}<ChevronRight className="w-3.5 h-3.5" />
                         </Link>
                     </div>
                 </FinanceSurface>
 
                 {/* Distribucion donut */}
                 <FinanceSurface className="rounded-2xl p-5 sm:p-6">
-                    <FinanceSectionHeading title="Donde esta tu dinero" eyebrow="Distribucion" />
+                    <FinanceSectionHeading title={finixUi("Donde esta tu dinero")} eyebrow="Distribucion" />
                     <div className="mt-6 flex items-center gap-5">
                         <div
                             className="relative flex h-36 w-36 shrink-0 items-center justify-center rounded-full shadow-xl"
@@ -111,7 +114,7 @@ export default function FinanceDashboard() {
                             }}
                         >
                             <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full bg-card text-center shadow-inner">
-                                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Total</span>
+                                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{""}<FinixUiText text={"Total"} />{""}</span>
                                 <FinanceAmount value={display(snapshot.netWorth)} currency={currency} compact className="mt-1 text-sm font-black" />
                             </div>
                         </div>
@@ -129,7 +132,7 @@ export default function FinanceDashboard() {
                     </div>
                     <div className="mt-6 border-t border-border/40 pt-4">
                         <Link to="/finanzas/cuentas" className="flex items-center justify-between text-sm font-bold text-muted-foreground hover:text-foreground transition-colors group">
-                            <span>Ver cuentas y saldos</span>
+                            <span>{""}<FinixUiText text={"Ver cuentas y saldos"} />{""}</span>
                             <ArrowUpRight className="h-4 w-4 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
                         </Link>
                     </div>
@@ -162,7 +165,7 @@ export default function FinanceDashboard() {
                             </div>
                             <div className="text-right flex flex-col items-end gap-1">
                                 <FinanceDelta value={item.delta} />
-                                <p className="text-[11px] text-muted-foreground">vs. mes anterior</p>
+                                <p className="text-[11px] text-muted-foreground">{""}<FinixUiText text={"vs. mes anterior"} />{""}</p>
                             </div>
                         </Link>
                     );
@@ -174,8 +177,8 @@ export default function FinanceDashboard() {
                 {/* Actividad reciente */}
                 <FinanceSurface className="rounded-2xl overflow-hidden">
                     <div className="flex items-center justify-between border-b border-border/50 px-5 py-5 sm:px-6">
-                        <FinanceSectionHeading title="Actividad reciente" />
-                        <ViewAllLink to="/finanzas/movimientos">Todos los movimientos</ViewAllLink>
+                        <FinanceSectionHeading title={finixUi("Actividad reciente")} />
+                        <ViewAllLink to="/finanzas/movimientos">{""}<FinixUiText text={"Todos los movimientos"} />{""}</ViewAllLink>
                     </div>
                     <div className="divide-y divide-border/40">
                         {snapshot.transactions.slice(0, 6).map((transaction) => {
@@ -211,14 +214,13 @@ export default function FinanceDashboard() {
                             to="/finanzas/movimientos?new=expense"
                             className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
                         >
-                            <Plus className="w-3.5 h-3.5" /> Agregar movimiento
-                        </Link>
+                            <Plus className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Agregar movimiento"} />{" "}</Link>
                     </div>
                 </FinanceSurface>
 
                 {/* Presupuestos */}
                 <FinanceSurface className="rounded-2xl p-5 sm:p-6">
-                    <FinanceSectionHeading title="Presupuestos" eyebrow="Este mes" action={<ViewAllLink to="/finanzas/presupuestos" />} />
+                    <FinanceSectionHeading title={finixUi("Presupuestos")} eyebrow="Este mes" action={<ViewAllLink to="/finanzas/presupuestos" />} />
                     <div className="mt-6 space-y-6">
                         {snapshot.budgets.slice(0, 3).map((budget) => {
                             const percentage = Math.round((budget.spent / budget.limit) * 100);
@@ -239,7 +241,7 @@ export default function FinanceDashboard() {
                                     <ProgressBar value={budget.spent} max={budget.limit} tone={tone} />
                                     <div className="mt-2 flex justify-between text-xs text-muted-foreground font-medium">
                                         <FinanceAmount value={display(budget.spent)} currency={currency} />
-                                        <span>de {formatFinanceAmount(display(budget.limit), currency)}</span>
+                                        <span>{""}<FinixUiText text={"de"} />{" "}{formatFinanceAmount(display(budget.limit), currency)}</span>
                                     </div>
                                 </div>
                             );
@@ -247,8 +249,7 @@ export default function FinanceDashboard() {
                     </div>
                     <div className="mt-6 border-t border-border/40 pt-4">
                         <Link to="/finanzas/presupuestos" className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors">
-                            Revisar limites y categorias
-                        </Link>
+                            {" "}<FinixUiText text={"Revisar limites y categorias"} />{" "}</Link>
                     </div>
                 </FinanceSurface>
             </div>
@@ -258,9 +259,9 @@ export default function FinanceDashboard() {
                 {/* Proximos compromisos */}
                 <FinanceSurface className="rounded-2xl p-5 sm:p-6">
                     <FinanceSectionHeading
-                        title="Proximos compromisos"
+                        title={finixUi("Proximos compromisos")}
                         eyebrow="Los proximos 14 dias"
-                        action={<ViewAllLink to="/finanzas/calendario">Calendario</ViewAllLink>}
+                        action={<ViewAllLink to="/finanzas/calendario">{""}<FinixUiText text={"Calendario"} />{""}</ViewAllLink>}
                     />
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
                         {snapshot.events.slice(0, 4).map((event) => (
@@ -285,7 +286,7 @@ export default function FinanceDashboard() {
 
                 {/* Objetivos */}
                 <FinanceSurface className="rounded-2xl p-5 sm:p-6">
-                    <FinanceSectionHeading title="Objetivos" eyebrow="Progreso" action={<ViewAllLink to="/finanzas/objetivos" />} />
+                    <FinanceSectionHeading title={finixUi("Objetivos")} eyebrow="Progreso" action={<ViewAllLink to="/finanzas/objetivos" />} />
                     <div className="mt-5 space-y-6">
                         {snapshot.goals.slice(0, 2).map((goal) => (
                             <div key={goal.id}>
@@ -296,7 +297,7 @@ export default function FinanceDashboard() {
                                         </span>
                                         <div className="min-w-0">
                                             <p className="truncate text-sm font-bold text-foreground">{goal.name}</p>
-                                            <p className="text-xs text-muted-foreground">Objetivo {goal.deadline}</p>
+                                            <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Objetivo"} />{" "}{goal.deadline}</p>
                                         </div>
                                     </div>
                                     <span className="text-sm font-black tabular-nums text-emerald-400 shrink-0">
@@ -306,7 +307,7 @@ export default function FinanceDashboard() {
                                 <ProgressBar value={goal.saved} max={goal.target} />
                                 <div className="mt-2 flex justify-between text-xs text-muted-foreground font-medium">
                                     <FinanceAmount value={display(goal.saved)} currency={currency} />
-                                    <span>de {formatFinanceAmount(display(goal.target), currency)}</span>
+                                    <span>{""}<FinixUiText text={"de"} />{" "}{formatFinanceAmount(display(goal.target), currency)}</span>
                                 </div>
                             </div>
                         ))}
@@ -317,8 +318,8 @@ export default function FinanceDashboard() {
             {/* Inversiones */}
             <FinanceSurface className="mt-6 overflow-hidden rounded-2xl">
                 <div className="flex items-center justify-between border-b border-border/50 px-5 py-5 sm:px-6">
-                    <FinanceSectionHeading title="Inversiones" eyebrow="Patrimonio invertido" />
-                    <ViewAllLink to="/finanzas/inversiones">Ver cartera</ViewAllLink>
+                    <FinanceSectionHeading title={finixUi("Inversiones")} eyebrow="Patrimonio invertido" />
+                    <ViewAllLink to="/finanzas/inversiones">{""}<FinixUiText text={"Ver cartera"} />{""}</ViewAllLink>
                 </div>
                 <div className="grid grid-cols-1 divide-y divide-border/40 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-5">
                     {snapshot.investments.map((investment) => (
@@ -348,8 +349,7 @@ export default function FinanceDashboard() {
             {/* Footer disclaimer */}
             <p className="mt-6 flex items-center gap-2 text-[11px] text-muted-foreground">
                 <Landmark className="h-3.5 w-3.5 shrink-0" />
-                Solo se muestran datos que cargaste o sincronizaste en tu cuenta. Finix no mueve dinero automaticamente.
-            </p>
+                {" "}<FinixUiText text={"Solo se muestran datos que cargaste o sincronizaste en tu cuenta. Finix no mueve dinero automaticamente."} />{" "}</p>
         </FinancePageFrame>
     );
 }

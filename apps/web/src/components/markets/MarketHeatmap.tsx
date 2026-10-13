@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useMemo } from 'react';
 import {
     Flame,
@@ -95,6 +97,8 @@ function formatMarketCap(cap: number) {
 }
 
 export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [items, setItems] = useState<HeatmapItem[]>([]);
     const [summaryState, setSummary] = useState<HeatmapSummary | null>(null);
     const [loading, setLoading] = useState(true);
@@ -222,16 +226,15 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                 onOpenChange={setShowGuideModal}
             />
             <MarketHeader
-                title="Mapa de calor"
+                title={finixUi("Mapa de calor")}
                 eyebrow="S&P 500 · WALL STREET"
                 icon={Flame}
                 description={
                     <>
-                        Top 250 empresas · Indicadores semanales
-                        {summaryState?.updatedAt && (
+                        {" "}<FinixUiText text={"Top 250 empresas · Indicadores semanales"} />{" "}{summaryState?.updatedAt && (
                             <>
                                 {' '}
-                                · Actualizado{' '}
+                                {" "}<FinixUiText text={"· Actualizado"} />{""}{' '}
                                 {new Date(
                                     summaryState.updatedAt,
                                 ).toLocaleTimeString('es-AR', {
@@ -249,8 +252,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                             className="market-action"
                             onClick={() => setShowGuideModal(true)}
                         >
-                            <BookOpen size={16} /> Guía técnica
-                        </Button>
+                            <BookOpen size={16} /> {" "}<FinixUiText text={"Guía técnica"} />{" "}</Button>
                         <Button
                             variant="outline"
                             className="market-action"
@@ -259,13 +261,12 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                 setShowQuickPlaybook(!showQuickPlaybook)
                             }
                         >
-                            Criterios
-                        </Button>
+                            {" "}<FinixUiText text={"Criterios"} />{" "}</Button>
                         <Button
                             variant="outline"
                             className="market-icon-action"
-                            title="Actualizar mapa de calor"
-                            aria-label="Actualizar mapa de calor"
+                            title={finixUi("Actualizar mapa de calor")}
+                            aria-label={finixUi("Actualizar mapa de calor")}
                             disabled={loading}
                             onClick={() => fetchData(true)}
                         >
@@ -280,23 +281,17 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
             {showQuickPlaybook && (
                 <div className="market-note market-note--stack">
                     <p>
-                        <strong>Acumulación:</strong> RSI menor a 45, histograma
-                        MACD positivo y retorno semanal positivo.
-                    </p>
+                        <strong>{""}<FinixUiText text={"Acumulación:"} />{""}</strong> {" "}<FinixUiText text={"RSI menor a 45, histograma MACD positivo y retorno semanal positivo."} />{" "}</p>
                     <p>
-                        <strong>Cautela:</strong> RSI mayor a 55, histograma
-                        MACD negativo y retorno semanal negativo.
-                    </p>
+                        <strong>{""}<FinixUiText text={"Cautela:"} />{""}</strong> {" "}<FinixUiText text={"RSI mayor a 55, histograma MACD negativo y retorno semanal negativo."} />{" "}</p>
                     <p>
-                        Los indicadores técnicos no garantizan rendimientos
-                        futuros.
-                    </p>
+                        {" "}<FinixUiText text={"Los indicadores técnicos no garantizan rendimientos futuros."} />{" "}</p>
                 </div>
             )}
             <div className="market-toolbar">
                 <div
                     className="market-segments"
-                    aria-label="Indicador del mapa de calor"
+                    aria-label={finixUi("Indicador del mapa de calor")}
                 >
                     {modes.map(({ value, label, icon: Icon }) => (
                         <button
@@ -330,15 +325,15 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                         <label className="market-search">
                             <Search size={16} />
                             <input
-                                aria-label="Buscar activo técnico"
-                                placeholder="Buscar activo o símbolo..."
+                                aria-label={finixUi("Buscar activo técnico")}
+                                placeholder={finixUi("Buscar activo o símbolo...")}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </label>
                         <div
                             className="market-segments"
-                            aria-label="Filtrar señales"
+                            aria-label={finixUi("Filtrar señales")}
                         >
                             {(
                                 [
@@ -360,11 +355,11 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                         </div>
                         <select
                             className="market-control"
-                            aria-label="Sector técnico"
+                            aria-label={finixUi("Sector técnico")}
                             value={selectedSector}
                             onChange={(e) => setSelectedSector(e.target.value)}
                         >
-                            <option value="ALL">Todos los sectores</option>
+                            <option value="ALL">{""}<FinixUiText text={"Todos los sectores"} />{""}</option>
                             {sectors.map((sector) => (
                                 <option key={sector} value={sector}>
                                     {sector}
@@ -373,30 +368,28 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                         </select>
                         <select
                             className="market-control"
-                            aria-label="Ordenar activos técnicos"
+                            aria-label={finixUi("Ordenar activos técnicos")}
                             value={sortBy}
                             onChange={(e) =>
                                 setSortBy(e.target.value as SortOption)
                             }
                         >
-                            <option value="marketCap">Capitalización</option>
-                            <option value="scoreDesc">Mayor score</option>
-                            <option value="scoreAsc">Menor score</option>
-                            <option value="rsiDesc">Mayor RSI</option>
-                            <option value="rsiAsc">Menor RSI</option>
+                            <option value="marketCap">{""}<FinixUiText text={"Capitalización"} />{""}</option>
+                            <option value="scoreDesc">{""}<FinixUiText text={"Mayor score"} />{""}</option>
+                            <option value="scoreAsc">{""}<FinixUiText text={"Menor score"} />{""}</option>
+                            <option value="rsiDesc">{""}<FinixUiText text={"Mayor RSI"} />{""}</option>
+                            <option value="rsiAsc">{""}<FinixUiText text={"Menor RSI"} />{""}</option>
                             <option value="change1WDesc">
-                                Mayor retorno semanal
-                            </option>
+                                {" "}<FinixUiText text={"Mayor retorno semanal"} />{" "}</option>
                             <option value="change1WAsc">
-                                Menor retorno semanal
-                            </option>
+                                {" "}<FinixUiText text={"Menor retorno semanal"} />{" "}</option>
                         </select>
                         <div className="market-segments">
                             <button
                                 type="button"
-                                aria-label="Vista de tarjetas"
+                                aria-label={finixUi("Vista de tarjetas")}
                                 className="market-segment-icon"
-                                title="Vista de tarjetas"
+                                title={finixUi("Vista de tarjetas")}
                                 aria-pressed={viewDisplay === 'cards'}
                                 onClick={() => setViewDisplay('cards')}
                             >
@@ -404,9 +397,9 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                             </button>
                             <button
                                 type="button"
-                                aria-label="Vista de mosaico"
+                                aria-label={finixUi("Vista de mosaico")}
                                 className="market-segment-icon"
-                                title="Vista de mosaico"
+                                title={finixUi("Vista de mosaico")}
                                 aria-pressed={viewDisplay === 'tiles'}
                                 onClick={() => setViewDisplay('tiles')}
                             >
@@ -415,19 +408,15 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                         </div>
                     </div>
                     <p className="market-results">
-                        {filteredItems.length} de {items.length} activos ·
-                        Retorno de una semana
-                    </p>
+                        {filteredItems.length} {" "}<FinixUiText text={"de"} />{" "}{items.length} {" "}<FinixUiText text={"activos · Retorno de una semana"} />{" "}</p>
                     {loading && (
                         <div role="status" className="market-empty">
                             <RefreshCw className="animate-spin" size={20} />{' '}
-                            Actualizando indicadores...
-                        </div>
+                            {" "}<FinixUiText text={"Actualizando indicadores..."} />{" "}</div>
                     )}
                     {!loading && filteredItems.length === 0 && (
                         <div className="market-empty">
-                            No hay activos para estos filtros.
-                        </div>
+                            {" "}<FinixUiText text={"No hay activos para estos filtros."} />{" "}</div>
                     )}
                     {viewDisplay === 'tiles' ? (
                         <div className="market-heatmap-tiles">
@@ -533,7 +522,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                             {activeMode === 'macd' ? (
                                                 <>
                                                     <div>
-                                                        <dt>Histograma</dt>
+                                                        <dt>{""}<FinixUiText text={"Histograma"} />{""}</dt>
                                                         <dd
                                                             className={
                                                                 item.hist >= 0
@@ -547,7 +536,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                                         </dd>
                                                     </div>
                                                     <div>
-                                                        <dt>MACD / Señal</dt>
+                                                        <dt>{""}<FinixUiText text={"MACD / Señal"} />{""}</dt>
                                                         <dd>
                                                             {item.macd.toFixed(
                                                                 2,
@@ -564,14 +553,13 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                                     <div>
                                                         <dt>
                                                             {activeMode.toUpperCase()}{' '}
-                                                            semanal
-                                                        </dt>
+                                                            {" "}<FinixUiText text={"semanal"} />{" "}</dt>
                                                         <dd>
                                                             {indicator} / 100
                                                         </dd>
                                                     </div>
                                                     <div>
-                                                        <dt>Capitalización</dt>
+                                                        <dt>{""}<FinixUiText text={"Capitalización"} />{""}</dt>
                                                         <dd>
                                                             {formatMarketCap(
                                                                 item.marketCap,
@@ -581,11 +569,11 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
                                                 </>
                                             )}
                                             <div>
-                                                <dt>Score técnico</dt>
+                                                <dt>{""}<FinixUiText text={"Score técnico"} />{""}</dt>
                                                 <dd>{item.totalScore}</dd>
                                             </div>
                                             <div>
-                                                <dt>Señal</dt>
+                                                <dt>{""}<FinixUiText text={"Señal"} />{""}</dt>
                                                 <dd>{item.signalLabel}</dd>
                                             </div>
                                         </dl>

@@ -11,13 +11,6 @@ export default function VerificationsManagement() {
     const getDocumentUrl = (path: string) => {
         if (!path) return '';
         if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) return path;
-        if (path.startsWith('/uploads/') || path.startsWith('uploads/')) {
-            const clean = path.startsWith('/') ? path : `/${path}`;
-            return `/api${clean}`;
-        }
-        if (path.startsWith('/api/uploads/')) {
-            return path;
-        }
         return `/api/admin/verifications/document?path=${encodeURIComponent(path)}`;
     };
 

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /**
  * AllocationDonut.tsx — Portfolio allocation donut chart
  *
@@ -53,11 +55,11 @@ function AllocationTooltip({ active, payload, currency }: any) {
       </div>
       <div className="space-y-1 text-xs font-mono">
         <div className="flex items-center justify-between gap-4">
-          <span className="text-muted-foreground">Valor</span>
+          <span className="text-muted-foreground">{""}<FinixUiText text={"Valor"} />{""}</span>
           <span className="font-bold text-foreground">{formatCurrency(entry.value, currency)}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span className="text-muted-foreground">Peso</span>
+          <span className="text-muted-foreground">{""}<FinixUiText text={"Peso"} />{""}</span>
           <span className="font-bold text-emerald-400">{formatPercentage(entry.percent, 2, false)}</span>
         </div>
       </div>
@@ -106,6 +108,8 @@ export function AllocationDonut({
   currency = 'USD',
   className,
 }: AllocationDonutProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const [groupBy, setGroupBy] = useState<GroupBy>('asset');
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -140,7 +144,7 @@ export function AllocationDonut({
 
   return (
     <ChartContainer
-      title="Distribución del Portafolio"
+      title={finixUi("Distribución del Portafolio")}
       description="Composición por activo, sector o tipo de activo"
       loading={loading}
       error={error}
@@ -153,7 +157,7 @@ export function AllocationDonut({
         <div
           className="flex items-center gap-0.5 rounded-xl border border-border/50 bg-background/50 p-1 overflow-x-auto"
           role="group"
-          aria-label="Agrupar por"
+          aria-label={finixUi("Agrupar por")}
         >
           {GROUP_BY_OPTIONS.map((opt) => (
             <button
@@ -168,7 +172,7 @@ export function AllocationDonut({
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/40',
               )}
             >
-              {opt.label}
+              {<FinixUiText text={opt.label} />}
             </button>
           ))}
         </div>

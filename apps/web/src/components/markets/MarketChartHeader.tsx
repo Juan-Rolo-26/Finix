@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import type { ReactNode } from 'react';
 import { LineChart } from 'lucide-react';
 import { SymbolLogo } from '@/components/SymbolLogo';
@@ -9,15 +11,17 @@ export function MarketChartHeader({ title, symbol, exchange, actions }: {
     exchange?: string;
     actions: ReactNode;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const ticker = symbol.split(':').pop() || symbol;
     const market = exchange || (symbol.includes(':') ? symbol.split(':')[0] : '');
 
     return (
-        <header className="market-chart-heading" aria-label="Activo del análisis técnico">
+        <header className="market-chart-heading" aria-label={finixUi("Activo del análisis técnico")}>
             <div className="market-chart-heading__content">
                 <div className="market-chart-heading__eyebrow">
                     <LineChart size={14} aria-hidden="true" />
-                    <span>Análisis técnico · Finix</span>
+                    <span>{""}<FinixUiText text={"Análisis técnico · Finix"} />{""}</span>
                 </div>
                 <div className="market-chart-heading__identity">
                     <SymbolLogo key={symbol} symbol={symbol} size={52} className="market-chart-heading__logo" />

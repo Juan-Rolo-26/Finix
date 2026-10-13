@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -79,7 +81,7 @@ const ToggleRow = ({
 const ProgressBar = ({ current, total }: { current: number; total: number }) => (
     <div className="w-full space-y-2">
         <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Paso {current + 1} de {total}</span>
+            <span>{""}<FinixUiText text={"Paso"} />{" "}{current + 1} {" "}<FinixUiText text={"de"} />{" "}{total}</span>
             <span>{Math.round(((current + 1) / total) * 100)}%</span>
         </div>
         <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
@@ -116,12 +118,10 @@ const StepWelcome = ({ username }: { username: string }) => (
 
         <div className="space-y-3">
             <h2 className="text-2xl font-heading font-bold">
-                ¡Hola, <span className="text-primary">{username}</span>! 👋
+                {" "}<FinixUiText text={"¡Hola,"} />{" "}<span className="text-primary">{username}</span>! 👋
             </h2>
             <p className="text-muted-foreground leading-relaxed max-w-sm mx-auto">
-                Te damos la bienvenida a <strong>Finix</strong>, la red social financiera.
-                En 2 minutos vas a configurar tu perfil y estar listo para invertir mejor.
-            </p>
+                {" "}<FinixUiText text={"Te damos la bienvenida a"} />{" "}<strong>{""}<FinixUiText text={"Finix"} />{""}</strong>{""}<FinixUiText text={", la red social financiera. En 2 minutos vas a configurar tu perfil y estar listo para invertir mejor."} />{" "}</p>
         </div>
 
         <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto">
@@ -156,7 +156,7 @@ const StepProfile = ({
         </div>
 
         <div className="space-y-2">
-            <Label htmlFor="ob-bio">Bio corta</Label>
+            <Label htmlFor="ob-bio">{""}<FinixUiText text={"Bio corta"} />{""}</Label>
             <Textarea
                 id="ob-bio"
                 rows={3}
@@ -170,7 +170,7 @@ const StepProfile = ({
         </div>
 
         <div className="space-y-2">
-            <Label htmlFor="ob-location">Ciudad / País (opcional)</Label>
+            <Label htmlFor="ob-location">{""}<FinixUiText text={"Ciudad / País (opcional)"} />{""}</Label>
             <LocationQuickSelect
                 id="ob-location"
                 placeholder="Ej: Buenos Aires, Argentina"
@@ -191,8 +191,7 @@ const StepPrivacy = ({
 }) => (
     <div className="space-y-3">
         <p className="text-sm text-muted-foreground mb-4">
-            Podés cambiar estas opciones en cualquier momento desde Configuración.
-        </p>
+            {" "}<FinixUiText text={"Podés cambiar estas opciones en cualquier momento desde Configuración."} />{" "}</p>
 
         <ToggleRow
             label="Perfil público"
@@ -231,27 +230,26 @@ const StepPreferences = ({
     <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-                <Label>Idioma</Label>
+                <Label>{""}<FinixUiText text={"Idioma"} />{""}</Label>
                 <Select value={data.language} onValueChange={(v) => onChange('language', v)}>
                     <SelectTrigger className="bg-secondary/30 border-border/50">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="es-AR">Español (AR)</SelectItem>
-                        <SelectItem value="en-US">Ingles (EE. UU.)</SelectItem>
-                        <SelectItem value="pt-BR">Português (BR)</SelectItem>
+                        <SelectItem value="es-AR">{""}<FinixUiText text={"Español (AR)"} />{""}</SelectItem>
+                        <SelectItem value="en-US">{""}<FinixUiText text={"Ingles (EE. UU.)"} />{""}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
             <div className="space-y-2">
-                <Label>Moneda</Label>
+                <Label>{""}<FinixUiText text={"Moneda"} />{""}</Label>
                 <Select value={data.currency} onValueChange={(v) => onChange('currency', v)}>
                     <SelectTrigger className="bg-secondary/30 border-border/50">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="USD">USD – Dólar</SelectItem>
-                        <SelectItem value="ARS">ARS – Peso AR</SelectItem>
+                        <SelectItem value="USD">{""}<FinixUiText text={"USD – Dólar"} />{""}</SelectItem>
+                        <SelectItem value="ARS">{""}<FinixUiText text={"ARS – Peso AR"} />{""}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -280,11 +278,10 @@ const StepDone = ({ username }: { username: string }) => (
 
         <div className="space-y-3">
             <h2 className="text-2xl font-heading font-bold">
-                ¡Todo listo, <span className="text-primary">{username}</span>!
+                {" "}<FinixUiText text={"¡Todo listo,"} />{" "}<span className="text-primary">{username}</span>!
             </h2>
             <p className="text-muted-foreground leading-relaxed max-w-sm mx-auto">
-                Tu cuenta está configurada. Ahora podés explorar el mercado, participar en la comunidad y conectar con otros inversores.
-            </p>
+                {" "}<FinixUiText text={"Tu cuenta está configurada. Ahora podés explorar el mercado, participar en la comunidad y conectar con otros inversores."} />{" "}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto text-left">
@@ -307,6 +304,8 @@ const StepDone = ({ username }: { username: string }) => (
 // ─── Main Onboarding Component ────────────────────────────────────────────────
 
 export default function OnboardingWizard() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { user, updateUser } = useAuthStore();
     const navigate = useNavigate();
 
@@ -456,11 +455,11 @@ export default function OnboardingWizard() {
                                 <StepIcon className="w-5 h-5 text-primary" />
                             </div>
                             <div>
-                                <h1 className="font-heading font-bold text-lg leading-tight">{step.title}</h1>
-                                <p className="text-xs text-muted-foreground">Configuración de cuenta</p>
+                                <h1 className="font-heading font-bold text-lg leading-tight">{<FinixUiText text={step.title} />}</h1>
+                                <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Configuración de cuenta"} />{""}</p>
                             </div>
                             <div className="ml-auto">
-                                <img src="/logo-small.webp" alt="Finix" className="h-7 w-7 object-contain opacity-60" />
+                                <img src="/logo-small.webp" alt={finixUi("Finix")} className="h-7 w-7 object-contain opacity-60" />
                             </div>
                         </div>
                         <ProgressBar current={currentStep} total={STEPS.length} />
@@ -510,8 +509,7 @@ export default function OnboardingWizard() {
                                     className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm"
                                 >
                                     <SkipForward className="w-3.5 h-3.5" />
-                                    Saltar
-                                </Button>
+                                    {" "}<FinixUiText text={"Saltar"} />{" "}</Button>
                             )}
 
                             {isLastStep ? (
@@ -526,8 +524,7 @@ export default function OnboardingWizard() {
                                     ) : (
                                         <Rocket className="w-4 h-4 mr-2" />
                                     )}
-                                    Ir a Finix
-                                </Button>
+                                    {" "}<FinixUiText text={"Ir a Finix"} />{" "}</Button>
                             ) : (
                                 <Button
                                     onClick={handleNext}
@@ -538,8 +535,7 @@ export default function OnboardingWizard() {
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
                                         <>
-                                            Avanzar
-                                            <ChevronRight className="w-4 h-4" />
+                                            {" "}<FinixUiText text={"Avanzar"} />{" "}<ChevronRight className="w-4 h-4" />
                                         </>
                                     )}
                                 </Button>

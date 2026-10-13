@@ -1,3 +1,4 @@
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /** ChartEmptyState.tsx — Empty data state for Finix chart components */
 import React from 'react';
 import { BarChart3 } from 'lucide-react';
@@ -16,10 +17,12 @@ export function ChartEmptyState({
   className,
   icon,
 }: ChartEmptyStateProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   return (
     <div
       role="status"
-      aria-label="Sin datos"
+      aria-label={finixUi("Sin datos")}
       className={cn(
         'flex flex-col items-center justify-center gap-4 w-full h-full min-h-[220px]',
         'rounded-2xl border border-dashed border-border/60 bg-muted/10 px-8 text-center',

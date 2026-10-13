@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -33,6 +35,8 @@ const cardVariants = {
 };
 
 export default function Notifications() {
+    const { ui: finixUi, locale } = useFinixUiTranslation();
+
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -121,18 +125,17 @@ export default function Notifications() {
     };
 
     const timeZone = notificationTimezone();
-    const groups = groupNotificationsByDay(notifications, { timeZone });
+    const groups = groupNotificationsByDay(notifications, { timeZone, locale });
 
     return (
         <div className="page-enter max-w-3xl mx-auto px-0 md:px-4 py-0 md:py-8 w-full flex flex-col min-h-screen">
-            <p className="px-4 md:px-0 pt-3 text-sm text-muted-foreground">Fecha y hora local: {timeZone}</p>
+            <p className="px-4 md:px-0 pt-3 text-sm text-muted-foreground">{""}<FinixUiText text={"Fecha y hora local:"} />{" "}{timeZone}</p>
             {/* Header */}
             <div className="sticky top-0 z-30 pt-4 pb-3 px-4 md:px-0 md:pt-0" style={{ background: 'hsl(var(--background) / 0.85)', backdropFilter: 'blur(12px)' }}>
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <h1 className="text-[22px] font-black tracking-tight flex items-center gap-2">
-                            Notificaciones
-                        </h1>
+                            {" "}<FinixUiText text={"Notificaciones"} />{" "}</h1>
                     </div>
                     <div className="flex items-center gap-2">
                         {notifications.length > 0 && notifications.some(n => !n.isRead) && (
@@ -141,10 +144,10 @@ export default function Notifications() {
                                 disabled={isMarkingRead}
                                 className="w-8 h-8 md:w-auto md:px-3 md:h-9 flex items-center justify-center gap-2 rounded-xl transition-all"
                                 style={{ color: 'hsl(var(--primary))', background: 'hsl(var(--primary) / 0.1)' }}
-                                title="Marcar leídas"
+                                title={finixUi("Marcar leídas")}
                             >
                                 <CheckCheck className="w-4 h-4" />
-                                <span className="hidden md:block text-[13px] font-bold">Leídas</span>
+                                <span className="hidden md:block text-[13px] font-bold">{""}<FinixUiText text={"Leídas"} />{""}</span>
                             </button>
                         )}
                         <button
@@ -179,7 +182,7 @@ export default function Notifications() {
                                         transition={{ type: 'spring', stiffness: 450, damping: 30 }}
                                     />
                                 )}
-                                {c.label}
+                                {<FinixUiText text={c.label} />}
                             </button>
                         );
                     })}
@@ -190,7 +193,7 @@ export default function Notifications() {
             <div className="flex-1 px-4 md:px-0 mt-4 pb-20">
                 {error && <div role="alert" className="mb-4 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
                     <span className="min-w-0 break-words">{error}</span>
-                    <button type="button" className="min-h-11 shrink-0 underline underline-offset-4" onClick={() => void loadNotifications(null, activeTab)}>Reintentar</button>
+                    <button type="button" className="min-h-11 shrink-0 underline underline-offset-4" onClick={() => void loadNotifications(null, activeTab)}>{""}<FinixUiText text={"Reintentar"} />{""}</button>
                 </div>}
                 {isLoading ? (
                     <div className="flex justify-center items-center py-32">
@@ -201,10 +204,9 @@ export default function Notifications() {
                         <div className="w-16 h-16 rounded-3xl flex items-center justify-center mb-4" style={{ background: 'hsl(var(--muted) / 0.5)' }}>
                             <Bell className="w-7 h-7" style={{ color: 'hsl(var(--muted-foreground))' }} />
                         </div>
-                        <h3 className="text-base font-bold mb-1">Todo al día</h3>
+                        <h3 className="text-base font-bold mb-1">{""}<FinixUiText text={"Todo al día"} />{""}</h3>
                         <p className="text-[13.5px] max-w-[280px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                            No hay notificaciones recientes en esta categoría.
-                        </p>
+                            {" "}<FinixUiText text={"No hay notificaciones recientes en esta categoría."} />{" "}</p>
                     </div>
                 ) : (
                     <div className="space-y-6">
@@ -273,7 +275,7 @@ export default function Notifications() {
                                                     )}
                                                     <time dateTime={n.createdAt} className="text-[13px] mt-1.5 inline-block font-semibold"
                                                         style={{ color: isUnread ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground) / 0.6)' }}>
-                                                        {formatNotificationTime(n.createdAt, timeZone)}
+                                                        {formatNotificationTime(n.createdAt, timeZone, locale)}
                                                     </time>
                                                 </div>
 

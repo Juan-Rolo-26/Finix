@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -83,6 +85,8 @@ const TARGET_TYPE_MAP: Record<string, { label: string; icon: React.ComponentType
 };
 
 export default function ReportModal({ isOpen, onClose, targetType, targetId, targetPreview }: ReportModalProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [selectedPreset, setSelectedPreset] = useState<string>('');
     const [specification, setSpecification] = useState<string>('');
     const [submitting, setSubmitting] = useState(false);
@@ -201,11 +205,9 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, tar
                             </div>
                             <div>
                                 <h2 id="report-modal-title" className="font-semibold text-base text-foreground tracking-tight">
-                                    Reportar Infracción
-                                </h2>
+                                    {" "}<FinixUiText text={"Reportar Infracción"} />{" "}</h2>
                                 <p className="text-xs text-muted-foreground">
-                                    Tu reporte es anónimo y nos ayuda a mantener Finix seguro
-                                </p>
+                                    {" "}<FinixUiText text={"Tu reporte es anónimo y nos ayuda a mantener Finix seguro"} />{" "}</p>
                             </div>
                         </div>
                         <button
@@ -215,7 +217,7 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, tar
                                 onClose();
                             }}
                             className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-colors"
-                            aria-label="Cerrar modal"
+                            aria-label={finixUi("Cerrar modal")}
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -233,11 +235,9 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, tar
                                     <CheckCircle2 className="w-8 h-8" />
                                 </div>
                                 <h3 className="text-lg font-semibold text-foreground">
-                                    Reporte Enviado con Éxito
-                                </h3>
+                                    {" "}<FinixUiText text={"Reporte Enviado con Éxito"} />{" "}</h3>
                                 <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
-                                    El equipo de moderación de Finix revisará este caso a la brevedad. Gracias por cuidar y mejorar la comunidad.
-                                </p>
+                                    {" "}<FinixUiText text={"El equipo de moderación de Finix revisará este caso a la brevedad. Gracias por cuidar y mejorar la comunidad."} />{" "}</p>
                                 <div className="pt-2">
                                     <button
                                         type="button"
@@ -247,8 +247,7 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, tar
                                         }}
                                         className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors shadow-sm"
                                     >
-                                        Aceptar
-                                    </button>
+                                        {" "}<FinixUiText text={"Aceptar"} />{" "}</button>
                                 </div>
                             </motion.div>
                         ) : (
@@ -260,7 +259,7 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, tar
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-xs text-muted-foreground">Estás reportando:</span>
+                                            <span className="text-xs text-muted-foreground">{""}<FinixUiText text={"Estás reportando:"} />{""}</span>
                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-primary/10 text-primary border border-primary/25">
                                                 {targetInfo.label}
                                             </span>
@@ -276,7 +275,7 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, tar
                                 {/* Selección de motivo */}
                                 <div>
                                     <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                                        Motivo del reporte <span className="text-destructive">*</span>
+                                        {" "}<FinixUiText text={"Motivo del reporte"} />{" "}<span className="text-destructive">*</span>
                                     </label>
                                     <div className="space-y-2">
                                         {REPORT_PRESETS.map((preset) => {
@@ -314,10 +313,10 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, tar
                                                                     isSelected ? 'text-foreground font-semibold' : 'text-foreground/90'
                                                                 }`}
                                                             >
-                                                                {preset.label}
+                                                                {<FinixUiText text={preset.label} />}
                                                             </p>
                                                             <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                                                                {preset.description}
+                                                                {<FinixUiText text={preset.description} />}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -342,8 +341,7 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, tar
                                 <div>
                                     <div className="flex items-center justify-between mb-1.5">
                                         <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                            Detalles adicionales (opcional)
-                                        </label>
+                                            {" "}<FinixUiText text={"Detalles adicionales (opcional)"} />{" "}</label>
                                         <span className="text-[11px] text-muted-foreground">
                                             {specification.length}/300
                                         </span>
@@ -356,7 +354,7 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, tar
                                             e.stopPropagation();
                                             setSpecification(e.target.value);
                                         }}
-                                        placeholder="Agregá contexto adicional o información relevante para el equipo de moderación..."
+                                        placeholder={finixUi("Agregá contexto adicional o información relevante para el equipo de moderación...")}
                                         rows={3}
                                         className="w-full rounded-xl border border-border/70 bg-secondary/25 px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 resize-none transition-all"
                                     />
@@ -385,8 +383,7 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, tar
                                         disabled={submitting}
                                         className="flex-1 px-4 py-2.5 rounded-xl border border-border/80 bg-secondary/50 hover:bg-secondary text-foreground text-sm font-medium transition-colors disabled:opacity-50"
                                     >
-                                        Cancelar
-                                    </button>
+                                        {" "}<FinixUiText text={"Cancelar"} />{" "}</button>
                                     <button
                                         type="submit"
                                         disabled={submitting || !selectedPreset}
@@ -395,10 +392,10 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, tar
                                         {submitting ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                <span>Enviando reporte...</span>
+                                                <span>{""}<FinixUiText text={"Enviando reporte..."} />{""}</span>
                                             </>
                                         ) : (
-                                            <span>Enviar Reporte</span>
+                                            <span>{""}<FinixUiText text={"Enviar Reporte"} />{""}</span>
                                         )}
                                     </button>
                                 </div>

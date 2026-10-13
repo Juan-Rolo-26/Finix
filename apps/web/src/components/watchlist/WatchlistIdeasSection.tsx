@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -16,6 +18,8 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 export default function WatchlistIdeasSection({ onAddSymbol }: WatchlistIdeasSectionProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any>(null);
     const [followingCategory, setFollowingCategory] = useState<string | null>(null);
@@ -66,7 +70,7 @@ export default function WatchlistIdeasSection({ onAddSymbol }: WatchlistIdeasSec
         return (
             <div className="rounded-3xl border border-border/60 bg-card/60 p-8 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
-                <span className="text-xs text-muted-foreground">Cargando ideas de mercado calculadas por Finix...</span>
+                <span className="text-xs text-muted-foreground">{""}<FinixUiText text={"Cargando ideas de mercado calculadas por Finix..."} />{""}</span>
             </div>
         );
     }
@@ -79,11 +83,9 @@ export default function WatchlistIdeasSection({ onAddSymbol }: WatchlistIdeasSec
                 <div>
                     <h3 className="text-lg font-black tracking-tight text-foreground flex items-center gap-2">
                         <Sparkles className="w-5 h-5 text-emerald-500" />
-                        Ideas para explorar
-                    </h3>
+                        {" "}<FinixUiText text={"Ideas para explorar"} />{" "}</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                        Listas dinámicas conectadas con el screener cuantitativo de Finix. Cada lista aplica reglas objetivas sin dictaminar recomendaciones.
-                    </p>
+                        {" "}<FinixUiText text={"Listas dinámicas conectadas con el screener cuantitativo de Finix. Cada lista aplica reglas objetivas sin dictaminar recomendaciones."} />{" "}</p>
                 </div>
             </div>
 
@@ -107,8 +109,7 @@ export default function WatchlistIdeasSection({ onAddSymbol }: WatchlistIdeasSec
                                         <div>
                                             <h4 className="text-sm font-black text-foreground">{cat.title}</h4>
                                             <span className="text-[10px] text-muted-foreground font-semibold">
-                                                {cat.count} resultados detectados
-                                            </span>
+                                                {cat.count} {" "}<FinixUiText text={"resultados detectados"} />{" "}</span>
                                         </div>
                                     </div>
 
@@ -137,7 +138,7 @@ export default function WatchlistIdeasSection({ onAddSymbol }: WatchlistIdeasSec
                                 <p className="text-xs text-muted-foreground leading-relaxed mb-2">{cat.description}</p>
 
                                 <div className="rounded-xl bg-secondary/40 border border-border/40 p-2.5 mb-3 text-[11px] text-muted-foreground">
-                                    <b className="text-foreground">Regla cuantitativa:</b> {cat.criteria}
+                                    <b className="text-foreground">{""}<FinixUiText text={"Regla cuantitativa:"} />{""}</b> {cat.criteria}
                                 </div>
 
                                 {/* Items de la idea */}
@@ -166,7 +167,7 @@ export default function WatchlistIdeasSection({ onAddSymbol }: WatchlistIdeasSec
                                                     size="sm"
                                                     onClick={() => onAddSymbol(item.symbol, item.name)}
                                                     className="h-7 px-2 rounded-lg text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary gap-1"
-                                                    title="Agregar a mi lista"
+                                                    title={finixUi("Agregar a mi lista")}
                                                 >
                                                     <BookmarkPlus className="w-3.5 h-3.5" />
                                                 </Button>

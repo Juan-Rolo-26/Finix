@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { sectorLabel } from '@/lib/sector-labels';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -236,6 +238,8 @@ export default function OpportunityScreener({
 }: {
     onOpenAnalysis: (ticker: string) => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [category, setCategory] = useState<Category>('ALL');
     const [search, setSearch] = useState('');
     const [sector, setSector] = useState('ALL');
@@ -328,7 +332,7 @@ export default function OpportunityScreener({
     return (
         <section className="market-section">
             <MarketHeader
-                title="Oportunidades"
+                title={finixUi("Oportunidades")}
                 eyebrow="SCREENER CUANTITATIVO · FINIX"
                 icon={Sparkles}
                 description="S&P 500 · Valuación, calidad, crecimiento y dividendos"
@@ -338,8 +342,8 @@ export default function OpportunityScreener({
                         className="market-icon-action"
                         onClick={() => load(true)}
                         disabled={refreshing}
-                        title="Actualizar oportunidades"
-                        aria-label="Actualizar oportunidades"
+                        title={finixUi("Actualizar oportunidades")}
+                        aria-label={finixUi("Actualizar oportunidades")}
                     >
                         <RefreshCw
                             size={17}
@@ -373,7 +377,7 @@ export default function OpportunityScreener({
             <div
                 className="market-segments mb-5"
                 role="group"
-                aria-label="Tipo de oportunidad"
+                aria-label={finixUi("Tipo de oportunidad")}
             >
                 {(Object.keys(categoryMeta) as Category[]).map((key) => {
                     const meta = categoryMeta[key];
@@ -398,17 +402,17 @@ export default function OpportunityScreener({
                     <input
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
-                        aria-label="Buscar empresa en oportunidades"
-                        placeholder="Buscar ticker o empresa..."
+                        aria-label={finixUi("Buscar empresa en oportunidades")}
+                        placeholder={finixUi("Buscar ticker o empresa...")}
                     />
                 </label>
                 <select
                     className="market-control opportunity-sector"
                     value={sector}
                     onChange={(event) => setSector(event.target.value)}
-                    aria-label="Sector de oportunidades"
+                    aria-label={finixUi("Sector de oportunidades")}
                 >
-                    <option value="ALL">Todos los sectores</option>
+                    <option value="ALL">{""}<FinixUiText text={"Todos los sectores"} />{""}</option>
                     {(data?.filters?.sectors || []).map((value: string) => (
                         <option key={value} value={value}>{sectorLabel(value)}</option>
                     ))}
@@ -420,8 +424,7 @@ export default function OpportunityScreener({
                     className="market-action"
                 >
                     <Filter size={16} />
-                    Filtros avanzados
-                    <ChevronDown
+                    {" "}<FinixUiText text={"Filtros avanzados"} />{" "}<ChevronDown
                         size={14}
                         className={advanced ? 'rotate-180' : ''}
                     />
@@ -463,12 +466,10 @@ export default function OpportunityScreener({
                 <>
                     {data?.stale && (
                         <p className="market-note">
-                            Mostrando la última lectura válida mientras se
-                            recupera la fuente de mercado.
-                        </p>
+                            {" "}<FinixUiText text={"Mostrando la última lectura válida mientras se recupera la fuente de mercado."} />{" "}</p>
                     )}
                     <p className="market-results">
-                        {data?.summary?.matchingCount ?? 0} empresas ·{' '}
+                        {data?.summary?.matchingCount ?? 0} {" "}<FinixUiText text={"empresas ·"} />{""}{' '}
                         {scoreLabel}
                     </p>
                     {items.length > 0 && (
@@ -484,22 +485,15 @@ export default function OpportunityScreener({
                     )}
                     {!items.length && (
                         <div className="market-empty">
-                            No hay empresas con los criterios seleccionados.
-                            Probá flexibilizar un filtro.
-                        </div>
+                            {" "}<FinixUiText text={"No hay empresas con los criterios seleccionados. Probá flexibilizar un filtro."} />{" "}</div>
                     )}
                 </>
             )}
             <footer className="market-note">
                 <HelpCircle size={16} />
                 <p>
-                    <b className="text-foreground">Transparencia del score.</b>{' '}
-                    Valuación 30%, calidad financiera 25%, crecimiento 20%,
-                    rentabilidad 15% y balance 10%. La cobertura indica qué
-                    parte del score pudo calcularse. Las métricas faltantes no
-                    se inventan. El score no es una recomendación de compra o
-                    venta.
-                </p>
+                    <b className="text-foreground">{""}<FinixUiText text={"Transparencia del score."} />{""}</b>{' '}
+                    {" "}<FinixUiText text={"Valuación 30%, calidad financiera 25%, crecimiento 20%, rentabilidad 15% y balance 10%. La cobertura indica qué parte del score pudo calcularse. Las métricas faltantes no se inventan. El score no es una recomendación de compra o venta."} />{" "}</p>
             </footer>
             {watchlistSymbol && (
                 <AddToWatchlistModal
@@ -578,13 +572,13 @@ function OpportunityTable({
             <table className="opportunities-table" aria-label={`Oportunidades: ${categoryMeta[category].label}`}>
                 <thead>
                     <tr>
-                        <th scope="col">Empresa</th>
-                        <th scope="col">Precio / variación</th>
+                        <th scope="col">{""}<FinixUiText text={"Empresa"} />{""}</th>
+                        <th scope="col">{""}<FinixUiText text={"Precio / variación"} />{""}</th>
                         {categoryMetrics[category].map((metric) => (
                             <th scope="col" key={metric.label}>{metric.label}</th>
                         ))}
-                        <th scope="col">Cobertura</th>
-                        {isWatchlistEnabled() && <th scope="col"><span className="sr-only">Seguimiento</span></th>}
+                        <th scope="col">{""}<FinixUiText text={"Cobertura"} />{""}</th>
+                        {isWatchlistEnabled() && <th scope="col"><span className="sr-only">{""}<FinixUiText text={"Seguimiento"} />{""}</span></th>}
                     </tr>
                 </thead>
                 <tbody>
@@ -614,6 +608,8 @@ function OpportunityRow({
     onOpen: (ticker: string) => void;
     onAddToWatchlist: (ticker: string, name?: string) => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     return (
         <tr onClick={() => onOpen(item.ticker)}>
             <th scope="row">
@@ -649,7 +645,7 @@ function OpportunityRow({
                     <button
                         type="button"
                         className="market-icon-action"
-                        title="Agregar a Seguimiento"
+                        title={finixUi("Agregar a Seguimiento")}
                         aria-label={`Agregar ${item.ticker} a Seguimiento`}
                         onClick={(event) => {
                             event.stopPropagation();

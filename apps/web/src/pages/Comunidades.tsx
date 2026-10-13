@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
@@ -108,8 +110,7 @@ function CommunityCard({ community, onOpen }: { community: Community; onOpen: ()
                 {community.isMember && (
                     <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
                         style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
-                        <Check className="w-2.5 h-2.5" /> Miembro
-                    </div>
+                        <Check className="w-2.5 h-2.5" /> {" "}<FinixUiText text={"Miembro"} />{" "}</div>
                 )}
             </div>
 
@@ -172,11 +173,11 @@ function CommunityCard({ community, onOpen }: { community: Community; onOpen: ()
                     </div>
                     <div className="text-[11px] font-semibold">
                         {minPrice === null ? (
-                            <span style={{ color: 'hsl(145 65% 36%)' }}>Gratis</span>
+                            <span style={{ color: 'hsl(145 65% 36%)' }}>{""}<FinixUiText text={"Gratis"} />{""}</span>
                         ) : hasFree ? (
-                            <span style={{ color: 'hsl(var(--primary))' }}>Desde ${minPrice}/mes</span>
+                            <span style={{ color: 'hsl(var(--primary))' }}>{""}<FinixUiText text={"Desde $"} />{""}{minPrice}{""}<FinixUiText text={"/mes"} />{""}</span>
                         ) : (
-                            <span style={{ color: 'hsl(var(--primary))' }}>${minPrice}/mes</span>
+                            <span style={{ color: 'hsl(var(--primary))' }}>${minPrice}{""}<FinixUiText text={"/mes"} />{""}</span>
                         )}
                     </div>
                 </div>
@@ -207,6 +208,8 @@ function CreateCommunityModal({ onClose, onCreate }: {
     onClose: () => void;
     onCreate: (c: Community) => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [step, setStep] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -335,9 +338,9 @@ function CreateCommunityModal({ onClose, onCreate }: {
                 <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4"
                     style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                     <div>
-                        <h2 className="font-bold text-base">Crear comunidad</h2>
+                        <h2 className="font-bold text-base">{""}<FinixUiText text={"Crear comunidad"} />{""}</h2>
                         <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                            Paso {step + 1} de {CREATION_STEPS.length} — {CREATION_STEPS[step]}
+                            {" "}<FinixUiText text={"Paso"} />{" "}{step + 1} {" "}<FinixUiText text={"de"} />{" "}{CREATION_STEPS.length} — {CREATION_STEPS[step]}
                         </p>
                     </div>
                     <button onClick={onClose} className="rounded-xl p-2 hover:bg-muted transition-colors">
@@ -368,8 +371,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                     <div>
                                         <label className="text-xs font-semibold mb-1 block"
                                             style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                            Nombre de la comunidad *
-                                        </label>
+                                            {" "}<FinixUiText text={"Nombre de la comunidad *"} />{" "}</label>
                                         <input
                                             className="w-full rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2"
                                             style={{
@@ -377,7 +379,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                                 border: '1px solid hsl(var(--border))',
                                                 '--tw-ring-color': 'hsl(var(--primary))',
                                             } as any}
-                                            placeholder="ej: Inversión Inteligente"
+                                            placeholder={finixUi("ej: Inversión Inteligente")}
                                             value={form.name}
                                             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                                             maxLength={60}
@@ -386,8 +388,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                     <div>
                                         <label className="text-xs font-semibold mb-1 block"
                                             style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                            Descripción *
-                                        </label>
+                                            {" "}<FinixUiText text={"Descripción *"} />{" "}</label>
                                         <textarea
                                             className="w-full rounded-xl px-3 py-2.5 text-sm outline-none resize-none focus:ring-2"
                                             style={{
@@ -395,7 +396,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                                 border: '1px solid hsl(var(--border))',
                                                 '--tw-ring-color': 'hsl(var(--primary))',
                                             } as any}
-                                            placeholder="Describí tu comunidad..."
+                                            placeholder={finixUi("Describí tu comunidad...")}
                                             rows={3}
                                             value={form.description}
                                             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -404,15 +405,13 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                     <div>
                                         <label className="text-xs font-semibold mb-1 block"
                                             style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                            Categoría
-                                            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
+                                            {" "}<FinixUiText text={"Categoría"} />{" "}<span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
                                                 style={{ background: 'hsl(var(--primary)/0.12)', color: 'hsl(var(--primary))' }}>
-                                                {form.categories.length} seleccionada{form.categories.length !== 1 ? 's' : ''}
+                                                {form.categories.length} {" "}<FinixUiText text={"seleccionada"} />{""}{form.categories.length !== 1 ? 's' : ''}
                                             </span>
                                         </label>
                                         <p className="text-[10px] mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                            Podés seleccionar una o más categorías.
-                                        </p>
+                                            {" "}<FinixUiText text={"Podés seleccionar una o más categorías."} />{" "}</p>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                                             {CATEGORIES.filter(c => c.key !== 'all').map(cat => {
                                                 const Icon = cat.icon;
@@ -430,7 +429,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                                         }}
                                                     >
                                                         <Icon className="w-3 h-3 shrink-0" />
-                                                        <span className="truncate">{cat.label}</span>
+                                                        <span className="truncate">{<FinixUiText text={cat.label} />}</span>
                                                         {active && (
                                                             <Check className="w-2.5 h-2.5 ml-auto shrink-0" />
                                                         )}
@@ -443,8 +442,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                         <div>
                                             <label className="text-xs font-semibold mb-2 block"
                                                 style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                Imagen de Avatar
-                                            </label>
+                                                {" "}<FinixUiText text={"Imagen de Avatar"} />{" "}</label>
                                             <div
                                                 className="w-full relative rounded-xl border border-dashed flex flex-col items-center justify-center p-4 transition-colors cursor-pointer group"
                                                 style={{
@@ -455,7 +453,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                             >
                                                 {form.imageUrl ? (
                                                     <>
-                                                        <img src={resolveMediaUrl(form.imageUrl)} alt="Avatar" className="absolute inset-0 w-full h-full object-cover rounded-xl" />
+                                                        <img src={resolveMediaUrl(form.imageUrl)} alt={finixUi("Avatar")} className="absolute inset-0 w-full h-full object-cover rounded-xl" />
                                                         <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                                             <Upload className="w-5 h-5 text-white" />
                                                         </div>
@@ -465,7 +463,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                                 ) : (
                                                     <>
                                                         <ImageIcon className="w-6 h-6 mb-2" style={{ color: 'hsl(var(--muted-foreground))' }} />
-                                                        <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Subir imagen</span>
+                                                        <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"Subir imagen"} />{""}</span>
                                                     </>
                                                 )}
                                                 <input
@@ -484,8 +482,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                         <div>
                                             <label className="text-xs font-semibold mb-2 block"
                                                 style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                Imagen de Banner
-                                            </label>
+                                                {" "}<FinixUiText text={"Imagen de Banner"} />{" "}</label>
                                             <div
                                                 className="w-full relative rounded-xl border border-dashed flex flex-col items-center justify-center p-4 transition-colors cursor-pointer group"
                                                 style={{
@@ -496,7 +493,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                             >
                                                 {form.bannerUrl ? (
                                                     <>
-                                                        <img src={resolveMediaUrl(form.bannerUrl)} alt="Banner" className="absolute inset-0 w-full h-full object-cover rounded-xl" />
+                                                        <img src={resolveMediaUrl(form.bannerUrl)} alt={finixUi("Banner")} className="absolute inset-0 w-full h-full object-cover rounded-xl" />
                                                         <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                                             <Upload className="w-5 h-5 text-white" />
                                                         </div>
@@ -506,7 +503,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                                 ) : (
                                                     <>
                                                         <ImageIcon className="w-6 h-6 mb-2" style={{ color: 'hsl(var(--muted-foreground))' }} />
-                                                        <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Subir banner</span>
+                                                        <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"Subir banner"} />{""}</span>
                                                     </>
                                                 )}
                                                 <input
@@ -563,7 +560,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                             {/* Step 2: Monetization */}
                             {step === 2 && (
                                 <div className="space-y-3 py-2">
-                                    <p className="text-sm font-semibold">¿Querés monetizar tu comunidad?</p>
+                                    <p className="text-sm font-semibold">{""}<FinixUiText text={"¿Querés monetizar tu comunidad?"} />{""}</p>
                                     {[
                                         { value: 'free', label: 'Gratis', icon: Heart, desc: 'Tu comunidad es completamente gratuita.' },
                                         { value: 'paid', label: 'Suscripción paga', icon: Crown, desc: 'Los miembros pagan para acceder.' },
@@ -601,8 +598,8 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                     {form.monetization === 'free' ? (
                                         <div className="flex flex-col items-center py-6 gap-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                             <Heart className="w-8 h-8" />
-                                            <p className="text-sm">Tu comunidad será gratuita.</p>
-                                            <p className="text-xs">Se creará un plan gratuito automáticamente.</p>
+                                            <p className="text-sm">{""}<FinixUiText text={"Tu comunidad será gratuita."} />{""}</p>
+                                            <p className="text-xs">{""}<FinixUiText text={"Se creará un plan gratuito automáticamente."} />{""}</p>
                                         </div>
                                     ) : (
                                         <>
@@ -611,7 +608,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                                     style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}>
                                                     <div className="flex items-center justify-between">
                                                         <p className="text-xs font-bold" style={{ color: 'hsl(var(--primary))' }}>
-                                                            Plan {i + 1}
+                                                            {" "}<FinixUiText text={"Plan"} />{" "}{i + 1}
                                                         </p>
                                                         <button onClick={() => removePlan(i)}
                                                             className="rounded p-1 hover:bg-destructive/10 transition-colors">
@@ -622,7 +619,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                                         <input
                                                             className="rounded-lg px-2 py-1.5 text-xs outline-none"
                                                             style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                                                            placeholder="Nombre (ej: Pro)"
+                                                            placeholder={finixUi("Nombre (ej: Pro)")}
                                                             value={plan.name}
                                                             onChange={e => updatePlan(i, 'name', e.target.value)}
                                                         />
@@ -637,7 +634,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                                                 value={plan.price || ''}
                                                                 onChange={e => updatePlan(i, 'price', parseFloat(e.target.value) || 0)}
                                                             />
-                                                            <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>/mes</span>
+                                                            <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"/mes"} />{""}</span>
                                                         </div>
                                                     </div>
                                                     <div className="space-y-1">
@@ -646,7 +643,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                                                 <input
                                                                     className="flex-1 rounded px-2 py-1 text-xs outline-none"
                                                                     style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                                                                    placeholder="Beneficio del plan"
+                                                                    placeholder={finixUi("Beneficio del plan")}
                                                                     value={feat}
                                                                     onChange={e => updatePlan(i, 'features', plan.features.map((f2, i2) => i2 === fi ? e.target.value : f2))}
                                                                 />
@@ -661,8 +658,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                                             className="text-[10px] font-medium mt-1"
                                                             style={{ color: 'hsl(var(--primary))' }}
                                                             onClick={() => updatePlan(i, 'features', [...plan.features, ''])}>
-                                                            + Agregar beneficio
-                                                        </button>
+                                                            {" "}<FinixUiText text={"+ Agregar beneficio"} />{" "}</button>
                                                     </div>
                                                 </div>
                                             ))}
@@ -670,8 +666,7 @@ function CreateCommunityModal({ onClose, onCreate }: {
                                                 onClick={addPlan}
                                                 className="w-full rounded-xl py-2.5 text-sm font-medium border-dashed border-2 transition-colors"
                                                 style={{ borderColor: 'hsl(var(--primary)/0.4)', color: 'hsl(var(--primary))' }}>
-                                                <Plus className="w-4 h-4 inline mr-1" /> Agregar plan
-                                            </button>
+                                                <Plus className="w-4 h-4 inline mr-1" /> {" "}<FinixUiText text={"Agregar plan"} />{" "}</button>
                                         </>
                                     )}
                                 </div>
@@ -748,6 +743,8 @@ function CreateCommunityModal({ onClose, onCreate }: {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Comunidades() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const isCreator = hasCommunityCreatorAccess(user);
@@ -847,10 +844,9 @@ export default function Comunidades() {
                 style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                 <div className="desktop-page-heading flex flex-col items-center justify-center text-center gap-3 mb-4 max-w-xl mx-auto">
                     <div className="min-w-0 text-center">
-                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-center">Comunidades</h1>
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-center">{""}<FinixUiText text={"Comunidades"} />{""}</h1>
                         <p className="text-xs sm:text-[13px] mt-0.5 text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                            Aprendé, compartí y conectate con inversores que piensan como vos.
-                        </p>
+                            {" "}<FinixUiText text={"Aprendé, compartí y conectate con inversores que piensan como vos."} />{" "}</p>
                     </div>
 
                     {isCreator ? (
@@ -863,8 +859,8 @@ export default function Comunidades() {
                             }}
                         >
                             <Plus className="w-4 h-4" />
-                            <span className="hidden xs:inline sm:inline">Crear comunidad</span>
-                            <span className="xs:hidden sm:hidden">Crear</span>
+                            <span className="hidden xs:inline sm:inline">{""}<FinixUiText text={"Crear comunidad"} />{""}</span>
+                            <span className="xs:hidden sm:hidden">{""}<FinixUiText text={"Crear"} />{""}</span>
                         </button>
                     ) : (
                         <Link
@@ -873,7 +869,7 @@ export default function Comunidades() {
                             style={{ borderColor: 'hsl(var(--primary)/0.4)', color: 'hsl(var(--primary))' }}
                         >
                             <Crown className="w-4 h-4" />
-                            <span>Convertite en Creator</span>
+                            <span>{""}<FinixUiText text={"Convertite en Creator"} />{""}</span>
                         </Link>
                     )}
                 </div>
@@ -888,7 +884,7 @@ export default function Comunidades() {
                             background: 'hsl(var(--muted))',
                             border: '1px solid hsl(var(--border))',
                         }}
-                        placeholder="Buscar comunidades, inversores o temas..."
+                        placeholder={finixUi("Buscar comunidades, inversores o temas...")}
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                     />
@@ -912,7 +908,7 @@ export default function Comunidades() {
                                     color: active ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))',
                                 }}
                             >
-                                <Icon className="w-3 h-3" /> {cat.label}
+                                <Icon className="w-3 h-3" /> {<FinixUiText text={cat.label} />}
                                 {active && !isAll && (
                                     <Check className="w-2.5 h-2.5 ml-0.5" />
                                 )}
@@ -967,7 +963,7 @@ export default function Comunidades() {
                     <div className="flex flex-col items-center py-16 sm:py-20 gap-3"
                         style={{ color: 'hsl(var(--muted-foreground))' }}>
                         <Users className="w-12 h-12 opacity-30" />
-                        <p className="font-semibold">No hay comunidades</p>
+                        <p className="font-semibold">{""}<FinixUiText text={"No hay comunidades"} />{""}</p>
                         <p className="text-sm">
                             {searchQuery ? `Sin resultados para "${searchQuery}"` : 'Todavía no hay comunidades publicadas.'}
                         </p>
@@ -980,8 +976,7 @@ export default function Comunidades() {
                                     color: 'hsl(var(--primary-foreground))',
                                 }}
                             >
-                                <Plus className="w-4 h-4" /> Crear comunidad
-                            </button>
+                                <Plus className="w-4 h-4" /> {" "}<FinixUiText text={"Crear comunidad"} />{" "}</button>
                         )}
                     </div>
                 ) : (

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { sectorLabel } from '@/lib/sector-labels';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -102,6 +104,8 @@ export default function ValueCreationHeatmap({
 }: {
     onSelectSymbol?: (symbol: string) => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [data, setData] = useState<ValuePayload | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -181,7 +185,7 @@ export default function ValueCreationHeatmap({
     return (
         <div className="market-section value-creation">
             <MarketHeader
-                title="Creación de valor"
+                title={finixUi("Creación de valor")}
                 eyebrow="INTELIGENCIA FUNDAMENTAL · FINIX"
                 icon={Building2}
                 description="S&P 500 · ROIC, WACC y retorno sobre el capital"
@@ -190,18 +194,18 @@ export default function ValueCreationHeatmap({
                         <Link
                             to="/educativa/analisis-fundamental/que-es-el-roic"
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
-                            title="Aprender sobre ROIC y Creación de Valor"
+                            title={finixUi("Aprender sobre ROIC y Creación de Valor")}
                         >
                             <GraduationCap size={15} className="text-emerald-500" />
-                            <span className="hidden sm:inline">Guía ROIC vs WACC</span>
+                            <span className="hidden sm:inline">{""}<FinixUiText text={"Guía ROIC vs WACC"} />{""}</span>
                         </Link>
                         <button
                             type="button"
                             className="market-icon-action"
                             onClick={() => load(true)}
                             disabled={refreshing}
-                            title="Actualizar datos"
-                            aria-label="Actualizar datos"
+                            title={finixUi("Actualizar datos")}
+                            aria-label={finixUi("Actualizar datos")}
                         >
                             <RefreshCw
                                 size={17}
@@ -213,25 +217,25 @@ export default function ValueCreationHeatmap({
             />
             <div className="market-overview">
                 <Metric
-                    title="Cobertura S&P 500"
+                    title={finixUi("Cobertura S&P 500")}
                     value={`${summary?.coveredCount ?? 0}/${summary?.totalCount ?? 0}`}
                     sub="Empresas con ROIC y WACC"
                     tone="neutral"
                 />
                 <Metric
-                    title="Creadoras de valor"
+                    title={finixUi("Creadoras de valor")}
                     value={String(summary?.createsValueCount ?? 0)}
                     sub="Spread mayor a +2 pp"
                     tone="positive"
                 />
                 <Metric
-                    title="Destructoras de valor"
+                    title={finixUi("Destructoras de valor")}
                     value={String(summary?.destroysValueCount ?? 0)}
                     sub="Spread menor a -2 pp"
                     tone="negative"
                 />
                 <Metric
-                    title="Spread mediano"
+                    title={finixUi("Spread mediano")}
                     value={spreadPoints(summary?.medianSpread)}
                     sub="ROIC menos WACC"
                     tone={
@@ -247,14 +251,14 @@ export default function ValueCreationHeatmap({
                     <input
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
-                        aria-label="Buscar empresa en creación de valor"
-                        placeholder="Buscar ticker o empresa..."
+                        aria-label={finixUi("Buscar empresa en creación de valor")}
+                        placeholder={finixUi("Buscar ticker o empresa...")}
                     />
                 </div>
                 <div
                     className="market-segments value-filters"
                     role="group"
-                    aria-label="Creación de valor"
+                    aria-label={finixUi("Creación de valor")}
                 >
                     {(
                         [
@@ -279,11 +283,11 @@ export default function ValueCreationHeatmap({
                 </div>
                 <select
                     className="market-control"
-                    aria-label="Sector de creación de valor"
+                    aria-label={finixUi("Sector de creación de valor")}
                     value={sector}
                     onChange={(event) => setSector(event.target.value)}
                 >
-                    <option value="ALL">Todos los sectores</option>
+                    <option value="ALL">{""}<FinixUiText text={"Todos los sectores"} />{""}</option>
                     {sectors.map((value) => (
                         <option key={value} value={value}>{sectorLabel(value)}</option>
                     ))}
@@ -291,13 +295,13 @@ export default function ValueCreationHeatmap({
                 <div
                     className="market-segments value-view-switch"
                     role="group"
-                    aria-label="Modo de visualización"
+                    aria-label={finixUi("Modo de visualización")}
                 >
                     <button
                         type="button"
-                        aria-label="Vista de mosaico"
+                        aria-label={finixUi("Vista de mosaico")}
                         className="market-segment-icon"
-                        title="Vista de mosaico (recuadros)"
+                        title={finixUi("Vista de mosaico (recuadros)")}
                         aria-pressed={viewDisplay === 'tiles'}
                         onClick={() => setViewDisplay('tiles')}
                     >
@@ -305,9 +309,9 @@ export default function ValueCreationHeatmap({
                     </button>
                     <button
                         type="button"
-                        aria-label="Vista de tarjetas"
+                        aria-label={finixUi("Vista de tarjetas")}
                         className="market-segment-icon"
-                        title="Vista de tarjetas"
+                        title={finixUi("Vista de tarjetas")}
                         aria-pressed={viewDisplay === 'cards'}
                         onClick={() => setViewDisplay('cards')}
                     >
@@ -322,14 +326,12 @@ export default function ValueCreationHeatmap({
             )}
             {summary?.stale && (
                 <div className="market-note">
-                    Mostrando la última lectura válida mientras se restablece la
-                    actualización de mercado.
-                </div>
+                    {" "}<FinixUiText text={"Mostrando la última lectura válida mientras se restablece la actualización de mercado."} />{" "}</div>
             )}
             <div className="value-results" aria-live="polite">
-                <p><strong>{items.length}</strong> empresas</p>
+                <p><strong>{items.length}</strong> {" "}<FinixUiText text={"empresas"} />{""}</p>
                 {summary?.updatedAt && (
-                    <span>Actualizado {new Date(summary.updatedAt).toLocaleString('es-AR', {
+                    <span>{""}<FinixUiText text={"Actualizado"} />{" "}{new Date(summary.updatedAt).toLocaleString('es-AR', {
                         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
                     })}</span>
                 )}
@@ -346,25 +348,20 @@ export default function ValueCreationHeatmap({
             </div>
             {!items.length && (
                 <div className="market-empty">
-                    No hay empresas que coincidan con los filtros.
-                </div>
+                    {" "}<FinixUiText text={"No hay empresas que coincidan con los filtros."} />{" "}</div>
             )}
             <footer className="market-note">
                 <HelpCircle size={16} />
                 <div>
-                    <b className="text-foreground">Metodología y límites</b>
+                    <b className="text-foreground">{""}<FinixUiText text={"Metodología y límites"} />{""}</b>
                     <p>
-                        {data?.methodology.description} WACC se recalcula con la
-                        estructura financiera y las condiciones de mercado.
-                        Bancos, aseguradoras y REITs requieren lectura sectorial
-                        adicional.
-                    </p>
+                        {data?.methodology.description} {" "}<FinixUiText text={"WACC se recalcula con la estructura financiera y las condiciones de mercado. Bancos, aseguradoras y REITs requieren lectura sectorial adicional."} />{" "}</p>
                     <p>
                         {summary?.updatedAt && Number.isFinite(new Date(summary.updatedAt).getTime())
                             ? `Actualizado: ${new Date(summary.updatedAt).toLocaleString('es-AR')}`
                             : 'Fecha de actualización no informada'}{' '}
-                        · Tasa libre de riesgo: {percent(data?.methodology.riskFreeRate)}
-                        · Prima de riesgo de mercado (ERP): {percent(data?.methodology.equityRiskPremium)}.
+                        {" "}<FinixUiText text={"· Tasa libre de riesgo:"} />{" "}{percent(data?.methodology.riskFreeRate)}
+                        {" "}<FinixUiText text={"· Prima de riesgo de mercado (ERP):"} />{" "}{percent(data?.methodology.equityRiskPremium)}.
                     </p>
                 </div>
             </footer>
@@ -434,7 +431,7 @@ function ValueTile({
                 {onSelect && <ArrowUpRight className="value-company__open" size={19} aria-hidden="true" />}
             </div>
             <div className="value-company__spread">
-                <span>Spread <span className="value-company__formula">ROIC − WACC</span></span>
+                <span>{""}<FinixUiText text={"Spread"} />{" "}<span className="value-company__formula">{""}<FinixUiText text={"ROIC − WACC"} />{""}</span></span>
                 <strong>{spreadPoints(item.spread)}</strong>
                 <span className="value-company__status">
                     <StatusIcon size={16} aria-hidden="true" />
@@ -444,24 +441,24 @@ function ValueTile({
             <dl className="value-company__comparison">
                 <div>
                     <dt className="flex items-center gap-1.5">
-                        <span>ROIC</span>
-                        <span>Retorno del capital</span>
+                        <span>{""}<FinixUiText text={"ROIC"} />{""}</span>
+                        <span>{""}<FinixUiText text={"Retorno del capital"} />{""}</span>
                         <EduInfoBadge term="roic" />
                     </dt>
                     <dd>{percent(item.roic)}</dd>
                 </div>
                 <div>
-                    <dt>WACC <span>Costo del capital</span></dt>
+                    <dt>{""}<FinixUiText text={"WACC"} />{" "}<span>{""}<FinixUiText text={"Costo del capital"} />{""}</span></dt>
                     <dd>{percent(item.wacc)}</dd>
                 </div>
             </dl>
             {!compact && <dl className="value-company__details">
                 <div>
-                    <dt>Capitalización</dt>
+                    <dt>{""}<FinixUiText text={"Capitalización"} />{""}</dt>
                     <dd>{marketCap(item.marketCap)}</dd>
                 </div>
                 <div>
-                    <dt>Beta</dt>
+                    <dt>{""}<FinixUiText text={"Beta"} />{""}</dt>
                     <dd>{item.beta?.toFixed(2) ?? '—'}</dd>
                 </div>
             </dl>}

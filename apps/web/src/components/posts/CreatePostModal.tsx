@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import AccountRequired from '@/components/auth/AccountRequired';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -101,6 +103,8 @@ interface CreatePostModalProps {
 }
 
 export default function CreatePostModal({ onClose, onCreated }: CreatePostModalProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { user } = useAuthStore();
 
     const [type, setType] = useState<PostType>('post');
@@ -452,8 +456,8 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                             : <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center text-black font-bold text-sm">{user?.username?.[0]?.toUpperCase()}</div>
                         }
                         <div>
-                            <p id="create-post-modal-title" className="font-semibold text-sm">Crear publicación</p>
-                            <p className="text-xs text-muted-foreground">{user?.username} · Feed principal</p>
+                            <p id="create-post-modal-title" className="font-semibold text-sm">{""}<FinixUiText text={"Crear publicación"} />{""}</p>
+                            <p className="text-xs text-muted-foreground">{user?.username} {" "}<FinixUiText text={"· Feed principal"} />{""}</p>
                         </div>
                     </div>
                     <button
@@ -461,7 +465,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                         onClick={onClose}
                         disabled={isPublishing}
                         className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary"
-                        aria-label="Cerrar modal"
+                        aria-label={finixUi("Cerrar modal")}
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -478,7 +482,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 title={desc}
                             >
                                 <Icon className="w-5 h-5" />
-                                {label}
+                                {<FinixUiText text={label} />}
                             </button>
                         ))}
                     </div>
@@ -492,19 +496,19 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                     <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
                                         <div className="relative flex-1">
                                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                                            <input type="text" placeholder="Símbolo: AAPL, BTCUSDT..." value={symbolInput}
+                                            <input type="text" placeholder={finixUi("Símbolo: AAPL, BTCUSDT...")} value={symbolInput}
                                                 onChange={(e) => setSymbolInput(e.target.value.toUpperCase())}
                                                 onKeyDown={(e) => e.key === 'Enter' && applySymbol()}
                                                 className="w-full h-10 pl-8 pr-3 rounded-lg border border-border/50 bg-secondary/30 text-sm font-mono uppercase outline-none focus:border-primary/50 transition-colors"
                                             />
                                         </div>
-                                        <Button size="sm" variant="outline" onClick={applySymbol} className="h-11 px-3.5 text-xs border-border/50 hover:border-primary/40 min-h-[44px] min-w-[44px]">Cargar</Button>
+                                        <Button size="sm" variant="outline" onClick={applySymbol} className="h-11 px-3.5 text-xs border-border/50 hover:border-primary/40 min-h-[44px] min-w-[44px]">{""}<FinixUiText text={"Cargar"} />{""}</Button>
                                     </div>
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                         {INTERVALS.map(({ v, label }) => (
                                             <button key={v} type="button" onClick={() => { setTvInterval(v); }}
                                                 className={`min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-lg text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary ${tvInterval === v ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
-                                            >{label}</button>
+                                            >{<FinixUiText text={label} />}</button>
                                         ))}
                                     </div>
                                 </div>
@@ -512,7 +516,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 {/* Popular symbols & Studies */}
                                 <div className="flex items-center justify-between gap-2 flex-wrap">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Rápido:</span>
+                                        <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{""}<FinixUiText text={"Rápido:"} />{""}</span>
                                         {POPULAR_SYMBOLS.map((s) => {
                                             const short = s.includes(':') ? s.split(':')[1].replace('USDT', '') : s;
                                             return (
@@ -560,10 +564,10 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                                     ? 'bg-primary text-primary-foreground shadow-xs'
                                                     : 'text-muted-foreground hover:text-foreground'
                                             }`}
-                                            title="Modo desplazamiento: permite scrollear la publicación sin interferencia"
+                                            title={finixUi("Modo desplazamiento: permite scrollear la publicación sin interferencia")}
                                         >
                                             <Move className="w-3.5 h-3.5" />
-                                            <span>Modo Scroll</span>
+                                            <span>{""}<FinixUiText text={"Modo Scroll"} />{""}</span>
                                         </button>
                                         <button
                                             type="button"
@@ -573,10 +577,10 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                                     ? 'bg-primary text-primary-foreground shadow-xs'
                                                     : 'text-muted-foreground hover:text-foreground'
                                             }`}
-                                            title="Modo trazado: interactúa directamente con el gráfico para colocar líneas"
+                                            title={finixUi("Modo trazado: interactúa directamente con el gráfico para colocar líneas")}
                                         >
                                             <PenTool className="w-3.5 h-3.5" />
-                                            <span>Trazar Líneas</span>
+                                            <span>{""}<FinixUiText text={"Trazar Líneas"} />{""}</span>
                                         </button>
                                     </div>
 
@@ -590,7 +594,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                             className="min-h-[44px] min-w-[44px] h-11 px-3.5 text-xs gap-1.5 border-border/60 hover:border-primary/50 text-muted-foreground hover:text-foreground"
                                         >
                                             {isCapturing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                                            <span>Capturar</span>
+                                            <span>{""}<FinixUiText text={"Capturar"} />{""}</span>
                                         </Button>
 
                                         <Button
@@ -603,7 +607,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                             className="min-h-[44px] min-w-[44px] h-11 px-3.5 text-xs gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
                                         >
                                             <Maximize2 className="w-3.5 h-3.5" />
-                                            <span>Pantalla Completa</span>
+                                            <span>{""}<FinixUiText text={"Pantalla Completa"} />{""}</span>
                                         </Button>
                                     </div>
                                 </div>
@@ -627,11 +631,10 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                             <div className="max-w-xs p-3.5 rounded-2xl bg-card/95 border border-border/70 shadow-xl space-y-2 pointer-events-auto">
                                                 <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-foreground">
                                                     <Move className="w-4 h-4 text-primary" />
-                                                    <span>Modo Scroll Activo</span>
+                                                    <span>{""}<FinixUiText text={"Modo Scroll Activo"} />{""}</span>
                                                 </div>
                                                 <p className="text-[11px] text-muted-foreground leading-snug">
-                                                    Podés deslizar la pantalla libremente. Tocá abajo para trazar líneas o dibujar.
-                                                </p>
+                                                    {" "}<FinixUiText text={"Podés deslizar la pantalla libremente. Tocá abajo para trazar líneas o dibujar."} />{" "}</p>
                                                 <div className="flex items-center justify-center gap-2 pt-1">
                                                     <button
                                                         type="button"
@@ -641,8 +644,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                                         }}
                                                         className="min-h-[44px] min-w-[44px] px-4 py-2.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-xs focus-visible:ring-2 focus-visible:ring-primary"
                                                     >
-                                                        Trazar Líneas
-                                                    </button>
+                                                        {" "}<FinixUiText text={"Trazar Líneas"} />{" "}</button>
                                                     <button
                                                         type="button"
                                                         onClick={(e) => {
@@ -653,7 +655,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                                         className="flex items-center gap-1.5 min-h-[44px] min-w-[44px] px-4 py-2.5 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary/80 text-foreground border border-border/60 transition-all focus-visible:ring-2 focus-visible:ring-primary"
                                                     >
                                                         <Maximize2 className="w-3.5 h-3.5" />
-                                                        <span>Expandir</span>
+                                                        <span>{""}<FinixUiText text={"Expandir"} />{""}</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -665,16 +667,15 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 {mediaFiles.length > 0 ? (
                                     <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-3.5 flex items-center justify-between shadow-xs">
                                         <div className="flex items-center gap-3">
-                                            <img src={mediaFiles[0].preview} alt="Captura" className="w-16 h-10 object-cover rounded-lg border border-border/50 shadow-xs" />
+                                            <img src={mediaFiles[0].preview} alt={finixUi("Captura")} className="w-16 h-10 object-cover rounded-lg border border-border/50 shadow-xs" />
                                             <div>
                                                 <p className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                                                     <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                                    Captura del gráfico lista
-                                                </p>
-                                                <p className="text-[11px] text-muted-foreground">Tus líneas y análisis se verán exactamente congelados en el post.</p>
+                                                    {" "}<FinixUiText text={"Captura del gráfico lista"} />{" "}</p>
+                                                <p className="text-[11px] text-muted-foreground">{""}<FinixUiText text={"Tus líneas y análisis se verán exactamente congelados en el post."} />{""}</p>
                                             </div>
                                         </div>
-                                        <Button size="sm" variant="ghost" onClick={() => removeMedia(0)} className="text-xs min-h-[44px] min-w-[44px] px-3.5 text-muted-foreground hover:text-rose-400">Cambiar</Button>
+                                        <Button size="sm" variant="ghost" onClick={() => removeMedia(0)} className="text-xs min-h-[44px] min-w-[44px] px-3.5 text-muted-foreground hover:text-rose-400">{""}<FinixUiText text={"Cambiar"} />{""}</Button>
                                     </div>
                                 ) : (
                                     <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3.5 flex items-center justify-between gap-3 shadow-xs">
@@ -683,10 +684,9 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                                 <Camera className="w-4 h-4" />
                                             </div>
                                             <div>
-                                                <p className="text-xs font-bold text-foreground">Captura y trazados 100% autónomos</p>
+                                                <p className="text-xs font-bold text-foreground">{""}<FinixUiText text={"Captura y trazados 100% autónomos"} />{""}</p>
                                                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                                    Al tocar <strong>Publicar análisis</strong>, Finix captura automáticamente el gráfico con todas tus líneas, temporalidad y zoom para que la comunidad lo vea tal cual en el feed.
-                                                </p>
+                                                    {" "}<FinixUiText text={"Al tocar"} />{" "}<strong>{""}<FinixUiText text={"Publicar análisis"} />{""}</strong>{""}<FinixUiText text={", Finix captura automáticamente el gráfico con todas tus líneas, temporalidad y zoom para que la comunidad lo vea tal cual en el feed."} />{" "}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -695,19 +695,19 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 {/* Analysis metadata */}
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <div className="space-y-1">
-                                        <Label className="text-xs">Tipo de análisis</Label>
+                                        <Label className="text-xs">{""}<FinixUiText text={"Tipo de análisis"} />{""}</Label>
                                         <div className="relative">
                                             <select value={analysisType} onChange={(e) => setAnalysisType(e.target.value)} className="w-full h-9 rounded-lg border border-border/50 bg-secondary/30 px-3 pr-8 text-sm appearance-none outline-none focus:border-primary/50 transition-colors">
-                                                {ANALYSIS_TYPES.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
+                                                {ANALYSIS_TYPES.map((a) => <option key={a.value} value={a.value}>{<FinixUiText text={a.label} />}</option>)}
                                             </select>
                                             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                                         </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-xs">Riesgo estimado</Label>
+                                        <Label className="text-xs">{""}<FinixUiText text={"Riesgo estimado"} />{""}</Label>
                                         <div className="relative">
                                             <select value={riskLevel} onChange={(e) => setRiskLevel(e.target.value)} className="w-full h-9 rounded-lg border border-border/50 bg-secondary/30 px-3 pr-8 text-sm appearance-none outline-none focus:border-primary/50 transition-colors">
-                                                {RISK_LEVELS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                                                {RISK_LEVELS.map((r) => <option key={r.value} value={r.value}>{<FinixUiText text={r.label} />}</option>)}
                                             </select>
                                             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                                         </div>
@@ -730,8 +730,8 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
                     {/* ── TICKERS ── */}
                     <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Tickers relacionados (opcional)</Label>
-                        <Input placeholder="AAPL BTC SPY (separados por espacio o coma)" value={tickers} onChange={(e) => setTickers(e.target.value)} className="bg-secondary/30 h-9 text-sm" />
+                        <Label className="text-xs text-muted-foreground">{""}<FinixUiText text={"Tickers relacionados (opcional)"} />{""}</Label>
+                        <Input placeholder={finixUi("AAPL BTC SPY (separados por espacio o coma)")} value={tickers} onChange={(e) => setTickers(e.target.value)} className="bg-secondary/30 h-9 text-sm" />
                     </div>
 
                     {/* ── MEDIA UPLOAD ── */}
@@ -744,7 +744,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${isDragging ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-border hover:bg-secondary/20'}`}
                                 role="button"
                                 tabIndex={0}
-                                aria-label="Subir imágenes a la publicación"
+                                aria-label={finixUi("Subir imágenes a la publicación")}
                                 onClick={() => fileInputRef.current?.click()}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
@@ -757,9 +757,9 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 onDragLeave={() => setIsDragging(false)}
                             >
                                 <Upload className="w-7 h-7 mx-auto mb-2 text-muted-foreground" />
-                                <p className="text-sm font-medium">Subir imagen</p>
-                                <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WEBP · Máx {MAX_IMAGE_MB} MB</p>
-                                <p className="text-xs text-primary mt-1">Hacé clic o arrastrá aquí</p>
+                                <p className="text-sm font-medium">{""}<FinixUiText text={"Subir imagen"} />{""}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{""}<FinixUiText text={"JPG, PNG, WEBP · Máx"} />{" "}{MAX_IMAGE_MB} {" "}<FinixUiText text={"MB"} />{""}</p>
+                                <p className="text-xs text-primary mt-1">{""}<FinixUiText text={"Hacé clic o arrastrá aquí"} />{""}</p>
                             </div>
                         )}
 
@@ -776,7 +776,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                                 type="button"
                                                 onClick={() => removeMedia(i)}
                                                 className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-red-600/90 hover:bg-red-600 flex items-center justify-center text-white transition-all shadow-md focus-visible:ring-2 focus-visible:ring-white"
-                                                aria-label="Eliminar imagen"
+                                                aria-label={finixUi("Eliminar imagen")}
                                             >
                                                 <Trash2 className="w-5 h-5 text-white" />
                                             </button>
@@ -795,14 +795,14 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
                     {/* Publish */}
                     <div className="flex gap-3 pt-2">
-                        <Button variant="outline" disabled={isPublishing} onClick={onClose} className="flex-1 min-h-[44px]">Cancelar</Button>
+                        <Button variant="outline" disabled={isPublishing} onClick={onClose} className="flex-1 min-h-[44px]">{""}<FinixUiText text={"Cancelar"} />{""}</Button>
                         <Button
                             onClick={handlePublish}
                             disabled={isPublishing || mediaFiles.some((m) => m.uploading)}
                             className="flex-1 min-h-[44px] bg-gradient-to-r from-primary to-emerald-400 text-black font-bold shadow-glow"
                         >
                             {isPublishing
-                                ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Publicando...</>
+                                ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> {" "}<FinixUiText text={"Publicando..."} />{""}</>
                                 : type === 'chart'
                                     ? '📊 Publicar análisis'
                                     : 'Crear en feed'
@@ -814,7 +814,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
             {/* ── FULLSCREEN DRAWING STUDIO ── */}
             {isFullscreenChart && (
-                <DialogPrimitive.Root open onOpenChange={setIsFullscreenChart}><DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-[250] bg-background" /><DialogPrimitive.Content aria-label="Gráfico de la publicación en pantalla completa" aria-describedby={undefined} className="fixed inset-0 z-[251] bg-background flex flex-col">
+                <DialogPrimitive.Root open onOpenChange={setIsFullscreenChart}><DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-[250] bg-background" /><DialogPrimitive.Content aria-label={finixUi("Gráfico de la publicación en pantalla completa")} aria-describedby={undefined} className="fixed inset-0 z-[251] bg-background flex flex-col">
                     {/* Fullscreen Header */}
                     <div className="flex items-center justify-between px-3 sm:px-6 py-2.5 bg-card border-b border-border/60 shrink-0">
                         <div className="flex items-center gap-2 sm:gap-3">
@@ -822,8 +822,8 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 type="button"
                                 onClick={() => setIsFullscreenChart(false)}
                                 className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary"
-                                title="Volver al post"
-                                aria-label="Volver al post"
+                                title={finixUi("Volver al post")}
+                                aria-label={finixUi("Volver al post")}
                             >
                                 <ArrowLeft className="w-4 h-4" />
                             </button>
@@ -839,7 +839,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                         onClick={() => setTvInterval(v)}
                                         className={`min-h-[44px] min-w-[44px] px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-primary ${tvInterval === v ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:bg-secondary'}`}
                                     >
-                                        {label}
+                                        {<FinixUiText text={label} />}
                                     </button>
                                 ))}
                             </div>
@@ -855,7 +855,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 className="min-h-[44px] min-w-[44px] h-11 px-3.5 text-xs gap-1.5 border-border/60 hover:border-primary/50 text-muted-foreground hover:text-foreground"
                             >
                                 {isCapturing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                                <span className="hidden xs:inline">Capturar</span>
+                                <span className="hidden xs:inline">{""}<FinixUiText text={"Capturar"} />{""}</span>
                             </Button>
                             <Button
                                 type="button"
@@ -867,7 +867,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 className="min-h-[44px] min-w-[44px] h-11 px-4 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
                             >
                                 <Check className="w-4 h-4" />
-                                <span>Listo / Guardar Líneas</span>
+                                <span>{""}<FinixUiText text={"Listo / Guardar Líneas"} />{""}</span>
                             </Button>
                         </div>
                     </div>

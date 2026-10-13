@@ -445,7 +445,15 @@ export class UserService {
     async getCurrentUserProfile(userId: string) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            select: this.getProfileSelect(),
+            select: {
+                ...this.getProfileSelect(),
+                autoRefreshMarket: true,
+                compactTables: true,
+                showAdvancedMetrics: true,
+                marketNotifications: true,
+                chartDensity: true,
+                timezone: true,
+            },
         });
 
         if (!user) {

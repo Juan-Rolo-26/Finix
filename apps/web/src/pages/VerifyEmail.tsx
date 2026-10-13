@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
@@ -8,6 +10,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/lib/api';
 
 export default function VerifyEmail() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { login } = useAuthStore();
@@ -95,27 +99,26 @@ export default function VerifyEmail() {
                     <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex justify-center items-center">
                         <MailCheck className="w-8 h-8" />
                     </div>
-                    <h2 className="text-xl font-bold">Verifica tu correo</h2>
+                    <h2 className="text-xl font-bold">{""}<FinixUiText text={"Verifica tu correo"} />{""}</h2>
                     <p className="text-sm text-muted-foreground">
-                        Finix te mando un codigo de 6 digitos por correo. Ingresalo abajo para activar tu cuenta.
-                    </p>
+                        {" "}<FinixUiText text={"Finix te mando un codigo de 6 digitos por correo. Ingresalo abajo para activar tu cuenta."} />{" "}</p>
 
                     <form onSubmit={handleVerify} className="w-full space-y-4 text-left">
                         <div className="space-y-2">
-                            <label htmlFor="verify-email" className="text-sm font-medium text-foreground">Correo electronico</label>
+                            <label htmlFor="verify-email" className="text-sm font-medium text-foreground">{""}<FinixUiText text={"Correo electronico"} />{""}</label>
                             <Input
                                 id="verify-email"
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="tu@email.com"
+                                placeholder={finixUi("tu@email.com")}
                                 className="h-11"
                                 required
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="verify-code" className="text-sm font-medium text-foreground">Codigo de verificacion</label>
+                            <label htmlFor="verify-code" className="text-sm font-medium text-foreground">{""}<FinixUiText text={"Codigo de verificacion"} />{""}</label>
                             <Input
                                 id="verify-code"
                                 inputMode="numeric"
@@ -150,8 +153,7 @@ export default function VerifyEmail() {
                     </form>
 
                     <p className="text-xs text-muted-foreground/70">
-                        Si tocaste el boton del mail y llegaste aca, usa el codigo que Finix te envio en ese mismo correo.
-                    </p>
+                        {" "}<FinixUiText text={"Si tocaste el boton del mail y llegaste aca, usa el codigo que Finix te envio en ese mismo correo."} />{" "}</p>
                 </m.div>
             </div>
         </LazyMotion>

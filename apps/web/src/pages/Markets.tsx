@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuthStore, isProUser } from '@/stores/authStore';
@@ -123,6 +125,9 @@ function buildFallbackAsset(symbol: string): MarketAsset {
 }
 
 export default function Markets() {
+    const autoRefreshMarket = usePreferencesStore(state => state.autoRefreshMarket);
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const t = useTranslation();
     const { user } = useAuthStore();
     const navigate = useNavigate();
@@ -291,13 +296,13 @@ export default function Markets() {
 
         fetchDashboardRef.current = fetchDashboard;
         fetchDashboard(true);
-        const intervalId = window.setInterval(
+        const intervalId = autoRefreshMarket ? window.setInterval(
             () => fetchDashboard(false),
             45000,
-        );
+        ) : undefined;
 
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
+            if (autoRefreshMarket && document.visibilityState === 'visible') {
                 fetchDashboard(false);
             }
         };
@@ -306,13 +311,13 @@ export default function Markets() {
         return () => {
             disposed = true;
             currentController?.abort();
-            window.clearInterval(intervalId);
+            if (intervalId !== undefined) window.clearInterval(intervalId);
             document.removeEventListener(
                 'visibilitychange',
                 handleVisibilityChange,
             );
         };
-    }, [isPro]);
+    }, [isPro, autoRefreshMarket]);
 
     if (!isPro) {
         return (
@@ -357,13 +362,13 @@ export default function Markets() {
                             <span className="market-tab-icon">
                                 <Clock className="h-3.5 w-3.5" />
                             </span>
-                            <span>Pre-Market</span>
+                            <span>{""}<FinixUiText text={"Pre-Market"} />{""}</span>
                         </TabsTrigger>
                         <TabsTrigger value="heatmap" className="market-tab">
                             <span className="market-tab-icon">
                                 <Flame className="h-3.5 w-3.5 fill-emerald-500/20 text-emerald-600 dark:text-emerald-400" />
                             </span>
-                            <span>Mapa de Calor</span>
+                            <span>{""}<FinixUiText text={"Mapa de Calor"} />{""}</span>
                         </TabsTrigger>
                         <TabsTrigger value="chart" className="market-tab">
                             <span className="market-tab-icon">
@@ -378,7 +383,7 @@ export default function Markets() {
                             <span className="market-tab-icon">
                                 <Building2 className="h-3.5 w-3.5" />
                             </span>
-                            <span>Creación de valor</span>
+                            <span>{""}<FinixUiText text={"Creación de valor"} />{""}</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="opportunities"
@@ -387,11 +392,11 @@ export default function Markets() {
                             <span className="market-tab-icon">
                                 <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                             </span>
-                            <span>Oportunidades</span>
+                            <span>{""}<FinixUiText text={"Oportunidades"} />{""}</span>
                         </TabsTrigger>
                     </TabsList>
 
-                    <Suspense fallback={<div className="market-section min-h-[320px] animate-pulse bg-muted/30" role="status" aria-label="Cargando sección de mercado" />}><TabsContent value="overview" className="space-y-4">
+                    <Suspense fallback={<div className="market-section min-h-[320px] animate-pulse bg-muted/30" role="status" aria-label={finixUi("Cargando sección de mercado")} />}><TabsContent value="overview" className="space-y-4">
                         <MarketDashboard
                             data={dashboardData}
                             loading={isDashboardLoading}
@@ -453,7 +458,7 @@ export default function Markets() {
                                                     className="market-action"
                                                 >
                                                     <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
-                                                    <span>Buscar símbolo</span>
+                                                    <span>{""}<FinixUiText text={"Buscar símbolo"} />{""}</span>
                                                 </Button>
                                             </DialogTrigger>
                                             <DialogContent className="sm:max-w-xl p-0 overflow-hidden border border-border/80 bg-card/95 backdrop-blur-2xl shadow-2xl shadow-emerald-950/20 rounded-lg gap-0 markets-view">
@@ -474,8 +479,7 @@ export default function Markets() {
                                     <div className="flex items-center gap-2.5">
                                         <LineChart size={18} className="text-emerald-500" />
                                         <p className="text-base font-bold text-foreground">
-                                            TradingView
-                                        </p>
+                                            {" "}<FinixUiText text={"TradingView"} />{" "}</p>
                                     </div>
 
                                     <div className="flex items-center gap-3 flex-wrap">
@@ -501,7 +505,7 @@ export default function Markets() {
                                                             : 'text-muted-foreground hover:border-emerald-500/50 hover:text-foreground',
                                                     )}
                                                 >
-                                                    {interval.label}
+                                                    {<FinixUiText text={interval.label} />}
                                                 </button>
                                             ))}
                                         </div>
@@ -509,12 +513,10 @@ export default function Markets() {
                                         <div className="flex items-center gap-2 pl-2 border-l border-border/60">
                                             <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                RSI (14)
-                                            </span>
+                                                {" "}<FinixUiText text={"RSI (14)"} />{" "}</span>
                                             <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-500/10 border border-blue-500/30 px-2.5 py-1 text-xs font-bold text-blue-600 dark:text-blue-400">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                                MACD (12, 26, 9)
-                                            </span>
+                                                {" "}<FinixUiText text={"MACD (12, 26, 9)"} />{" "}</span>
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -528,8 +530,7 @@ export default function Markets() {
                                                 }}
                                                 className="inline-flex items-center gap-1 rounded-lg border border-border/70 hover:border-emerald-500/50 bg-secondary/50 px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
                                             >
-                                                Ver Fundamentales ↓
-                                            </button>
+                                                {" "}<FinixUiText text={"Ver Fundamentales ↓"} />{" "}</button>
                                         </div>
                                     </div>
                                 </div>
@@ -712,6 +713,8 @@ function MarketAssetSearch({
 }: {
     onSelect: (symbol: string) => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [query, setQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('all');
     const [results, setResults] = useState<any[]>([]);
@@ -790,12 +793,9 @@ function MarketAssetSearch({
                     </div>
                     <div className="min-w-0">
                         <DialogTitle className="text-[20px] font-bold text-foreground tracking-tight">
-                            Buscar activo en TradingView
-                        </DialogTitle>
+                            {" "}<FinixUiText text={"Buscar activo en TradingView"} />{" "}</DialogTitle>
                         <p className="text-[14px] text-muted-foreground mt-0.5">
-                            Explora acciones globales, CEDEARs, cripto e índices
-                            para tu gráfico
-                        </p>
+                            {" "}<FinixUiText text={"Explora acciones globales, CEDEARs, cripto e índices para tu gráfico"} />{" "}</p>
                     </div>
                 </div>
             </div>
@@ -807,7 +807,7 @@ function MarketAssetSearch({
                     <input
                         ref={inputRef}
                         type="text"
-                        placeholder="Buscar ticker o empresa (ej: NIO, AAPL, GGAL, BTC)..."
+                        placeholder={finixUi("Buscar ticker o empresa (ej: NIO, AAPL, GGAL, BTC)...")}
                         value={query}
                         onChange={(e) => {
                             setQuery(e.target.value);
@@ -831,7 +831,7 @@ function MarketAssetSearch({
                                 inputRef.current?.focus();
                             }}
                             className="absolute right-3.5 rounded-full p-1 text-muted-foreground/80 hover:bg-muted hover:text-foreground transition-colors"
-                            aria-label="Limpiar búsqueda"
+                            aria-label={finixUi("Limpiar búsqueda")}
                         >
                             <X className="h-4 w-4" />
                         </button>
@@ -856,7 +856,7 @@ function MarketAssetSearch({
                                 : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/40',
                         )}
                     >
-                        {tag.label}
+                        {<FinixUiText text={tag.label} />}
                     </button>
                 ))}
             </div>
@@ -878,13 +878,10 @@ function MarketAssetSearch({
                                 <SearchX className="h-6 w-6" />
                             </div>
                             <p className="text-[16px] font-semibold text-foreground">
-                                No se encontraron resultados para "{query}"
+                                {" "}<FinixUiText text={"No se encontraron resultados para \""} />{""}{query}"
                             </p>
                             <p className="text-[14px] text-muted-foreground mt-1 max-w-sm mx-auto">
-                                Verifica que el ticker esté bien escrito o pulsa
-                                el botón para buscarlo directamente en
-                                TradingView.
-                            </p>
+                                {" "}<FinixUiText text={"Verifica que el ticker esté bien escrito o pulsa el botón para buscarlo directamente en TradingView."} />{" "}</p>
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -894,9 +891,7 @@ function MarketAssetSearch({
                                 }
                             >
                                 <span>
-                                    Cargar "{query.trim().toUpperCase()}" en el
-                                    gráfico
-                                </span>
+                                    {" "}<FinixUiText text={"Cargar \""} />{""}{query.trim().toUpperCase()}{""}<FinixUiText text={"\" en el gráfico"} />{" "}</span>
                                 <ArrowUpRight className="h-3.5 w-3.5" />
                             </Button>
                         </div>
@@ -981,24 +976,20 @@ function MarketAssetSearch({
                         <kbd className="px-1.5 py-0.5 rounded border border-border/70 bg-muted/70 font-mono text-[12px]">
                             ↑↓
                         </kbd>
-                        Navegar
-                    </span>
+                        {" "}<FinixUiText text={"Navegar"} />{" "}</span>
                     <span className="flex items-center gap-1">
                         <kbd className="px-1.5 py-0.5 rounded border border-border/70 bg-muted/70 font-mono text-[12px]">
                             ↵
                         </kbd>
-                        Seleccionar
-                    </span>
+                        {" "}<FinixUiText text={"Seleccionar"} />{" "}</span>
                     <span className="flex items-center gap-1">
                         <kbd className="px-1.5 py-0.5 rounded border border-border/70 bg-muted/70 font-mono text-[12px]">
-                            ESC
-                        </kbd>
-                        Cerrar
-                    </span>
+                            {" "}<FinixUiText text={"ESC"} />{" "}</kbd>
+                        {" "}<FinixUiText text={"Cerrar"} />{" "}</span>
                 </div>
                 <div className="flex items-center gap-1 text-[12px] text-muted-foreground/80 font-medium">
                     <Sparkles className="h-3 w-3 text-emerald-500" />
-                    <span>TradingView</span>
+                    <span>{""}<FinixUiText text={"TradingView"} />{""}</span>
                 </div>
             </div>
         </div>

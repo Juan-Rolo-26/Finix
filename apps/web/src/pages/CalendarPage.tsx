@@ -1,3 +1,6 @@
+import { usePreferencesStore } from '@/stores/preferencesStore';
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -194,12 +197,11 @@ function EarningsMetric({ label, actual, estimate, surprise, amount = false }: {
             <dt>{label}{amount ? ' (moneda no informada)' : ' (por acción; moneda no informada)'}{actual === undefined ? amount ? ' estimada' : ' estimado' : ''}</dt>
             <dd className={'calendar-metric-primary ' + tone}>{format(value)}</dd>
             {actual !== undefined && estimate !== undefined && (
-                <dd className="calendar-metric-detail">Est. {format(estimate)}</dd>
+                <dd className="calendar-metric-detail">{""}<FinixUiText text={"Est."} />{" "}{format(estimate)}</dd>
             )}
             {actual !== undefined && surprise !== undefined && (
                 <dd className={'calendar-metric-detail ' + tone}>
-                    {surprise >= 0 ? '+' : ''}{surprise.toFixed(1)}% vs. est.
-                </dd>
+                    {surprise >= 0 ? '+' : ''}{surprise.toFixed(1)}{""}<FinixUiText text={"% vs. est."} />{" "}</dd>
             )}
         </div>
     );
@@ -401,6 +403,8 @@ function formatDateLabel(dateStr: string): string {
 }
 
 export default function CalendarPage() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const isPro = isProUser(user);
@@ -419,16 +423,8 @@ export default function CalendarPage() {
     const [refreshFailed, setRefreshFailed] = useState(false);
     const activeRequest = useRef<AbortController | null>(null);
 
-    // Detección automática del timezone local del usuario
-    const userTimezone = useMemo(() => {
-        try {
-            return (
-                Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Argentina/Buenos_Aires'
-            );
-        } catch {
-            return 'America/Argentina/Buenos_Aires';
-        }
-    }, []);
+    const userTimezone = usePreferencesStore(state => state.timezone);
+    const dateLocale = usePreferencesStore(state => state.language === 'en-US' ? 'en-US' : 'es-AR');
 
     // Abreviación del timezone para el usuario
     const userTimezoneShort = useMemo(() => {
@@ -529,7 +525,7 @@ export default function CalendarPage() {
 
             if (isNaN(dt.getTime())) return timeStr || 'Durante el día';
 
-            return new Intl.DateTimeFormat('es-AR', {
+            return new Intl.DateTimeFormat(dateLocale, {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false,
@@ -636,20 +632,19 @@ export default function CalendarPage() {
         <div className="markets-view market-shell calendar-view">
             <div className="market-section">
                 <MarketHeader
-                    title="Calendario de mercado"
+                    title={finixUi("Calendario de mercado")}
                     eyebrow="AGENDA · FINIX"
                     icon={CalendarIcon}
                     centered
                     description={
                         <span className="calendar-subtitle">
-                            Economía, balances de EE. UU. y dividendos del S&amp;P 500.{' '}
+                            {" "}<FinixUiText text={"Economía, balances de EE. UU. y dividendos del S&amp;P 500."} />{""}{' '}
                             {isEducationEnabled() && (
                                 <Link to="/educativa/macroeconomia/inflacion-y-tasas-de-interes" className="text-primary hover:underline font-semibold inline-flex items-center gap-1">
-                                    <span>Guía macro</span> &rarr;
-                                </Link>
+                                    <span>{""}<FinixUiText text={"Guía macro"} />{""}</span> {" "}<FinixUiText text={"&rarr;"} />{" "}</Link>
                             )}
                             <span>
-                                <Clock size={15} aria-hidden="true" /> Hora local:{' '}
+                                <Clock size={15} aria-hidden="true" /> {" "}<FinixUiText text={"Hora local:"} />{""}{' '}
                                 {userTimezoneShort}
                             </span>
                         </span>
@@ -666,7 +661,7 @@ export default function CalendarPage() {
                                 </span>
                                 {calendarData?.weekRange && (
                                     <strong>
-                                        {formatDateLabel(calendarData.weekRange.from)} al{' '}
+                                        {formatDateLabel(calendarData.weekRange.from)} {" "}<FinixUiText text={"al"} />{""}{' '}
                                         {formatDateLabel(calendarData.weekRange.to)}
                                     </strong>
                                 )}
@@ -677,8 +672,8 @@ export default function CalendarPage() {
                                     className="calendar-icon-button"
                                     onClick={() => setWeekOffset((w) => Math.max(-4, w - 1))}
                                     disabled={weekOffset <= -4}
-                                    title="Semana anterior"
-                                    aria-label="Semana anterior"
+                                    title={finixUi("Semana anterior")}
+                                    aria-label={finixUi("Semana anterior")}
                                 >
                                     <ChevronLeft size={19} />
                                 </button>
@@ -687,8 +682,8 @@ export default function CalendarPage() {
                                     className="calendar-icon-button"
                                     onClick={() => setWeekOffset((w) => Math.min(4, w + 1))}
                                     disabled={weekOffset >= 4}
-                                    title="Semana siguiente"
-                                    aria-label="Semana siguiente"
+                                    title={finixUi("Semana siguiente")}
+                                    aria-label={finixUi("Semana siguiente")}
                                 >
                                     <ChevronRight size={19} />
                                 </button>
@@ -697,8 +692,8 @@ export default function CalendarPage() {
                                     className="calendar-icon-button"
                                     onClick={() => loadCalendar()}
                                     disabled={isLoading}
-                                    title="Actualizar datos"
-                                    aria-label="Actualizar datos"
+                                    title={finixUi("Actualizar datos")}
+                                    aria-label={finixUi("Actualizar datos")}
                                 >
                                     <RefreshCw
                                         size={17}
@@ -710,7 +705,7 @@ export default function CalendarPage() {
                     }
                 />
 
-                <nav className="market-tabs calendar-tabs" aria-label="Secciones del calendario">
+                <nav className="market-tabs calendar-tabs" aria-label={finixUi("Secciones del calendario")}>
                     {(
                         [
                             { key: 'GENERAL', label: 'General', icon: Globe, count: totalEconomic },
@@ -744,7 +739,7 @@ export default function CalendarPage() {
                 </nav>
 
                 {activeSection === 'GENERAL' && (
-                    <div className="calendar-filters" aria-label="Indicadores económicos">
+                    <div className="calendar-filters" aria-label={finixUi("Indicadores económicos")}>
                         {[
                             { key: 'ALL', label: 'Todos' },
                             { key: 'US', label: 'Estados Unidos' },
@@ -770,24 +765,24 @@ export default function CalendarPage() {
                 {activeSection === 'BALANCES' && (
                     <div className="calendar-earnings-toolbar">
                         <span>
-                            Balances EE. UU.{' '}
-                            <span className="calendar-muted">· S&amp;P 500 y empresas principales</span>
+                            {" "}<FinixUiText text={"Balances EE. UU."} />{""}{' '}
+                            <span className="calendar-muted">{""}<FinixUiText text={"· S&amp;P 500 y empresas principales"} />{""}</span>
                         </span>
                         <label className="calendar-sort">
                             <ListFilter size={18} aria-hidden="true" />
-                            <span>Ordenar por</span>
+                            <span>{""}<FinixUiText text={"Ordenar por"} />{""}</span>
                             <select
                                 value={earningsSort}
                                 onChange={(event) =>
                                     setEarningsSort(event.target.value as EarningsSort)
                                 }
-                                aria-label="Ordenar balances"
+                                aria-label={finixUi("Ordenar balances")}
                             >
-                                <option value="RELEVANCIA">Relevancia</option>
-                                <option value="VICTORIOSOS">Superaron estimaciones</option>
-                                <option value="DESVICTORIOSOS">Debajo de estimaciones</option>
-                                <option value="MIXTOS">Resultados mixtos</option>
-                                <option value="PENDIENTES">Pendientes</option>
+                                <option value="RELEVANCIA">{""}<FinixUiText text={"Relevancia"} />{""}</option>
+                                <option value="VICTORIOSOS">{""}<FinixUiText text={"Superaron estimaciones"} />{""}</option>
+                                <option value="DESVICTORIOSOS">{""}<FinixUiText text={"Debajo de estimaciones"} />{""}</option>
+                                <option value="MIXTOS">{""}<FinixUiText text={"Resultados mixtos"} />{""}</option>
+                                <option value="PENDIENTES">{""}<FinixUiText text={"Pendientes"} />{""}</option>
                             </select>
                         </label>
                     </div>
@@ -796,32 +791,31 @@ export default function CalendarPage() {
                 {!isLoading && !isError && refreshFailed && (
                     <div className="calendar-context mb-6" role="status">
                         <Info size={17} />
-                        <p>No se pudo actualizar el calendario. Se conservan los últimos eventos y se reintentará automáticamente.</p>
+                        <p>{""}<FinixUiText text={"No se pudo actualizar el calendario. Se conservan los últimos eventos y se reintentará automáticamente."} />{""}</p>
                     </div>
                 )}
                 {!isLoading && !isError && economicUnavailable && visibleDays.length > 0 && (
                     <div className="calendar-context mb-6" role="status">
                         <Info size={17} />
-                        <p>{economicStatusMessage} Se muestran los eventos guardados.</p>
+                        <p>{economicStatusMessage} {" "}<FinixUiText text={"Se muestran los eventos guardados."} />{""}</p>
                     </div>
                 )}
                 {isLoading ? (
                     <div className="calendar-state" role="status">
                         <Loader2 size={32} className="animate-spin" />
-                        <p>Cargando eventos de la semana...</p>
+                        <p>{""}<FinixUiText text={"Cargando eventos de la semana..."} />{""}</p>
                     </div>
                 ) : isError || !calendarData ? (
                     <div className="calendar-state" role="alert">
                         <CalendarIcon size={36} />
-                        <h2>No se pudieron cargar los eventos</h2>
-                        <p>Revisá tu conexión e intentá de nuevo.</p>
+                        <h2>{""}<FinixUiText text={"No se pudieron cargar los eventos"} />{""}</h2>
+                        <p>{""}<FinixUiText text={"Revisá tu conexión e intentá de nuevo."} />{""}</p>
                         <button
                             type="button"
                             className="calendar-retry"
                             onClick={() => loadCalendar()}
                         >
-                            <RefreshCw size={17} /> Reintentar
-                        </button>
+                            <RefreshCw size={17} /> {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
                     </div>
                 ) : !visibleDays.length ? (
                     <div className="calendar-state">
@@ -853,8 +847,7 @@ export default function CalendarPage() {
                                     <span>{formatDateLabel(day.date)}</span>
                                     {day.isToday && (
                                         <span className="calendar-badge calendar-badge--positive">
-                                            Hoy
-                                        </span>
+                                            {" "}<FinixUiText text={"Hoy"} />{" "}</span>
                                     )}
                                     <span className="calendar-day-count">
                                         {day.economic.length +
@@ -881,7 +874,7 @@ export default function CalendarPage() {
                                                         }
                                                     >
                                                         {impact.isCritical && <Flame size={14} />}
-                                                        Impacto {impact.label}
+                                                        {" "}<FinixUiText text={"Impacto"} />{" "}{impact.label}
                                                     </span>
                                                     <span className="calendar-time">
                                                         <Clock size={14} />
@@ -912,7 +905,7 @@ export default function CalendarPage() {
                                                     <dl className="calendar-metrics">
                                                         {event.actualValue != null && (
                                                             <div>
-                                                                <dt>Actual</dt>
+                                                                <dt>{""}<FinixUiText text={"Actual"} />{""}</dt>
                                                                 <dd className="calendar-metric-primary">
                                                                     {event.actualValue}
                                                                     {event.unit
@@ -924,7 +917,7 @@ export default function CalendarPage() {
                                                         {(event.consensusValue ??
                                                             event.forecastValue) != null && (
                                                             <div>
-                                                                <dt>Estimado</dt>
+                                                                <dt>{""}<FinixUiText text={"Estimado"} />{""}</dt>
                                                                 <dd>
                                                                     {event.consensusValue ??
                                                                         event.forecastValue}
@@ -936,7 +929,7 @@ export default function CalendarPage() {
                                                         )}
                                                         {event.previousValue != null && (
                                                             <div>
-                                                                <dt>Previo</dt>
+                                                                <dt>{""}<FinixUiText text={"Previo"} />{""}</dt>
                                                                 <dd>
                                                                     {event.previousValue}
                                                                     {event.unit
@@ -947,7 +940,7 @@ export default function CalendarPage() {
                                                         )}
                                                         {event.surprise != null && (
                                                             <div>
-                                                                <dt title="Actual menos estimado, en la unidad del evento; una diferencia de porcentajes se expresa en puntos porcentuales.">Sorpresa (actual − estimado)</dt>
+                                                                <dt title={finixUi("Actual menos estimado, en la unidad del evento; una diferencia de porcentajes se expresa en puntos porcentuales.")}>{""}<FinixUiText text={"Sorpresa (actual − estimado)"} />{""}</dt>
                                                                 <dd
                                                                     className={
                                                                         event.surprise > 0
@@ -968,7 +961,7 @@ export default function CalendarPage() {
                                                 {event.affectedAssets &&
                                                     event.affectedAssets.length > 0 && (
                                                         <div className="calendar-assets">
-                                                            <span>Activos afectados</span>
+                                                            <span>{""}<FinixUiText text={"Activos afectados"} />{""}</span>
                                                             {event.affectedAssets.map((asset) => (
                                                                 <span
                                                                     key={asset}
@@ -987,7 +980,7 @@ export default function CalendarPage() {
                                                 )}
                                                 {event.source && (
                                                     <div className="calendar-card-footer">
-                                                        <span>Fuente: {formatEconomicEventSource(event.source)}</span>
+                                                        <span>{""}<FinixUiText text={"Fuente:"} />{" "}{formatEconomicEventSource(event.source)}</span>
                                                     </div>
                                                 )}
                                             </article>
@@ -1027,9 +1020,8 @@ export default function CalendarPage() {
                                                         {timing}
                                                     </span>
                                                     {isSP500 && (
-                                                        <span className="calendar-badge calendar-badge--blue" title="Componente del S&P 500">
-                                                            S&amp;P 500
-                                                        </span>
+                                                        <span className="calendar-badge calendar-badge--blue" title={finixUi("Componente del S&P 500")}>
+                                                            {" "}<FinixUiText text={"S&amp;P 500"} />{" "}</span>
                                                     )}
                                                     {reported ? (
                                                         <span
@@ -1038,13 +1030,11 @@ export default function CalendarPage() {
                                                                 tone
                                                             }
                                                         >
-                                                            Publicado
-                                                        </span>
+                                                            {" "}<FinixUiText text={"Publicado"} />{" "}</span>
                                                     ) : (
                                                         earn.dateStatus === 'ESTIMATED' && (
                                                             <span className="calendar-badge calendar-badge--amber">
-                                                                Fecha estimada
-                                                            </span>
+                                                                {" "}<FinixUiText text={"Fecha estimada"} />{" "}</span>
                                                         )
                                                     )}
                                                 </div>
@@ -1094,13 +1084,13 @@ export default function CalendarPage() {
                                                 <div className="calendar-card-footer">
                                                     {earn.marketCap ? (
                                                         <span>
-                                                            Cap. {formatMarketCap(earn.marketCap)}
+                                                            {" "}<FinixUiText text={"Cap."} />{" "}{formatMarketCap(earn.marketCap)}
                                                         </span>
                                                     ) : (
-                                                        <span>EE. UU.</span>
+                                                        <span>{""}<FinixUiText text={"EE. UU."} />{""}</span>
                                                     )}
                                                     {earn.marketReaction != null && <span className="calendar-reaction">
-                                                        <span>Reacción</span>
+                                                        <span>{""}<FinixUiText text={"Reacción"} />{""}</span>
                                                         <MarketChange value={earn.marketReaction} />
                                                     </span>}
                                                 </div>
@@ -1115,8 +1105,7 @@ export default function CalendarPage() {
                                         >
                                             <div className="calendar-card-meta">
                                                 <span className="calendar-country">
-                                                    S&amp;P 500
-                                                </span>
+                                                    {" "}<FinixUiText text={"S&amp;P 500"} />{" "}</span>
                                                 {dividend.frequency && (
                                                     <span className="calendar-badge">
                                                         {dividend.frequency}
@@ -1138,7 +1127,7 @@ export default function CalendarPage() {
                                             </div>
                                             <div className="market-quote-card__quote">
                                                 <span className="market-quote-card__quote-label">
-                                                    Dividendo por acción<span>USD</span>
+                                                    {" "}<FinixUiText text={"Dividendo por acción"} />{""}<span>{""}<FinixUiText text={"USD"} />{""}</span>
                                                 </span>
                                                 <div className="market-quote-card__numbers">
                                                     <span className="market-quote-card__price">
@@ -1152,14 +1141,13 @@ export default function CalendarPage() {
                                                     {dividend.yield != null && (
                                                         <span className="calendar-badge calendar-badge--positive">
                                                             <ArrowUpRight size={15} />
-                                                            {dividend.yield.toFixed(2)}% yield
-                                                        </span>
+                                                            {dividend.yield.toFixed(2)}{""}<FinixUiText text={"% yield"} />{" "}</span>
                                                     )}
                                                 </div>
                                             </div>
                                             <div className="calendar-card-footer calendar-dividend-dates">
                                                 {dividend.exDate && <span>
-                                                    <span>Ex-dividendo</span>
+                                                    <span>{""}<FinixUiText text={"Ex-dividendo"} />{""}</span>
                                                     <strong>
                                                         {dividend.exDate
                                                             ? formatDateLabel(dividend.exDate)
@@ -1167,7 +1155,7 @@ export default function CalendarPage() {
                                                     </strong>
                                                 </span>}
                                                 {dividend.paymentDate && <span>
-                                                    <span>Fecha de pago</span>
+                                                    <span>{""}<FinixUiText text={"Fecha de pago"} />{""}</span>
                                                     <strong>
                                                         {dividend.paymentDate
                                                             ? formatDateLabel(dividend.paymentDate)

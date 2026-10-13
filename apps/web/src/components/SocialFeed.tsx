@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { lazy, Suspense, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Link, useNavigate } from 'react-router-dom';
@@ -85,10 +87,9 @@ function EmptyFeed() {
                     style={{ background: 'hsl(var(--primary))', color: 'white' }}>0</div>
             </div>
             <div className="text-center space-y-1.5 max-w-[240px]">
-                <p className="text-[15px] font-semibold">El feed está vacío</p>
+                <p className="text-[15px] font-semibold">{""}<FinixUiText text={"El feed está vacío"} />{""}</p>
                 <p className="text-[12.5px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    Sé el primero en publicar o seguí a otros traders para ver su actividad
-                </p>
+                    {" "}<FinixUiText text={"Sé el primero en publicar o seguí a otros traders para ver su actividad"} />{" "}</p>
             </div>
             <div className="flex gap-2 flex-wrap justify-center mt-1">
                 {['Explorar traders', 'General'].map(label => (
@@ -234,7 +235,7 @@ export default function SocialFeed({ initialPosts, isLoading = false, onPostCrea
                                     : 'bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/80 border-border/50'
                             }`}
                         >
-                            {f.label}
+                            {<FinixUiText text={f.label} />}
                         </button>
                     );
                 })}
@@ -248,15 +249,14 @@ export default function SocialFeed({ initialPosts, isLoading = false, onPostCrea
                 ) : filteredPosts.length === 0 ? (
                     activeFilter !== 'all' ? (
                         <div className="p-8 text-center rounded-2xl border border-dashed border-border/60 bg-secondary/10 space-y-2">
-                            <p className="text-sm font-semibold text-foreground">No encontramos publicaciones con este filtro</p>
-                            <p className="text-xs text-muted-foreground">Sé el primero en compartir un post o volvé a ver todos.</p>
+                            <p className="text-sm font-semibold text-foreground">{""}<FinixUiText text={"No encontramos publicaciones con este filtro"} />{""}</p>
+                            <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Sé el primero en compartir un post o volvé a ver todos."} />{""}</p>
                             <button
                                 type="button"
                                 onClick={() => setActiveFilter('all')}
                                 className="mt-2 min-h-11 min-w-11 px-3 py-1 rounded-full text-xs font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20"
                             >
-                                Mostrar todos
-                            </button>
+                                {" "}<FinixUiText text={"Mostrar todos"} />{" "}</button>
                         </div>
                     ) : (
                         <EmptyFeed />
@@ -288,6 +288,8 @@ function FeedItem({ post }: { post: Post }) {
 }
 
 function FeedItemContent({ post }: { post: Post }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [quoteExpanded, setQuoteExpanded] = useState(false);
     const navigate = useNavigate();
     const { user } = useAuthStore();
@@ -462,7 +464,7 @@ function FeedItemContent({ post }: { post: Post }) {
 
                         <div className="relative">
                             <button
-                                aria-label="Más acciones de la publicación" aria-expanded={showMenu}
+                                aria-label={finixUi("Más acciones de la publicación")} aria-expanded={showMenu}
                                 onClick={e => { e.stopPropagation(); setShowMenu(p => !p); }}
                                 className="w-11 h-11 min-w-11 min-h-11 flex items-center justify-center rounded-lg transition-all hover:bg-secondary/60"
                                 style={{ color: 'hsl(var(--muted-foreground))' }}
@@ -495,14 +497,12 @@ function FeedItemContent({ post }: { post: Post }) {
                                             <button onClick={handleDeleteClick}
                                                 className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[12.5px] font-medium transition-colors hover:bg-red-500/10"
                                                 style={{ color: 'hsl(0 68% 55%)' }}>
-                                                <Trash2 className="w-3.5 h-3.5" />Eliminar
-                                            </button>
+                                                <Trash2 className="w-3.5 h-3.5" />{""}<FinixUiText text={"Eliminar"} />{" "}</button>
                                         ) : (
                                             <button onClick={(e) => { e.stopPropagation(); setShowReportModal(true); setShowMenu(false); }}
                                                 className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[12.5px] font-medium transition-colors hover:bg-secondary/50"
                                                 style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                <Flag className="w-3.5 h-3.5" />Reportar
-                                            </button>
+                                                <Flag className="w-3.5 h-3.5" />{""}<FinixUiText text={"Reportar"} />{" "}</button>
                                         )}
                                     </motion.div>
                                 )}
@@ -552,7 +552,7 @@ function FeedItemContent({ post }: { post: Post }) {
                                 />
                             ) : (
                                 <div className="h-[460px] sm:h-[500px] min-h-[460px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
-                                    <Suspense fallback={<div className="h-[500px] animate-pulse bg-muted" role="status" aria-label="Cargando gráfico" />}><TradingViewWidget symbol={tvSymbol} height={500} /></Suspense>
+                                    <Suspense fallback={<div className="h-[500px] animate-pulse bg-muted" role="status" aria-label={finixUi("Cargando gráfico")} />}><TradingViewWidget symbol={tvSymbol} height={500} /></Suspense>
                                 </div>
                             )}
                         </div>
@@ -562,7 +562,7 @@ function FeedItemContent({ post }: { post: Post }) {
                                 <div className="rounded-xl overflow-hidden" style={{ border: '1px solid hsl(var(--border) / 0.25)' }}>
                                     <img
                                         src={resolveMediaUrl(mediaUrl)}
-                                        alt="Archivo de la publicación"
+                                        alt={finixUi("Archivo de la publicación")}
                                         loading="lazy" decoding="async"
                                         className="w-full h-auto max-h-[400px] object-cover"
                                         onError={(e) => {
@@ -574,7 +574,7 @@ function FeedItemContent({ post }: { post: Post }) {
 
                             {!mediaUrl && tvSymbol && (
                                 <div className="h-[460px] sm:h-[500px] min-h-[460px] w-full shrink-0 rounded-2xl overflow-hidden shadow-xs border border-border/40">
-                                    <Suspense fallback={<div className="h-[500px] animate-pulse bg-muted" role="status" aria-label="Cargando gráfico" />}><TradingViewWidget symbol={tvSymbol} height={500} /></Suspense>
+                                    <Suspense fallback={<div className="h-[500px] animate-pulse bg-muted" role="status" aria-label={finixUi("Cargando gráfico")} />}><TradingViewWidget symbol={tvSymbol} height={500} /></Suspense>
                                 </div>
                             )}
                         </>
@@ -686,13 +686,12 @@ function FeedItemContent({ post }: { post: Post }) {
                             </button>
                             <div className="flex items-center gap-2 text-[10px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                 <div className="flex-1 h-px" style={{ background: 'hsl(var(--border) / 0.3)' }} />
-                                O citar publicación
-                                <div className="flex-1 h-px" style={{ background: 'hsl(var(--border) / 0.3)' }} />
+                                {" "}<FinixUiText text={"O citar publicación"} />{" "}<div className="flex-1 h-px" style={{ background: 'hsl(var(--border) / 0.3)' }} />
                             </div>
                             <CreatePostWidget
                                 isReply={true}
                                 quotedPostId={post.id}
-                                placeholder="Añade tu análisis a este repost..."
+                                placeholder={finixUi("Añade tu análisis a este repost...")}
                                 onPostCreated={() => setShowQuoteBox(false)}
                             />
                         </div>
@@ -702,7 +701,7 @@ function FeedItemContent({ post }: { post: Post }) {
 
             {/* ── Comments panel ─── */}
             {showComments && (
-                <Suspense fallback={<div role="status" className="p-4">Cargando comentarios…</div>}><CommentsPanel
+                <Suspense fallback={<div role="status" className="p-4">{""}<FinixUiText text={"Cargando comentarios…"} />{""}</div>}><CommentsPanel
                     postId={post.id}
                     currentUserId={user?.id}
                     onCountChange={setCommentsCount}

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import type { CSSProperties, ReactNode } from 'react';
 import { Calendar, RefreshCw } from 'lucide-react';
 import type { NewsSlotData } from './NewsCard';
@@ -8,8 +10,8 @@ export function DesktopNewsHero({ children }: { children?: ReactNode }) {
         <div className="desktop-news-intro">
             <header className="desktop-news-hero">
                 <div>
-                    <h1>NOTICIAS</h1>
-                    <p>Información financiera curada por nuestro equipo editorial</p>
+                    <h1>{""}<FinixUiText text={"NOTICIAS"} />{""}</h1>
+                    <p>{""}<FinixUiText text={"Información financiera curada por nuestro equipo editorial"} />{""}</p>
                     {children && <div className="desktop-news-hero-categories">{children}</div>}
                 </div>
             </header>
@@ -26,6 +28,8 @@ export function DesktopNews({ slots, categoryName, categoryColor, loading, refre
     onRefresh: () => void;
     onClickTracking: (slotId: string) => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const activeSlots = slots.filter(slot => slot.isActive && slot.article).sort((a, b) => a.position - b.position);
     const shared = { categoryName, onClickTracking };
     const color = /^#[0-9a-f]{6}$/i.test(categoryColor || '') ? categoryColor : 'hsl(var(--primary))';
@@ -37,24 +41,24 @@ export function DesktopNews({ slots, categoryName, categoryColor, loading, refre
             <div className="desktop-news-section-heading">
                 <div className="flex items-center gap-2">
                     <Calendar size={20} />
-                    <h2>Actualidad</h2>
-                    <span>{categoryName} · {activeSlots.length} noticias</span>
+                    <h2>{""}<FinixUiText text={"Actualidad"} />{""}</h2>
+                    <span>{categoryName} · {activeSlots.length} {" "}<FinixUiText text={"noticias"} />{""}</span>
                 </div>
                 <button
                     type="button"
                     className="desktop-news-refresh-inline"
                     disabled={refreshing}
                     onClick={onRefresh}
-                    title="Actualizar noticias"
+                    title={finixUi("Actualizar noticias")}
                 >
                     <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-                    <span>Actualizar noticias</span>
+                    <span>{""}<FinixUiText text={"Actualizar noticias"} />{""}</span>
                 </button>
             </div>
             <div className="desktop-news-columns">
                 <div className="desktop-news-timeline" aria-busy={loading}>
                     {loading ? <div className="desktop-news-skeleton animate-pulse" /> : activeSlots.slice(4).map(slot => <DesktopNewsCard key={slot.article!.id} slot={slot} variant="timeline" {...shared} />)}
-                    {!loading && activeSlots.length === 0 && <p className="desktop-news-empty">No hay noticias publicadas en esta categoría.</p>}
+                    {!loading && activeSlots.length === 0 && <p className="desktop-news-empty">{""}<FinixUiText text={"No hay noticias publicadas en esta categoría."} />{""}</p>}
                 </div>
             </div>
         </div>

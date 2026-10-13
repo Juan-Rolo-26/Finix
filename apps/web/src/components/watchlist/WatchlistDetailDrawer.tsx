@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
@@ -51,6 +53,8 @@ function WatchlistItemDetails({
     onClose,
     onItemUpdated,
 }: WatchlistDetailDrawerProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const navigate = useNavigate();
 
     // Estado editable del activo
@@ -200,7 +204,7 @@ function WatchlistItemDetails({
     return (
         <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200">
             {/* Backdrop */}
-            <button type="button" aria-label="Cerrar ficha" className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
+            <button type="button" aria-label={finixUi("Cerrar ficha")} className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
             {/* Slide-over panel */}
             <div className="relative z-50 w-full sm:max-w-xl h-full bg-card border-l border-border/60 shadow-2xl overflow-y-auto flex flex-col">
@@ -233,12 +237,12 @@ function WatchlistItemDetails({
                                 }}
                                 className="rounded-xl text-xs font-bold gap-1.5 h-8 border-border/60"
                             >
-                                Ver en Mercado <ExternalLink className="w-3.5 h-3.5" />
+                                {" "}<FinixUiText text={"Ver en Mercado"} />{" "}<ExternalLink className="w-3.5 h-3.5" />
                             </Button>
                             <button
                                 type="button"
                                 onClick={onClose}
-                                aria-label="Cerrar ficha del activo"
+                                aria-label={finixUi("Cerrar ficha del activo")}
                                 className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                             >
                                 <X className="w-5 h-5" />
@@ -251,7 +255,7 @@ function WatchlistItemDetails({
                         <div className="mt-3 flex items-center justify-between rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
                             <div className="flex items-center gap-2">
                                 <Briefcase className="w-4 h-4 shrink-0" />
-                                <span>Tenés este activo en tu Portafolio</span>
+                                <span>{""}<FinixUiText text={"Tenés este activo en tu Portafolio"} />{""}</span>
                             </div>
                             <Button
                                 variant="ghost"
@@ -262,8 +266,7 @@ function WatchlistItemDetails({
                                 }}
                                 className="h-6 px-2 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 rounded-lg"
                             >
-                                Ir a Portafolio
-                            </Button>
+                                {" "}<FinixUiText text={"Ir a Portafolio"} />{" "}</Button>
                         </div>
                     )}
                 </div>
@@ -272,8 +275,7 @@ function WatchlistItemDetails({
                     {/* Alerta de guardado */}
                     {savedSuccess && (
                         <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                            <Check className="w-4 h-4" /> Cambios guardados con éxito.
-                        </div>
+                            <Check className="w-4 h-4" /> {" "}<FinixUiText text={"Cambios guardados con éxito."} />{" "}</div>
                     )}
                     {error && (
                         <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive font-semibold">
@@ -285,8 +287,7 @@ function WatchlistItemDetails({
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         <div className="rounded-2xl border border-border/60 bg-background/60 p-3">
                             <span className="text-[10px] text-muted-foreground uppercase font-bold block">
-                                Precio Actual
-                            </span>
+                                {" "}<FinixUiText text={"Precio Actual"} />{" "}</span>
                             <span className="text-base font-black text-foreground">
                                 {currentPrice !== null ? `$${currentPrice.toLocaleString()}` : 'No disponible'}
                             </span>
@@ -303,8 +304,7 @@ function WatchlistItemDetails({
 
                         <div className="rounded-2xl border border-border/60 bg-background/60 p-3">
                             <span className="text-[10px] text-muted-foreground uppercase font-bold block">
-                                Precio al Agregar
-                            </span>
+                                {" "}<FinixUiText text={"Precio al Agregar"} />{" "}</span>
                             <span className="text-base font-black text-foreground">
                                 {item.addedPrice !== null ? `$${item.addedPrice.toLocaleString()}` : 'N/D'}
                             </span>
@@ -315,8 +315,7 @@ function WatchlistItemDetails({
 
                         <div className="rounded-2xl border border-border/60 bg-background/60 p-3">
                             <span className="text-[10px] text-muted-foreground uppercase font-bold block">
-                                Sector
-                            </span>
+                                {" "}<FinixUiText text={"Sector"} />{" "}</span>
                             <span className="text-xs font-bold text-foreground line-clamp-1">
                                 {item.sector || 'General'}
                             </span>
@@ -327,8 +326,7 @@ function WatchlistItemDetails({
 
                         <div className="rounded-2xl border border-border/60 bg-background/60 p-3">
                             <span className="text-[10px] text-muted-foreground uppercase font-bold block">
-                                Próximo Balance
-                            </span>
+                                {" "}<FinixUiText text={"Próximo Balance"} />{" "}</span>
                             <span className="text-xs font-bold text-foreground line-clamp-1">
                                 {item.nextEarnings?.date ? item.nextEarnings.date : 'Sin fecha'}
                             </span>
@@ -340,7 +338,7 @@ function WatchlistItemDetails({
 
                     {/* Estado personal del seguimiento */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-foreground">Estado personal de seguimiento</label>
+                        <label className="text-xs font-bold text-foreground">{""}<FinixUiText text={"Estado personal de seguimiento"} />{""}</label>
                         <div className="grid grid-cols-2 gap-2">
                             {STATUS_OPTIONS.map((opt) => (
                                 <button
@@ -352,7 +350,7 @@ function WatchlistItemDetails({
                                             : 'border-border/60 hover:bg-secondary/40 text-muted-foreground'
                                         }`}
                                 >
-                                    {opt.label}
+                                    {<FinixUiText text={opt.label} />}
                                 </button>
                             ))}
                         </div>
@@ -360,7 +358,7 @@ function WatchlistItemDetails({
 
                     <section className="space-y-3" aria-label={`Gráfico de ${item.symbol}`}>
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="text-sm font-bold">Gráfico del activo</h3>
+                            <h3 className="text-sm font-bold">{""}<FinixUiText text={"Gráfico del activo"} />{""}</h3>
                             <div className="flex gap-1">
                                 {[['15', '15m'], ['60', '1H'], ['240', '4H'], ['D', '1D'], ['W', '1S']].map(([value, label]) =>
                                     <button key={value} type="button" aria-pressed={chartInterval === value} onClick={() => setChartInterval(value)} className={`rounded px-2 py-1 text-xs ${chartInterval === value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{label}</button>)}
@@ -370,17 +368,16 @@ function WatchlistItemDetails({
                     </section>
                     {/* Objetivo de precio y alertas */}
                     <label className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                        Condición del objetivo
-                        <select aria-label="Condición del objetivo" value={targetDirection} onChange={event => setTargetDirection(event.target.value as 'ABOVE' | 'BELOW')} className="rounded-lg border border-border bg-background p-2 text-foreground">
-                            <option value="BELOW">Precio menor al objetivo</option>
-                            <option value="ABOVE">Precio mayor al objetivo</option>
+                        {" "}<FinixUiText text={"Condición del objetivo"} />{" "}<select aria-label={finixUi("Condición del objetivo")} value={targetDirection} onChange={event => setTargetDirection(event.target.value as 'ABOVE' | 'BELOW')} className="rounded-lg border border-border bg-background p-2 text-foreground">
+                            <option value="BELOW">{""}<FinixUiText text={"Precio menor al objetivo"} />{""}</option>
+                            <option value="ABOVE">{""}<FinixUiText text={"Precio mayor al objetivo"} />{""}</option>
                         </select>
                     </label>
                     <div className="rounded-2xl border border-border/60 bg-secondary/20 p-4 space-y-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-foreground font-bold text-xs">
                                 <Target className="w-4 h-4 text-emerald-500" />
-                                <span>Precio objetivo personal ({item.currency})</span>
+                                <span>{""}<FinixUiText text={"Precio objetivo personal ("} />{""}{item.currency})</span>
                             </div>
                             {distancePct !== null && (
                                 <div
@@ -401,13 +398,13 @@ function WatchlistItemDetails({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label className="text-[11px] text-muted-foreground block mb-1">
-                                    Precio objetivo ($ {item.currency})
+                                    {" "}<FinixUiText text={"Precio objetivo ($"} />{" "}{item.currency})
                                 </label>
                                 <input
                                     type="number"
                                     step="any"
-                                    placeholder="Ej. 185.50"
-                                    aria-label="Precio objetivo"
+                                    placeholder={finixUi("Ej. 185.50")}
+                                    aria-label={finixUi("Precio objetivo")}
                                     value={targetPrice}
                                     onChange={(e) => setTargetPrice(e.target.value)}
                                     className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 text-xs font-bold text-foreground outline-none focus:border-emerald-500 transition-colors"
@@ -416,8 +413,7 @@ function WatchlistItemDetails({
 
                             <div>
                                 <label className="text-[11px] text-muted-foreground block mb-1">
-                                    Alerta de cruce de precio
-                                </label>
+                                    {" "}<FinixUiText text={"Alerta de cruce de precio"} />{" "}</label>
                                 <div className="flex items-center gap-2 h-10">
                                     <button
                                         type="button"
@@ -433,14 +429,14 @@ function WatchlistItemDetails({
 
                                     {alertEnabled && (
                                         <select
-                                            aria-label="Canal de la alerta"
+                                            aria-label={finixUi("Canal de la alerta")}
                                             value={alertChannel}
                                             onChange={(e: any) => setAlertChannel(e.target.value)}
                                             className="h-full rounded-xl border border-border/60 bg-background px-2 text-xs font-bold text-foreground outline-none"
                                         >
-                                            <option value="EMAIL">Email</option>
-                                            <option value="PUSH">App</option>
-                                            <option value="ALL">Ambos</option>
+                                            <option value="EMAIL">{""}<FinixUiText text={"Email"} />{""}</option>
+                                            <option value="PUSH">{""}<FinixUiText text={"App"} />{""}</option>
+                                            <option value="ALL">{""}<FinixUiText text={"Ambos"} />{""}</option>
                                         </select>
                                     )}
                                 </div>
@@ -456,10 +452,10 @@ function WatchlistItemDetails({
 
                     {/* Motivo de seguimiento */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-foreground">Motivo por el que lo seguís</label>
+                        <label className="text-xs font-bold text-foreground">{""}<FinixUiText text={"Motivo por el que lo seguís"} />{""}</label>
                         <textarea
                             rows={2}
-                            placeholder="Ej. Líder en microchips para IA, esperando retroceso al soporte de $120..."
+                            placeholder={finixUi("Ej. Líder en microchips para IA, esperando retroceso al soporte de $120...")}
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             className="w-full rounded-xl border border-border/60 bg-background/80 p-3 text-xs text-foreground outline-none focus:border-emerald-500 transition-colors resize-none"
@@ -470,8 +466,7 @@ function WatchlistItemDetails({
                     <div className="space-y-1.5">
                         <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                             <Tag className="w-3.5 h-3.5 text-muted-foreground" />
-                            Etiquetas personales
-                        </label>
+                            {" "}<FinixUiText text={"Etiquetas personales"} />{" "}</label>
                         <div className="flex flex-wrap items-center gap-1.5">
                             {tags.map((tag) => (
                                 <span
@@ -490,7 +485,7 @@ function WatchlistItemDetails({
                             ))}
                             <input
                                 type="text"
-                                placeholder="+ Etiqueta (Enter)..."
+                                placeholder={finixUi("+ Etiqueta (Enter)...")}
                                 value={tagInput}
                                 onChange={(e) => setTagInput(e.target.value)}
                                 onKeyDown={handleAddTag}
@@ -509,8 +504,7 @@ function WatchlistItemDetails({
                             className="rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm"
                         >
                             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                            Guardar configuración
-                        </Button>
+                            {" "}<FinixUiText text={"Guardar configuración"} />{" "}</Button>
                     </div>
 
                     {/* Notas privadas con historial */}
@@ -518,16 +512,16 @@ function WatchlistItemDetails({
                         <div className="flex items-center justify-between">
                             <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                                 <FileText className="w-4 h-4 text-emerald-500" />
-                                Notas privadas ({notes.length})
+                                {" "}<FinixUiText text={"Notas privadas ("} />{""}{notes.length})
                             </h4>
-                            <span className="text-[11px] text-muted-foreground">Solo visibles para vos</span>
+                            <span className="text-[11px] text-muted-foreground">{""}<FinixUiText text={"Solo visibles para vos"} />{""}</span>
                         </div>
 
                         {/* Formulario nueva nota */}
                         <form onSubmit={handleAddNote} className="space-y-2">
                             <textarea
                                 rows={2}
-                                placeholder="Escribí una nota fechada sobre el balance, tesis de inversión o noticias..."
+                                placeholder={finixUi("Escribí una nota fechada sobre el balance, tesis de inversión o noticias...")}
                                 value={newNoteContent}
                                 onChange={(e) => setNewNoteContent(e.target.value)}
                                 className="w-full rounded-xl border border-border/60 bg-background/80 p-3 text-xs text-foreground outline-none focus:border-emerald-500 transition-colors resize-none"
@@ -540,8 +534,7 @@ function WatchlistItemDetails({
                                     className="h-8 rounded-xl text-xs font-bold gap-1 bg-secondary text-foreground hover:bg-secondary/80 border border-border/60"
                                 >
                                     {addingNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-                                    Agregar nota
-                                </Button>
+                                    {" "}<FinixUiText text={"Agregar nota"} />{" "}</Button>
                             </div>
                         </form>
 
@@ -549,8 +542,7 @@ function WatchlistItemDetails({
                         <div className="space-y-2">
                             {notes.length === 0 ? (
                                 <p className="text-[11px] text-muted-foreground italic text-center py-2">
-                                    No hay notas registradas para este activo.
-                                </p>
+                                    {" "}<FinixUiText text={"No hay notas registradas para este activo."} />{" "}</p>
                             ) : (
                                 notes.map((note) => (
                                     <div
@@ -566,7 +558,7 @@ function WatchlistItemDetails({
                                                 type="button"
                                                 onClick={() => handleDeleteNote(note.id)}
                                                 className="text-muted-foreground hover:text-destructive transition-colors"
-                                                title="Eliminar nota"
+                                                title={finixUi("Eliminar nota")}
                                             >
                                                 <Trash2 className="w-3 h-3" />
                                             </button>
@@ -583,12 +575,11 @@ function WatchlistItemDetails({
                         <div className="flex items-center justify-between">
                             <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                                 <MessageSquare className="w-4 h-4 text-primary" />
-                                Publicaciones de la comunidad sobre {item.symbol}
+                                {" "}<FinixUiText text={"Publicaciones de la comunidad sobre"} />{" "}{item.symbol}
                             </h4>
                         </div>
                         <p className="text-[11px] text-muted-foreground leading-snug">
-                            Las opiniones de los usuarios no constituyen datos verificados ni recomendaciones de Finix.
-                        </p>
+                            {" "}<FinixUiText text={"Las opiniones de los usuarios no constituyen datos verificados ni recomendaciones de Finix."} />{" "}</p>
 
                         {loadingPosts ? (
                             <div className="py-4 flex justify-center">
@@ -596,8 +587,7 @@ function WatchlistItemDetails({
                             </div>
                         ) : communityPosts.length === 0 ? (
                             <p className="text-[11px] text-muted-foreground italic text-center py-2">
-                                No hay publicaciones recientes etiquetadas con este activo.
-                            </p>
+                                {" "}<FinixUiText text={"No hay publicaciones recientes etiquetadas con este activo."} />{" "}</p>
                         ) : (
                             <div className="space-y-2">
                                 {communityPosts.map((post) => (

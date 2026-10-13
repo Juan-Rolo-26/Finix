@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -234,8 +236,7 @@ function SectionHero({ section }: { section: SectionMeta }) {
               <Icon className="h-7 w-7 text-primary" />
             </div>
             <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Resumen ejecutivo
-            </span>
+              {" "}<FinixUiText text={"Resumen ejecutivo"} />{" "}</span>
           </div>
 
           <div className="space-y-3">
@@ -261,14 +262,11 @@ function FeatureSection() {
         <Panel className="h-full rounded-[32px] p-7 md:p-9">
           <div className="max-w-2xl space-y-4">
             <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
-              Lo central
-            </span>
+              {" "}<FinixUiText text={"Lo central"} />{" "}</span>
             <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-              Comunidad, análisis y portafolio dentro de una misma experiencia.
-            </h2>
+              {" "}<FinixUiText text={"Comunidad, análisis y portafolio dentro de una misma experiencia."} />{" "}</h2>
             <p className="text-sm leading-8 text-muted-foreground">
-              Finix combina herramientas que suelen estar separadas para que seguir inversores, analizar activos y gestionar inversiones tenga una lógica más simple y conectada.
-            </p>
+              {" "}<FinixUiText text={"Finix combina herramientas que suelen estar separadas para que seguir inversores, analizar activos y gestionar inversiones tenga una lógica más simple y conectada."} />{" "}</p>
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -289,11 +287,9 @@ function FeatureSection() {
         <Panel className="h-full rounded-[32px] p-7 md:p-8">
           <div className="space-y-3">
             <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
-              Qué incluye
-            </span>
+              {" "}<FinixUiText text={"Qué incluye"} />{" "}</span>
             <h3 className="text-2xl font-semibold text-foreground">
-              Funcionalidades alineadas con el flujo real del inversor.
-            </h3>
+              {" "}<FinixUiText text={"Funcionalidades alineadas con el flujo real del inversor."} />{" "}</h3>
           </div>
 
           <div className="mt-8 space-y-5">
@@ -345,14 +341,11 @@ function HowSection() {
         <Panel className="rounded-[32px] p-7 md:p-8">
           <div className="space-y-3">
             <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
-              Qué pasa después
-            </span>
+              {" "}<FinixUiText text={"Qué pasa después"} />{" "}</span>
             <h2 className="text-2xl font-semibold text-foreground">
-              El proceso deja al usuario listo para empezar a usar Finix.
-            </h2>
+              {" "}<FinixUiText text={"El proceso deja al usuario listo para empezar a usar Finix."} />{" "}</h2>
             <p className="text-sm leading-8 text-muted-foreground">
-              El objetivo es que el registro sea rápido y que, desde el primer ingreso, la plataforma ya tenga valor práctico para explorar, analizar y participar.
-            </p>
+              {" "}<FinixUiText text={"El objetivo es que el registro sea rápido y que, desde el primer ingreso, la plataforma ya tenga valor práctico para explorar, analizar y participar."} />{" "}</p>
           </div>
 
           <div className="mt-8 space-y-4">
@@ -397,39 +390,34 @@ function HowSection() {
 }
 
 function AboutSection() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   return (
     <section className="grid gap-6 xl:grid-cols-12">
       <motion.article variants={sectionVariants} className="xl:col-span-7">
         <Panel className="h-full rounded-[32px] p-7 md:p-9">
           <div className="space-y-4">
             <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
-              Por qué existe
-            </span>
+              {" "}<FinixUiText text={"Por qué existe"} />{" "}</span>
             <h2 className="max-w-2xl text-2xl font-semibold text-foreground md:text-3xl">
-              Una red social financiera pensada para mejorar el acceso a información y comunidad en la región.
-            </h2>
+              {" "}<FinixUiText text={"Una red social financiera pensada para mejorar el acceso a información y comunidad en la región."} />{" "}</h2>
           </div>
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="space-y-5 text-sm leading-8 text-muted-foreground">
               <p>
-                <strong className="font-semibold text-foreground">Finix</strong> busca democratizar el acceso a información financiera útil y construir una comunidad donde los inversores de Latinoamérica puedan compartir análisis, aprender y descubrir nuevas ideas.
-              </p>
+                <strong className="font-semibold text-foreground">{""}<FinixUiText text={"Finix"} />{""}</strong> {" "}<FinixUiText text={"busca democratizar el acceso a información financiera útil y construir una comunidad donde los inversores de Latinoamérica puedan compartir análisis, aprender y descubrir nuevas ideas."} />{" "}</p>
               <p>
-                La propuesta integra red social, herramientas de análisis y gestión de portafolio para reducir fricción entre descubrir una oportunidad, analizarla y seguirla dentro del mismo producto.
-              </p>
+                {" "}<FinixUiText text={"La propuesta integra red social, herramientas de análisis y gestión de portafolio para reducir fricción entre descubrir una oportunidad, analizarla y seguirla dentro del mismo producto."} />{" "}</p>
               <p>
-                El producto sigue en desarrollo y se construye con foco en transparencia, claridad y aprendizaje continuo a partir del uso real de la comunidad.
-              </p>
+                {" "}<FinixUiText text={"El producto sigue en desarrollo y se construye con foco en transparencia, claridad y aprendizaje continuo a partir del uso real de la comunidad."} />{" "}</p>
             </div>
 
             <div className="rounded-[28px] border border-border/45 bg-background/28 p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                Idea rectora
-              </p>
+                {" "}<FinixUiText text={"Idea rectora"} />{" "}</p>
               <p className="mt-3 text-base leading-8 text-foreground/86">
-                Crear una plataforma donde comunidad e información financiera convivan con más orden, contexto y utilidad para el inversor latinoamericano.
-              </p>
+                {" "}<FinixUiText text={"Crear una plataforma donde comunidad e información financiera convivan con más orden, contexto y utilidad para el inversor latinoamericano."} />{" "}</p>
             </div>
           </div>
         </Panel>
@@ -444,14 +432,11 @@ function AboutSection() {
               </div>
               <div className="space-y-2">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                  Visión
-                </p>
+                  {" "}<FinixUiText text={"Visión"} />{" "}</p>
                 <h3 className="text-lg font-semibold text-foreground">
-                  Construir una red social financiera relevante para Latinoamérica.
-                </h3>
+                  {" "}<FinixUiText text={"Construir una red social financiera relevante para Latinoamérica."} />{" "}</h3>
                 <p className="text-sm leading-7 text-muted-foreground">
-                  La visión es integrar educación financiera, análisis de mercado y comunidad dentro de un producto claro, útil y confiable.
-                </p>
+                  {" "}<FinixUiText text={"La visión es integrar educación financiera, análisis de mercado y comunidad dentro de un producto claro, útil y confiable."} />{" "}</p>
               </div>
             </div>
           </Panel>
@@ -460,8 +445,7 @@ function AboutSection() {
         <motion.article variants={sectionVariants}>
           <Panel className="rounded-[30px] p-6 md:p-7">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-              Principios de producto
-            </p>
+              {" "}<FinixUiText text={"Principios de producto"} />{" "}</p>
             <div className="mt-5 space-y-4">
               {ABOUT_PRINCIPLES.map(({ id, title, desc }) => (
                 <div key={id} className="border-t border-border/50 pt-4 first:border-t-0 first:pt-0">
@@ -477,7 +461,7 @@ function AboutSection() {
       <motion.div variants={sectionVariants} className="xl:col-span-12">
         <ContactFormSection
           id="contacto"
-          title="Contacto Finix"
+          title={finixUi("Contacto Finix")}
           description="Mandanos tu mensaje y el equipo lo recibe directamente por correo en finiixarg@gmail.com."
         />
       </motion.div>
@@ -486,12 +470,14 @@ function AboutSection() {
 }
 
 function ContactSection() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   return (
     <section className="grid gap-6">
       <motion.div variants={sectionVariants}>
         <ContactFormSection
           id="contacto"
-          title="Contactanos"
+          title={finixUi("Contactanos")}
           eyebrow="Formulario directo"
           description="Mandanos tu consulta o mensaje y el equipo de Finix te responderá a la brevedad."
         />
@@ -501,6 +487,8 @@ function ContactSection() {
 }
 
 export default function InfoPage() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const { section } = useParams<{ section?: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -562,12 +550,11 @@ export default function InfoPage() {
 
             <div className="flex justify-center lg:justify-end">
               <div className="finix-marketing-panel inline-flex items-center gap-3 rounded-[26px] border border-border/50 px-5 py-3 shadow-sm">
-                <img src="/logo-small.webp" alt="Finix" className="h-7 w-7 object-contain" />
+                <img src="/logo-small.webp" alt={finixUi("Finix")} className="h-7 w-7 object-contain" />
                 <div className="leading-tight">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                    Finanzas sociales
-                  </p>
-                  <p className="font-heading text-base font-bold text-primary">Finix</p>
+                    {" "}<FinixUiText text={"Finanzas sociales"} />{" "}</p>
+                  <p className="font-heading text-base font-bold text-primary">{""}<FinixUiText text={"Finix"} />{""}</p>
                 </div>
               </div>
             </div>

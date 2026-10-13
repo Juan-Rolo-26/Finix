@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Clock } from 'lucide-react';
@@ -46,7 +47,7 @@ export default function LandingNews() {
     return (
         <div className="w-full max-w-6xl mx-auto px-6 py-12 lg:py-20 relative z-10">
             <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-bold text-foreground">Últimas Noticias</h2>
+                <h2 className="text-2xl font-bold text-foreground">{""}<FinixUiText text={"Últimas Noticias"} />{""}</h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import {
     useState,
@@ -358,6 +360,8 @@ function SharedPostCard({
     textPrimary: string;
     textMuted: string;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const firstMedia = post.media?.[0];
 
     return (
@@ -406,7 +410,7 @@ function SharedPostCard({
                     <div className="rounded-2xl overflow-hidden border" style={{ borderColor }}>
                         <img
                             src={resolveMediaUrl(firstMedia.url)}
-                            alt="Publicacion compartida"
+                            alt={finixUi("Publicacion compartida")}
                             className="w-full max-h-80 object-cover"
                             loading="lazy"
                         />
@@ -431,12 +435,14 @@ function MessageAttachmentCard({
     textPrimary: string;
     textMuted: string;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     if (message.attachmentType === 'image' && message.attachmentUrl) {
         return (
             <div className="space-y-2">
                 <img
                     src={resolveMediaUrl(message.attachmentUrl)}
-                    alt="Foto enviada"
+                    alt={finixUi("Foto enviada")}
                     className="w-full max-w-[320px] max-h-[300px] object-cover rounded-2xl"
                     loading="lazy"
                 />
@@ -510,7 +516,7 @@ function MessageAttachmentCard({
                         )}
                         {riskLevel && (
                             <span className="text-[11px]" style={{ color: textMuted }}>
-                                Riesgo {riskLevel}
+                                {" "}<FinixUiText text={"Riesgo"} />{" "}{riskLevel}
                             </span>
                         )}
                     </div>
@@ -518,8 +524,7 @@ function MessageAttachmentCard({
                         to={`/market?symbol=${encodeURIComponent(symbol)}`}
                         className="inline-flex items-center gap-1 text-xs font-bold text-primary"
                     >
-                        Abrir grafico
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        {" "}<FinixUiText text={"Abrir grafico"} />{" "}<ExternalLink className="w-3.5 h-3.5" />
                     </Link>
                 </div>
             </div>
@@ -528,7 +533,7 @@ function MessageAttachmentCard({
 
 
     return message.attachmentType ? (
-        <p className="text-sm" style={{ color: textMuted }}>Adjunto no disponible</p>
+        <p className="text-sm" style={{ color: textMuted }}>{""}<FinixUiText text={"Adjunto no disponible"} />{""}</p>
     ) : null;
 }
 
@@ -545,6 +550,8 @@ function NewMessageModal({
     isSubmitting: boolean;
     errorMessage: string;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const returnFocusRef = useRef(document.activeElement as HTMLElement | null);
     const [q, setQ] = useState('');
     const [results, setResults] = useState<MsgUser[]>([]);
@@ -652,14 +659,14 @@ function NewMessageModal({
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
                     <div>
-                        <h2 id="new-message-modal-title" className="font-bold text-lg">Nuevo mensaje o grupo</h2>
-                        <p className="text-xs text-muted-foreground mt-0.5">Seleccioná una o varias personas</p>
+                        <h2 id="new-message-modal-title" className="font-bold text-lg">{""}<FinixUiText text={"Nuevo mensaje o grupo"} />{""}</h2>
+                        <p className="text-xs text-muted-foreground mt-0.5">{""}<FinixUiText text={"Seleccioná una o varias personas"} />{""}</p>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={isSubmitting}
-                        aria-label="Cerrar ventana de nuevo mensaje"
+                        aria-label={finixUi("Cerrar ventana de nuevo mensaje")}
                         className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-secondary/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary"
                     >
                         <X className="w-5 h-5" />
@@ -694,11 +701,11 @@ function NewMessageModal({
                         {selectedUsers.length > 1 && (
                             <div className="space-y-3">
                                 <div className="space-y-1.5">
-                                    <label htmlFor="group-title" className="text-xs font-semibold text-muted-foreground">Nombre del grupo</label>
+                                    <label htmlFor="group-title" className="text-xs font-semibold text-muted-foreground">{""}<FinixUiText text={"Nombre del grupo"} />{""}</label>
                                     <input
                                         id="group-title"
                                         type="text"
-                                        placeholder="Ej: Equipo Finix"
+                                        placeholder={finixUi("Ej: Equipo Finix")}
                                         value={groupTitle}
                                         onChange={(e) => setGroupTitle(e.target.value)}
                                         disabled={isSubmitting}
@@ -706,11 +713,11 @@ function NewMessageModal({
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label htmlFor="group-description" className="text-xs font-semibold text-muted-foreground">Descripción (opcional)</label>
+                                    <label htmlFor="group-description" className="text-xs font-semibold text-muted-foreground">{""}<FinixUiText text={"Descripción (opcional)"} />{""}</label>
                                     <input
                                         id="group-description"
                                         type="text"
-                                        placeholder="Ej: Grupo para hablar de inversiones"
+                                        placeholder={finixUi("Ej: Grupo para hablar de inversiones")}
                                         disabled={isSubmitting}
                                         className="w-full rounded-xl border border-border/50 bg-secondary/20 px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary/40"
                                         value={groupDescription}
@@ -729,8 +736,8 @@ function NewMessageModal({
                         <input
                             ref={inputRef}
                             type="text"
-                            placeholder="Buscar por usuario (@nombredeusuario)"
-                            aria-label="Buscar por nombre de usuario"
+                            placeholder={finixUi("Buscar por usuario (@nombredeusuario)")}
+                            aria-label={finixUi("Buscar por nombre de usuario")}
                             value={q}
                             onChange={(e) => setQ(e.target.value)}
                             disabled={isSubmitting}
@@ -746,11 +753,11 @@ function NewMessageModal({
                     {results.length === 0 && normalizedQuery.length >= 2 && !loading && searchError ? (
                         <p className="text-sm text-muted-foreground text-center py-8">{searchError}</p>
                     ) : results.length === 0 && normalizedQuery.length >= 2 && !loading ? (
-                        <p className="text-sm text-muted-foreground text-center py-8">No hay usuarios con ese nombre de usuario</p>
+                        <p className="text-sm text-muted-foreground text-center py-8">{""}<FinixUiText text={"No hay usuarios con ese nombre de usuario"} />{""}</p>
                     ) : results.length === 0 && normalizedQuery.length > 0 && !loading ? (
-                        <p className="text-sm text-muted-foreground text-center py-8">Escribí al menos 2 caracteres del usuario</p>
+                        <p className="text-sm text-muted-foreground text-center py-8">{""}<FinixUiText text={"Escribí al menos 2 caracteres del usuario"} />{""}</p>
                     ) : results.length === 0 && normalizedQuery.length === 0 ? (
-                        <p className="text-xs text-muted-foreground text-center py-6">Buscá personas por su nombre de usuario</p>
+                        <p className="text-xs text-muted-foreground text-center py-6">{""}<FinixUiText text={"Buscá personas por su nombre de usuario"} />{""}</p>
                     ) : (
                         results.map((u) => (
                             <button
@@ -793,8 +800,7 @@ function NewMessageModal({
                         {isSubmitting ? (
                             <span className="inline-flex items-center gap-2">
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Creando...
-                            </span>
+                                {" "}<FinixUiText text={"Creando..."} />{" "}</span>
                         ) : (
                             isGroup ? 'Crear grupo' : 'Abrir chat'
                         )}
@@ -840,12 +846,12 @@ function ConversationInfoModal({
 
     return <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
         <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-border/50 bg-card shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4"><div><h2 className="text-lg font-black">Información del grupo</h2><p className="text-xs text-muted-foreground">Configurá el nombre, descripción y miembros</p></div><button onClick={onClose} className="rounded-full p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
+            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4"><div><h2 className="text-lg font-black">{""}<FinixUiText text={"Información del grupo"} />{""}</h2><p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Configurá el nombre, descripción y miembros"} />{""}</p></div><button onClick={onClose} className="rounded-full p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
             <div className="max-h-[70vh] space-y-5 overflow-y-auto p-5">
-                <div className="flex flex-col items-center gap-3"><ConversationAvatar conversation={conversation} currentUserId={currentUserId} size={88} onlineUsers={new Set()} /><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Grupo Finix</span></div>
-                {editing ? <div className="space-y-3"><label className="block text-xs font-bold text-muted-foreground">Nombre<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} className="mt-1 w-full rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary" /></label><label className="block text-xs font-bold text-muted-foreground">Descripción<textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={500} rows={3} className="mt-1 w-full resize-none rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary" /></label>{error && <p className="text-xs text-red-400">{error}</p>}<div className="flex gap-2"><button onClick={() => setEditing(false)} className="flex-1 rounded-xl border border-border px-3 py-2 text-sm font-semibold">Cancelar</button><button onClick={save} disabled={saving} className="flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-black">{saving ? 'Guardando…' : 'Guardar cambios'}</button></div></div> : <div className="space-y-3"><div><p className="text-xl font-black text-center">{conversation.title}</p><p className="mt-1 text-center text-sm text-muted-foreground">{conversation.description || 'Sin descripción'}</p></div><button onClick={() => setEditing(true)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm font-bold text-primary"><Pencil className="h-4 w-4" /> Editar información</button></div>}
-                <div className="space-y-3 border-t border-border/40 pt-4"><div className="flex items-center gap-2 text-sm font-bold"><Users className="h-4 w-4 text-primary" /> {members.length} miembros</div>{members.map((member) => <div key={member.id} className="flex items-center gap-3 rounded-xl px-2 py-2"><UserAvatar user={member} size={36} online={false} /><div className="min-w-0"><p className="truncate text-sm font-semibold">{member.username}{member.id === currentUserId ? ' (vos)' : ''}</p><p className="text-xs text-muted-foreground">{member.title || 'Miembro del grupo'}</p></div></div>)}</div>
-                <div className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground"><Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />Las fotos de perfil de los miembros se sincronizan automáticamente con sus perfiles públicos de Finix.</div>
+                <div className="flex flex-col items-center gap-3"><ConversationAvatar conversation={conversation} currentUserId={currentUserId} size={88} onlineUsers={new Set()} /><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{""}<FinixUiText text={"Grupo Finix"} />{""}</span></div>
+                {editing ? <div className="space-y-3"><label className="block text-xs font-bold text-muted-foreground">{""}<FinixUiText text={"Nombre"} />{""}<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} className="mt-1 w-full rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary" /></label><label className="block text-xs font-bold text-muted-foreground">{""}<FinixUiText text={"Descripción"} />{""}<textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={500} rows={3} className="mt-1 w-full resize-none rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary" /></label>{error && <p className="text-xs text-red-400">{error}</p>}<div className="flex gap-2"><button onClick={() => setEditing(false)} className="flex-1 rounded-xl border border-border px-3 py-2 text-sm font-semibold">{""}<FinixUiText text={"Cancelar"} />{""}</button><button onClick={save} disabled={saving} className="flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-black">{saving ? 'Guardando…' : 'Guardar cambios'}</button></div></div> : <div className="space-y-3"><div><p className="text-xl font-black text-center">{conversation.title}</p><p className="mt-1 text-center text-sm text-muted-foreground">{conversation.description || 'Sin descripción'}</p></div><button onClick={() => setEditing(true)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm font-bold text-primary"><Pencil className="h-4 w-4" /> {" "}<FinixUiText text={"Editar información"} />{""}</button></div>}
+                <div className="space-y-3 border-t border-border/40 pt-4"><div className="flex items-center gap-2 text-sm font-bold"><Users className="h-4 w-4 text-primary" /> {members.length} {" "}<FinixUiText text={"miembros"} />{""}</div>{members.map((member) => <div key={member.id} className="flex items-center gap-3 rounded-xl px-2 py-2"><UserAvatar user={member} size={36} online={false} /><div className="min-w-0"><p className="truncate text-sm font-semibold">{member.username}{member.id === currentUserId ? ' (vos)' : ''}</p><p className="text-xs text-muted-foreground">{member.title || 'Miembro del grupo'}</p></div></div>)}</div>
+                <div className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground"><Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{""}<FinixUiText text={"Las fotos de perfil de los miembros se sincronizan automáticamente con sus perfiles públicos de Finix."} />{""}</div>
             </div>
         </div>
     </div>;
@@ -854,6 +860,8 @@ function ConversationInfoModal({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function MessagesPage() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { user, token } = useAuthStore();
     const { theme: appTheme } = usePreferencesStore();
     const isLight = appTheme === 'light' || (appTheme === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches);
@@ -1490,15 +1498,14 @@ export default function MessagesPage() {
                                                 boxShadow: '0 0 14px hsl(158 100% 45% / 0.35)',
                                             }}
                                         >
-                                            <img src="/logo-small.webp" alt="Finix" className="w-5 h-5 object-contain" />
+                                            <img src="/logo-small.webp" alt={finixUi("Finix")} className="w-5 h-5 object-contain" />
                                         </div>
                                         <div>
                                             <h1 className="text-[17px] font-black tracking-tight" style={{ color: textPrimary }}>
                                                 {user?.username || 'Mensajes'}
                                             </h1>
                                             <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'hsl(158 100% 40% / 0.65)' }}>
-                                                Red Finix
-                                            </p>
+                                                {" "}<FinixUiText text={"Red Finix"} />{" "}</p>
                                         </div>
                                     </div>
                                     <button
@@ -1508,7 +1515,7 @@ export default function MessagesPage() {
                                             background: `linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 30%) 100%)`,
                                             boxShadow: `0 4px 18px hsl(158 100% 45% / 0.4)`,
                                         }}
-                                        title="Nuevo mensaje"
+                                        title={finixUi("Nuevo mensaje")}
                                     >
                                         <Plus className="w-5 h-5 text-black" />
                                     </button>
@@ -1520,7 +1527,7 @@ export default function MessagesPage() {
                                         <Search className="w-4 h-4 flex-shrink-0" style={{ color: textMuted }} />
                                         <input
                                             type="text"
-                                            placeholder="Buscar conversaciones..."
+                                            placeholder={finixUi("Buscar conversaciones...")}
                                             value={convSearch}
                                             onChange={(e) => setConvSearch(e.target.value)}
                                             className="flex-1 bg-transparent py-2.5 text-sm outline-none placeholder:text-muted-foreground"
@@ -1573,8 +1580,7 @@ export default function MessagesPage() {
                                                     }}
                                                 >
                                                     <Plus className="w-4 h-4" />
-                                                    Empezar chat o grupo
-                                                </button>
+                                                    {" "}<FinixUiText text={"Empezar chat o grupo"} />{" "}</button>
                                             )}
                                         </div>
                                     ) : (
@@ -1640,24 +1646,22 @@ export default function MessagesPage() {
                                                                         className={`absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isActive ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100'
                                                                             }`}
                                                                         style={{ background: isActive ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
-                                                                        title="Acciones del chat"
+                                                                        title={finixUi("Acciones del chat")}
                                                                         aria-label={`Acciones del chat ${getConversationName(conv)}`}
                                                                     >
                                                                         <MoreHorizontal className="w-4 h-4" style={{ color: textMuted }} />
                                                                     </button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end" className="w-48">
-                                                                    <DropdownMenuLabel>Acciones del chat</DropdownMenuLabel>
+                                                                    <DropdownMenuLabel>{""}<FinixUiText text={"Acciones del chat"} />{""}</DropdownMenuLabel>
                                                                     <DropdownMenuSeparator />
                                                                     <DropdownMenuItem onClick={() => handleSelectConv(conv.id)}>
                                                                         <MessageSquare className="w-4 h-4" />
-                                                                        Abrir chat
-                                                                    </DropdownMenuItem>
+                                                                        {" "}<FinixUiText text={"Abrir chat"} />{" "}</DropdownMenuItem>
                                                                     {!conv.isGroup && conv.otherUser && (
                                                                         <DropdownMenuItem onClick={() => conv.otherUser && navigate(`/profile/${conv.otherUser.username}`)}>
                                                                             <ExternalLink className="w-4 h-4" />
-                                                                            Ver perfil
-                                                                        </DropdownMenuItem>
+                                                                            {" "}<FinixUiText text={"Ver perfil"} />{" "}</DropdownMenuItem>
                                                                     )}
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
@@ -1702,10 +1706,9 @@ export default function MessagesPage() {
                                 </div>
 
                                 <div className="text-center space-y-2">
-                                    <h2 className="text-2xl font-black" style={{ color: textPrimary }}>Tus mensajes</h2>
+                                    <h2 className="text-2xl font-black" style={{ color: textPrimary }}>{""}<FinixUiText text={"Tus mensajes"} />{""}</h2>
                                     <p className="text-sm leading-relaxed max-w-xs" style={{ color: textMuted }}>
-                                        Conectate con otros inversores de la red Finix y armá chats privados o grupales
-                                    </p>
+                                        {" "}<FinixUiText text={"Conectate con otros inversores de la red Finix y armá chats privados o grupales"} />{" "}</p>
                                 </div>
 
                                 <button
@@ -1717,13 +1720,12 @@ export default function MessagesPage() {
                                     }}
                                 >
                                     <Plus className="w-4 h-4" />
-                                    Nuevo mensaje o grupo
-                                </button>
+                                    {" "}<FinixUiText text={"Nuevo mensaje o grupo"} />{" "}</button>
 
                                 {/* Recent conversations hint */}
                                 {conversations.length > 0 && (
                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <span>Seleccioná una conversación o grupo a la izquierda</span>
+                                        <span>{""}<FinixUiText text={"Seleccioná una conversación o grupo a la izquierda"} />{""}</span>
                                     </div>
                                 )}
                             </div>
@@ -1745,13 +1747,12 @@ export default function MessagesPage() {
                                         onClick={handleReturnToInbox}
                                         className="h-9 rounded-xl inline-flex items-center gap-2 px-3 flex-shrink-0 transition-all active:scale-90"
                                         style={{ background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.07)' }}
-                                        title="Volver a mensajes"
-                                        aria-label="Volver a mensajes"
+                                        title={finixUi("Volver a mensajes")}
+                                        aria-label={finixUi("Volver a mensajes")}
                                     >
                                         <ArrowLeft className="w-4 h-4" style={{ color: textPrimary }} />
                                         <span className="text-[13px] font-semibold whitespace-nowrap" style={{ color: textPrimary }}>
-                                            Mensajes
-                                        </span>
+                                            {" "}<FinixUiText text={"Mensajes"} />{" "}</span>
                                     </button>
 
                                     {activeConv && (
@@ -1805,8 +1806,7 @@ export default function MessagesPage() {
                                                     ) : activeConv.otherUser && onlineUsers.has(activeConv.otherUser.id) ? (
                                                         <span className="flex items-center gap-1">
                                                             <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'hsl(158 100% 42%)', boxShadow: '0 0 5px hsl(158 100% 45%)' }} />
-                                                            En línea
-                                                        </span>
+                                                            {" "}<FinixUiText text={"En línea"} />{" "}</span>
                                                     ) : 'Desconectado'}
                                                 </p>
                                             </div>
@@ -1817,34 +1817,31 @@ export default function MessagesPage() {
                                                     <button
                                                         className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
                                                         style={{ background: isLight ? 'hsl(210 14% 94%)' : 'hsl(0 0% 100% / 0.07)' }}
-                                                        title="Acciones del chat"
+                                                        title={finixUi("Acciones del chat")}
                                                     >
                                                         <MoreHorizontal className="w-4 h-4" style={{ color: textMuted }} />
                                                     </button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-52">
-                                                    <DropdownMenuLabel>Acciones del chat</DropdownMenuLabel>
+                                                    <DropdownMenuLabel>{""}<FinixUiText text={"Acciones del chat"} />{""}</DropdownMenuLabel>
                                                     <DropdownMenuSeparator />
                                                     {!activeConv.isGroup && activeConv.otherUser && (
                                                         <DropdownMenuItem onClick={() => activeConv.otherUser && navigate(`/profile/${activeConv.otherUser.username}`)}>
                                                             <ExternalLink className="w-4 h-4" />
-                                                            Ver perfil
-                                                        </DropdownMenuItem>
+                                                            {" "}<FinixUiText text={"Ver perfil"} />{" "}</DropdownMenuItem>
                                                     )}
                                                     {activeConv.isGroup && (
                                                         <DropdownMenuItem onClick={() => setShowConversationInfo(true)}>
                                                             <Info className="w-4 h-4" />
-                                                            Información del grupo
-                                                        </DropdownMenuItem>
+                                                            {" "}<FinixUiText text={"Información del grupo"} />{" "}</DropdownMenuItem>
                                                     )}
                                                     <DropdownMenuItem onClick={handleReturnToInbox}>
                                                         <ArrowLeft className="w-4 h-4" />
-                                                        Volver a mensajes
-                                                    </DropdownMenuItem>
+                                                        {" "}<FinixUiText text={"Volver a mensajes"} />{" "}</DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem onClick={() => setReportTarget({ id: activeConv.id, type: 'CHAT' })}>
                                                         <Flag className="w-4 h-4 text-orange-500" />
-                                                        <span className="text-orange-500">Reportar chat</span>
+                                                        <span className="text-orange-500">{""}<FinixUiText text={"Reportar chat"} />{""}</span>
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -1865,8 +1862,7 @@ export default function MessagesPage() {
                                                 <MessageSquare className="w-6 h-6" style={{ color: 'hsl(158 100% 45%)' }} />
                                             </div>
                                             <p className="text-sm font-medium" style={{ color: textMuted }}>
-                                                Iniciá el chat 👋
-                                            </p>
+                                                {" "}<FinixUiText text={"Iniciá el chat 👋"} />{" "}</p>
                                         </div>
                                     ) : (
                                         <>
@@ -1945,7 +1941,7 @@ export default function MessagesPage() {
                                                                                         rows={3}
                                                                                         className="w-full resize-none rounded-xl border bg-transparent px-3 py-2 text-sm leading-relaxed outline-none"
                                                                                         style={{ borderColor: inputBorder, color: textPrimary }}
-                                                                                        aria-label="Editar mensaje"
+                                                                                        aria-label={finixUi("Editar mensaje")}
                                                                                     />
                                                                                     {messageEditError && (
                                                                                         <p className="mt-2 text-xs text-red-500">{messageEditError}</p>
@@ -1958,8 +1954,7 @@ export default function MessagesPage() {
                                                                                             className="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors hover:bg-muted disabled:opacity-50"
                                                                                             style={{ color: textMuted }}
                                                                                         >
-                                                                                            Cancelar
-                                                                                        </button>
+                                                                                            {" "}<FinixUiText text={"Cancelar"} />{" "}</button>
                                                                                         <button
                                                                                             type="button"
                                                                                             onClick={() => void handleSaveMessageEdit()}
@@ -1967,8 +1962,7 @@ export default function MessagesPage() {
                                                                                             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-bold text-black transition-opacity disabled:opacity-50"
                                                                                         >
                                                                                             {isSavingMessageEdit && <Loader2 className="h-3 w-3 animate-spin" />}
-                                                                                            Guardar
-                                                                                        </button>
+                                                                                            {" "}<FinixUiText text={"Guardar"} />{" "}</button>
                                                                                     </div>
                                                                                 </div>
                                                                             ) : (
@@ -2014,8 +2008,8 @@ export default function MessagesPage() {
                                                                                                 background: isLight ? 'hsl(0 0% 100%)' : 'hsl(0 0% 12%)',
                                                                                                 color: textMuted,
                                                                                             }}
-                                                                                            title="Editar mensaje"
-                                                                                            aria-label="Editar mensaje"
+                                                                                            title={finixUi("Editar mensaje")}
+                                                                                            aria-label={finixUi("Editar mensaje")}
                                                                                         >
                                                                                             <Pencil className="h-3.5 w-3.5" />
                                                                                         </button>
@@ -2042,8 +2036,7 @@ export default function MessagesPage() {
                                                                                 onClick={() => setReportTarget({ id: msg.id, type: 'MESSAGE', preview: msg.content })}
                                                                                 className="text-[10px] text-muted-foreground hover:text-orange-500 transition-colors ml-2"
                                                                             >
-                                                                                Reportar
-                                                                            </button>
+                                                                                {" "}<FinixUiText text={"Reportar"} />{" "}</button>
                                                                         )}
                                                                     </div>
                                                                 )}
@@ -2104,7 +2097,7 @@ export default function MessagesPage() {
                                                 {pendingAttachment.type === 'image' && pendingAttachment.url && (
                                                     <img
                                                         src={resolveMediaUrl(pendingAttachment.url)}
-                                                        alt="Foto lista para enviar"
+                                                        alt={finixUi("Foto lista para enviar")}
                                                         className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
                                                     />
                                                 )}
@@ -2113,7 +2106,7 @@ export default function MessagesPage() {
                                                     pendingAttachment.url ? (
                                                         <img
                                                             src={resolveMediaUrl(pendingAttachment.url)}
-                                                            alt="Grafico listo para enviar"
+                                                            alt={finixUi("Grafico listo para enviar")}
                                                             className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
                                                         />
                                                     ) : (
@@ -2134,8 +2127,7 @@ export default function MessagesPage() {
                                                     {pendingAttachment.type === 'image' && (
                                                         <>
                                                             <p className="text-sm font-semibold" style={{ color: textPrimary }}>
-                                                                Foto lista para enviar
-                                                            </p>
+                                                                {" "}<FinixUiText text={"Foto lista para enviar"} />{" "}</p>
                                                             <p className="text-xs mt-1" style={{ color: textMuted }}>
                                                                 {String(pendingAttachment.meta?.originalName || 'Imagen')}
                                                             </p>
@@ -2145,8 +2137,7 @@ export default function MessagesPage() {
                                                     {pendingAttachment.type === 'post' && pendingAttachment.sharedPost && (
                                                         <>
                                                             <p className="text-sm font-semibold" style={{ color: textPrimary }}>
-                                                                Publicacion compartida
-                                                            </p>
+                                                                {" "}<FinixUiText text={"Publicacion compartida"} />{" "}</p>
                                                             <p className="text-xs mt-1" style={{ color: textMuted }}>
                                                                 {pendingAttachment.sharedPost.author.username}
                                                             </p>
@@ -2161,8 +2152,7 @@ export default function MessagesPage() {
                                                     {pendingAttachment.type === 'chart' && (
                                                         <>
                                                             <p className="text-sm font-semibold" style={{ color: textPrimary }}>
-                                                                Grafico listo para enviar
-                                                            </p>
+                                                                {" "}<FinixUiText text={"Grafico listo para enviar"} />{" "}</p>
                                                             <p className="text-xs mt-1 font-mono" style={{ color: textMuted }}>
                                                                 {String(pendingAttachment.meta?.symbol || 'ACTIVO')} · {getChartIntervalLabel(String(pendingAttachment.meta?.interval || 'D'))}
                                                             </p>
@@ -2189,8 +2179,7 @@ export default function MessagesPage() {
 
                                     <div className="mb-3 flex flex-wrap items-center gap-2">
                                         <span className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: textMuted }}>
-                                            Enviar
-                                        </span>
+                                            {" "}<FinixUiText text={"Enviar"} />{" "}</span>
                                         <button
                                             type="button"
                                             onClick={() => imageInputRef.current?.click()}
@@ -2198,8 +2187,7 @@ export default function MessagesPage() {
                                             style={{ borderColor, color: textPrimary }}
                                         >
                                             <ImageIcon className="w-3.5 h-3.5 text-primary" />
-                                            Foto
-                                        </button>
+                                            {" "}<FinixUiText text={"Foto"} />{" "}</button>
                                         <button
                                             type="button"
                                             onClick={() => setShowPostPicker(true)}
@@ -2207,8 +2195,7 @@ export default function MessagesPage() {
                                             style={{ borderColor, color: textPrimary }}
                                         >
                                             <Newspaper className="w-3.5 h-3.5 text-primary" />
-                                            Post
-                                        </button>
+                                            {" "}<FinixUiText text={"Post"} />{" "}</button>
                                         <button
                                             type="button"
                                             onClick={() => setShowChartPicker(true)}
@@ -2216,11 +2203,9 @@ export default function MessagesPage() {
                                             style={{ borderColor, color: textPrimary }}
                                         >
                                             <BarChart2 className="w-3.5 h-3.5 text-primary" />
-                                            Grafico
-                                        </button>
+                                            {" "}<FinixUiText text={"Grafico"} />{" "}</button>
                                         <span className="text-xs" style={{ color: textMuted }}>
-                                            Texto desde el cuadro de abajo
-                                        </span>
+                                            {" "}<FinixUiText text={"Texto desde el cuadro de abajo"} />{" "}</span>
                                     </div>
 
                                     <div
@@ -2239,7 +2224,7 @@ export default function MessagesPage() {
                                                 }}
                                                 className="p-1.5 rounded-xl transition-all flex-shrink-0 mb-0.5"
                                                 style={{ color: showAttachMenu ? 'hsl(158 100% 45%)' : textMuted, background: showAttachMenu ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
-                                                title="Adjuntar"
+                                                title={finixUi("Adjuntar")}
                                             >
                                                 <Plus className="w-5 h-5" />
                                             </button>
@@ -2262,8 +2247,7 @@ export default function MessagesPage() {
                                                             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
                                                         >
                                                             <ImageIcon className="w-4 h-4 text-primary" />
-                                                            Foto
-                                                        </button>
+                                                            {" "}<FinixUiText text={"Foto"} />{" "}</button>
                                                         <button
                                                             onClick={() => {
                                                                 setShowAttachMenu(false);
@@ -2272,8 +2256,7 @@ export default function MessagesPage() {
                                                             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
                                                         >
                                                             <Newspaper className="w-4 h-4 text-primary" />
-                                                            Publicacion
-                                                        </button>
+                                                            {" "}<FinixUiText text={"Publicacion"} />{" "}</button>
                                                         <button
                                                             onClick={() => {
                                                                 setShowAttachMenu(false);
@@ -2282,8 +2265,7 @@ export default function MessagesPage() {
                                                             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm hover:bg-secondary/50 transition-colors"
                                                         >
                                                             <BarChart2 className="w-4 h-4 text-primary" />
-                                                            Grafico
-                                                        </button>
+                                                            {" "}<FinixUiText text={"Grafico"} />{" "}</button>
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>
@@ -2298,7 +2280,7 @@ export default function MessagesPage() {
                                                 }}
                                                 className="p-1.5 rounded-xl transition-all flex-shrink-0 mb-0.5"
                                                 style={{ color: showEmojiPicker ? 'hsl(158 100% 45%)' : textMuted, background: showEmojiPicker ? 'hsl(158 100% 45% / 0.1)' : 'transparent' }}
-                                                title="Emojis"
+                                                title={finixUi("Emojis")}
                                             >
                                                 <Smile className="w-5 h-5" />
                                             </button>
@@ -2326,14 +2308,13 @@ export default function MessagesPage() {
                                                             }}
                                                         >
                                                             <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: textMuted }}>
-                                                                Emojis
-                                                            </p>
+                                                                {" "}<FinixUiText text={"Emojis"} />{" "}</p>
                                                         </div>
                                                         <div className="p-3 space-y-3">
                                                             {EMOJI_GROUPS.map((group) => (
                                                                 <div key={group.label} className="space-y-2">
                                                                     <p className="text-[11px] font-medium" style={{ color: textMuted }}>
-                                                                        {group.label}
+                                                                        {<FinixUiText text={group.label} />}
                                                                     </p>
                                                                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
                                                                         {group.items.map((emoji) => (

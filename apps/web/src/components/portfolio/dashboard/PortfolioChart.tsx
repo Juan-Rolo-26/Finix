@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useId, useMemo } from 'react';
 import {
     Area,
@@ -107,14 +108,14 @@ export function PortfolioChart({
                     <div className="grid gap-3 sm:grid-cols-3">
                         {/* Valor total */}
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
-                            <p className="text-sm font-semibold text-muted-foreground text-center">Valor total</p>
+                            <p className="text-sm font-semibold text-muted-foreground text-center">{""}<FinixUiText text={"Valor total"} />{""}</p>
                             <p className="mt-3 text-[30px] font-extrabold leading-none tracking-[-0.04em] tabular-nums sm:text-[32px] text-center">
                                 {formatCurrency(summary.currentValue, currency)}
                             </p>
                         </div>
                         {/* Capital invertido */}
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center')}>
-                            <p className="text-sm font-semibold text-muted-foreground text-center">Capital invertido</p>
+                            <p className="text-sm font-semibold text-muted-foreground text-center">{""}<FinixUiText text={"Capital invertido"} />{""}</p>
                             <p className="mt-3 text-[30px] font-extrabold leading-none tracking-[-0.04em] tabular-nums text-foreground/80 sm:text-[32px] text-center">
                                 {formatCurrency(costBasis, currency)}
                             </p>
@@ -122,7 +123,7 @@ export function PortfolioChart({
                         {/* Cambio */}
                         <div className={cn(metricCardClass, 'flex flex-col items-center text-center justify-center gap-3')}>
                             <div className="flex flex-col items-center text-center">
-                                <p className="text-sm font-semibold text-muted-foreground text-center">Cambio de valor · {TIME_RANGE_LABELS[selectedRange]}</p>
+                                <p className="text-sm font-semibold text-muted-foreground text-center">{""}<FinixUiText text={"Cambio de valor ·"} />{" "}{TIME_RANGE_LABELS[selectedRange]}</p>
                                 <p className={cn('mt-3 text-[30px] font-extrabold leading-none tracking-[-0.04em] tabular-nums sm:text-[32px] text-center', isPositive ? 'text-emerald-500' : 'text-red-500')}>
                                     {isPositive ? '+' : ''}{formatCompactCurrency(summary.absoluteChange, currency)}
                                 </p>
@@ -135,8 +136,7 @@ export function PortfolioChart({
                                         : 'bg-red-500/15 text-red-500',
                                 )}
                             >
-                                {formatPercent(summary.percentChange, 2, true)} de rendimiento
-                            </span>}
+                                {formatPercent(summary.percentChange, 2, true)} {" "}<FinixUiText text={"de rendimiento"} />{" "}</span>}
                         </div>
                     </div>
 
@@ -164,13 +164,12 @@ export function PortfolioChart({
             </div>
 
             <div className="px-6 pt-5 sm:px-7 flex flex-col items-center text-center">
-                <h4 className="text-xl font-bold text-foreground sm:text-2xl">Evolución del portafolio</h4>
+                <h4 className="text-xl font-bold text-foreground sm:text-2xl">{""}<FinixUiText text={"Evolución del portafolio"} />{""}</h4>
                 <p className="mt-1 text-sm text-muted-foreground/70 text-center max-w-md mx-auto">
-                    El valor incluye aportes y retiros. El rendimiento porcentual descuenta esos movimientos.
-                </p>
+                    {" "}<FinixUiText text={"El valor incluye aportes y retiros. El rendimiento porcentual descuenta esos movimientos."} />{" "}</p>
             </div>
 
-            {safeActiveData.length === 1 && <p className="px-6 pt-4 text-center text-sm text-muted-foreground">Solo hay una medición disponible; la curva aparecerá cuando exista más historial.</p>}
+            {safeActiveData.length === 1 && <p className="px-6 pt-4 text-center text-sm text-muted-foreground">{""}<FinixUiText text={"Solo hay una medición disponible; la curva aparecerá cuando exista más historial."} />{""}</p>}
             {/* Chart */}
             {safeActiveData.length > 0 ? (
                 <div className="h-[320px] w-full px-1 pb-4 pt-3 sm:h-[390px] sm:px-3 sm:pb-5 lg:h-[430px]">
@@ -228,8 +227,7 @@ export function PortfolioChart({
                 </div>
             ) : (
                 <div className="mx-4 my-4 flex h-[300px] items-center justify-center rounded-2xl border border-dashed border-border/50 bg-muted/20 text-sm text-muted-foreground">
-                    No hay mediciones disponibles para este período.
-                </div>
+                    {" "}<FinixUiText text={"No hay mediciones disponibles para este período."} />{" "}</div>
             )}
         </div>
     );

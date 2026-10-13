@@ -1,3 +1,4 @@
+import { useTranslation } from '@/i18n';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -10,6 +11,7 @@ import { InvestorStreakPill } from '@/components/common/InvestorStreakPill';
 const PRIMARY = 'hsl(var(--primary))';
 
 export function MobileTopBar() {
+    const { ui } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuthStore();
@@ -46,7 +48,7 @@ export function MobileTopBar() {
             }}
         >
             {/* Logo */}
-            <Link to="/dashboard" aria-label="Finix · Inicio" className="flex items-center gap-1.5 min-h-11 shrink-0 focus-visible:ring-2 focus-visible:ring-primary rounded-lg">
+            <Link to="/dashboard" aria-label={ui("Finix · Inicio")} className="flex items-center gap-1.5 min-h-11 shrink-0 focus-visible:ring-2 focus-visible:ring-primary rounded-lg">
                 <img
                     src="/logo-small.webp"
                     alt="Finix"
@@ -56,8 +58,7 @@ export function MobileTopBar() {
                     className="text-[15px] sm:text-[17px] font-black tracking-[0.08em] uppercase"
                     style={{ color: 'hsl(var(--foreground))' }}
                 >
-                    FINIX
-                </span>
+                    {ui("FINIX")}</span>
             </Link>
 
             {/* Actions */}
@@ -65,7 +66,7 @@ export function MobileTopBar() {
                 {/* Theme toggle */}
                 <button
                     type="button"
-                    aria-label={isLight ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro'}
+                    aria-label={isLight ? ui("Cambiar a tema oscuro") : ui("Cambiar a tema claro")}
                     className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                     style={{ color: 'hsl(var(--muted-foreground))' }}
                     onClick={() => setTheme(isLight ? 'dark' : 'light')}
@@ -85,7 +86,7 @@ export function MobileTopBar() {
                             className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                             style={{ color: 'hsl(var(--muted-foreground))' }}
                             onClick={() => navigate('/explore?create=true')}
-                            aria-label="Crear publicación"
+                            aria-label={ui("Crear publicación")}
                         >
                             <Plus className="w-[18px] h-[18px]" />
                         </button>
@@ -99,7 +100,7 @@ export function MobileTopBar() {
                                     background: location.pathname === '/notifications' ? 'hsl(var(--muted))' : 'transparent',
                                 }}
                                 onClick={() => navigate('/notifications')}
-                                aria-label="Notificaciones"
+                                aria-label={ui("Notificaciones")}
                             >
                                 <Bell className="w-[18px] h-[18px]" />
                                 {unreadNotifs > 0 && (
@@ -125,7 +126,7 @@ export function MobileTopBar() {
                                 padding: user?.avatarUrl ? 0 : undefined,
                             }}
                             onClick={() => navigate('/profile')}
-                            aria-label="Mi perfil"
+                            aria-label={ui("Mi perfil")}
                         >
                             {user?.avatarUrl
                                 ? <img src={resolveMediaUrl(user.avatarUrl)} alt="Avatar" className="w-full h-full object-cover" />
@@ -143,8 +144,7 @@ export function MobileTopBar() {
                                 color: 'hsl(var(--primary-foreground))',
                             }}
                         >
-                            Iniciar sesión
-                        </button>
+                            {ui("Iniciar sesión")}</button>
                     </div>
                 )}
             </div>

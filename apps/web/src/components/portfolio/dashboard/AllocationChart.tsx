@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useMemo } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,8 +27,8 @@ export function AllocationChart({ data, className }: AllocationChartProps) {
     return (
         <Card className={cn('border-border/70 bg-card/80 shadow-[0_24px_60px_rgba(15,23,42,0.08)]', className)}>
             <CardHeader>
-                <CardTitle className="text-lg">Distribucion por tipo de activo</CardTitle>
-                <CardDescription>Peso del portafolio por tipo real de instrumento</CardDescription>
+                <CardTitle className="text-lg">{""}<FinixUiText text={"Distribucion por tipo de activo"} />{""}</CardTitle>
+                <CardDescription>{""}<FinixUiText text={"Peso del portafolio por tipo real de instrumento"} />{""}</CardDescription>
             </CardHeader>
             <CardContent>
                 {hasData ? (
@@ -79,8 +80,7 @@ export function AllocationChart({ data, className }: AllocationChartProps) {
                                         dominantBaseline="middle"
                                         className="fill-muted-foreground text-[12px]"
                                     >
-                                        tipos
-                                    </text>
+                                        {" "}<FinixUiText text={"tipos"} />{" "}</text>
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -105,8 +105,7 @@ export function AllocationChart({ data, className }: AllocationChartProps) {
                     </div>
                 ) : (
                     <div className="flex h-[300px] items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/40 px-6 text-center text-sm text-muted-foreground">
-                        La asignacion aparecera cuando el portafolio tenga posiciones activas.
-                    </div>
+                        {" "}<FinixUiText text={"La asignacion aparecera cuando el portafolio tenga posiciones activas."} />{" "}</div>
                 )}
             </CardContent>
         </Card>

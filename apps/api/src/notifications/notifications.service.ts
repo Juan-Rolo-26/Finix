@@ -62,7 +62,8 @@ export class NotificationsService {
 
     async checkPreferences(userId: string, category: string): Promise<boolean> {
         if (category === 'SECURITY' || category === 'SYSTEM') return true; // Cannot be disabled
-        const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { notificationPrefs: true } });
+        const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { notificationPrefs: true, marketNotifications: true } });
+        if (category === 'MARKET' && user?.marketNotifications === false) return false;
         if (!user || !user.notificationPrefs) return true; // Default to allow
         try {
             const prefs = JSON.parse(user.notificationPrefs);
@@ -116,13 +117,17 @@ export class NotificationsService {
                     subscriptionStatus: true,
                     proAccessOverride: true,
                     investmentEmailNotifications: true,
+                    notificationPrefs: true,
                 },
             } as any);
             const isInvestmentNotification = category === 'MARKET';
             const canReceiveInvestmentEmail = hasEffectiveProAccess(recipient)
                 && recipient?.investmentEmailNotifications === true;
 
-            if (recipient?.email && recipient.emailVerified && (!isInvestmentNotification || canReceiveInvestmentEmail)) {
+            let emailEnabled = true;
+            try { emailEnabled = JSON.parse(recipient?.notificationPrefs || '{}').email !== false; } catch { /* Legacy defaults. */ }
+            const mandatoryAccountEmail = category === 'SECURITY' || category === 'SYSTEM';
+            if (recipient?.email && recipient.emailVerified && (emailEnabled || mandatoryAccountEmail) && (!isInvestmentNotification || canReceiveInvestmentEmail)) {
                 try {
                     if (isInvestmentNotification) {
                         await this.mailService.sendProInvestmentEmail(recipient.email, {

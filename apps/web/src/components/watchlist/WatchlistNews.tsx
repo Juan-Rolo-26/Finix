@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '@/lib/api';
 import SymbolLogo from '@/components/SymbolLogo';
@@ -142,11 +143,9 @@ export default function WatchlistNews({ items, onItemClick }: WatchlistNewsProps
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground">
-                            Noticias de tus Activos en Seguimiento
-                        </h3>
+                            {" "}<FinixUiText text={"Noticias de tus Activos en Seguimiento"} />{" "}</h3>
                         <p className="text-xs text-muted-foreground">
-                            Actualidad informativa, reportes y novedades de las empresas que tenés en lista.
-                        </p>
+                            {" "}<FinixUiText text={"Actualidad informativa, reportes y novedades de las empresas que tenés en lista."} />{" "}</p>
                     </div>
                 </div>
 
@@ -157,7 +156,7 @@ export default function WatchlistNews({ items, onItemClick }: WatchlistNewsProps
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
                 >
                     <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
-                    <span>Actualizar noticias</span>
+                    <span>{""}<FinixUiText text={"Actualizar noticias"} />{""}</span>
                 </button>
             </div>
 
@@ -172,7 +171,7 @@ export default function WatchlistNews({ items, onItemClick }: WatchlistNewsProps
                             : 'bg-card border-border/70 text-muted-foreground hover:text-foreground hover:bg-secondary/50'
                     }`}
                 >
-                    Todos los activos ({news.length})
+                    {" "}<FinixUiText text={"Todos los activos ("} />{""}{news.length})
                 </button>
                 {items.map((item) => {
                     const clean = item.symbol.replace(/^[A-Z]+:/, '').toUpperCase();
@@ -209,12 +208,10 @@ export default function WatchlistNews({ items, onItemClick }: WatchlistNewsProps
                 <div className="rounded-2xl border border-border/60 bg-card p-12 text-center">
                     <Newspaper size={32} className="mx-auto text-muted-foreground/40 mb-3" />
                     <h4 className="text-base font-bold text-foreground">
-                        Sin noticias recientes para este activo
-                    </h4>
+                        {" "}<FinixUiText text={"Sin noticias recientes para este activo"} />{" "}</h4>
                     <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-                        No hay reportes de última hora publicados en las últimas 24 horas para{' '}
-                        {selectedSymbol}. Podés consultar la ficha individual para ver su historial completo.
-                    </p>
+                        {" "}<FinixUiText text={"No hay reportes de última hora publicados en las últimas 24 horas para"} />{""}{' '}
+                        {selectedSymbol}{""}<FinixUiText text={". Podés consultar la ficha individual para ver su historial completo."} />{" "}</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -273,10 +270,9 @@ export default function WatchlistNews({ items, onItemClick }: WatchlistNewsProps
                                             onClick={() => onItemClick(targetItem)}
                                             className="font-bold text-primary hover:underline cursor-pointer"
                                         >
-                                            Ver activo en radar →
-                                        </button>
+                                            {" "}<FinixUiText text={"Ver activo en radar →"} />{" "}</button>
                                     ) : (
-                                        <span className="text-muted-foreground">Cobertura general</span>
+                                        <span className="text-muted-foreground">{""}<FinixUiText text={"Cobertura general"} />{""}</span>
                                     )}
                                     {article.url && article.url !== '#' && (
                                         <a
@@ -285,7 +281,7 @@ export default function WatchlistNews({ items, onItemClick }: WatchlistNewsProps
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors font-medium"
                                         >
-                                            <span>Fuente original</span>
+                                            <span>{""}<FinixUiText text={"Fuente original"} />{""}</span>
                                             <ExternalLink size={12} />
                                         </a>
                                     )}

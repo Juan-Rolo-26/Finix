@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import FinancialPriceHistory from '@/components/charts/financial/FinancialPriceHistory';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { financialNumber } from '@finix/shared';
@@ -75,6 +77,8 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -185,8 +189,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
             <Card className="rounded-lg border-border/60 bg-card/60">
                 <CardContent className="flex min-h-40 items-center justify-center gap-2 text-[16px] text-muted-foreground">
                     <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />{' '}
-                    Cargando información fundamental…
-                </CardContent>
+                    {" "}<FinixUiText text={"Cargando información fundamental…"} />{" "}</CardContent>
             </Card>
         );
 
@@ -198,8 +201,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                         {error || 'No hay información financiera disponible para este activo.'}
                     </p>
                     <Button variant="outline" onClick={() => void load(true)}>
-                        <RefreshCw className="mr-2 h-4 w-4" /> Actualizar
-                    </Button>
+                        <RefreshCw className="mr-2 h-4 w-4" /> {" "}<FinixUiText text={"Actualizar"} />{" "}</Button>
                 </CardContent>
             </Card>
         );
@@ -226,8 +228,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                         onClick={() => void load(true)}
                         className="ml-2 font-semibold underline"
                     >
-                        Actualizar
-                    </button>
+                        {" "}<FinixUiText text={"Actualizar"} />{" "}</button>
                 </div>
             )}
             <Card className="market-fundamentals-band">
@@ -236,8 +237,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                         <SymbolLogo symbol={symbol} size={48} />
                         <div>
                             <CardTitle className="text-[18px]">
-                                Información del activo
-                            </CardTitle>
+                                {" "}<FinixUiText text={"Información del activo"} />{" "}</CardTitle>
                             <p className="mt-1 text-[14px] text-muted-foreground">
                                 {data.instrument?.name || ticker} · {ticker} ·{' '}
                                 {data.instrument?.exchange || exchange}
@@ -251,8 +251,8 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                 size="sm"
                                 onClick={() => setIsAddToWatchlistOpen(true)}
                                 className="market-icon-action"
-                                title="Agregar a seguimiento"
-                                aria-label="Agregar a seguimiento"
+                                title={finixUi("Agregar a seguimiento")}
+                                aria-label={finixUi("Agregar a seguimiento")}
                             >
                                 <Bookmark size={16} />
                             </Button>
@@ -263,8 +263,8 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                             onClick={() => void load(true)}
                             disabled={refreshing}
                             className="market-icon-action"
-                            title="Actualizar fundamentales"
-                            aria-label="Actualizar fundamentales"
+                            title={finixUi("Actualizar fundamentales")}
+                            aria-label={finixUi("Actualizar fundamentales")}
                         >
                             <RefreshCw
                                 className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
@@ -273,11 +273,11 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-5 p-5">
-                    {!hasMetrics && !hasIncome && !hasBalance && !hasCash && <p className="text-muted-foreground">No hay información financiera disponible para este activo.</p>}
-                    <div className="space-y-2 text-sm text-muted-foreground" aria-label="Fuente, período y unidades">
-                        <p>Fuente: {source}. Consulta: {data.source?.fetchedAt ? new Date(data.source.fetchedAt).toLocaleString('es-AR') : 'fecha no informada'}. {data.quality?.stale || data.source?.staleFromCache ? 'Datos guardados sin actualización reciente.' : ''}</p>
-                        <p>Moneda: {data.metricContext?.currency || 'no informada por la fuente'}. Escala: M = millones, B = mil millones, T = billones.</p>
-                        <p>ROIC: porcentaje · {data.metricContext?.roic?.period || 'período no informado'} · cierre fiscal: {data.metricContext?.roic?.asOf || 'fecha no informada'}. {data.metricContext?.roic?.formula || 'Fórmula no informada por este proveedor.'} El radar usa TradingView FQ; diferencias de fuente, fórmula y período pueden producir valores distintos.</p>
+                    {!hasMetrics && !hasIncome && !hasBalance && !hasCash && <p className="text-muted-foreground">{""}<FinixUiText text={"No hay información financiera disponible para este activo."} />{""}</p>}
+                    <div className="space-y-2 text-sm text-muted-foreground" aria-label={finixUi("Fuente, período y unidades")}>
+                        <p>{""}<FinixUiText text={"Fuente:"} />{" "}{source}{""}<FinixUiText text={". Consulta:"} />{" "}{data.source?.fetchedAt ? new Date(data.source.fetchedAt).toLocaleString('es-AR') : 'fecha no informada'}. {data.quality?.stale || data.source?.staleFromCache ? 'Datos guardados sin actualización reciente.' : ''}</p>
+                        <p>{""}<FinixUiText text={"Moneda:"} />{" "}{data.metricContext?.currency || 'no informada por la fuente'}{""}<FinixUiText text={". Escala: M = millones, B = mil millones, T = billones."} />{""}</p>
+                        <p>{""}<FinixUiText text={"ROIC: porcentaje ·"} />{" "}{data.metricContext?.roic?.period || 'período no informado'} {" "}<FinixUiText text={"· cierre fiscal:"} />{" "}{data.metricContext?.roic?.asOf || 'fecha no informada'}. {data.metricContext?.roic?.formula || 'Fórmula no informada por este proveedor.'} {" "}<FinixUiText text={"El radar usa TradingView FQ; diferencias de fuente, fórmula y período pueden producir valores distintos."} />{""}</p>
                     </div>
                     {hasMetrics && <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
                         <Metric
@@ -316,8 +316,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-[16px]">
                                     <Building2 className="h-4 w-4 text-emerald-500" />{' '}
-                                    Estado de resultados
-                                </CardTitle>
+                                    {" "}<FinixUiText text={"Estado de resultados"} />{" "}</CardTitle>
                                 <p className="text-xs text-muted-foreground">{latestIncome.period || 'Período no informado'} · {latestIncome.date || ''}{latestIncome.date ? ' · ' : ''}{latestIncome.currency || 'Moneda no informada'}</p>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-2 text-[14px]">
@@ -343,8 +342,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-[16px]">
                                     <Wallet className="h-4 w-4 text-emerald-500" />{' '}
-                                    Balance
-                                </CardTitle>
+                                    {" "}<FinixUiText text={"Balance"} />{" "}</CardTitle>
                                 <p className="text-xs text-muted-foreground">{latestBalance.period || 'Período no informado'} · {latestBalance.date || ''}{latestBalance.date ? ' · ' : ''}{latestBalance.currency || 'Moneda no informada'}</p>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-2 text-[14px]">
@@ -378,8 +376,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-[16px]">
                                     <Activity className="h-4 w-4 text-emerald-500" />{' '}
-                                    Flujo y calidad
-                                </CardTitle>
+                                    {" "}<FinixUiText text={"Flujo y calidad"} />{" "}</CardTitle>
                                 <p className="text-xs text-muted-foreground">{latestCash.period || 'Período no informado'} · {latestCash.date || ''}{latestCash.date ? ' · ' : ''}{latestCash.currency || 'Moneda no informada'}</p>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-2 text-[14px]">
@@ -421,8 +418,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                             <CardHeader className="pb-2">
                                 <CardTitle className="flex items-center gap-2 text-[16px]">
                                     <TrendingUp className="h-4 w-4 text-emerald-500" />{' '}
-                                    Evolución de precio · 6 meses
-                                </CardTitle>
+                                    {" "}<FinixUiText text={"Evolución de precio · 6 meses"} />{" "}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <FinancialPriceHistory candles={candles} currency={data.metricContext?.currency} />
@@ -433,7 +429,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                 <CardTitle className="flex items-center gap-2 text-[16px]">
                                     <Newspaper className="h-4 w-4 text-emerald-500" />
                                     <span>
-                                        Noticias relacionadas · {ticker}
+                                        {" "}<FinixUiText text={"Noticias relacionadas ·"} />{" "}{ticker}
                                     </span>
                                 </CardTitle>
                                 <a
@@ -442,7 +438,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                     rel="noreferrer"
                                     className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
                                 >
-                                    <span>AlphaSpread</span>
+                                    <span>{""}<FinixUiText text={"AlphaSpread"} />{""}</span>
                                     <ExternalLink className="h-2.5 w-2.5" />
                                 </a>
                             </CardHeader>
@@ -491,10 +487,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                                 className="inline-flex items-center justify-center gap-1.5 w-full py-2 rounded-md text-[13px] font-bold text-muted-foreground hover:text-foreground bg-secondary/30 hover:bg-secondary/60 border border-border/50 transition-colors text-center"
                                             >
                                                 <span>
-                                                    Ver análisis de valoración y
-                                                    noticias de {ticker} en
-                                                    AlphaSpread
-                                                </span>
+                                                    {" "}<FinixUiText text={"Ver análisis de valoración y noticias de"} />{" "}{ticker} {" "}<FinixUiText text={"en AlphaSpread"} />{" "}</span>
                                                 <ExternalLink className="h-3 w-3 text-emerald-500" />
                                             </a>
                                         </div>
@@ -502,16 +495,14 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                 ) : (
                                     <div className="py-8 text-center space-y-2">
                                         <p className="text-[14px] text-muted-foreground">
-                                            No hay noticias recientes para este
-                                            activo.
-                                        </p>
+                                            {" "}<FinixUiText text={"No hay noticias recientes para este activo."} />{" "}</p>
                                         <a
                                             href={alphaSpreadUrl}
                                             target="_blank"
                                             rel="noreferrer"
                                             className="inline-flex items-center gap-1 text-[14px] font-bold text-emerald-500 hover:underline"
                                         >
-                                            Ver noticias y DCF en AlphaSpread{' '}
+                                            {" "}<FinixUiText text={"Ver noticias y DCF en AlphaSpread"} />{""}{' '}
                                             <ExternalLink className="h-3 w-3" />
                                         </a>
                                     </div>
@@ -521,7 +512,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 pt-4 text-[14px] text-muted-foreground">
-                        <span>Fuente fundamental: {source}</span>
+                        <span>{""}<FinixUiText text={"Fuente fundamental:"} />{" "}{source}</span>
                         <div className="flex gap-2">
                             <a
                                 href={`https://www.tradingview.com/symbols/${ticker}/`}
@@ -529,7 +520,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                 rel="noreferrer"
                                 className="inline-flex items-center gap-1 rounded-md border border-border/60 px-3 py-2 font-semibold hover:border-emerald-500/50 hover:text-emerald-500"
                             >
-                                TradingView <ExternalLink className="h-3 w-3" />
+                                {" "}<FinixUiText text={"TradingView"} />{" "}<ExternalLink className="h-3 w-3" />
                             </a>
                             <a
                                 href={alphaSpreadUrl}
@@ -537,7 +528,7 @@ export default function AssetFundamentalPanel({ symbol }: { symbol: string }) {
                                 rel="noreferrer"
                                 className="inline-flex items-center gap-1 rounded-md border border-border/60 px-3 py-2 font-semibold hover:border-emerald-500/50 hover:text-emerald-500"
                             >
-                                AlphaSpread <ExternalLink className="h-3 w-3" />
+                                {" "}<FinixUiText text={"AlphaSpread"} />{" "}<ExternalLink className="h-3 w-3" />
                             </a>
                         </div>
                     </div>

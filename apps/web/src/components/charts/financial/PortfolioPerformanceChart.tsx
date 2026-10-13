@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /**
  * PortfolioPerformanceChart.tsx
  *
@@ -97,6 +99,8 @@ export function PortfolioPerformanceChart({
   currency = 'USD',
   className,
 }: PortfolioPerformanceChartProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
@@ -291,7 +295,7 @@ export function PortfolioPerformanceChart({
 
   return (
     <ChartContainer
-      title="Evolución del Portafolio"
+      title={finixUi("Evolución del Portafolio")}
       description="Valor patrimonial histórico con operaciones registradas"
       loading={false}
       error={error}
@@ -305,7 +309,7 @@ export function PortfolioPerformanceChart({
       headerActions={
         <div className="flex items-center gap-2 flex-wrap justify-end">
           {/* View mode selector */}
-          <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1" role="group" aria-label="Modo de visualización">
+          <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1" role="group" aria-label={finixUi("Modo de visualización")}>
             {([
               { key: 'value', label: 'Valor' },
               { key: 'returnPct', label: 'Rend. %' },
@@ -340,7 +344,7 @@ export function PortfolioPerformanceChart({
           <div className="px-5 py-4 sm:px-6 border-b border-border/30 grid grid-cols-2 sm:grid-cols-4 gap-3">
             {/* Current Value */}
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Valor total</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{""}<FinixUiText text={"Valor total"} />{""}</span>
               <span className="mt-1 text-lg font-black tabular-nums tracking-tight text-foreground">
                 {crosshairData
                   ? formatCurrency(crosshairData.value, currency)
@@ -349,7 +353,7 @@ export function PortfolioPerformanceChart({
             </div>
             {/* P&L */}
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Ganancia/Pérdida</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{""}<FinixUiText text={"Ganancia/Pérdida"} />{""}</span>
               <span className={cn('mt-1 text-lg font-black tabular-nums tracking-tight', valueColor)}>
                 {crosshairData
                   ? formatPnL(crosshairData.pnl, currency)
@@ -358,7 +362,7 @@ export function PortfolioPerformanceChart({
             </div>
             {/* Return % */}
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Rendimiento</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{""}<FinixUiText text={"Rendimiento"} />{""}</span>
               <span className={cn('mt-1 text-lg font-black tabular-nums tracking-tight', valueColor)}>
                 {crosshairData
                   ? formatPercentage(crosshairData.returnPct)
@@ -367,7 +371,7 @@ export function PortfolioPerformanceChart({
             </div>
             {/* Invested */}
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Capital invertido</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{""}<FinixUiText text={"Capital invertido"} />{""}</span>
               <span className="mt-1 text-lg font-black tabular-nums tracking-tight text-foreground/80">
                 {crosshairData
                   ? formatCurrency(crosshairData.invested, currency)
@@ -377,7 +381,7 @@ export function PortfolioPerformanceChart({
           </div>
 
           {/* ── Range selector ── */}
-          <div className="px-5 py-3 sm:px-6 flex flex-wrap items-center gap-1 border-b border-border/20" role="group" aria-label="Rango de tiempo">
+          <div className="px-5 py-3 sm:px-6 flex flex-wrap items-center gap-1 border-b border-border/20" role="group" aria-label={finixUi("Rango de tiempo")}>
             {TIME_RANGES.map((range) => (
               <button
                 key={range}
@@ -402,11 +406,11 @@ export function PortfolioPerformanceChart({
               <span className="text-muted-foreground font-medium">{formatTooltipDate(crosshairData.date)}</span>
               {crosshairData.dailyReturn !== undefined && (
                 <span className={cn('font-bold', crosshairData.dailyReturn >= 0 ? 'text-emerald-500' : 'text-red-500')}>
-                  Variación diaria: {formatPercentage(crosshairData.dailyReturn)}
+                  {" "}<FinixUiText text={"Variación diaria:"} />{" "}{formatPercentage(crosshairData.dailyReturn)}
                 </span>
               )}
               <span className={cn('font-bold', crosshairData.pnl >= 0 ? 'text-emerald-500' : 'text-red-500')}>
-                P&L acumulado: {formatPnL(crosshairData.pnl, currency)}
+                {" "}<FinixUiText text={"P&L acumulado:"} />{" "}{formatPnL(crosshairData.pnl, currency)}
               </span>
             </div>
           )}

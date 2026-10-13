@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException,
 import { EventsGateway } from '../events.gateway';
 import { PrismaService } from '../prisma.service';
 import { hasEffectiveProAccess } from '../auth/pro-access';
+import { isOwnedVerificationDocument } from './verification-storage';
 import { normalizeStoredUploadUrl } from '../uploads/upload-url.util';
 
 @Injectable()
@@ -27,6 +28,7 @@ export class SettingsService {
                 id: true,
                 username: true,
                 email: true,
+                notificationPrefs: true,
                 bio: true,
                 bioLong: true,
                 avatarUrl: true,
@@ -73,7 +75,14 @@ export class SettingsService {
         } as any);
 
         if (!user) throw new NotFoundException('Usuario no encontrado');
-        return this.normalizeUserMedia(user);
+        let notificationPrefs = { email: true, push: true };
+        try {
+            const stored = typeof user.notificationPrefs === 'string' ? JSON.parse(user.notificationPrefs) : user.notificationPrefs;
+            if (stored && typeof stored === 'object') notificationPrefs = {
+                email: stored.email !== false, push: stored.push !== false,
+            };
+        } catch { /* Keep defaults for legacy invalid JSON. */ }
+        return { ...this.normalizeUserMedia(user), notificationPrefs };
     }
 
     // ─── PRIVACY ────────────────────────────────────────────────────────────────
@@ -171,6 +180,8 @@ export class SettingsService {
         }
         if (dto.timezone !== undefined) {
             if (typeof dto.timezone !== 'string' || dto.timezone.length > 60) throw new BadRequestException('Zona horaria no válida');
+            try { new Intl.DateTimeFormat('en-US', { timeZone: dto.timezone }).format(); }
+            catch { throw new BadRequestException('Zona horaria no válida'); }
             data.timezone = dto.timezone;
         }
 
@@ -272,8 +283,19 @@ export class SettingsService {
     }
 
     async submitVerification(userId: string, data: any) {
-        if (!data.fullName || !data.documentNumber || !data.registrationNumber) {
+        if (![data.fullName, data.documentNumber, data.registrationNumber].every(value => typeof value === 'string' && value.trim())) {
             throw new BadRequestException('Faltan campos obligatorios para la verificación');
+        }
+
+        for (const key of ['identityDocumentFrontPath', 'identityDocumentBackPath', 'professionalDocumentPath']) {
+            const path = data[key];
+            if (!isOwnedVerificationDocument(path, userId)) {
+                throw new BadRequestException('Adjuntá documentación privada válida para esta cuenta');
+            }
+        }
+        if (data.experienceYears !== undefined && data.experienceYears !== null &&
+            (!Number.isFinite(Number(data.experienceYears)) || Number(data.experienceYears) < 0 || Number(data.experienceYears) > 80)) {
+            throw new BadRequestException('Los años de experiencia son inválidos');
         }
 
         const existing = await this.prisma.financialAdvisorVerification.findFirst({

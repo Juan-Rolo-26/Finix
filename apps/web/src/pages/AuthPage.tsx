@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
@@ -35,6 +37,8 @@ const FeaturePill = ({ icon: Icon, label }: { icon: any; label: string }) => (
 );
 
 export default function AuthPage() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const t = useTranslation();
     const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const [searchParams] = useSearchParams();
@@ -406,11 +410,11 @@ export default function AuthPage() {
                             >
                                 <div className="relative">
                                     <div className="absolute -inset-3 rounded-2xl bg-primary/20 blur-xl" />
-                                    <img src="/logo-small.webp" alt="Finix" className="relative h-16 w-16 object-contain drop-shadow-[0_0_20px_rgba(34,197,94,0.5)]" />
+                                    <img src="/logo-small.webp" alt={finixUi("Finix")} className="relative h-16 w-16 object-contain drop-shadow-[0_0_20px_rgba(34,197,94,0.5)]" />
                                 </div>
                                 <div>
-                                    <h1 className="text-4xl font-heading font-extrabold text-foreground tracking-tight">Finix</h1>
-                                    <p className="text-sm text-primary font-medium tracking-widest uppercase">Finanzas Sociales</p>
+                                    <h1 className="text-4xl font-heading font-extrabold text-foreground tracking-tight">{""}<FinixUiText text={"Finix"} />{""}</h1>
+                                    <p className="text-sm text-primary font-medium tracking-widest uppercase">{""}<FinixUiText text={"Finanzas Sociales"} />{""}</p>
                                 </div>
                             </m.div>
 
@@ -420,14 +424,12 @@ export default function AuthPage() {
                                 transition={{ delay: 0.2, duration: 0.7 }}
                             >
                                 <h2 className="text-3xl lg:text-4xl font-heading font-bold text-foreground leading-tight mb-4">
-                                    Invertí mejor.<br />
+                                    {" "}<FinixUiText text={"Invertí mejor."} />{""}<br />
                                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">
-                                        Conectá con inversores.
-                                    </span>
+                                        {" "}<FinixUiText text={"Conectá con inversores."} />{" "}</span>
                                 </h2>
                                 <p className="auth-hero-copy text-base leading-relaxed">
-                                    La red social financiera donde compartís análisis, gestionás tu portafolio y aprendés de los mejores inversores.
-                                </p>
+                                    {" "}<FinixUiText text={"La red social financiera donde compartís análisis, gestionás tu portafolio y aprendés de los mejores inversores."} />{" "}</p>
                             </m.div>
 
                             <m.div
@@ -442,7 +444,7 @@ export default function AuthPage() {
                                             <Icon className="w-4 h-4 text-primary" />
                                         </div>
                                         <div>
-                                            <p className="auth-hero-card-title text-sm font-semibold">{highlightTitle}</p>
+                                            <p className="auth-hero-card-title text-sm font-semibold">{<FinixUiText text={highlightTitle} />}</p>
                                             <p className="auth-hero-card-copy text-xs">{desc}</p>
                                         </div>
                                     </div>
@@ -465,8 +467,8 @@ export default function AuthPage() {
 
                     <div className="flex flex-col justify-center items-center p-6 lg:p-12 relative min-h-screen lg:min-h-0">
                         <div className="lg:hidden flex items-center gap-3 mb-10">
-                            <img src="/logo-small.webp" alt="Finix" className="h-12 w-12 object-contain" />
-                            <span className="text-2xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">Finix</span>
+                            <img src="/logo-small.webp" alt={finixUi("Finix")} className="h-12 w-12 object-contain" />
+                            <span className="text-2xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">{""}<FinixUiText text={"Finix"} />{""}</span>
                         </div>
 
                         <div className="auth-form-panel w-full max-w-sm space-y-6 rounded-[2rem] border p-6 shadow-[var(--shadow-card)] backdrop-blur-xl lg:max-w-md lg:p-8">
@@ -507,8 +509,8 @@ export default function AuthPage() {
 
                                 {view === 'register' && <AuthField id="auth-username" label="Nombre de usuario" hint="Entre 3 y 20 letras, números o guiones bajos." autoComplete="username" value={username} onChange={e => setUsername(e.target.value)} required minLength={3} maxLength={20} pattern="[a-zA-Z0-9_]+" error={fieldErrors['auth-username']} formError={Boolean(authError)} />}
                                 {(view === 'login' && loginCodeStep) || (view === 'forgot' && forgotCodeStep) ? <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground rounded-xl bg-secondary/40 p-3">
-                                    <span className="break-all">Código enviado a: <strong>{email}</strong></span>
-                                    <button type="button" className="min-h-11 text-primary underline" onClick={() => { setLoginCodeStep(false); setForgotCodeStep(false); setLoginCode(''); }}>Cambiar correo</button>
+                                    <span className="break-all">{""}<FinixUiText text={"Código enviado a:"} />{" "}<strong>{email}</strong></span>
+                                    <button type="button" className="min-h-11 text-primary underline" onClick={() => { setLoginCodeStep(false); setForgotCodeStep(false); setLoginCode(''); }}>{""}<FinixUiText text={"Cambiar correo"} />{""}</button>
                                 </div> : <AuthField id="auth-email" label="Correo electrónico" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required error={fieldErrors['auth-email']} formError={Boolean(authError)} />}
                                 {view === 'login' && loginCodeStep ? <AuthField id="auth-login-code" label="Código de verificación" hint="Ingresá los 6 dígitos que recibiste por correo." inputMode="numeric" autoComplete="one-time-code" value={loginCode} onChange={e => setLoginCode(e.target.value.replace(/\D/g, '').slice(0, 6))} required maxLength={6} pattern="[0-9]{6}" autoFocus error={fieldErrors['auth-login-code']} formError={Boolean(authError)} /> : view !== 'forgot' && <AuthField id="auth-password" label="Contraseña" hint={view === 'register' ? 'Al menos 8 caracteres. Elegí una contraseña que no uses en otro sitio.' : 'Después de la contraseña, verificaremos el acceso con un código por correo.'} type={showPassword ? 'text' : 'password'} autoComplete={view === 'register' ? 'new-password' : 'current-password'} value={password} onChange={e => setPassword(e.target.value)} required minLength={8} onToggle={() => setShowPassword(current => !current)} revealed={showPassword} error={fieldErrors['auth-password']} formError={Boolean(authError)} />}
                                 {view === 'forgot' && forgotCodeStep && <>
@@ -564,20 +566,18 @@ export default function AuthPage() {
                                             disabled={isLoading}
                                             className="text-muted-foreground hover:text-foreground underline transition-colors disabled:opacity-50"
                                         >
-                                            Reenviar código
-                                        </button>
+                                            {" "}<FinixUiText text={"Reenviar código"} />{" "}</button>
                                         <button
                                             type="button"
                                             onClick={() => switchView('login')}
                                             className="text-primary hover:underline font-medium"
                                         >
-                                            Volver a iniciar sesión
-                                        </button>
+                                            {" "}<FinixUiText text={"Volver a iniciar sesión"} />{" "}</button>
                                     </div>
                                 ) : null}
 
                                 {authError ? (
-                                    <div id="auth-error" role="alert" className="text-sm text-destructive font-medium space-y-2"><p>{authError}</p><Link to="/help" className="underline">Ayuda con el acceso</Link></div>
+                                    <div id="auth-error" role="alert" className="text-sm text-destructive font-medium space-y-2"><p>{authError}</p><Link to="/help" className="underline">{""}<FinixUiText text={"Ayuda con el acceso"} />{""}</Link></div>
                                 ) : null}
 
                                 {view !== 'forgot' ? (
@@ -607,7 +607,7 @@ export default function AuthPage() {
                                                         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                                                     </svg>
                                                 </div>
-                                                <span className="flex-1 text-center">Google</span>
+                                                <span className="flex-1 text-center">{""}<FinixUiText text={"Google"} />{""}</span>
                                             </Button>
                                         </div>
                                     </>
@@ -648,7 +648,7 @@ export default function AuthPage() {
                         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4 lg:flex-nowrap lg:items-center lg:gap-x-8">
                             {infoLinks.map(({ label, to }) => (
                                 <Link key={label} to={to} className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
-                                    {label}
+                                    {<FinixUiText text={label} />}
                                 </Link>
                             ))}
                             <span className="text-xs text-muted-foreground whitespace-nowrap">•</span>
@@ -660,15 +660,15 @@ export default function AuthPage() {
                         </div>
                         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/50">
                             <Sparkles className="w-3 h-3" />
-                            <span>© 2026 Finix · Finanzas Sociales</span>
+                            <span>{""}<FinixUiText text={"© 2026 Finix · Finanzas Sociales"} />{""}</span>
                             <span className="mx-1">•</span>
-                            <a href="https://t.me/Finixcomunidad" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors" title="Telegram oficial">
+                            <a href="https://t.me/Finixcomunidad" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors" title={finixUi("Telegram oficial")}>
                                 <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
                                 </svg>
                             </a>
                             <span className="opacity-40">•</span>
-                            <a href="https://instagram.com/finixarg_" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors" title="Instagram oficial">
+                            <a href="https://instagram.com/finixarg_" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors" title={finixUi("Instagram oficial")}>
                                 <Instagram className="w-3.5 h-3.5" />
                             </a>
                         </div>

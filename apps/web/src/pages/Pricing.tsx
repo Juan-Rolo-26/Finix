@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -126,6 +128,8 @@ const FAQS = [
 ];
 
 export default function Pricing() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const user = useAuthStore((state) => state.user);
     const checkout = usePlanCheckout();
     const { catalog, loading, configError } = checkout;
@@ -167,11 +171,11 @@ export default function Pricing() {
     ) => limits?.[plan]?.[key]?.toLocaleString('es-AR') ?? 'No informado';
 
     const yes = (
-        <span aria-label="Incluido" className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary">
+        <span aria-label={finixUi("Incluido")} className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary">
             <Check size={15} />
         </span>
     );
-    const no = <span className="text-muted-foreground font-semibold">No incluido</span>;
+    const no = <span className="text-muted-foreground font-semibold">{""}<FinixUiText text={"No incluido"} />{""}</span>;
 
     const rows = [
         { label: 'Portafolios personales', values: ['1', 'Ilimitados', 'Ilimitados'] },
@@ -197,11 +201,10 @@ export default function Pricing() {
             <nav className="lg:hidden flex items-center justify-between px-5 py-4 border-b border-border/80 bg-card/80 backdrop-blur-md sticky top-0 z-20">
                 <Link to="/dashboard" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground">
                     <ArrowLeft size={18} />
-                    <span>Inicio</span>
+                    <span>{""}<FinixUiText text={"Inicio"} />{""}</span>
                 </Link>
                 <Link to="/dashboard" className="font-extrabold tracking-widest text-base">
-                    FINIX
-                </Link>
+                    {" "}<FinixUiText text={"FINIX"} />{" "}</Link>
             </nav>
 
             <main className="pricing-main">
@@ -209,27 +212,25 @@ export default function Pricing() {
                 <header className="pricing-heading">
                     <div className="pricing-eyebrow-badge">
                         <Sparkles size={14} className="text-primary" />
-                        <span>PLANES &amp; SUSCRIPCIONES</span>
+                        <span>{""}<FinixUiText text={"PLANES &amp; SUSCRIPCIONES"} />{""}</span>
                     </div>
 
                     <h1>
-                        Invertí con herramientas de{' '}
-                        <span className="pricing-heading-gradient">nivel profesional</span>
+                        {" "}<FinixUiText text={"Invertí con herramientas de"} />{""}{' '}
+                        <span className="pricing-heading-gradient">{""}<FinixUiText text={"nivel profesional"} />{""}</span>
                     </h1>
 
                     <p>
-                        Elegí la potencia que necesitás para tus análisis, portafolios y comunidad.
-                        Precios transparentes, sin contratos forzosos ni comisiones ocultas.
-                    </p>
+                        {" "}<FinixUiText text={"Elegí la potencia que necesitás para tus análisis, portafolios y comunidad. Precios transparentes, sin contratos forzosos ni comisiones ocultas."} />{" "}</p>
 
                     {user && (
                         <div className="pricing-user-status">
                             <div className="pricing-user-badge">
                                 <span className="pricing-user-dot" />
-                                <span>Tu plan actual: <strong>{PLAN_NAMES[current]}</strong></span>
+                                <span>{""}<FinixUiText text={"Tu plan actual:"} />{" "}<strong>{PLAN_NAMES[current]}</strong></span>
                             </div>
                             <Link className="pricing-user-link" to="/settings?tab=suscripcion">
-                                Gestionar suscripción <ArrowRight size={14} />
+                                {" "}<FinixUiText text={"Gestionar suscripción"} />{" "}<ArrowRight size={14} />
                             </Link>
                         </div>
                     )}
@@ -239,7 +240,7 @@ export default function Pricing() {
                 {loading && (
                     <div className="pricing-notice" role="status">
                         <Loader2 size={20} className="animate-spin text-primary" />
-                        <span>Consultando disponibilidad y precios actualizados…</span>
+                        <span>{""}<FinixUiText text={"Consultando disponibilidad y precios actualizados…"} />{""}</span>
                     </div>
                 )}
 
@@ -251,8 +252,7 @@ export default function Pricing() {
                             className="font-bold underline ml-auto"
                             onClick={() => { void checkout.reload(); }}
                         >
-                            Reintentar
-                        </button>
+                            {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
                     </div>
                 )}
 
@@ -260,19 +260,18 @@ export default function Pricing() {
                     <div className="pricing-notice pricing-notice--free" role="status">
                         <ShieldCheck size={28} />
                         <div>
-                            <strong>Finix PRO y sus funcionalidades están momentáneamente abiertas</strong>
+                            <strong>{""}<FinixUiText text={"Finix PRO y sus funcionalidades están momentáneamente abiertas"} />{""}</strong>
                             <p>
-                                Actualmente todas las funciones avanzadas de PRO y Creador están 100% bonificadas para todos los usuarios. Aprovechá este período de acceso libre; más adelante las herramientas PRO volverán a ser de pago bajo suscripción.
-                            </p>
+                                {" "}<FinixUiText text={"Actualmente todas las funciones avanzadas de PRO y Creador están 100% bonificadas para todos los usuarios. Aprovechá este período de acceso libre; más adelante las herramientas PRO volverán a ser de pago bajo suscripción."} />{" "}</p>
                         </div>
-                        <span className="pricing-free-tag">Acceso Libre Temporal</span>
+                        <span className="pricing-free-tag">{""}<FinixUiText text={"Acceso Libre Temporal"} />{""}</span>
                     </div>
                 )}
 
                 {catalog?.purchasesPaused && !catalog.freeAccessEnabled && (
                     <div className="pricing-notice" role="status">
                         <Clock size={20} className="text-amber-500" />
-                        <span>Las nuevas compras están pausadas momentáneamente. Podés seguir gestionando tus suscripciones existentes.</span>
+                        <span>{""}<FinixUiText text={"Las nuevas compras están pausadas momentáneamente. Podés seguir gestionando tus suscripciones existentes."} />{""}</span>
                     </div>
                 )}
 
@@ -283,7 +282,7 @@ export default function Pricing() {
                 )}
 
                 {/* The 3 Cards */}
-                <section id="planes" className="pricing-plans" aria-label="Planes de Finix">
+                <section id="planes" className="pricing-plans" aria-label={finixUi("Planes de Finix")}>
                     {PLANS.map((plan) => {
                         const Icon = plan.icon;
                         const included = current === 'CREATOR' && plan.id === 'PRO';
@@ -384,7 +383,7 @@ export default function Pricing() {
                                     )}
                                 </div>
 
-                                {verified && catalog?.freeAccessEnabled && habitual != null && plan.id !== 'FREE' && <p className="text-sm text-center text-muted-foreground">Precio habitual configurado: ARS {habitual.toLocaleString('es-AR')}/mes. Durante esta etapa no se cobra.</p>}
+                                {verified && catalog?.freeAccessEnabled && habitual != null && plan.id !== 'FREE' && <p className="text-sm text-center text-muted-foreground">{""}<FinixUiText text={"Precio habitual configurado: ARS"} />{" "}{habitual.toLocaleString('es-AR')}{""}<FinixUiText text={"/mes. Durante esta etapa no se cobra."} />{""}</p>}
                                 {/* Action CTA Button */}
                                 <button
                                     type="button"
@@ -432,8 +431,8 @@ export default function Pricing() {
                             <Lock size={22} />
                         </div>
                         <div>
-                            <h3>Gestión de pagos</h3>
-                            <p>Consultá la disponibilidad de cada medio de pago y las condiciones antes de contratar.</p>
+                            <h3>{""}<FinixUiText text={"Gestión de pagos"} />{""}</h3>
+                            <p>{""}<FinixUiText text={"Consultá la disponibilidad de cada medio de pago y las condiciones antes de contratar."} />{""}</p>
                         </div>
                     </div>
 
@@ -442,8 +441,8 @@ export default function Pricing() {
                             <Shield size={22} />
                         </div>
                         <div>
-                            <h3>Sin Permanencia</h3>
-                            <p>Cancelá tu renovación en cualquier momento con un solo clic desde tu cuenta.</p>
+                            <h3>{""}<FinixUiText text={"Sin Permanencia"} />{""}</h3>
+                            <p>{""}<FinixUiText text={"Cancelá tu renovación en cualquier momento con un solo clic desde tu cuenta."} />{""}</p>
                         </div>
                     </div>
 
@@ -452,8 +451,8 @@ export default function Pricing() {
                             <Zap size={22} />
                         </div>
                         <div>
-                            <h3>Activación Inmediata</h3>
-                            <p>Acceso instantáneo a todas las herramientas PRO en cuanto se confirma el pago.</p>
+                            <h3>{""}<FinixUiText text={"Activación Inmediata"} />{""}</h3>
+                            <p>{""}<FinixUiText text={"Acceso instantáneo a todas las herramientas PRO en cuanto se confirma el pago."} />{""}</p>
                         </div>
                     </div>
                 </div>
@@ -461,7 +460,7 @@ export default function Pricing() {
                 {/* Feature Comparison Matrix */}
                 <section className="pricing-comparison" aria-labelledby="pricing-comparison-title">
                     <div className="pricing-section-heading">
-                        <h2 id="pricing-comparison-title">Compará lo que incluye cada plan</h2>
+                        <h2 id="pricing-comparison-title">{""}<FinixUiText text={"Compará lo que incluye cada plan"} />{""}</h2>
                         <p>
                             {catalog?.freeAccessEnabled
                                 ? 'Estos son los límites habituales de cada plan. El acceso temporal bonificado habilita las funciones de Creador.'
@@ -476,7 +475,7 @@ export default function Pricing() {
                         <table>
                             <thead>
                                 <tr>
-                                    <th scope="col">Herramienta o límite</th>
+                                    <th scope="col">{""}<FinixUiText text={"Herramienta o límite"} />{""}</th>
                                     {PLANS.map((plan) => (
                                         <th
                                             scope="col"
@@ -506,15 +505,14 @@ export default function Pricing() {
                         </table>
                     </div>
                     <p className="pricing-footnote">
-                        * Las membresías fijadas por creadores de comunidades privadas se contratan por separado.
-                    </p>
+                        {" "}<FinixUiText text={"* Las membresías fijadas por creadores de comunidades privadas se contratan por separado."} />{" "}</p>
                 </section>
 
                 {/* Interactive FAQ */}
                 <section className="pricing-faq" aria-labelledby="pricing-faq-title">
                     <div className="pricing-section-heading">
-                        <h2 id="pricing-faq-title">Preguntas frecuentes</h2>
-                        <p>Todo lo que necesitás saber sobre pagos, renovaciones y acceso.</p>
+                        <h2 id="pricing-faq-title">{""}<FinixUiText text={"Preguntas frecuentes"} />{""}</h2>
+                        <p>{""}<FinixUiText text={"Todo lo que necesitás saber sobre pagos, renovaciones y acceso."} />{""}</p>
                     </div>
 
                     <div className="pricing-faq-list">
@@ -550,9 +548,9 @@ export default function Pricing() {
 
                 {/* Footer Links */}
                 <footer className="pricing-footer">
-                    <Link to="/terms">Términos y condiciones</Link>
-                    <Link to="/privacy">Política de privacidad</Link>
-                    <Link to="/help">Centro de ayuda</Link>
+                    <Link to="/terms">{""}<FinixUiText text={"Términos y condiciones"} />{""}</Link>
+                    <Link to="/privacy">{""}<FinixUiText text={"Política de privacidad"} />{""}</Link>
+                    <Link to="/help">{""}<FinixUiText text={"Centro de ayuda"} />{""}</Link>
                 </footer>
             </main>
 

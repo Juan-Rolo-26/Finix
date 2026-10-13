@@ -37,24 +37,24 @@ export function notificationDateKey(value: Date, timeZone = notificationTimezone
     return `${part('year')}-${part('month')}-${part('day')}`;
 }
 
-export function formatNotificationTime(value: string, timeZone = notificationTimezone()) {
+export function formatNotificationTime(value: string, timeZone = notificationTimezone(), locale = 'es-AR') {
     const date = new Date(value);
-    if (!value || !Number.isFinite(date.getTime())) return 'Fecha no disponible';
-    return new Intl.DateTimeFormat('es-AR', { timeZone, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date);
+    if (!value || !Number.isFinite(date.getTime())) return locale === 'en-US' ? 'Date unavailable' : 'Fecha no disponible';
+    return new Intl.DateTimeFormat(locale, { timeZone, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date);
 }
 
-function formatDateLabel(value: Date, timeZone: string, now: Date) {
+function formatDateLabel(value: Date, timeZone: string, now: Date, locale: string) {
     // Compare local calendar days, independent of DST's 23/25-hour days.
     const today = Date.parse(notificationDateKey(now, timeZone) + 'T00:00:00Z');
     const target = Date.parse(notificationDateKey(value, timeZone) + 'T00:00:00Z');
     const diffDays = Math.round((today - target) / 86400000);
-    if (diffDays === 0) return 'Hoy';
-    if (diffDays === 1) return 'Ayer';
-    const label = value.toLocaleDateString('es-AR', { timeZone, weekday: 'long', day: '2-digit', month: 'short' });
+    if (diffDays === 0) return locale === 'en-US' ? 'Today' : 'Hoy';
+    if (diffDays === 1) return locale === 'en-US' ? 'Yesterday' : 'Ayer';
+    const label = value.toLocaleDateString(locale, { timeZone, weekday: 'long', day: '2-digit', month: 'short' });
     return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-export function groupNotificationsByDay(notifications: NotificationItem[], options: { timeZone?: string; now?: Date } = {}): NotificationGroup[] {
+export function groupNotificationsByDay(notifications: NotificationItem[], options: { timeZone?: string; now?: Date; locale?: string } = {}): NotificationGroup[] {
     const timeZone = options.timeZone || notificationTimezone();
     const now = options.now || new Date();
     const groups: NotificationGroup[] = [];
@@ -64,7 +64,7 @@ export function groupNotificationsByDay(notifications: NotificationItem[], optio
         const createdAt = notification.createdAt ? new Date(notification.createdAt) : null;
         const hasValidDate = createdAt instanceof Date && !Number.isNaN(createdAt.getTime());
         const dateKey = hasValidDate ? notificationDateKey(createdAt, timeZone) : 'sin-fecha';
-        const label = hasValidDate ? formatDateLabel(createdAt, timeZone, now) : 'Sin fecha';
+        const label = hasValidDate ? formatDateLabel(createdAt, timeZone, now, options.locale || 'es-AR') : options.locale === 'en-US' ? 'No date' : 'Sin fecha';
 
         let group = byDay.get(dateKey);
         if (!group) {

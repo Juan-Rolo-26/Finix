@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiFetch } from '@/lib/api';
@@ -76,6 +78,8 @@ const getStatusConfig = (status: string) =>
     };
 
 export default function WatchlistPage() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuthStore();
@@ -295,8 +299,8 @@ export default function WatchlistPage() {
                 onDismissWelcome={handleDismissOnboarding}
                 onAddAsset={asset => { setAddModalSymbol(asset.symbol); setAddModalName(asset.name || asset.description); setIsAddModalOpen(true); }}
             />
-            <nav className="watchlist-navigation" aria-label="Navegación de seguimiento">
-                <div role="tablist" aria-label="Vistas de seguimiento" onKeyDown={event => {
+            <nav className="watchlist-navigation" aria-label={finixUi("Navegación de seguimiento")}>
+                <div role="tablist" aria-label={finixUi("Vistas de seguimiento")} onKeyDown={event => {
                     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
                     event.preventDefault();
                     const nextTab = event.key === 'Home' ? 'dashboard' : event.key === 'End' ? 'list' : activeTab === 'dashboard' ? 'list' : 'dashboard';
@@ -304,11 +308,9 @@ export default function WatchlistPage() {
                     document.getElementById(`watchlist-${nextTab}-tab`)?.focus();
                 }}>
                     <button type="button" role="tab" id="watchlist-dashboard-tab" aria-controls="watchlist-content" tabIndex={activeTab === 'dashboard' ? 0 : -1} aria-selected={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')}>
-                        <LayoutDashboard size={17} /> Dashboard
-                    </button>
+                        <LayoutDashboard size={17} /> {" "}<FinixUiText text={"Dashboard"} />{" "}</button>
                     <button type="button" role="tab" id="watchlist-list-tab" aria-controls="watchlist-content" tabIndex={activeTab === 'list' ? 0 : -1} aria-selected={activeTab === 'list'} onClick={() => setActiveTab('list')}>
-                        <List size={17} /> Lista de seguimiento
-                    </button>
+                        <List size={17} /> {" "}<FinixUiText text={"Lista de seguimiento"} />{" "}</button>
                 </div>
                 <button type="button" aria-pressed={showIdeasSection} onClick={() => setShowIdeasSection(!showIdeasSection)}>
                     <Sparkles size={17} /> {showIdeasSection ? 'Ocultar ideas' : 'Ideas para explorar'}
@@ -316,15 +318,15 @@ export default function WatchlistPage() {
             </nav>
             <div className="market-shell watchlist-shell">
                 <div className="watchlist-heading">
-                    <h1>Seguimiento</h1>
-                    <p>Tu radar de inversión</p>
+                    <h1>{""}<FinixUiText text={"Seguimiento"} />{""}</h1>
+                    <p>{""}<FinixUiText text={"Tu radar de inversión"} />{""}</p>
                 </div>
                 <div className="watchlist-actions">
-                    <span>Un lugar para cada idea de inversión.</span>
+                    <span>{""}<FinixUiText text={"Un lugar para cada idea de inversión."} />{""}</span>
                     <div>
-                        <Button variant="outline" size="sm" disabled={!activeListId} onClick={() => setIsImportModalOpen(true)}><UploadCloud size={15} /> Importar</Button>
-                        <Button variant="outline" size="sm" disabled={!activeListId} onClick={() => handleExport('csv')}><Download size={15} /> Exportar</Button>
-                        <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus size={16} /> Nueva lista</Button>
+                        <Button variant="outline" size="sm" disabled={!activeListId} onClick={() => setIsImportModalOpen(true)}><UploadCloud size={15} /> {" "}<FinixUiText text={"Importar"} />{""}</Button>
+                        <Button variant="outline" size="sm" disabled={!activeListId} onClick={() => handleExport('csv')}><Download size={15} /> {" "}<FinixUiText text={"Exportar"} />{""}</Button>
+                        <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus size={16} /> {" "}<FinixUiText text={"Nueva lista"} />{""}</Button>
                     </div>
                 </div>
 
@@ -346,14 +348,13 @@ export default function WatchlistPage() {
                     {loadingLists ? (
                         <div className="flex items-center gap-2.5 py-2 text-muted-foreground text-sm">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                            <span>Cargando tus listas...</span>
+                            <span>{""}<FinixUiText text={"Cargando tus listas..."} />{""}</span>
                         </div>
                     ) : watchlists.length === 0 ? (
                         <span className="text-sm font-semibold text-muted-foreground py-2">
-                            No tenés listas de seguimiento creadas todavía.
-                        </span>
+                            {" "}<FinixUiText text={"No tenés listas de seguimiento creadas todavía."} />{" "}</span>
                     ) : (
-                        <div className="watchlist-list-selector__tabs" role="group" aria-label="Listas de seguimiento">
+                        <div className="watchlist-list-selector__tabs" role="group" aria-label={finixUi("Listas de seguimiento")}>
                             {watchlists.map((wl) => {
                                 const isActive = wl.id === activeListId;
                                 return (
@@ -375,7 +376,7 @@ export default function WatchlistPage() {
                                     </button>
                                 );
                             })}
-                            <button type="button" className="watchlist-list-selector__add" onClick={() => setIsCreateModalOpen(true)} aria-label="Crear otra lista" title="Crear otra lista"><Plus size={19} /></button>
+                            <button type="button" className="watchlist-list-selector__add" onClick={() => setIsCreateModalOpen(true)} aria-label={finixUi("Crear otra lista")} title={finixUi("Crear otra lista")}><Plus size={19} /></button>
                         </div>
                     )}
 
@@ -386,8 +387,8 @@ export default function WatchlistPage() {
                                 onClick={handleRefresh}
                                 disabled={isRefreshing}
                                 className="w-9 h-9 rounded-xl border border-border/70 flex items-center justify-center hover:bg-secondary/80 transition-all text-muted-foreground hover:text-foreground"
-                                title="Actualizar cotizaciones"
-                                aria-label="Actualizar cotizaciones"
+                                title={finixUi("Actualizar cotizaciones")}
+                                aria-label={finixUi("Actualizar cotizaciones")}
                             >
                                 <RefreshCw size={15} className={isRefreshing ? 'animate-spin text-primary' : ''} />
                             </button>
@@ -395,8 +396,8 @@ export default function WatchlistPage() {
                                 type="button"
                                 onClick={() => setEditingList(activeList)}
                                 className="w-9 h-9 rounded-xl border border-border/70 flex items-center justify-center hover:bg-secondary/80 transition-all text-muted-foreground hover:text-foreground"
-                                title="Editar lista"
-                                aria-label="Editar lista"
+                                title={finixUi("Editar lista")}
+                                aria-label={finixUi("Editar lista")}
                             >
                                 <Edit3 size={15} />
                             </button>
@@ -404,8 +405,8 @@ export default function WatchlistPage() {
                                 type="button"
                                 onClick={() => setDeletingListId(activeList.id)}
                                 className="w-9 h-9 rounded-xl border border-border/70 flex items-center justify-center hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-500 transition-all text-muted-foreground"
-                                title="Eliminar lista"
-                                aria-label="Eliminar lista"
+                                title={finixUi("Eliminar lista")}
+                                aria-label={finixUi("Eliminar lista")}
                             >
                                 <Trash2 size={15} />
                             </button>
@@ -414,11 +415,11 @@ export default function WatchlistPage() {
                 </div>
 
                 {activeList && totalItems > 0 && (
-                    <div className="watchlist-stats" aria-label="Resumen de seguimiento">
-                        <div><List size={16} /><strong>{totalItems}</strong><span>activos en tu lista</span></div>
-                        <div className="watchlist-stats__positive"><TrendingUp size={16} /><strong>{gainersCount}</strong><span>al alza hoy</span></div>
-                        <div className="watchlist-stats__negative"><ArrowDownRight size={16} /><strong>{losersCount}</strong><span>a la baja hoy</span></div>
-                        <div><Bell size={16} /><strong>{withAlert}</strong><span>alertas activas</span></div>
+                    <div className="watchlist-stats" aria-label={finixUi("Resumen de seguimiento")}>
+                        <div><List size={16} /><strong>{totalItems}</strong><span>{""}<FinixUiText text={"activos en tu lista"} />{""}</span></div>
+                        <div className="watchlist-stats__positive"><TrendingUp size={16} /><strong>{gainersCount}</strong><span>{""}<FinixUiText text={"al alza hoy"} />{""}</span></div>
+                        <div className="watchlist-stats__negative"><ArrowDownRight size={16} /><strong>{losersCount}</strong><span>{""}<FinixUiText text={"a la baja hoy"} />{""}</span></div>
+                        <div><Bell size={16} /><strong>{withAlert}</strong><span>{""}<FinixUiText text={"alertas activas"} />{""}</span></div>
                     </div>
                 )}
 
@@ -427,7 +428,7 @@ export default function WatchlistPage() {
                     <div className="flex flex-col gap-4 mb-6">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             {activeTab === 'list' && (
-                                <div className="flex items-center p-1 bg-secondary/50 border border-border/60 rounded-xl" role="group" aria-label="Modo de vista">
+                                <div className="flex items-center p-1 bg-secondary/50 border border-border/60 rounded-xl" role="group" aria-label={finixUi("Modo de vista")}>
                                     <button
                                         type="button"
                                         className={cn(
@@ -438,7 +439,7 @@ export default function WatchlistPage() {
                                         )}
                                         aria-pressed={viewMode === 'table'}
                                         onClick={() => setViewMode('table')}
-                                        title="Vista tabla"
+                                        title={finixUi("Vista tabla")}
                                     >
                                         <TableIcon size={16} />
                                     </button>
@@ -452,7 +453,7 @@ export default function WatchlistPage() {
                                         )}
                                         aria-pressed={viewMode === 'cards'}
                                         onClick={() => setViewMode('cards')}
-                                        title="Vista tarjetas"
+                                        title={finixUi("Vista tarjetas")}
                                     >
                                         <LayoutGrid size={16} />
                                     </button>
@@ -466,7 +467,7 @@ export default function WatchlistPage() {
                                     <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                     <input
                                         type="text"
-                                        placeholder="Buscar por ticker, nombre o tag..."
+                                        placeholder={finixUi("Buscar por ticker, nombre o tag...")}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className="w-full h-10 pl-10 pr-4 rounded-xl border border-border/70 bg-card/70 backdrop-blur-sm text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/60"
@@ -493,7 +494,7 @@ export default function WatchlistPage() {
                                     )}
                                 >
                                     <Filter size={15} />
-                                    <span>Filtros</span>
+                                    <span>{""}<FinixUiText text={"Filtros"} />{""}</span>
                                     {(statusFilter !== 'ALL' || portfolioFilter !== 'ALL') && (
                                         <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                                             {(statusFilter !== 'ALL' ? 1 : 0) +
@@ -505,8 +506,7 @@ export default function WatchlistPage() {
                                 {selectedItemIds.length > 0 && (
                                     <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/25 rounded-xl px-3 py-1.5 shadow-2xs">
                                         <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
-                                            {selectedItemIds.length} seleccionados
-                                        </span>
+                                            {selectedItemIds.length} {" "}<FinixUiText text={"seleccionados"} />{" "}</span>
                                         <Button
                                             variant="destructive"
                                             size="sm"
@@ -514,8 +514,7 @@ export default function WatchlistPage() {
                                             onClick={handleBulkDelete}
                                             className="h-7 px-2.5 rounded-lg text-xs font-bold gap-1 shadow-xs"
                                         >
-                                            <Trash2 size={13} /> Quitar
-                                        </Button>
+                                            <Trash2 size={13} /> {" "}<FinixUiText text={"Quitar"} />{" "}</Button>
                                     </div>
                                 )}
                             </div>
@@ -524,29 +523,29 @@ export default function WatchlistPage() {
                         {activeTab === 'list' && showFilters && (
                             <div className="flex flex-wrap gap-4 p-4 rounded-md border border-border bg-card/60">
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="market-metric-label">Estado personal</label>
+                                    <label className="market-metric-label">{""}<FinixUiText text={"Estado personal"} />{""}</label>
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => setStatusFilter(e.target.value)}
                                         className="market-control min-w-[200px]"
                                     >
-                                        <option value="ALL">Todos los estados</option>
-                                        <option value="RESEARCHING">Investigando</option>
-                                        <option value="WAITING_PRICE">Esperando precio</option>
-                                        <option value="EARNINGS">Siguiendo resultados</option>
-                                        <option value="DISCARDED">Descartada</option>
+                                        <option value="ALL">{""}<FinixUiText text={"Todos los estados"} />{""}</option>
+                                        <option value="RESEARCHING">{""}<FinixUiText text={"Investigando"} />{""}</option>
+                                        <option value="WAITING_PRICE">{""}<FinixUiText text={"Esperando precio"} />{""}</option>
+                                        <option value="EARNINGS">{""}<FinixUiText text={"Siguiendo resultados"} />{""}</option>
+                                        <option value="DISCARDED">{""}<FinixUiText text={"Descartada"} />{""}</option>
                                     </select>
                                 </div>
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="market-metric-label">Portafolio</label>
+                                    <label className="market-metric-label">{""}<FinixUiText text={"Portafolio"} />{""}</label>
                                     <select
                                         value={portfolioFilter}
                                         onChange={(e) => setPortfolioFilter(e.target.value)}
                                         className="market-control min-w-[200px]"
                                     >
-                                        <option value="ALL">Todos</option>
-                                        <option value="IN_PORTFOLIO">En mi Portafolio</option>
-                                        <option value="NOT_IN_PORTFOLIO">Solo en seguimiento</option>
+                                        <option value="ALL">{""}<FinixUiText text={"Todos"} />{""}</option>
+                                        <option value="IN_PORTFOLIO">{""}<FinixUiText text={"En mi Portafolio"} />{""}</option>
+                                        <option value="NOT_IN_PORTFOLIO">{""}<FinixUiText text={"Solo en seguimiento"} />{""}</option>
                                     </select>
                                 </div>
                                 {(statusFilter !== 'ALL' || portfolioFilter !== 'ALL') && (
@@ -560,8 +559,7 @@ export default function WatchlistPage() {
                                             }}
                                             className="market-action flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-foreground"
                                         >
-                                            <X size={15} /> Limpiar filtros
-                                        </Button>
+                                            <X size={15} /> {" "}<FinixUiText text={"Limpiar filtros"} />{" "}</Button>
                                     </div>
                                 )}
                             </div>
@@ -570,30 +568,28 @@ export default function WatchlistPage() {
                 )}
 
                 {loadError && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
-                    <span>{loadError}</span><Button variant="outline" size="sm" onClick={handleRefresh}>Reintentar</Button>
+                    <span>{loadError}</span><Button variant="outline" size="sm" onClick={handleRefresh}>{""}<FinixUiText text={"Reintentar"} />{""}</Button>
                 </div>}
                 <div id="watchlist-content" role="tabpanel" aria-labelledby={activeTab === 'dashboard' ? 'watchlist-dashboard-tab' : 'watchlist-list-tab'}>
                 {/* CONTENIDO PRINCIPAL */}
                 {loadingDetail ? (
                     <div className="market-empty flex flex-col items-center justify-center gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                        <p className="font-bold text-foreground">Actualizando datos</p>
-                        <p className="text-sm text-muted-foreground">Cargando cotizaciones y seguimiento...</p>
+                        <p className="font-bold text-foreground">{""}<FinixUiText text={"Actualizando datos"} />{""}</p>
+                        <p className="text-sm text-muted-foreground">{""}<FinixUiText text={"Cargando cotizaciones y seguimiento..."} />{""}</p>
                     </div>
                 ) : !activeList ? (
                     /* ESTADO VACIO GLOBAL */
                     <div className="market-empty max-w-lg mx-auto flex flex-col items-center">
                         <Bookmark size={36} className="text-primary mb-2" />
-                        <h3 className="text-xl font-bold text-foreground mb-2">Comenzá tu seguimiento</h3>
+                        <h3 className="text-xl font-bold text-foreground mb-2">{""}<FinixUiText text={"Comenzá tu seguimiento"} />{""}</h3>
                         <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                            Creá tu primera lista de seguimiento para agrupar las acciones y CEDEARs que estás evaluando antes de invertir.
-                        </p>
+                            {" "}<FinixUiText text={"Creá tu primera lista de seguimiento para agrupar las acciones y CEDEARs que estás evaluando antes de invertir."} />{" "}</p>
                         <Button
                             onClick={() => setIsCreateModalOpen(true)}
                             className="market-action bg-emerald-600 hover:bg-emerald-500 text-white gap-2"
                         >
-                            <Plus size={16} /> Crear mi primera lista
-                        </Button>
+                            <Plus size={16} /> {" "}<FinixUiText text={"Crear mi primera lista"} />{" "}</Button>
                     </div>
                 ) : activeTab === 'dashboard' ? (
                     activeListDetail?.items?.length > 0 ? (
@@ -605,15 +601,13 @@ export default function WatchlistPage() {
                     ) : (
                         <div className="market-empty max-w-lg mx-auto flex flex-col items-center">
                             <LayoutDashboard size={36} className="text-muted-foreground mb-2" />
-                            <h3 className="text-lg font-bold text-foreground mb-2">Lista vacía</h3>
-                            <p className="text-sm text-muted-foreground mb-5">Buscá tu primer activo para empezar a seguir sus precios y definir objetivos.</p>
+                            <h3 className="text-lg font-bold text-foreground mb-2">{""}<FinixUiText text={"Lista vacía"} />{""}</h3>
+                            <p className="text-sm text-muted-foreground mb-5">{""}<FinixUiText text={"Buscá tu primer activo para empezar a seguir sus precios y definir objetivos."} />{""}</p>
                             <div className="flex justify-center gap-2.5">
                                 <Button size="sm" onClick={() => document.getElementById('watchlist-asset-search')?.focus()} className="market-action bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
-                                    <Plus size={16} /> Agregar activo
-                                </Button>
+                                    <Plus size={16} /> {" "}<FinixUiText text={"Agregar activo"} />{" "}</Button>
                                 <Button variant="outline" size="sm" onClick={() => navigate('/market')} className="market-action">
-                                    Explorar Mercado
-                                </Button>
+                                    {" "}<FinixUiText text={"Explorar Mercado"} />{" "}</Button>
                             </div>
                         </div>
                     )
@@ -633,16 +627,13 @@ export default function WatchlistPage() {
                         </p>
                         {searchQuery || statusFilter !== 'ALL' || portfolioFilter !== 'ALL' ? (
                             <Button variant="outline" size="sm" onClick={() => { setSearchQuery(''); setStatusFilter('ALL'); setPortfolioFilter('ALL'); }} className="market-action gap-2">
-                                <X size={16} /> Limpiar filtros
-                            </Button>
+                                <X size={16} /> {" "}<FinixUiText text={"Limpiar filtros"} />{" "}</Button>
                         ) : (
                             <div className="flex justify-center gap-2.5">
                                 <Button size="sm" onClick={() => document.getElementById('watchlist-asset-search')?.focus()} className="market-action bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
-                                    <Plus size={16} /> Agregar activo
-                                </Button>
+                                    <Plus size={16} /> {" "}<FinixUiText text={"Agregar activo"} />{" "}</Button>
                                 <Button variant="outline" size="sm" onClick={() => navigate('/market')} className="market-action">
-                                    Explorar Mercado
-                                </Button>
+                                    {" "}<FinixUiText text={"Explorar Mercado"} />{" "}</Button>
                             </div>
                         )}
                     </div>
@@ -661,15 +652,15 @@ export default function WatchlistPage() {
                                                 className="rounded border-border/80 cursor-pointer w-4 h-4 accent-primary"
                                             />
                                         </th>
-                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Activo</th>
-                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Precio</th>
-                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Variación</th>
-                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Objetivo</th>
-                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Distancia</th>
-                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Alertas</th>
-                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Balance</th>
-                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">Estado</th>
-                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-right">Acciones</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">{""}<FinixUiText text={"Activo"} />{""}</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">{""}<FinixUiText text={"Precio"} />{""}</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">{""}<FinixUiText text={"Variación"} />{""}</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">{""}<FinixUiText text={"Objetivo"} />{""}</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">{""}<FinixUiText text={"Distancia"} />{""}</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">{""}<FinixUiText text={"Alertas"} />{""}</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">{""}<FinixUiText text={"Balance"} />{""}</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider">{""}<FinixUiText text={"Estado"} />{""}</th>
+                                        <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-right">{""}<FinixUiText text={"Acciones"} />{""}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/60">
@@ -704,8 +695,7 @@ export default function WatchlistPage() {
                                                                 </span>
                                                                 {item.isInPortfolio && (
                                                                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                                                        En cartera
-                                                                    </span>
+                                                                        {" "}<FinixUiText text={"En cartera"} />{" "}</span>
                                                                 )}
                                                             </div>
                                                             <span className="text-xs text-muted-foreground line-clamp-1">
@@ -720,7 +710,7 @@ export default function WatchlistPage() {
                                                     <span className="font-bold text-foreground text-base font-mono tabular-nums">
                                                         {Number.isFinite(item.currentPrice)
                                                             ? `$${item.currentPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                                            : <span className="text-sm text-muted-foreground font-normal">N/D</span>}
+                                                            : <span className="text-sm text-muted-foreground font-normal">{""}<FinixUiText text={"N/D"} />{""}</span>}
                                                     </span>
                                                 </td>
 
@@ -736,7 +726,7 @@ export default function WatchlistPage() {
                                                             ${item.targetPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-muted-foreground/60 text-xs italic">Sin definir</span>
+                                                        <span className="text-muted-foreground/60 text-xs italic">{""}<FinixUiText text={"Sin definir"} />{""}</span>
                                                     )}
                                                 </td>
 
@@ -753,12 +743,10 @@ export default function WatchlistPage() {
                                                 <td className="p-4">
                                                     {item.hasActiveAlert ? (
                                                         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                                            <Bell size={14} className="fill-current" /> Activa
-                                                        </span>
+                                                            <Bell size={14} className="fill-current" /> {" "}<FinixUiText text={"Activa"} />{" "}</span>
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/60">
-                                                            <BellOff size={14} /> Sin alerta
-                                                        </span>
+                                                            <BellOff size={14} /> {" "}<FinixUiText text={"Sin alerta"} />{" "}</span>
                                                     )}
                                                 </td>
 
@@ -784,7 +772,7 @@ export default function WatchlistPage() {
                                                         onClick={() => setSelectedItemForDrawer(item)}
                                                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground group-hover:text-primary hover:bg-secondary/60 transition-all"
                                                     >
-                                                        <span>Ver ficha</span>
+                                                        <span>{""}<FinixUiText text={"Ver ficha"} />{""}</span>
                                                         <ChevronRight size={14} />
                                                     </button>
                                                 </td>
@@ -798,8 +786,7 @@ export default function WatchlistPage() {
                         {/* Footer tabla */}
                         <div className="border-t border-border/60 bg-muted/20 px-5 py-3.5 flex items-center justify-between">
                             <span className="text-sm text-muted-foreground">
-                                <span className="font-bold text-foreground">{filteredItems.length}</span> activos
-                                {filteredItems.length !== totalItems && ` de ${totalItems}`}
+                                <span className="font-bold text-foreground">{filteredItems.length}</span> {" "}<FinixUiText text={"activos"} />{" "}{filteredItems.length !== totalItems && ` de ${totalItems}`}
                             </span>
                             <button
                                 type="button"
@@ -807,7 +794,7 @@ export default function WatchlistPage() {
                                 className="flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
                             >
                                 <Plus size={15} />
-                                <span>Agregar activo</span>
+                                <span>{""}<FinixUiText text={"Agregar activo"} />{""}</span>
                             </button>
                         </div>
                     </div>
@@ -835,8 +822,7 @@ export default function WatchlistPage() {
                                                     </span>
                                                     {item.isInPortfolio && (
                                                         <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                                            En cartera
-                                                        </span>
+                                                            {" "}<FinixUiText text={"En cartera"} />{" "}</span>
                                                     )}
                                                 </div>
                                                 <p className="text-xs text-muted-foreground truncate" title={item.name}>
@@ -856,8 +842,7 @@ export default function WatchlistPage() {
                                     <div className="my-3 py-2.5 px-3 rounded-xl bg-muted/40 border border-border/40 flex items-center justify-between">
                                         <div>
                                             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
-                                                Precio actual
-                                            </span>
+                                                {" "}<FinixUiText text={"Precio actual"} />{" "}</span>
                                             <span className="text-xl font-bold font-mono text-foreground tabular-nums">
                                                 {Number.isFinite(item.currentPrice)
                                                     ? `$${item.currentPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -872,15 +857,15 @@ export default function WatchlistPage() {
                                     {/* Metrics: Target & Distance */}
                                     <div className="grid grid-cols-2 gap-2 text-xs py-1">
                                         <div className="flex flex-col">
-                                            <span className="text-muted-foreground font-medium">Precio Objetivo</span>
+                                            <span className="text-muted-foreground font-medium">{""}<FinixUiText text={"Precio Objetivo"} />{""}</span>
                                             <span className="font-semibold text-foreground font-mono tabular-nums">
                                                 {item.targetPrice
                                                     ? `$${item.targetPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                                    : <span className="text-muted-foreground/60 italic font-normal">Sin definir</span>}
+                                                    : <span className="text-muted-foreground/60 italic font-normal">{""}<FinixUiText text={"Sin definir"} />{""}</span>}
                                             </span>
                                         </div>
                                         <div className="flex flex-col text-right">
-                                            <span className="text-muted-foreground font-medium">Distancia</span>
+                                            <span className="text-muted-foreground font-medium">{""}<FinixUiText text={"Distancia"} />{""}</span>
                                             <span className="font-semibold tabular-nums">
                                                 {distance !== null ? (
                                                     <span className={distance >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}>
@@ -901,15 +886,14 @@ export default function WatchlistPage() {
                                             </span>
                                             {item.nextEarnings?.date && (
                                                 <span className="text-[11px] truncate">
-                                                    Bal: {item.nextEarnings.date}
+                                                    {" "}<FinixUiText text={"Bal:"} />{" "}{item.nextEarnings.date}
                                                 </span>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {item.hasActiveAlert ? (
                                                 <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium text-[11px]">
-                                                    <Bell size={12} className="fill-current" /> Alerta
-                                                </span>
+                                                    <Bell size={12} className="fill-current" /> {" "}<FinixUiText text={"Alerta"} />{" "}</span>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1 text-muted-foreground/60 text-[11px]">
                                                     <BellOff size={12} />
@@ -933,11 +917,9 @@ export default function WatchlistPage() {
                             </div>
                             <div className="text-center">
                                 <span className="font-bold text-sm text-foreground block">
-                                    Agregar activo
-                                </span>
+                                    {" "}<FinixUiText text={"Agregar activo"} />{" "}</span>
                                 <span className="text-xs text-muted-foreground mt-0.5 block">
-                                    Sumá acciones o CEDEARs a esta lista
-                                </span>
+                                    {" "}<FinixUiText text={"Sumá acciones o CEDEARs a esta lista"} />{" "}</span>
                             </div>
                         </button>
                     </div>

@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { ResponsiveContainer, Tooltip as RechartsTooltip, Treemap } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -63,8 +64,8 @@ export function SectorTreemap({ data, className }: SectorTreemapProps) {
     return (
         <Card className={cn('border-border/70 bg-card/80 shadow-[0_24px_60px_rgba(15,23,42,0.08)]', className)}>
             <CardHeader>
-                <CardTitle className="text-lg">Asignacion por sector</CardTitle>
-                <CardDescription>Mapa de exposicion por sectores y tematicas</CardDescription>
+                <CardTitle className="text-lg">{""}<FinixUiText text={"Asignacion por sector"} />{""}</CardTitle>
+                <CardDescription>{""}<FinixUiText text={"Mapa de exposicion por sectores y tematicas"} />{""}</CardDescription>
             </CardHeader>
             <CardContent>
                 {data.length > 0 ? (
@@ -90,8 +91,7 @@ export function SectorTreemap({ data, className }: SectorTreemapProps) {
                     </div>
                 ) : (
                     <div className="flex h-[360px] items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/40 px-6 text-center text-sm text-muted-foreground">
-                        La exposicion sectorial aparecera cuando los activos puedan agruparse por sector o industria.
-                    </div>
+                        {" "}<FinixUiText text={"La exposicion sectorial aparecera cuando los activos puedan agruparse por sector o industria."} />{" "}</div>
                 )}
             </CardContent>
         </Card>

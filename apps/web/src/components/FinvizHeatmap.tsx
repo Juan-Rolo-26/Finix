@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useEffect, useMemo, useState } from 'react';
 import { ResponsiveContainer, Treemap } from 'recharts';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
@@ -319,8 +320,7 @@ export default function FinvizHeatmap({ onSelectSymbol }: FinvizHeatmapProps = {
             <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl border border-border/70 bg-card/60 backdrop-blur-xl">
                 <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mr-1">
-                        Período:
-                    </span>
+                        {" "}<FinixUiText text={"Período:"} />{" "}</span>
                     {subtypeOptions.map((option) => (
                         <Button
                             key={option.value}
@@ -336,10 +336,9 @@ export default function FinvizHeatmap({ onSelectSymbol }: FinvizHeatmapProps = {
 
                 <div className="flex items-center gap-3">
                     <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-500 font-bold px-3 py-1">
-                        Finviz S&P 500
-                    </Badge>
+                        {" "}<FinixUiText text={"Finviz S&P 500"} />{" "}</Badge>
                     <span className="text-xs font-semibold text-muted-foreground">
-                        Actualizado: {getUpdatedLabel(data?.updatedAt)}
+                        {" "}<FinixUiText text={"Actualizado:"} />{" "}{getUpdatedLabel(data?.updatedAt)}
                     </span>
                 </div>
             </div>
@@ -355,16 +354,14 @@ export default function FinvizHeatmap({ onSelectSymbol }: FinvizHeatmapProps = {
                     <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
                         <AlertTriangle className="h-10 w-10 text-amber-400" />
                         <p className="text-base font-semibold text-muted-foreground">
-                            No se pudo cargar el mapa de calor de Finviz ahora mismo.
-                        </p>
+                            {" "}<FinixUiText text={"No se pudo cargar el mapa de calor de Finviz ahora mismo."} />{" "}</p>
                         <a
                             href="https://finviz.com/map.ashx?t=sec"
                             target="_blank"
                             rel="noreferrer"
                             className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-2.5 text-sm font-bold text-emerald-400 hover:bg-emerald-500/20"
                         >
-                            Abrir Finviz
-                            <ExternalLink className="h-4 w-4" />
+                            {" "}<FinixUiText text={"Abrir Finviz"} />{" "}<ExternalLink className="h-4 w-4" />
                         </a>
                     </div>
                 )}
@@ -385,7 +382,7 @@ export default function FinvizHeatmap({ onSelectSymbol }: FinvizHeatmapProps = {
 
             <div className="grid gap-4 xl:grid-cols-3">
                 <div className="rounded-[20px] border border-border/70 bg-card/60 p-5 shadow-sm">
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Mayores subas</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{""}<FinixUiText text={"Mayores subas"} />{""}</p>
                     <div className="mt-4 space-y-3">
                         {gainers.slice(0, 5).map((ticker) => (
                             <div
@@ -401,7 +398,7 @@ export default function FinvizHeatmap({ onSelectSymbol }: FinvizHeatmapProps = {
                 </div>
 
                 <div className="rounded-[20px] border border-border/70 bg-card/60 p-5 shadow-sm">
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Mayores bajas</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{""}<FinixUiText text={"Mayores bajas"} />{""}</p>
                     <div className="mt-4 space-y-3">
                         {losers.slice(0, 5).map((ticker) => (
                             <div
@@ -417,22 +414,22 @@ export default function FinvizHeatmap({ onSelectSymbol }: FinvizHeatmapProps = {
                 </div>
 
                 <div className="rounded-[20px] border border-border/70 bg-card/60 p-5 shadow-sm">
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Panorama del mercado</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{""}<FinixUiText text={"Panorama del mercado"} />{""}</p>
                     <div className="mt-4 space-y-3 text-sm">
                         <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground font-medium">Sectores</span>
+                            <span className="text-muted-foreground font-medium">{""}<FinixUiText text={"Sectores"} />{""}</span>
                             <span className="font-extrabold text-foreground">{sectorCount}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground font-medium">Acciones analizadas</span>
+                            <span className="text-muted-foreground font-medium">{""}<FinixUiText text={"Acciones analizadas"} />{""}</span>
                             <span className="font-extrabold text-foreground">{data?.stats?.tickerCount || 0}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground font-medium">Capitalización total</span>
+                            <span className="text-muted-foreground font-medium">{""}<FinixUiText text={"Capitalización total"} />{""}</span>
                             <span className="font-extrabold text-foreground">{formatMarketCap(data?.stats?.totalMarketCap || 0)}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground font-medium">Amplitud de mercado</span>
+                            <span className="text-muted-foreground font-medium">{""}<FinixUiText text={"Amplitud de mercado"} />{""}</span>
                             <span className="font-black text-emerald-500">{marketBreadth}</span>
                         </div>
                     </div>

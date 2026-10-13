@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { Globe2, MapPin } from 'lucide-react';
 import {
     Select,
@@ -83,12 +84,11 @@ export default function LocationQuickSelect({
             </SelectTrigger>
             <SelectContent className="rounded-2xl border border-border/60 bg-card/95 backdrop-blur-sm">
                 <SelectGroup>
-                    <SelectLabel>Seleccion</SelectLabel>
+                    <SelectLabel>{""}<FinixUiText text={"Seleccion"} />{""}</SelectLabel>
                     <SelectItem value={CLEAR_LOCATION_VALUE}>
                         <span className="flex items-center gap-2">
                             <Globe2 className="h-4 w-4 text-primary" />
-                            Sin seleccionar
-                        </span>
+                            {" "}<FinixUiText text={"Sin seleccionar"} />{" "}</span>
                     </SelectItem>
                 </SelectGroup>
 
@@ -96,7 +96,7 @@ export default function LocationQuickSelect({
                     <>
                         <SelectSeparator />
                         <SelectGroup>
-                            <SelectLabel>Actual</SelectLabel>
+                            <SelectLabel>{""}<FinixUiText text={"Actual"} />{""}</SelectLabel>
                             <SelectItem value={currentValue}>
                                 <span className="flex items-center gap-2">
                                     {currentValue.includes(',') ? (
@@ -113,7 +113,7 @@ export default function LocationQuickSelect({
 
                 <SelectSeparator />
                 <SelectGroup>
-                    <SelectLabel>Sugeridas</SelectLabel>
+                    <SelectLabel>{""}<FinixUiText text={"Sugeridas"} />{""}</SelectLabel>
                     {uniqueQuickPicks.map((option) => (
                         <SelectItem key={option} value={option}>
                             <span className="flex items-center gap-2">
@@ -132,7 +132,7 @@ export default function LocationQuickSelect({
                     <>
                         <SelectSeparator />
                         <SelectGroup>
-                            <SelectLabel>Mas opciones</SelectLabel>
+                            <SelectLabel>{""}<FinixUiText text={"Mas opciones"} />{""}</SelectLabel>
                             {additionalSuggestions.map((option) => (
                                 <SelectItem key={option} value={option}>
                                     <span className="flex items-center gap-2">

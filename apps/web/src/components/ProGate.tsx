@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -406,8 +407,8 @@ export function ProGate({
                             </svg>
 
                             <div className="flex items-center justify-between text-xs text-muted-foreground/40 pt-2 border-t border-border/30">
-                                <span>Volumen institucional diario: •••••••</span>
-                                <span>RSI(14): •••• | MACD: Bullish | EMA 200: Soporte</span>
+                                <span>{""}<FinixUiText text={"Volumen institucional diario: •••••••"} />{""}</span>
+                                <span>{""}<FinixUiText text={"RSI(14): •••• | MACD: Bullish | EMA 200: Soporte"} />{""}</span>
                             </div>
                         </div>
 
@@ -431,11 +432,11 @@ export function ProGate({
                                     <div className="flex items-center gap-6">
                                         <div className="text-right filter blur-[2px]">
                                             <p className="font-bold text-sm text-foreground/70">{item.price}</p>
-                                            <p className="text-[11px] text-muted-foreground/60">Precio Mercado</p>
+                                            <p className="text-[11px] text-muted-foreground/60">{""}<FinixUiText text={"Precio Mercado"} />{""}</p>
                                         </div>
                                         <div className="text-right filter blur-[2px] hidden sm:block">
                                             <p className="font-bold text-sm text-emerald-400/70">{item.fair}</p>
-                                            <p className="text-[11px] text-muted-foreground/60">Fair Value DCF</p>
+                                            <p className="text-[11px] text-muted-foreground/60">{""}<FinixUiText text={"Fair Value DCF"} />{""}</p>
                                         </div>
                                         <span className="px-2.5 py-1 rounded-md text-xs font-black bg-emerald-500/10 text-emerald-400/80 border border-emerald-500/20 filter blur-[1px]">
                                             {item.rec}
@@ -466,7 +467,7 @@ export function ProGate({
                 transition={{ duration: 0.4, ease: 'easeOut' }}
                 className="relative z-20 w-full max-w-xl mx-auto rounded-3xl sm:rounded-[2.5rem] bg-card dark:bg-card backdrop-blur-2xl border border-primary/35 shadow-[0_0_60px_-15px_rgba(16,185,129,0.25)] p-5 sm:p-8 text-center my-auto"
             >
-                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">Vista de ejemplo de las herramientas. No son cotizaciones ni resultados de tu cuenta.</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">{""}<FinixUiText text={"Vista de ejemplo de las herramientas. No son cotizaciones ni resultados de tu cuenta."} />{""}</p>
                 {/* Header Badge */}
                 <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30 mb-3 sm:mb-5 shadow-xs">
                     <Crown className="w-3.5 h-3.5 text-primary" />
@@ -493,8 +494,8 @@ export function ProGate({
                 {/* Section-Specific Key Benefits List */}
                 <div className="bg-secondary/40 border border-border/60 rounded-2xl p-3.5 sm:p-5 mb-4 sm:mb-5 text-left space-y-2.5 sm:space-y-3">
                     <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between pb-1 border-b border-border/50">
-                        <span>Herramientas activas en esta sección:</span>
-                        <span className="text-emerald-500 font-extrabold">FINIX PRO</span>
+                        <span>{""}<FinixUiText text={"Herramientas activas en esta sección:"} />{""}</span>
+                        <span className="text-emerald-500 font-extrabold">{""}<FinixUiText text={"FINIX PRO"} />{""}</span>
                     </div>
 
                     {displayFeatures.map((item, i) => (

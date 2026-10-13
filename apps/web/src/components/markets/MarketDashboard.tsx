@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { MarketDashboardGrid } from './MarketDashboardGrid';
 import {
     Activity,
@@ -324,7 +326,7 @@ function DollarTile({ item }: { item: MarketDollarRate }) {
 
             <div className="dollar-card__rates">
                 <div className="dollar-card__rate-box">
-                    <span className="dollar-card__rate-label">Compra</span>
+                    <span className="dollar-card__rate-label">{""}<FinixUiText text={"Compra"} />{""}</span>
                     <span className="dollar-card__rate-val">
                         {formatCurrency(item.buy, 'ARS')}
                     </span>
@@ -332,8 +334,7 @@ function DollarTile({ item }: { item: MarketDollarRate }) {
                 <div className="dollar-card__divider" />
                 <div className="dollar-card__rate-box dollar-card__rate-box--sell">
                     <span className="dollar-card__rate-label dollar-card__rate-label--sell">
-                        Venta
-                    </span>
+                        {" "}<FinixUiText text={"Venta"} />{" "}</span>
                     <span className="dollar-card__rate-val dollar-card__rate-val--sell">
                         {formatCurrency(item.sell, 'ARS')}
                     </span>
@@ -346,7 +347,7 @@ function DollarTile({ item }: { item: MarketDollarRate }) {
                     {formatRelativeTime(item.updatedAt)}
                 </span>
                 <span className="dollar-card__spread">
-                    Spread {spreadFormatted}%
+                    {" "}<FinixUiText text={"Spread"} />{" "}{spreadFormatted}%
                 </span>
             </div>
         </article>
@@ -380,7 +381,7 @@ function SectionCard({
                 ))}
             </MarketDashboardGrid>
             {!items.length && (
-                <p className="market-empty">Sin cotizaciones disponibles.</p>
+                <p className="market-empty">{""}<FinixUiText text={"Sin cotizaciones disponibles."} />{""}</p>
             )}
         </section>
     );
@@ -392,12 +393,14 @@ export default function MarketDashboard({
     onSelectSymbol,
     onRefresh,
 }: MarketDashboardProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     if (loading && !data)
         return (
             <div className="market-section">
                 <MarketDashboardGrid
                     role="status"
-                    aria-label="Cargando mercado"
+                    aria-label={finixUi("Cargando mercado")}
                 >
                     {Array.from({ length: 6 }, (_, index) => (
                         <div
@@ -411,13 +414,13 @@ export default function MarketDashboard({
     if (!data)
         return (
             <div className="market-empty">
-                <p>No pudimos cargar las cotizaciones.</p>
+                <p>{""}<FinixUiText text={"No pudimos cargar las cotizaciones."} />{""}</p>
                 {onRefresh && (
                     <button
                         type="button"
                         className="market-icon-action mt-4"
-                        title="Reintentar"
-                        aria-label="Reintentar"
+                        title={finixUi("Reintentar")}
+                        aria-label={finixUi("Reintentar")}
                         onClick={onRefresh}
                     >
                         <RotateCw size={17} />
@@ -430,7 +433,7 @@ export default function MarketDashboard({
     return (
         <div className="market-section">
             <MarketHeader
-                title="Resumen de mercado"
+                title={finixUi("Resumen de mercado")}
                 eyebrow="COTIZACIONES · FINIX"
                 icon={Activity}
                 description={`Actualizado ${formatRelativeTime(data.updatedAt).toLowerCase()}`}
@@ -441,8 +444,8 @@ export default function MarketDashboard({
                             className="market-icon-action"
                             onClick={onRefresh}
                             disabled={loading}
-                            title="Actualizar cotizaciones"
-                            aria-label="Actualizar cotizaciones"
+                            title={finixUi("Actualizar cotizaciones")}
+                            aria-label={finixUi("Actualizar cotizaciones")}
                         >
                             <RotateCw
                                 size={17}
@@ -457,43 +460,37 @@ export default function MarketDashboard({
                     <article className="market-card">
                         <h2 className="market-card__title">
                             <Activity size={17} />
-                            Pulso del mercado
-                        </h2>
+                            {" "}<FinixUiText text={"Pulso del mercado"} />{" "}</h2>
                         <p className="market-card__value">{data.pulse.label}</p>
                         <p className="market-card__detail">
                             {data.pulse.summary}
                         </p>
                         <div className="market-quote-card__footer mt-5">
                             <span className="premarket-positive">
-                                {data.pulse.advancing} en alza
-                            </span>
+                                {data.pulse.advancing} {" "}<FinixUiText text={"en alza"} />{" "}</span>
                             <span className="premarket-negative">
-                                {data.pulse.declining} en baja
-                            </span>
-                            <span>{data.pulse.unchanged} neutros</span>
+                                {data.pulse.declining} {" "}<FinixUiText text={"en baja"} />{" "}</span>
+                            <span>{data.pulse.unchanged} {" "}<FinixUiText text={"neutros"} />{""}</span>
                         </div>
                     </article>
                     <article className="market-card">
                         <h2 className="market-card__title">
                             <DollarSign size={17} />
-                            Brecha cambiaria
-                        </h2>
+                            {" "}<FinixUiText text={"Brecha cambiaria"} />{" "}</h2>
                         <p className="market-card__value">
                             {data.currencyGap
                                 ? formatChange(data.currencyGap.gapPct)
                                 : 'Sin datos'}
                         </p>
                         <p className="market-card__detail">
-                            Dólar blue vs. oficial
-                        </p>
+                            {" "}<FinixUiText text={"Dólar blue vs. oficial"} />{" "}</p>
                         {data.currencyGap && (
                             <p className="market-card__detail mt-3">
                                 {formatCurrency(
                                     data.currencyGap.gapValue,
                                     'ARS',
                                 )}{' '}
-                                de diferencia
-                            </p>
+                                {" "}<FinixUiText text={"de diferencia"} />{" "}</p>
                         )}
                     </article>
                     {topGainer ? (
@@ -506,11 +503,9 @@ export default function MarketDashboard({
                         <article className="market-card">
                             <h2 className="market-card__title">
                                 <TrendingUp size={17} />
-                                Mejor rendimiento
-                            </h2>
+                                {" "}<FinixUiText text={"Mejor rendimiento"} />{" "}</h2>
                             <p className="market-card__detail mt-5">
-                                Sin datos.
-                            </p>
+                                {" "}<FinixUiText text={"Sin datos."} />{" "}</p>
                         </article>
                     )}
                     {topCommunity ? (
@@ -535,19 +530,16 @@ export default function MarketDashboard({
                         <article className="market-card">
                             <h2 className="market-card__title">
                                 <Users size={17} />
-                                Radar Finix
-                            </h2>
+                                {" "}<FinixUiText text={"Radar Finix"} />{" "}</h2>
                             <p className="market-card__detail mt-5">
-                                Todavía no hay suficiente conversación para
-                                armar el radar social.
-                            </p>
+                                {" "}<FinixUiText text={"Todavía no hay suficiente conversación para armar el radar social."} />{" "}</p>
                         </article>
                     )}
                 </MarketDashboardGrid>
                 {data.dollars.length > 0 && (
                     <section>
                         <MarketSectionTitle
-                            title="Dólar hoy"
+                            title={finixUi("Dólar hoy")}
                             icon={DollarSign}
                             count={`${data.dollars.length} referencias`}
                         />
@@ -561,7 +553,7 @@ export default function MarketDashboard({
                 {data.leaders.gainers.length > 0 && (
                     <section>
                         <MarketSectionTitle
-                            title="Mayores subas"
+                            title={finixUi("Mayores subas")}
                             icon={TrendingUp}
                         />
                         <MarketDashboardGrid>
@@ -578,7 +570,7 @@ export default function MarketDashboard({
                 {data.leaders.losers.length > 0 && (
                     <section>
                         <MarketSectionTitle
-                            title="Mayores bajas"
+                            title={finixUi("Mayores bajas")}
                             icon={TrendingDown}
                         />
                         <MarketDashboardGrid>

@@ -5,4 +5,3 @@ async function main() {
     console.log('All communities and relations truncated.');
 }
 main().catch(console.error).finally(() => prisma.$disconnect());
-jhfj

@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useState } from 'react';
 import {
     TrendingUp,
@@ -22,8 +23,8 @@ export function TrendWidget() {
                         <TrendingUp className="w-5 h-5" />
                     </div>
                     <div>
-                        <h4 className="text-sm font-bold text-foreground">Simulador de Estructura de Tendencia</h4>
-                        <p className="text-xs text-muted-foreground">Acción del precio y sucesión de máximos y mínimos</p>
+                        <h4 className="text-sm font-bold text-foreground">{""}<FinixUiText text={"Simulador de Estructura de Tendencia"} />{""}</h4>
+                        <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Acción del precio y sucesión de máximos y mínimos"} />{""}</p>
                     </div>
                 </div>
 
@@ -35,8 +36,7 @@ export function TrendWidget() {
                             mode === 'UP' ? 'bg-emerald-500 text-white shadow-xs' : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        Alcista (Uptrend)
-                    </button>
+                        {" "}<FinixUiText text={"Alcista (Uptrend)"} />{" "}</button>
                     <button
                         type="button"
                         onClick={() => setMode('DOWN')}
@@ -44,8 +44,7 @@ export function TrendWidget() {
                             mode === 'DOWN' ? 'bg-rose-500 text-white shadow-xs' : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        Bajista (Downtrend)
-                    </button>
+                        {" "}<FinixUiText text={"Bajista (Downtrend)"} />{" "}</button>
                     <button
                         type="button"
                         onClick={() => setMode('SIDEWAYS')}
@@ -53,8 +52,7 @@ export function TrendWidget() {
                             mode === 'SIDEWAYS' ? 'bg-secondary text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        Lateral (Rango)
-                    </button>
+                        {" "}<FinixUiText text={"Lateral (Rango)"} />{" "}</button>
                 </div>
             </div>
 
@@ -80,19 +78,19 @@ export function TrendWidget() {
                             />
                             {/* Key points with badges */}
                             <circle cx="130" cy="110" r="5" fill="#10b981" />
-                            <text x="130" y="95" textAnchor="middle" fill="currentColor" className="text-[11px] font-black fill-primary">HH1</text>
+                            <text x="130" y="95" textAnchor="middle" fill="currentColor" className="text-[11px] font-black fill-primary">{""}<FinixUiText text={"HH1"} />{""}</text>
 
                             <circle cx="220" cy="140" r="5" fill="#10b981" />
-                            <text x="220" y="160" textAnchor="middle" fill="currentColor" className="text-[11px] font-black fill-primary">HL1</text>
+                            <text x="220" y="160" textAnchor="middle" fill="currentColor" className="text-[11px] font-black fill-primary">{""}<FinixUiText text={"HL1"} />{""}</text>
 
                             <circle cx="320" cy="65" r="5" fill="#10b981" />
-                            <text x="320" y="50" textAnchor="middle" fill="currentColor" className="text-[11px] font-black fill-primary">HH2</text>
+                            <text x="320" y="50" textAnchor="middle" fill="currentColor" className="text-[11px] font-black fill-primary">{""}<FinixUiText text={"HH2"} />{""}</text>
 
                             <circle cx="420" cy="105" r="5" fill="#10b981" />
-                            <text x="420" y="125" textAnchor="middle" fill="currentColor" className="text-[11px] font-black fill-primary">HL2</text>
+                            <text x="420" y="125" textAnchor="middle" fill="currentColor" className="text-[11px] font-black fill-primary">{""}<FinixUiText text={"HL2"} />{""}</text>
 
                             <circle cx="520" cy="35" r="5" fill="#10b981" />
-                            <text x="520" y="20" textAnchor="middle" fill="currentColor" className="text-[11px] font-black fill-primary">HH3</text>
+                            <text x="520" y="20" textAnchor="middle" fill="currentColor" className="text-[11px] font-black fill-primary">{""}<FinixUiText text={"HH3"} />{""}</text>
                         </>
                     )}
 
@@ -110,16 +108,16 @@ export function TrendWidget() {
                             />
                             {/* Points */}
                             <circle cx="130" cy="120" r="5" fill="#f43f5e" />
-                            <text x="130" y="140" textAnchor="middle" className="text-[11px] font-black fill-rose-500">LH1</text>
+                            <text x="130" y="140" textAnchor="middle" className="text-[11px] font-black fill-rose-500">{""}<FinixUiText text={"LH1"} />{""}</text>
 
                             <circle cx="220" cy="80" r="5" fill="#f43f5e" />
-                            <text x="220" y="65" textAnchor="middle" className="text-[11px] font-black fill-rose-500">LL1</text>
+                            <text x="220" y="65" textAnchor="middle" className="text-[11px] font-black fill-rose-500">{""}<FinixUiText text={"LL1"} />{""}</text>
 
                             <circle cx="320" cy="155" r="5" fill="#f43f5e" />
-                            <text x="320" y="175" textAnchor="middle" className="text-[11px] font-black fill-rose-500">LH2</text>
+                            <text x="320" y="175" textAnchor="middle" className="text-[11px] font-black fill-rose-500">{""}<FinixUiText text={"LH2"} />{""}</text>
 
                             <circle cx="420" cy="115" r="5" fill="#f43f5e" />
-                            <text x="420" y="100" textAnchor="middle" className="text-[11px] font-black fill-rose-500">LL2</text>
+                            <text x="420" y="100" textAnchor="middle" className="text-[11px] font-black fill-rose-500">{""}<FinixUiText text={"LL2"} />{""}</text>
                         </>
                     )}
 
@@ -127,10 +125,10 @@ export function TrendWidget() {
                         <>
                             {/* Range Resistance & Support */}
                             <line x1="20" y1="60" x2="580" y2="60" stroke="#f43f5e" strokeWidth="2" strokeDasharray="5 5" />
-                            <text x="50" y="50" className="text-[10px] font-bold fill-rose-500">RESISTENCIA (Techo)</text>
+                            <text x="50" y="50" className="text-[10px] font-bold fill-rose-500">{""}<FinixUiText text={"RESISTENCIA (Techo)"} />{""}</text>
 
                             <line x1="20" y1="160" x2="580" y2="160" stroke="#10b981" strokeWidth="2" strokeDasharray="5 5" />
-                            <text x="50" y="180" className="text-[10px] font-bold fill-emerald-500">SOPORTE (Suelo)</text>
+                            <text x="50" y="180" className="text-[10px] font-bold fill-emerald-500">{""}<FinixUiText text={"SOPORTE (Suelo)"} />{""}</text>
 
                             <path
                                 d="M 40 150 Q 80 60, 120 70 T 200 155 T 290 65 T 380 158 T 470 65 L 550 140"
@@ -147,18 +145,15 @@ export function TrendWidget() {
             <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 text-xs leading-relaxed text-muted-foreground">
                 {mode === 'UP' && (
                     <p>
-                        <strong className="text-foreground">Estructura Alcista:</strong> Cada máximo supera al anterior (<strong>Higher High - HH</strong>) y cada corrección frena por encima del piso anterior (<strong>Higher Low - HL</strong>). La tendencia sigue intacta mientras el precio respete el último HL.
-                    </p>
+                        <strong className="text-foreground">{""}<FinixUiText text={"Estructura Alcista:"} />{""}</strong> {" "}<FinixUiText text={"Cada máximo supera al anterior ("} />{""}<strong>{""}<FinixUiText text={"Higher High - HH"} />{""}</strong>{""}<FinixUiText text={") y cada corrección frena por encima del piso anterior ("} />{""}<strong>{""}<FinixUiText text={"Higher Low - HL"} />{""}</strong>{""}<FinixUiText text={"). La tendencia sigue intacta mientras el precio respete el último HL."} />{" "}</p>
                 )}
                 {mode === 'DOWN' && (
                     <p>
-                        <strong className="text-foreground">Estructura Bajista:</strong> Se forman máximos descendentes (<strong>Lower High - LH</strong>) y nuevos mínimos cada vez más bajos (<strong>Lower Low - LL</strong>). La presión de los vendedores predomina.
-                    </p>
+                        <strong className="text-foreground">{""}<FinixUiText text={"Estructura Bajista:"} />{""}</strong> {" "}<FinixUiText text={"Se forman máximos descendentes ("} />{""}<strong>{""}<FinixUiText text={"Lower High - LH"} />{""}</strong>{""}<FinixUiText text={") y nuevos mínimos cada vez más bajos ("} />{""}<strong>{""}<FinixUiText text={"Lower Low - LL"} />{""}</strong>{""}<FinixUiText text={"). La presión de los vendedores predomina."} />{" "}</p>
                 )}
                 {mode === 'SIDEWAYS' && (
                     <p>
-                        <strong className="text-foreground">Estructura Lateral:</strong> El precio oscila entre un soporte y una resistencia sin definir nuevos extremos. Corresponde a etapas de acumulación o distribución institucional antes de la ruptura.
-                    </p>
+                        <strong className="text-foreground">{""}<FinixUiText text={"Estructura Lateral:"} />{""}</strong> {" "}<FinixUiText text={"El precio oscila entre un soporte y una resistencia sin definir nuevos extremos. Corresponde a etapas de acumulación o distribución institucional antes de la ruptura."} />{" "}</p>
                 )}
             </div>
         </div>
@@ -180,8 +175,8 @@ export function RsiWidget() {
                         <Activity className="w-5 h-5" />
                     </div>
                     <div>
-                        <h4 className="text-sm font-bold text-foreground">Simulador Interactivo de RSI (14 Períodos)</h4>
-                        <p className="text-xs text-muted-foreground">Deslizá el control para ver cómo reacciona el oscilador</p>
+                        <h4 className="text-sm font-bold text-foreground">{""}<FinixUiText text={"Simulador Interactivo de RSI (14 Períodos)"} />{""}</h4>
+                        <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Deslizá el control para ver cómo reacciona el oscilador"} />{""}</p>
                     </div>
                 </div>
 
@@ -194,9 +189,9 @@ export function RsiWidget() {
             {/* Slider Control */}
             <div className="space-y-1">
                 <div className="flex justify-between text-[11px] font-semibold text-muted-foreground">
-                    <span>Sobreventa extrema (0)</span>
-                    <span>Neutro (50)</span>
-                    <span>Sobrecompra extrema (100)</span>
+                    <span>{""}<FinixUiText text={"Sobreventa extrema (0)"} />{""}</span>
+                    <span>{""}<FinixUiText text={"Neutro (50)"} />{""}</span>
+                    <span>{""}<FinixUiText text={"Sobrecompra extrema (100)"} />{""}</span>
                 </div>
                 <input
                     type="range"
@@ -212,16 +207,13 @@ export function RsiWidget() {
             <div className="relative h-9 w-full rounded-xl bg-muted/40 border border-border overflow-hidden flex items-center">
                 {/* Zone 0-30: Oversold */}
                 <div className="h-full bg-emerald-500/20 border-r border-emerald-500/40 flex items-center justify-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400" style={{ width: '30%' }}>
-                    Sobreventa (&lt; 30)
-                </div>
+                    {" "}<FinixUiText text={"Sobreventa (&lt; 30)"} />{" "}</div>
                 {/* Zone 30-70: Neutral */}
                 <div className="h-full bg-muted/30 flex items-center justify-center text-[10px] font-medium text-muted-foreground" style={{ width: '40%' }}>
-                    Zona Neutra (30 - 70)
-                </div>
+                    {" "}<FinixUiText text={"Zona Neutra (30 - 70)"} />{" "}</div>
                 {/* Zone 70-100: Overbought */}
                 <div className="h-full bg-rose-500/20 border-l border-rose-500/40 flex items-center justify-center text-[10px] font-bold text-rose-600 dark:text-rose-400" style={{ width: '30%' }}>
-                    Sobrecompra (&gt; 70)
-                </div>
+                    {" "}<FinixUiText text={"Sobrecompra (&gt; 70)"} />{" "}</div>
 
                 {/* Needle */}
                 <div
@@ -233,18 +225,15 @@ export function RsiWidget() {
             <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 text-xs text-muted-foreground leading-relaxed">
                 {rsiValue >= 70 && (
                     <p>
-                        ⚠️ <strong>Lectura de Sobrecompra ({rsiValue}):</strong> El precio subió con fuerza reciente. Los compradores pueden comenzar a tomar ganancias. En tendencias fuertes el RSI puede mantenerse en sobrecompra, pero aumenta el riesgo de consolidación.
-                    </p>
+                        ⚠️ <strong>{""}<FinixUiText text={"Lectura de Sobrecompra ("} />{""}{rsiValue}):</strong> {" "}<FinixUiText text={"El precio subió con fuerza reciente. Los compradores pueden comenzar a tomar ganancias. En tendencias fuertes el RSI puede mantenerse en sobrecompra, pero aumenta el riesgo de consolidación."} />{" "}</p>
                 )}
                 {rsiValue <= 30 && (
                     <p>
-                        🟢 <strong>Lectura de Sobreventa ({rsiValue}):</strong> El activo sufrió ventas intensas. Si confluye con un soporte clave de precio, la probabilidad de un rebote técnico alcista se incrementa.
-                    </p>
+                        🟢 <strong>{""}<FinixUiText text={"Lectura de Sobreventa ("} />{""}{rsiValue}):</strong> {" "}<FinixUiText text={"El activo sufrió ventas intensas. Si confluye con un soporte clave de precio, la probabilidad de un rebote técnico alcista se incrementa."} />{" "}</p>
                 )}
                 {rsiValue > 30 && rsiValue < 70 && (
                     <p>
-                        ℹ️ <strong>Zona Neutra ({rsiValue}):</strong> El momentum no se encuentra en extremos. La superación de 50 hacia arriba confirma control comprador; por debajo de 50, predominio de la oferta.
-                    </p>
+                        ℹ️ <strong>{""}<FinixUiText text={"Zona Neutra ("} />{""}{rsiValue}):</strong> {" "}<FinixUiText text={"El momentum no se encuentra en extremos. La superación de 50 hacia arriba confirma control comprador; por debajo de 50, predominio de la oferta."} />{" "}</p>
                 )}
             </div>
         </div>
@@ -263,8 +252,8 @@ export function MacdWidget() {
                         <Activity className="w-5 h-5" />
                     </div>
                     <div>
-                        <h4 className="text-sm font-bold text-foreground">Anatomía del MACD (12, 26, 9)</h4>
-                        <p className="text-xs text-muted-foreground">Línea MACD, Línea de Señal e Histograma</p>
+                        <h4 className="text-sm font-bold text-foreground">{""}<FinixUiText text={"Anatomía del MACD (12, 26, 9)"} />{""}</h4>
+                        <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Línea MACD, Línea de Señal e Histograma"} />{""}</p>
                     </div>
                 </div>
 
@@ -276,8 +265,7 @@ export function MacdWidget() {
                             crossType === 'BULL' ? 'bg-emerald-500 text-white shadow-xs' : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        Cruce Alcista (Compra)
-                    </button>
+                        {" "}<FinixUiText text={"Cruce Alcista (Compra)"} />{" "}</button>
                     <button
                         type="button"
                         onClick={() => setCrossType('BEAR')}
@@ -285,8 +273,7 @@ export function MacdWidget() {
                             crossType === 'BEAR' ? 'bg-rose-500 text-white shadow-xs' : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        Cruce Bajista (Venta)
-                    </button>
+                        {" "}<FinixUiText text={"Cruce Bajista (Venta)"} />{" "}</button>
                 </div>
             </div>
 
@@ -294,7 +281,7 @@ export function MacdWidget() {
                 <svg className="w-full h-full" viewBox="0 0 500 140" preserveAspectRatio="none">
                     {/* Zero Line */}
                     <line x1="0" y1="70" x2="500" y2="70" stroke="currentColor" strokeWidth="1.5" className="text-border" />
-                    <text x="10" y="65" className="text-[10px] font-bold fill-muted-foreground">Línea Cero (0.0)</text>
+                    <text x="10" y="65" className="text-[10px] font-bold fill-muted-foreground">{""}<FinixUiText text={"Línea Cero (0.0)"} />{""}</text>
 
                     {/* Histogram bars */}
                     {crossType === 'BULL' ? (
@@ -316,7 +303,7 @@ export function MacdWidget() {
 
                             {/* Signal marker */}
                             <circle cx="190" cy="70" r="6" fill="#10b981" />
-                            <text x="190" y="95" textAnchor="middle" className="text-[10px] font-black fill-emerald-500">CRUCE ALCISTA</text>
+                            <text x="190" y="95" textAnchor="middle" className="text-[10px] font-black fill-emerald-500">{""}<FinixUiText text={"CRUCE ALCISTA"} />{""}</text>
                         </>
                     ) : (
                         <>
@@ -335,7 +322,7 @@ export function MacdWidget() {
 
                             {/* Signal marker */}
                             <circle cx="190" cy="70" r="6" fill="#f43f5e" />
-                            <text x="190" y="55" textAnchor="middle" className="text-[10px] font-black fill-rose-500">CRUCE BAJISTA</text>
+                            <text x="190" y="55" textAnchor="middle" className="text-[10px] font-black fill-rose-500">{""}<FinixUiText text={"CRUCE BAJISTA"} />{""}</text>
                         </>
                     )}
                 </svg>
@@ -343,14 +330,11 @@ export function MacdWidget() {
 
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5 font-semibold text-sky-500">
-                    <span className="w-3 h-1 bg-sky-500 rounded-full" /> Línea MACD (Rápida: EMA 12 - 26)
-                </span>
+                    <span className="w-3 h-1 bg-sky-500 rounded-full" /> {" "}<FinixUiText text={"Línea MACD (Rápida: EMA 12 - 26)"} />{" "}</span>
                 <span className="flex items-center gap-1.5 font-semibold text-amber-500">
-                    <span className="w-3 h-1 bg-amber-500 rounded-full" /> Línea de Señal (Lenta: EMA 9)
-                </span>
+                    <span className="w-3 h-1 bg-amber-500 rounded-full" /> {" "}<FinixUiText text={"Línea de Señal (Lenta: EMA 9)"} />{" "}</span>
                 <span className="flex items-center gap-1.5 font-semibold text-foreground">
-                    <span className="w-2 h-2 bg-emerald-500 rounded-xs" /> Histograma (Diferencia)
-                </span>
+                    <span className="w-2 h-2 bg-emerald-500 rounded-xs" /> {" "}<FinixUiText text={"Histograma (Diferencia)"} />{" "}</span>
             </div>
         </div>
     );
@@ -372,15 +356,14 @@ export function RoicWaccWidget() {
                         <Scale className="w-5 h-5" />
                     </div>
                     <div>
-                        <h4 className="text-sm font-bold text-foreground">Simulador de Creación de Valor: ROIC vs WACC</h4>
-                        <p className="text-xs text-muted-foreground">Medí si un negocio enriquece o destruye el patrimonio del inversor</p>
+                        <h4 className="text-sm font-bold text-foreground">{""}<FinixUiText text={"Simulador de Creación de Valor: ROIC vs WACC"} />{""}</h4>
+                        <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Medí si un negocio enriquece o destruye el patrimonio del inversor"} />{""}</p>
                     </div>
                 </div>
 
                 <div className="text-right">
                     <div className={`text-xl font-black font-mono ${isCreating ? 'text-emerald-500' : 'text-rose-500'}`}>
-                        Spread: {Number(spread) > 0 ? `+${spread}` : spread} pp
-                    </div>
+                        {" "}<FinixUiText text={"Spread:"} />{" "}{Number(spread) > 0 ? `+${spread}` : spread} {" "}<FinixUiText text={"pp"} />{" "}</div>
                     <div className={`text-[11px] font-bold ${isCreating ? 'text-emerald-500' : 'text-rose-500'}`}>
                         {isCreating ? 'CREA VALOR ECONÓMICO' : 'DESTRUYE VALOR'}
                     </div>
@@ -390,7 +373,7 @@ export function RoicWaccWidget() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5 p-3.5 rounded-xl bg-background/60 border border-border">
                     <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-foreground">ROIC (Retorno del Capital)</span>
+                        <span className="text-foreground">{""}<FinixUiText text={"ROIC (Retorno del Capital)"} />{""}</span>
                         <span className="text-emerald-500 font-bold">{roic}%</span>
                     </div>
                     <input
@@ -406,7 +389,7 @@ export function RoicWaccWidget() {
 
                 <div className="space-y-1.5 p-3.5 rounded-xl bg-background/60 border border-border">
                     <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-foreground">WACC (Costo Medio de Capital)</span>
+                        <span className="text-foreground">{""}<FinixUiText text={"WACC (Costo Medio de Capital)"} />{""}</span>
                         <span className="text-amber-500 font-bold">{wacc}%</span>
                     </div>
                     <input
@@ -425,8 +408,8 @@ export function RoicWaccWidget() {
             <div className="p-4 rounded-xl bg-muted/30 border border-border/60 space-y-3">
                 <div className="space-y-1">
                     <div className="flex justify-between text-xs font-bold text-foreground">
-                        <span>ROIC: {roic}%</span>
-                        <span className="text-muted-foreground">Retorno Operativo</span>
+                        <span>{""}<FinixUiText text={"ROIC:"} />{" "}{roic}%</span>
+                        <span className="text-muted-foreground">{""}<FinixUiText text={"Retorno Operativo"} />{""}</span>
                     </div>
                     <div className="w-full h-3 rounded-full bg-muted overflow-hidden">
                         <div
@@ -438,8 +421,8 @@ export function RoicWaccWidget() {
 
                 <div className="space-y-1">
                     <div className="flex justify-between text-xs font-bold text-foreground">
-                        <span>WACC: {wacc}%</span>
-                        <span className="text-muted-foreground">Costo de Financiamiento</span>
+                        <span>{""}<FinixUiText text={"WACC:"} />{" "}{wacc}%</span>
+                        <span className="text-muted-foreground">{""}<FinixUiText text={"Costo de Financiamiento"} />{""}</span>
                     </div>
                     <div className="w-full h-3 rounded-full bg-muted overflow-hidden">
                         <div
@@ -453,12 +436,10 @@ export function RoicWaccWidget() {
             <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 text-xs text-muted-foreground leading-relaxed">
                 {isCreating ? (
                     <p>
-                        🟢 <strong>Creación genuina de valor:</strong> Por cada US$ 100 invertidos en el negocio, la empresa obtiene un retorno de US$ {roic}, mientras que el costo de financiarse es de solo US$ {wacc}. El excedente de <strong>US$ {spread}</strong> va directo a capitalizar al accionista.
-                    </p>
+                        🟢 <strong>{""}<FinixUiText text={"Creación genuina de valor:"} />{""}</strong> {" "}<FinixUiText text={"Por cada US$ 100 invertidos en el negocio, la empresa obtiene un retorno de US$"} />{" "}{roic}{""}<FinixUiText text={", mientras que el costo de financiarse es de solo US$"} />{" "}{wacc}{""}<FinixUiText text={". El excedente de"} />{" "}<strong>{""}<FinixUiText text={"US$"} />{" "}{spread}</strong> {" "}<FinixUiText text={"va directo a capitalizar al accionista."} />{" "}</p>
                 ) : (
                     <p>
-                        🔴 <strong>Destrucción de valor:</strong> Aunque la compañía registre ganancias contables en su balance, su rentabilidad ({roic}%) es inferior a lo que cuesta conseguir el dinero ({wacc}%). Cada reinversión empobrece al negocio.
-                    </p>
+                        🔴 <strong>{""}<FinixUiText text={"Destrucción de valor:"} />{""}</strong> {" "}<FinixUiText text={"Aunque la compañía registre ganancias contables en su balance, su rentabilidad ("} />{""}{roic}{""}<FinixUiText text={"%) es inferior a lo que cuesta conseguir el dinero ("} />{""}{wacc}{""}<FinixUiText text={"%). Cada reinversión empobrece al negocio."} />{" "}</p>
                 )}
             </div>
         </div>
@@ -477,8 +458,8 @@ export function CandlesWidget() {
                         <Layers className="w-5 h-5" />
                     </div>
                     <div>
-                        <h4 className="text-sm font-bold text-foreground">Anatomía y Patrones de Velas Japonesas</h4>
-                        <p className="text-xs text-muted-foreground">Apertura, Cierre, Máximos, Mínimos y Psicología</p>
+                        <h4 className="text-sm font-bold text-foreground">{""}<FinixUiText text={"Anatomía y Patrones de Velas Japonesas"} />{""}</h4>
+                        <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Apertura, Cierre, Máximos, Mínimos y Psicología"} />{""}</p>
                     </div>
                 </div>
 
@@ -488,29 +469,25 @@ export function CandlesWidget() {
                         onClick={() => setPattern('HAMMER')}
                         className={`px-2.5 py-1.5 rounded-lg transition-all ${pattern === 'HAMMER' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
                     >
-                        Martillo (Hammer)
-                    </button>
+                        {" "}<FinixUiText text={"Martillo (Hammer)"} />{" "}</button>
                     <button
                         type="button"
                         onClick={() => setPattern('DOJI')}
                         className={`px-2.5 py-1.5 rounded-lg transition-all ${pattern === 'DOJI' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
                     >
-                        Doji (Indecisión)
-                    </button>
+                        {" "}<FinixUiText text={"Doji (Indecisión)"} />{" "}</button>
                     <button
                         type="button"
                         onClick={() => setPattern('ENGULFING')}
                         className={`px-2.5 py-1.5 rounded-lg transition-all ${pattern === 'ENGULFING' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
                     >
-                        Envolvente Alcista
-                    </button>
+                        {" "}<FinixUiText text={"Envolvente Alcista"} />{" "}</button>
                     <button
                         type="button"
                         onClick={() => setPattern('SHOOTING_STAR')}
                         className={`px-2.5 py-1.5 rounded-lg transition-all ${pattern === 'SHOOTING_STAR' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
                     >
-                        Estrella Fugaz
-                    </button>
+                        {" "}<FinixUiText text={"Estrella Fugaz"} />{" "}</button>
                 </div>
             </div>
 
@@ -523,17 +500,16 @@ export function CandlesWidget() {
                             <div className="w-0.5 h-3 bg-emerald-500" />
                             {/* Body */}
                             <div className="w-12 h-10 rounded-xs bg-emerald-500 shadow-sm flex items-center justify-center text-[10px] font-bold text-white">
-                                Cierre
-                            </div>
+                                {" "}<FinixUiText text={"Cierre"} />{" "}</div>
                             {/* Long lower wick */}
                             <div className="w-0.5 h-24 bg-emerald-500" />
-                            <span className="text-[10px] font-bold text-emerald-500 mt-1">Mínimo rechazado</span>
+                            <span className="text-[10px] font-bold text-emerald-500 mt-1">{""}<FinixUiText text={"Mínimo rechazado"} />{""}</span>
                         </div>
                         <div className="text-xs text-muted-foreground space-y-1">
-                            <p className="font-bold text-foreground">Martillo Alcista (Hammer):</p>
-                            <p>• Mecha inferior al menos el doble de largo que el cuerpo.</p>
-                            <p>• Señal de rechazo agresivo de precios bajos en zona de soporte.</p>
-                            <p>• Los compradores recuperaron todo el terreno perdido en la sesión.</p>
+                            <p className="font-bold text-foreground">{""}<FinixUiText text={"Martillo Alcista (Hammer):"} />{""}</p>
+                            <p>{""}<FinixUiText text={"• Mecha inferior al menos el doble de largo que el cuerpo."} />{""}</p>
+                            <p>{""}<FinixUiText text={"• Señal de rechazo agresivo de precios bajos en zona de soporte."} />{""}</p>
+                            <p>{""}<FinixUiText text={"• Los compradores recuperaron todo el terreno perdido en la sesión."} />{""}</p>
                         </div>
                     </div>
                 )}
@@ -546,10 +522,10 @@ export function CandlesWidget() {
                             <div className="w-0.5 h-16 bg-muted-foreground" />
                         </div>
                         <div className="text-xs text-muted-foreground space-y-1">
-                            <p className="font-bold text-foreground">Doji (Indecisión Absoluta):</p>
-                            <p>• Apertura y Cierre prácticamente al mismo precio.</p>
-                            <p>• Equilibrio exacto entre oferta y demanda.</p>
-                            <p>• Frecuente al final de tendencias extendidas antes de un giro.</p>
+                            <p className="font-bold text-foreground">{""}<FinixUiText text={"Doji (Indecisión Absoluta):"} />{""}</p>
+                            <p>{""}<FinixUiText text={"• Apertura y Cierre prácticamente al mismo precio."} />{""}</p>
+                            <p>{""}<FinixUiText text={"• Equilibrio exacto entre oferta y demanda."} />{""}</p>
+                            <p>{""}<FinixUiText text={"• Frecuente al final de tendencias extendidas antes de un giro."} />{""}</p>
                         </div>
                     </div>
                 )}
@@ -571,9 +547,9 @@ export function CandlesWidget() {
                             </div>
                         </div>
                         <div className="text-xs text-muted-foreground space-y-1">
-                            <p className="font-bold text-foreground">Envolvente Alcista (Bullish Engulfing):</p>
-                            <p>• La vela verde envuelve por completo el cuerpo de la vela roja previa.</p>
-                            <p>• Señal contundente de toma de control por compradores.</p>
+                            <p className="font-bold text-foreground">{""}<FinixUiText text={"Envolvente Alcista (Bullish Engulfing):"} />{""}</p>
+                            <p>{""}<FinixUiText text={"• La vela verde envuelve por completo el cuerpo de la vela roja previa."} />{""}</p>
+                            <p>{""}<FinixUiText text={"• Señal contundente de toma de control por compradores."} />{""}</p>
                         </div>
                     </div>
                 )}
@@ -583,14 +559,13 @@ export function CandlesWidget() {
                         <div className="flex flex-col items-center">
                             <div className="w-0.5 h-24 bg-rose-500" />
                             <div className="w-12 h-10 rounded-xs bg-rose-500 shadow-sm flex items-center justify-center text-[10px] font-bold text-white">
-                                Cierre
-                            </div>
+                                {" "}<FinixUiText text={"Cierre"} />{" "}</div>
                             <div className="w-0.5 h-3 bg-rose-500" />
                         </div>
                         <div className="text-xs text-muted-foreground space-y-1">
-                            <p className="font-bold text-foreground">Estrella Fugaz (Shooting Star):</p>
-                            <p>• Mecha superior larga en zona de resistencia.</p>
-                            <p>• Los compradores intentaron marcar nuevos máximos y fueron repelidos.</p>
+                            <p className="font-bold text-foreground">{""}<FinixUiText text={"Estrella Fugaz (Shooting Star):"} />{""}</p>
+                            <p>{""}<FinixUiText text={"• Mecha superior larga en zona de resistencia."} />{""}</p>
+                            <p>{""}<FinixUiText text={"• Los compradores intentaron marcar nuevos máximos y fueron repelidos."} />{""}</p>
                         </div>
                     </div>
                 )}
@@ -646,15 +621,14 @@ export function DcfValuationWidget() {
                         <Calculator className="w-5 h-5" />
                     </div>
                     <div>
-                        <h4 className="text-sm font-bold text-foreground">Simulador Interactivo de Flujos Descontados (DCF)</h4>
-                        <p className="text-xs text-muted-foreground">Calculá el valor intrínseco (Fair Value) sensibilizando crecimiento y costo de capital (WACC)</p>
+                        <h4 className="text-sm font-bold text-foreground">{""}<FinixUiText text={"Simulador Interactivo de Flujos Descontados (DCF)"} />{""}</h4>
+                        <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Calculá el valor intrínseco (Fair Value) sensibilizando crecimiento y costo de capital (WACC)"} />{""}</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                     <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> Modelo 2-Etapas
-                    </span>
+                        <Sparkles className="w-3 h-3" /> {" "}<FinixUiText text={"Modelo 2-Etapas"} />{" "}</span>
                 </div>
             </div>
 
@@ -663,8 +637,8 @@ export function DcfValuationWidget() {
                 {/* FCF Base */}
                 <div className="p-4 rounded-xl bg-background/50 border border-border/60 space-y-2">
                     <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-muted-foreground">FCF Año 0 (Base)</span>
-                        <span className="text-primary font-bold">${initialFcf.toLocaleString()} M USD</span>
+                        <span className="text-muted-foreground">{""}<FinixUiText text={"FCF Año 0 (Base)"} />{""}</span>
+                        <span className="text-primary font-bold">${initialFcf.toLocaleString()} {" "}<FinixUiText text={"M USD"} />{""}</span>
                     </div>
                     <input
                         type="range"
@@ -675,14 +649,14 @@ export function DcfValuationWidget() {
                         onChange={e => setInitialFcf(Number(e.target.value))}
                         className="w-full accent-primary cursor-pointer"
                     />
-                    <p className="text-[10px] text-muted-foreground">Caja libre actual generada por la compañía</p>
+                    <p className="text-[10px] text-muted-foreground">{""}<FinixUiText text={"Caja libre actual generada por la compañía"} />{""}</p>
                 </div>
 
                 {/* Crecimiento 5 años */}
                 <div className="p-4 rounded-xl bg-background/50 border border-border/60 space-y-2">
                     <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-muted-foreground">Crecimiento estimado (Años 1-5)</span>
-                        <span className="text-primary font-bold">+{growthRate5y}% anual</span>
+                        <span className="text-muted-foreground">{""}<FinixUiText text={"Crecimiento estimado (Años 1-5)"} />{""}</span>
+                        <span className="text-primary font-bold">+{growthRate5y}{""}<FinixUiText text={"% anual"} />{""}</span>
                     </div>
                     <input
                         type="range"
@@ -693,13 +667,13 @@ export function DcfValuationWidget() {
                         onChange={e => setGrowthRate5y(Number(e.target.value))}
                         className="w-full accent-primary cursor-pointer"
                     />
-                    <p className="text-[10px] text-muted-foreground">Tasa a la que crecerá el FCF en los próximos 5 años</p>
+                    <p className="text-[10px] text-muted-foreground">{""}<FinixUiText text={"Tasa a la que crecerá el FCF en los próximos 5 años"} />{""}</p>
                 </div>
 
                 {/* WACC */}
                 <div className="p-4 rounded-xl bg-background/50 border border-border/60 space-y-2">
                     <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-muted-foreground">Tasa Descuento (WACC)</span>
+                        <span className="text-muted-foreground">{""}<FinixUiText text={"Tasa Descuento (WACC)"} />{""}</span>
                         <span className="text-primary font-bold">{wacc.toFixed(1)}%</span>
                     </div>
                     <input
@@ -711,13 +685,13 @@ export function DcfValuationWidget() {
                         onChange={e => setWacc(Number(e.target.value))}
                         className="w-full accent-primary cursor-pointer"
                     />
-                    <p className="text-[10px] text-muted-foreground">Retorno mínimo exigido según riesgo del negocio</p>
+                    <p className="text-[10px] text-muted-foreground">{""}<FinixUiText text={"Retorno mínimo exigido según riesgo del negocio"} />{""}</p>
                 </div>
 
                 {/* Crecimiento Terminal */}
                 <div className="p-4 rounded-xl bg-background/50 border border-border/60 space-y-2">
                     <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-muted-foreground">Crecimiento Terminal (g)</span>
+                        <span className="text-muted-foreground">{""}<FinixUiText text={"Crecimiento Terminal (g)"} />{""}</span>
                         <span className="text-primary font-bold">{terminalGrowth.toFixed(1)}%</span>
                     </div>
                     <input
@@ -729,14 +703,14 @@ export function DcfValuationWidget() {
                         onChange={e => setTerminalGrowth(Number(e.target.value))}
                         className="w-full accent-primary cursor-pointer"
                     />
-                    <p className="text-[10px] text-muted-foreground">Tasa a perpetuidad (acorde al PIB mundial, 2% - 3%)</p>
+                    <p className="text-[10px] text-muted-foreground">{""}<FinixUiText text={"Tasa a perpetuidad (acorde al PIB mundial, 2% - 3%)"} />{""}</p>
                 </div>
 
                 {/* Acciones en circulación */}
                 <div className="p-4 rounded-xl bg-background/50 border border-border/60 space-y-2">
                     <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-muted-foreground">Acciones en circulación</span>
-                        <span className="text-primary font-bold">{sharesOutstanding} M</span>
+                        <span className="text-muted-foreground">{""}<FinixUiText text={"Acciones en circulación"} />{""}</span>
+                        <span className="text-primary font-bold">{sharesOutstanding} {" "}<FinixUiText text={"M"} />{""}</span>
                     </div>
                     <input
                         type="range"
@@ -747,14 +721,14 @@ export function DcfValuationWidget() {
                         onChange={e => setSharesOutstanding(Number(e.target.value))}
                         className="w-full accent-primary cursor-pointer"
                     />
-                    <p className="text-[10px] text-muted-foreground">Cantidad total de acciones emitidas (dilución)</p>
+                    <p className="text-[10px] text-muted-foreground">{""}<FinixUiText text={"Cantidad total de acciones emitidas (dilución)"} />{""}</p>
                 </div>
 
                 {/* Precio de mercado actual */}
                 <div className="p-4 rounded-xl bg-background/50 border border-border/60 space-y-2">
                     <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-muted-foreground">Precio de Mercado Actual</span>
-                        <span className="text-primary font-bold">${currentPrice} USD</span>
+                        <span className="text-muted-foreground">{""}<FinixUiText text={"Precio de Mercado Actual"} />{""}</span>
+                        <span className="text-primary font-bold">${currentPrice} {" "}<FinixUiText text={"USD"} />{""}</span>
                     </div>
                     <input
                         type="range"
@@ -765,7 +739,7 @@ export function DcfValuationWidget() {
                         onChange={e => setCurrentPrice(Number(e.target.value))}
                         className="w-full accent-primary cursor-pointer"
                     />
-                    <p className="text-[10px] text-muted-foreground">Cotización actual en el mercado bursátil</p>
+                    <p className="text-[10px] text-muted-foreground">{""}<FinixUiText text={"Cotización actual en el mercado bursátil"} />{""}</p>
                 </div>
             </div>
 
@@ -773,13 +747,12 @@ export function DcfValuationWidget() {
             <div className="p-5 rounded-2xl bg-muted/40 border border-border/80 flex flex-col md:flex-row items-stretch justify-between gap-6">
                 <div className="space-y-2 md:w-1/2">
                     <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                        Resultado de la Valuación
-                    </div>
+                        {" "}<FinixUiText text={"Resultado de la Valuación"} />{" "}</div>
                     <div className="flex items-baseline gap-3">
                         <span className="text-3xl sm:text-4xl font-black text-foreground">
                             ${intrinsicValuePerShare.toFixed(2)}
                         </span>
-                        <span className="text-xs text-muted-foreground font-semibold">USD / acción (Fair Value)</span>
+                        <span className="text-xs text-muted-foreground font-semibold">{""}<FinixUiText text={"USD / acción (Fair Value)"} />{""}</span>
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
@@ -800,28 +773,28 @@ export function DcfValuationWidget() {
 
                 {/* BREAKDOWN BOX */}
                 <div className="md:w-1/2 flex flex-col justify-between p-4 rounded-xl bg-card border border-border/70 space-y-3">
-                    <div className="text-xs font-bold text-foreground">Desglose del Enterprise Value Total:</div>
+                    <div className="text-xs font-bold text-foreground">{""}<FinixUiText text={"Desglose del Enterprise Value Total:"} />{""}</div>
                     <div className="space-y-2 text-xs">
                         <div className="flex justify-between text-muted-foreground">
-                            <span>Suma VP Flujos Años 1 al 5:</span>
-                            <span className="font-bold text-foreground">${Math.round(sumPv5Years).toLocaleString()} M ({((sumPv5Years / totalEnterpriseValue) * 100).toFixed(0)}%)</span>
+                            <span>{""}<FinixUiText text={"Suma VP Flujos Años 1 al 5:"} />{""}</span>
+                            <span className="font-bold text-foreground">${Math.round(sumPv5Years).toLocaleString()} {" "}<FinixUiText text={"M ("} />{""}{((sumPv5Years / totalEnterpriseValue) * 100).toFixed(0)}%)</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
-                            <span>VP Valor Terminal (a perpetuidad):</span>
-                            <span className="font-bold text-foreground">${Math.round(pvTerminalValue).toLocaleString()} M ({((pvTerminalValue / totalEnterpriseValue) * 100).toFixed(0)}%)</span>
+                            <span>{""}<FinixUiText text={"VP Valor Terminal (a perpetuidad):"} />{""}</span>
+                            <span className="font-bold text-foreground">${Math.round(pvTerminalValue).toLocaleString()} {" "}<FinixUiText text={"M ("} />{""}{((pvTerminalValue / totalEnterpriseValue) * 100).toFixed(0)}%)</span>
                         </div>
                         <div className="h-px bg-border/60 my-1" />
                         <div className="flex justify-between font-bold text-foreground">
-                            <span>Enterprise Value Total:</span>
-                            <span className="text-primary">${Math.round(totalEnterpriseValue).toLocaleString()} M USD</span>
+                            <span>{""}<FinixUiText text={"Enterprise Value Total:"} />{""}</span>
+                            <span className="text-primary">${Math.round(totalEnterpriseValue).toLocaleString()} {" "}<FinixUiText text={"M USD"} />{""}</span>
                         </div>
                     </div>
 
                     {/* COMPARISON VISUAL BAR */}
                     <div className="space-y-1.5 pt-2">
                         <div className="flex justify-between text-[11px] text-muted-foreground">
-                            <span>Precio Actual: ${currentPrice}</span>
-                            <span>Fair Value: ${intrinsicValuePerShare.toFixed(2)}</span>
+                            <span>{""}<FinixUiText text={"Precio Actual: $"} />{""}{currentPrice}</span>
+                            <span>{""}<FinixUiText text={"Fair Value: $"} />{""}{intrinsicValuePerShare.toFixed(2)}</span>
                         </div>
                         <div className="w-full h-3 rounded-full bg-secondary overflow-hidden relative">
                             <div

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -138,6 +140,8 @@ interface ChartAttachmentModalProps {
 }
 
 export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachmentModalProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { theme: appTheme } = usePreferencesStore();
     const tvTheme: 'dark' | 'light' = appTheme === 'light' ? 'light' : 'dark';
 
@@ -229,8 +233,8 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                             <BarChart2 className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-black">Adjuntar grafico</h2>
-                            <p className="text-xs text-muted-foreground">Captura el grafico actual y envialo al chat</p>
+                            <h2 className="text-lg font-black">{""}<FinixUiText text={"Adjuntar grafico"} />{""}</h2>
+                            <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Captura el grafico actual y envialo al chat"} />{""}</p>
                         </div>
                     </div>
                     <button
@@ -250,7 +254,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                                 value={symbolInput}
                                 onChange={(event) => setSymbolInput(event.target.value.toUpperCase())}
                                 onKeyDown={(event) => event.key === 'Enter' && applySymbol()}
-                                placeholder="Simbolo: AAPL, BTCUSDT..."
+                                placeholder={finixUi("Simbolo: AAPL, BTCUSDT...")}
                                 className="w-full h-11 pl-9 pr-3 rounded-2xl border border-border/40 bg-secondary/30 text-sm font-mono uppercase outline-none focus:border-primary/40 transition-colors"
                             />
                         </div>
@@ -258,8 +262,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                             onClick={applySymbol}
                             className="h-11 px-4 rounded-2xl border border-border/40 text-sm font-semibold hover:border-primary/40 hover:text-primary transition-colors"
                         >
-                            Cargar
-                        </button>
+                            {" "}<FinixUiText text={"Cargar"} />{" "}</button>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -290,7 +293,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                                     : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'
                                     }`}
                             >
-                                {item.label}
+                                {<FinixUiText text={item.label} />}
                             </button>
                         ))}
                     </div>
@@ -304,7 +307,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
 
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-muted-foreground">Tipo de analisis</label>
+                            <label className="text-xs font-semibold text-muted-foreground">{""}<FinixUiText text={"Tipo de analisis"} />{""}</label>
                             <div className="relative">
                                 <select
                                     value={analysisType}
@@ -313,7 +316,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                                 >
                                     {ANALYSIS_TYPES.map((item) => (
                                         <option key={item.value} value={item.value}>
-                                            {item.label}
+                                            {<FinixUiText text={item.label} />}
                                         </option>
                                     ))}
                                 </select>
@@ -322,7 +325,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-muted-foreground">Riesgo estimado</label>
+                            <label className="text-xs font-semibold text-muted-foreground">{""}<FinixUiText text={"Riesgo estimado"} />{""}</label>
                             <div className="relative">
                                 <select
                                     value={riskLevel}
@@ -331,7 +334,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                                 >
                                     {RISK_LEVELS.map((item) => (
                                         <option key={item.value} value={item.value}>
-                                            {item.label}
+                                            {<FinixUiText text={item.label} />}
                                         </option>
                                     ))}
                                 </select>
@@ -346,10 +349,9 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <BarChart2 className="w-5 h-5" />}
                             </div>
                             <div>
-                                <p className="text-sm font-bold text-primary">Adjuntar análisis</p>
+                                <p className="text-sm font-bold text-primary">{""}<FinixUiText text={"Adjuntar análisis"} />{""}</p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Se enviará el gráfico al chat. Si TradingView no permite capturar la imagen, se compartirá como gráfico interactivo.
-                                </p>
+                                    {" "}<FinixUiText text={"Se enviará el gráfico al chat. Si TradingView no permite capturar la imagen, se compartirá como gráfico interactivo."} />{" "}</p>
                             </div>
                         </div>
                     </div>
@@ -365,8 +367,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                             onClick={onClose}
                             className="flex-1 h-11 rounded-2xl border border-border/40 text-sm font-semibold hover:border-border transition-colors"
                         >
-                            Cancelar
-                        </button>
+                            {" "}<FinixUiText text={"Cancelar"} />{" "}</button>
                         <button
                             onClick={handleAttach}
                             disabled={isSubmitting}
@@ -375,8 +376,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                             {isSubmitting ? (
                                 <span className="inline-flex items-center gap-2">
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    Adjuntando...
-                                </span>
+                                    {" "}<FinixUiText text={"Adjuntando..."} />{" "}</span>
                             ) : (
                                 'Adjuntar grafico'
                             )}

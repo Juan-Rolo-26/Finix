@@ -107,7 +107,7 @@ test('API financiera: PostgreSQL aislado, JWT real, contabilidad y privacidad', 
             await prisma.post.create({data:{authorId:a.id,content:'Publicación pública de prueba'}});
             const published = await prisma.community.create({data:{creatorId:a.id,name:'Comunidad pública de prueba',description:'Descripción pública',category:'Argentina'}});
             const profile = await new UserService(prisma, notifications, {} as any).getUserProfile(a.username, b.id);
-            const feed = await new PostsService(prisma, notifications, {} as any).getFeed(b.id, { sort: 'recent' });
+            const feed = await new PostsService(prisma, notifications, {} as any, new CommunityPermissionsService(prisma)).getFeed(b.id, { sort: 'recent' });
             const community = await new CommunitiesService(prisma, {} as any, new CommunityPermissionsService(prisma), {} as any, {} as any).findAll({}, b.id);
             for (const output of [profile, feed, community]) { const json = JSON.stringify(output); assert.ok(!json.includes('sentinel')); assert.ok(!json.includes('personalFinance')); }
             assert.equal(feed.posts.length,1); assert.equal(community.length,1);

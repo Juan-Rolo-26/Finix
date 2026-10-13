@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
@@ -60,7 +61,7 @@ const DialogContent = React.forwardRef<
             {children}
             <DialogPrimitive.Close className="absolute right-3.5 top-3.5 p-1 rounded-[4px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors duration-100 focus:outline-none focus:ring-2 focus:ring-primary/35">
                 <X className="h-3.5 w-3.5" />
-                <span className="sr-only">Cerrar</span>
+                <span className="sr-only">{""}<FinixUiText text={"Cerrar"} />{""}</span>
             </DialogPrimitive.Close>
         </DialogPrimitive.Content>
     </DialogPortal>

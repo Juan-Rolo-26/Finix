@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useMemo } from 'react';
 import { watchlistChartSymbol, watchlistPeriodChange, type WatchlistHistory, type WatchlistPricePoint, type WatchlistPeriod } from './watchlistData';
 import SymbolLogo from '@/components/SymbolLogo';
@@ -68,13 +70,15 @@ function generateTimelineEvents(items: any[]): TimelineEvent[] {
 }
 
 function Sparkline({ points, history }: { points: WatchlistPricePoint[]; history?: WatchlistHistory }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     if (points.length < 2) return <span className="text-xs text-muted-foreground">{history?.loading ? 'Cargando…' : history?.error ? 'No disponible' : 'Sin historial'}</span>;
     const prices = points.map(point => point.close);
     const min = Math.min(...prices), max = Math.max(...prices);
     const start = points[0].time, duration = points.at(-1)!.time - start;
     const coords = points.map(point => `${((point.time - start) / duration) * 80},${max === min ? 14 : 28 - ((point.close - min) / (max - min)) * 28}`).join(' ');
     const positive = prices.at(-1)! >= prices[0];
-    return <svg width={80} height={28} viewBox="0 0 80 28" fill="none" role="img" aria-label="Historial de precios del último mes">
+    return <svg width={80} height={28} viewBox="0 0 80 28" fill="none" role="img" aria-label={finixUi("Historial de precios del último mes")}>
         <polyline points={coords} stroke={positive ? '#10b981' : '#f43f5e'} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
     </svg>;
 }
@@ -86,6 +90,8 @@ function MoversCard({ items, period, onPeriodChange, onItemClick, negative = fal
     onItemClick: (item: any) => void;
     negative?: boolean;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const Icon = negative ? TrendingDown : TrendingUp;
     const maximum = Math.max(0.01, ...items.map(item => Math.abs(item.changePercent)));
     return (
@@ -98,14 +104,14 @@ function MoversCard({ items, period, onPeriodChange, onItemClick, negative = fal
                         <p>{negative ? 'Mayores bajas de tu lista' : 'Mayores subas de tu lista'}</p>
                     </div>
                 </div>
-                <div className="watchlist-periods" role="group" aria-label="Período de variación">
+                <div className="watchlist-periods" role="group" aria-label={finixUi("Período de variación")}>
                     {(['1D', '1W', '1M'] as const).map(timeframe => (
                         <button key={timeframe} type="button" aria-pressed={period === timeframe} onClick={() => onPeriodChange(timeframe)}>{timeframe}</button>
                     ))}
                 </div>
             </div>
             {items.length === 0 ? (
-                <div className="watchlist-insight__empty"><Icon size={22} /><p>Sin {negative ? 'bajas' : 'subas'} con datos para este período</p></div>
+                <div className="watchlist-insight__empty"><Icon size={22} /><p>{""}<FinixUiText text={"Sin"} />{" "}{negative ? 'bajas' : 'subas'} {" "}<FinixUiText text={"con datos para este período"} />{""}</p></div>
             ) : (
                 <div className="watchlist-movers__chart">
                     {items.map(item => {
@@ -195,7 +201,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                     }`}
                 >
                     <TrendingUp size={15} />
-                    <span>Radar de Mercado</span>
+                    <span>{""}<FinixUiText text={"Radar de Mercado"} />{""}</span>
                 </button>
                 <button
                     type="button"
@@ -207,7 +213,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                     }`}
                 >
                     <ShieldCheck size={15} className="text-emerald-500" />
-                    <span>Creación de Valor (ROIC vs WACC)</span>
+                    <span>{""}<FinixUiText text={"Creación de Valor (ROIC vs WACC)"} />{""}</span>
                 </button>
                 <button
                     type="button"
@@ -219,7 +225,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                     }`}
                 >
                     <Newspaper size={15} className="text-sky-400" />
-                    <span>Noticias de tus Activos</span>
+                    <span>{""}<FinixUiText text={"Noticias de tus Activos"} />{""}</span>
                 </button>
                 <button
                     type="button"
@@ -231,7 +237,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                     }`}
                 >
                     <PieChart size={15} className="text-purple-400" />
-                    <span>Sectores & Gráficos</span>
+                    <span>{""}<FinixUiText text={"Sectores & Gráficos"} />{""}</span>
                 </button>
             </div>
 
@@ -258,8 +264,8 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                             <Target className="w-4 h-4" />
                         </div>
                         <div>
-                            <h3>Objetivos alcanzados</h3>
-                            <p>Activos que alcanzaron tu condición de precio</p>
+                            <h3>{""}<FinixUiText text={"Objetivos alcanzados"} />{""}</h3>
+                            <p>{""}<FinixUiText text={"Activos que alcanzaron tu condición de precio"} />{""}</p>
                         </div>
                     </div>
                     {opportunities.length === 0 ? (
@@ -302,21 +308,21 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
             {/* PREMIUM TABLE */}
             <div className="watchlist-summary rounded-lg border border-border bg-card overflow-hidden shadow-xs">
                 <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
-                    <h3 className="text-base font-bold text-foreground">Resumen de tu Lista</h3>
-                    <span className="text-xs text-muted-foreground font-semibold">{items.length} activos</span>
+                    <h3 className="text-base font-bold text-foreground">{""}<FinixUiText text={"Resumen de tu Lista"} />{""}</h3>
+                    <span className="text-xs text-muted-foreground font-semibold">{items.length} {" "}<FinixUiText text={"activos"} />{""}</span>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[850px] text-left text-sm">
                         <thead>
                             <tr className="border-b border-border bg-secondary/30 text-muted-foreground font-bold text-xs uppercase tracking-wider">
-                                <th className="px-5 py-3.5">Empresa</th>
-                                <th className="px-4 py-3.5">Gráfico</th>
-                                <th className="px-4 py-3.5">Precio</th>
-                                <th className="px-4 py-3.5">Var. diaria</th>
-                                <th className="px-4 py-3.5">Mi Objetivo</th>
-                                <th className="px-4 py-3.5">Distancia</th>
-                                <th className="px-4 py-3.5">Estado</th>
-                                <th className="px-4 py-3.5 text-right">Acción</th>
+                                <th className="px-5 py-3.5">{""}<FinixUiText text={"Empresa"} />{""}</th>
+                                <th className="px-4 py-3.5">{""}<FinixUiText text={"Gráfico"} />{""}</th>
+                                <th className="px-4 py-3.5">{""}<FinixUiText text={"Precio"} />{""}</th>
+                                <th className="px-4 py-3.5">{""}<FinixUiText text={"Var. diaria"} />{""}</th>
+                                <th className="px-4 py-3.5">{""}<FinixUiText text={"Mi Objetivo"} />{""}</th>
+                                <th className="px-4 py-3.5">{""}<FinixUiText text={"Distancia"} />{""}</th>
+                                <th className="px-4 py-3.5">{""}<FinixUiText text={"Estado"} />{""}</th>
+                                <th className="px-4 py-3.5 text-right">{""}<FinixUiText text={"Acción"} />{""}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border/30">
@@ -344,7 +350,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                                                     <div className="flex items-center gap-1.5">
                                                         <span className="font-bold text-foreground font-mono text-base">{item.symbol}</span>
                                                         {item.isInPortfolio && (
-                                                            <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">Lo tengo</span>
+                                                            <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">{""}<FinixUiText text={"Lo tengo"} />{""}</span>
                                                         )}
                                                     </div>
                                                     <span className="text-xs text-muted-foreground line-clamp-1">{item.name || item.symbol}</span>
@@ -355,7 +361,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                                         <td className="px-4 py-3.5 font-mono font-bold text-base text-foreground">
                                             {item.currentPrice != null
                                                 ? `$${item.currentPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                                : <span className="text-muted-foreground font-normal">N/D</span>}
+                                                : <span className="text-muted-foreground font-normal">{""}<FinixUiText text={"N/D"} />{""}</span>}
                                         </td>
                                         <td className="px-4 py-3.5">
                                             {item.changePercent != null ? (
@@ -368,7 +374,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                                         <td className="px-4 py-3.5 font-mono font-bold text-base">
                                             {item.targetPrice
                                                 ? <span className="text-foreground">${item.targetPrice.toLocaleString()}</span>
-                                                : <span className="text-xs text-muted-foreground italic font-normal">Sin objetivo</span>}
+                                                : <span className="text-xs text-muted-foreground italic font-normal">{""}<FinixUiText text={"Sin objetivo"} />{""}</span>}
                                         </td>
                                         <td className="px-4 py-3.5">
                                             {dist != null ? (
@@ -386,7 +392,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                                         <td className="px-4 py-3.5 text-right">
                                             <button type="button" onClick={e => { e.stopPropagation(); onItemClick(item); }}
                                                 className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-emerald-500 transition-colors">
-                                                Ver ficha <ChevronRight className="w-3.5 h-3.5" />
+                                                {" "}<FinixUiText text={"Ver ficha"} />{" "}<ChevronRight className="w-3.5 h-3.5" />
                                             </button>
                                         </td>
                                     </tr>
@@ -404,13 +410,13 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                         <div className="w-8 h-8 rounded-xl bg-secondary flex items-center justify-center">
                             <Calendar className="w-4 h-4 text-muted-foreground" />
                         </div>
-                        <h3 className="text-base font-bold text-foreground">Actividad de tu lista</h3>
-                        <span className="ml-auto text-xs px-2.5 py-1 rounded-full bg-secondary text-muted-foreground font-semibold">{filteredEvents.length} eventos</span>
+                        <h3 className="text-base font-bold text-foreground">{""}<FinixUiText text={"Actividad de tu lista"} />{""}</h3>
+                        <span className="ml-auto text-xs px-2.5 py-1 rounded-full bg-secondary text-muted-foreground font-semibold">{filteredEvents.length} {" "}<FinixUiText text={"eventos"} />{""}</span>
                     </div>
                     {filteredEvents.length === 0 ? (
                         <div className="p-10 text-center">
                             <Filter className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
-                            <p className="text-sm text-muted-foreground">No hay eventos para las categorías seleccionadas</p>
+                            <p className="text-sm text-muted-foreground">{""}<FinixUiText text={"No hay eventos para las categorías seleccionadas"} />{""}</p>
                         </div>
                     ) : (
                         <div className="p-5">
@@ -466,7 +472,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                 <div className="rounded-2xl border border-border/60 bg-card/70 backdrop-blur-md p-5 flex flex-col gap-4 shadow-xs h-fit">
                     <div className="flex items-center gap-2">
                         <Filter className="w-4 h-4 text-muted-foreground" />
-                        <h4 className="text-sm font-bold text-foreground">Filtrar por Categoría</h4>
+                        <h4 className="text-sm font-bold text-foreground">{""}<FinixUiText text={"Filtrar por Categoría"} />{""}</h4>
                     </div>
                     <div className="flex flex-col gap-2">
                         {(Object.keys(CATEGORY_CONFIG) as EventCategory[]).map(cat => {

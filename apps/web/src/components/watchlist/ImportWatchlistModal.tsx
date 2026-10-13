@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState } from 'react';
 import {
     Dialog,
@@ -26,6 +28,8 @@ export default function ImportWatchlistModal({
     onClose,
     onSuccess,
 }: ImportWatchlistModalProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [step, setStep] = useState<'input' | 'review'>('input');
     const [rawInput, setRawInput] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
@@ -177,8 +181,7 @@ export default function ImportWatchlistModal({
                 <DialogHeader className="space-y-2 shrink-0">
                     <DialogTitle className="text-lg font-black tracking-tight text-foreground flex items-center gap-2">
                         <UploadCloud className="h-5 w-5 text-emerald-500" />
-                        Importar activos a la lista
-                    </DialogTitle>
+                        {" "}<FinixUiText text={"Importar activos a la lista"} />{" "}</DialogTitle>
                     <DialogDescription className="text-xs text-muted-foreground">
                         {step === 'input'
                             ? 'Pegá una lista de símbolos o subí un archivo CSV con una columna de tickers.'
@@ -195,32 +198,29 @@ export default function ImportWatchlistModal({
                 {step === 'input' ? (
                     <div className="space-y-4 py-2 flex-1 overflow-y-auto">
                         <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-foreground">Pegar símbolos</label>
+                            <label className="text-xs font-bold text-foreground">{""}<FinixUiText text={"Pegar símbolos"} />{""}</label>
                             <textarea
                                 rows={4}
-                                placeholder="AAPL, MSFT, NVDA, BCBA:GGAL, MELI, TSLA..."
+                                placeholder={finixUi("AAPL, MSFT, NVDA, BCBA:GGAL, MELI, TSLA...")}
                                 value={rawInput}
                                 onChange={(e) => setRawInput(e.target.value)}
                                 className="w-full rounded-2xl border border-border/60 bg-background/80 p-3 text-xs text-foreground outline-none focus:border-emerald-500 transition-colors resize-none font-mono"
                             />
                             <p className="text-[11px] text-muted-foreground">
-                                Podés separar tickers por comas, espacios o saltos de línea.
-                            </p>
+                                {" "}<FinixUiText text={"Podés separar tickers por comas, espacios o saltos de línea."} />{" "}</p>
                         </div>
 
                         <div className="relative flex items-center justify-center my-2">
                             <div className="border-t border-border/60 w-full" />
                             <span className="bg-card px-3 text-[11px] uppercase font-bold text-muted-foreground absolute">
-                                o también
-                            </span>
+                                {" "}<FinixUiText text={"o también"} />{" "}</span>
                         </div>
 
                         <div className="rounded-2xl border border-dashed border-border/80 p-6 text-center hover:bg-secondary/20 transition-colors">
                             <FileText className="mx-auto h-8 w-8 text-muted-foreground/60 mb-2" />
                             <label className="cursor-pointer">
                                 <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
-                                    Hacé clic para subir un archivo CSV
-                                </span>
+                                    {" "}<FinixUiText text={"Hacé clic para subir un archivo CSV"} />{" "}</span>
                                 <input
                                     type="file"
                                     accept=".csv,.txt"
@@ -229,8 +229,7 @@ export default function ImportWatchlistModal({
                                 />
                             </label>
                             <p className="text-[11px] text-muted-foreground mt-1">
-                                Archivo con una columna de tickers (ej: Ticker, Symbol).
-                            </p>
+                                {" "}<FinixUiText text={"Archivo con una columna de tickers (ej: Ticker, Symbol)."} />{" "}</p>
                         </div>
                     </div>
                 ) : (
@@ -241,19 +240,19 @@ export default function ImportWatchlistModal({
                                 <span className="block text-base font-black text-emerald-600 dark:text-emerald-400">
                                     {validCount}
                                 </span>
-                                <span className="text-[10px] text-muted-foreground font-bold uppercase">A agregar</span>
+                                <span className="text-[10px] text-muted-foreground font-bold uppercase">{""}<FinixUiText text={"A agregar"} />{""}</span>
                             </div>
                             <div className="rounded-xl bg-background/80 p-2.5 border border-border/40">
                                 <span className="block text-base font-black text-amber-500">
                                     {ambiguous.length}
                                 </span>
-                                <span className="text-[10px] text-muted-foreground font-bold uppercase">Ambiguos</span>
+                                <span className="text-[10px] text-muted-foreground font-bold uppercase">{""}<FinixUiText text={"Ambiguos"} />{""}</span>
                             </div>
                             <div className="rounded-xl bg-background/80 p-2.5 border border-border/40">
                                 <span className="block text-base font-black text-muted-foreground">
                                     {duplicates.length}
                                 </span>
-                                <span className="text-[10px] text-muted-foreground font-bold uppercase">Duplicados</span>
+                                <span className="text-[10px] text-muted-foreground font-bold uppercase">{""}<FinixUiText text={"Duplicados"} />{""}</span>
                             </div>
                         </div>
 
@@ -277,19 +276,16 @@ export default function ImportWatchlistModal({
                                                 <span className="font-bold text-foreground font-mono">{item.clean}</span>
                                                 {isDupe && (
                                                     <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-bold">
-                                                        Ya en la lista
-                                                    </span>
+                                                        {" "}<FinixUiText text={"Ya en la lista"} />{" "}</span>
                                                 )}
                                                 {!isDupe && item.hasAmbiguity && (
                                                     <span className="text-[10px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold">
-                                                        Elegir mercado
-                                                    </span>
+                                                        {" "}<FinixUiText text={"Elegir mercado"} />{" "}</span>
                                                 )}
                                             </div>
                                             {!isDupe && (
                                                 <span className="text-emerald-500 font-bold flex items-center gap-1 text-[11px]">
-                                                    <CheckCircle2 className="w-3.5 h-3.5" /> Listo
-                                                </span>
+                                                    <CheckCircle2 className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Listo"} />{" "}</span>
                                             )}
                                         </div>
 
@@ -338,8 +334,7 @@ export default function ImportWatchlistModal({
                                 onClick={onClose}
                                 className="rounded-xl text-xs font-bold text-muted-foreground"
                             >
-                                Cancelar
-                            </Button>
+                                {" "}<FinixUiText text={"Cancelar"} />{" "}</Button>
                             <Button
                                 type="button"
                                 size="sm"
@@ -352,8 +347,7 @@ export default function ImportWatchlistModal({
                                 ) : (
                                     <ArrowRight className="h-3.5 w-3.5" />
                                 )}
-                                Analizar lista
-                            </Button>
+                                {" "}<FinixUiText text={"Analizar lista"} />{" "}</Button>
                         </>
                     ) : (
                         <>
@@ -365,8 +359,7 @@ export default function ImportWatchlistModal({
                                 onClick={() => setStep('input')}
                                 className="rounded-xl text-xs font-bold text-muted-foreground"
                             >
-                                Volver
-                            </Button>
+                                {" "}<FinixUiText text={"Volver"} />{" "}</Button>
                             <Button
                                 type="button"
                                 size="sm"
@@ -379,7 +372,7 @@ export default function ImportWatchlistModal({
                                 ) : (
                                     <CheckCircle2 className="h-3.5 w-3.5" />
                                 )}
-                                Confirmar e importar ({validCount})
+                                {" "}<FinixUiText text={"Confirmar e importar ("} />{""}{validCount})
                             </Button>
                         </>
                     )}

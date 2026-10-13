@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -46,6 +48,8 @@ const CATEGORY_ICONS: Record<string, any> = {
 
 
 export default function EducationHome() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [searchParams, setSearchParams] = useSearchParams();
     const urlQuery = searchParams.get('search') || '';
     const [search, setSearch] = useState(urlQuery);
@@ -178,18 +182,15 @@ export default function EducationHome() {
                 <div className="max-w-4xl mx-auto text-center space-y-5 relative z-10">
                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold tracking-wider uppercase">
                         <GraduationCap className="w-4 h-4" />
-                        Finix · Biblioteca de Consulta Financiera
-                    </div>
+                        {" "}<FinixUiText text={"Finix · Biblioteca de Consulta Financiera"} />{" "}</div>
 
                     <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-foreground">
-                        Biblioteca Educativa
-                    </h1>
+                        {" "}<FinixUiText text={"Biblioteca Educativa"} />{" "}</h1>
 
                     <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto font-normal leading-relaxed">
-                        Consultá conceptos, fórmulas, indicadores y métricas de mercado con rigor técnico institucional. Libre acceso y sin registro requerido.
-                    </p>
+                        {" "}<FinixUiText text={"Consultá conceptos, fórmulas, indicadores y métricas de mercado con rigor técnico institucional. Libre acceso y sin registro requerido."} />{" "}</p>
 
-                    <Link to="/laboratorio" className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/25 bg-card px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary">Probá los conceptos en el Laboratorio <ArrowRight className="h-4 w-4 shrink-0" /></Link>
+                    <Link to="/laboratorio" className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/25 bg-card px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary">{""}<FinixUiText text={"Probá los conceptos en el Laboratorio"} />{" "}<ArrowRight className="h-4 w-4 shrink-0" /></Link>
                     {/* BUSCADOR INSTANTÁNEO */}
                     <div className="max-w-2xl mx-auto relative pt-2">
                         <div className="relative flex items-center shadow-md shadow-black/5 rounded-2xl bg-card border border-border/80 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary transition-all">
@@ -198,9 +199,9 @@ export default function EducationHome() {
                                 type="text"
                                 value={search}
                                 onChange={e => handleSearchChange(e.target.value)}
-                                placeholder="Buscar por métrica, sigla o fórmula (ej: PE, P-E, RSI, MACD, Media Móvil 20/200, CEDEAR, TIR)..."
+                                placeholder={finixUi("Buscar por métrica, sigla o fórmula (ej: PE, P-E, RSI, MACD, Media Móvil 20/200, CEDEAR, TIR)...")}
                                 className="w-full bg-transparent px-3 py-3.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
-                                aria-label="Buscador instantáneo de conceptos financieros"
+                                aria-label={finixUi("Buscador instantáneo de conceptos financieros")}
                             />
                             {search && (
                                 <button
@@ -208,15 +209,14 @@ export default function EducationHome() {
                                     onClick={() => handleSearchChange('')}
                                     className="mr-3 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-md bg-muted/60"
                                 >
-                                    Limpiar
-                                </button>
+                                    {" "}<FinixUiText text={"Limpiar"} />{" "}</button>
                             )}
                         </div>
                     </div>
 
                     {/* ACCESOS DIRECTOS POPULARES */}
                     <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-xs">
-                        <span className="text-muted-foreground font-medium mr-1">Consultas rápidas:</span>
+                        <span className="text-muted-foreground font-medium mr-1">{""}<FinixUiText text={"Consultas rápidas:"} />{""}</span>
                         {[
                             { label: 'PER (P/E)', term: 'PER' },
                             { label: 'RSI 14', term: 'RSI' },
@@ -263,7 +263,7 @@ export default function EducationHome() {
                                     : 'bg-card border border-border/80 text-muted-foreground hover:text-foreground'
                             }`}
                         >
-                            Todas las categorías ({articles.length})
+                            {" "}<FinixUiText text={"Todas las categorías ("} />{""}{articles.length})
                         </button>
                         {categories.map(cat => (
                             <button
@@ -283,7 +283,7 @@ export default function EducationHome() {
 
                     {/* Level selector */}
                     <div className="flex flex-wrap items-center gap-1.5 shrink-0 text-xs">
-                        <span className="text-muted-foreground font-medium hidden md:inline">Nivel:</span>
+                        <span className="text-muted-foreground font-medium hidden md:inline">{""}<FinixUiText text={"Nivel:"} />{""}</span>
                         {[
                             { label: 'Todos', value: 'ALL' },
                             { label: 'Principiante', value: 'BEGINNER' },
@@ -309,10 +309,10 @@ export default function EducationHome() {
                 {/* RESULTS SUMMARY BAR */}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div>
-                        <span>Mostrando </span>
+                        <span>{""}<FinixUiText text={"Mostrando"} />{" "}</span>
                         <strong className="text-foreground font-bold">{filteredArticles.length}</strong>
-                        <span> de {articles.length} artículos</span>
-                        {search && <span> para «{search}»</span>}
+                        <span> {" "}<FinixUiText text={"de"} />{" "}{articles.length} {" "}<FinixUiText text={"artículos"} />{""}</span>
+                        {search && <span> {" "}<FinixUiText text={"para «"} />{""}{search}»</span>}
                     </div>
                     {(search || selectedCategory !== 'ALL' || selectedLevel !== 'ALL') && (
                         <button
@@ -324,8 +324,7 @@ export default function EducationHome() {
                             }}
                             className="text-primary hover:underline font-semibold"
                         >
-                            Restablecer filtros
-                        </button>
+                            {" "}<FinixUiText text={"Restablecer filtros"} />{" "}</button>
                     )}
                 </div>
 
@@ -334,11 +333,9 @@ export default function EducationHome() {
                     <div className="p-12 text-center rounded-2xl border border-dashed border-border/80 bg-card/40 space-y-3">
                         <HelpCircle className="w-10 h-10 text-muted-foreground/60 mx-auto" />
                         <h3 className="text-base font-bold text-foreground">
-                            No se encontraron artículos con ese criterio
-                        </h3>
+                            {" "}<FinixUiText text={"No se encontraron artículos con ese criterio"} />{" "}</h3>
                         <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                            Probá buscando por la sigla (ej: RSI, MACD, PER, DCF), nombre en español (ej: medias móviles, flujo de caja, inflación) o limpiando los filtros.
-                        </p>
+                            {" "}<FinixUiText text={"Probá buscando por la sigla (ej: RSI, MACD, PER, DCF), nombre en español (ej: medias móviles, flujo de caja, inflación) o limpiando los filtros."} />{" "}</p>
                         <button
                             type="button"
                             onClick={() => {
@@ -348,8 +345,7 @@ export default function EducationHome() {
                             }}
                             className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs hover:bg-primary/90 transition-all"
                         >
-                            Ver todos los artículos
-                        </button>
+                            {" "}<FinixUiText text={"Ver todos los artículos"} />{" "}</button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -394,10 +390,9 @@ export default function EducationHome() {
 
                                     <div className="pt-4 border-t border-border/60 mt-4 flex items-center justify-between text-xs text-muted-foreground">
                                         <span className="flex items-center gap-1 font-medium">
-                                            <Clock className="w-3.5 h-3.5" /> {art.readTimeMinutes} min de lectura
-                                        </span>
+                                            <Clock className="w-3.5 h-3.5" /> {art.readTimeMinutes} {" "}<FinixUiText text={"min de lectura"} />{" "}</span>
                                         <span className="font-bold text-primary flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                                            Consultar <ArrowRight className="w-3.5 h-3.5" />
+                                            {" "}<FinixUiText text={"Consultar"} />{" "}<ArrowRight className="w-3.5 h-3.5" />
                                         </span>
                                     </div>
                                 </Link>

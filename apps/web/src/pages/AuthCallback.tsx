@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
@@ -53,7 +54,7 @@ export default function AuthCallback() {
         <div className="min-h-screen flex items-center justify-center bg-background">
             <div className="flex flex-col items-center gap-4 text-muted-foreground">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p className="text-sm">Iniciando sesión...</p>
+                <p className="text-sm">{""}<FinixUiText text={"Iniciando sesión..."} />{""}</p>
             </div>
         </div>
     );

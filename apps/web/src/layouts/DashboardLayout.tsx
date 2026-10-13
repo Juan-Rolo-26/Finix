@@ -1,3 +1,4 @@
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { prefetchRoute } from '@/lib/routePrefetch';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { DesktopNavigation } from '../components/DesktopNavigation';
@@ -14,6 +15,8 @@ import './desktop-social.css';
 const GlobalSearch = lazy(() => import('../components/GlobalSearch').then(module => ({ default: module.GlobalSearch })));
 
 export default function DashboardLayout() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const location = useLocation();
     const navigate = useNavigate();
     const isMessages = location.pathname.startsWith('/messages');
@@ -48,7 +51,7 @@ export default function DashboardLayout() {
                 >
                     <ErrorBoundary key={location.pathname} fallbackTitle="Error al cargar la página" fallbackMessage="Ocurrió un error inesperado al renderizar esta sección. Podés reintentar para recargar los datos.">
                         <div className="desktop-page-frame" data-page={page} data-layout={desktopLayout}>
-                            <Suspense fallback={<div className="m-6 h-64 rounded-2xl bg-muted/30 animate-pulse" role="status" aria-label="Cargando sección" />}><Outlet /></Suspense>
+                            <Suspense fallback={<div className="m-6 h-64 rounded-2xl bg-muted/30 animate-pulse" role="status" aria-label={finixUi("Cargando sección")} />}><Outlet /></Suspense>
                         </div>
                     </ErrorBoundary>
                 </main>

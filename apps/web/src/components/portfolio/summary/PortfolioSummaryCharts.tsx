@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BarChart3, Layers, TrendingUp } from 'lucide-react';
@@ -22,6 +24,8 @@ export function MonthlyReturnChart({ returns = EMPTY_RETURNS, totalReturn, loadi
     loading?: boolean;
     hidden?: boolean;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const data = useMemo(() => returns.filter(p => Number.isFinite(p.value)).slice(-12), [returns]);
     const maxAbs = Math.max(0.5, ...data.map(p => Math.abs(p.value)));
     // Leave enough room for the labels above/below each bar, including losses.
@@ -34,21 +38,21 @@ export function MonthlyReturnChart({ returns = EMPTY_RETURNS, totalReturn, loadi
     };
 
     return (
-        <section className={PANEL} aria-label="Rendimiento mensual" aria-busy={loading}>
+        <section className={PANEL} aria-label={finixUi("Rendimiento mensual")} aria-busy={loading}>
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><TrendingUp className="h-6 w-6" /></span>
                     <div>
-                        <h4 className="text-xl font-bold tracking-tight sm:text-2xl">Rendimiento mensual</h4>
-                        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Variación de la cartera por mes, descontando aportes y retiros. El mes en curso se actualiza desde la primera medición.</p>
+                        <h4 className="text-xl font-bold tracking-tight sm:text-2xl">{""}<FinixUiText text={"Rendimiento mensual"} />{""}</h4>
+                        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{""}<FinixUiText text={"Variación de la cartera por mes, descontando aportes y retiros. El mes en curso se actualiza desde la primera medición."} />{""}</p>
                     </div>
                 </div>
                 {totalReturn && totalReturn !== '—' && <div className="rounded-2xl border border-border bg-secondary/30 px-4 py-3">
                     <p className={cn('text-2xl font-bold tabular-nums', totalReturn.startsWith('-') ? 'text-rose-500' : 'text-emerald-500')}>{totalReturn}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">Resultado sobre aportes netos</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{""}<FinixUiText text={"Resultado sobre aportes netos"} />{""}</p>
                 </div>}
             </div>
-            {hidden ? <EmptyChart>El titular comparte sus rendimientos por rangos.</EmptyChart> : loading ? <EmptyChart>Cargando el historial del portafolio…</EmptyChart> : !data.length ? <EmptyChart>El rendimiento mensual aparecerá cuando haya mediciones suficientes.</EmptyChart> : <>
+            {hidden ? <EmptyChart>{""}<FinixUiText text={"El titular comparte sus rendimientos por rangos."} />{""}</EmptyChart> : loading ? <EmptyChart>{""}<FinixUiText text={"Cargando el historial del portafolio…"} />{""}</EmptyChart> : !data.length ? <EmptyChart>{""}<FinixUiText text={"El rendimiento mensual aparecerá cuando haya mediciones suficientes."} />{""}</EmptyChart> : <>
                 <div className="rounded-2xl bg-secondary/20 px-1 pt-4 sm:px-3">
                     <div className="overflow-x-auto">
                         <div className="h-[300px] sm:h-[340px]" style={{ minWidth: Math.max(280, data.length * 66) }}>
@@ -68,12 +72,12 @@ export function MonthlyReturnChart({ returns = EMPTY_RETURNS, totalReturn, loadi
                         </div>
                     </div>
                 </div>
-                {data.some(p => p.isPartial) && <p className="mt-3 text-sm text-muted-foreground">Mes en curso: rendimiento acumulado hasta la última medición disponible.</p>}
+                {data.some(p => p.isPartial) && <p className="mt-3 text-sm text-muted-foreground">{""}<FinixUiText text={"Mes en curso: rendimiento acumulado hasta la última medición disponible."} />{""}</p>}
                 <details className="mt-4 text-sm">
-                    <summary className="w-fit cursor-pointer rounded-lg py-2 font-semibold text-muted-foreground hover:text-foreground">Ver rendimientos por mes</summary>
+                    <summary className="w-fit cursor-pointer rounded-lg py-2 font-semibold text-muted-foreground hover:text-foreground">{""}<FinixUiText text={"Ver rendimientos por mes"} />{""}</summary>
                     <div className="mt-2 overflow-x-auto rounded-xl border border-border">
-                        <table className="w-full text-left"><thead className="bg-secondary/40"><tr><th className="px-4 py-3">Mes</th><th className="px-4 py-3 text-right">Rendimiento</th></tr></thead><tbody>
-                            {data.map(p => <tr key={p.monthKey} className="border-t border-border"><td className="px-4 py-3">{monthLabel(p.monthKey)}{p.isPartial && <span className="ml-2 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">En curso</span>}</td><td className={cn('px-4 py-3 text-right font-semibold tabular-nums', p.value < 0 ? 'text-rose-500' : 'text-emerald-600')}>{pct(p.value, true)}</td></tr>)}
+                        <table className="w-full text-left"><thead className="bg-secondary/40"><tr><th className="px-4 py-3">{""}<FinixUiText text={"Mes"} />{""}</th><th className="px-4 py-3 text-right">{""}<FinixUiText text={"Rendimiento"} />{""}</th></tr></thead><tbody>
+                            {data.map(p => <tr key={p.monthKey} className="border-t border-border"><td className="px-4 py-3">{monthLabel(p.monthKey)}{p.isPartial && <span className="ml-2 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">{""}<FinixUiText text={"En curso"} />{""}</span>}</td><td className={cn('px-4 py-3 text-right font-semibold tabular-nums', p.value < 0 ? 'text-rose-500' : 'text-emerald-600')}>{pct(p.value, true)}</td></tr>)}
                         </tbody></table>
                     </div>
                 </details>
@@ -96,6 +100,8 @@ function classLabel(value: string) {
 }
 
 export function AllocationSummary({ data, loading = false }: { data: Record<string, number>; loading?: boolean }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [focused, setFocused] = useState<string | null>(null);
     const allocation = useMemo(() => {
         const groups = new Map<string, number>();
@@ -110,12 +116,12 @@ export function AllocationSummary({ data, loading = false }: { data: Record<stri
     const selected = allocation.find(p => p.name === focused);
 
     return (
-        <section className={PANEL} aria-label="Composición del portafolio" aria-busy={loading}>
+        <section className={PANEL} aria-label={finixUi("Composición del portafolio")} aria-busy={loading}>
             <div className="mb-5 flex items-start justify-between gap-3">
-                <div><h4 className="text-xl font-bold tracking-tight sm:text-2xl">Composición del portafolio</h4><p className="mt-1 text-sm text-muted-foreground">Peso de cada clase según el valor actual de la cartera.</p></div>
+                <div><h4 className="text-xl font-bold tracking-tight sm:text-2xl">{""}<FinixUiText text={"Composición del portafolio"} />{""}</h4><p className="mt-1 text-sm text-muted-foreground">{""}<FinixUiText text={"Peso de cada clase según el valor actual de la cartera."} />{""}</p></div>
                 <Layers className="mt-1 h-6 w-6 shrink-0 text-primary" />
             </div>
-            {loading ? <EmptyChart>Cargando la composición…</EmptyChart> : !allocation.length ? <EmptyChart>Agregá posiciones o efectivo para ver la composición real.</EmptyChart> : <div className="grid items-center gap-6 md:grid-cols-[minmax(240px,0.8fr)_minmax(0,1.2fr)]">
+            {loading ? <EmptyChart>{""}<FinixUiText text={"Cargando la composición…"} />{""}</EmptyChart> : !allocation.length ? <EmptyChart>{""}<FinixUiText text={"Agregá posiciones o efectivo para ver la composición real."} />{""}</EmptyChart> : <div className="grid items-center gap-6 md:grid-cols-[minmax(240px,0.8fr)_minmax(0,1.2fr)]">
                 <div className="relative mx-auto h-[260px] w-full max-w-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -130,12 +136,12 @@ export function AllocationSummary({ data, loading = false }: { data: Record<stri
                         <span className="mt-1 text-sm text-muted-foreground">{selected ? 'de la cartera' : 'con saldo positivo'}</span>
                     </div>
                 </div>
-                <div className="space-y-2" aria-label="Distribución por clase">
+                <div className="space-y-2" aria-label={finixUi("Distribución por clase")}>
                     {allocation.map(p => <button type="button" key={p.name} onClick={() => setFocused(p.name)} onFocus={() => setFocused(p.name)} onBlur={() => setFocused(null)} aria-label={`${p.name}: ${pct(p.percent)} de la cartera`} aria-pressed={selected?.name === p.name} className={cn('block w-full rounded-2xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary', selected?.name === p.name ? 'border-primary/40 bg-primary/5' : 'border-transparent hover:bg-secondary/40')}>
                         <span className="flex items-center justify-between gap-3"><span className="flex items-center gap-3 text-base font-semibold"><span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: p.color }} />{p.name}</span><span className="text-lg font-bold tabular-nums">{pct(p.percent)}</span></span>
                         <span className="mt-3 block h-2.5 overflow-hidden rounded-full bg-secondary"><span className="block h-full rounded-full transition-[width] duration-300" style={{ width: `${p.percent}%`, backgroundColor: p.color }} /></span>
                     </button>)}
-                    <p className="flex items-center gap-2 px-4 pt-2 text-sm text-muted-foreground"><BarChart3 className="h-4 w-4 shrink-0" />Seleccioná una clase para ver su participación.</p>
+                    <p className="flex items-center gap-2 px-4 pt-2 text-sm text-muted-foreground"><BarChart3 className="h-4 w-4 shrink-0" />{""}<FinixUiText text={"Seleccioná una clase para ver su participación."} />{""}</p>
                 </div>
             </div>}
         </section>

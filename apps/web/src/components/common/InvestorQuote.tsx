@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useMemo } from 'react';
 import { ArrowUp, Quote, RotateCw, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -101,6 +103,8 @@ export function InvestorQuote({
     showBackToTop = false,
     className = '',
 }: InvestorQuoteProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const defaultIndex = useMemo(() => {
         if (investorId) {
             const idx = INVESTORS.findIndex((i) => i.id === investorId);
@@ -129,13 +133,13 @@ export function InvestorQuote({
     return (
         <section
             className={`investor-quote-section my-12 py-10 px-4 flex flex-col items-center text-center justify-center ${className}`}
-            aria-label="Cita de inversor legendario"
+            aria-label={finixUi("Cita de inversor legendario")}
         >
             <div className="max-w-3xl mx-auto flex flex-col items-center text-center">
                 {/* Pill Badge at the top */}
                 <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/25 mb-4 shadow-2xs select-none">
                     <Sparkles className="w-3 h-3" />
-                    <span>Sabiduría de Inversión</span>
+                    <span>{""}<FinixUiText text={"Sabiduría de Inversión"} />{""}</span>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -193,12 +197,12 @@ export function InvestorQuote({
                         type="button"
                         onClick={handleNextQuote}
                         className="group inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold border border-border/70 bg-card/80 hover:bg-secondary text-muted-foreground hover:text-foreground shadow-2xs hover:shadow-xs transition-all active:scale-95 cursor-pointer"
-                        title="Ver otra frase célebre"
+                        title={finixUi("Ver otra frase célebre")}
                     >
                         <span className="w-5 h-5 rounded-full bg-secondary/80 flex items-center justify-center text-foreground group-hover:bg-primary/15 group-hover:text-primary transition-colors">
                             <RotateCw size={12} className={`transition-transform duration-300 ${isRotating ? 'rotate-180' : 'group-hover:rotate-45'}`} />
                         </span>
-                        <span>Otra frase</span>
+                        <span>{""}<FinixUiText text={"Otra frase"} />{""}</span>
                     </button>
 
                     {/* Back to top circular pill button */}
@@ -211,7 +215,7 @@ export function InvestorQuote({
                             <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center transition-transform group-hover:-translate-y-0.5">
                                 <ArrowUp size={12} />
                             </span>
-                            <span>Volver arriba</span>
+                            <span>{""}<FinixUiText text={"Volver arriba"} />{""}</span>
                         </button>
                     )}
                 </div>

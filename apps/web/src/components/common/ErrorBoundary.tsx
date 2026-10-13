@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -55,8 +56,7 @@ export class ErrorBoundary extends Component<Props, State> {
                         className="mt-4 gap-2 text-xs font-bold"
                     >
                         <RefreshCw className="w-3.5 h-3.5" />
-                        Reintentar
-                    </Button>
+                        {" "}<FinixUiText text={"Reintentar"} />{" "}</Button>
                 </div>
             );
         }

@@ -1,3 +1,6 @@
+import { usePreferencesStore } from '@/stores/preferencesStore';
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import DataReferenceContext from './DataReferenceContext';
 import { useEffect, useState, useMemo } from 'react';
 import {
@@ -195,7 +198,7 @@ function AssetCard({
             {(asset.isPremarketQuote || asset.requiresPremarket) &&
                 asset.regularPrice != null && (
                     <div className="market-quote-card__regular">
-                        <span>Precio regular</span>
+                        <span>{""}<FinixUiText text={"Precio regular"} />{""}</span>
                         <strong>
                             {formatPrice(asset, asset.regularPrice)}
                         </strong>
@@ -207,8 +210,7 @@ function AssetCard({
             <div className="market-quote-card__footer">
                 <span>
                     <Clock size={13} aria-hidden="true" />{' '}
-                    {formatTime(asset.updatedAt)} ART
-                </span>
+                    {formatTime(asset.updatedAt)} {" "}<FinixUiText text={"ART"} />{" "}</span>
                 <span>
                     {quoted
                         ? asset.isPremarketQuote
@@ -243,6 +245,9 @@ interface PremarketBriefProps {
 export default function PremarketBrief({
     onSelectSymbol,
 }: PremarketBriefProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+    const autoRefreshMarket = usePreferencesStore(state => state.autoRefreshMarket);
+
     const [data, setData] = useState<PremarketData | null>(null);
     const [error, setError] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -275,12 +280,12 @@ export default function PremarketBrief({
             }
         };
         void load();
-        const timer = setInterval(load, 60000);
+        const timer = autoRefreshMarket ? setInterval(() => { if (document.visibilityState === 'visible') void load(); }, 60000) : undefined;
         return () => {
             controller.abort();
-            clearInterval(timer);
+            if (timer !== undefined) clearInterval(timer);
         };
-    }, [retry]);
+    }, [retry, autoRefreshMarket]);
 
     const allAssets = useMemo(() => {
         if (!data) return [];
@@ -350,15 +355,13 @@ export default function PremarketBrief({
     };
 
     return (
-        <section className="premarket" aria-label="Pre-Market">
+        <section className="premarket" aria-label={finixUi("Pre-Market")}>
             <header className="premarket-header">
                 <div>
                     <div className="premarket-eyebrow">
-                        <Sunrise size={17} aria-hidden="true" /> WALL STREET ·
-                        PRE-APERTURA
-                    </div>
+                        <Sunrise size={17} aria-hidden="true" /> {" "}<FinixUiText text={"WALL STREET · PRE-APERTURA"} />{" "}</div>
                     <div className="premarket-title-row">
-                        <h1>Pre-Market</h1>
+                        <h1>{""}<FinixUiText text={"Pre-Market"} />{""}</h1>
                         <span
                             className={`premarket-status${!data ? '' : isFrozen ? ' premarket-status--frozen' : ' premarket-status--live'}`}
                         >
@@ -386,9 +389,9 @@ export default function PremarketBrief({
                     <div className="premarket-cutoff">
                         <Clock size={18} aria-hidden="true" />
                         <div>
-                            <span>Corte de referencia</span>
+                            <span>{""}<FinixUiText text={"Corte de referencia"} />{""}</span>
                             <strong>
-                                09:30 <small>Nueva York</small>
+                                09:30 <small>{""}<FinixUiText text={"Nueva York"} />{""}</small>
                             </strong>
                         </div>
                     </div>
@@ -402,8 +405,8 @@ export default function PremarketBrief({
                         className="premarket-icon-button"
                         onClick={refresh}
                         disabled={isLoading || isRefreshing}
-                        title="Actualizar cotizaciones"
-                        aria-label="Actualizar cotizaciones"
+                        title={finixUi("Actualizar cotizaciones")}
+                        aria-label={finixUi("Actualizar cotizaciones")}
                     >
                         <RefreshCw
                             size={17}
@@ -422,8 +425,7 @@ export default function PremarketBrief({
                 >
                     <div className="premarket-sentiment__heading">
                         <span>
-                            <Activity size={16} /> Clima de mercado
-                        </span>
+                            <Activity size={16} /> {" "}<FinixUiText text={"Clima de mercado"} />{" "}</span>
                         <strong>
                             {hasSentiment ? sentimentLabel : 'Sin datos'}{' '}
                             <span>{hasSentiment ? `${sentimentScore}%` : ''}</span>
@@ -431,7 +433,7 @@ export default function PremarketBrief({
                     </div>
                     {hasSentiment && <meter
                         className="sr-only"
-                        aria-label="Clima de mercado"
+                        aria-label={finixUi("Clima de mercado")}
                         min={0}
                         max={100}
                         value={data ? sentimentScore : 0}
@@ -455,24 +457,21 @@ export default function PremarketBrief({
                 <dl className="premarket-stats">
                     <div>
                         <dt>
-                            <ArrowUpRight size={16} /> En alza
-                        </dt>
+                            <ArrowUpRight size={16} /> {" "}<FinixUiText text={"En alza"} />{" "}</dt>
                         <dd className="premarket-positive">
                             {data ? stats.up : '—'}
                         </dd>
                     </div>
                     <div>
                         <dt>
-                            <ArrowDownRight size={16} /> En baja
-                        </dt>
+                            <ArrowDownRight size={16} /> {" "}<FinixUiText text={"En baja"} />{" "}</dt>
                         <dd className="premarket-negative">
                             {data ? stats.down : '—'}
                         </dd>
                     </div>
                     <div>
                         <dt>
-                            <Layers size={16} /> Cotizando
-                        </dt>
+                            <Layers size={16} /> {" "}<FinixUiText text={"Cotizando"} />{" "}</dt>
                         <dd>
                             {data ? stats.withQuote : '—'}
                             <small> / {allAssets.length}</small>
@@ -488,16 +487,16 @@ export default function PremarketBrief({
                         type="search"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
-                        aria-label="Buscar activo o símbolo"
-                        placeholder="Buscar activo o símbolo..."
+                        aria-label={finixUi("Buscar activo o símbolo")}
+                        placeholder={finixUi("Buscar activo o símbolo...")}
                     />
                     {query && (
                         <button
                             type="button"
                             className="premarket-icon-button"
                             onClick={() => setQuery('')}
-                            title="Limpiar búsqueda"
-                            aria-label="Limpiar búsqueda"
+                            title={finixUi("Limpiar búsqueda")}
+                            aria-label={finixUi("Limpiar búsqueda")}
                         >
                             <X size={16} />
                         </button>
@@ -506,7 +505,7 @@ export default function PremarketBrief({
                 <div
                     className="premarket-filters"
                     role="group"
-                    aria-label="Mercados"
+                    aria-label={finixUi("Mercados")}
                 >
                     {CATEGORIES.map((category) => {
                         const Icon = category.icon;
@@ -547,8 +546,7 @@ export default function PremarketBrief({
                         onClick={refresh}
                         disabled={isRefreshing}
                     >
-                        <RefreshCw size={15} /> Reintentar
-                    </button>
+                        <RefreshCw size={15} /> {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
                 </div>
             )}
 
@@ -556,7 +554,7 @@ export default function PremarketBrief({
                 <div
                     className="premarket-loading"
                     role="status"
-                    aria-label="Cargando cotizaciones"
+                    aria-label={finixUi("Cargando cotizaciones")}
                 >
                     {Array.from({ length: 6 }, (_, index) => (
                         <div
@@ -613,7 +611,7 @@ export default function PremarketBrief({
             {data && groups.length === 0 && (
                 <div className="premarket-empty">
                     <SearchX size={30} aria-hidden="true" />
-                    <h2>No hay activos para esta búsqueda</h2>
+                    <h2>{""}<FinixUiText text={"No hay activos para esta búsqueda"} />{""}</h2>
                     <p>
                         {query
                             ? `Sin resultados para “${query}”.`
@@ -626,17 +624,14 @@ export default function PremarketBrief({
                             setActiveCategory('all');
                         }}
                     >
-                        Restablecer filtros
-                    </button>
+                        {" "}<FinixUiText text={"Restablecer filtros"} />{" "}</button>
                 </div>
             )}
 
             <footer className="premarket-note">
                 <Lock size={14} aria-hidden="true" />
                 <p>
-                    El corte de pre-apertura se conserva al abrir la rueda
-                    regular. Horarios en Argentina (ART).
-                </p>
+                    {" "}<FinixUiText text={"El corte de pre-apertura se conserva al abrir la rueda regular. Horarios en Argentina (ART)."} />{" "}</p>
             </footer>
         </section>
     );

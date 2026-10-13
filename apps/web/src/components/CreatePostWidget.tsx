@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import AccountRequired from '@/components/auth/AccountRequired';
 import { useState, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
@@ -40,6 +42,8 @@ export default function CreatePostWidget({
     isReply = false,
     autoFocus = false,
 }: CreatePostWidgetProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { user } = useAuthStore();
     const [content, setContent] = useState('');
     const [isPosting, setIsPosting] = useState(false);
@@ -131,7 +135,7 @@ export default function CreatePostWidget({
                     <textarea
                         ref={textRef}
                         autoFocus={autoFocus}
-                        placeholder="Escribe tu respuesta..."
+                        placeholder={finixUi("Escribe tu respuesta...")}
                         className="w-full bg-transparent outline-none resize-none text-sm placeholder:text-muted-foreground/40 min-h-[56px]"
                         value={content}
                         onChange={e => setContent(e.target.value)}
@@ -200,7 +204,7 @@ export default function CreatePostWidget({
                                 {image?.type.startsWith('video/') ? (
                                     <video src={preview} controls className="h-36 rounded-xl border border-border/30 object-contain bg-black/5" />
                                 ) : (
-                                    <img src={preview} alt="Preview" className="h-36 rounded-xl object-cover border border-border/30" />
+                                    <img src={preview} alt={finixUi("Preview")} className="h-36 rounded-xl object-cover border border-border/30" />
                                 )}
                                 <button
                                     onClick={handleRemoveImage}
@@ -256,7 +260,7 @@ export default function CreatePostWidget({
                                                 style={{ color: postType === t.key ? t.color : 'hsl(var(--foreground))' }}
                                             >
                                                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: t.color }} />
-                                                {t.label}
+                                                {<FinixUiText text={t.label} />}
                                             </button>
                                         ))}
                                     </motion.div>
@@ -283,13 +287,11 @@ export default function CreatePostWidget({
                                     <motion.span animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }} className="block">
                                         <Send className="w-3 h-3" />
                                     </motion.span>
-                                    Publicando
-                                </span>
+                                    {" "}<FinixUiText text={"Publicando"} />{" "}</span>
                             ) : (
                                 <>
                                     <Send className="w-3 h-3" />
-                                    Publicar
-                                </>
+                                    {" "}<FinixUiText text={"Publicar"} />{" "}</>
                             )}
                         </button>
                     </div>
@@ -299,8 +301,7 @@ export default function CreatePostWidget({
             {/* Keyboard hint */}
             {isFocused && content && (
                 <p className="text-[10px] px-1 mt-1.5" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>
-                    ⌘ + Enter para publicar
-                </p>
+                    {" "}<FinixUiText text={"⌘ + Enter para publicar"} />{" "}</p>
             )}
         </div>
     );

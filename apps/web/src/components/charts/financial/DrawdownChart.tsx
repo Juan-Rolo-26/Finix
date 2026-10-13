@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /**
  * DrawdownChart.tsx — Portfolio Drawdown visualization
  *
@@ -53,6 +55,8 @@ function DrawdownTooltip({ active, payload, label }: any) {
 }
 
 export function DrawdownChart({ data, loading, error, onRetry, currency = 'USD', className }: DrawdownChartProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const chartData = useMemo(() => {
     if (!data?.series?.length) return [];
     return data.series.map((pt) => ({
@@ -75,7 +79,7 @@ export function DrawdownChart({ data, loading, error, onRetry, currency = 'USD',
 
   return (
     <ChartContainer
-      title="Drawdown"
+      title={finixUi("Drawdown")}
       description="Caída porcentual desde el pico máximo histórico del portafolio"
       loading={loading}
       error={error}
@@ -145,10 +149,10 @@ export function DrawdownChart({ data, loading, error, onRetry, currency = 'USD',
       {/* Max drawdown annotation */}
       {data?.maxDrawdown !== undefined && data.maxDrawdown < 0 && (
         <div className="px-5 pb-3 sm:px-6 text-[11px] text-muted-foreground">
-          <span>Máximo drawdown: </span>
+          <span>{""}<FinixUiText text={"Máximo drawdown:"} />{" "}</span>
           <span className="font-bold text-red-400">{formatPercentage(data.maxDrawdown)}</span>
           {data.maxDrawdownDate && (
-            <span> el {formatTooltipDate(data.maxDrawdownDate)}</span>
+            <span> {" "}<FinixUiText text={"el"} />{" "}{formatTooltipDate(data.maxDrawdownDate)}</span>
           )}
         </div>
       )}

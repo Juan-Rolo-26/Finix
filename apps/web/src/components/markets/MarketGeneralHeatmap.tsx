@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { RefreshCw, Layers, Grid3X3, Search } from 'lucide-react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
@@ -38,6 +40,8 @@ export default function MarketGeneralHeatmap({
     onRefresh,
     onSelectSymbol,
 }: MarketGeneralHeatmapProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const containerRef = useRef<HTMLDivElement>(null);
     const { theme } = usePreferencesStore();
     const isDark =
@@ -249,25 +253,23 @@ export default function MarketGeneralHeatmap({
         <div className="market-stack">
             <div className="market-overview">
                 <div className="market-stat">
-                    <p className="market-stat__label">Variación diaria media</p>
+                    <p className="market-stat__label">{""}<FinixUiText text={"Variación diaria media"} />{""}</p>
                     <p className="market-stat__value">
                         {items.length
                             ? overallStats.avg1D.toLocaleString('es-AR') + '%'
                             : '—'}
                     </p>
                     <p className="market-stat__detail">
-                        {items.length} activos
-                    </p>
+                        {items.length} {" "}<FinixUiText text={"activos"} />{" "}</p>
                 </div>
                 <div className="market-stat">
-                    <p className="market-stat__label">Amplitud de mercado</p>
+                    <p className="market-stat__label">{""}<FinixUiText text={"Amplitud de mercado"} />{""}</p>
                     <p className="market-stat__value">
                         {items.length ? overallStats.greenPct + '%' : '—'}
                     </p>
                     <p className="market-stat__detail">
-                        {overallStats.gainers} suben · {overallStats.losers}{' '}
-                        bajan
-                    </p>
+                        {overallStats.gainers} {" "}<FinixUiText text={"suben ·"} />{" "}{overallStats.losers}{' '}
+                        {" "}<FinixUiText text={"bajan"} />{" "}</p>
                 </div>
                 {[
                     ['Mayor ganancia', overallStats.topGainer],
@@ -301,21 +303,20 @@ export default function MarketGeneralHeatmap({
                         aria-pressed={viewSubmode === 'treemap'}
                         onClick={() => setViewSubmode('treemap')}
                     >
-                        <Layers size={16} /> Treemap S&amp;P 500
-                    </button>
+                        <Layers size={16} /> {" "}<FinixUiText text={"Treemap S&amp;P 500"} />{" "}</button>
                     <button
                         type="button"
                         aria-pressed={viewSubmode === 'sectors'}
                         onClick={() => setViewSubmode('sectors')}
                     >
-                        <Grid3X3 size={16} /> Sectores ({sectorStats.length})
+                        <Grid3X3 size={16} /> {" "}<FinixUiText text={"Sectores ("} />{""}{sectorStats.length})
                     </button>
                 </div>
                 <Button
                     variant="outline"
                     className="market-icon-action"
-                    aria-label="Actualizar mediciones"
-                    title="Actualizar mediciones"
+                    aria-label={finixUi("Actualizar mediciones")}
+                    title={finixUi("Actualizar mediciones")}
                     onClick={handleTriggerRefresh}
                     disabled={loading}
                 >
@@ -326,7 +327,7 @@ export default function MarketGeneralHeatmap({
                 </Button>
                 {lastUpdatedTime && (
                     <span className="market-results">
-                        Captura {lastUpdatedTime}
+                        {" "}<FinixUiText text={"Captura"} />{" "}{lastUpdatedTime}
                     </span>
                 )}
             </div>
@@ -334,7 +335,7 @@ export default function MarketGeneralHeatmap({
                 <div className="market-chart market-treemap">
                     <div className="market-section-title">
                         <Layers size={16} />
-                        <h2>S&amp;P 500 · Capitalización y variación diaria</h2>
+                        <h2>{""}<FinixUiText text={"S&amp;P 500 · Capitalización y variación diaria"} />{""}</h2>
                     </div>
                     <div className="market-treemap__canvas">
                         {loading && (
@@ -343,17 +344,14 @@ export default function MarketGeneralHeatmap({
                                 role="status"
                             >
                                 <RefreshCw className="animate-spin" size={20} />{' '}
-                                Actualizando mediciones...
-                            </div>
+                                {" "}<FinixUiText text={"Actualizando mediciones..."} />{" "}</div>
                         )}
                         {widgetError && (
                             <div
                                 className="market-treemap__status"
                                 role="alert"
                             >
-                                El mapa de TradingView no está disponible. Las
-                                mediciones por sector siguen disponibles.
-                            </div>
+                                {" "}<FinixUiText text={"El mapa de TradingView no está disponible. Las mediciones por sector siguen disponibles."} />{" "}</div>
                         )}
                         <div
                             className="tradingview-widget-container w-full h-full"
@@ -369,21 +367,21 @@ export default function MarketGeneralHeatmap({
                         <label className="market-search">
                             <Search size={16} />
                             <input
-                                aria-label="Buscar sector o ticker"
-                                placeholder="Buscar sector o ticker..."
+                                aria-label={finixUi("Buscar sector o ticker")}
+                                placeholder={finixUi("Buscar sector o ticker...")}
                                 value={searchLocal}
                                 onChange={(e) => setSearchLocal(e.target.value)}
                             />
                         </label>
                         <select
                             className="market-control"
-                            aria-label="Filtrar sector del mapa"
+                            aria-label={finixUi("Filtrar sector del mapa")}
                             value={selectedSectorFilter}
                             onChange={(e) =>
                                 setSelectedSectorFilter(e.target.value)
                             }
                         >
-                            <option value="ALL">Todos los sectores</option>
+                            <option value="ALL">{""}<FinixUiText text={"Todos los sectores"} />{""}</option>
                             {sectorStats.map((sector) => (
                                 <option key={sector.name} value={sector.name}>
                                     {sector.name}
@@ -393,13 +391,11 @@ export default function MarketGeneralHeatmap({
                     </div>
                     {loading && (
                         <div className="market-empty" role="status">
-                            Cargando mediciones por sector...
-                        </div>
+                            {" "}<FinixUiText text={"Cargando mediciones por sector..."} />{" "}</div>
                     )}
                     {!loading && filteredSectors.length === 0 && (
                         <div className="market-empty">
-                            No hay sectores para estos filtros.
-                        </div>
+                            {" "}<FinixUiText text={"No hay sectores para estos filtros."} />{" "}</div>
                     )}
                     {filteredSectors.map((sector) => (
                         <section key={sector.name}>
@@ -411,16 +407,15 @@ export default function MarketGeneralHeatmap({
                                 />
                                 <MarketChange value={sector.avgChange1D} />
                                 <span className="market-results">
-                                    {sector.gainersCount} suben ·{' '}
-                                    {sector.losersCount} bajan · Cap. US${' '}
+                                    {sector.gainersCount} {" "}<FinixUiText text={"suben ·"} />{""}{' '}
+                                    {sector.losersCount} {" "}<FinixUiText text={"bajan · Cap. US$"} />{""}{' '}
                                     {(sector.totalCap / 1e12).toLocaleString(
                                         'es-AR',
                                         {
                                             maximumFractionDigits: 2,
                                         },
                                     )}
-                                    T
-                                </span>
+                                    {" "}<FinixUiText text={"T"} />{" "}</span>
                             </div>
                             <div className="market-grid">
                                 {sector.topStocks

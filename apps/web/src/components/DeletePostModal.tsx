@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -33,10 +34,9 @@ export default function DeletePostModal({ isOpen, onClose, onConfirm, isDeleting
                             </div>
                             
                             <div>
-                                <h3 className="text-lg font-bold text-foreground">¿Eliminar publicación?</h3>
+                                <h3 className="text-lg font-bold text-foreground">{""}<FinixUiText text={"¿Eliminar publicación?"} />{""}</h3>
                                 <p className="text-[13.5px] text-muted-foreground mt-2 leading-relaxed">
-                                    Esta acción no se puede deshacer. La publicación será borrada permanentemente de tu feed y del inicio.
-                                </p>
+                                    {" "}<FinixUiText text={"Esta acción no se puede deshacer. La publicación será borrada permanentemente de tu feed y del inicio."} />{" "}</p>
                             </div>
 
                             <div className="flex items-center gap-3 pt-4">
@@ -46,8 +46,7 @@ export default function DeletePostModal({ isOpen, onClose, onConfirm, isDeleting
                                     disabled={isDeleting}
                                     className="flex-1 rounded-xl h-11 border-border/50 hover:bg-muted/50"
                                 >
-                                    Cancelar
-                                </Button>
+                                    {" "}<FinixUiText text={"Cancelar"} />{" "}</Button>
                                 <Button 
                                     onClick={onConfirm} 
                                     disabled={isDeleting}

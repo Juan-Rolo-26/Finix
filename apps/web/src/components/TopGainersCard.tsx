@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
@@ -113,10 +114,10 @@ export function TopGainersCard({
                         <TrendingUp className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
                     </div>
                     <div>
-                        <h3 className="text-[14.5px] font-bold tracking-tight text-foreground">Mejores rendimientos</h3>
+                        <h3 className="text-[14.5px] font-bold tracking-tight text-foreground">{""}<FinixUiText text={"Mejores rendimientos"} />{""}</h3>
                         {isStale && (
                             <p className="text-[10.5px] font-medium text-muted-foreground">
-                                Último cierre {date ? `(${date})` : ''}
+                                {" "}<FinixUiText text={"Último cierre"} />{" "}{date ? `(${date})` : ''}
                             </p>
                         )}
                     </div>
@@ -126,7 +127,7 @@ export function TopGainersCard({
                     to="/mercado/mejores-rendimientos"
                     className="text-[12px] font-bold flex items-center gap-0.5 transition-colors text-primary/80 hover:text-primary group"
                 >
-                    <span>Ver todos</span>
+                    <span>{""}<FinixUiText text={"Ver todos"} />{""}</span>
                     <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
             </div>
@@ -163,15 +164,13 @@ export function TopGainersCard({
                     <div className="flex-1 flex flex-col items-center justify-center p-5 text-center space-y-2">
                         <AlertCircle className="w-7 h-7 mx-auto text-destructive/70" />
                         <p className="text-[13px] font-medium text-muted-foreground">
-                            No pudimos cargar los rendimientos.
-                        </p>
+                            {" "}<FinixUiText text={"No pudimos cargar los rendimientos."} />{" "}</p>
                         {onRetry && (
                             <button
                                 onClick={onRetry}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold text-primary hover:bg-primary/10 transition-colors"
                             >
-                                <RefreshCw className="w-3.5 h-3.5" /> Reintentar
-                            </button>
+                                <RefreshCw className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
                         )}
                     </div>
                 )}
@@ -180,8 +179,7 @@ export function TopGainersCard({
                 {!isLoading && !isError && items.length === 0 && (
                     <div className="flex-1 flex items-center justify-center p-5 text-center">
                         <p className="text-[13px] font-medium text-muted-foreground">
-                            Todavía no hay datos de rendimiento disponibles.
-                        </p>
+                            {" "}<FinixUiText text={"Todavía no hay datos de rendimiento disponibles."} />{" "}</p>
                     </div>
                 )}
 

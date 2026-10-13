@@ -1,3 +1,4 @@
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { type ReactNode } from 'react';
 
 /** Small, safe Markdown subset used by the reference library; never injects HTML. */
@@ -40,10 +41,12 @@ export function EducationTextBlock({text}: {text: string}) {
 }
 
 export function EducationTable({text}: {text: string}) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const rows = text.trim().split('\n').map(line => line.trim().replace(/^\||\|$/g, '').split('|').map(cell => cell.trim()));
   const header = rows[0];
   const body = rows.slice(1).filter(row => !row.every(cell => /^:?-{3,}:?$/.test(cell)));
-  return <div className="overflow-x-auto my-4 rounded-xl border border-border" tabIndex={0} role="region" aria-label="Tabla de referencia; desplazamiento horizontal">
+  return <div className="overflow-x-auto my-4 rounded-xl border border-border" tabIndex={0} role="region" aria-label={finixUi("Tabla de referencia; desplazamiento horizontal")}>
     <table className="w-full min-w-[420px] border-collapse text-left text-xs sm:text-sm">
       <thead className="bg-muted/60"><tr>{header.map((cell, index) => <th key={index} scope="col" className="border-b border-border px-3 py-2.5 font-bold">{renderEducationText(cell)}</th>)}</tr></thead>
       <tbody>{body.map((row, index) => <tr key={index} className="border-b border-border/50 last:border-0">{header.map((_, column) => <td key={column} className="px-3 py-2.5 align-top">{renderEducationText(row[column] || '')}</td>)}</tr>)}</tbody>

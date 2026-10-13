@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -28,6 +30,8 @@ const SUGGESTED_QUERIES = [
 ];
 
 export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const navigate = useNavigate();
     const inputRef = useRef<HTMLInputElement>(null);
     const [query, setQuery] = useState('');
@@ -121,7 +125,7 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 {/* Backdrop */}
                 <button
                     type="button"
-                    aria-label="Cerrar búsqueda"
+                    aria-label={finixUi("Cerrar búsqueda")}
                     className="global-search-backdrop absolute inset-0 bg-background/80 backdrop-blur-sm"
                     onClick={onClose}
                 />
@@ -130,7 +134,7 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 <motion.div
                     role="dialog"
                     aria-modal="true"
-                    aria-label="Buscar en Finix"
+                    aria-label={finixUi("Buscar en Finix")}
                     className="global-search-dialog relative w-full max-w-2xl bg-card border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col"
                     initial={{ scale: 0.95, y: -20, opacity: 0 }}
                     animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -139,12 +143,12 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 >
                     <div className="global-search-intro global-search-desktop-only">
                         <div>
-                            <span className="global-search-eyebrow"><img src="/logo-small.webp" alt="" />EXPLORÁ FINIX</span>
-                            <h2>Todo empieza con una búsqueda</h2>
-                            <p>Encontrá activos, inversores y nuevas ideas.</p>
+                            <span className="global-search-eyebrow"><img src="/logo-small.webp" alt="" />{""}<FinixUiText text={"EXPLORÁ FINIX"} />{""}</span>
+                            <h2>{""}<FinixUiText text={"Todo empieza con una búsqueda"} />{""}</h2>
+                            <p>{""}<FinixUiText text={"Encontrá activos, inversores y nuevas ideas."} />{""}</p>
                         </div>
-                        <button type="button" onClick={onClose} className="global-search-close" aria-label="Cerrar buscador">
-                            <X size={18} /><kbd>Esc</kbd>
+                        <button type="button" onClick={onClose} className="global-search-close" aria-label={finixUi("Cerrar buscador")}>
+                            <X size={18} /><kbd>{""}<FinixUiText text={"Esc"} />{""}</kbd>
                         </button>
                     </div>
                     {/* Header Input */}
@@ -153,20 +157,19 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                         <input
                             ref={inputRef}
                             type="text"
-                            aria-label="Buscar en Finix"
+                            aria-label={finixUi("Buscar en Finix")}
                             className="flex-1 bg-transparent border-none outline-none text-base placeholder:text-muted-foreground"
-                            placeholder="Buscar en Finix o pedir a la IA..."
+                            placeholder={finixUi("Buscar en Finix o pedir a la IA...")}
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                         />
                         {query && (
-                            <button type="button" aria-label="Limpiar búsqueda" onClick={() => setQuery('')} className="p-1 hover:bg-secondary rounded-full transition-colors">
+                            <button type="button" aria-label={finixUi("Limpiar búsqueda")} onClick={() => setQuery('')} className="p-1 hover:bg-secondary rounded-full transition-colors">
                                 <X className="w-4 h-4 text-muted-foreground" />
                             </button>
                         )}
                         <kbd className="hidden sm:inline-flex items-center gap-1 bg-secondary px-2 py-1 rounded text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-                            ESC
-                        </kbd>
+                            {" "}<FinixUiText text={"ESC"} />{" "}</kbd>
                     </div>
 
                     {/* Filters */}
@@ -203,15 +206,14 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                         {isLoading ? (
                             <div className="flex flex-col items-center justify-center py-10 gap-3">
                                 <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                                <span className="text-xs text-muted-foreground">Buscando...</span>
+                                <span className="text-xs text-muted-foreground">{""}<FinixUiText text={"Buscando..."} />{""}</span>
                             </div>
                         ) : query.length < 2 ? (
                             <div className="global-search-start p-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 <div className="global-search-history mb-6">
                                     <h4 className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-widest px-2 mb-3">
                                         <History className="w-3.5 h-3.5" />
-                                        Búsquedas Recientes
-                                    </h4>
+                                        {" "}<FinixUiText text={"Búsquedas Recientes"} />{" "}</h4>
                                     <div className="global-search-history-list space-y-1">
                                         {history.map(h => (
                                             <button
@@ -230,8 +232,7 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                                 <div className="global-search-suggestions">
                                     <h4 className="flex items-center gap-1.5 text-xs font-semibold text-primary uppercase tracking-widest px-2 mb-3">
                                         <Sparkles className="w-3.5 h-3.5" />
-                                        Consultas Inteligentes (IA)
-                                    </h4>
+                                        {" "}<FinixUiText text={"Consultas Inteligentes (IA)"} />{" "}</h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         {SUGGESTED_QUERIES.map(q => (
                                             <button
@@ -252,7 +253,7 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                         ) : results.length > 0 ? (
                             <div className="global-search-results space-y-1 p-2">
                                 <h4 className="text-xs font-semibold text-muted-foreground px-2 py-1 mb-1">
-                                    Resultados ({results.length})
+                                    {" "}<FinixUiText text={"Resultados ("} />{""}{results.length})
                                 </h4>
                                 {results.map((r) => {
                                     if (r._searchType === 'asset') {
@@ -282,7 +283,7 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                                                 {isWatchlistEnabled() && (
                                                     <button
                                                         type="button"
-                                                        title="Agregar a Seguimiento"
+                                                        title={finixUi("Agregar a Seguimiento")}
                                                         aria-label={`Agregar ${r.name || r.symbol} a Seguimiento`}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -331,10 +332,9 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                                 <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
                                     <Search className="w-5 h-5 text-muted-foreground" />
                                 </div>
-                                <h3 className="text-sm font-semibold mb-1">No hay resultados</h3>
+                                <h3 className="text-sm font-semibold mb-1">{""}<FinixUiText text={"No hay resultados"} />{""}</h3>
                                 <p className="text-xs text-muted-foreground max-w-[250px]">
-                                    No pudimos encontrar nada que coincida con "{query}". Prueba buscar otra cosa o usar la IA.
-                                </p>
+                                    {" "}<FinixUiText text={"No pudimos encontrar nada que coincida con \""} />{""}{query}{""}<FinixUiText text={"\". Prueba buscar otra cosa o usar la IA."} />{" "}</p>
                             </div>
                         )}
                     </div>

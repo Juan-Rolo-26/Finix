@@ -1,8 +1,11 @@
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function ScrollToTopButton() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
@@ -36,8 +39,8 @@ export function ScrollToTopButton() {
                     onClick={scrollToTop}
                     type="button"
                     className="fixed bottom-[calc(var(--finix-mobile-nav-height,60px)+env(safe-area-inset-bottom)+16px)] lg:bottom-7 right-5 lg:right-7 z-50 w-11 h-11 rounded-full border border-border/80 bg-card/90 dark:bg-card/85 text-foreground shadow-xl backdrop-blur-md flex items-center justify-center transition-all hover:border-primary/60 hover:text-primary group cursor-pointer select-none"
-                    aria-label="Volver arriba"
-                    title="Volver arriba"
+                    aria-label={finixUi("Volver arriba")}
+                    title={finixUi("Volver arriba")}
                 >
                     <ArrowUp className="w-5 h-5 transition-transform duration-200 group-hover:-translate-y-0.5" />
                 </motion.button>

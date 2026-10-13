@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { Clock, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { normalizeNewsImage } from '@/lib/newsImage';
@@ -9,6 +11,8 @@ export function DesktopNewsCard({ slot, variant, categoryName, onClickTracking }
     categoryName?: string;
     onClickTracking: (slotId: string) => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [imageFailed, setImageFailed] = useState(false);
     const article = slot.article;
     if (!slot.isActive || !article) return null;
@@ -23,9 +27,9 @@ export function DesktopNewsCard({ slot, variant, categoryName, onClickTracking }
             </div>
             <div className="desktop-news-card__body">
                 {article.description && <p>{article.description}</p>}
-                {variant === 'timeline' && <span className="desktop-news-card__read">Leer noticia<ExternalLink size={14} /></span>}
+                {variant === 'timeline' && <span className="desktop-news-card__read">{""}<FinixUiText text={"Leer noticia"} />{""}<ExternalLink size={14} /></span>}
             </div>
-            <div className="desktop-news-card__footer">{time && <span><Clock size={13} /><time dateTime={article.publishedAt}>{time}</time></span>}{variant === 'desktop' && <ExternalLink size={13} aria-label="Abrir noticia" />}</div>
+            <div className="desktop-news-card__footer">{time && <span><Clock size={13} /><time dateTime={article.publishedAt}>{time}</time></span>}{variant === 'desktop' && <ExternalLink size={13} aria-label={finixUi("Abrir noticia")} />}</div>
         </a>
     );
 }

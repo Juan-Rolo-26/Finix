@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, ChevronRight, Loader2 } from 'lucide-react';
@@ -77,14 +78,13 @@ export function CalendarPreviewCard() {
                         <Calendar className="w-4 h-4" />
                     </div>
                     <span className="text-[14.5px] font-bold tracking-tight text-foreground">
-                        Calendario
-                    </span>
+                        {" "}<FinixUiText text={"Calendario"} />{" "}</span>
                 </div>
                 <button
                     onClick={() => navigate('/calendario')}
                     className="text-[12px] font-bold text-muted-foreground/80 hover:text-primary transition-colors flex items-center gap-0.5 group"
                 >
-                    <span>Ver todos</span>
+                    <span>{""}<FinixUiText text={"Ver todos"} />{""}</span>
                     <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                 </button>
             </div>
@@ -94,11 +94,11 @@ export function CalendarPreviewCard() {
                 {isLoading ? (
                     <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted-foreground py-6">
                         <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                        <span className="text-[12px] font-medium">Cargando eventos...</span>
+                        <span className="text-[12px] font-medium">{""}<FinixUiText text={"Cargando eventos..."} />{""}</span>
                     </div>
                 ) : isError || events.length === 0 ? (
                     <div className="flex-1 flex items-center justify-center py-6 text-center text-muted-foreground">
-                        <p className="text-[13px] font-medium">No hay eventos destacados para esta semana</p>
+                        <p className="text-[13px] font-medium">{""}<FinixUiText text={"No hay eventos destacados para esta semana"} />{""}</p>
                     </div>
                 ) : (
                     <div className="flex-1 flex flex-col justify-between min-h-0 gap-2">
@@ -130,12 +130,10 @@ export function CalendarPreviewCard() {
                                             {isEarnings ? (
                                                 <>
                                                     <span className="text-[10px] font-black tracking-wider uppercase text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/25">
-                                                        📊 RESULTADOS
-                                                    </span>
+                                                        {" "}<FinixUiText text={"📊 RESULTADOS"} />{" "}</span>
                                                     {evt.dateStatus === 'ESTIMATED' && (
                                                         <span className="text-[9.5px] font-semibold text-muted-foreground bg-secondary px-1.5 rounded">
-                                                            Fecha estimada
-                                                        </span>
+                                                            {" "}<FinixUiText text={"Fecha estimada"} />{" "}</span>
                                                     )}
                                                 </>
                                             ) : (
@@ -145,7 +143,7 @@ export function CalendarPreviewCard() {
                                                         : 'text-amber-500 bg-amber-500/10 border-amber-500/25'
                                                         }`}
                                                 >
-                                                    {flag} IMPACTO {evt.importance === 'HIGH' ? 'ALTO' : 'MEDIO'}
+                                                    {flag} {" "}<FinixUiText text={"IMPACTO"} />{" "}{evt.importance === 'HIGH' ? 'ALTO' : 'MEDIO'}
                                                 </span>
                                             )}
                                         </div>
@@ -179,9 +177,9 @@ export function CalendarPreviewCard() {
                                             (evt.consensusValue || evt.previousValue) ? (
                                                 <p className="text-[11.5px] text-muted-foreground mt-0.5 leading-tight truncate">
                                                     {evt.consensusValue && (
-                                                        <span>Consenso: <strong className="text-foreground/90">{evt.consensusValue}</strong></span>
+                                                        <span>{""}<FinixUiText text={"Consenso:"} />{" "}<strong className="text-foreground/90">{evt.consensusValue}</strong></span>
                                                     )}
-                                                    {evt.previousValue && <span> · Ant: {evt.previousValue}</span>}
+                                                    {evt.previousValue && <span> {" "}<FinixUiText text={"· Ant:"} />{" "}{evt.previousValue}</span>}
                                                 </p>
                                             ) : (
                                                 evt.subtitle && (

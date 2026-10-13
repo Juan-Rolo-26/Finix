@@ -14,6 +14,9 @@ export interface AppPreferences {
     showAdvancedMetrics: boolean;
     theme: Theme;
     sidebarCollapsed: boolean;
+    chartDensity: 'basic' | 'normal' | 'advanced';
+    marketNotifications: boolean;
+    timezone: string;
 }
 
 interface PreferencesState extends AppPreferences {
@@ -44,7 +47,7 @@ function applyThemeToDOM(theme: Theme) {
 
 function syncThemeToBackend(theme: Theme) {
     if (typeof window === 'undefined') return;
-    apiFetch('/users/me/preferences', {
+    apiFetch('/me/preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme }),
@@ -63,6 +66,9 @@ export const usePreferencesStore = create<PreferencesState>()(
             showAdvancedMetrics: true,
             theme: 'light',
             sidebarCollapsed: false,
+            chartDensity: 'normal',
+            marketNotifications: false,
+            timezone: 'America/Argentina/Buenos_Aires',
 
             setLanguage: (language) => set({ language }),
             setCurrency: (currency) => set({ currency }),
@@ -79,7 +85,7 @@ export const usePreferencesStore = create<PreferencesState>()(
                 set((state) => ({ ...state, ...prefs }));
                 if (prefs.theme) {
                     applyThemeToDOM(prefs.theme);
-                    syncThemeToBackend(prefs.theme);
+
                 }
             },
         }),

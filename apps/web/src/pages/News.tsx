@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -98,8 +99,7 @@ function EmptyState({ categoryName }: { categoryName?: string }) {
                 {categoryName ? `No hay noticias publicadas en ${categoryName}` : 'Sin contenido disponible'}
             </p>
             <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                Nuestro equipo editorial actualizará esta sección pronto con la información más relevante.
-            </p>
+                {" "}<FinixUiText text={"Nuestro equipo editorial actualizará esta sección pronto con la información más relevante."} />{" "}</p>
         </div>
     );
 }
@@ -240,11 +240,9 @@ export default function NewsPage() {
                 <div className="news-mobile-content flex flex-col items-center justify-center text-center gap-4 max-w-2xl mx-auto">
                     <div className="flex flex-col items-center text-center">
                         <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight text-center">
-                            Noticias
-                        </h1>
+                            {" "}<FinixUiText text={"Noticias"} />{" "}</h1>
                         <p className="text-muted-foreground text-sm sm:text-base mt-1 text-center">
-                            Información financiera curada por nuestro equipo editorial
-                        </p>
+                            {" "}<FinixUiText text={"Información financiera curada por nuestro equipo editorial"} />{" "}</p>
                     </div>
                     <button
                         onClick={() => selectedSlug && loadSlots(selectedSlug, Boolean(categoryData))}
@@ -252,24 +250,20 @@ export default function NewsPage() {
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-secondary text-sm font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                     >
                         <RefreshCw className={`w-4 h-4 ${slotsLoading ? 'animate-spin' : ''}`} />
-                        <span>Actualizar</span>
+                        <span>{""}<FinixUiText text={"Actualizar"} />{""}</span>
                     </button>
                     {/* Educational Shortcuts */}
                     {isEducationEnabled() && (
                         <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs">
                             <span className="text-muted-foreground font-medium flex items-center gap-1">
                                 <GraduationCap className="w-3.5 h-3.5 text-primary" />
-                                Conceptos clave:
-                            </span>
+                                {" "}<FinixUiText text={"Conceptos clave:"} />{" "}</span>
                             <Link to="/educativa/macroeconomia/inflacion-y-tasas-de-interes" className="px-2.5 py-1 rounded-lg bg-card/80 border border-border/70 hover:border-primary/50 text-foreground font-medium transition-colors">
-                                Inflación y Tasas Fed
-                            </Link>
+                                {" "}<FinixUiText text={"Inflación y Tasas Fed"} />{" "}</Link>
                             <Link to="/educativa/fundamentos/que-son-los-cedears" className="px-2.5 py-1 rounded-lg bg-card/80 border border-border/70 hover:border-primary/50 text-foreground font-medium transition-colors">
-                                CEDEARs y Dólar CCL
-                            </Link>
+                                {" "}<FinixUiText text={"CEDEARs y Dólar CCL"} />{" "}</Link>
                             <Link to="/educativa/fundamentos/que-son-los-etfs" className="px-2.5 py-1 rounded-lg bg-card/80 border border-border/70 hover:border-primary/50 text-foreground font-medium transition-colors">
-                                ETFs (SPY / QQQ)
-                            </Link>
+                                {" "}<FinixUiText text={"ETFs (SPY / QQQ)"} />{" "}</Link>
                         </div>
                     )}
                 </div>
@@ -314,8 +308,7 @@ export default function NewsPage() {
                             onClick={() => selectedSlug && loadSlots(selectedSlug, Boolean(categoryData))}
                             className="shrink-0 text-xs underline hover:no-underline"
                         >
-                            Reintentar
-                        </button>
+                            {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
                     </div>
                 )}
 

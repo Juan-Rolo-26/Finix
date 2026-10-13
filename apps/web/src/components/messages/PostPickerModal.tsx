@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -64,6 +66,8 @@ export default function PostPickerModal({
     onClose,
     onSelect,
 }: PostPickerModalProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [activeTab, setActiveTab] = useState<'mine' | 'recent'>('recent');
     const [minePosts, setMinePosts] = useState<SharedPostPreview[]>([]);
     const [recentPosts, setRecentPosts] = useState<SharedPostPreview[]>([]);
@@ -135,8 +139,8 @@ export default function PostPickerModal({
             >
                 <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-border/30 bg-card/95 backdrop-blur-sm">
                     <div>
-                        <h2 className="text-lg font-black">Compartir publicacion</h2>
-                        <p className="text-xs text-muted-foreground">Selecciona una publicacion para enviarla en el chat</p>
+                        <h2 className="text-lg font-black">{""}<FinixUiText text={"Compartir publicacion"} />{""}</h2>
+                        <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Selecciona una publicacion para enviarla en el chat"} />{""}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -156,8 +160,7 @@ export default function PostPickerModal({
                                     : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'
                             }`}
                         >
-                            Comunidad
-                        </button>
+                            {" "}<FinixUiText text={"Comunidad"} />{" "}</button>
                         {currentUsername && (
                             <button
                                 onClick={() => setActiveTab('mine')}
@@ -167,8 +170,7 @@ export default function PostPickerModal({
                                         : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'
                                 }`}
                             >
-                                Mis publicaciones
-                            </button>
+                                {" "}<FinixUiText text={"Mis publicaciones"} />{" "}</button>
                         )}
                     </div>
 
@@ -186,10 +188,9 @@ export default function PostPickerModal({
                                 <MessageSquare className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-sm font-semibold">No hay publicaciones para compartir</p>
+                                <p className="text-sm font-semibold">{""}<FinixUiText text={"No hay publicaciones para compartir"} />{""}</p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Crea una nueva publicacion o prueba con la pestana de recientes.
-                                </p>
+                                    {" "}<FinixUiText text={"Crea una nueva publicacion o prueba con la pestana de recientes."} />{" "}</p>
                             </div>
                         </div>
                     ) : (
@@ -245,7 +246,7 @@ export default function PostPickerModal({
                                                 <div className="rounded-2xl overflow-hidden border border-border/30 bg-black/20">
                                                     <img
                                                         src={resolveMediaUrl(firstMedia.url)}
-                                                        alt="Vista previa"
+                                                        alt={finixUi("Vista previa")}
                                                         className="w-full max-h-72 object-cover"
                                                         loading="lazy"
                                                     />

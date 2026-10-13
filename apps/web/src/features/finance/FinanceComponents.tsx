@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -104,8 +106,10 @@ const PERIODS: Array<{ value: FinancePeriod; label: string }> = [
 ];
 
 export function PeriodSelector({ value, onChange }: { value: FinancePeriod; onChange: (value: FinancePeriod) => void }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     return (
-        <div className="inline-flex items-center rounded-xl border border-border/60 bg-secondary/30 p-1 gap-0.5" aria-label="Periodo">
+        <div className="inline-flex items-center rounded-xl border border-border/60 bg-secondary/30 p-1 gap-0.5" aria-label={finixUi("Periodo")}>
             {PERIODS.map((period) => (
                 <button
                     key={period.value}
@@ -119,7 +123,7 @@ export function PeriodSelector({ value, onChange }: { value: FinancePeriod; onCh
                     )}
                     aria-pressed={value === period.value}
                 >
-                    {period.label}
+                    {<FinixUiText text={period.label} />}
                 </button>
             ))}
         </div>
@@ -155,6 +159,8 @@ export function FinancePageFrame({
     showAction?: boolean;
     status?: string;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const location = useLocation();
     const hideValues = useFinancePreferences((state) => state.hideValues);
     const toggleHideValues = useFinancePreferences((state) => state.toggleHideValues);
@@ -164,7 +170,7 @@ export function FinancePageFrame({
     return (
         <ProGate
             section="finance"
-            title="Finanzas personales en Finix PRO"
+            title={finixUi("Finanzas personales en Finix PRO")}
             description="Tus cuentas, movimientos y objetivos en un espacio privado conectado a tu cuenta Finix."
             features={[
                 { title: 'Un solo resumen', desc: 'Patrimonio, liquidez, ahorro y compromisos en una vista clara.' },
@@ -190,11 +196,11 @@ export function FinancePageFrame({
                                     <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-emerald-500/25 to-emerald-600/10 border border-emerald-500/30 flex items-center justify-center">
                                         <Wallet className="w-3.5 h-3.5 text-emerald-400" />
                                     </div>
-                                    <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-400">Finanzas</p>
+                                    <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-400">{""}<FinixUiText text={"Finanzas"} />{""}</p>
                                 </div>
                             </div>
 
-                            <nav className="space-y-0.5" aria-label="Navegacion financiera">
+                            <nav className="space-y-0.5" aria-label={finixUi("Navegacion financiera")}>
                                 {financeNav.map((item) => {
                                     const active =
                                         item.path === '/finanzas'
@@ -213,7 +219,7 @@ export function FinancePageFrame({
                                             )}
                                         >
                                             <Icon className={cn('w-4 h-4 shrink-0', active ? 'text-emerald-400' : 'text-muted-foreground')} />
-                                            {item.label}
+                                            {<FinixUiText text={item.label} />}
                                             {active && (
                                                 <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
                                             )}
@@ -229,8 +235,7 @@ export function FinancePageFrame({
                                     className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
                                 >
                                     <Settings className="w-3.5 h-3.5" />
-                                    Ajustes
-                                </Link>
+                                    {" "}<FinixUiText text={"Ajustes"} />{" "}</Link>
                             </div>
                         </div>
                     </aside>
@@ -244,7 +249,7 @@ export function FinancePageFrame({
                                         <Wallet className="w-5 h-5 text-emerald-400" />
                                     </div>
                                     <div>
-                                        <p className="mb-1 text-xs font-black uppercase tracking-[0.18em] text-emerald-400">Finanzas Personales</p>
+                                        <p className="mb-1 text-xs font-black uppercase tracking-[0.18em] text-emerald-400">{""}<FinixUiText text={"Finanzas Personales"} />{""}</p>
                                         <h1 className="text-3xl font-black tracking-tight sm:text-4xl text-foreground">{title}</h1>
                                         <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
                                     </div>
@@ -269,16 +274,16 @@ export function FinancePageFrame({
                                     </button>
 
                                     {/* Selector moneda */}
-                                    <label className="sr-only" htmlFor="finance-currency">Moneda principal</label>
+                                    <label className="sr-only" htmlFor="finance-currency">{""}<FinixUiText text={"Moneda principal"} />{""}</label>
                                     <select
                                         id="finance-currency"
                                         value={currency}
                                         onChange={(event) => setCurrency(event.target.value as FinanceCurrency)}
                                         className="h-10 rounded-xl border border-border/60 bg-card/60 px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/30 backdrop-blur-sm transition-all"
                                     >
-                                        <option value="ARS">ARS</option>
-                                        <option value="USD">USD</option>
-                                        <option value="EUR">EUR</option>
+                                        <option value="ARS">{""}<FinixUiText text={"ARS"} />{""}</option>
+                                        <option value="USD">{""}<FinixUiText text={"USD"} />{""}</option>
+                                        <option value="EUR">{""}<FinixUiText text={"EUR"} />{""}</option>
                                     </select>
 
                                     {/* Boton principal */}
@@ -295,7 +300,7 @@ export function FinancePageFrame({
                             </div>
 
                             {/* Nav horizontal mobile/tablet */}
-                            <nav className="mt-6 -mb-6 flex gap-1 overflow-x-auto pb-px lg:hidden scrollbar-none" aria-label="Navegacion financiera">
+                            <nav className="mt-6 -mb-6 flex gap-1 overflow-x-auto pb-px lg:hidden scrollbar-none" aria-label={finixUi("Navegacion financiera")}>
                                 {financeNav.map((item) => {
                                     const active =
                                         item.path === '/finanzas'
@@ -312,7 +317,7 @@ export function FinancePageFrame({
                                                     : 'border-transparent text-muted-foreground hover:text-foreground'
                                             )}
                                         >
-                                            {item.label}
+                                            {<FinixUiText text={item.label} />}
                                         </Link>
                                     );
                                 })}
@@ -433,7 +438,6 @@ export function SyncButton({ onClick }: { onClick?: () => void }) {
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
         >
             <RefreshCw className="h-3.5 w-3.5" />
-            Sincronizar
-        </button>
+            {" "}<FinixUiText text={"Sincronizar"} />{" "}</button>
     );
 }

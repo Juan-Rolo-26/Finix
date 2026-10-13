@@ -1,3 +1,4 @@
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /** ChartSkeleton.tsx — Animated loading skeleton for charts */
 import { cn } from '@/lib/utils';
 
@@ -8,12 +9,14 @@ interface ChartSkeletonProps {
 }
 
 export function ChartSkeleton({ height = 320, className, showBars = true }: ChartSkeletonProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   return (
     <div
       className={cn('w-full animate-pulse', className)}
       style={{ height }}
       role="progressbar"
-      aria-label="Cargando gráfico"
+      aria-label={finixUi("Cargando gráfico")}
       aria-busy="true"
     >
       {showBars ? (

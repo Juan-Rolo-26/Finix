@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useRef, useState } from 'react';
 import { Loader2, Upload, X, Camera } from 'lucide-react';
 import { uploadProfileImage } from '@/lib/profileMedia';
@@ -16,6 +18,8 @@ const SIZES = {
 };
 
 export default function AvatarUpload({ currentUrl, onUploaded, size = 'md' }: AvatarUploadProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const inputRef = useRef<HTMLInputElement>(null);
     const [localPreview, setLocalPreview] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -70,7 +74,7 @@ export default function AvatarUpload({ currentUrl, onUploaded, size = 'md' }: Av
                 {preview ? (
                     <img
                         src={resolveMediaUrl(preview)}
-                        alt="Avatar"
+                        alt={finixUi("Avatar")}
                         className={`${s.container} rounded-full object-cover border-2 border-primary/40 group-hover:border-primary transition-all`}
                     />
                 ) : (
@@ -114,8 +118,7 @@ export default function AvatarUpload({ currentUrl, onUploaded, size = 'md' }: Av
                 {isUploading ? (
                     <>
                         <Loader2 className="w-3 h-3 animate-spin" />
-                        Subiendo...
-                    </>
+                        {" "}<FinixUiText text={"Subiendo..."} />{" "}</>
                 ) : (
                     <>
                         <Upload className="w-3 h-3" />
@@ -125,8 +128,7 @@ export default function AvatarUpload({ currentUrl, onUploaded, size = 'md' }: Av
             </button>
 
             <p className={`${s.text} text-muted-foreground/60 text-center`}>
-                JPG, PNG, WEBP · Máx 5 MB
-            </p>
+                {" "}<FinixUiText text={"JPG, PNG, WEBP · Máx 5 MB"} />{" "}</p>
 
             {error && (
                 <p className="text-xs text-red-400 text-center">{error}</p>

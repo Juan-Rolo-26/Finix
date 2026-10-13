@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
@@ -59,6 +61,8 @@ function CommentItem({
     onThreadCountDelta: (delta: number) => void;
     depth?: number;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [liked, setLiked] = useState(comment.likedByMe);
     const [likesCount, setLikesCount] = useState(comment.likesCount);
     const [repliesCount, setRepliesCount] = useState(comment.repliesCount);
@@ -159,18 +163,17 @@ function CommentItem({
                             <button
                                 type="button"
                                 onClick={() => setShowReply(!showReply)}
-                                aria-label="Responder a este comentario"
+                                aria-label={finixUi("Responder a este comentario")}
                                 className="min-h-[44px] min-w-[44px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                             >
                                 <Reply className="w-3.5 h-3.5" />
-                                Responder
-                            </button>
+                                {" "}<FinixUiText text={"Responder"} />{" "}</button>
                         )}
                         {isOwner ? (
                             <button
                                 type="button"
                                 onClick={handleDelete}
-                                aria-label="Eliminar comentario"
+                                aria-label={finixUi("Eliminar comentario")}
                                 className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-lg text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors focus-visible:ring-2 focus-visible:ring-red-500"
                             >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -180,7 +183,7 @@ function CommentItem({
                                 <button
                                     type="button"
                                     onClick={() => setShowReportModal(true)}
-                                    aria-label="Reportar comentario"
+                                    aria-label={finixUi("Reportar comentario")}
                                     className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-lg text-xs text-muted-foreground hover:text-red-400 hover:bg-secondary/40 transition-colors focus-visible:ring-2 focus-visible:ring-primary"
                                 >
                                     <Flag className="w-3.5 h-3.5" />
@@ -265,6 +268,8 @@ interface CommentsPanelProps {
 }
 
 export default function CommentsPanel({ postId, currentUserId, onCountChange }: CommentsPanelProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
     const [submitError, setSubmitError] = useState('');
@@ -351,7 +356,7 @@ export default function CommentsPanel({ postId, currentUserId, onCountChange }: 
             {currentUserId && (
                 <div className="flex gap-2">
                     <Textarea
-                        placeholder="Escribí un comentario..."
+                        placeholder={finixUi("Escribí un comentario...")}
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         className="bg-secondary/30 resize-none text-sm"
@@ -401,8 +406,7 @@ export default function CommentsPanel({ postId, currentUserId, onCountChange }: 
                             onClick={handleLoadMore}
                             className="w-full text-xs text-primary hover:underline py-2"
                         >
-                            Ver más comentarios
-                        </button>
+                            {" "}<FinixUiText text={"Ver más comentarios"} />{" "}</button>
                     )}
                 </div>
             )}

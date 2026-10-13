@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useState, useEffect } from 'react';
 import {
     Dialog,
@@ -79,10 +80,9 @@ export default function DeleteWatchlistModal({
                     </div>
                     <div>
                         <DialogTitle className="text-lg font-black tracking-tight text-foreground">
-                            ¿Eliminar lista de seguimiento?
-                        </DialogTitle>
+                            {" "}<FinixUiText text={"¿Eliminar lista de seguimiento?"} />{" "}</DialogTitle>
                         <DialogDescription className="text-xs text-muted-foreground mt-1">
-                            Estás a punto de eliminar la lista{' '}
+                            {" "}<FinixUiText text={"Estás a punto de eliminar la lista"} />{""}{' '}
                             <span className="font-bold text-foreground">"{watchlistName || impact?.name}"</span>.
                         </DialogDescription>
                     </div>
@@ -97,29 +97,28 @@ export default function DeleteWatchlistModal({
                 {loadingImpact ? (
                     <div className="py-6 flex flex-col items-center justify-center gap-2">
                         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">Calculando impacto...</span>
+                        <span className="text-xs text-muted-foreground">{""}<FinixUiText text={"Calculando impacto..."} />{""}</span>
                     </div>
                 ) : (
                     <div className="rounded-2xl border border-border/60 bg-secondary/30 p-4 space-y-3">
-                        <p className="text-xs font-bold text-foreground">Impacto de la eliminación:</p>
+                        <p className="text-xs font-bold text-foreground">{""}<FinixUiText text={"Impacto de la eliminación:"} />{""}</p>
                         <div className="grid grid-cols-3 gap-2 text-center">
                             <div className="rounded-xl bg-background/80 p-2.5 border border-border/40">
                                 <span className="block text-lg font-black text-foreground">{impact?.itemCount ?? 0}</span>
-                                <span className="text-[10px] text-muted-foreground uppercase font-bold">Activos</span>
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold">{""}<FinixUiText text={"Activos"} />{""}</span>
                             </div>
                             <div className="rounded-xl bg-background/80 p-2.5 border border-border/40">
                                 <span className="block text-lg font-black text-foreground">{impact?.notesCount ?? 0}</span>
-                                <span className="text-[10px] text-muted-foreground uppercase font-bold">Notas</span>
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold">{""}<FinixUiText text={"Notas"} />{""}</span>
                             </div>
                             <div className="rounded-xl bg-background/80 p-2.5 border border-border/40">
                                 <span className="block text-lg font-black text-foreground">{impact?.alertsCount ?? 0}</span>
-                                <span className="text-[10px] text-muted-foreground uppercase font-bold">Alertas vinculadas</span>
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold">{""}<FinixUiText text={"Alertas vinculadas"} />{""}</span>
                             </div>
                         </div>
                         <p className="text-[11px] text-muted-foreground leading-relaxed">
-                            Esta acción eliminará los activos y notas registradas en esta lista. Tus posiciones en{' '}
-                            <b className="text-foreground">Portafolio</b> no se verán modificadas.
-                        </p>
+                            {" "}<FinixUiText text={"Esta acción eliminará los activos y notas registradas en esta lista. Tus posiciones en"} />{""}{' '}
+                            <b className="text-foreground">{""}<FinixUiText text={"Portafolio"} />{""}</b> {" "}<FinixUiText text={"no se verán modificadas."} />{" "}</p>
                     </div>
                 )}
 
@@ -132,8 +131,7 @@ export default function DeleteWatchlistModal({
                         onClick={onClose}
                         className="rounded-xl text-xs font-bold text-muted-foreground"
                     >
-                        Cancelar
-                    </Button>
+                        {" "}<FinixUiText text={"Cancelar"} />{" "}</Button>
                     <Button
                         type="button"
                         variant="destructive"
@@ -147,8 +145,7 @@ export default function DeleteWatchlistModal({
                         ) : (
                             <Trash2 className="h-3.5 w-3.5" />
                         )}
-                        Eliminar lista
-                    </Button>
+                        {" "}<FinixUiText text={"Eliminar lista"} />{" "}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

@@ -1,3 +1,4 @@
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import React, { useMemo } from 'react';
 import {
     PieChart,
@@ -257,6 +258,8 @@ export const PortfolioAdvancedMetrics = ({
     assets: PortfolioAsset[];
     currency?: string;
 }) => {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const allocationByType = useMemo(
         () => {
             if (metrics?.diversificacionPorClase) {
@@ -303,7 +306,7 @@ export const PortfolioAdvancedMetrics = ({
     return (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <DistributionCard
-                title="Diversificacion por tipo de activo"
+                title={finixUi("Diversificacion por tipo de activo")}
                 description="Peso real de cada tipo dentro del portafolio"
                 summary={largestType
                     ? `La mayor exposicion hoy esta en ${largestType.name} con ${formatPercent(largestType.share)} del valor total del portafolio.`
@@ -314,7 +317,7 @@ export const PortfolioAdvancedMetrics = ({
             />
 
             <DistributionCard
-                title="Diversificacion por activo"
+                title={finixUi("Diversificacion por activo")}
                 description="Distribucion individual de todas las posiciones"
                 summary={largestAsset
                     ? `La posicion con mas peso es ${largestAsset.name} con ${formatPercent(largestAsset.share)} del valor actual del portafolio.`

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore, isJuanUser } from '../stores/authStore';
@@ -143,6 +145,8 @@ interface ProfilePortfolioSectionProps {
 }
 
 export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortfolio, totalReturn, winRate, riskScore, showStats, showExactReturns, returnsVisibilityMode }: ProfilePortfolioSectionProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { portfolios, selectedId, selected, selectPortfolio, metrics, movements, loading, refreshing, error, updatedAt, refresh } = useProfilePortfolio(profileUserId, isOwnProfile, showPortfolio);
     const [activeView, setActiveView] = useState<'overview' | 'assets' | 'movements'>('overview');
 
@@ -209,8 +213,8 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
         return (
             <div className="rounded-2xl py-12 text-center space-y-3" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px dashed hsl(var(--border))' }}>
                 <Lock className="w-8 h-8 mx-auto text-muted-foreground opacity-40" />
-                <p className="text-sm font-semibold text-foreground">Portafolio privado</p>
-                <p className="text-sm text-muted-foreground">Este usuario mantiene su portafolio oculto</p>
+                <p className="text-sm font-semibold text-foreground">{""}<FinixUiText text={"Portafolio privado"} />{""}</p>
+                <p className="text-sm text-muted-foreground">{""}<FinixUiText text={"Este usuario mantiene su portafolio oculto"} />{""}</p>
             </div>
         );
     }
@@ -232,12 +236,11 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                 <p className="text-sm font-semibold text-foreground">
                     {error || (isOwnProfile ? 'Aún no tenés portafolios' : 'Sin portafolios públicos')}
                 </p>
-                {error && <button type="button" onClick={refresh} className="rounded-xl border border-border px-5 py-3 text-base font-semibold">Reintentar</button>}
+                {error && <button type="button" onClick={refresh} className="rounded-xl border border-border px-5 py-3 text-base font-semibold">{""}<FinixUiText text={"Reintentar"} />{""}</button>}
                 {!error && isOwnProfile && (
                     <Link to="/portfolio" className="inline-block text-sm font-bold px-4 py-1.5 rounded-xl"
                         style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}>
-                        + Crear portafolio
-                    </Link>
+                        {" "}<FinixUiText text={"+ Crear portafolio"} />{" "}</Link>
                 )}
             </div>
         );
@@ -246,7 +249,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
     const totalValue = metrics?.valorActual ?? 0;
 
     return (
-        <div className="min-w-0 space-y-6" aria-label="Resumen del portafolio del perfil" aria-busy={loading || refreshing}>
+        <div className="min-w-0 space-y-6" aria-label={finixUi("Resumen del portafolio del perfil")} aria-busy={loading || refreshing}>
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">{selected?.nombre}</h3>
@@ -256,9 +259,8 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     <button type="button" onClick={refresh} disabled={refreshing} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold hover:bg-secondary disabled:opacity-60">
-                        <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />Actualizar
-                    </button>
-                    {isOwnProfile && <Link to="/portfolio" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground"><Wallet className="h-4 w-4" />Administrar portafolio<ArrowUpRight className="h-4 w-4" /></Link>}
+                        <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />{""}<FinixUiText text={"Actualizar"} />{" "}</button>
+                    {isOwnProfile && <Link to="/portfolio" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground"><Wallet className="h-4 w-4" />{""}<FinixUiText text={"Administrar portafolio"} />{""}<ArrowUpRight className="h-4 w-4" /></Link>}
                 </div>
             </div>
             {error && <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-foreground">{error}</p>}
@@ -338,7 +340,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                         {selected?.nivelRiesgo && (
                             <div className="rounded-2xl border border-border bg-card p-5">
                                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                                    <p className="text-base font-semibold">Perfil de riesgo declarado</p>
+                                    <p className="text-base font-semibold">{""}<FinixUiText text={"Perfil de riesgo declarado"} />{""}</p>
                                     <span className="text-base font-bold">{riskLabels[selected.nivelRiesgo.toLowerCase()] ?? selected.nivelRiesgo}</span>
                                 </div>
                                 <RiskMeter level={selected.nivelRiesgo} />
@@ -355,7 +357,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                                         </div>
                                         <div className="min-w-0">
                                             <div className="break-words text-2xl font-bold" style={{ color }}>{value}</div>
-                                            <div className="mt-0.5 text-sm font-semibold text-muted-foreground">{label}</div>
+                                            <div className="mt-0.5 text-sm font-semibold text-muted-foreground">{<FinixUiText text={label} />}</div>
                                         </div>
                                     </div>
                                 ))}
@@ -372,11 +374,11 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                               <div className="min-w-[680px] space-y-2 p-3">
                                 {/* Header */}
                                 <div className="grid grid-cols-12 gap-2 px-3 py-2 text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                                    <span className="col-span-3">Activo</span>
-                                    <span className="col-span-2 text-right">Cant.</span>
-                                    <span className="col-span-3 text-right">Invertido</span>
-                                    <span className="col-span-2 text-right">PPC</span>
-                                    <span className="col-span-2 text-right">P&L</span>
+                                    <span className="col-span-3">{""}<FinixUiText text={"Activo"} />{""}</span>
+                                    <span className="col-span-2 text-right">{""}<FinixUiText text={"Cant."} />{""}</span>
+                                    <span className="col-span-3 text-right">{""}<FinixUiText text={"Invertido"} />{""}</span>
+                                    <span className="col-span-2 text-right">{""}<FinixUiText text={"PPC"} />{""}</span>
+                                    <span className="col-span-2 text-right">{""}<FinixUiText text={"P&L"} />{""}</span>
                                 </div>
                                 {selected.assets.map((asset, i) => {
                                     const precio = asset.precioActual ?? asset.ppc;
@@ -438,7 +440,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                         ) : (
                             <div className="rounded-2xl py-10 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px dashed hsl(var(--border))' }}>
                                 <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                                <p className="text-sm text-muted-foreground">Sin activos en este portafolio</p>
+                                <p className="text-sm text-muted-foreground">{""}<FinixUiText text={"Sin activos en este portafolio"} />{""}</p>
                             </div>
                         )}
                     </motion.div>
@@ -493,7 +495,7 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
                         ) : (
                             <div className="rounded-2xl py-10 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px dashed hsl(var(--border))' }}>
                                 <Activity className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                                <p className="text-sm text-muted-foreground">Sin movimientos registrados</p>
+                                <p className="text-sm text-muted-foreground">{""}<FinixUiText text={"Sin movimientos registrados"} />{""}</p>
                             </div>
                         )}
                     </motion.div>
@@ -504,6 +506,8 @@ export function ProfilePortfolioSection({ profileUserId, isOwnProfile, showPortf
 }
 
 export default function Profile() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { username } = useParams();
     const navigate = useNavigate();
     const { user: currentUser, updateUser } = useAuthStore();
@@ -1005,7 +1009,7 @@ export default function Profile() {
             <div className="flex items-center justify-center flex-1 bg-background">
                 <div className="flex flex-col items-center gap-4">
                     <div className="h-12 w-12 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: PRIMARY, borderTopColor: 'transparent' }} />
-                    <p className="text-sm" style={{ color: PRIMARY }}>Cargando perfil...</p>
+                    <p className="text-sm" style={{ color: PRIMARY }}>{""}<FinixUiText text={"Cargando perfil..."} />{""}</p>
                 </div>
             </div>
         );
@@ -1015,10 +1019,9 @@ export default function Profile() {
         return (
             <div className="flex flex-col items-center justify-center flex-1 gap-4">
                 <User className="w-16 h-16 text-gray-600" />
-                <h2 className="text-xl font-bold text-white">Perfil no encontrado</h2>
+                <h2 className="text-xl font-bold text-white">{""}<FinixUiText text={"Perfil no encontrado"} />{""}</h2>
                 <button onClick={() => navigate('/dashboard')} className="px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}>
-                    Volver al inicio
-                </button>
+                    {" "}<FinixUiText text={"Volver al inicio"} />{" "}</button>
             </div>
         );
     }
@@ -1085,7 +1088,7 @@ export default function Profile() {
                             disabled={uploadingImage === 'banner'}
                             className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
                             style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', backdropFilter: 'blur(10px)' }}
-                            title="Cambiar imagen de banner"
+                            title={finixUi("Cambiar imagen de banner")}
                         >
                             {uploadingImage === 'banner' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" /> : <Camera className="w-3.5 h-3.5 text-emerald-400" />}
                             <span>{uploadingImage === 'banner' ? 'Subiendo...' : 'Cambiar banner'}</span>
@@ -1132,7 +1135,7 @@ export default function Profile() {
                                     ) : (
                                         <>
                                             <Camera className="w-5 h-5" />
-                                            <span>Cambiar</span>
+                                            <span>{""}<FinixUiText text={"Cambiar"} />{""}</span>
                                         </>
                                     )}
                                 </div>
@@ -1148,7 +1151,7 @@ export default function Profile() {
                                 disabled={uploadingImage === 'avatar'}
                                 className="absolute top-[76px] right-0 w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-colors cursor-pointer z-30"
                                 style={{ background: PRIMARY, color: '#000', border: '2px solid hsl(var(--background))' }}
-                                title="Cambiar foto de perfil"
+                                title={finixUi("Cambiar foto de perfil")}
                             >
                                 {uploadingImage === 'avatar' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                             </button>
@@ -1158,7 +1161,7 @@ export default function Profile() {
                             <div
                                 className={`absolute ${isOwnProfile ? 'top-0 right-0' : 'top-[84px] right-1'} w-7 h-7 rounded-full flex items-center justify-center z-10 shadow-md`}
                                 style={{ background: PRIMARY, border: '2px solid hsl(var(--background))' }}
-                                title="Usuario verificado"
+                                title={finixUi("Usuario verificado")}
                             >
                                 <Check className="w-3.5 h-3.5 text-black stroke-[3]" />
                             </div>
@@ -1176,7 +1179,7 @@ export default function Profile() {
                                         disabled={uploadingImage === 'avatar'}
                                         className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold border transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
                                         style={{ borderColor: PRIMARY_BRD, color: PRIMARY, background: PRIMARY_DIM }}
-                                        title="Cambiar foto de perfil"
+                                        title={finixUi("Cambiar foto de perfil")}
                                     >
                                         {uploadingImage === 'avatar' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                                         <span>{uploadingImage === 'avatar' ? 'Subiendo...' : 'Cambiar foto'}</span>
@@ -1191,8 +1194,7 @@ export default function Profile() {
                                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border"
                                         style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
                                     >
-                                        <X className="w-3.5 h-3.5" /> Cancelar
-                                    </button>
+                                        <X className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Cancelar"} />{" "}</button>
                                     <button
                                         type="button"
                                         onClick={handleSaveProfile}
@@ -1212,7 +1214,7 @@ export default function Profile() {
                                         disabled={uploadingImage === 'avatar'}
                                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-md"
                                         style={{ borderColor: PRIMARY_BRD, color: PRIMARY, background: PRIMARY_DIM }}
-                                        title="Cambiar foto de perfil"
+                                        title={finixUi("Cambiar foto de perfil")}
                                     >
                                         {uploadingImage === 'avatar' ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -1226,22 +1228,21 @@ export default function Profile() {
                                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:scale-105 active:scale-95"
                                         style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--secondary)/0.6)' }}
                                     >
-                                        <Edit className="w-3.5 h-3.5" /> Editar perfil
-                                    </button>
+                                        <Edit className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Editar perfil"} />{" "}</button>
                                     <button
                                         onClick={() => navigate('/settings')}
                                         className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-secondary/80"
                                         style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
-                                        title="Ir a Configuración"
+                                        title={finixUi("Ir a Configuración")}
                                     >
                                         <SettingsIcon className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Configuración</span>
+                                        <span className="hidden sm:inline">{""}<FinixUiText text={"Configuración"} />{""}</span>
                                     </button>
                                     <button
                                         onClick={handleShareProfile}
                                         className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all hover:bg-secondary/80"
                                         style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
-                                        title="Compartir perfil"
+                                        title={finixUi("Compartir perfil")}
                                     >
                                         <Share2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1254,8 +1255,7 @@ export default function Profile() {
                                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-secondary/80"
                                     style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
                                 >
-                                    <MessageSquare className="w-3.5 h-3.5" /> Mensaje
-                                </button>
+                                    <MessageSquare className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Mensaje"} />{" "}</button>
                                 <button
                                     onClick={handleToggleFollow}
                                     disabled={isFollowSubmitting}
@@ -1268,16 +1268,16 @@ export default function Profile() {
                                     }}
                                 >
                                     {isFollowSubmitting
-                                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando</>
+                                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {" "}<FinixUiText text={"Guardando"} />{""}</>
                                         : isFollowing
-                                            ? <><Check className="w-3.5 h-3.5" /> Siguiendo</>
-                                            : <><UserPlus className="w-3.5 h-3.5" /> Seguir</>}
+                                            ? <><Check className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Siguiendo"} />{""}</>
+                                            : <><UserPlus className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Seguir"} />{""}</>}
                                 </button>
                                 <button
                                     onClick={handleShareProfile}
                                     className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all hover:bg-secondary/80"
                                     style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
-                                    title="Compartir perfil"
+                                    title={finixUi("Compartir perfil")}
                                 >
                                     <Share2 className="w-3.5 h-3.5" />
                                 </button>
@@ -1285,7 +1285,7 @@ export default function Profile() {
                                     onClick={() => setShowReportModal(true)}
                                     className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all hover:bg-secondary/80"
                                     style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
-                                    title="Reportar usuario"
+                                    title={finixUi("Reportar usuario")}
                                 >
                                     <Flag className="w-4 h-4 text-orange-500" />
                                 </button>
@@ -1317,14 +1317,14 @@ export default function Profile() {
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/40 flex items-center justify-center shrink-0 bg-secondary/50 font-bold">
                                     {profile.avatarUrl ? (
-                                        <img src={resolveMediaUrl(profile.avatarUrl)} alt="Avatar" className="w-full h-full object-cover" />
+                                        <img src={resolveMediaUrl(profile.avatarUrl)} alt={finixUi("Avatar")} className="w-full h-full object-cover" />
                                     ) : (
                                         <span className="font-bold text-sm text-primary">{(profile.username || 'U')[0].toUpperCase()}</span>
                                     )}
                                 </div>
                                 <div>
-                                    <p className="text-xs font-bold text-foreground">Foto de perfil</p>
-                                    <p className="text-[11px] text-muted-foreground">Tu imagen pública visible para toda la comunidad</p>
+                                    <p className="text-xs font-bold text-foreground">{""}<FinixUiText text={"Foto de perfil"} />{""}</p>
+                                    <p className="text-[11px] text-muted-foreground">{""}<FinixUiText text={"Tu imagen pública visible para toda la comunidad"} />{""}</p>
                                 </div>
                             </div>
                             <button
@@ -1354,8 +1354,7 @@ export default function Profile() {
                         )}
                         {profile.isInfluencer && (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ background: 'hsl(47 100% 50% / 0.15)', color: '#fbbf24', border: '1px solid hsl(47 100% 50% / 0.25)' }}>
-                                <Award className="w-3 h-3 inline mr-1" />Influencer
-                            </span>
+                                <Award className="w-3 h-3 inline mr-1" />{""}<FinixUiText text={"Influencer"} />{" "}</span>
                         )}
                         <InvestorStreakPill />
                     </div>
@@ -1363,7 +1362,7 @@ export default function Profile() {
                     {isEditing ? (
                         <Input
                             value={editForm.title || ''}
-                            placeholder="ej: Value Investor & Macro Strategist"
+                            placeholder={finixUi("ej: Value Investor & Macro Strategist")}
                             onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
                             className="mb-2 bg-transparent border-white/20 text-gray-400 text-sm"
                         />
@@ -1374,7 +1373,7 @@ export default function Profile() {
                     {isEditing ? (
                         <Textarea
                             value={editForm.bio || ''}
-                            placeholder="Contá algo sobre vos..."
+                            placeholder={finixUi("Contá algo sobre vos...")}
                             onChange={e => setEditForm(p => ({ ...p, bio: e.target.value }))}
                             rows={2}
                             className="mb-3 bg-transparent border-white/20 text-white text-sm"
@@ -1395,7 +1394,7 @@ export default function Profile() {
                         )}
                         <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            Miembro desde {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : 'recientemente'}
+                            {" "}<FinixUiText text={"Miembro desde"} />{" "}{profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : 'recientemente'}
                         </span>
                         {profile.website && (
                             <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-white transition-colors" style={{ color: PRIMARY }}>
@@ -1495,22 +1494,22 @@ export default function Profile() {
                         <div className="grid gap-4 mb-6 md:grid-cols-2">
                             {profile.bioLong && (
                                 <div className="rounded-2xl p-5 md:col-span-2" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Sobre el perfil</p>
+                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">{""}<FinixUiText text={"Sobre el perfil"} />{""}</p>
                                     <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap">{profile.bioLong}</p>
                                 </div>
                             )}
 
                             {profile.yearsExperience !== undefined && profile.yearsExperience !== null && (
                                 <div className="rounded-2xl p-5" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Experiencia</p>
-                                    <p className="text-lg font-black text-foreground">{profile.yearsExperience} años</p>
-                                    <p className="text-xs mt-1 text-muted-foreground">Trayectoria declarada en mercados</p>
+                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">{""}<FinixUiText text={"Experiencia"} />{""}</p>
+                                    <p className="text-lg font-black text-foreground">{profile.yearsExperience} {" "}<FinixUiText text={"años"} />{""}</p>
+                                    <p className="text-xs mt-1 text-muted-foreground">{""}<FinixUiText text={"Trayectoria declarada en mercados"} />{""}</p>
                                 </div>
                             )}
 
                             {specializations.length > 0 && (
                                 <div className="rounded-2xl p-5" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">Especializaciones</p>
+                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">{""}<FinixUiText text={"Especializaciones"} />{""}</p>
                                     <div className="flex flex-wrap gap-2">
                                         {specializations.map((item) => (
                                             <span
@@ -1527,7 +1526,7 @@ export default function Profile() {
 
                             {certifications.length > 0 && (
                                 <div className="rounded-2xl p-5 md:col-span-2" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">Certificaciones</p>
+                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">{""}<FinixUiText text={"Certificaciones"} />{""}</p>
                                     <div className="flex flex-wrap gap-2">
                                         {certifications.map((item) => (
                                             <span
@@ -1548,16 +1547,14 @@ export default function Profile() {
                     <div className="mb-6">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                                Activos Destacados
-                            </h3>
+                                {" "}<FinixUiText text={"Activos Destacados"} />{" "}</h3>
                             {isOwnProfile && allPinnedTickers.length < 4 && (
                                 <button
                                     onClick={() => setShowAssetPicker(true)}
                                     className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
                                     style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}
                                 >
-                                    <Plus className="w-3 h-3" /> Agregar
-                                </button>
+                                    <Plus className="w-3 h-3" /> {" "}<FinixUiText text={"Agregar"} />{" "}</button>
                             )}
                         </div>
 
@@ -1573,8 +1570,7 @@ export default function Profile() {
                                         className="mt-3 px-4 py-1.5 rounded-xl text-xs font-semibold"
                                         style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}
                                     >
-                                        + Agregar activo
-                                    </button>
+                                        {" "}<FinixUiText text={"+ Agregar activo"} />{" "}</button>
                                 )}
                             </div>
                         ) : (
@@ -1642,7 +1638,7 @@ export default function Profile() {
                                 style={{ color: activeTab === tab.id ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                             >
                                 {'icon' in tab && tab.icon}
-                                {tab.label}
+                                {<FinixUiText text={tab.label} />}
                                 {'count' in tab && tab.count !== undefined && (
                                     <span className="text-xs opacity-60">({tab.count})</span>
                                 )}
@@ -1678,7 +1674,7 @@ export default function Profile() {
                                     {isLoadingPosts ? (
                                         <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
                                             <Loader2 className="w-12 h-12 mx-auto mb-3 opacity-40 animate-spin" />
-                                            <p className="text-muted-foreground text-sm">Cargando publicaciones...</p>
+                                            <p className="text-muted-foreground text-sm">{""}<FinixUiText text={"Cargando publicaciones..."} />{""}</p>
                                         </div>
                                     ) : profilePosts.length > 0 ? (
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1723,8 +1719,7 @@ export default function Profile() {
                                                     style={{ background: PRIMARY, color: '#000' }}
                                                 >
                                                     <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                                                    Ir al Feed para Publicar
-                                                </button>
+                                                    {" "}<FinixUiText text={"Ir al Feed para Publicar"} />{" "}</button>
                                             )}
                                         </div>
                                     )}
@@ -1737,7 +1732,7 @@ export default function Profile() {
                                 {isLoadingSavedPosts && savedPosts.length === 0 ? (
                                     <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
                                         <Loader2 className="w-12 h-12 mx-auto mb-3 opacity-40 animate-spin" />
-                                        <p className="text-muted-foreground text-sm">Cargando guardados...</p>
+                                        <p className="text-muted-foreground text-sm">{""}<FinixUiText text={"Cargando guardados..."} />{""}</p>
                                     </div>
                                 ) : savedPostsError && savedPosts.length === 0 ? (
                                     <div className="rounded-2xl py-12 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
@@ -1748,8 +1743,7 @@ export default function Profile() {
                                             onClick={() => void loadSavedPosts()}
                                             className="mt-4 rounded-xl border border-border px-4 py-2 text-xs font-semibold hover:bg-secondary"
                                         >
-                                            Reintentar
-                                        </button>
+                                            {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
                                     </div>
                                 ) : savedPosts.length > 0 ? (
                                     <>
@@ -1779,8 +1773,7 @@ export default function Profile() {
                                             <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-center">
                                                 <p className="text-sm text-red-300">{savedPostsError}</p>
                                                 <button type="button" onClick={() => void loadSavedPosts(false)} className="mt-2 text-xs font-semibold text-primary hover:underline">
-                                                    Reintentar
-                                                </button>
+                                                    {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
                                             </div>
                                         )}
                                         {hasMoreSavedPosts && (
@@ -1799,7 +1792,7 @@ export default function Profile() {
                                 ) : (
                                     <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
                                         <Bookmark className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                        <p className="text-muted-foreground text-sm">No hay guardados</p>
+                                        <p className="text-muted-foreground text-sm">{""}<FinixUiText text={"No hay guardados"} />{""}</p>
                                     </div>
                                 )}
                             </motion.div>
@@ -1814,7 +1807,7 @@ export default function Profile() {
                             className="mt-6 rounded-2xl p-5 space-y-4"
                             style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}
                         >
-                            <h3 className="font-bold text-foreground mb-4">Editar información</h3>
+                            <h3 className="font-bold text-foreground mb-4">{""}<FinixUiText text={"Editar información"} />{""}</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 {[
                                     { field: 'title', placeholder: 'ej: Value Investor', label: 'Título' },
@@ -1852,7 +1845,7 @@ export default function Profile() {
                                 ))}
                             </div>
                             <div>
-                                <label className="text-xs font-semibold mb-1 block text-gray-500 uppercase tracking-wider">Bio extendida</label>
+                                <label className="text-xs font-semibold mb-1 block text-gray-500 uppercase tracking-wider">{""}<FinixUiText text={"Bio extendida"} />{""}</label>
                                 <Textarea
                                     value={editForm.bioLong || ''}
                                     onChange={e => setEditForm(p => ({ ...p, bioLong: e.target.value }))}
@@ -1871,8 +1864,7 @@ export default function Profile() {
                             <div className="rounded-2xl p-4" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 flex items-center gap-2">
                                     <BarChart3 className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
-                                    Especializaciones
-                                </h4>
+                                    {" "}<FinixUiText text={"Especializaciones"} />{" "}</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {specializations.map((s, i) => (
                                         <span key={i} className="px-3 py-1 rounded-xl text-xs font-semibold" style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}>
@@ -1886,8 +1878,7 @@ export default function Profile() {
                             <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 flex items-center gap-2">
                                     <Award className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
-                                    Certificaciones
-                                </h4>
+                                    {" "}<FinixUiText text={"Certificaciones"} />{" "}</h4>
                                 <div className="space-y-2">
                                     {certifications.map((c, i) => (
                                         <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1921,20 +1912,20 @@ export default function Profile() {
                         >
                             <div className="rounded-3xl p-5 mx-4 bg-card border border-border/60" style={{ boxShadow: '0 32px 80px rgba(0,0,0,0.3)' }}>
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="font-bold text-foreground">Elegir activo destacado</h3>
+                                    <h3 className="font-bold text-foreground">{""}<FinixUiText text={"Elegir activo destacado"} />{""}</h3>
                                     <button onClick={() => { setShowAssetPicker(false); setAssetSearch(''); }}
                                         className="w-7 h-7 rounded-lg flex items-center justify-center bg-secondary">
                                         <X className="w-3.5 h-3.5 text-gray-400" />
                                     </button>
                                 </div>
-                                <p className="text-xs text-gray-500 mb-3">{4 - allPinnedTickers.length} lugar(es) disponible(s)</p>
+                                <p className="text-xs text-gray-500 mb-3">{4 - allPinnedTickers.length} {" "}<FinixUiText text={"lugar(es) disponible(s)"} />{""}</p>
 
                                 <div className="flex items-center gap-2 px-3 rounded-xl mb-4 bg-secondary border border-border">
                                     <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                                     <input
                                         autoFocus
                                         type="text"
-                                        placeholder="Buscar símbolo o empresa..."
+                                        placeholder={finixUi("Buscar símbolo o empresa...")}
                                         value={assetSearch}
                                         onChange={e => setAssetSearch(e.target.value)}
                                         className="flex-1 bg-transparent py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground"
@@ -1972,11 +1963,11 @@ export default function Profile() {
                                             </button>
                                         );
                                     }) : assetSearch.length > 0 && !isSearching ? (
-                                        <p className="text-center py-8 text-sm text-gray-600">Sin resultados para "{assetSearch}"</p>
+                                        <p className="text-center py-8 text-sm text-gray-600">{""}<FinixUiText text={"Sin resultados para \""} />{""}{assetSearch}"</p>
                                     ) : assetSearch.length === 0 ? (
                                         <div className="py-6 text-center">
                                             <Search className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                                            <p className="text-xs text-gray-600">Escribí para buscar acciones, cryptos, ETFs...</p>
+                                            <p className="text-xs text-gray-600">{""}<FinixUiText text={"Escribí para buscar acciones, cryptos, ETFs..."} />{""}</p>
                                         </div>
                                     ) : null}
                                 </div>

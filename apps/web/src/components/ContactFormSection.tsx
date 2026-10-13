@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { FormEvent, useState } from 'react';
 import { Loader2, Mail, Send } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
@@ -24,6 +26,8 @@ export default function ContactFormSection({
     title = 'Mandanos un mensaje',
     description = 'Completá el formulario y el equipo de Finix lo recibe por mail en finiixarg@gmail.com.',
 }: ContactFormSectionProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [subject, setSubject] = useState('');
@@ -96,11 +100,10 @@ export default function ContactFormSection({
                     </div>
 
                     <div className="rounded-2xl border border-border/60 bg-background/60 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Destino</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{""}<FinixUiText text={"Destino"} />{""}</p>
                         <p className="mt-2 text-base font-semibold text-foreground">{CONTACT_EMAIL}</p>
                         <p className="mt-2 text-sm text-muted-foreground">
-                            Usá este formulario para consultas, soporte, alianzas o feedback de producto.
-                        </p>
+                            {" "}<FinixUiText text={"Usá este formulario para consultas, soporte, alianzas o feedback de producto."} />{" "}</p>
                     </div>
                 </div>
 
@@ -108,13 +111,12 @@ export default function ContactFormSection({
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                             <label htmlFor={`${id}-name`} className="text-sm font-medium text-foreground">
-                                Nombre
-                            </label>
+                                {" "}<FinixUiText text={"Nombre"} />{" "}</label>
                             <Input
                                 id={`${id}-name`}
                                 value={name}
                                 onChange={(event) => setName(event.target.value)}
-                                placeholder="Tu nombre"
+                                placeholder={finixUi("Tu nombre")}
                                 autoComplete="name"
                                 maxLength={80}
                                 required
@@ -123,14 +125,13 @@ export default function ContactFormSection({
 
                         <div className="space-y-2">
                             <label htmlFor={`${id}-email`} className="text-sm font-medium text-foreground">
-                                Email
-                            </label>
+                                {" "}<FinixUiText text={"Email"} />{" "}</label>
                             <Input
                                 id={`${id}-email`}
                                 type="email"
                                 value={email}
                                 onChange={(event) => setEmail(event.target.value)}
-                                placeholder="tu@email.com"
+                                placeholder={finixUi("tu@email.com")}
                                 autoComplete="email"
                                 maxLength={120}
                                 required
@@ -140,13 +141,12 @@ export default function ContactFormSection({
 
                     <div className="space-y-2">
                         <label htmlFor={`${id}-subject`} className="text-sm font-medium text-foreground">
-                            Asunto
-                        </label>
+                            {" "}<FinixUiText text={"Asunto"} />{" "}</label>
                         <Input
                             id={`${id}-subject`}
                             value={subject}
                             onChange={(event) => setSubject(event.target.value)}
-                            placeholder="¿En qué te podemos ayudar?"
+                            placeholder={finixUi("¿En qué te podemos ayudar?")}
                             maxLength={140}
                             required
                         />
@@ -154,13 +154,12 @@ export default function ContactFormSection({
 
                     <div className="space-y-2">
                         <label htmlFor={`${id}-message`} className="text-sm font-medium text-foreground">
-                            Mensaje
-                        </label>
+                            {" "}<FinixUiText text={"Mensaje"} />{" "}</label>
                         <Textarea
                             id={`${id}-message`}
                             value={message}
                             onChange={(event) => setMessage(event.target.value)}
-                            placeholder="Contanos tu consulta, idea o problema."
+                            placeholder={finixUi("Contanos tu consulta, idea o problema.")}
                             className="min-h-[160px] resize-y"
                             maxLength={2000}
                             required
@@ -185,13 +184,11 @@ export default function ContactFormSection({
                         {isSubmitting ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Enviando...
-                            </>
+                                {" "}<FinixUiText text={"Enviando..."} />{" "}</>
                         ) : (
                             <>
                                 <Send className="mr-2 h-4 w-4" />
-                                Enviar mensaje
-                            </>
+                                {" "}<FinixUiText text={"Enviar mensaje"} />{" "}</>
                         )}
                     </Button>
                 </form>

@@ -9,11 +9,15 @@ import {
     Request,
     UseInterceptors,
     UploadedFiles,
+    UploadedFile,
     BadRequestException,
 } from '@nestjs/common';
-import { AnyFilesInterceptor } from '@nestjs/platform-express';
+import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, resolve } from 'path';
+import { mkdirSync, openSync, readSync, closeSync, unlinkSync, chmodSync } from 'fs';
+import { verificationStorageRoot, validVerificationSignature } from './verification-storage';
+import { randomUUID } from 'crypto';
 import { SettingsService } from './settings.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { buildUploadPublicPath, getUploadFolder } from '../uploads/upload-url.util';
@@ -42,6 +46,19 @@ const bannerStorage = diskStorage({
     filename: (_req, file, cb) => {
         const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
         cb(null, `${unique}${extname(file.originalname)}`);
+    },
+});
+
+const verificationStorage = diskStorage({
+    destination: (_req, _file, cb) => {
+        const root = verificationStorageRoot();
+        const dir = resolve(root, 'financial-verifications');
+        mkdirSync(dir, { recursive: true, mode: 0o700 });
+        cb(null, dir);
+    },
+    filename: (req: any, file, cb) => {
+        const extensions = { 'application/pdf': '.pdf', 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
+        cb(null, `${req.user.id}-${randomUUID()}${extensions[file.mimetype]}`);
     },
 });
 
@@ -87,6 +104,30 @@ export class SettingsController {
     @Get('verification')
     getVerification(@Request() req) {
         return this.settingsService.getVerification(req.user.id);
+    }
+
+    @Post('verification/documents')
+    @UseInterceptors(FileInterceptor('file', {
+        storage: verificationStorage,
+        limits: { fileSize: MAX_SIZE_BYTES },
+        fileFilter: (_req, file, cb) => {
+            if (!['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+                return cb(new BadRequestException('Solo se permiten documentos PDF, JPG, PNG o WEBP de hasta 5 MB'), false);
+            }
+            cb(null, true);
+        },
+    }))
+    uploadVerificationDocument(@UploadedFile() file: Express.Multer.File) {
+        if (!file) throw new BadRequestException('No se recibió ningún archivo');
+        const descriptor = openSync(file.path, 'r');
+        const header = Buffer.alloc(12);
+        try { readSync(descriptor, header, 0, 12, 0); } finally { closeSync(descriptor); }
+        if (!validVerificationSignature(header, file.mimetype)) {
+            unlinkSync(file.path);
+            throw new BadRequestException('El archivo no coincide con el formato permitido');
+        }
+        chmodSync(file.path, 0o600);
+        return { path: `financial-verifications/${file.filename}` };
     }
 
     @Post('verification')

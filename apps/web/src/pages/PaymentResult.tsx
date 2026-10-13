@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
@@ -53,8 +54,8 @@ export default function PaymentResult() {
             {approved ? <CheckCircle2 className="mx-auto h-12 w-12 text-primary" /> : status === 'checking' ? <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" /> : <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />}
             <h1 className="text-2xl font-bold">{approved ? 'Pago confirmado' : status === 'failed' ? 'El pago no se completó' : status === 'unverified' ? 'Falta la referencia del pago' : status === 'unauthorized' ? 'Verificá tu cuenta' : status === 'unavailable' ? 'No pudimos consultar el pago' : status === 'pending' ? 'Pago pendiente de confirmación' : 'Verificando tu pago'}</h1>
             <p className="text-muted-foreground">{approved ? 'La pasarela confirmó el pago y sincronizamos tu cuenta.' : status === 'failed' ? 'La pasarela no confirmó un pago válido. Revisá su estado antes de intentar nuevamente.' : status === 'unverified' ? 'Este enlace no contiene una referencia verificable. Consultá el comprobante de la pasarela y tu facturación en Configuración.' : status === 'unauthorized' ? 'Iniciá sesión con la cuenta que realizó el pago para consultar su estado.' : status === 'unavailable' ? 'No recibimos una confirmación del servidor. Podés reintentar la consulta; no hace falta iniciar otro pago.' : 'Esperamos la confirmación de la pasarela. No hace falta que vuelvas a pagar. Podés consultar nuevamente en unos momentos.'}</p>
-            {!approved && !['unverified', 'unauthorized', 'checking'].includes(status) && <button className="rounded-xl border border-border px-4 py-3" onClick={() => setAttempt(value => value + 1)}>Consultar estado</button>}
-            {status === 'unauthorized' && !user && <Link className="block text-primary underline" to={`/auth?redirect=${encodeURIComponent(`/payment-result?${query}`)}`}>Iniciar sesión</Link>}
+            {!approved && !['unverified', 'unauthorized', 'checking'].includes(status) && <button className="rounded-xl border border-border px-4 py-3" onClick={() => setAttempt(value => value + 1)}>{""}<FinixUiText text={"Consultar estado"} />{""}</button>}
+            {status === 'unauthorized' && !user && <Link className="block text-primary underline" to={`/auth?redirect=${encodeURIComponent(`/payment-result?${query}`)}`}>{""}<FinixUiText text={"Iniciar sesión"} />{""}</Link>}
             <Link className="block rounded-xl bg-primary text-primary-foreground px-4 py-3 font-semibold" to={communityId ? `/comunidades/${encodeURIComponent(communityId)}` : approved ? '/settings?tab=suscripcion' : '/pricing#planes'}>{communityId ? 'Volver a la comunidad' : approved ? 'Ver mi suscripción' : 'Volver a planes'}</Link>
         </section>
     </main>;

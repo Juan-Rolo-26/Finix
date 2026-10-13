@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -210,6 +212,8 @@ const parseTradingViewSymbolInput = (value: string): AssetResult | null => {
 };
 
 export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess, initialSymbol, mode = 'BUY', portfolioAssets = [] }: AddTransactionModalProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [step, setStep] = useState<'search' | 'details'>('search');
 
     // Search State
@@ -546,12 +550,11 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                     {step === 'search' ? (
                         mode === 'SELL' ? (
                             <div className="space-y-4">
-                                <div className="text-sm text-foreground mb-4">Selecciona el activo de tu portafolio que deseas vender:</div>
+                                <div className="text-sm text-foreground mb-4">{""}<FinixUiText text={"Selecciona el activo de tu portafolio que deseas vender:"} />{""}</div>
                                 <div className="max-h-[340px] overflow-y-auto overflow-x-hidden space-y-1.5 pr-1 -mr-1">
                                     {portfolioAssets.length === 0 ? (
                                         <div className="text-center text-muted-foreground py-6">
-                                            No hay activos en este portafolio aún.
-                                        </div>
+                                            {" "}<FinixUiText text={"No hay activos en este portafolio aún."} />{" "}</div>
                                     ) : portfolioAssets.filter(a => a.cantidad > 0).map((asset, index) => (
                                         <button
                                             key={`portfolio-asset-${asset.ticker}-${index}`}
@@ -568,7 +571,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                             <div className="min-w-0 flex-1">
                                                 <div className="font-bold text-sm truncate">{asset.ticker}</div>
                                                 <div className="text-xs text-muted-foreground mt-0.5 truncate">
-                                                    Cantidad disponible: <span className="font-semibold text-foreground/80">{asset.cantidad.toFixed(4)}</span>
+                                                    {" "}<FinixUiText text={"Cantidad disponible:"} />{" "}<span className="font-semibold text-foreground/80">{asset.cantidad.toFixed(4)}</span>
                                                 </div>
                                             </div>
                                             <Badge variant="outline" className="text-[10px] font-bold uppercase shrink-0 px-2 py-0.5 ml-2">
@@ -583,7 +586,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                 <div className="relative">
                                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                     <Input
-                                        placeholder="Buscar por ticker o nombre (ej: SPY, AAPL, BTC)..."
+                                        placeholder={finixUi("Buscar por ticker o nombre (ej: SPY, AAPL, BTC)...")}
                                         value={searchQuery}
                                         onChange={e => setSearchQuery(e.target.value)}
                                         autoFocus
@@ -604,8 +607,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                     /* When empty: show recommendations */
                                     <div className="pt-1">
                                         <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
-                                            Activos Populares
-                                        </div>
+                                            {" "}<FinixUiText text={"Activos Populares"} />{" "}</div>
                                         <div className="grid grid-cols-2 gap-2">
                                             {POPULAR_RECOMMENDATIONS.map((asset) => {
                                                 const info = resolveAssetInfo(asset.symbol);
@@ -634,7 +636,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                         {isSearching && (
                                             <div className="flex items-center justify-center gap-2 text-muted-foreground py-8">
                                                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                                <span className="text-sm">Buscando en TradingView...</span>
+                                                <span className="text-sm">{""}<FinixUiText text={"Buscando en TradingView..."} />{""}</span>
                                             </div>
                                         )}
                                         {!isSearching && searchError && (
@@ -673,7 +675,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                         })}
                                         {!isSearching && !searchError && searchResults.length === 0 && (
                                             <div className="text-center text-muted-foreground py-8 space-y-3">
-                                                <p className="text-sm">No se encontraron resultados para "{trimmedQuery}".</p>
+                                                <p className="text-sm">{""}<FinixUiText text={"No se encontraron resultados para \""} />{""}{trimmedQuery}".</p>
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -686,8 +688,7 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                                         })
                                                     }
                                                 >
-                                                    Crear "{trimmedQuery.toUpperCase()}" manualmente
-                                                </Button>
+                                                    {" "}<FinixUiText text={"Crear \""} />{""}{trimmedQuery.toUpperCase()}{""}<FinixUiText text={"\" manualmente"} />{" "}</Button>
                                             </div>
                                         )}
                                     </div>
@@ -699,19 +700,19 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                             <div className="flex flex-col gap-3 rounded-lg border border-border/70 p-3">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
-                                        <div className="text-xs uppercase text-muted-foreground">Activo seleccionado</div>
+                                        <div className="text-xs uppercase text-muted-foreground">{""}<FinixUiText text={"Activo seleccionado"} />{""}</div>
                                         <div className="text-lg font-semibold">{selectedAsset?.symbol}</div>
                                         <div className="text-sm text-muted-foreground">{selectedAsset?.name}</div>
                                     </div>
                                     {canCedear && (
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs text-muted-foreground">CEDEAR (ARS)</span>
+                                            <span className="text-xs text-muted-foreground">{""}<FinixUiText text={"CEDEAR (ARS)"} />{""}</span>
                                             <Switch checked={isCedear} onCheckedChange={handleCedearToggle} />
                                         </div>
                                     )}
                                 </div>
                                 {priceLoading && (
-                                    <div className="text-xs text-muted-foreground">Actualizando precio desde TradingView / BYMA...</div>
+                                    <div className="text-xs text-muted-foreground">{""}<FinixUiText text={"Actualizando precio desde TradingView / BYMA..."} />{""}</div>
                                 )}
                                 {priceError && !priceLoading && (
                                     <div className="text-xs text-red-400">{priceError}</div>
@@ -720,25 +721,25 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                 {isCedear && cedearValuation && (
                                     <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs space-y-1.5 backdrop-blur-sm mt-1">
                                         <div className="flex justify-between items-center font-bold text-foreground">
-                                            <span>Ratio CEDEAR:</span>
+                                            <span>{""}<FinixUiText text={"Ratio CEDEAR:"} />{""}</span>
                                             <Badge variant="secondary" className="font-mono text-[11px]">{cedearValuation.ratio}:1</Badge>
                                         </div>
                                         <div className="flex justify-between text-muted-foreground">
-                                            <span>Subyacente en EEUU ({cedearValuation.underlyingTicker}):</span>
-                                            <span className="font-semibold text-foreground">${cedearValuation.underlyingPriceUsd?.toFixed(2) ?? 'N/A'} USD</span>
+                                            <span>{""}<FinixUiText text={"Subyacente en EEUU ("} />{""}{cedearValuation.underlyingTicker}):</span>
+                                            <span className="font-semibold text-foreground">${cedearValuation.underlyingPriceUsd?.toFixed(2) ?? 'N/A'} {" "}<FinixUiText text={"USD"} />{""}</span>
                                         </div>
                                         <div className="flex justify-between text-muted-foreground">
-                                            <span>Dólar CCL Utilizado:</span>
-                                            <span className="font-semibold text-foreground">${cedearValuation.dolarCcl?.toFixed(2) ?? 'N/A'} ARS</span>
+                                            <span>{""}<FinixUiText text={"Dólar CCL Utilizado:"} />{""}</span>
+                                            <span className="font-semibold text-foreground">${cedearValuation.dolarCcl?.toFixed(2) ?? 'N/A'} {" "}<FinixUiText text={"ARS"} />{""}</span>
                                         </div>
                                         <div className="flex justify-between border-t border-border/40 pt-1 text-muted-foreground">
-                                            <span>Valor Teórico en ARS:</span>
-                                            <span className="font-bold text-primary">${cedearValuation.theoreticalPriceArs?.toLocaleString('es-AR') ?? 'N/A'} ARS</span>
+                                            <span>{""}<FinixUiText text={"Valor Teórico en ARS:"} />{""}</span>
+                                            <span className="font-bold text-primary">${cedearValuation.theoreticalPriceArs?.toLocaleString('es-AR') ?? 'N/A'} {" "}<FinixUiText text={"ARS"} />{""}</span>
                                         </div>
                                         {cedearValuation.implicitCcl && (
                                             <div className="flex justify-between text-muted-foreground text-[11px]">
-                                                <span>CCL Implícito del CEDEAR:</span>
-                                                <span className="font-mono">${cedearValuation.implicitCcl.toFixed(2)} ARS ({cedearValuation.discrepancyPct >= 0 ? '+' : ''}{cedearValuation.discrepancyPct}%)</span>
+                                                <span>{""}<FinixUiText text={"CCL Implícito del CEDEAR:"} />{""}</span>
+                                                <span className="font-mono">${cedearValuation.implicitCcl.toFixed(2)} {" "}<FinixUiText text={"ARS ("} />{""}{cedearValuation.discrepancyPct >= 0 ? '+' : ''}{cedearValuation.discrepancyPct}%)</span>
                                             </div>
                                         )}
                                     </div>
@@ -747,9 +748,9 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
 
                             <Tabs value={transactionType} onValueChange={setTransactionType} className="space-y-4">
                                 <TabsList className="grid w-full grid-cols-3">
-                                    <TabsTrigger value="BUY" className="data-[state=active]:bg-green-500 data-[state=active]:text-white">Compra</TabsTrigger>
-                                    <TabsTrigger value="SELL" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">Venta</TabsTrigger>
-                                    <TabsTrigger value="DIVIDEND" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">Dividendo</TabsTrigger>
+                                    <TabsTrigger value="BUY" className="data-[state=active]:bg-green-500 data-[state=active]:text-white">{""}<FinixUiText text={"Compra"} />{""}</TabsTrigger>
+                                    <TabsTrigger value="SELL" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">{""}<FinixUiText text={"Venta"} />{""}</TabsTrigger>
+                                    <TabsTrigger value="DIVIDEND" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">{""}<FinixUiText text={"Dividendo"} />{""}</TabsTrigger>
                                 </TabsList>
 
                                 <TabsContent value="BUY" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
@@ -782,16 +783,16 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                                 </TabsContent>
                                 <TabsContent value="DIVIDEND" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
                                     <div className="space-y-2">
-                                        <Label>Fecha</Label>
+                                        <Label>{""}<FinixUiText text={"Fecha"} />{""}</Label>
                                         <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Monto Neto Recibido ({currency})</Label>
+                                        <Label>{""}<FinixUiText text={"Monto Neto Recibido ("} />{""}{currency})</Label>
                                         <Input type="number" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="0.00" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Notas</Label>
-                                        <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Opcional..." />
+                                        <Label>{""}<FinixUiText text={"Notas"} />{""}</Label>
+                                        <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={finixUi("Opcional...")} />
                                     </div>
                                 </TabsContent>
                             </Tabs>
@@ -821,16 +822,14 @@ export function AddTransactionModal({ open, onOpenChange, portfolioId, onSuccess
                     ) : (
                         <div className="flex w-full items-center justify-between">
                             <span className="text-xs text-muted-foreground">
-                                Selecciona un activo para continuar
-                            </span>
+                                {" "}<FinixUiText text={"Selecciona un activo para continuar"} />{" "}</span>
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => onOpenChange(false)}
                                 className="text-xs font-semibold cursor-pointer"
                             >
-                                Cancelar
-                            </Button>
+                                {" "}<FinixUiText text={"Cancelar"} />{" "}</Button>
                         </div>
                     )}
                 </DialogFooter>
@@ -857,6 +856,8 @@ function FormContent({
     priceLoading,
     onRefreshPrice,
 }: any) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const feeValue = parseInputNumber(fee || '0');
     const safeFee = Number.isFinite(feeValue) ? feeValue : 0;
     const cashImpact = transactionType === 'SELL' ? total - safeFee : -(total + safeFee);
@@ -868,16 +869,16 @@ function FormContent({
         <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="date">Fecha</Label>
+                    <Label htmlFor="date">{""}<FinixUiText text={"Fecha"} />{""}</Label>
                     <Input id="date" type="date" value={date} onChange={e => setDate(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="currency">Moneda</Label>
+                    <Label htmlFor="currency">{""}<FinixUiText text={"Moneda"} />{""}</Label>
                     <Select value={currency} disabled>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="USD">USD</SelectItem>
-                            <SelectItem value="ARS">ARS</SelectItem>
+                            <SelectItem value="USD">{""}<FinixUiText text={"USD"} />{""}</SelectItem>
+                            <SelectItem value="ARS">{""}<FinixUiText text={"ARS"} />{""}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -885,12 +886,12 @@ function FormContent({
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="qty">Cantidad</Label>
+                    <Label htmlFor="qty">{""}<FinixUiText text={"Cantidad"} />{""}</Label>
                     <Input id="qty" type="number" step="any" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="0.00" autoFocus />
                 </div>
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                        <Label htmlFor="price">Precio por Unidad</Label>
+                        <Label htmlFor="price">{""}<FinixUiText text={"Precio por Unidad"} />{""}</Label>
                         <Button
                             type="button"
                             variant="ghost"
@@ -898,8 +899,7 @@ function FormContent({
                             onClick={onRefreshPrice}
                             disabled={priceLoading}
                         >
-                            Actualizar
-                        </Button>
+                            {" "}<FinixUiText text={"Actualizar"} />{" "}</Button>
                     </div>
                     <Input
                         id="price"
@@ -915,7 +915,7 @@ function FormContent({
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="fee">Comisión (Fee)</Label>
+                <Label htmlFor="fee">{""}<FinixUiText text={"Comisión (Fee)"} />{""}</Label>
                 <Input id="fee" type="number" step="any" value={fee} onChange={e => setFee(e.target.value)} placeholder="0.00" />
             </div>
 
@@ -923,7 +923,7 @@ function FormContent({
                 <div>
                     <div className="font-medium">{amountLabel}</div>
                     <div className="text-xs text-muted-foreground">
-                        Comisión: -{formatter.format(safeFee)}
+                        {" "}<FinixUiText text={"Comisión: -"} />{""}{formatter.format(safeFee)}
                     </div>
                     <div className="text-xs text-muted-foreground">
                         {cashImpactLabel}: {formatter.format(cashImpact)}
@@ -933,8 +933,8 @@ function FormContent({
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="notes">Notas</Label>
-                <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Opcional..." className="h-20" />
+                <Label htmlFor="notes">{""}<FinixUiText text={"Notas"} />{""}</Label>
+                <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder={finixUi("Opcional...")} className="h-20" />
             </div>
         </div>
     );

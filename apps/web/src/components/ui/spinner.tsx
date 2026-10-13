@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import * as React from "react"
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -7,6 +9,8 @@ export interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function Spinner({ size = "default", className, ...props }: SpinnerProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const sizeClasses = {
         sm: "w-4 h-4",
         default: "w-6 h-6",
@@ -17,12 +21,12 @@ export function Spinner({ size = "default", className, ...props }: SpinnerProps)
     return (
         <div
             role="status"
-            aria-label="Cargando"
+            aria-label={finixUi("Cargando")}
             className={cn("flex items-center justify-center text-primary", className)}
             {...props}
         >
             <Loader2 className={cn("animate-spin", sizeClasses[size])} />
-            <span className="sr-only">Cargando...</span>
+            <span className="sr-only">{""}<FinixUiText text={"Cargando..."} />{""}</span>
         </div>
     )
 }

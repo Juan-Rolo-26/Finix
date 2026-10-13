@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
@@ -33,6 +35,8 @@ function WatchlistMembershipForm({
     onClose,
     onSuccess,
 }: AddToWatchlistModalProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { user } = useAuthStore();
     const [lists, setLists] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -177,8 +181,7 @@ function WatchlistMembershipForm({
                         <SymbolLogo symbol={cleanSymbol} size={42} />
                         <div>
                             <DialogTitle className="text-lg font-black tracking-tight text-foreground flex items-center gap-2">
-                                Agregar a Seguimiento
-                            </DialogTitle>
+                                {" "}<FinixUiText text={"Agregar a Seguimiento"} />{" "}</DialogTitle>
                             <DialogDescription className="text-xs text-muted-foreground">
                                 {name ? `${name} (${cleanSymbol})` : cleanSymbol}
                             </DialogDescription>
@@ -196,8 +199,7 @@ function WatchlistMembershipForm({
 
                 <div className="space-y-4 py-2">
                     <p className="text-xs font-medium text-muted-foreground">
-                        Elegí una o varias listas de seguimiento personales:
-                    </p>
+                        {" "}<FinixUiText text={"Elegí una o varias listas de seguimiento personales:"} />{" "}</p>
 
                     {loading ? (
                         <div className="flex items-center justify-center py-8">
@@ -206,10 +208,9 @@ function WatchlistMembershipForm({
                     ) : lists.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-border/80 p-5 text-center">
                             <Bookmark className="mx-auto h-7 w-7 text-muted-foreground/60 mb-2" />
-                            <p className="text-xs font-semibold text-foreground">Aún no creaste listas</p>
+                            <p className="text-xs font-semibold text-foreground">{""}<FinixUiText text={"Aún no creaste listas"} />{""}</p>
                             <p className="text-[11px] text-muted-foreground mt-0.5">
-                                Creá tu primera lista para organizar tus activos.
-                            </p>
+                                {" "}<FinixUiText text={"Creá tu primera lista para organizar tus activos."} />{" "}</p>
                         </div>
                     ) : (
                         <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
@@ -248,7 +249,7 @@ function WatchlistMembershipForm({
                     <form onSubmit={handleCreateList} className="flex items-center gap-2 pt-2 border-t border-border/40">
                         <input
                             type="text"
-                            placeholder="Nueva lista (ej. Dividendos)..."
+                            placeholder={finixUi("Nueva lista (ej. Dividendos)...")}
                             value={newListName}
                             onChange={(e) => setNewListName(e.target.value)}
                             className="flex-1 h-9 rounded-xl border border-border/60 bg-background/80 px-3 text-xs outline-none focus:border-emerald-500 transition-colors"
@@ -264,8 +265,7 @@ function WatchlistMembershipForm({
                             ) : (
                                 <Plus className="h-3.5 w-3.5" />
                             )}
-                            Crear
-                        </Button>
+                            {" "}<FinixUiText text={"Crear"} />{" "}</Button>
                     </form>
                 </div>
 
@@ -276,8 +276,7 @@ function WatchlistMembershipForm({
                         onClick={onClose}
                         className="rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground"
                     >
-                        Listo
-                    </Button>
+                        {" "}<FinixUiText text={"Listo"} />{" "}</Button>
                 </div>
             </DialogContent>
         </Dialog>

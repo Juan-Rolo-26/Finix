@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /**
  * AssetPnLChart.tsx — Horizontal bar chart showing P&L per asset.
  *
@@ -56,27 +58,27 @@ function AssetPnLTooltip({ active, payload, currency }: any) {
       </div>
       <div className="space-y-1 text-xs font-mono">
         <div className="flex justify-between gap-4">
-          <span className="text-muted-foreground">Rendimiento</span>
+          <span className="text-muted-foreground">{""}<FinixUiText text={"Rendimiento"} />{""}</span>
           <span className={cn('font-black', isPos ? 'text-emerald-400' : 'text-red-400')}>
             {formatPercentage(item.returnPct)}
           </span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-muted-foreground">P&L</span>
+          <span className="text-muted-foreground">{""}<FinixUiText text={"P&L"} />{""}</span>
           <span className={cn('font-bold', isPos ? 'text-emerald-400' : 'text-red-400')}>
             {formatCurrency(item.pnlUsd, currency)}
           </span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-muted-foreground">Valor actual</span>
+          <span className="text-muted-foreground">{""}<FinixUiText text={"Valor actual"} />{""}</span>
           <span className="font-bold text-foreground">{formatCurrency(item.currentValue, currency)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-muted-foreground">Costo</span>
+          <span className="text-muted-foreground">{""}<FinixUiText text={"Costo"} />{""}</span>
           <span className="font-bold text-foreground/75">{formatCurrency(item.costBasis, currency)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-muted-foreground">Peso</span>
+          <span className="text-muted-foreground">{""}<FinixUiText text={"Peso"} />{""}</span>
           <span className="font-bold text-amber-400">{formatPercentage(item.weight, 1, false)}</span>
         </div>
       </div>
@@ -94,6 +96,8 @@ export function AssetPnLChart({
   currency = 'USD',
   className,
 }: AssetPnLChartProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const [sortBy, setSortBy] = useState<SortMetric>('returnPct');
 
   const chartData = useMemo(() => {
@@ -120,7 +124,7 @@ export function AssetPnLChart({
 
   return (
     <ChartContainer
-      title="Rendimiento por Activo"
+      title={finixUi("Rendimiento por Activo")}
       description="Retorno y ganancia/pérdida individual de cada posición"
       loading={loading}
       error={error}
@@ -131,7 +135,7 @@ export function AssetPnLChart({
       ariaLabel="Gráfico de rendimiento por activo"
       className={className}
       headerActions={
-        <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1" role="group" aria-label="Ordenar por">
+        <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-background/50 p-1" role="group" aria-label={finixUi("Ordenar por")}>
           {sortButtons.map((btn) => (
             <button
               key={btn.key}
@@ -146,7 +150,7 @@ export function AssetPnLChart({
               )}
             >
               {btn.icon}
-              {btn.label}
+              {<FinixUiText text={btn.label} />}
             </button>
           ))}
         </div>

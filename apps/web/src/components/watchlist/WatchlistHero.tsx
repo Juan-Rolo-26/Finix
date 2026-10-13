@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { WATCHLIST_PLAN_LIMITS } from '@finix/shared';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { useEffect, useRef, useState, type RefObject } from 'react';
@@ -12,6 +14,8 @@ function WatchlistAssetSearch({ inputRef, onAddAsset }: {
     inputRef: RefObject<HTMLInputElement>;
     onAddAsset: (asset: Asset) => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [query, setQuery] = useState('');
     const [open, setOpen] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -53,12 +57,12 @@ function WatchlistAssetSearch({ inputRef, onAddAsset }: {
                     id="watchlist-asset-search"
                     ref={inputRef}
                     role="combobox"
-                    aria-label="Buscar activos para seguir"
+                    aria-label={finixUi("Buscar activos para seguir")}
                     aria-autocomplete="list"
                     aria-expanded={open && Boolean(normalized)}
                     aria-controls="watchlist-search-results"
                     aria-activedescendant={open && assets[selectedIndex] ? `watchlist-search-${selectedIndex}` : undefined}
-                    placeholder="Buscá por empresa o símbolo…"
+                    placeholder={finixUi("Buscá por empresa o símbolo…")}
                     value={query}
                     autoComplete="off"
                     onFocus={() => setOpen(true)}
@@ -72,12 +76,12 @@ function WatchlistAssetSearch({ inputRef, onAddAsset }: {
                         if (event.key === 'Enter' && open && assets[selectedIndex]) { event.preventDefault(); selectAsset(assets[selectedIndex]); }
                     }}
                 />
-                {loading ? <Loader2 size={18} className="animate-spin" aria-label="Buscando" /> : query ? (
-                    <button type="button" aria-label="Limpiar búsqueda de activos" onClick={() => { setQuery(''); inputRef.current?.focus(); }}><X size={17} /></button>
-                ) : <span className="watchlist-asset-search__hint">Ticker o empresa</span>}
+                {loading ? <Loader2 size={18} className="animate-spin" aria-label={finixUi("Buscando")} /> : query ? (
+                    <button type="button" aria-label={finixUi("Limpiar búsqueda de activos")} onClick={() => { setQuery(''); inputRef.current?.focus(); }}><X size={17} /></button>
+                ) : <span className="watchlist-asset-search__hint">{""}<FinixUiText text={"Ticker o empresa"} />{""}</span>}
             </div>
             {open && normalized && (
-                <div className="watchlist-search-results" id="watchlist-search-results" role="listbox" aria-label="Activos encontrados" aria-busy={loading}>
+                <div className="watchlist-search-results" id="watchlist-search-results" role="listbox" aria-label={finixUi("Activos encontrados")} aria-busy={loading}>
                     {loading || searchError || assets.length === 0 ? (
                         <p role="status">{loading ? 'Buscando activos…' : searchError ? 'No se pudo buscar. Volvé a intentarlo.' : 'No encontramos activos con esa búsqueda.'}</p>
                     ) : assets.map((asset, index) => (
@@ -102,6 +106,8 @@ export default function WatchlistHero({ items, isPro, showWelcome, onDismissWelc
     onDismissWelcome: () => void;
     onAddAsset: (asset: Asset) => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const navigate = useNavigate();
     const inputRef = useRef<HTMLInputElement>(null);
@@ -109,13 +115,13 @@ export default function WatchlistHero({ items, isPro, showWelcome, onDismissWelc
         <header className="watchlist-hero">
             <div className="watchlist-hero__inner">
                 <div className="watchlist-hero__main">
-                    <span className="watchlist-hero__eyebrow"><Bookmark size={14} /> TU RADAR DE INVERSIÓN</span>
-                    <h2>¿Cuál es tu próxima<br /><span>oportunidad?</span></h2>
-                    <p>Encontrá activos, definí tu precio de entrada y seguí su evolución.</p>
+                    <span className="watchlist-hero__eyebrow"><Bookmark size={14} /> {" "}<FinixUiText text={"TU RADAR DE INVERSIÓN"} />{""}</span>
+                    <h2>{""}<FinixUiText text={"¿Cuál es tu próxima"} />{""}<br /><span>{""}<FinixUiText text={"oportunidad?"} />{""}</span></h2>
+                    <p>{""}<FinixUiText text={"Encontrá activos, definí tu precio de entrada y seguí su evolución."} />{""}</p>
                     <WatchlistAssetSearch inputRef={inputRef} onAddAsset={onAddAsset} />
                     {items.length > 0 && (
                         <div className="watchlist-hero__shortcuts">
-                            <span>En tu radar</span>
+                            <span>{""}<FinixUiText text={"En tu radar"} />{""}</span>
                             {items.slice(0, 4).map(item => (
                                 <button key={item.symbol} type="button" onClick={() => navigate(`/market?symbol=${encodeURIComponent(item.symbol)}`)} title={`Ver ${item.name || item.symbol} en Mercado`}>
                                     <SymbolLogo symbol={item.symbol} size={18} />{item.symbol.split(':').pop()}
@@ -125,9 +131,9 @@ export default function WatchlistHero({ items, isPro, showWelcome, onDismissWelc
                     )}
                 </div>
                 <aside className="watchlist-hero__aside">
-                    <div className="watchlist-hero__aside-label"><span /> PARA VOS <span /></div>
+                    <div className="watchlist-hero__aside-label"><span /> {" "}<FinixUiText text={"PARA VOS"} />{" "}<span /></div>
                     <div className="watchlist-hero__tip">
-                        {showWelcome && <button type="button" className="watchlist-hero__dismiss" onClick={onDismissWelcome} aria-label="Cerrar aviso"><X size={15} /></button>}
+                        {showWelcome && <button type="button" className="watchlist-hero__dismiss" onClick={onDismissWelcome} aria-label={finixUi("Cerrar aviso")}><X size={15} /></button>}
                         {isPro ? <Target size={22} /> : <Crown size={22} />}
                         <h3>{isPro ? 'Tu estrategia empieza acá' : 'Dale más espacio a tus ideas'}</h3>
                         <p>{freeAccess ? `Durante el acceso bonificado tenés los límites de Creador: ${WATCHLIST_PLAN_LIMITS.CREATOR.maxWatchlists} listas y ${WATCHLIST_PLAN_LIMITS.CREATOR.maxItemsPerList} activos por lista. Necesitás una cuenta.` : `Límites habituales: Gratis, ${WATCHLIST_PLAN_LIMITS.FREE.maxWatchlists} lista y ${WATCHLIST_PLAN_LIMITS.FREE.maxItemsPerList} activos; PRO, ${WATCHLIST_PLAN_LIMITS.PRO.maxWatchlists} listas y ${WATCHLIST_PLAN_LIMITS.PRO.maxItemsPerList} activos por lista; Creador, ${WATCHLIST_PLAN_LIMITS.CREATOR.maxWatchlists} listas y ${WATCHLIST_PLAN_LIMITS.CREATOR.maxItemsPerList} activos por lista.`}</p>
@@ -135,7 +141,7 @@ export default function WatchlistHero({ items, isPro, showWelcome, onDismissWelc
                             {isPro ? 'Buscar un activo' : 'Conocer Finix PRO'}<ArrowUpRight size={16} />
                         </button>
                     </div>
-                    {showWelcome && <p className="watchlist-hero__welcome">Tus listas son un espacio para investigar. Agregar activos acá no modifica tu portafolio.</p>}
+                    {showWelcome && <p className="watchlist-hero__welcome">{""}<FinixUiText text={"Tus listas son un espacio para investigar. Agregar activos acá no modifica tu portafolio."} />{""}</p>}
                 </aside>
             </div>
         </header>

@@ -1,3 +1,4 @@
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /**
  * RiskReturnChart.tsx — Risk vs Return scatter chart using Apache ECharts.
  *
@@ -31,6 +32,8 @@ export function RiskReturnChart({
   onRetry,
   className,
 }: RiskReturnChartProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const chartRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<ECharts | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -204,7 +207,7 @@ export function RiskReturnChart({
 
   return (
     <ChartContainer
-      title="Riesgo vs Rendimiento"
+      title={finixUi("Riesgo vs Rendimiento")}
       description="Tamaño = peso en portafolio · Eje X = volatilidad anualizada · Eje Y = rendimiento acumulado"
       loading={loading}
       error={error}
@@ -220,7 +223,7 @@ export function RiskReturnChart({
         className="w-full"
         style={{ height: '380px' }}
         role="img"
-        aria-label="Scatter plot riesgo vs rendimiento"
+        aria-label={finixUi("Scatter plot riesgo vs rendimiento")}
       />
     </ChartContainer>
   );

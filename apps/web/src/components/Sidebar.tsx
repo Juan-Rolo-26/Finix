@@ -1,3 +1,4 @@
+import { useTranslation } from '@/i18n';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -83,10 +84,11 @@ function SidebarNavLink({
     onHoverStart,
     onHoverEnd,
 }: SidebarNavLinkProps) {
+    const { ui } = useTranslation();
     return (
         <Link
             to={path}
-            title={collapsed ? name : undefined}
+            title={collapsed ? ui(name) : undefined}
             onMouseEnter={() => onHoverStart(path)}
             onMouseLeave={onHoverEnd}
             className="relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition-colors duration-200 select-none overflow-hidden"
@@ -137,7 +139,7 @@ function SidebarNavLink({
                 </div>
                 {!collapsed && (
                     <>
-                        <span className="flex-1 leading-none font-semibold">{name}</span>
+                        <span className="flex-1 leading-none font-semibold">{ui(name)}</span>
                         {badge > 0 && (
                             <motion.span
                                 initial={{ scale: 0 }}
@@ -162,18 +164,20 @@ function SidebarNavLink({
 }
 
 function SectionLabel({ label, collapsed }: { label: string; collapsed: boolean }) {
+    const { ui } = useTranslation();
     if (collapsed) return <div className="h-px mx-2 my-3" style={{ background: 'hsl(var(--border) / 0.5)' }} />;
     return (
         <p
             className="mb-1.5 px-3 pt-1 text-[10px] font-bold uppercase tracking-[0.2em]"
             style={{ color: label === 'PRO' ? PRIMARY : 'hsl(var(--sidebar-section-label))' }}
         >
-            {label}
+            {ui(label)}
         </p>
     );
 }
 
 export function Sidebar() {
+    const { ui, locale } = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
     const { logout, user } = useAuthStore();
@@ -305,31 +309,31 @@ export function Sidebar() {
         {
             label: 'Social',
             links: [
-                { name: 'Inicio', path: '/dashboard', icon: LayoutDashboard, badge: 0 },
-                { name: 'Explorar', path: '/explore', icon: Compass, badge: 0 },
-                ...(hasCommunityAccess(user) ? [{ name: 'Comunidades', path: '/comunidades', icon: Users, badge: 0 }] : []),
-                { name: 'Mensajes', path: '/messages', icon: MessageSquare, badge: unreadMsgs },
+                { name: ui("Inicio"), path: '/dashboard', icon: LayoutDashboard, badge: 0 },
+                { name: ui("Explorar"), path: '/explore', icon: Compass, badge: 0 },
+                ...(hasCommunityAccess(user) ? [{ name: ui("Comunidades"), path: '/comunidades', icon: Users, badge: 0 }] : []),
+                { name: ui("Mensajes"), path: '/messages', icon: MessageSquare, badge: unreadMsgs },
             ],
         },
         {
-            label: 'Mercados',
+            label: ui("Mercados"),
             links: [
-                { name: 'Mercado',     path: '/market',            icon: TrendingUp, badge: 0 },
-                ...(isWatchlistEnabled() ? [{ name: 'Seguimiento', path: '/market/seguimiento', icon: Bookmark, badge: 0 }] : []),
-                { name: 'Calendario',  path: '/calendario',        icon: Calendar,   badge: 0 },
-                { name: 'Portafolio',  path: '/portfolio',         icon: Briefcase,  badge: 0 },
+                { name: ui("Mercado"),     path: '/market',            icon: TrendingUp, badge: 0 },
+                ...(isWatchlistEnabled() ? [{ name: ui("Seguimiento"), path: '/market/seguimiento', icon: Bookmark, badge: 0 }] : []),
+                { name: ui("Calendario"),  path: '/calendario',        icon: Calendar,   badge: 0 },
+                { name: ui("Portafolio"),  path: '/portfolio',         icon: Briefcase,  badge: 0 },
                 // { name: 'Finanzas Personales', path: '/finanzas', icon: Wallet, badge: 0 },
-                { name: 'Noticias',    path: '/news',              icon: Newspaper,  badge: 0 },
-                { name: 'Análisis',    path: '/analysis',          icon: AreaChart,  badge: 0 },
+                { name: ui("Noticias"),    path: '/news',              icon: Newspaper,  badge: 0 },
+                { name: ui("Análisis"),    path: '/analysis',          icon: AreaChart,  badge: 0 },
                 // { name: 'Aprender', path: '/learn', icon: BookOpen, badge: 0 },
             ],
         },
         {
-            label: 'Mi Cuenta',
+            label: ui("Mi Cuenta"),
             links: [
-                { name: 'Perfil', path: '/profile', icon: User, badge: 0 },
-                { name: 'Notificaciones', path: '/notifications', icon: Bell, badge: unreadNotifs },
-                { name: 'Configuraciones', path: '/settings', icon: Settings, badge: 0 },
+                { name: ui("Perfil"), path: '/profile', icon: User, badge: 0 },
+                { name: ui("Notificaciones"), path: '/notifications', icon: Bell, badge: unreadNotifs },
+                { name: ui("Configuraciones"), path: '/settings', icon: Settings, badge: 0 },
             ],
         },
     ];
@@ -343,7 +347,7 @@ export function Sidebar() {
 
     const toggleTheme = () => setTheme(isLight ? 'dark' : 'light');
 
-    const notificationGroups = groupNotificationsByDay(notifications);
+    const notificationGroups = groupNotificationsByDay(notifications, { locale });
 
     const sidebarWidth = collapsed ? '72px' : '276px';
 
@@ -384,8 +388,7 @@ export function Sidebar() {
                     >
                         <p className="text-[17px] font-black tracking-[0.1em] uppercase"
                             style={{ color: 'hsl(var(--foreground))' }}>
-                            FINIX
-                        </p>
+                            {ui("FINIX")}</p>
                         <p className="text-[9px] font-bold tracking-[0.24em] uppercase mt-0.5"
                             style={{ color: `hsl(var(--sidebar-logo-subtitle))` }}>
                             Red Social
@@ -403,7 +406,7 @@ export function Sidebar() {
                             onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--muted))')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                             onClick={toggleTheme}
-                            title={isLight ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+                            title={isLight ? ui("Cambiar a modo oscuro") : ui("Cambiar a modo claro")}
                         >
                             {isLight ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
                         </button>
@@ -417,7 +420,7 @@ export function Sidebar() {
                                     background: isSearchOpen ? 'hsl(var(--muted))' : 'transparent',
                                 }}
                                 onClick={() => { setIsSearchOpen(!isSearchOpen); setIsNotifsOpen(false); }}
-                                title="Buscar"
+                                title={ui("Buscar")}
                             >
                                 <Search className="w-3.5 h-3.5" />
                             </button>
@@ -436,7 +439,7 @@ export function Sidebar() {
                                                 style={{ color: 'hsl(var(--muted-foreground))' }} />
                                             <input
                                                 type="text"
-                                                placeholder="Buscar usuarios..."
+                                                placeholder={ui("Buscar usuarios...")}
                                                 className="w-full text-[13px] pl-8 pr-3 py-2 rounded-xl outline-none"
                                                 style={{
                                                     background: 'hsl(var(--secondary))',
@@ -509,7 +512,7 @@ export function Sidebar() {
                                     background: isNotifsOpen ? 'hsl(var(--muted))' : 'transparent',
                                 }}
                                 onClick={() => { setIsNotifsOpen(!isNotifsOpen); setIsSearchOpen(false); }}
-                                title="Notificaciones"
+                                title={ui("Notificaciones")}
                             >
                                 <Bell className="w-3.5 h-3.5" />
                                 {unreadNotifs > 0 && (
@@ -532,10 +535,9 @@ export function Sidebar() {
                                         <div className="px-4 py-3 flex items-center justify-between sticky top-0 z-10"
                                             style={{ background: 'hsl(var(--popover))', borderBottom: '1px solid hsl(var(--border) / 0.6)' }}>
                                             <div>
-                                                <h3 className="font-semibold text-[13.5px]">Notificaciones</h3>
+                                                <h3 className="font-semibold text-[13.5px]">{ui("Notificaciones")}</h3>
                                                 <p className="text-[10.5px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                                    Últimos {NOTIFICATION_HISTORY_DAYS} días
-                                                </p>
+                                                    Últimos {NOTIFICATION_HISTORY_DAYS} {ui("días")}</p>
                                             </div>
                                             {notifications.length > 0 && (
                                                 <button
@@ -622,7 +624,7 @@ export function Sidebar() {
                                                     <div className="empty-state-icon">
                                                         <Bell className="w-6 h-6" />
                                                     </div>
-                                                    <p className="text-[13px] font-semibold">Sin notificaciones</p>
+                                                    <p className="text-[13px] font-semibold">{ui("Sin notificaciones")}</p>
                                                     <p className="text-[11.5px] leading-relaxed max-w-[200px]"
                                                         style={{ color: 'hsl(var(--muted-foreground))' }}>
                                                         Acá verás seguidores, likes y actividad relevante
@@ -660,7 +662,7 @@ export function Sidebar() {
                     }}
                 >
                     <Plus className="w-4 h-4 flex-shrink-0" />
-                    {!collapsed && <span className="flex-1">Crear publicación</span>}
+                    {!collapsed && <span className="flex-1">{ui("Crear publicación")}</span>}
                 </button>
             </div>
 
@@ -765,13 +767,13 @@ export function Sidebar() {
                     onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--muted) / 0.6)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     onClick={() => setCollapsed()}
-                    title={collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+                    title={collapsed ? ui("Expandir sidebar") : ui("Colapsar sidebar")}
                 >
                     {collapsed
                         ? <PanelLeftOpen className="w-4 h-4 mx-auto" />
                         : <>
                             <PanelLeftClose className="w-3.5 h-3.5" />
-                            <span>Colapsar</span>
+                            <span>{ui("Colapsar")}</span>
                         </>
                     }
                 </button>
@@ -844,7 +846,7 @@ export function Sidebar() {
                     onClick={e => { e.stopPropagation(); logout(); }}
                 >
                     <LogOut className="w-3.5 h-3.5" />
-                    {!collapsed && <span>Cerrar sesión</span>}
+                    {!collapsed && <span>{ui("Cerrar sesión")}</span>}
                 </motion.button>
 
                 {/* ── Legal footer links — only when expanded ── */}
@@ -853,29 +855,24 @@ export function Sidebar() {
                         <Link to="/help" className="text-[9.5px] font-medium transition-colors" style={{ color: 'hsl(var(--muted-foreground))' }}
                             onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--foreground))')}
                             onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))')}>
-                            Ayuda
-                        </Link>
+                            {ui("Ayuda")}</Link>
                         <span className="text-[9.5px]" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>·</span>
                         <Link to="/terms" className="text-[9.5px] font-medium transition-colors" style={{ color: 'hsl(var(--muted-foreground))' }}
                             onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--foreground))')}
                             onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))')}>
-                            Términos
-                        </Link>
+                            {ui("Términos")}</Link>
                         <span className="text-[9.5px]" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>·</span>
                         <Link to="/privacy" className="text-[9.5px] font-medium transition-colors" style={{ color: 'hsl(var(--muted-foreground))' }}
                             onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--foreground))')}
                             onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))')}>
-                            Privacidad
-                        </Link>
+                            {ui("Privacidad")}</Link>
                         <span className="text-[9.5px]" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>·</span>
                         <Link to="/cookies" className="text-[9.5px] font-medium transition-colors" style={{ color: 'hsl(var(--muted-foreground))' }}
                             onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--foreground))')}
                             onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))')}>
-                            Cookies
-                        </Link>
+                            {ui("Cookies")}</Link>
                         <p className="w-full text-center text-[8.5px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground) / 0.45)' }}>
-                            © {new Date().getFullYear()} Finix
-                        </p>
+                            © {new Date().getFullYear()} {ui("Finix")}</p>
                     </div>
                 )}
             </motion.div>

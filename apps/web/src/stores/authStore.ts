@@ -255,13 +255,17 @@ export const useAuthStore = create<AuthState>((set) => ({
                 const enhanced = enhanceUser(user);
                 persistUser(enhanced);
                 set({ token: getAccessToken(), user: enhanced });
-                const { language, theme, currency } = user as any;
-                if (language || theme || currency) {
-                    usePreferencesStore.getState().updatePreferences({
-                        ...(language && { language }), ...(theme && { theme }), ...(currency && { currency }),
-                    });
-                    if (theme) usePreferencesStore.getState().setTheme(theme);
+                const saved = user as any;
+                const preferences: Record<string, any> = {};
+                if (saved.language) preferences.language = saved.language === 'en-US' ? 'en-US' : 'es-AR';
+                if (saved.currency) preferences.currency = saved.currency === 'ARS' ? 'ARS' : 'USD';
+                if (['light', 'dark', 'system'].includes(saved.theme)) preferences.theme = saved.theme;
+                for (const field of ['autoRefreshMarket', 'compactTables', 'showAdvancedMetrics', 'marketNotifications']) {
+                    if (typeof saved[field] === 'boolean') preferences[field] = saved[field];
                 }
+                if (['basic', 'normal', 'advanced'].includes(saved.chartDensity)) preferences.chartDensity = saved.chartDensity;
+                if (saved.timezone) preferences.timezone = saved.timezone;
+                usePreferencesStore.getState().updatePreferences(preferences);
                 return enhanced;
             } catch {
                 // Keep the UI during temporary network failures; the API still checks authorization.

@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import FreeAccessNotice from '@/components/FreeAccessNotice';
 import { usePlanCheckout } from '@/hooks/usePlanCheckout';
 import { PlanCheckoutDialog } from '@/components/PlanCheckoutDialog';
@@ -31,8 +32,8 @@ export default function ProUpgrade() {
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden">
             <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-4"><FreeAccessNotice /></div>
-            {(checkout.configError || (checkout.error && !checkout.selectedPlan)) && <div role="alert" className="relative z-10 mx-auto max-w-6xl px-6 py-4">{checkout.configError || checkout.error}<button className="ml-3 text-primary underline" onClick={() => { void checkout.reload(); }}>Reintentar</button></div>}
-            {freeAccess && <p className="relative z-10 mx-auto px-6 pt-3 text-sm text-muted-foreground">Precio habitual configurado (importe actual: ARS 0): {formatArs(proPriceArs)}. El acceso temporal no crea una suscripción.</p>}
+            {(checkout.configError || (checkout.error && !checkout.selectedPlan)) && <div role="alert" className="relative z-10 mx-auto max-w-6xl px-6 py-4">{checkout.configError || checkout.error}<button className="ml-3 text-primary underline" onClick={() => { void checkout.reload(); }}>{""}<FinixUiText text={"Reintentar"} />{""}</button></div>}
+            {freeAccess && <p className="relative z-10 mx-auto px-6 pt-3 text-sm text-muted-foreground">{""}<FinixUiText text={"Precio habitual configurado (importe actual: ARS 0):"} />{" "}{formatArs(proPriceArs)}{""}<FinixUiText text={". El acceso temporal no crea una suscripción."} />{""}</p>}
             {/* Background Effects */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full opacity-30"
@@ -49,7 +50,7 @@ export default function ProUpgrade() {
                 >
                     <ArrowLeft className="w-5 h-5" />
                 </button>
-                <div className="font-heading font-extrabold text-2xl tracking-tighter">FINIX</div>
+                <div className="font-heading font-extrabold text-2xl tracking-tighter">{""}<FinixUiText text={"FINIX"} />{""}</div>
             </header>
 
             {/* Main Content */}
@@ -65,17 +66,14 @@ export default function ProUpgrade() {
                     >
                         <div className="space-y-4">
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
-                                <Sparkles className="w-4 h-4" /> Herramientas para analizar mercados
-                            </div>
+                                <Sparkles className="w-4 h-4" /> {" "}<FinixUiText text={"Herramientas para analizar mercados"} />{" "}</div>
                             <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold tracking-tight leading-[1.1]">
-                                Entendé mejor el mercado <br />
+                                {" "}<FinixUiText text={"Entendé mejor el mercado"} />{" "}<br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">
-                                    con más datos
-                                </span>
+                                    {" "}<FinixUiText text={"con más datos"} />{" "}</span>
                             </h1>
                             <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-                                Reuní cotizaciones, noticias, portafolios y métricas en un mismo lugar. Consultá los precios, límites y condiciones de cada plan antes de contratar.
-                            </p>
+                                {" "}<FinixUiText text={"Reuní cotizaciones, noticias, portafolios y métricas en un mismo lugar. Consultá los precios, límites y condiciones de cada plan antes de contratar."} />{" "}</p>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
@@ -84,8 +82,8 @@ export default function ProUpgrade() {
                                     <Target className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-sm">Datos ordenados</h4>
-                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Consultá información de mercados y empresas en un mismo espacio.</p>
+                                    <h4 className="font-bold text-sm">{""}<FinixUiText text={"Datos ordenados"} />{""}</h4>
+                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{""}<FinixUiText text={"Consultá información de mercados y empresas en un mismo espacio."} />{""}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-4">
@@ -93,8 +91,8 @@ export default function ProUpgrade() {
                                     <Shield className="w-5 h-5 text-blue-500" />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-sm">Herramientas claras</h4>
-                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Usá métricas y filtros para hacer tu propio seguimiento.</p>
+                                    <h4 className="font-bold text-sm">{""}<FinixUiText text={"Herramientas claras"} />{""}</h4>
+                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{""}<FinixUiText text={"Usá métricas y filtros para hacer tu propio seguimiento."} />{""}</p>
                                 </div>
                             </div>
                         </div>
@@ -113,8 +111,8 @@ export default function ProUpgrade() {
 
                             <div className="flex justify-between items-start mb-6">
                                 <div>
-                                    <h2 className="text-2xl font-bold">Finix Pro</h2>
-                                    <p className="text-muted-foreground text-sm mt-1">Más datos para tu propio análisis.</p>
+                                    <h2 className="text-2xl font-bold">{""}<FinixUiText text={"Finix Pro"} />{""}</h2>
+                                    <p className="text-muted-foreground text-sm mt-1">{""}<FinixUiText text={"Más datos para tu propio análisis."} />{""}</p>
                                 </div>
                                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                                     <Zap className="w-6 h-6 text-primary" />
@@ -141,8 +139,7 @@ export default function ProUpgrade() {
                                 {loading ? (
                                     <>
                                         <Loader2 className="w-5 h-5 animate-spin" />
-                                        Conectando...
-                                    </>
+                                        {" "}<FinixUiText text={"Conectando..."} />{" "}</>
                                 ) : !checkout.catalog ? ('Disponibilidad sin confirmar') : checkout.catalog.purchasesPaused && !freeAccess && !hasPro ? ('Compras pausadas') : !user ? (
                                     <>
                                         <span>{freeAccess ? 'Creá tu cuenta y accedé gratis' : 'Iniciar sesión para elegir plan'}</span>
@@ -152,7 +149,7 @@ export default function ProUpgrade() {
                                     'Gestionar mi plan'
                                 ) : (
                                     <>
-                                        <span>Mejorar a PRO</span>
+                                        <span>{""}<FinixUiText text={"Mejorar a PRO"} />{""}</span>
                                         <ArrowRight className="w-5 h-5" />
                                     </>
                                 )}

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -60,6 +62,8 @@ function useScrollSpy(ids: string[]) {
 
 // ─── Back to top button ────────────────────────────────────────────────────────
 function BackToTop() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
@@ -73,7 +77,7 @@ function BackToTop() {
     return (
         <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            aria-label="Volver arriba"
+            aria-label={finixUi("Volver arriba")}
             className="fixed bottom-6 right-6 z-50 w-10 h-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:opacity-90 transition-all"
         >
             <ArrowUp className="w-4 h-4" />
@@ -151,6 +155,8 @@ export default function LegalPageLayout({
     sections,
     children,
 }: LegalPageLayoutProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const sectionIds = sections.map(s => s.id);
     const activeId = useScrollSpy(sectionIds);
     const navigate = useNavigate();
@@ -179,16 +185,16 @@ export default function LegalPageLayout({
                     <button
                         onClick={() => navigate(-1)}
                         className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                        aria-label="Volver"
+                        aria-label={finixUi("Volver")}
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="hidden sm:inline">Volver</span>
+                        <span className="hidden sm:inline">{""}<FinixUiText text={"Volver"} />{""}</span>
                     </button>
                     <Link to="/dashboard" className="flex items-center gap-3 group cursor-pointer">
                         <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border border-black/20 dark:border-white/30 bg-white dark:bg-zinc-900 shadow-2xs transition-transform group-hover:scale-105">
-                            <img src="/logo-small.webp" alt="Finix" className="h-5 w-5 object-contain" />
+                            <img src="/logo-small.webp" alt={finixUi("Finix")} className="h-5 w-5 object-contain" />
                         </div>
-                        <span className="font-heading font-black text-xl tracking-tight text-foreground">Finix</span>
+                        <span className="font-heading font-black text-xl tracking-tight text-foreground">{""}<FinixUiText text={"Finix"} />{""}</span>
                     </Link>
                 </div>
             </nav>
@@ -274,13 +280,12 @@ export default function LegalPageLayout({
                             role="contentinfo"
                         >
                             <p>
-                                © {new Date().getFullYear()} Finix. Todos los derechos reservados.
-                            </p>
+                                © {new Date().getFullYear()} {" "}<FinixUiText text={"Finix. Todos los derechos reservados."} />{" "}</p>
                             <div className="flex flex-wrap items-center justify-center gap-4">
-                                <Link to="/help" className="hover:text-foreground transition-colors">Ayuda</Link>
-                                <Link to="/terms" className="hover:text-foreground transition-colors">Términos</Link>
-                                <Link to="/privacy" className="hover:text-foreground transition-colors">Privacidad</Link>
-                                <Link to="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>
+                                <Link to="/help" className="hover:text-foreground transition-colors">{""}<FinixUiText text={"Ayuda"} />{""}</Link>
+                                <Link to="/terms" className="hover:text-foreground transition-colors">{""}<FinixUiText text={"Términos"} />{""}</Link>
+                                <Link to="/privacy" className="hover:text-foreground transition-colors">{""}<FinixUiText text={"Privacidad"} />{""}</Link>
+                                <Link to="/cookies" className="hover:text-foreground transition-colors">{""}<FinixUiText text={"Cookies"} />{""}</Link>
                             </div>
                         </footer>
                     </div>

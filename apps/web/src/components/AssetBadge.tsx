@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 /**
  * AssetBadge.tsx
  * ─────────────────────────────────────────────────────────────────────────────
@@ -114,7 +115,7 @@ export function AssetBadge({
                 {showPrice && !compactPrice && (
                     <div className="flex items-center gap-2 mt-0.5">
                         {loading ? (
-                            <span className={cn('text-muted-foreground/50 animate-pulse', cfg.price)}>Cargando...</span>
+                            <span className={cn('text-muted-foreground/50 animate-pulse', cfg.price)}>{""}<FinixUiText text={"Cargando..."} />{""}</span>
                         ) : price !== null ? (
                             <>
                                 <span className={cn('font-bold tabular-nums', cfg.price)}>{fmtPrice(price)}</span>
@@ -125,7 +126,7 @@ export function AssetBadge({
                                 )}
                             </>
                         ) : (
-                            <span className={cn('text-muted-foreground/40', cfg.price)}>Sin precio</span>
+                            <span className={cn('text-muted-foreground/40', cfg.price)}>{""}<FinixUiText text={"Sin precio"} />{""}</span>
                         )}
                     </div>
                 )}

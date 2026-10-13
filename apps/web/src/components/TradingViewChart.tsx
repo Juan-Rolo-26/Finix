@@ -35,7 +35,7 @@ function TradingViewChart({
     const containerRef = useRef<HTMLDivElement>(null);
     const scriptLoadedRef = useRef(false);
     const onWidgetReadyRef = useRef(onWidgetReady);
-    const { theme: storeTheme } = usePreferencesStore();
+    const { theme: storeTheme, language, chartDensity, timezone } = usePreferencesStore();
 
     useEffect(() => {
         onWidgetReadyRef.current = onWidgetReady;
@@ -92,20 +92,20 @@ function TradingViewChart({
                     height: '100%',
                     symbol: cleanSymbol,
                     interval: interval || 'D',
-                    timezone: 'America/Argentina/Buenos_Aires',
+                    timezone: timezone === 'America/Argentina/Cordoba' ? 'America/Argentina/Buenos_Aires' : timezone,
                     theme: activeTheme,
                     style: '1',
-                    locale: 'es',
+                    locale: language === 'en-US' ? 'en' : 'es',
                     toolbar_bg: activeTheme === 'dark' ? '#09090b' : '#ffffff',
                     enable_publishing: false,
                     allow_symbol_change: allowSymbolChange,
                     save_image: true,
-                    hide_side_toolbar: hideSideToolbar,
+                    hide_side_toolbar: hideSideToolbar || chartDensity === 'basic',
                     show_popup_button: false,
-                    withdateranges: withDateRanges,
-                    hide_volume: false,
+                    withdateranges: withDateRanges && chartDensity !== 'basic',
+                    hide_volume: chartDensity === 'basic',
                     disabled_features: [],
-                    enabled_features: ['study_templates', 'header_indicators', 'header_widget'],
+                    enabled_features: chartDensity === 'basic' ? [] : chartDensity === 'advanced' ? ['study_templates', 'header_indicators', 'header_widget'] : ['header_indicators', 'header_widget'],
                     studies: JSON.parse(studiesKey),
                     ...(chartStorageId ? {
                         charts_storage_url: 'https://saveload.tradingview.com',
@@ -170,6 +170,9 @@ function TradingViewChart({
         hideSideToolbar,
         withDateRanges,
         allowSymbolChange,
+        language,
+        chartDensity,
+        timezone,
     ]);
 
     const resolvedHeightStyle = typeof height === 'number' ? `${height}px` : height;

@@ -1,13 +1,13 @@
 export type ToolId = 'compuesto' | 'objetivos' | 'inflacion' | 'comisiones' | 'escenarios' | 'tasas' | 'prestamos' | 'operacion';
 export type Values = Record<string, number>;
-export type Field = { key: string; label: string; unit?: string; min: number; max: number; step?: number; hint?: string };
+export type Field = { key: string; label: string; unit?: string; monetary?: boolean; min: number; max: number; step?: number; hint?: string };
 export type Tool = { id: ToolId; title: string; description: string; category: string; fields: Field[]; defaults: Values; formula: string; explanation: string; limitations: string; education: string; source: { name: string; url: string } };
 
 const investor = { name: 'Investor.gov · calculadoras', url: 'https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator' };
 const rates = { name: 'BCRA · metodología de tasas', url: 'https://www.bcra.gob.ar/archivos/Pdfs/PublicacionesEstadisticas/tasmet.pdf' };
 const fees = { name: 'SEC · impacto de los costos', url: 'https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins/updated' };
 
-const money = (key: string, label: string, hint?: string): Field => ({ key, label, min: 0, max: 1e12, step: 100, hint });
+const money = (key: string, label: string, hint?: string): Field => ({ key, label, monetary: true, min: 0, max: 1e12, step: 100, hint });
 const pct = (key: string, label: string, min = -90, max = 500): Field => ({ key, label, unit: '%', min, max, step: 0.1 });
 const years: Field = { key: 'years', label: 'Plazo en años', min: 1, max: 50, step: 1 };
 const capital = money('capital', 'Capital inicial');
@@ -31,12 +31,12 @@ export const TOOLS: Tool[] = [
 export type Row = Record<string, number>;
 export type Result = { metrics: { label: string; value: number; percent?: boolean; hint?: string }[]; rows: Row[]; columns: { key: string; label: string; percent?: boolean; plain?: boolean }[]; series: { key: string; label: string; color: string }[]; xLabel: string };
 
-export function validate(tool: Tool, values: Values): Record<string, string> {
+export function validate(tool: Tool, values: Values, locale = 'es-AR'): Record<string, string> {
  const errors: Record<string, string> = {};
  for (const f of tool.fields) {
   const v = values[f.key];
   if (!Number.isFinite(v) || v < f.min || v > f.max) {
-   errors[f.key] = `Ingresá un valor entre ${f.min.toLocaleString('es-AR')} y ${f.max.toLocaleString('es-AR')}.`;
+   errors[f.key] = `Ingresá un valor entre ${f.min.toLocaleString(locale)} y ${f.max.toLocaleString(locale)}.`;
   } else if (f.step === 1 && !Number.isInteger(v)) {
    errors[f.key] = 'Ingresá un número entero.';
   }
@@ -300,4 +300,24 @@ export function calculate(tool: Tool, v: Values): Result {
  }
 
  return result;
+}
+
+export type Currency = 'ARS' | 'USD';
+/** Accept a decimal comma or point, including small converted scientific values. */
+export function parseLaboratoryNumber(raw: string): number {
+ const normalized = raw.trim().replace(',', '.');
+ return /^-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(normalized) ? Number(normalized) : NaN;
+}
+/** Change denomination only for monetary fields; rates, periods and quantities are unchanged. */
+export function convertCurrency(tool: Tool, values: Values, from: Currency, to: Currency, arsPerUsd: number): Values {
+ if (from === to || !tool.fields.some(f => f.monetary)) return { ...values };
+ if (!Number.isFinite(arsPerUsd) || arsPerUsd <= 0) throw new Error('Ingresá una cotización positiva para convertir los importes.');
+ const factor = from === 'ARS' ? 1 / arsPerUsd : arsPerUsd;
+ const next = { ...values };
+ for (const field of tool.fields.filter(f => f.monetary)) {
+  if (!Number.isFinite(values[field.key]) || values[field.key] < field.min || values[field.key] > field.max) throw new Error('Corregí los importes antes de cambiar la moneda.');
+  next[field.key] = values[field.key] * factor;
+  if (!Number.isFinite(next[field.key]) || next[field.key] > field.max) throw new Error('La conversión supera el límite permitido. Reducí los importes.');
+ }
+ return next;
 }

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Maximize2, X } from 'lucide-react';
@@ -7,6 +9,8 @@ import { cn } from '@/lib/utils';
 export function ImagePreviewButton({ src, alt, label = 'Ver imagen completa', className }: {
     src: string; alt: string; label?: string; className?: string;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [failed, setFailed] = useState(false);
     return (
         <Dialog.Root onOpenChange={(open) => { if (open) setFailed(false); }}>
@@ -20,9 +24,9 @@ export function ImagePreviewButton({ src, alt, label = 'Ver imagen completa', cl
                 <Dialog.Content aria-describedby={undefined} className="fixed inset-4 z-[101] flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 text-foreground shadow-xl">
                     <div className="flex items-center justify-between gap-3">
                         <Dialog.Title className="min-w-0 break-words text-sm font-semibold">{label}</Dialog.Title>
-                        <Dialog.Close asChild><button type="button" aria-label="Cerrar imagen completa" className="h-11 w-11 shrink-0 inline-flex items-center justify-center rounded-xl border border-border focus-visible:ring-2 focus-visible:ring-primary"><X className="h-5 w-5" aria-hidden="true" /></button></Dialog.Close>
+                        <Dialog.Close asChild><button type="button" aria-label={finixUi("Cerrar imagen completa")} className="h-11 w-11 shrink-0 inline-flex items-center justify-center rounded-xl border border-border focus-visible:ring-2 focus-visible:ring-primary"><X className="h-5 w-5" aria-hidden="true" /></button></Dialog.Close>
                     </div>
-                    {failed ? <p role="status">La imagen original no está disponible. Cerrá esta vista para continuar.</p> :
+                    {failed ? <p role="status">{""}<FinixUiText text={"La imagen original no está disponible. Cerrá esta vista para continuar."} />{""}</p> :
                         <img src={src} alt={alt} referrerPolicy="no-referrer" onError={() => setFailed(true)} className="min-h-0 flex-1 w-full object-contain" />}
                 </Dialog.Content>
             </Dialog.Portal>

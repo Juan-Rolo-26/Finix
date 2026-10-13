@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -62,6 +64,8 @@ const ACCENT_COLORS = [
 ];
 
 export default function CommunityCreate() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const navigate = useNavigate();
 
     const [currentStep, setCurrentStep] = useState(0);
@@ -299,9 +303,9 @@ export default function CommunityCreate() {
                         <ArrowLeft className="w-4 h-4" />
                     </button>
                     <div>
-                        <h1 className="text-lg sm:text-xl font-bold">Crear Comunidad</h1>
+                        <h1 className="text-lg sm:text-xl font-bold">{""}<FinixUiText text={"Crear Comunidad"} />{""}</h1>
                         <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                            Paso {currentStep + 1} de {STEPS.length}: {STEPS[currentStep]}
+                            {" "}<FinixUiText text={"Paso"} />{" "}{currentStep + 1} {" "}<FinixUiText text={"de"} />{" "}{STEPS.length}: {STEPS[currentStep]}
                         </p>
                     </div>
                 </div>
@@ -338,18 +342,17 @@ export default function CommunityCreate() {
                             exit={{ opacity: 0, x: -20 }}
                             className="space-y-4"
                         >
-                            <h2 className="text-base font-bold">Identidad y Misión</h2>
+                            <h2 className="text-base font-bold">{""}<FinixUiText text={"Identidad y Misión"} />{""}</h2>
                             <p className="text-xs text-muted-foreground">
-                                Define la propuesta de valor, objetivos y temática central para atraer a los miembros ideales.
-                            </p>
+                                {" "}<FinixUiText text={"Define la propuesta de valor, objetivos y temática central para atraer a los miembros ideales."} />{" "}</p>
 
                             <div className="space-y-4 pt-1">
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1">Nombre de la comunidad *</label>
+                                    <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Nombre de la comunidad *"} />{""}</label>
                                     <input
                                         type="text"
                                         required
-                                        placeholder="Ej: Inversores de Valor & CEDEARs"
+                                        placeholder={finixUi("Ej: Inversores de Valor & CEDEARs")}
                                         value={form.name}
                                         onChange={e => {
                                             const val = e.target.value;
@@ -362,13 +365,13 @@ export default function CommunityCreate() {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1">Handle / Slug personalizado</label>
+                                    <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Handle / Slug personalizado"} />{""}</label>
                                     <div className="flex items-center rounded-xl border bg-background px-3" style={{ borderColor: 'hsl(var(--border))' }}>
-                                        <span className="text-xs text-muted-foreground mr-1 shrink-0 hidden xs:inline sm:inline">finixarg.com/comunidades/</span>
+                                        <span className="text-xs text-muted-foreground mr-1 shrink-0 hidden xs:inline sm:inline">{""}<FinixUiText text={"finixarg.com/comunidades/"} />{""}</span>
                                         <span className="text-xs text-muted-foreground mr-1 shrink-0 xs:hidden sm:hidden">/</span>
                                         <input
                                             type="text"
-                                            placeholder="inversores-cedears"
+                                            placeholder={finixUi("inversores-cedears")}
                                             value={form.slug}
                                             onChange={e => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '-') })}
                                             className="w-full py-2.5 text-xs bg-transparent outline-none min-w-0"
@@ -377,7 +380,7 @@ export default function CommunityCreate() {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1">Categoría Principal *</label>
+                                    <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Categoría Principal *"} />{""}</label>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                         {CATEGORIES.map(cat => (
                                             <button
@@ -393,7 +396,7 @@ export default function CommunityCreate() {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1.5">Nivel de Experiencia Recomendado</label>
+                                    <label className="text-xs font-semibold block mb-1.5">{""}<FinixUiText text={"Nivel de Experiencia Recomendado"} />{""}</label>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                                         {EXPERIENCE_LEVELS.map(lvl => (
                                             <button
@@ -403,7 +406,7 @@ export default function CommunityCreate() {
                                                 aria-pressed={form.experienceLevel === lvl.label}
                                                 className={`p-3 min-h-[64px] text-left rounded-xl border transition-all flex flex-col justify-start focus-visible:ring-2 focus-visible:ring-primary ${form.experienceLevel === lvl.label ? 'border-primary bg-primary/10 text-primary shadow-xs' : 'border-border hover:bg-muted'}`}
                                             >
-                                                <p className="text-xs font-bold leading-snug">{lvl.label}</p>
+                                                <p className="text-xs font-bold leading-snug">{<FinixUiText text={lvl.label} />}</p>
                                                 <p className="text-xs text-muted-foreground mt-1 leading-normal break-words">{lvl.desc}</p>
                                             </button>
                                         ))}
@@ -411,11 +414,11 @@ export default function CommunityCreate() {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1">Descripción corta de presentación *</label>
+                                    <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Descripción corta de presentación *"} />{""}</label>
                                     <textarea
                                         rows={3}
                                         required
-                                        placeholder="Una síntesis atractiva para el feed de exploración y perfiles..."
+                                        placeholder={finixUi("Una síntesis atractiva para el feed de exploración y perfiles...")}
                                         value={form.description}
                                         onChange={e => setForm({ ...form, description: e.target.value })}
                                         className="w-full px-3.5 py-2.5 text-xs rounded-xl border bg-background"
@@ -424,10 +427,10 @@ export default function CommunityCreate() {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1">Misión y Tesis (¿Qué aprenderán o lograrán los miembros?)</label>
+                                    <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Misión y Tesis (¿Qué aprenderán o lograrán los miembros?)"} />{""}</label>
                                     <textarea
                                         rows={2}
-                                        placeholder="Ej: Ayudar a construir una cartera de dividendos sólida y analizar balances de empresas del S&P 500 semana a semana..."
+                                        placeholder={finixUi("Ej: Ayudar a construir una cartera de dividendos sólida y analizar balances de empresas del S&P 500 semana a semana...")}
                                         value={form.mission}
                                         onChange={e => setForm({ ...form, mission: e.target.value })}
                                         className="w-full px-3.5 py-2.5 text-xs rounded-xl border bg-background"
@@ -436,10 +439,10 @@ export default function CommunityCreate() {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1">Tickers y Etiquetas clave (separadas por coma)</label>
+                                    <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Tickers y Etiquetas clave (separadas por coma)"} />{""}</label>
                                     <input
                                         type="text"
-                                        placeholder="SPY, AAPL, NVDA, AL30, CEDEARs, BTC"
+                                        placeholder={finixUi("SPY, AAPL, NVDA, AL30, CEDEARs, BTC")}
                                         value={form.tags}
                                         onChange={e => setForm({ ...form, tags: e.target.value })}
                                         className="w-full px-3.5 py-2.5 text-xs rounded-xl border bg-background"
@@ -459,28 +462,27 @@ export default function CommunityCreate() {
                             exit={{ opacity: 0, x: -20 }}
                             className="space-y-4"
                         >
-                            <h2 className="text-base font-bold">Apariencia, Marca y Canales VIP</h2>
+                            <h2 className="text-base font-bold">{""}<FinixUiText text={"Apariencia, Marca y Canales VIP"} />{""}</h2>
                             <p className="text-xs text-muted-foreground">
-                                Dale personalidad visual a tu espacio y comparte canales de mensajería externa si los utilizas.
-                            </p>
+                                {" "}<FinixUiText text={"Dale personalidad visual a tu espacio y comparte canales de mensajería externa si los utilizas."} />{" "}</p>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1">Logo / Avatar</label>
+                                    <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Logo / Avatar"} />{""}</label>
                                     <div className="relative rounded-2xl border border-dashed p-4 flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer hover:bg-muted/30 transition-colors"
                                         style={{ borderColor: 'hsl(var(--border))' }}>
                                         {isUploading['imageUrl'] ? (
                                             <div className="space-y-1">
                                                 <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary" />
-                                                <p className="text-xs font-medium text-muted-foreground">Subiendo...</p>
+                                                <p className="text-xs font-medium text-muted-foreground">{""}<FinixUiText text={"Subiendo..."} />{""}</p>
                                             </div>
                                         ) : form.imageUrl ? (
                                             <img src={resolveMediaUrl(form.imageUrl)} alt="" className="w-20 h-20 rounded-full object-cover shadow" />
                                         ) : (
                                             <div className="space-y-1">
                                                 <ImageIcon className="w-8 h-8 mx-auto text-muted-foreground" />
-                                                <p className="text-xs font-medium text-muted-foreground">Subir Avatar</p>
-                                                <p className="text-[10px] text-muted-foreground">PNG o JPG cuadrado recomendado</p>
+                                                <p className="text-xs font-medium text-muted-foreground">{""}<FinixUiText text={"Subir Avatar"} />{""}</p>
+                                                <p className="text-[10px] text-muted-foreground">{""}<FinixUiText text={"PNG o JPG cuadrado recomendado"} />{""}</p>
                                             </div>
                                         )}
                                         <input
@@ -496,21 +498,21 @@ export default function CommunityCreate() {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold block mb-1">Banner de Portada</label>
+                                    <label className="text-xs font-semibold block mb-1">{""}<FinixUiText text={"Banner de Portada"} />{""}</label>
                                     <div className="relative rounded-2xl border border-dashed p-4 flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer hover:bg-muted/30 transition-colors"
                                         style={{ borderColor: 'hsl(var(--border))' }}>
                                         {isUploading['bannerUrl'] ? (
                                             <div className="space-y-1">
                                                 <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary" />
-                                                <p className="text-xs font-medium text-muted-foreground">Subiendo...</p>
+                                                <p className="text-xs font-medium text-muted-foreground">{""}<FinixUiText text={"Subiendo..."} />{""}</p>
                                             </div>
                                         ) : form.bannerUrl ? (
                                             <img src={resolveMediaUrl(form.bannerUrl)} alt="" className="w-full h-24 rounded-xl object-cover shadow" />
                                         ) : (
                                             <div className="space-y-1">
                                                 <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
-                                                <p className="text-xs font-medium text-muted-foreground">Subir Banner</p>
-                                                <p className="text-[10px] text-muted-foreground">1200x300 recomendado</p>
+                                                <p className="text-xs font-medium text-muted-foreground">{""}<FinixUiText text={"Subir Banner"} />{""}</p>
+                                                <p className="text-[10px] text-muted-foreground">{""}<FinixUiText text={"1200x300 recomendado"} />{""}</p>
                                             </div>
                                         )}
                                         <input
@@ -528,7 +530,7 @@ export default function CommunityCreate() {
 
                             {/* Color de acento */}
                             <div>
-                                <label className="text-xs font-semibold block mb-1.5">Color de Identidad</label>
+                                <label className="text-xs font-semibold block mb-1.5">{""}<FinixUiText text={"Color de Identidad"} />{""}</label>
                                 <div className="flex flex-wrap items-center gap-2">
                                     {ACCENT_COLORS.map(c => (
                                         <button
@@ -538,7 +540,7 @@ export default function CommunityCreate() {
                                             className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${form.accentColor === c.hex ? 'border-foreground shadow-sm' : 'border-border opacity-80 hover:opacity-100'}`}
                                         >
                                             <span className="w-3.5 h-3.5 rounded-full" style={{ background: c.hex }} />
-                                            <span>{c.label}</span>
+                                            <span>{<FinixUiText text={c.label} />}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -546,13 +548,13 @@ export default function CommunityCreate() {
 
                             {/* Enlaces a canales VIP */}
                             <div className="pt-2 border-t space-y-3" style={{ borderColor: 'hsl(var(--border))' }}>
-                                <label className="text-xs font-semibold block">Canales Externos Exclusivos (Opcional)</label>
+                                <label className="text-xs font-semibold block">{""}<FinixUiText text={"Canales Externos Exclusivos (Opcional)"} />{""}</label>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                     <div>
-                                        <span className="text-[10px] text-muted-foreground block mb-0.5">Grupo Telegram VIP</span>
+                                        <span className="text-[10px] text-muted-foreground block mb-0.5">{""}<FinixUiText text={"Grupo Telegram VIP"} />{""}</span>
                                         <input
                                             type="text"
-                                            placeholder="https://t.me/+invitacion"
+                                            placeholder={finixUi("https://t.me/+invitacion")}
                                             value={form.externalTelegram}
                                             onChange={e => setForm({ ...form, externalTelegram: e.target.value })}
                                             className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
@@ -560,10 +562,10 @@ export default function CommunityCreate() {
                                         />
                                     </div>
                                     <div>
-                                        <span className="text-[10px] text-muted-foreground block mb-0.5">Servidor Discord</span>
+                                        <span className="text-[10px] text-muted-foreground block mb-0.5">{""}<FinixUiText text={"Servidor Discord"} />{""}</span>
                                         <input
                                             type="text"
-                                            placeholder="https://discord.gg/invitacion"
+                                            placeholder={finixUi("https://discord.gg/invitacion")}
                                             value={form.externalDiscord}
                                             onChange={e => setForm({ ...form, externalDiscord: e.target.value })}
                                             className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
@@ -571,10 +573,10 @@ export default function CommunityCreate() {
                                         />
                                     </div>
                                     <div>
-                                        <span className="text-[10px] text-muted-foreground block mb-0.5">Comunidad WhatsApp</span>
+                                        <span className="text-[10px] text-muted-foreground block mb-0.5">{""}<FinixUiText text={"Comunidad WhatsApp"} />{""}</span>
                                         <input
                                             type="text"
-                                            placeholder="https://chat.whatsapp.com/..."
+                                            placeholder={finixUi("https://chat.whatsapp.com/...")}
                                             value={form.externalWhatsapp}
                                             onChange={e => setForm({ ...form, externalWhatsapp: e.target.value })}
                                             className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
@@ -595,10 +597,9 @@ export default function CommunityCreate() {
                             exit={{ opacity: 0, x: -20 }}
                             className="space-y-4"
                         >
-                            <h2 className="text-base font-bold">Privacidad, Acceso y Normas de Convivencia</h2>
+                            <h2 className="text-base font-bold">{""}<FinixUiText text={"Privacidad, Acceso y Normas de Convivencia"} />{""}</h2>
                             <p className="text-xs text-muted-foreground">
-                                Establece las condiciones de admisión y las normas para mantener una comunidad de alto valor.
-                            </p>
+                                {" "}<FinixUiText text={"Establece las condiciones de admisión y las normas para mantener una comunidad de alto valor."} />{" "}</p>
 
                             <div className="space-y-3">
                                 {[
@@ -632,30 +633,27 @@ export default function CommunityCreate() {
                                             onChange={e => setForm({ ...form, showContentBeforeJoin: e.target.checked })}
                                         />
                                         <label htmlFor="previewJoin" className="text-xs font-semibold cursor-pointer">
-                                            Permitir vista previa de publicaciones antes de unirse
-                                        </label>
+                                            {" "}<FinixUiText text={"Permitir vista previa de publicaciones antes de unirse"} />{" "}</label>
                                     </div>
                                     <p className="text-[11px] text-muted-foreground pl-5">
-                                        Muestra titulares difuminados para incentivar a los curiosos a convertirse en miembros.
-                                    </p>
+                                        {" "}<FinixUiText text={"Muestra titulares difuminados para incentivar a los curiosos a convertirse en miembros."} />{" "}</p>
                                 </div>
 
                                 <div className="pt-2">
                                     <div className="flex items-center justify-between mb-1">
-                                        <label className="text-xs font-semibold">Reglas y Disclaimer Financiero</label>
+                                        <label className="text-xs font-semibold">{""}<FinixUiText text={"Reglas y Disclaimer Financiero"} />{""}</label>
                                         <button
                                             type="button"
                                             onClick={() => setForm({ ...form, rules: DEFAULT_RULES.join('\n') })}
                                             className="text-[11px] text-primary hover:underline"
                                         >
-                                            Restablecer reglas sugeridas
-                                        </button>
+                                            {" "}<FinixUiText text={"Restablecer reglas sugeridas"} />{" "}</button>
                                     </div>
                                     <textarea
                                         rows={5}
                                         value={form.rules}
                                         onChange={e => setForm({ ...form, rules: e.target.value })}
-                                        placeholder="Ingresa una regla por línea..."
+                                        placeholder={finixUi("Ingresa una regla por línea...")}
                                         className="w-full px-3.5 py-2.5 text-xs rounded-xl border bg-background font-mono"
                                         style={{ borderColor: 'hsl(var(--border))' }}
                                     />
@@ -673,10 +671,9 @@ export default function CommunityCreate() {
                             exit={{ opacity: 0, x: -20 }}
                             className="space-y-4"
                         >
-                            <h2 className="text-base font-bold">Monetización y Membresías</h2>
+                            <h2 className="text-base font-bold">{""}<FinixUiText text={"Monetización y Membresías"} />{""}</h2>
                             <p className="text-xs text-muted-foreground">
-                                Elige si deseas ofrecer acceso 100% gratuito o cobrar una cuota mensual por tus análisis.
-                            </p>
+                                {" "}<FinixUiText text={"Elige si deseas ofrecer acceso 100% gratuito o cobrar una cuota mensual por tus análisis."} />{" "}</p>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <button
@@ -688,8 +685,8 @@ export default function CommunityCreate() {
                                     })}
                                     className={`p-4 rounded-2xl border text-left transition-all ${form.monetization === 'free' ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:bg-muted/30'}`}
                                 >
-                                    <p className="text-xs font-bold">Comunidad Gratuita</p>
-                                    <p className="text-[11px] text-muted-foreground mt-0.5">Acceso abierto sin cobro de cuotas.</p>
+                                    <p className="text-xs font-bold">{""}<FinixUiText text={"Comunidad Gratuita"} />{""}</p>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">{""}<FinixUiText text={"Acceso abierto sin cobro de cuotas."} />{""}</p>
                                 </button>
 
                                 <button
@@ -701,8 +698,8 @@ export default function CommunityCreate() {
                                     })}
                                     className={`p-4 rounded-2xl border text-left transition-all ${form.monetization === 'paid' ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:bg-muted/30'}`}
                                 >
-                                    <p className="text-xs font-bold">Comunidad con Membresía Paga</p>
-                                    <p className="text-[11px] text-muted-foreground mt-0.5">Cobra cuotas mensuales a tus miembros.</p>
+                                    <p className="text-xs font-bold">{""}<FinixUiText text={"Comunidad con Membresía Paga"} />{""}</p>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">{""}<FinixUiText text={"Cobra cuotas mensuales a tus miembros."} />{""}</p>
                                 </button>
                             </div>
 
@@ -710,7 +707,7 @@ export default function CommunityCreate() {
                                 <div className="space-y-4 pt-2 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                         <div>
-                                            <label className="text-[11px] font-semibold block mb-1">Nombre de la Membresía</label>
+                                            <label className="text-[11px] font-semibold block mb-1">{""}<FinixUiText text={"Nombre de la Membresía"} />{""}</label>
                                             <input
                                                 type="text"
                                                 value={form.paidPlanName}
@@ -721,20 +718,20 @@ export default function CommunityCreate() {
                                         </div>
 
                                         <div>
-                                            <label className="text-[11px] font-semibold block mb-1">Moneda</label>
+                                            <label className="text-[11px] font-semibold block mb-1">{""}<FinixUiText text={"Moneda"} />{""}</label>
                                             <select
                                                 value={form.planCurrency}
                                                 onChange={e => setForm({ ...form, planCurrency: e.target.value })}
                                                 className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
                                                 style={{ borderColor: 'hsl(var(--border))' }}
                                             >
-                                                <option value="ARS">ARS ($ Pesos Argentinos)</option>
-                                                <option value="USD">USD (Dólares)</option>
+                                                <option value="ARS">{""}<FinixUiText text={"ARS ($ Pesos Argentinos)"} />{""}</option>
+                                                <option value="USD">{""}<FinixUiText text={"USD (Dólares)"} />{""}</option>
                                             </select>
                                         </div>
 
                                         <div>
-                                            <label className="text-[11px] font-semibold block mb-1">Precio Mensual</label>
+                                            <label className="text-[11px] font-semibold block mb-1">{""}<FinixUiText text={"Precio Mensual"} />{""}</label>
                                             <div className="relative">
                                                 <input
                                                     type="number"
@@ -751,7 +748,7 @@ export default function CommunityCreate() {
 
                                     {/* Beneficios de la membresía */}
                                     <div>
-                                        <label className="text-xs font-semibold block mb-1.5">Beneficios incluidos para los suscriptores</label>
+                                        <label className="text-xs font-semibold block mb-1.5">{""}<FinixUiText text={"Beneficios incluidos para los suscriptores"} />{""}</label>
                                         <div className="space-y-2">
                                             {form.paidPlanFeatures.map((feat, idx) => (
                                                 <div key={idx} className="flex items-center gap-2">
@@ -785,13 +782,13 @@ export default function CommunityCreate() {
                                                 className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline pt-1"
                                             >
                                                 <Plus className="w-3.5 h-3.5" />
-                                                <span>Añadir otro beneficio</span>
+                                                <span>{""}<FinixUiText text={"Añadir otro beneficio"} />{""}</span>
                                             </button>
                                         </div>
 
                                         {/* Sugerencias de beneficios rápidos */}
                                         <div className="mt-3 p-3 rounded-xl border bg-muted/20 space-y-1.5">
-                                            <p className="text-[10px] font-bold text-muted-foreground uppercase">Ideas de beneficios (Haz clic para agregar):</p>
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase">{""}<FinixUiText text={"Ideas de beneficios (Haz clic para agregar):"} />{""}</p>
                                             <div className="flex flex-wrap gap-1.5">
                                                 {SUGGESTED_BENEFITS.map((sug, i) => (
                                                     <button
@@ -827,14 +824,13 @@ export default function CommunityCreate() {
                         >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
-                                    <h2 className="text-base font-bold">Pasarela de Pagos & Dónde Recibirás tu Dinero</h2>
+                                    <h2 className="text-base font-bold">{""}<FinixUiText text={"Pasarela de Pagos & Dónde Recibirás tu Dinero"} />{""}</h2>
                                     <p className="text-xs text-muted-foreground">
-                                        Configura la cuenta bancaria o pasarela donde se transferirán los ingresos de tus miembros.
-                                    </p>
+                                        {" "}<FinixUiText text={"Configura la cuenta bancaria o pasarela donde se transferirán los ingresos de tus miembros."} />{" "}</p>
                                 </div>
                                 <div className="px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-[11px] font-black flex items-center gap-1.5 self-start sm:self-auto">
                                     <Percent className="w-3.5 h-3.5" />
-                                    <span>Comisión Finix: 4%</span>
+                                    <span>{""}<FinixUiText text={"Comisión Finix: 4%"} />{""}</span>
                                 </div>
                             </div>
 
@@ -846,10 +842,9 @@ export default function CommunityCreate() {
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold text-foreground">
-                                            Transparencia Total de Finix: 96% para vos, 4% de servicio
-                                        </p>
+                                            {" "}<FinixUiText text={"Transparencia Total de Finix: 96% para vos, 4% de servicio"} />{" "}</p>
                                         <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                                            Finix retiene únicamente un <strong>4% de comisión de servicio</strong> sobre cada cobro o suscripción para cubrir servidores de alta disponibilidad, seguridad financiera y mantenimiento continuo de la plataforma. <strong>El 96% neto restante es acreditado directamente a tu cuenta configurada.</strong>
+                                            {" "}<FinixUiText text={"Finix retiene únicamente un"} />{" "}<strong>{""}<FinixUiText text={"4% de comisión de servicio"} />{""}</strong> {" "}<FinixUiText text={"sobre cada cobro o suscripción para cubrir servidores de alta disponibilidad, seguridad financiera y mantenimiento continuo de la plataforma."} />{" "}<strong>{""}<FinixUiText text={"El 96% neto restante es acreditado directamente a tu cuenta configurada."} />{""}</strong>
                                         </p>
                                     </div>
                                 </div>
@@ -858,19 +853,19 @@ export default function CommunityCreate() {
                                 {form.monetization === 'paid' && (
                                     <div className="p-3 rounded-xl bg-card border border-border/80 grid grid-cols-3 gap-2 text-center">
                                         <div className="border-r border-border/60 pr-2">
-                                            <span className="text-[10px] text-muted-foreground block">Precio Cobrado</span>
+                                            <span className="text-[10px] text-muted-foreground block">{""}<FinixUiText text={"Precio Cobrado"} />{""}</span>
                                             <span className="text-xs font-bold text-foreground">
                                                 {form.planCurrency === 'ARS' ? `$${priceNumber.toLocaleString('es-AR')}` : `US$${priceNumber}`}
                                             </span>
                                         </div>
                                         <div className="border-r border-border/60 pr-2">
-                                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block">Vos Recibís (96%)</span>
+                                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block">{""}<FinixUiText text={"Vos Recibís (96%)"} />{""}</span>
                                             <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
                                                 {form.planCurrency === 'ARS' ? `$${creatorNet.toLocaleString('es-AR')}` : `US$${creatorNet}`}
                                             </span>
                                         </div>
                                         <div>
-                                            <span className="text-[10px] text-muted-foreground block">Comisión Finix (4%)</span>
+                                            <span className="text-[10px] text-muted-foreground block">{""}<FinixUiText text={"Comisión Finix (4%)"} />{""}</span>
                                             <span className="text-xs font-bold text-muted-foreground">
                                                 {form.planCurrency === 'ARS' ? `$${platformFee.toLocaleString('es-AR')}` : `US$${platformFee}`}
                                             </span>
@@ -881,7 +876,7 @@ export default function CommunityCreate() {
 
                             {/* SELECCIÓN DE MÉTODO DE COBRO */}
                             <div className="space-y-3">
-                                <label className="text-xs font-semibold block">Selecciona cómo te enviaremos la plata:</label>
+                                <label className="text-xs font-semibold block">{""}<FinixUiText text={"Selecciona cómo te enviaremos la plata:"} />{""}</label>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                     {[
                                         { key: 'transfer', label: 'Transferencia Bancaria', sub: 'CBU, CVU o Alias (Argentina)', icon: Building },
@@ -911,11 +906,11 @@ export default function CommunityCreate() {
                                 <div className="p-4 rounded-2xl border bg-muted/20 space-y-3">
                                     <h3 className="text-xs font-bold flex items-center gap-1.5">
                                         <Building className="w-3.5 h-3.5 text-primary" />
-                                        <span>Datos Bancarios para Transferencia Directa</span>
+                                        <span>{""}<FinixUiText text={"Datos Bancarios para Transferencia Directa"} />{""}</span>
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
-                                            <label className="text-[10px] font-semibold block mb-1">CBU o CVU (22 dígitos) *</label>
+                                            <label className="text-[10px] font-semibold block mb-1">{""}<FinixUiText text={"CBU o CVU (22 dígitos) *"} />{""}</label>
                                             <input
                                                 type="text"
                                                 maxLength={22}
@@ -928,10 +923,10 @@ export default function CommunityCreate() {
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-semibold block mb-1">Alias Bancario *</label>
+                                            <label className="text-[10px] font-semibold block mb-1">{""}<FinixUiText text={"Alias Bancario *"} />{""}</label>
                                             <input
                                                 type="text"
-                                                placeholder="inversor.finix.mp"
+                                                placeholder={finixUi("inversor.finix.mp")}
                                                 value={form.alias}
                                                 onChange={e => setForm({ ...form, alias: e.target.value.toLowerCase() })}
                                                 className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
@@ -940,10 +935,10 @@ export default function CommunityCreate() {
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-semibold block mb-1">Nombre y Apellido del Titular</label>
+                                            <label className="text-[10px] font-semibold block mb-1">{""}<FinixUiText text={"Nombre y Apellido del Titular"} />{""}</label>
                                             <input
                                                 type="text"
-                                                placeholder="Juan Pablo Rolo"
+                                                placeholder={finixUi("Juan Pablo Rolo")}
                                                 value={form.holderName}
                                                 onChange={e => setForm({ ...form, holderName: e.target.value })}
                                                 className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
@@ -952,7 +947,7 @@ export default function CommunityCreate() {
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-semibold block mb-1">CUIT / CUIL del Titular</label>
+                                            <label className="text-[10px] font-semibold block mb-1">{""}<FinixUiText text={"CUIT / CUIL del Titular"} />{""}</label>
                                             <input
                                                 type="text"
                                                 placeholder="20-44123456-9"
@@ -964,10 +959,10 @@ export default function CommunityCreate() {
                                         </div>
 
                                         <div className="sm:col-span-2">
-                                            <label className="text-[10px] font-semibold block mb-1">Banco o Entidad Financiera</label>
+                                            <label className="text-[10px] font-semibold block mb-1">{""}<FinixUiText text={"Banco o Entidad Financiera"} />{""}</label>
                                             <input
                                                 type="text"
-                                                placeholder="Ej: Banco Santander, Mercado Pago Billetera, BBVA, Galicia, etc."
+                                                placeholder={finixUi("Ej: Banco Santander, Mercado Pago Billetera, BBVA, Galicia, etc.")}
                                                 value={form.bankName}
                                                 onChange={e => setForm({ ...form, bankName: e.target.value })}
                                                 className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
@@ -982,14 +977,14 @@ export default function CommunityCreate() {
                                 <div className="p-4 rounded-2xl border bg-muted/20 space-y-3">
                                     <h3 className="text-xs font-bold flex items-center gap-1.5">
                                         <Wallet className="w-3.5 h-3.5 text-primary" />
-                                        <span>Configuración de Mercado Pago</span>
+                                        <span>{""}<FinixUiText text={"Configuración de Mercado Pago"} />{""}</span>
                                     </h3>
                                     <div className="space-y-3">
                                         <div>
-                                            <label className="text-[10px] font-semibold block mb-1">Email o Alias asociado a tu cuenta de Mercado Pago</label>
+                                            <label className="text-[10px] font-semibold block mb-1">{""}<FinixUiText text={"Email o Alias asociado a tu cuenta de Mercado Pago"} />{""}</label>
                                             <input
                                                 type="text"
-                                                placeholder="tu-email@gmail.com o tu.alias.mp"
+                                                placeholder={finixUi("tu-email@gmail.com o tu.alias.mp")}
                                                 value={form.mpEmail}
                                                 onChange={e => setForm({ ...form, mpEmail: e.target.value })}
                                                 className="w-full px-3 py-2 text-xs rounded-xl border bg-background"
@@ -998,10 +993,10 @@ export default function CommunityCreate() {
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <div>
-                                                <label className="text-[10px] font-semibold block mb-1">Public Key (Opcional checkout)</label>
+                                                <label className="text-[10px] font-semibold block mb-1">{""}<FinixUiText text={"Public Key (Opcional checkout)"} />{""}</label>
                                                 <input
                                                     type="text"
-                                                    placeholder="APP_USR-..."
+                                                    placeholder={finixUi("APP_USR-...")}
                                                     value={form.mpPublicKey}
                                                     onChange={e => setForm({ ...form, mpPublicKey: e.target.value })}
                                                     className="w-full px-3 py-2 text-xs rounded-xl border bg-background font-mono text-[11px]"
@@ -1009,10 +1004,10 @@ export default function CommunityCreate() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-[10px] font-semibold block mb-1">Access Token (Opcional checkout)</label>
+                                                <label className="text-[10px] font-semibold block mb-1">{""}<FinixUiText text={"Access Token (Opcional checkout)"} />{""}</label>
                                                 <input
                                                     type="password"
-                                                    placeholder="APP_USR-..."
+                                                    placeholder={finixUi("APP_USR-...")}
                                                     value={form.mpAccessToken}
                                                     onChange={e => setForm({ ...form, mpAccessToken: e.target.value })}
                                                     className="w-full px-3 py-2 text-xs rounded-xl border bg-background font-mono text-[11px]"
@@ -1028,13 +1023,13 @@ export default function CommunityCreate() {
                                 <div className="p-4 rounded-2xl border bg-muted/20 space-y-3">
                                     <h3 className="text-xs font-bold flex items-center gap-1.5">
                                         <CreditCard className="w-3.5 h-3.5 text-primary" />
-                                        <span>Configuración de Stripe (Cobros Internacionales en USD)</span>
+                                        <span>{""}<FinixUiText text={"Configuración de Stripe (Cobros Internacionales en USD)"} />{""}</span>
                                     </h3>
                                     <div>
-                                        <label className="text-[10px] font-semibold block mb-1">Stripe Account ID o Email de cuenta conectada</label>
+                                        <label className="text-[10px] font-semibold block mb-1">{""}<FinixUiText text={"Stripe Account ID o Email de cuenta conectada"} />{""}</label>
                                         <input
                                             type="text"
-                                            placeholder="acct_1XXXXXXXXX"
+                                            placeholder={finixUi("acct_1XXXXXXXXX")}
                                             value={form.stripeAccountId}
                                             onChange={e => setForm({ ...form, stripeAccountId: e.target.value })}
                                             className="w-full px-3 py-2 text-xs rounded-xl border bg-background font-mono text-[11px]"
@@ -1049,8 +1044,7 @@ export default function CommunityCreate() {
                                 onClick={() => setForm({ ...form, payoutProvider: 'none' })}
                                 className="text-[11px] text-muted-foreground hover:text-foreground underline pt-1 block"
                             >
-                                Configurar pasarela más tarde desde el panel de administración
-                            </button>
+                                {" "}<FinixUiText text={"Configurar pasarela más tarde desde el panel de administración"} />{" "}</button>
                         </motion.div>
                     )}
 
@@ -1063,10 +1057,9 @@ export default function CommunityCreate() {
                             exit={{ opacity: 0, x: -20 }}
                             className="space-y-4"
                         >
-                            <h2 className="text-base font-bold">Secciones Temáticas</h2>
+                            <h2 className="text-base font-bold">{""}<FinixUiText text={"Secciones Temáticas"} />{""}</h2>
                             <p className="text-xs text-muted-foreground">
-                                Organiza las publicaciones de tu comunidad por áreas de interés. Podrás crear más luego.
-                            </p>
+                                {" "}<FinixUiText text={"Organiza las publicaciones de tu comunidad por áreas de interés. Podrás crear más luego."} />{" "}</p>
 
                             <div className="space-y-2">
                                 {form.sections.map((sec, idx) => (
@@ -1091,7 +1084,7 @@ export default function CommunityCreate() {
                             <div className="flex items-center gap-2 pt-1">
                                 <input
                                     type="text"
-                                    placeholder="Ej: Análisis de Criptomonedas..."
+                                    placeholder={finixUi("Ej: Análisis de Criptomonedas...")}
                                     value={form.newSectionInput}
                                     onChange={e => setForm({ ...form, newSectionInput: e.target.value })}
                                     onKeyDown={e => {
@@ -1112,8 +1105,7 @@ export default function CommunityCreate() {
                                     }}
                                     className="px-4 py-2 text-xs font-semibold rounded-xl border hover:bg-muted"
                                 >
-                                    Añadir
-                                </button>
+                                    {" "}<FinixUiText text={"Añadir"} />{" "}</button>
                             </div>
                         </motion.div>
                     )}
@@ -1131,45 +1123,44 @@ export default function CommunityCreate() {
                                 <div className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center bg-primary/10 text-primary mb-2">
                                     <Sparkles className="w-6 h-6" />
                                 </div>
-                                <h2 className="text-lg font-bold">¡Tu comunidad está lista para nacer!</h2>
+                                <h2 className="text-lg font-bold">{""}<FinixUiText text={"¡Tu comunidad está lista para nacer!"} />{""}</h2>
                                 <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                                    Revisa el resumen antes de publicarla. Podrás editar todos los detalles en cualquier momento.
-                                </p>
+                                    {" "}<FinixUiText text={"Revisa el resumen antes de publicarla. Podrás editar todos los detalles en cualquier momento."} />{" "}</p>
                             </div>
 
                             <div className="p-4 rounded-2xl border space-y-2.5 bg-muted/20 text-xs">
                                 <div className="flex items-center justify-between border-b pb-2">
-                                    <span className="text-muted-foreground">Comunidad:</span>
+                                    <span className="text-muted-foreground">{""}<FinixUiText text={"Comunidad:"} />{""}</span>
                                     <span className="font-bold">{form.name}</span>
                                 </div>
                                 <div className="flex items-center justify-between border-b pb-2">
-                                    <span className="text-muted-foreground">Slug / URL:</span>
-                                    <span className="font-mono text-[11px] text-primary">/comunidades/{form.slug || 'auto'}</span>
+                                    <span className="text-muted-foreground">{""}<FinixUiText text={"Slug / URL:"} />{""}</span>
+                                    <span className="font-mono text-[11px] text-primary">{""}<FinixUiText text={"/comunidades/"} />{""}{form.slug || 'auto'}</span>
                                 </div>
                                 <div className="flex items-center justify-between border-b pb-2">
-                                    <span className="text-muted-foreground">Categoría & Nivel:</span>
+                                    <span className="text-muted-foreground">{""}<FinixUiText text={"Categoría & Nivel:"} />{""}</span>
                                     <span className="font-semibold">{form.category} · {form.experienceLevel}</span>
                                 </div>
                                 <div className="flex items-center justify-between border-b pb-2">
-                                    <span className="text-muted-foreground">Acceso:</span>
+                                    <span className="text-muted-foreground">{""}<FinixUiText text={"Acceso:"} />{""}</span>
                                     <span className="font-semibold">{form.privacyType}</span>
                                 </div>
                                 <div className="flex items-center justify-between border-b pb-2">
-                                    <span className="text-muted-foreground">Monetización:</span>
+                                    <span className="text-muted-foreground">{""}<FinixUiText text={"Monetización:"} />{""}</span>
                                     <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                                         {form.monetization === 'paid' ? `${form.paidPlanName}: ${form.planCurrency} $${priceNumber.toLocaleString('es-AR')}/mes` : '100% Gratuita'}
                                     </span>
                                 </div>
                                 {form.monetization === 'paid' && (
                                     <div className="flex items-center justify-between border-b pb-2 bg-emerald-500/10 p-2 rounded-xl">
-                                        <span className="text-muted-foreground">Desglose de Pago:</span>
+                                        <span className="text-muted-foreground">{""}<FinixUiText text={"Desglose de Pago:"} />{""}</span>
                                         <span className="font-bold text-foreground">
-                                            Tu ganancia neta: 95% (${creatorNet.toLocaleString('es-AR')}) · Finix fee: 5% (${platformFee.toLocaleString('es-AR')})
+                                            {" "}<FinixUiText text={"Tu ganancia neta: 95% ($"} />{""}{creatorNet.toLocaleString('es-AR')}{""}<FinixUiText text={") · Finix fee: 5% ($"} />{""}{platformFee.toLocaleString('es-AR')})
                                         </span>
                                     </div>
                                 )}
                                 <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Cuenta de Cobro / Retiro:</span>
+                                    <span className="text-muted-foreground">{""}<FinixUiText text={"Cuenta de Cobro / Retiro:"} />{""}</span>
                                     <span className="font-semibold">
                                         {form.payoutProvider === 'transfer' ? `Transferencia (Alias: ${form.alias || 'Configurado'})` : form.payoutProvider === 'mercadopago' ? `Mercado Pago (${form.mpEmail || 'Configurado'})` : form.payoutProvider === 'stripe' ? 'Stripe' : 'A configurar luego'}
                                     </span>
@@ -1183,8 +1174,7 @@ export default function CommunityCreate() {
                                     className="w-full sm:w-auto px-4 py-2 text-xs font-semibold rounded-xl border hover:bg-muted transition-colors order-3 sm:order-1"
                                     style={{ borderColor: 'hsl(var(--border))' }}
                                 >
-                                    Anterior
-                                </button>
+                                    {" "}<FinixUiText text={"Anterior"} />{" "}</button>
                                 <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto order-1 sm:order-2">
                                     <button
                                         type="button"
@@ -1192,8 +1182,7 @@ export default function CommunityCreate() {
                                         onClick={() => handleSubmit('DRAFT')}
                                         className="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold rounded-xl border hover:bg-muted transition-colors disabled:opacity-40"
                                     >
-                                        Guardar como Borrador
-                                    </button>
+                                        {" "}<FinixUiText text={"Guardar como Borrador"} />{" "}</button>
                                     <button
                                         type="button"
                                         disabled={loading}
@@ -1202,7 +1191,7 @@ export default function CommunityCreate() {
                                         style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}
                                     >
                                         {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                                        <span>Publicar Comunidad</span>
+                                        <span>{""}<FinixUiText text={"Publicar Comunidad"} />{""}</span>
                                     </button>
                                 </div>
                             </div>
@@ -1229,7 +1218,7 @@ export default function CommunityCreate() {
                             className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold rounded-xl btn-primary-glow disabled:opacity-40"
                             style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}
                         >
-                            <span>Siguiente</span>
+                            <span>{""}<FinixUiText text={"Siguiente"} />{""}</span>
                             <ChevronRight className="w-3.5 h-3.5" />
                         </button>
                     </div>

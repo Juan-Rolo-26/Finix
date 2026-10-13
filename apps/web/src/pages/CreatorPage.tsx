@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import FreeAccessNotice from '@/components/FreeAccessNotice';
 import { usePlanCheckout } from '@/hooks/usePlanCheckout';
 import { PlanCheckoutDialog } from '@/components/PlanCheckoutDialog';
@@ -76,8 +77,8 @@ export default function CreatorPage() {
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden selection:bg-amber-500/20 selection:text-amber-300">
             <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-4"><FreeAccessNotice /></div>
-            {(checkout.configError || (checkout.error && !checkout.selectedPlan)) && <div role="alert" className="relative z-10 mx-auto max-w-6xl px-6 py-4">{checkout.configError || checkout.error}<button className="ml-3 text-primary underline" onClick={() => { void checkout.reload(); }}>Reintentar</button></div>}
-            {freeAccess && <p className="relative z-10 mx-auto px-6 pt-3 text-sm text-muted-foreground">Precio mensual configurado: {formatArs(creatorPrice)}. El acceso temporal no crea una suscripción.</p>}
+            {(checkout.configError || (checkout.error && !checkout.selectedPlan)) && <div role="alert" className="relative z-10 mx-auto max-w-6xl px-6 py-4">{checkout.configError || checkout.error}<button className="ml-3 text-primary underline" onClick={() => { void checkout.reload(); }}>{""}<FinixUiText text={"Reintentar"} />{""}</button></div>}
+            {freeAccess && <p className="relative z-10 mx-auto px-6 pt-3 text-sm text-muted-foreground">{""}<FinixUiText text={"Precio mensual configurado:"} />{" "}{formatArs(creatorPrice)}{""}<FinixUiText text={". El acceso temporal no crea una suscripción."} />{""}</p>}
             {/* Ambient Background Glows */}
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                 <div
@@ -105,14 +106,13 @@ export default function CreatorPage() {
                             className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1 px-2.5 rounded-lg hover:bg-muted"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            <span>Comunidades</span>
+                            <span>{""}<FinixUiText text={"Comunidades"} />{""}</span>
                         </button>
                         <div className="h-4 w-px bg-border/60" />
                         <div className="flex items-center gap-2">
-                            <span className="font-heading font-extrabold text-base sm:text-lg tracking-tight">FINIX</span>
+                            <span className="font-heading font-extrabold text-base sm:text-lg tracking-tight">{""}<FinixUiText text={"FINIX"} />{""}</span>
                             <span className="bg-gradient-to-r from-amber-500 to-amber-300 text-black text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm">
-                                CREATOR
-                            </span>
+                                {" "}<FinixUiText text={"CREATOR"} />{" "}</span>
                         </div>
                     </div>
 
@@ -123,7 +123,7 @@ export default function CreatorPage() {
                                 className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold text-xs px-3.5 py-2 rounded-xl shadow-lg shadow-amber-500/20 transition-all hover:scale-105"
                             >
                                 <Crown className="w-3.5 h-3.5 fill-black" />
-                                <span>Crear Comunidad</span>
+                                <span>{""}<FinixUiText text={"Crear Comunidad"} />{""}</span>
                             </Link>
                         ) : (
                             <button
@@ -160,8 +160,7 @@ export default function CreatorPage() {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                                        Tenés acceso a las herramientas de Creador
-                                    </h4>
+                                        {" "}<FinixUiText text={"Tenés acceso a las herramientas de Creador"} />{" "}</h4>
                                     <p className="text-xs text-muted-foreground mt-0.5">
                                         {freeAccess ? 'Podés crear y gestionar comunidades. Las compras están pausadas durante el acceso gratuito.' : 'Podés crear y gestionar comunidades con las herramientas de Creador.'}
                                     </p>
@@ -171,7 +170,7 @@ export default function CreatorPage() {
                                 to="/comunidades/crear"
                                 className="shrink-0 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-black px-3.5 py-2 rounded-xl shadow-md transition-all flex items-center gap-1"
                             >
-                                <span>Crear ahora</span>
+                                <span>{""}<FinixUiText text={"Crear ahora"} />{""}</span>
                                 <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
                         </motion.div>
@@ -180,20 +179,17 @@ export default function CreatorPage() {
                     {/* Pre-title badge */}
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-6 shadow-sm">
                         <Sparkles className="w-3.5 h-3.5 fill-amber-400" />
-                        Programa de creadores de Finix
-                    </div>
+                        {" "}<FinixUiText text={"Programa de creadores de Finix"} />{" "}</div>
 
                     {/* Main Headline */}
                     <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-black tracking-tight leading-[1.08] mb-6">
-                        Monetizá tu conocimiento.{' '}
+                        {" "}<FinixUiText text={"Monetizá tu conocimiento."} />{""}{' '}
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-primary to-emerald-400 block sm:inline">
-                            Liderá tu propia comunidad de inversores.
-                        </span>
+                            {" "}<FinixUiText text={"Liderá tu propia comunidad de inversores."} />{" "}</span>
                     </h1>
 
                     <p className="max-w-3xl mx-auto text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed mb-10">
-                        Creá un espacio exclusivo con salas privadas, compartí tesis con datos de Finix y configurá membresías para tus seguidores.
-                    </p>
+                        {" "}<FinixUiText text={"Creá un espacio exclusivo con salas privadas, compartí tesis con datos de Finix y configurá membresías para tus seguidores."} />{" "}</p>
 
                     {/* Hero CTAs */}
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
@@ -203,7 +199,7 @@ export default function CreatorPage() {
                                 className="w-full sm:w-auto min-h-14 h-auto py-3 px-6 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 text-black shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
                             >
                                 <Crown className="w-5 h-5 fill-black" />
-                                <span>Crear mi Comunidad</span>
+                                <span>{""}<FinixUiText text={"Crear mi Comunidad"} />{""}</span>
                                 <ArrowRight className="w-4 h-4" />
                             </Link>
                         ) : (
@@ -227,7 +223,7 @@ export default function CreatorPage() {
                             className="w-full sm:w-auto min-h-14 h-auto py-3 px-6 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 border border-border/80 bg-card/60 hover:bg-muted backdrop-blur-md transition-all hover:border-primary/50"
                         >
                             <Sliders className="w-4 h-4 text-primary" />
-                            <span>Calcular mis ingresos potenciales</span>
+                            <span>{""}<FinixUiText text={"Calcular mis ingresos potenciales"} />{""}</span>
                         </a>
                     </div>
 
@@ -236,15 +232,15 @@ export default function CreatorPage() {
                         <div className="p-3.5 rounded-2xl bg-card/40 border border-border/50 backdrop-blur-sm text-left">
                             <div className="flex items-center gap-2 text-amber-400 mb-1">
                                 <Crown className="w-4 h-4" />
-                                <span className="text-xs font-bold uppercase tracking-wider">Insignia Oficial</span>
+                                <span className="text-xs font-bold uppercase tracking-wider">{""}<FinixUiText text={"Insignia Oficial"} />{""}</span>
                             </div>
-                            <p className="text-xs text-muted-foreground">Badge dorado de Creador Verificado en toda la red.</p>
+                            <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Badge dorado de Creador Verificado en toda la red."} />{""}</p>
                         </div>
 
                         <div className="p-3.5 rounded-2xl bg-card/40 border border-border/50 backdrop-blur-sm text-left">
                             <div className="flex items-center gap-2 text-emerald-400 mb-1">
                                 <Coins className="w-4 h-4" />
-                                <span className="text-xs font-bold uppercase tracking-wider">Cobros en ARS</span>
+                                <span className="text-xs font-bold uppercase tracking-wider">{""}<FinixUiText text={"Cobros en ARS"} />{""}</span>
                             </div>
                             <p className="text-xs text-muted-foreground">{freeAccess ? 'Importe actual: ARS 0. Compras pausadas.' : checkout.catalog?.purchasesPaused ? 'Compras pausadas. Revisá la disponibilidad del plan.' : 'Elegís la renovación antes de confirmar un pago.'}</p>
                         </div>
@@ -252,17 +248,17 @@ export default function CreatorPage() {
                         <div className="p-3.5 rounded-2xl bg-card/40 border border-border/50 backdrop-blur-sm text-left">
                             <div className="flex items-center gap-2 text-cyan-400 mb-1">
                                 <BarChart3 className="w-4 h-4" />
-                                <span className="text-xs font-bold uppercase tracking-wider">Datos en Vivo</span>
+                                <span className="text-xs font-bold uppercase tracking-wider">{""}<FinixUiText text={"Datos en Vivo"} />{""}</span>
                             </div>
-                            <p className="text-xs text-muted-foreground">Balances y gráficos integrados en tus publicaciones.</p>
+                            <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Balances y gráficos integrados en tus publicaciones."} />{""}</p>
                         </div>
 
                         <div className="p-3.5 rounded-2xl bg-card/40 border border-border/50 backdrop-blur-sm text-left">
                             <div className="flex items-center gap-2 text-purple-400 mb-1">
                                 <ShieldCheck className="w-4 h-4" />
-                                <span className="text-xs font-bold uppercase tracking-wider">Todo Finix PRO</span>
+                                <span className="text-xs font-bold uppercase tracking-wider">{""}<FinixUiText text={"Todo Finix PRO"} />{""}</span>
                             </div>
-                            <p className="text-xs text-muted-foreground">Acceso total a las 5 secciones de análisis y mercados.</p>
+                            <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Acceso total a las 5 secciones de análisis y mercados."} />{""}</p>
                         </div>
                     </div>
                 </section>
@@ -273,14 +269,11 @@ export default function CreatorPage() {
                         <div className="text-center max-w-2xl mx-auto mb-12">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-3">
                                 <DollarSign className="w-3.5 h-3.5" />
-                                Simulador de Ingresos Recurrentes
-                            </div>
+                                {" "}<FinixUiText text={"Simulador de Ingresos Recurrentes"} />{" "}</div>
                             <h2 className="text-2xl sm:text-4xl font-heading font-extrabold tracking-tight">
-                                Calculá el potencial mensual de tu comunidad
-                            </h2>
+                                {" "}<FinixUiText text={"Calculá el potencial mensual de tu comunidad"} />{" "}</h2>
                             <p className="text-sm text-muted-foreground mt-2">
-                                Ajustá el número estimado de suscriptores y la cuota mensual para ver tus ingresos netos proyectados.
-                            </p>
+                                {" "}<FinixUiText text={"Ajustá el número estimado de suscriptores y la cuota mensual para ver tus ingresos netos proyectados."} />{" "}</p>
                         </div>
 
                         <div className="grid lg:grid-cols-12 gap-8 items-center bg-card/80 border border-border/70 rounded-3xl p-6 sm:p-10 shadow-2xl backdrop-blur-xl">
@@ -291,7 +284,7 @@ export default function CreatorPage() {
                                     <div className="flex items-center justify-between mb-3">
                                         <label className="text-sm font-bold flex items-center gap-2">
                                             <Users className="w-4 h-4 text-primary" />
-                                            <span>Miembros suscriptores</span>
+                                            <span>{""}<FinixUiText text={"Miembros suscriptores"} />{""}</span>
                                         </label>
                                         <span className="text-xl font-extrabold text-foreground bg-muted/80 px-3.5 py-1 rounded-xl border border-border">
                                             {memberCount.toLocaleString('es-AR')}
@@ -307,10 +300,10 @@ export default function CreatorPage() {
                                         className="w-full h-2.5 bg-muted rounded-lg appearance-none cursor-pointer accent-emerald-500"
                                     />
                                     <div className="flex justify-between text-[11px] text-muted-foreground mt-1.5 font-medium">
-                                        <span>10 miembros</span>
+                                        <span>{""}<FinixUiText text={"10 miembros"} />{""}</span>
                                         <span>250</span>
                                         <span>500</span>
-                                        <span>1.000 miembros</span>
+                                        <span>{""}<FinixUiText text={"1.000 miembros"} />{""}</span>
                                     </div>
                                 </div>
 
@@ -319,11 +312,10 @@ export default function CreatorPage() {
                                     <div className="flex items-center justify-between mb-3">
                                         <label className="text-sm font-bold flex items-center gap-2">
                                             <Coins className="w-4 h-4 text-amber-400" />
-                                            <span>Cuota mensual por suscriptor</span>
+                                            <span>{""}<FinixUiText text={"Cuota mensual por suscriptor"} />{""}</span>
                                         </label>
                                         <span className="text-xl font-extrabold text-amber-400 bg-amber-500/10 px-3.5 py-1 rounded-xl border border-amber-500/30">
-                                            ${monthlyFee.toLocaleString('es-AR')} ARS
-                                        </span>
+                                            ${monthlyFee.toLocaleString('es-AR')} {" "}<FinixUiText text={"ARS"} />{" "}</span>
                                     </div>
                                     <input
                                         type="range"
@@ -335,10 +327,10 @@ export default function CreatorPage() {
                                         className="w-full h-2.5 bg-muted rounded-lg appearance-none cursor-pointer accent-amber-400"
                                     />
                                     <div className="flex justify-between text-[11px] text-muted-foreground mt-1.5 font-medium">
-                                        <span>$3.000 ARS</span>
-                                        <span>$20.000 ARS</span>
-                                        <span>$40.000 ARS</span>
-                                        <span>$60.000 ARS</span>
+                                        <span>{""}<FinixUiText text={"$3.000 ARS"} />{""}</span>
+                                        <span>{""}<FinixUiText text={"$20.000 ARS"} />{""}</span>
+                                        <span>{""}<FinixUiText text={"$40.000 ARS"} />{""}</span>
+                                        <span>{""}<FinixUiText text={"$60.000 ARS"} />{""}</span>
                                     </div>
                                 </div>
 
@@ -348,8 +340,7 @@ export default function CreatorPage() {
                                         {freeAccess ? 'Simulación para la futura etapa paga. Hoy los cobros están pausados.' : 'Membresías según la modalidad elegida'}
                                     </div>
                                     <p>
-                                        Esta simulación multiplica la cantidad de miembros por la cuota mensual. El saldo real depende de los pagos confirmados, las comisiones y los costos aplicables.
-                                    </p>
+                                        {" "}<FinixUiText text={"Esta simulación multiplica la cantidad de miembros por la cuota mensual. El saldo real depende de los pagos confirmados, las comisiones y los costos aplicables."} />{" "}</p>
                                 </div>
                             </div>
 
@@ -362,33 +353,30 @@ export default function CreatorPage() {
                                 <div className="relative z-10 space-y-6">
                                     <div>
                                         <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
-                                            Ingresos mensuales brutos simulados
-                                        </span>
+                                            {" "}<FinixUiText text={"Ingresos mensuales brutos simulados"} />{" "}</span>
                                         <div className="mt-2 flex items-baseline gap-2">
                                             <span className="text-3xl sm:text-4xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
                                                 ${grossMonthlyArs.toLocaleString('es-AR')}
                                             </span>
-                                            <span className="text-xs font-semibold text-muted-foreground">ARS / mes</span>
+                                            <span className="text-xs font-semibold text-muted-foreground">{""}<FinixUiText text={"ARS / mes"} />{""}</span>
                                         </div>
                                         <p className="text-xs font-semibold text-emerald-400/90 mt-1 flex items-center gap-1">
-                                            <Sparkles className="w-3 h-3" /> Antes de comisiones, costos e impuestos
-                                        </p>
+                                            <Sparkles className="w-3 h-3" /> {" "}<FinixUiText text={"Antes de comisiones, costos e impuestos"} />{" "}</p>
                                     </div>
 
                                     <div className="pt-4 border-t border-border/50 space-y-2">
                                         <div className="flex justify-between items-center text-xs">
-                                            <span className="text-muted-foreground">Proyección anual:</span>
+                                            <span className="text-muted-foreground">{""}<FinixUiText text={"Proyección anual:"} />{""}</span>
                                             <span className="font-extrabold text-foreground">
-                                                ${grossAnnualArs.toLocaleString('es-AR')} ARS
-                                            </span>
+                                                ${grossAnnualArs.toLocaleString('es-AR')} {" "}<FinixUiText text={"ARS"} />{" "}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-xs">
-                                            <span className="text-muted-foreground">Tipo de cálculo:</span>
-                                            <span className="font-extrabold text-emerald-400">Simulación sin garantía</span>
+                                            <span className="text-muted-foreground">{""}<FinixUiText text={"Tipo de cálculo:"} />{""}</span>
+                                            <span className="font-extrabold text-emerald-400">{""}<FinixUiText text={"Simulación sin garantía"} />{""}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-xs">
-                                            <span className="text-muted-foreground">Costo de hosting/servidores:</span>
-                                            <span className="font-extrabold text-foreground">$0 (incluido)</span>
+                                            <span className="text-muted-foreground">{""}<FinixUiText text={"Costo de hosting/servidores:"} />{""}</span>
+                                            <span className="font-extrabold text-foreground">{""}<FinixUiText text={"$0 (incluido)"} />{""}</span>
                                         </div>
                                     </div>
 
@@ -418,14 +406,11 @@ export default function CreatorPage() {
                     <div className="text-center max-w-3xl mx-auto mb-16">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 mb-3">
                             <Sparkles className="w-3.5 h-3.5" />
-                            Infraestructura Dedicada
-                        </div>
+                            {" "}<FinixUiText text={"Infraestructura Dedicada"} />{" "}</div>
                         <h2 className="text-3xl sm:text-4xl font-heading font-extrabold tracking-tight">
-                            Todo lo que necesitás para escalar tu comunidad financiera
-                        </h2>
+                            {" "}<FinixUiText text={"Todo lo que necesitás para escalar tu comunidad financiera"} />{" "}</h2>
                         <p className="text-sm sm:text-base text-muted-foreground mt-3">
-                            Diseñado específicamente para el mercado financiero: olvidate de lidiar con bots de Telegram o transferencias desordenadas por WhatsApp.
-                        </p>
+                            {" "}<FinixUiText text={"Diseñado específicamente para el mercado financiero: olvidate de lidiar con bots de Telegram o transferencias desordenadas por WhatsApp."} />{" "}</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -435,11 +420,10 @@ export default function CreatorPage() {
                                 <Crown className="w-6 h-6 fill-amber-400" />
                             </div>
                             <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-                                <span>Perfil de Creador</span>
+                                <span>{""}<FinixUiText text={"Perfil de Creador"} />{""}</span>
                             </h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                Tu perfil se destaca en discusiones, comentarios y rankings con el sello dorado oficial de Finix Creador, para identificar tu participación como creador. La verificación del perfil se gestiona por separado.
-                            </p>
+                                {" "}<FinixUiText text={"Tu perfil se destaca en discusiones, comentarios y rankings con el sello dorado oficial de Finix Creador, para identificar tu participación como creador. La verificación del perfil se gestiona por separado."} />{" "}</p>
                         </div>
 
                         {/* Pillar 2 */}
@@ -447,10 +431,9 @@ export default function CreatorPage() {
                             <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-5 group-hover:scale-110 transition-transform">
                                 <Layers className="w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold mb-2">Canales Públicos y Salas VIP</h3>
+                            <h3 className="text-lg font-bold mb-2">{""}<FinixUiText text={"Canales Públicos y Salas VIP"} />{""}</h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                Organizá tu comunidad por temáticas: Renta Variable, Cedears, Opciones, Cripto o Renta Fija. Restringí el acceso a tus mejores tesis solo para miembros pagos.
-                            </p>
+                                {" "}<FinixUiText text={"Organizá tu comunidad por temáticas: Renta Variable, Cedears, Opciones, Cripto o Renta Fija. Restringí el acceso a tus mejores tesis solo para miembros pagos."} />{" "}</p>
                         </div>
 
                         {/* Pillar 3 */}
@@ -458,10 +441,9 @@ export default function CreatorPage() {
                             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-5 group-hover:scale-110 transition-transform">
                                 <BarChart3 className="w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold mb-2">Tesis con Datos Bursátiles</h3>
+                            <h3 className="text-lg font-bold mb-2">{""}<FinixUiText text={"Tesis con Datos Bursátiles"} />{""}</h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                Publicá análisis enlazando directamente los tickers de Finix. Tus suscriptores pueden consultar gráficos, balances y ratios de tus recomendaciones sin salir del hilo.
-                            </p>
+                                {" "}<FinixUiText text={"Publicá análisis enlazando directamente los tickers de Finix. Tus suscriptores pueden consultar gráficos, balances y ratios de tus recomendaciones sin salir del hilo."} />{" "}</p>
                         </div>
 
                         {/* Pillar 4 */}
@@ -469,10 +451,9 @@ export default function CreatorPage() {
                             <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-5 group-hover:scale-110 transition-transform">
                                 <Coins className="w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold mb-2">Membresías y facturación</h3>
+                            <h3 className="text-lg font-bold mb-2">{""}<FinixUiText text={"Membresías y facturación"} />{""}</h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                Configurá planes para los miembros de tu comunidad y consultá los pagos confirmados, las comisiones y los saldos en Finix. Las compras dependen de la disponibilidad de las pasarelas.
-                            </p>
+                                {" "}<FinixUiText text={"Configurá planes para los miembros de tu comunidad y consultá los pagos confirmados, las comisiones y los saldos en Finix. Las compras dependen de la disponibilidad de las pasarelas."} />{" "}</p>
                         </div>
 
                         {/* Pillar 5 */}
@@ -480,10 +461,9 @@ export default function CreatorPage() {
                             <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-5 group-hover:scale-110 transition-transform">
                                 <TrendingUp className="w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold mb-2">Seguimiento de portafolios</h3>
+                            <h3 className="text-lg font-bold mb-2">{""}<FinixUiText text={"Seguimiento de portafolios"} />{""}</h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                Organizá tus portafolios y compartí la información que elijas publicar con tu comunidad. Las métricas se calculan con los datos registrados en Finix.
-                            </p>
+                                {" "}<FinixUiText text={"Organizá tus portafolios y compartí la información que elijas publicar con tu comunidad. Las métricas se calculan con los datos registrados en Finix."} />{" "}</p>
                         </div>
 
                         {/* Pillar 6 */}
@@ -491,16 +471,15 @@ export default function CreatorPage() {
                             <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 mb-5 group-hover:scale-110 transition-transform">
                                 <ShieldCheck className="w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold mb-2">Moderación y Filtros Anti-Spam</h3>
+                            <h3 className="text-lg font-bold mb-2">{""}<FinixUiText text={"Moderación y Filtros Anti-Spam"} />{""}</h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                Asigná moderadores de confianza, fijá mensajes importantes y expulsá cuentas sospechosas con un solo toque para mantener un ambiente profesional.
-                            </p>
+                                {" "}<FinixUiText text={"Asigná moderadores de confianza, fijá mensajes importantes y expulsá cuentas sospechosas con un solo toque para mantener un ambiente profesional."} />{" "}</p>
                         </div>
                     </div>
                 </section>
 
                 <section className="px-4 sm:px-6 py-8 max-w-6xl mx-auto w-full">
-                    <Link to="/pricing#planes" className="inline-flex items-center gap-2 text-primary font-semibold">Comparar Free, PRO y Creador con sus límites reales <ArrowRight className="w-4 h-4" /></Link>
+                    <Link to="/pricing#planes" className="inline-flex items-center gap-2 text-primary font-semibold">{""}<FinixUiText text={"Comparar Free, PRO y Creador con sus límites reales"} />{" "}<ArrowRight className="w-4 h-4" /></Link>
                 </section>
 
                 {/* ── 5. PRICING & CHECKOUT CARD ── */}
@@ -509,18 +488,15 @@ export default function CreatorPage() {
                         {/* Corner Ribbon */}
                         <div className="absolute top-0 right-0">
                             <div className="bg-gradient-to-l from-amber-500 to-amber-400 text-black text-[11px] font-black uppercase tracking-widest px-8 py-1.5 rotate-45 translate-x-7 translate-y-4 shadow-md">
-                                PLAN CREADOR
-                            </div>
+                                {" "}<FinixUiText text={"PLAN CREADOR"} />{" "}</div>
                         </div>
 
                         <div className="max-w-2xl">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30 mb-4">
-                                <Crown className="w-3.5 h-3.5 fill-amber-400" /> Plan Creador · incluye PRO
-                            </div>
+                                <Crown className="w-3.5 h-3.5 fill-amber-400" /> {" "}<FinixUiText text={"Plan Creador · incluye PRO"} />{" "}</div>
 
                             <h3 className="text-2xl sm:text-4xl font-heading font-black tracking-tight mb-3">
-                                Comenzá hoy como Finix Creador
-                            </h3>
+                                {" "}<FinixUiText text={"Comenzá hoy como Finix Creador"} />{" "}</h3>
                             <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-6">
                                 {freeAccess ? 'Creá tu comunidad y compartí contenido sin pagar. Los cobros a miembros están pausados durante esta etapa.' : 'Creá tu comunidad, atraé miembros y cobrá cuotas mensuales con el respaldo de una plataforma institucional.'}
                             </p>
@@ -539,27 +515,27 @@ export default function CreatorPage() {
                             <div className="grid sm:grid-cols-2 gap-3 mb-8">
                                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
                                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                                    <span>Creación de comunidades públicas y privadas</span>
+                                    <span>{""}<FinixUiText text={"Creación de comunidades públicas y privadas"} />{""}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
                                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                                    <span>Gestión de membresías y pagos</span>
+                                    <span>{""}<FinixUiText text={"Gestión de membresías y pagos"} />{""}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
                                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                                    <span>Insignia de Creador Verificado</span>
+                                    <span>{""}<FinixUiText text={"Insignia de Creador Verificado"} />{""}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
                                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                                    <span>Todo lo de Finix PRO (Mercados, DCF, etc.)</span>
+                                    <span>{""}<FinixUiText text={"Todo lo de Finix PRO (Mercados, DCF, etc.)"} />{""}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
                                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                                    <span>Publicación de tesis con datos de Finix</span>
+                                    <span>{""}<FinixUiText text={"Publicación de tesis con datos de Finix"} />{""}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
                                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                                    <span>Cancelación desde Configuración</span>
+                                    <span>{""}<FinixUiText text={"Cancelación desde Configuración"} />{""}</span>
                                 </div>
                             </div>
 
@@ -570,7 +546,7 @@ export default function CreatorPage() {
                                     className="w-full sm:w-auto min-h-14 h-auto py-3 px-6 rounded-2xl font-extrabold text-base flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-amber-400 text-black shadow-xl shadow-amber-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
                                 >
                                     <Crown className="w-5 h-5 fill-black" />
-                                    <span>Crear comunidad con mi acceso</span>
+                                    <span>{""}<FinixUiText text={"Crear comunidad con mi acceso"} />{""}</span>
                                     <ArrowRight className="w-4 h-4" />
                                 </Link>
                             ) : (
@@ -582,7 +558,7 @@ export default function CreatorPage() {
                                     {loadingCheckout ? (
                                         <div className="flex items-center gap-2">
                                             <Loader2 className="w-5 h-5 animate-spin" />
-                                            <span>Conectando con Mercado Pago...</span>
+                                            <span>{""}<FinixUiText text={"Conectando con Mercado Pago..."} />{""}</span>
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-2">
@@ -608,11 +584,9 @@ export default function CreatorPage() {
                 <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-4xl mx-auto w-full">
                     <div className="text-center mb-12">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-muted text-muted-foreground mb-3">
-                            <HelpCircle className="w-3.5 h-3.5" /> Dudas habituales
-                        </div>
+                            <HelpCircle className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Dudas habituales"} />{" "}</div>
                         <h2 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight">
-                            Preguntas Frecuentes
-                        </h2>
+                            {" "}<FinixUiText text={"Preguntas Frecuentes"} />{" "}</h2>
                     </div>
 
                     <div className="space-y-3">
@@ -661,14 +635,14 @@ export default function CreatorPage() {
             <footer className="border-t border-border/40 py-8 px-4 sm:px-6 text-center text-xs text-muted-foreground bg-muted/20">
                 <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
-                        <span className="font-heading font-bold text-foreground">FINIX</span>
-                        <span>• Finanzas inteligentes para inversores modernos</span>
+                        <span className="font-heading font-bold text-foreground">{""}<FinixUiText text={"FINIX"} />{""}</span>
+                        <span>{""}<FinixUiText text={"• Finanzas inteligentes para inversores modernos"} />{""}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Link to="/pro" className="hover:text-foreground transition-colors">Planes y Precios</Link>
-                        <Link to="/comunidades" className="hover:text-foreground transition-colors">Comunidades</Link>
-                        <Link to="/legal/terms" className="hover:text-foreground transition-colors">Términos</Link>
-                        <Link to="/legal/privacy" className="hover:text-foreground transition-colors">Privacidad</Link>
+                        <Link to="/pro" className="hover:text-foreground transition-colors">{""}<FinixUiText text={"Planes y Precios"} />{""}</Link>
+                        <Link to="/comunidades" className="hover:text-foreground transition-colors">{""}<FinixUiText text={"Comunidades"} />{""}</Link>
+                        <Link to="/legal/terms" className="hover:text-foreground transition-colors">{""}<FinixUiText text={"Términos"} />{""}</Link>
+                        <Link to="/legal/privacy" className="hover:text-foreground transition-colors">{""}<FinixUiText text={"Privacidad"} />{""}</Link>
                     </div>
                 </div>
             </footer>

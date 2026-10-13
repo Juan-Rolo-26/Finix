@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useRef } from 'react';
 import { Clock, Zap, TrendingUp, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -59,6 +61,8 @@ export function getWallStreetStatus(now = new Date()): MarketState {
 }
 
 export function MarketStatusPill({ className = '' }: { className?: string }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [state, setState] = useState<MarketState>(getWallStreetStatus);
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -120,12 +124,12 @@ export function MarketStatusPill({ className = '' }: { className?: string }) {
                         <div className="flex items-center justify-between font-bold text-foreground">
                             <div className="flex items-center gap-1.5">
                                 <Clock className="w-4 h-4 text-primary" />
-                                <span>Wall Street (NYSE / NASDAQ)</span>
+                                <span>{""}<FinixUiText text={"Wall Street (NYSE / NASDAQ)"} />{""}</span>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsOpen(false)}
-                                aria-label="Cerrar detalle del horario" className="min-h-[44px] min-w-[44px] text-muted-foreground hover:text-foreground"
+                                aria-label={finixUi("Cerrar detalle del horario")} className="min-h-[44px] min-w-[44px] text-muted-foreground hover:text-foreground"
                             >
                                 <X className="w-3.5 h-3.5" />
                             </button>
@@ -135,12 +139,12 @@ export function MarketStatusPill({ className = '' }: { className?: string }) {
                         </p>
                         <div className="pt-2 border-t border-border/50 text-[11px] text-muted-foreground space-y-1">
                             <div className="flex justify-between">
-                                <span>Horario regular (Nueva York):</span>
-                                <strong className="text-foreground">09:30 - 16:00 hs</strong>
+                                <span>{""}<FinixUiText text={"Horario regular (Nueva York):"} />{""}</span>
+                                <strong className="text-foreground">{""}<FinixUiText text={"09:30 - 16:00 hs"} />{""}</strong>
                             </div>
                             <div className="flex justify-between">
-                                <span>Horario Buenos Aires (ART):</span>
-                                <strong className="text-foreground">Varía según la hora de Nueva York</strong>
+                                <span>{""}<FinixUiText text={"Horario Buenos Aires (ART):"} />{""}</span>
+                                <strong className="text-foreground">{""}<FinixUiText text={"Varía según la hora de Nueva York"} />{""}</strong>
                             </div>
                         </div>
                     </motion.div>
@@ -187,7 +191,7 @@ export function FearAndGreedPill({ className = '' }: { className?: string }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
-    if (!fng) return <span role="status" className="text-xs text-muted-foreground">Índice cripto: sin datos disponibles</span>;
+    if (!fng) return <span role="status" className="text-xs text-muted-foreground">{""}<FinixUiText text={"Índice cripto: sin datos disponibles"} />{""}</span>;
 
     const isGreed = fng.value >= 55;
     const isFear = fng.value <= 45;
@@ -225,8 +229,7 @@ export function FearAndGreedPill({ className = '' }: { className?: string }) {
                         <div className="flex items-center justify-between font-bold text-foreground">
                             <span className="flex items-center gap-1.5">
                                 <TrendingUp className="w-4 h-4 text-primary" />
-                                Sentimiento del mercado cripto
-                            </span>
+                                {" "}<FinixUiText text={"Sentimiento del mercado cripto"} />{" "}</span>
                             <span className="text-[10.5px] font-mono px-2 py-0.5 rounded-full bg-secondary font-bold">
                                 {fng.value}/100
                             </span>
@@ -241,13 +244,12 @@ export function FearAndGreedPill({ className = '' }: { className?: string }) {
                         </div>
 
                         <p className="text-muted-foreground leading-relaxed text-[11.5px]">
-                            Índice cripto de Alternative.me: escala de 0 a 100. No representa el mercado de acciones.
-                        </p>
+                            {" "}<FinixUiText text={"Índice cripto de Alternative.me: escala de 0 a 100. No representa el mercado de acciones."} />{" "}</p>
 
                         <div className="grid grid-cols-3 gap-1 pt-2 border-t border-border/50 text-[10px] text-center font-medium">
-                            <div className="p-1 rounded bg-rose-500/10 text-rose-500 font-bold">0-45 Miedo</div>
-                            <div className="p-1 rounded bg-amber-500/10 text-amber-500 font-bold">46-54 Neutral</div>
-                            <div className="p-1 rounded bg-emerald-500/10 text-emerald-500 font-bold">55-100 Codicia</div>
+                            <div className="p-1 rounded bg-rose-500/10 text-rose-500 font-bold">{""}<FinixUiText text={"0-45 Miedo"} />{""}</div>
+                            <div className="p-1 rounded bg-amber-500/10 text-amber-500 font-bold">{""}<FinixUiText text={"46-54 Neutral"} />{""}</div>
+                            <div className="p-1 rounded bg-emerald-500/10 text-emerald-500 font-bold">{""}<FinixUiText text={"55-100 Codicia"} />{""}</div>
                         </div>
                     </motion.div>
                 )}

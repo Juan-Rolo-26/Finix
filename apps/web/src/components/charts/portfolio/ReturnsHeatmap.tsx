@@ -1,3 +1,4 @@
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /**
  * ReturnsHeatmap.tsx — Calendar heatmap of monthly returns using Apache ECharts.
  *
@@ -36,6 +37,8 @@ function returnToColor(value: number | null): string {
 }
 
 export function ReturnsHeatmap({ data, loading, error, onRetry, className }: ReturnsHeatmapProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const chartRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<ECharts | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -217,7 +220,7 @@ export function ReturnsHeatmap({ data, loading, error, onRetry, className }: Ret
 
   return (
     <ChartContainer
-      title="Mapa de Calor — Retornos"
+      title={finixUi("Mapa de Calor — Retornos")}
       description="Rendimiento mensual histórico. Verde = positivo · Rojo = negativo"
       loading={loading}
       error={error}
@@ -243,7 +246,7 @@ export function ReturnsHeatmap({ data, loading, error, onRetry, className }: Ret
         className="w-full"
         style={{ height: `${chartHeight}px` }}
         role="img"
-        aria-label="Heatmap de retornos mensuales"
+        aria-label={finixUi("Heatmap de retornos mensuales")}
       />
     </ChartContainer>
   );

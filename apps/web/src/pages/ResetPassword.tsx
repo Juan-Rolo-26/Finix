@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
@@ -7,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/api';
 
 export default function ResetPassword() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
@@ -174,8 +178,8 @@ export default function ResetPassword() {
                     {/* Header */}
                     <div className="flex flex-col items-center text-center gap-3">
                         <Link to="/" className="flex items-center gap-2 mb-1 group">
-                            <img src="/logo-small.webp" alt="Finix" className="h-10 w-10 object-contain drop-shadow-[0_0_12px_rgba(34,197,94,0.4)] transition-transform group-hover:scale-105" />
-                            <span className="text-xl font-heading font-extrabold text-foreground tracking-tight">Finix</span>
+                            <img src="/logo-small.webp" alt={finixUi("Finix")} className="h-10 w-10 object-contain drop-shadow-[0_0_12px_rgba(34,197,94,0.4)] transition-transform group-hover:scale-105" />
+                            <span className="text-xl font-heading font-extrabold text-foreground tracking-tight">{""}<FinixUiText text={"Finix"} />{""}</span>
                         </Link>
 
                         <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-inner">
@@ -215,13 +219,12 @@ export default function ResetPassword() {
                         <form onSubmit={handleRequestCode} className="space-y-4">
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Correo electrónico
-                                </label>
+                                    {" "}<FinixUiText text={"Correo electrónico"} />{" "}</label>
                                 <div className="relative">
                                     <Mail className="absolute left-3.5 top-3 w-5 h-5 text-muted-foreground" />
                                     <Input
                                         type="email"
-                                        placeholder="tu@email.com"
+                                        placeholder={finixUi("tu@email.com")}
                                         className="pl-11 h-11 bg-secondary/40 border-input/50 focus:border-primary/50"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
@@ -239,11 +242,11 @@ export default function ResetPassword() {
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Enviando código...</span>
+                                        <span>{""}<FinixUiText text={"Enviando código..."} />{""}</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span>Enviar código</span>
+                                        <span>{""}<FinixUiText text={"Enviar código"} />{""}</span>
                                         <ArrowRight className="w-4 h-4 stroke-[2.2]" />
                                     </>
                                 )}
@@ -255,8 +258,7 @@ export default function ResetPassword() {
                                     onClick={() => setStep('reset')}
                                     className="text-xs text-primary hover:underline font-medium"
                                 >
-                                    ¿Ya tenés un código? Ingresalo acá
-                                </button>
+                                    {" "}<FinixUiText text={"¿Ya tenés un código? Ingresalo acá"} />{" "}</button>
                             </div>
                         </form>
                     )}
@@ -267,21 +269,19 @@ export default function ResetPassword() {
                             <div className="space-y-1.5">
                                 <div className="flex justify-between items-center">
                                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                        Correo electrónico
-                                    </label>
+                                        {" "}<FinixUiText text={"Correo electrónico"} />{" "}</label>
                                     <button
                                         type="button"
                                         onClick={() => setStep('request')}
                                         className="text-xs text-primary hover:underline"
                                     >
-                                        Cambiar
-                                    </button>
+                                        {" "}<FinixUiText text={"Cambiar"} />{" "}</button>
                                 </div>
                                 <div className="relative">
                                     <Mail className="absolute left-3.5 top-3 w-5 h-5 text-muted-foreground" />
                                     <Input
                                         type="email"
-                                        placeholder="tu@email.com"
+                                        placeholder={finixUi("tu@email.com")}
                                         className="pl-11 h-11 bg-secondary/40 border-input/50 focus:border-primary/50"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
@@ -292,8 +292,7 @@ export default function ResetPassword() {
 
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Código de 6 dígitos
-                                </label>
+                                    {" "}<FinixUiText text={"Código de 6 dígitos"} />{" "}</label>
                                 <Input
                                     inputMode="numeric"
                                     placeholder="123456"
@@ -307,13 +306,12 @@ export default function ResetPassword() {
 
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Nueva contraseña (mínimo 8 caracteres)
-                                </label>
+                                    {" "}<FinixUiText text={"Nueva contraseña (mínimo 8 caracteres)"} />{" "}</label>
                                 <div className="relative">
                                     <Lock className="absolute left-3.5 top-3 w-5 h-5 text-muted-foreground" />
                                     <Input
                                         type={showPassword ? 'text' : 'password'}
-                                        placeholder="Mínimo 8 caracteres"
+                                        placeholder={finixUi("Mínimo 8 caracteres")}
                                         className="pl-11 pr-11 h-11 bg-secondary/40 border-input/50 focus:border-primary/50"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
@@ -332,13 +330,12 @@ export default function ResetPassword() {
 
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Confirmar nueva contraseña
-                                </label>
+                                    {" "}<FinixUiText text={"Confirmar nueva contraseña"} />{" "}</label>
                                 <div className="relative">
                                     <Lock className="absolute left-3.5 top-3 w-5 h-5 text-muted-foreground" />
                                     <Input
                                         type={showConfirmPassword ? 'text' : 'password'}
-                                        placeholder="Repetí tu nueva contraseña"
+                                        placeholder={finixUi("Repetí tu nueva contraseña")}
                                         className="pl-11 pr-11 h-11 bg-secondary/40 border-input/50 focus:border-primary/50"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
@@ -364,11 +361,11 @@ export default function ResetPassword() {
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Guardando contraseña...</span>
+                                        <span>{""}<FinixUiText text={"Guardando contraseña..."} />{""}</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span>Guardar nueva contraseña</span>
+                                        <span>{""}<FinixUiText text={"Guardar nueva contraseña"} />{""}</span>
                                         <ArrowRight className="w-4 h-4 stroke-[2.2]" />
                                     </>
                                 )}
@@ -385,8 +382,7 @@ export default function ResetPassword() {
                                 </button>
 
                                 <Link to="/" className="text-primary hover:underline font-medium">
-                                    Iniciar sesión
-                                </Link>
+                                    {" "}<FinixUiText text={"Iniciar sesión"} />{" "}</Link>
                             </div>
                         </form>
                     )}
@@ -399,8 +395,7 @@ export default function ResetPassword() {
                                 onClick={() => navigate('/')}
                                 className="w-full h-11 font-bold"
                             >
-                                Ir al inicio de sesión
-                            </Button>
+                                {" "}<FinixUiText text={"Ir al inicio de sesión"} />{" "}</Button>
                         </div>
                     )}
 
@@ -412,7 +407,7 @@ export default function ResetPassword() {
                                 className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 <ArrowLeft className="w-3.5 h-3.5" />
-                                <span>Volver al inicio</span>
+                                <span>{""}<FinixUiText text={"Volver al inicio"} />{""}</span>
                             </Link>
                         </div>
                     )}

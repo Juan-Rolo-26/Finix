@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 /** ChartErrorState.tsx — Error state for Finix chart components */
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -13,6 +15,8 @@ export function ChartErrorState({
   onRetry,
   className,
 }: ChartErrorStateProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   return (
     <div
       role="alert"
@@ -27,18 +31,17 @@ export function ChartErrorState({
         <AlertTriangle className="w-6 h-6" aria-hidden="true" />
       </div>
       <div className="space-y-1.5 max-w-xs">
-        <p className="text-sm font-semibold text-foreground/80">Error al cargar datos</p>
+        <p className="text-sm font-semibold text-foreground/80">{""}<FinixUiText text={"Error al cargar datos"} />{""}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">{message}</p>
       </div>
       {onRetry && (
         <button
           onClick={onRetry}
-          aria-label="Reintentar carga de datos"
+          aria-label={finixUi("Reintentar carga de datos")}
           className="inline-flex items-center gap-2 min-h-11 h-auto py-2 px-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive/80 text-sm font-semibold hover:bg-destructive/15 transition-all"
         >
           <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
-          Reintentar
-        </button>
+          {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
       )}
     </div>
   );

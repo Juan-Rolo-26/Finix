@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useMemo } from 'react';
 import {
     Bar,
@@ -26,6 +28,8 @@ interface AssetPerformanceChartProps {
 type ViewMode = 'PERFORMANCE' | 'WEIGHT' | 'LIST';
 
 export function AssetPerformanceChart({ data, className }: AssetPerformanceChartProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [viewMode, setViewMode] = useState<ViewMode>('PERFORMANCE');
 
     // Sanitizar datos para evitar NaN o undefined que causen pantalla blanca
@@ -98,7 +102,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         <span className="block text-xs text-muted-foreground">{item.asset}</span>
                     </span>
                     <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-secondary text-muted-foreground">
-                        Peso: {formatPercent(item.weight, 1)}
+                        {" "}<FinixUiText text={"Peso:"} />{" "}{formatPercent(item.weight, 1)}
                     </span>
                 </div>
 
@@ -106,8 +110,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                     <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: isPositive ? '#10b981' : '#f43f5e' }} />
-                            Retorno Total:
-                        </span>
+                            {" "}<FinixUiText text={"Retorno Total:"} />{" "}</span>
                         <span className={`font-black ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
                             {formatPercent(item.return, 2, true)}
                         </span>
@@ -116,8 +119,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                     <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
-                            Aporte al PnL:
-                        </span>
+                            {" "}<FinixUiText text={"Aporte al PnL:"} />{" "}</span>
                         <span className={`font-bold ${item.contribution >= 0 ? 'text-sky-400' : 'text-rose-300'}`}>
                             {formatPercent(item.contribution, 2, true)}
                         </span>
@@ -134,11 +136,9 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                     <div className="flex min-w-0 w-full flex-col items-center text-center">
                         <CardTitle className="text-2xl font-bold tracking-tight flex items-center justify-center gap-2.5 text-center">
                             <BarChart3 className="w-5 h-5 text-primary" />
-                            Rendimiento por Activo
-                        </CardTitle>
+                            {" "}<FinixUiText text={"Rendimiento por Activo"} />{" "}</CardTitle>
                         <CardDescription className="text-sm text-muted-foreground/80 mt-1 text-center max-w-md mx-auto">
-                            Retorno, aporte y peso actual de cada posición
-                        </CardDescription>
+                            {" "}<FinixUiText text={"Retorno, aporte y peso actual de cada posición"} />{" "}</CardDescription>
                     </div>
 
                     {/* Selector de modo de vista */}
@@ -152,8 +152,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                             }`}
                         >
                             <TrendingUp className="w-3.5 h-3.5" />
-                            Rendimiento
-                        </button>
+                            {" "}<FinixUiText text={"Rendimiento"} />{" "}</button>
                         <button
                             onClick={() => setViewMode('WEIGHT')} aria-pressed={viewMode === 'WEIGHT'}
                             className={`flex shrink-0 items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -163,8 +162,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                             }`}
                         >
                             <PieChart className="w-3.5 h-3.5" />
-                            Ponderación
-                        </button>
+                            {" "}<FinixUiText text={"Ponderación"} />{" "}</button>
                         <button
                             onClick={() => setViewMode('LIST')} aria-pressed={viewMode === 'LIST'}
                             className={`flex shrink-0 items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -174,8 +172,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                             }`}
                         >
                             <ListFilter className="w-3.5 h-3.5" />
-                            Detalle
-                        </button>
+                            {" "}<FinixUiText text={"Detalle"} />{" "}</button>
                     </div>
                 </div>
 
@@ -185,18 +182,18 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         {summary.topPerformer && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
                                 <TrendingUp className="w-3.5 h-3.5" />
-                                Mejor: {summary.topPerformer.name || summary.topPerformer.asset} ({formatPercent(summary.topPerformer.return, 1, true)})
+                                {" "}<FinixUiText text={"Mejor:"} />{" "}{summary.topPerformer.name || summary.topPerformer.asset} ({formatPercent(summary.topPerformer.return, 1, true)})
                             </span>
                         )}
                         {summary.worstPerformer && summary.worstPerformer.return < 0 && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">
                                 <TrendingDown className="w-3.5 h-3.5" />
-                                Menor: {summary.worstPerformer.name || summary.worstPerformer.asset} ({formatPercent(summary.worstPerformer.return, 1, true)})
+                                {" "}<FinixUiText text={"Menor:"} />{" "}{summary.worstPerformer.name || summary.worstPerformer.asset} ({formatPercent(summary.worstPerformer.return, 1, true)})
                             </span>
                         )}
                         {summary.topWeight && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 font-bold">
-                                Mayor peso: {summary.topWeight.name || summary.topWeight.asset} ({summary.topWeight.weight.toFixed(1)}%)
+                                {" "}<FinixUiText text={"Mayor peso:"} />{" "}{summary.topWeight.name || summary.topWeight.asset} ({summary.topWeight.weight.toFixed(1)}%)
                             </span>
                         )}
                     </div>
@@ -210,19 +207,18 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                             <BarChart3 className="w-6 h-6" />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="text-sm font-bold text-foreground">Sin posiciones para comparar</h4>
+                            <h4 className="text-sm font-bold text-foreground">{""}<FinixUiText text={"Sin posiciones para comparar"} />{""}</h4>
                             <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
-                                Agregá transacciones a tu portafolio para visualizar el retorno, el aporte al capital y el peso relativo de cada activo.
-                            </p>
+                                {" "}<FinixUiText text={"Agregá transacciones a tu portafolio para visualizar el retorno, el aporte al capital y el peso relativo de cada activo."} />{" "}</p>
                         </div>
                     </div>
                 ) : viewMode === 'PERFORMANCE' ? (
                     <div className="min-w-0 w-full">
-                      <div className="mb-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-muted-foreground" aria-label="Leyenda del gráfico">
-                        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />Retorno del activo (%)</span>
-                        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-sky-400" />Aporte a la cartera (%)</span>
+                      <div className="mb-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-muted-foreground" aria-label={finixUi("Leyenda del gráfico")}>
+                        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />{""}<FinixUiText text={"Retorno del activo (%)"} />{""}</span>
+                        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-sky-400" />{""}<FinixUiText text={"Aporte a la cartera (%)"} />{""}</span>
                       </div>
-                      <div className="h-[320px] min-h-[320px] w-full overflow-x-auto sm:min-h-[390px]" role="region" aria-label="Rendimiento por activo; desplazamiento horizontal" tabIndex={0}>
+                      <div className="h-[320px] min-h-[320px] w-full overflow-x-auto sm:min-h-[390px]" role="region" aria-label={finixUi("Rendimiento por activo; desplazamiento horizontal")} tabIndex={0}>
                       <div className="h-full" style={{ minWidth: Math.max(280, safeData.length * 96) }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
@@ -297,7 +293,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                         </ResponsiveContainer>
                       </div>
                       </div>
-                      {safeData.length > 2 && <p className="mt-2 text-xs text-muted-foreground sm:hidden">Deslizá el gráfico para ver todos los activos.</p>}
+                      {safeData.length > 2 && <p className="mt-2 text-xs text-muted-foreground sm:hidden">{""}<FinixUiText text={"Deslizá el gráfico para ver todos los activos."} />{""}</p>}
                     </div>
                 ) : viewMode === 'WEIGHT' ? (
                     <div className="min-h-[300px] w-full flex flex-col justify-center gap-4 px-1 sm:min-h-[340px] sm:px-4">
@@ -311,7 +307,7 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                     </span>
                                     <div className="flex items-center gap-3 font-mono">
                                         <span className="text-muted-foreground">
-                                            Retorno: <span className={item.return >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                                            {" "}<FinixUiText text={"Retorno:"} />{" "}<span className={item.return >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
                                                 {formatPercent(item.return, 1, true)}
                                             </span>
                                         </span>
@@ -345,19 +341,19 @@ export function AssetPerformanceChart({ data, className }: AssetPerformanceChart
                                         <SymbolLogo symbol={item.symbol} size={34} className="shrink-0" />
                                         <div className="min-w-0 flex-1">
                                             <div className="font-bold text-foreground text-sm leading-tight truncate">{item.name}</div>
-                                            <div className="text-xs text-muted-foreground">{item.asset} · {formatPercent(item.weight, 1)} del portafolio</div>
+                                            <div className="text-xs text-muted-foreground">{item.asset} · {formatPercent(item.weight, 1)} {" "}<FinixUiText text={"del portafolio"} />{""}</div>
                                         </div>
                                     </div>
                                     {/* Bottom row: retorno + aporte side by side */}
                                     <div className="flex items-center gap-3 font-mono pl-11">
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-sm text-muted-foreground uppercase tracking-wider">Retorno</div>
+                                            <div className="text-sm text-muted-foreground uppercase tracking-wider">{""}<FinixUiText text={"Retorno"} />{""}</div>
                                             <div className={`text-sm font-black ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                 {formatPercent(item.return, 2, true)}
                                             </div>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-sm text-muted-foreground uppercase tracking-wider">Aporte</div>
+                                            <div className="text-sm text-muted-foreground uppercase tracking-wider">{""}<FinixUiText text={"Aporte"} />{""}</div>
                                             <div className={`text-sm font-bold ${item.contribution >= 0 ? 'text-sky-400' : 'text-rose-300'}`}>
                                                 {formatPercent(item.contribution, 2, true)}
                                             </div>

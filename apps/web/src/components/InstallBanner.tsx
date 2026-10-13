@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect } from 'react';
 import { X, Download, Sparkles } from 'lucide-react';
 
@@ -28,6 +30,8 @@ function isIosDevice() {
 }
 
 export default function InstallBanner() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const [isVisible, setIsVisible] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [installMethod, setInstallMethod] = useState<InstallMethod>(null);
@@ -130,7 +134,7 @@ export default function InstallBanner() {
 
     return (
         <aside
-            aria-label="Instalar Finix"
+            aria-label={finixUi("Instalar Finix")}
             className="fixed bottom-[72px] left-3 right-3 z-40 mx-auto max-w-md sm:bottom-6 sm:left-auto sm:right-6"
         >
             <div
@@ -151,7 +155,7 @@ export default function InstallBanner() {
                     <div className="relative shrink-0 w-10 h-10 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center shadow-xs">
                         <img
                             src="/logo-small.webp"
-                            alt="Finix"
+                            alt={finixUi("Finix")}
                             className="w-6 h-6 object-contain"
                             onError={(e) => {
                                 (e.currentTarget as HTMLElement).style.display = 'none';
@@ -167,8 +171,7 @@ export default function InstallBanner() {
                             {installMethod === 'share' ? 'Agregar Finix' : 'Instalar Finix'}
                         </span>
                         <span className="text-[11px] text-muted-foreground font-medium leading-tight truncate">
-                            Acceso directo a tus inversiones
-                        </span>
+                            {" "}<FinixUiText text={"Acceso directo a tus inversiones"} />{" "}</span>
                     </div>
                 </div>
 
@@ -187,7 +190,7 @@ export default function InstallBanner() {
                         type="button"
                         onClick={handleDismiss}
                         className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-                        aria-label="Cerrar notificación"
+                        aria-label={finixUi("Cerrar notificación")}
                     >
                         <X className="w-4 h-4" />
                     </button>

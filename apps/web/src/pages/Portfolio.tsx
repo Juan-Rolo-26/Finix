@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { lazy, Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore, isProUser } from "@/stores/authStore";
@@ -347,7 +349,7 @@ function AssetRow({
           </span>
           {asset.isCedear && asset.cedearPriceArs ? (
             <span className="text-[10px] font-semibold text-sky-400/90 mt-0.5 tabular-nums">
-              CEDEAR: {fmtArs(asset.cedearPriceArs)}
+              {" "}<FinixUiText text={"CEDEAR:"} />{" "}{fmtArs(asset.cedearPriceArs)}
               {typeof cedearChange === 'number' && (
                 <span className={cedearChange >= 0 ? " text-emerald-400 ml-1" : " text-red-400 ml-1"}>
                   ({fmtPct(cedearChange, 1)})
@@ -377,7 +379,7 @@ function AssetRow({
             {fmtPct(dailyChange)}
           </p>
         ) : (
-          <p className="text-[10px] text-muted-foreground font-medium">cotización</p>
+          <p className="text-[10px] text-muted-foreground font-medium">{""}<FinixUiText text={"cotización"} />{""}</p>
         )}
       </div>
 
@@ -390,8 +392,7 @@ function AssetRow({
                 {fmtArs(asset.cedearPriceArs)}
               </span>
               <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 leading-none">
-                ARS
-              </span>
+                {" "}<FinixUiText text={"ARS"} />{" "}</span>
             </div>
             <div className="flex items-center justify-end gap-1.5 mt-0.5">
               {typeof cedearChange === 'number' && (
@@ -409,7 +410,7 @@ function AssetRow({
         ) : (
           <div className="flex flex-col items-end justify-center">
             <span className="text-xs text-muted-foreground/40 font-mono">—</span>
-            <span className="text-[10px] text-muted-foreground/40">Sin CEDEAR</span>
+            <span className="text-[10px] text-muted-foreground/40">{""}<FinixUiText text={"Sin CEDEAR"} />{""}</span>
           </div>
         )}
       </div>
@@ -437,14 +438,14 @@ function AssetRow({
           title={`Comprar más ${asset.ticker}`}
           className="flex-1 md:flex-none inline-flex items-center justify-center gap-1 h-7 px-2.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-all cursor-pointer"
         >
-          <Plus className="w-3 h-3" /> <span className="md:hidden">Comprar</span>
+          <Plus className="w-3 h-3" /> <span className="md:hidden">{""}<FinixUiText text={"Comprar"} />{""}</span>
         </button>
         <button
           onClick={onSell}
           title={`Vender ${asset.ticker}`}
           className="flex-1 md:flex-none inline-flex items-center justify-center gap-1 h-7 px-2.5 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[11px] font-bold transition-all cursor-pointer"
         >
-          <Minus className="w-3 h-3" /> <span className="md:hidden">Vender</span>
+          <Minus className="w-3 h-3" /> <span className="md:hidden">{""}<FinixUiText text={"Vender"} />{""}</span>
         </button>
       </div>
     </motion.div>
@@ -512,8 +513,7 @@ function EmptyPortfolio({ onAdd, isFirstCreation }: { onAdd: () => void, isFirst
         {isFirstCreation ? "Crear perfil de inversión" : "Agregar primer activo"}
       </Button>
       <p className="mt-4 text-[11px] text-muted-foreground">
-        La información mostrada tiene fines informativos y no constituye asesoramiento financiero.
-      </p>
+        {" "}<FinixUiText text={"La información mostrada tiene fines informativos y no constituye asesoramiento financiero."} />{" "}</p>
     </motion.div>
   );
 }
@@ -552,8 +552,7 @@ function EmptyPortfolioAssets({
         <div className="flex flex-wrap items-center justify-center gap-2.5">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
             <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-            PORTAFOLIO CREADO · LISTO PARA OPERAR
-          </span>
+            {" "}<FinixUiText text={"PORTAFOLIO CREADO · LISTO PARA OPERAR"} />{" "}</span>
           <Badge variant="outline" className="text-xs font-semibold border-border/70 text-muted-foreground rounded-full px-3 py-1">
             {portfolioName}
           </Badge>
@@ -561,11 +560,9 @@ function EmptyPortfolioAssets({
 
         <div className="space-y-2 text-center max-w-2xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground text-center">
-            Comenzá a armar tu portafolio
-          </h2>
+            {" "}<FinixUiText text={"Comenzá a armar tu portafolio"} />{" "}</h2>
           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed text-center">
-            Tu cartera todavía no registra posiciones. Una vez que agregues tu primera compra de CEDEARs (en pesos ARS), acciones, ETFs o cripto, acá se activarán automáticamente los gráficos de evolución histórica, el rendimiento ponderado y la comparativa contra el S&P 500.
-          </p>
+            {" "}<FinixUiText text={"Tu cartera todavía no registra posiciones. Una vez que agregues tu primera compra de CEDEARs (en pesos ARS), acciones, ETFs o cripto, acá se activarán automáticamente los gráficos de evolución histórica, el rendimiento ponderado y la comparativa contra el S&P 500."} />{" "}</p>
         </div>
 
         {/* Primary CTA */}
@@ -575,15 +572,13 @@ function EmptyPortfolioAssets({
             className="h-11 px-6 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
-            Agregar Primera Transacción
-          </Button>
+            {" "}<FinixUiText text={"Agregar Primera Transacción"} />{" "}</Button>
         </div>
 
         {/* Quick Suggestions */}
         <div className="pt-2 border-t border-border/50 space-y-2.5 w-full flex flex-col items-center text-center">
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">
-            O sumá directamente un activo popular con un clic:
-          </p>
+            {" "}<FinixUiText text={"O sumá directamente un activo popular con un clic:"} />{" "}</p>
           <div className="flex flex-wrap items-center justify-center gap-2">
             {quickAssets.map((qa) => (
               <button
@@ -613,28 +608,25 @@ function EmptyPortfolioAssets({
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto">
               <TrendingUp className="w-4 h-4" />
             </div>
-            <p className="text-xs font-bold text-foreground text-center">Evolución & PnL</p>
+            <p className="text-xs font-bold text-foreground text-center">{""}<FinixUiText text={"Evolución & PnL"} />{""}</p>
             <p className="text-[11px] text-muted-foreground leading-snug text-center">
-              Medí ganancias y pérdidas en USD y ARS con cotizaciones en vivo y Dólar CCL.
-            </p>
+              {" "}<FinixUiText text={"Medí ganancias y pérdidas en USD y ARS con cotizaciones en vivo y Dólar CCL."} />{" "}</p>
           </div>
           <div className="rounded-2xl border border-border/60 bg-secondary/20 p-3.5 space-y-1.5 flex flex-col items-center text-center">
             <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center mx-auto">
               <Target className="w-4 h-4" />
             </div>
-            <p className="text-xs font-bold text-foreground text-center">Benchmark S&P 500</p>
+            <p className="text-xs font-bold text-foreground text-center">{""}<FinixUiText text={"Benchmark S&P 500"} />{""}</p>
             <p className="text-[11px] text-muted-foreground leading-snug text-center">
-              Compará tu curva indexada contra el SPY para medir si estás batiendo al mercado.
-            </p>
+              {" "}<FinixUiText text={"Compará tu curva indexada contra el SPY para medir si estás batiendo al mercado."} />{" "}</p>
           </div>
           <div className="rounded-2xl border border-border/60 bg-secondary/20 p-3.5 space-y-1.5 flex flex-col items-center text-center">
             <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
               <PieChart className="w-4 h-4" />
             </div>
-            <p className="text-xs font-bold text-foreground text-center">Diversificación</p>
+            <p className="text-xs font-bold text-foreground text-center">{""}<FinixUiText text={"Diversificación"} />{""}</p>
             <p className="text-[11px] text-muted-foreground leading-snug text-center">
-              Analizá la distribución y peso de tu cartera por clase de activo y sector.
-            </p>
+              {" "}<FinixUiText text={"Analizá la distribución y peso de tu cartera por clase de activo y sector."} />{" "}</p>
           </div>
         </div>
       </div>
@@ -657,6 +649,8 @@ function PortfolioSkeleton() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const PortfolioPage = () => {
+    const { ui: finixUi } = useFinixUiTranslation();
+
   const t = useTranslation();
   const { user, syncFromSession } = useAuthStore();
   const navigate = useNavigate();
@@ -1090,7 +1084,7 @@ const PortfolioPage = () => {
                 </h1>
                 {selectedPortfolio && <PrivacyBadge mode={privacyMode} />}
                 {selectedPortfolio?.esPrincipal && (
-                  <Badge variant="outline" className="border-primary/40 text-primary text-[10.5px] font-semibold">Principal</Badge>
+                  <Badge variant="outline" className="border-primary/40 text-primary text-[10.5px] font-semibold">{""}<FinixUiText text={"Principal"} />{""}</Badge>
                 )}
               </div>
 
@@ -1160,7 +1154,7 @@ const PortfolioPage = () => {
                 size="sm"
                 onClick={handleShare}
                 className="h-8.5 px-2.5 text-xs font-medium gap-1.5 border-border/60"
-                title="Compartir enlace al portfolio"
+                title={finixUi("Compartir enlace al portfolio")}
               >
                 {copyFeedback ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
                 <span className="hidden sm:inline">{copyFeedback ? "¡Copiado!" : "Compartir"}</span>
@@ -1176,7 +1170,7 @@ const PortfolioPage = () => {
                 }}
                 disabled={isRefreshing}
                 className="h-8.5 px-2.5 text-xs font-medium gap-1.5 border-border/60"
-                title="Actualizar datos del portafolio manualmente"
+                title={finixUi("Actualizar datos del portafolio manualmente")}
               >
                 <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin text-emerald-500")} />
                 <span className="hidden sm:inline">{isRefreshing ? "Actualizando…" : "Actualizar"}</span>
@@ -1190,7 +1184,7 @@ const PortfolioPage = () => {
                   onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
                 >
                   <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>Agregar transacción</span>
+                  <span>{""}<FinixUiText text={"Agregar transacción"} />{""}</span>
                 </Button>
               )}
 
@@ -1200,7 +1194,7 @@ const PortfolioPage = () => {
                   <DialogTrigger asChild>
                     <Button size="sm" className="h-8.5 gap-1.5">
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Crear Portafolio</span>
+                      <span>{""}<FinixUiText text={"Crear Portafolio"} />{""}</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[480px]">
@@ -1225,8 +1219,8 @@ const PortfolioPage = () => {
                           <Select value={portfolioForm.monedaBase} onValueChange={(v) => setPortfolioForm({ ...portfolioForm, monedaBase: v })}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="USD">USD</SelectItem>
-                              <SelectItem value="ARS">ARS</SelectItem>
+                              <SelectItem value="USD">{""}<FinixUiText text={"USD"} />{""}</SelectItem>
+                              <SelectItem value="ARS">{""}<FinixUiText text={"ARS"} />{""}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1235,24 +1229,24 @@ const PortfolioPage = () => {
                           <Select value={portfolioForm.nivelRiesgo} onValueChange={(v) => setPortfolioForm({ ...portfolioForm, nivelRiesgo: v })}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="bajo">Bajo</SelectItem>
-                              <SelectItem value="medio">Medio</SelectItem>
-                              <SelectItem value="alto">Alto</SelectItem>
+                              <SelectItem value="bajo">{""}<FinixUiText text={"Bajo"} />{""}</SelectItem>
+                              <SelectItem value="medio">{""}<FinixUiText text={"Medio"} />{""}</SelectItem>
+                              <SelectItem value="alto">{""}<FinixUiText text={"Alto"} />{""}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
                       <div className="flex items-center justify-between py-2">
-                        <div><Label>Modo social</Label><p className="text-xs text-muted-foreground">Visible para tus seguidores</p></div>
+                        <div><Label>{""}<FinixUiText text={"Modo social"} />{""}</Label><p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Visible para tus seguidores"} />{""}</p></div>
                         <Switch checked={portfolioForm.modoSocial} onCheckedChange={(v) => setPortfolioForm({ ...portfolioForm, modoSocial: v })} />
                       </div>
                       <div className="flex items-center justify-between py-2">
-                        <div><Label>Portfolio principal</Label><p className="text-xs text-muted-foreground">Se muestra en tu perfil</p></div>
+                        <div><Label>{""}<FinixUiText text={"Portfolio principal"} />{""}</Label><p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Se muestra en tu perfil"} />{""}</p></div>
                         <Switch checked={portfolioForm.esPrincipal} onCheckedChange={(v) => setPortfolioForm({ ...portfolioForm, esPrincipal: v })} />
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button variant="outline" onClick={() => setCreatePortfolioOpen(false)}>Cancelar</Button>
+                      <Button variant="outline" onClick={() => setCreatePortfolioOpen(false)}>{""}<FinixUiText text={"Cancelar"} />{""}</Button>
                       <Button onClick={createPortfolio} disabled={!portfolioForm.nombre || isSubmitting}>
                         {isSubmitting ? "Creando..." : "Crear portfolio"}
                       </Button>
@@ -1268,7 +1262,7 @@ const PortfolioPage = () => {
                   size="sm"
                   onClick={() => deletePortfolio(selectedPortfolio.id)}
                   className="h-8.5 w-8.5 p-0 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
-                  title="Eliminar Portfolio"
+                  title={finixUi("Eliminar Portfolio")}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
@@ -1327,7 +1321,7 @@ const PortfolioPage = () => {
                 <CardContent className="p-4 text-sm text-red-700 dark:text-red-300 flex items-center justify-between gap-4">
                   <div>
                     <p className="font-semibold">{errorMessage}</p>
-                    {!displayPortfolio && <p className="mt-1 text-muted-foreground">La información se mostrará cuando se restablezca la conexión.</p>}
+                    {!displayPortfolio && <p className="mt-1 text-muted-foreground">{""}<FinixUiText text={"La información se mostrará cuando se restablezca la conexión."} />{""}</p>}
                   </div>
                   <Button size="sm" variant="outline" disabled={isRefreshing} className="shrink-0 border-red-500/30 text-red-700 dark:text-red-300" onClick={() => loadPortfolios()}>
                     <RefreshCw className={cn("w-3.5 h-3.5 mr-1", isRefreshing && "animate-spin")} /> {isRefreshing ? 'Reintentando…' : 'Reintentar'}
@@ -1383,7 +1377,7 @@ const PortfolioPage = () => {
               <CardHeader className="pb-3 flex flex-col items-center text-center space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
                   <div className="flex items-center justify-center sm:justify-start gap-3 w-full sm:w-auto">
-                    <CardTitle className="text-lg font-bold text-center">Mis activos</CardTitle>
+                    <CardTitle className="text-lg font-bold text-center">{""}<FinixUiText text={"Mis activos"} />{""}</CardTitle>
                     <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5 rounded-full">
                       {displayPortfolio.assets.length} {displayPortfolio.assets.length === 1 ? 'posición' : 'posiciones'}
                     </Badge>
@@ -1394,7 +1388,7 @@ const PortfolioPage = () => {
                       <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-muted-foreground" />
                       <input
                         type="text"
-                        placeholder="Buscar por ticker..."
+                        placeholder={finixUi("Buscar por ticker...")}
                         value={assetSearch}
                         onChange={(e) => setAssetSearch(e.target.value)}
                         className="h-9 w-full rounded-xl border border-border/70 bg-card/60 pl-9 pr-8 text-xs outline-none shadow-sm backdrop-blur-sm transition-[border-color,box-shadow,background-color] placeholder:text-muted-foreground/60 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 sm:w-48"
@@ -1403,7 +1397,7 @@ const PortfolioPage = () => {
                         <button
                           onClick={() => setAssetSearch("")}
                           className="absolute right-2.5 cursor-pointer rounded-md p-0.5 text-muted-foreground transition-colors hover:text-foreground"
-                          title="Limpiar búsqueda"
+                          title={finixUi("Limpiar búsqueda")}
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -1415,10 +1409,10 @@ const PortfolioPage = () => {
                         <SortAsc className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" /><SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="value">Por valor</SelectItem>
-                        <SelectItem value="return">Por retorno</SelectItem>
-                        <SelectItem value="weight">Por peso</SelectItem>
-                        <SelectItem value="name">Por nombre</SelectItem>
+                        <SelectItem value="value">{""}<FinixUiText text={"Por valor"} />{""}</SelectItem>
+                        <SelectItem value="return">{""}<FinixUiText text={"Por retorno"} />{""}</SelectItem>
+                        <SelectItem value="weight">{""}<FinixUiText text={"Por peso"} />{""}</SelectItem>
+                        <SelectItem value="name">{""}<FinixUiText text={"Por nombre"} />{""}</SelectItem>
                       </SelectContent>
                     </Select>
                     {/* Buy */}
@@ -1430,7 +1424,7 @@ const PortfolioPage = () => {
                       <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-white group-hover:rotate-90 transition-transform duration-200">
                         <Plus className="w-2.5 h-2.5 stroke-[3]" />
                       </span>
-                      <span>Comprar</span>
+                      <span>{""}<FinixUiText text={"Comprar"} />{""}</span>
                     </button>
                   </div>
                 </div>
@@ -1452,7 +1446,7 @@ const PortfolioPage = () => {
                               : "bg-background/80 hover:bg-muted/80 text-muted-foreground hover:text-foreground border-border/60 hover:border-border"
                           )}
                         >
-                          {f.label}
+                          {<FinixUiText text={f.label} />}
                           <span className={cn("text-[10px] ml-1.5 px-1.5 py-0.5 rounded-full font-bold", isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground")}>
                             {count}
                           </span>
@@ -1486,28 +1480,26 @@ const PortfolioPage = () => {
                         onClick={() => { setAssetSearch(""); setAssetClassFilter("all"); }}
                         className="text-xs rounded-xl"
                       >
-                        Restablecer filtros
-                      </Button>
+                        {" "}<FinixUiText text={"Restablecer filtros"} />{" "}</Button>
                     ) : (
                       <Button
                         onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
                         className="gap-2 h-9 px-4 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white cursor-pointer shadow-xs"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        Comprar activo
-                      </Button>
+                        {" "}<FinixUiText text={"Comprar activo"} />{" "}</Button>
                     )}
                   </div>
                 ) : (
                   <div className="space-y-1">
                     {/* Desktop Table Header */}
                     <div className="hidden md:grid md:grid-cols-[1.15fr_70px_95px_130px_115px_85px] items-center gap-3 px-4 py-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40 mb-1">
-                      <span>Activo</span>
-                      <span className="text-right">Peso</span>
-                      <span className="text-right">Cotización</span>
-                      <span className="text-right">Precio CEDEAR (ARS)</span>
-                      <span className="text-right">Valor & PnL</span>
-                      <span className="text-center">Operar</span>
+                      <span>{""}<FinixUiText text={"Activo"} />{""}</span>
+                      <span className="text-right">{""}<FinixUiText text={"Peso"} />{""}</span>
+                      <span className="text-right">{""}<FinixUiText text={"Cotización"} />{""}</span>
+                      <span className="text-right">{""}<FinixUiText text={"Precio CEDEAR (ARS)"} />{""}</span>
+                      <span className="text-right">{""}<FinixUiText text={"Valor & PnL"} />{""}</span>
+                      <span className="text-center">{""}<FinixUiText text={"Operar"} />{""}</span>
                     </div>
 
                     {sortedAssets.map((asset) => (
@@ -1532,7 +1524,7 @@ const PortfolioPage = () => {
               <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
                 <CardHeader className="pb-3 flex flex-col items-center text-center">
                   <div className="flex items-center justify-between flex-wrap gap-2 w-full">
-                    <CardTitle className="text-base font-bold text-center">Actividad</CardTitle>
+                    <CardTitle className="text-base font-bold text-center">{""}<FinixUiText text={"Actividad"} />{""}</CardTitle>
                     <div className="flex items-center justify-center gap-1.5 flex-wrap">
                       {["all", "compra", "venta"].map((f) => (
                         <button
@@ -1553,11 +1545,11 @@ const PortfolioPage = () => {
                         size="sm"
                         onClick={() => void exportMovementsCSV()}
                         disabled={isExporting}
-                        title="Descargar historial de movimientos en CSV"
+                        title={finixUi("Descargar historial de movimientos en CSV")}
                         className="h-7.5 px-2.5 text-xs gap-1.5 rounded-lg ml-1 border-border/60 hover:border-primary/40 cursor-pointer shadow-2xs"
                       >
                         <Download className="w-3.5 h-3.5 text-primary" />
-                        <span className="hidden sm:inline font-semibold">CSV</span>
+                        <span className="hidden sm:inline font-semibold">{""}<FinixUiText text={"CSV"} />{""}</span>
                       </Button>
                     </div>
                   </div>
@@ -1567,7 +1559,7 @@ const PortfolioPage = () => {
                   {filteredMovements.length === 0 ? (
                     <div className="flex flex-col items-center py-10 text-center gap-2">
                       <BarChart3 className="w-8 h-8 text-muted-foreground/40" />
-                      <p className="text-sm text-muted-foreground">Sin movimientos en este período</p>
+                      <p className="text-sm text-muted-foreground">{""}<FinixUiText text={"Sin movimientos en este período"} />{""}</p>
                     </div>
                   ) : (
                     <div className="space-y-0.5">
@@ -1597,19 +1589,17 @@ const PortfolioPage = () => {
                       </div>
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                          Efectivo disponible
-                        </p>
+                          {" "}<FinixUiText text={"Efectivo disponible"} />{" "}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                          <span className="text-[11px] text-muted-foreground font-medium">Liquidez en cuenta</span>
+                          <span className="text-[11px] text-muted-foreground font-medium">{""}<FinixUiText text={"Liquidez en cuenta"} />{""}</span>
                         </div>
                       </div>
                     </div>
 
                     {totalValue > 0 && (
                       <Badge variant="outline" className="border-emerald-500/25 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-lg">
-                        {fmtDecimal((cashBalance / totalValue) * 100, 1)}% cartera
-                      </Badge>
+                        {fmtDecimal((cashBalance / totalValue) * 100, 1)}{""}<FinixUiText text={"% cartera"} />{" "}</Badge>
                     )}
                   </div>
 
@@ -1618,19 +1608,17 @@ const PortfolioPage = () => {
                       {mask(fmtCurrency(cashBalance, currency))}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Capital disponible para operar o reinvertir en nuevos activos
-                    </p>
+                      {" "}<FinixUiText text={"Capital disponible para operar o reinvertir en nuevos activos"} />{" "}</p>
                   </div>
 
                   <div className="pt-3 flex items-center justify-between border-t border-border/50 mt-3">
-                    <span className="text-[11px] font-medium text-muted-foreground">¿Listo para operar?</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">{""}<FinixUiText text={"¿Listo para operar?"} />{""}</span>
                     <Button
                       size="sm"
                       onClick={() => { setModalMode("BUY"); setModalInitialSymbol(""); setAddAssetOpen(true); }}
                       className="h-8 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Invertir
-                    </Button>
+                      <Plus className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Invertir"} />{" "}</Button>
                   </div>
                 </div>
 
@@ -1639,8 +1627,7 @@ const PortfolioPage = () => {
                   <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
                     <CardHeader className="pb-3 flex flex-col items-center text-center">
                       <CardTitle className="text-base font-bold flex items-center justify-center gap-2 text-center">
-                        <Sparkles className="w-4 h-4 text-primary" /> Insights
-                      </CardTitle>
+                        <Sparkles className="w-4 h-4 text-primary" /> {" "}<FinixUiText text={"Insights"} />{" "}</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0 space-y-3">
                       {/* Top winner */}
@@ -1667,7 +1654,7 @@ const PortfolioPage = () => {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-bold text-foreground">{best.ticker}</p>
-                                  <p className="text-[10px] text-muted-foreground font-medium">Mejor rendimiento</p>
+                                  <p className="text-[10px] text-muted-foreground font-medium">{""}<FinixUiText text={"Mejor rendimiento"} />{""}</p>
                                 </div>
                                 <span className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmtPct(bestR)}</span>
                               </div>
@@ -1679,7 +1666,7 @@ const PortfolioPage = () => {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-bold text-foreground">{worst.ticker}</p>
-                                  <p className="text-[10px] text-muted-foreground font-medium">Mayor drawdown</p>
+                                  <p className="text-[10px] text-muted-foreground font-medium">{""}<FinixUiText text={"Mayor drawdown"} />{""}</p>
                                 </div>
                                 <span className="text-[13px] font-bold text-rose-600 dark:text-rose-400 tabular-nums">{fmtPct(worstR)}</span>
                               </div>
@@ -1689,8 +1676,8 @@ const PortfolioPage = () => {
                                 <PieChart className="w-4 h-4" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-foreground">{displayPortfolio.assets.length} activos</p>
-                                <p className="text-[10px] text-muted-foreground font-medium">en cartera diversificada</p>
+                                <p className="text-xs font-bold text-foreground">{displayPortfolio.assets.length} {" "}<FinixUiText text={"activos"} />{""}</p>
+                                <p className="text-[10px] text-muted-foreground font-medium">{""}<FinixUiText text={"en cartera diversificada"} />{""}</p>
                               </div>
                               <ChevronRight className="w-4 h-4 text-muted-foreground" />
                             </div>
@@ -1698,8 +1685,7 @@ const PortfolioPage = () => {
                         );
                       })()}
                       <p className="text-[10px] text-muted-foreground/60 leading-relaxed pt-1">
-                        Información con fines educativos. No constituye asesoramiento financiero.
-                      </p>
+                        {" "}<FinixUiText text={"Información con fines educativos. No constituye asesoramiento financiero."} />{" "}</p>
                     </CardContent>
                   </Card>
                 )}
@@ -1713,8 +1699,7 @@ const PortfolioPage = () => {
             >
               <span className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-primary" />
-                Análisis avanzado de diversificación
-              </span>
+                {" "}<FinixUiText text={"Análisis avanzado de diversificación"} />{" "}</span>
               <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", showAdvanced && "rotate-180")} />
             </button>
 
@@ -1727,7 +1712,7 @@ const PortfolioPage = () => {
                   className="overflow-hidden"
                 >
                   <ErrorBoundary fallbackTitle="Análisis de diversificación temporalmente inaccesible">
-                    <Suspense fallback={<div className="h-64 animate-pulse bg-muted/30" role="status" aria-label="Cargando métricas" />}><PortfolioAdvancedMetrics metrics={displayMetrics} assets={displayPortfolio.assets} currency={currency} /></Suspense>
+                    <Suspense fallback={<div className="h-64 animate-pulse bg-muted/30" role="status" aria-label={finixUi("Cargando métricas")} />}><PortfolioAdvancedMetrics metrics={displayMetrics} assets={displayPortfolio.assets} currency={currency} /></Suspense>
                   </ErrorBoundary>
                 </motion.div>
               )}

@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
@@ -91,6 +93,8 @@ const TYPE_FILTERS = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ExplorePage() {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { user } = useAuthStore();
     const location = useLocation();
     const navigate = useNavigate();
@@ -241,11 +245,9 @@ export default function ExplorePage() {
                                         {showSaved ? 'Coleccion personal' : 'Actividad de mercado'}
                                     </Badge>
                                     <div className="space-y-2 text-center">
-                                        <h1 className="text-3xl font-semibold tracking-tight text-center">Explorar</h1>
+                                        <h1 className="text-3xl font-semibold tracking-tight text-center">{""}<FinixUiText text={"Explorar"} />{""}</h1>
                                         <p className="max-w-2xl text-sm text-muted-foreground md:text-base text-center mx-auto">
-                                            Descubrí ideas, publicaciones, ediciones y gráficos con una superficie más amplia,
-                                            limpia y profesional para navegar la actividad de Finix.
-                                        </p>
+                                            {" "}<FinixUiText text={"Descubrí ideas, publicaciones, ediciones y gráficos con una superficie más amplia, limpia y profesional para navegar la actividad de Finix."} />{" "}</p>
                                     </div>
                                 </div>
 
@@ -263,7 +265,7 @@ export default function ExplorePage() {
                                         size="icon"
                                         onClick={handleRefresh}
                                         disabled={isRefreshing}
-                                        title="Actualizar"
+                                        title={finixUi("Actualizar")}
                                     >
                                         <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
                                     </Button>
@@ -272,7 +274,7 @@ export default function ExplorePage() {
                                         className="gap-2 bg-gradient-to-r from-primary to-emerald-400 text-black font-bold shadow-glow"
                                     >
                                         <PenSquare className="w-4 h-4" />
-                                        <span>Crear publicación</span>
+                                        <span>{""}<FinixUiText text={"Crear publicación"} />{""}</span>
                                     </Button>
                                 </div>
                             </div>
@@ -291,7 +293,7 @@ export default function ExplorePage() {
                                                     }`}
                                             >
                                                 <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                                                <span>{label}</span>
+                                                <span>{<FinixUiText text={label} />}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -308,7 +310,7 @@ export default function ExplorePage() {
                                                     }`}
                                             >
                                                 <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-                                                <span>{label}</span>
+                                                <span>{<FinixUiText text={label} />}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -319,10 +321,9 @@ export default function ExplorePage() {
                                 <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-4 text-primary">
                                     <Bookmark className="w-5 h-5 fill-primary" />
                                     <div className="space-y-0.5">
-                                        <p className="text-sm font-semibold">Publicaciones guardadas</p>
+                                        <p className="text-sm font-semibold">{""}<FinixUiText text={"Publicaciones guardadas"} />{""}</p>
                                         <p className="text-sm text-muted-foreground">
-                                            Un espacio dedicado para volver rápido a tus ideas y análisis más relevantes.
-                                        </p>
+                                            {" "}<FinixUiText text={"Un espacio dedicado para volver rápido a tus ideas y análisis más relevantes."} />{" "}</p>
                                     </div>
                                 </div>
                             )}
@@ -386,8 +387,7 @@ export default function ExplorePage() {
                                             </div>
                                             {!showSaved && (
                                                 <Button onClick={() => setShowCreate(true)} className="mt-2">
-                                                    Crear publicación
-                                                </Button>
+                                                    {" "}<FinixUiText text={"Crear publicación"} />{" "}</Button>
                                             )}
                                         </CardContent>
                                     </Card>
@@ -400,11 +400,10 @@ export default function ExplorePage() {
                         {isLoading && posts.length > 0 && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Cargando más publicaciones...
-                            </div>
+                                {" "}<FinixUiText text={"Cargando más publicaciones..."} />{" "}</div>
                         )}
                         {!isLoading && !hasMore && posts.length > 0 && (
-                            <p className="text-xs text-muted-foreground">Fin de la actividad</p>
+                            <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Fin de la actividad"} />{""}</p>
                         )}
                     </div>
                 </div>

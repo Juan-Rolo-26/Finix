@@ -1,3 +1,5 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
+import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import CommentsPanel from '@/components/posts/CommentsPanel';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -104,10 +106,10 @@ function LockedCard({ post, plans, onSubscribe }: {
                     <Lock className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
                 </div>
                 <div className="text-center">
-                    <p className="font-bold text-sm">Contenido exclusivo</p>
+                    <p className="font-bold text-sm">{""}<FinixUiText text={"Contenido exclusivo"} />{""}</p>
                     {plan && (
                         <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                            Plan {plan.name} — ${Number(plan.price).toFixed(2)}/{plan.interval === 'monthly' ? 'mes' : 'año'}
+                            {" "}<FinixUiText text={"Plan"} />{" "}{plan.name} — ${Number(plan.price).toFixed(2)}/{plan.interval === 'monthly' ? 'mes' : 'año'}
                         </p>
                     )}
                 </div>
@@ -115,8 +117,7 @@ function LockedCard({ post, plans, onSubscribe }: {
                     onClick={onSubscribe}
                     className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-[12px] font-semibold"
                     style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
-                    <Crown className="w-3.5 h-3.5" /> Desbloquear
-                </button>
+                    <Crown className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Desbloquear"} />{" "}</button>
             </div>
         </div>
     );
@@ -127,6 +128,8 @@ function LockedCard({ post, plans, onSubscribe }: {
 function PostCard({ post, community, onDelete }: {
     post: Post; community: Community; onDelete: (id: string) => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { user } = useAuthStore();
     const [liked, setLiked] = useState(Boolean((post as any).isLiked));
     const [likeCount, setLikeCount] = useState(post._count.likes);
@@ -184,8 +187,7 @@ function PostCard({ post, community, onDelete }: {
                             )}
                             {post.isPinned && (
                                 <span className="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500">
-                                    📌 Fijada
-                                </span>
+                                    {" "}<FinixUiText text={"📌 Fijada"} />{" "}</span>
                             )}
                             {post.section && (
                                 <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -222,8 +224,7 @@ function PostCard({ post, community, onDelete }: {
                                     <button
                                         onClick={() => { if (confirm('¿Eliminar esta publicación?')) onDelete(post.id); setShowMenu(false); }}
                                         className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-medium hover:bg-destructive/10 transition-colors text-destructive">
-                                        <Trash2 className="w-3.5 h-3.5" /> Eliminar
-                                    </button>
+                                        <Trash2 className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Eliminar"} />{" "}</button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -248,8 +249,7 @@ function PostCard({ post, community, onDelete }: {
                                         onClick={() => { setShowReportModal(true); setShowMenu(false); }}
                                         className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-medium hover:bg-orange-500/10 transition-colors"
                                         style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                        <AlertCircle className="w-3.5 h-3.5" /> Reportar
-                                    </button>
+                                        <AlertCircle className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Reportar"} />{" "}</button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -283,7 +283,7 @@ function PostCard({ post, community, onDelete }: {
                     <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
                     {likeCount > 0 && likeCount}
                 </button>
-                <button onClick={() => setShowComments(v => !v)} aria-expanded={showComments} aria-label="Comentarios" className="flex items-center gap-1.5 text-[12px] font-medium transition-colors"
+                <button onClick={() => setShowComments(v => !v)} aria-expanded={showComments} aria-label={finixUi("Comentarios")} className="flex items-center gap-1.5 text-[12px] font-medium transition-colors"
                     style={{ color: 'hsl(var(--muted-foreground))' }}>
                     <MessageCircle className="w-4 h-4" />
                     {commentCount > 0 && commentCount}
@@ -314,6 +314,8 @@ function CreatePost({ communityId, plans, onCreated }: {
     communityId: string; plans: CommunityPlan[];
     onCreated: (post: Post) => void;
 }) {
+    const { ui: finixUi } = useFinixUiTranslation();
+
     const { user } = useAuthStore();
     const [content, setContent] = useState('');
     const [visibility, setVisibility] = useState('PUBLIC');
@@ -381,7 +383,7 @@ function CreatePost({ communityId, plans, onCreated }: {
                 </Avatar>
                 <textarea
                     className="flex-1 resize-none bg-transparent text-sm outline-none leading-relaxed"
-                    placeholder="¿Qué querés compartir con la comunidad?"
+                    placeholder={finixUi("¿Qué querés compartir con la comunidad?")}
                     rows={3}
                     maxLength={1000}
                     value={content}
@@ -396,7 +398,7 @@ function CreatePost({ communityId, plans, onCreated }: {
                             {image?.type.startsWith('video/') ? (
                                 <video src={preview} controls className="h-32 rounded-xl object-contain border border-border/30 bg-black/5" />
                             ) : (
-                                <img src={preview} alt="Vista previa de imagen adjunta" className="h-32 rounded-xl object-cover border border-border/30" />
+                                <img src={preview} alt={finixUi("Vista previa de imagen adjunta")} className="h-32 rounded-xl object-cover border border-border/30" />
                             )}
                             <button onClick={handleRemoveImage} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive rounded-full flex items-center justify-center text-white">
                                 <X className="w-3 h-3" />
@@ -411,7 +413,7 @@ function CreatePost({ communityId, plans, onCreated }: {
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
                     <input type="file" ref={fileRef} className="hidden" accept="image/*,video/*" onChange={handleImageSelect} />
-                    <button title="Adjuntar multimedia" onClick={() => fileRef.current?.click()} className="p-1.5 rounded-lg hover:bg-muted transition-colors mr-1">
+                    <button title={finixUi("Adjuntar multimedia")} onClick={() => fileRef.current?.click()} className="p-1.5 rounded-lg hover:bg-muted transition-colors mr-1">
                         <ImageIcon className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
                     </button>
                     {/* Visibility selector */}
@@ -420,8 +422,8 @@ function CreatePost({ communityId, plans, onCreated }: {
                         style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}
                         value={visibility}
                         onChange={e => setVisibility(e.target.value)}>
-                        <option value="PUBLIC">🌎 Público</option>
-                        <option value="MEMBERS">👥 Miembros</option>
+                        <option value="PUBLIC">{""}<FinixUiText text={"🌎 Público"} />{""}</option>
+                        <option value="MEMBERS">{""}<FinixUiText text={"👥 Miembros"} />{""}</option>
                         {plans.filter(p => Number(p.price) > 0).map(p => (
                             <option key={p.id} value="PREMIUM_TIER">🔒 {p.name}</option>
                         ))}
@@ -444,8 +446,7 @@ function CreatePost({ communityId, plans, onCreated }: {
                     className="ml-auto flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-semibold shadow-sm hover:shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-40 h-8"
                     style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: '#ffffff' }}>
                     {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                    Publicar
-                </button>
+                    {" "}<FinixUiText text={"Publicar"} />{" "}</button>
             </div>
         </div>
     );
@@ -534,7 +535,7 @@ function SubscribeModal({ community, onClose, onJoined, onSelectPaidPlan }: {
 
                 <div className="px-6 py-4" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                     <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-base">Unirte a {community.name}</h3>
+                        <h3 className="font-bold text-base">{""}<FinixUiText text={"Unirte a"} />{" "}{community.name}</h3>
                         <button onClick={onClose} className="rounded-xl p-1.5 hover:bg-muted transition-colors">
                             <X className="w-4 h-4" />
                         </button>
@@ -542,7 +543,7 @@ function SubscribeModal({ community, onClose, onJoined, onSelectPaidPlan }: {
                 </div>
 
                 <div className="p-6 space-y-3 max-h-[70vh] overflow-y-auto">
-                    {privateAccess && <div className="space-y-3"><p className="text-sm text-muted-foreground">El creador debe aprobar tu ingreso a esta comunidad privada.</p><label className="block text-sm">Mensaje para el creador (opcional)<textarea maxLength={1000} className="mt-2 w-full rounded-xl border border-border bg-background p-3" value={requestNote} onChange={e => setRequestNote(e.target.value)} /></label><button className="min-h-11 w-full rounded-xl bg-primary px-4 text-primary-foreground disabled:opacity-50" disabled={loading || requestSent} onClick={() => void sendRequest()}>{requestSent ? "Solicitud enviada: pendiente de aprobación" : "Solicitar ingreso"}</button></div>}
+                    {privateAccess && <div className="space-y-3"><p className="text-sm text-muted-foreground">{""}<FinixUiText text={"El creador debe aprobar tu ingreso a esta comunidad privada."} />{""}</p><label className="block text-sm">{""}<FinixUiText text={"Mensaje para el creador (opcional)"} />{""}<textarea maxLength={1000} className="mt-2 w-full rounded-xl border border-border bg-background p-3" value={requestNote} onChange={e => setRequestNote(e.target.value)} /></label><button className="min-h-11 w-full rounded-xl bg-primary px-4 text-primary-foreground disabled:opacity-50" disabled={loading || requestSent} onClick={() => void sendRequest()}>{requestSent ? "Solicitud enviada: pendiente de aprobación" : "Solicitar ingreso"}</button></div>}
                     {/* Free plan */}
                     {!privateAccess && freePlan && (
                         <div className="rounded-xl p-4 space-y-3"
@@ -550,7 +551,7 @@ function SubscribeModal({ community, onClose, onJoined, onSelectPaidPlan }: {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="font-bold text-sm">{freePlan.name}</p>
-                                    <p className="text-xl font-black mt-0.5" style={{ color: 'hsl(145 65% 36%)' }}>Gratis</p>
+                                    <p className="text-xl font-black mt-0.5" style={{ color: 'hsl(145 65% 36%)' }}>{""}<FinixUiText text={"Gratis"} />{""}</p>
                                 </div>
                             </div>
                             <ul className="space-y-1.5">
@@ -612,7 +613,7 @@ function SubscribeModal({ community, onClose, onJoined, onSelectPaidPlan }: {
                                     }
                                 }}>
                                 <CreditCard className="w-4 h-4 shrink-0" />
-                                <span className="truncate">Pagar con Tarjeta — ${Number(plan.price).toFixed(2)}/{plan.interval === 'monthly' ? 'mes' : 'año'}</span>
+                                <span className="truncate">{""}<FinixUiText text={"Pagar con Tarjeta — $"} />{""}{Number(plan.price).toFixed(2)}/{plan.interval === 'monthly' ? 'mes' : 'año'}</span>
                             </button>
                             <button
                                 type="button"
@@ -785,8 +786,8 @@ export default function CommunityDetail(props?: {
         return <div role="alert" className="mx-auto max-w-xl space-y-4 p-8 text-center">
             <p>{communityError}</p>
             <div className="flex justify-center gap-3">
-                <Button variant="outline" onClick={handleBack}>Volver a comunidades</Button>
-                <Button onClick={() => setReloadKey(key => key + 1)}>Reintentar</Button>
+                <Button variant="outline" onClick={handleBack}>{""}<FinixUiText text={"Volver a comunidades"} />{""}</Button>
+                <Button onClick={() => setReloadKey(key => key + 1)}>{""}<FinixUiText text={"Reintentar"} />{""}</Button>
             </div>
         </div>;
     }
@@ -824,8 +825,7 @@ export default function CommunityDetail(props?: {
                         onClick={handleBack}
                         className="absolute top-3.5 left-3.5 sm:top-4 sm:left-4 z-10 flex items-center gap-1.5 rounded-xl px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
                         style={{ background: 'rgba(15, 23, 42, 0.75)', color: '#ffffff', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                        <ArrowLeft className="w-4 h-4" /> Comunidades
-                    </button>
+                        <ArrowLeft className="w-4 h-4" /> {" "}<FinixUiText text={"Comunidades"} />{" "}</button>
                 </div>
 
                 {/* Community info */}
@@ -854,19 +854,17 @@ export default function CommunityDetail(props?: {
                                     className="flex items-center gap-1.5 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition-colors hover:bg-muted"
                                     style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}>
                                     <Settings className="w-4 h-4" />
-                                    <span>Administrar</span>
+                                    <span>{""}<FinixUiText text={"Administrar"} />{""}</span>
                                 </button>
                             ) : isMember ? (
                                 <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap">
                                     <span className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border border-emerald-500/30"
                                         style={{ background: 'hsl(var(--primary)/0.1)', color: 'hsl(var(--primary))' }}>
-                                        <Check className="w-3.5 h-3.5" /> Miembro Activo
-                                    </span>
+                                        <Check className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Miembro Activo"} />{" "}</span>
                                     <button onClick={handleLeave}
                                         className="text-[11px] sm:text-xs font-medium px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
                                         style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>
-                                        Salir
-                                    </button>
+                                        {" "}<FinixUiText text={"Salir"} />{" "}</button>
                                 </div>
                             ) : (
                                 <button
@@ -874,7 +872,7 @@ export default function CommunityDetail(props?: {
                                     className="flex items-center gap-2 rounded-xl px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 active:scale-[0.98] transition-all"
                                     style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: '#ffffff' }}>
                                     <Plus className="w-4 h-4" />
-                                    <span>Unirme<span className="hidden xs:inline sm:inline"> a la comunidad</span></span>
+                                    <span>{""}<FinixUiText text={"Unirme"} />{""}<span className="hidden xs:inline sm:inline"> {" "}<FinixUiText text={"a la comunidad"} />{""}</span></span>
                                 </button>
                             )}
                         </div>
@@ -892,7 +890,7 @@ export default function CommunityDetail(props?: {
                                 <AvatarFallback className="text-[8px]">{community.creator.username[0]}</AvatarFallback>
                             </Avatar>
                             <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                por @{community.creator.username}
+                                {" "}<FinixUiText text={"por @"} />{""}{community.creator.username}
                             </span>
                             {community.creator.isVerified && (
                                 <BadgeCheck className="w-3 h-3" style={{ color: 'hsl(var(--primary))' }} />
@@ -904,11 +902,11 @@ export default function CommunityDetail(props?: {
                         <div className="flex items-center gap-3 mt-2">
                             <span className="text-[11px] font-semibold">
                                 <span className="text-foreground">{community._count.members.toLocaleString()}</span>
-                                <span className="ml-1" style={{ color: 'hsl(var(--muted-foreground))' }}>miembros</span>
+                                <span className="ml-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"miembros"} />{""}</span>
                             </span>
                             <span className="text-[11px] font-semibold">
                                 <span className="text-foreground">{community._count.posts}</span>
-                                <span className="ml-1" style={{ color: 'hsl(var(--muted-foreground))' }}>posts</span>
+                                <span className="ml-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"posts"} />{""}</span>
                             </span>
                         </div>
                     </div>
@@ -926,7 +924,7 @@ export default function CommunityDetail(props?: {
                                 onClick={() => setActiveTab(tab.key)}
                                 className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold whitespace-nowrap relative shrink-0 transition-colors"
                                 style={{ color: active ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}>
-                                <Icon className="w-3.5 h-3.5" /> {tab.label}
+                                <Icon className="w-3.5 h-3.5" /> {<FinixUiText text={tab.label} />}
                                 {active && (
                                     <motion.div
                                         layoutId="community-tab-indicator"
@@ -965,8 +963,7 @@ export default function CommunityDetail(props?: {
                                                 onClick={() => setSelectedSectionId(null)}
                                                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${!selectedSectionId ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                                             >
-                                                Todas las secciones
-                                            </button>
+                                                {" "}<FinixUiText text={"Todas las secciones"} />{" "}</button>
                                             {community.sections.map(sec => (
                                                 <button
                                                     key={sec.id}
@@ -988,8 +985,8 @@ export default function CommunityDetail(props?: {
                                     ) : (
                                         <div className="rounded-2xl p-4.5 border border-border/50 bg-card/70 backdrop-blur-xs flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
                                             <div className="space-y-1 text-center sm:text-left">
-                                                <p className="font-bold text-sm text-foreground">¿Querés publicar en esta comunidad?</p>
-                                                <p className="text-xs text-muted-foreground">Unite para compartir análisis, debatir mercados y conectar con otros inversores.</p>
+                                                <p className="font-bold text-sm text-foreground">{""}<FinixUiText text={"¿Querés publicar en esta comunidad?"} />{""}</p>
+                                                <p className="text-xs text-muted-foreground">{""}<FinixUiText text={"Unite para compartir análisis, debatir mercados y conectar con otros inversores."} />{""}</p>
                                             </div>
                                             <button
                                                 onClick={() => setShowSubscribe(true)}
@@ -997,8 +994,7 @@ export default function CommunityDetail(props?: {
                                                 style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: '#ffffff' }}
                                             >
                                                 <Plus className="w-3.5 h-3.5" />
-                                                Unirme ahora
-                                            </button>
+                                                {" "}<FinixUiText text={"Unirme ahora"} />{" "}</button>
                                         </div>
                                     )}
 
@@ -1008,15 +1004,13 @@ export default function CommunityDetail(props?: {
                                             <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
                                                 <Lock className="w-6 h-6" />
                                             </div>
-                                            <p className="font-bold text-base text-foreground">Contenido exclusivo para miembros</p>
+                                            <p className="font-bold text-base text-foreground">{""}<FinixUiText text={"Contenido exclusivo para miembros"} />{""}</p>
                                             <p className="text-xs text-muted-foreground max-w-sm">
-                                                Esta sección contiene análisis premium y recursos reservados. Elegí un plan de membresía para acceder de inmediato.
-                                            </p>
+                                                {" "}<FinixUiText text={"Esta sección contiene análisis premium y recursos reservados. Elegí un plan de membresía para acceder de inmediato."} />{" "}</p>
                                             <button onClick={() => setShowSubscribe(true)}
                                                 className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold mt-2 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
                                                 style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: '#ffffff' }}>
-                                                <Crown className="w-4 h-4 text-amber-300" /> Ver Planes y Suscribirme
-                                            </button>
+                                                <Crown className="w-4 h-4 text-amber-300" /> {" "}<FinixUiText text={"Ver Planes y Suscribirme"} />{" "}</button>
                                         </div>
                                     )}
 
@@ -1030,8 +1024,8 @@ export default function CommunityDetail(props?: {
                                             <div className="w-12 h-12 rounded-2xl bg-secondary/50 flex items-center justify-center text-muted-foreground">
                                                 <MessageCircle className="w-6 h-6" />
                                             </div>
-                                            <p className="font-bold text-sm text-foreground">Sin publicaciones aún</p>
-                                            <p className="text-xs text-muted-foreground max-w-xs">Sé el primero en iniciar una conversación en esta comunidad.</p>
+                                            <p className="font-bold text-sm text-foreground">{""}<FinixUiText text={"Sin publicaciones aún"} />{""}</p>
+                                            <p className="text-xs text-muted-foreground max-w-xs">{""}<FinixUiText text={"Sé el primero en iniciar una conversación en esta comunidad."} />{""}</p>
                                         </div>
                                     ) : (
                                         posts.map(post => post.isLocked ? (
@@ -1052,8 +1046,7 @@ export default function CommunityDetail(props?: {
                                             onClick={() => loadPosts(activeTab === 'exclusivo' ? 'exclusive' : 'all', posts[posts.length - 1]?.id)}
                                             className="w-full py-3 text-xs font-bold rounded-xl border border-border/50 hover:bg-muted/50 transition-colors"
                                             style={{ background: 'hsl(var(--card))', color: 'hsl(var(--foreground))' }}>
-                                            Cargar más publicaciones
-                                        </button>
+                                            {" "}<FinixUiText text={"Cargar más publicaciones"} />{" "}</button>
                                     )}
                                 </div>
 
@@ -1064,8 +1057,7 @@ export default function CommunityDetail(props?: {
                                         <div className="flex items-center justify-between">
                                             <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
                                                 <Globe className="w-4 h-4 text-emerald-500" />
-                                                Sobre la comunidad
-                                            </h3>
+                                                {" "}<FinixUiText text={"Sobre la comunidad"} />{" "}</h3>
                                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground uppercase tracking-wider">
                                                 {community.category || 'General'}
                                             </span>
@@ -1077,11 +1069,11 @@ export default function CommunityDetail(props?: {
 
                                         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/40 text-xs">
                                             <div className="p-2.5 rounded-xl bg-secondary/40">
-                                                <span className="text-[10px] text-muted-foreground block font-medium">Miembros</span>
+                                                <span className="text-[10px] text-muted-foreground block font-medium">{""}<FinixUiText text={"Miembros"} />{""}</span>
                                                 <span className="font-black text-foreground text-base">{community._count.members.toLocaleString()}</span>
                                             </div>
                                             <div className="p-2.5 rounded-xl bg-secondary/40">
-                                                <span className="text-[10px] text-muted-foreground block font-medium">Publicaciones</span>
+                                                <span className="text-[10px] text-muted-foreground block font-medium">{""}<FinixUiText text={"Publicaciones"} />{""}</span>
                                                 <span className="font-black text-foreground text-base">{community._count.posts.toLocaleString()}</span>
                                             </div>
                                         </div>
@@ -1110,11 +1102,9 @@ export default function CommunityDetail(props?: {
                                             <div className="flex items-center justify-between">
                                                 <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
                                                     <Crown className="w-4 h-4 text-amber-400" />
-                                                    Planes de Membresía
-                                                </h3>
+                                                    {" "}<FinixUiText text={"Planes de Membresía"} />{" "}</h3>
                                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
-                                                    Acceso Inmediato
-                                                </span>
+                                                    {" "}<FinixUiText text={"Acceso Inmediato"} />{" "}</span>
                                             </div>
 
                                             <div className="space-y-3">
@@ -1159,8 +1149,7 @@ export default function CommunityDetail(props?: {
                                         <div className="rounded-2xl p-5 border border-border/50 bg-card/70 backdrop-blur-xs space-y-2 shadow-xs">
                                             <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                                                 <FileText className="w-3.5 h-3.5 text-primary" />
-                                                Reglas
-                                            </h3>
+                                                {" "}<FinixUiText text={"Reglas"} />{" "}</h3>
                                             <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
                                                 {community.rules}
                                             </p>
@@ -1177,7 +1166,7 @@ export default function CommunityDetail(props?: {
                                     <div className="flex flex-col items-center py-12 gap-3"
                                         style={{ color: 'hsl(var(--muted-foreground))' }}>
                                         <BookOpen className="w-10 h-10 opacity-30" />
-                                        <p className="font-semibold text-sm">Sin recursos aún</p>
+                                        <p className="font-semibold text-sm">{""}<FinixUiText text={"Sin recursos aún"} />{""}</p>
                                     </div>
                                 ) : resources.map(r => (
                                     <div key={r.id} className="flex items-center gap-3 rounded-xl p-3"
@@ -1213,7 +1202,7 @@ export default function CommunityDetail(props?: {
                                     <div className="flex flex-col items-center py-12 gap-3"
                                         style={{ color: 'hsl(var(--muted-foreground))' }}>
                                         <Calendar className="w-10 h-10 opacity-30" />
-                                        <p className="font-semibold text-sm">Sin eventos próximos</p>
+                                        <p className="font-semibold text-sm">{""}<FinixUiText text={"Sin eventos próximos"} />{""}</p>
                                     </div>
                                 ) : events.map(ev => (
                                     <div key={ev.id} className="rounded-xl p-4 space-y-2"
@@ -1228,8 +1217,7 @@ export default function CommunityDetail(props?: {
                                             {ev.requiredTierLevel > 0 && (
                                                 <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                                                     style={{ background: 'hsl(var(--primary)/0.1)', color: 'hsl(var(--primary))' }}>
-                                                    <Crown className="w-2.5 h-2.5" /> Premium
-                                                </span>
+                                                    <Crown className="w-2.5 h-2.5" /> {" "}<FinixUiText text={"Premium"} />{" "}</span>
                                             )}
                                         </div>
                                         {ev.description && (
@@ -1241,8 +1229,7 @@ export default function CommunityDetail(props?: {
                                             <a href={ev.link} target="_blank" rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-1.5 text-[12px] font-semibold"
                                                 style={{ color: 'hsl(var(--primary))' }}>
-                                                <Play className="w-3.5 h-3.5" /> Participar
-                                            </a>
+                                                <Play className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Participar"} />{" "}</a>
                                         )}
                                     </div>
                                 ))}
@@ -1256,7 +1243,7 @@ export default function CommunityDetail(props?: {
                                     <div className="flex flex-col items-center py-12 gap-3"
                                         style={{ color: 'hsl(var(--muted-foreground))' }}>
                                         <Users className="w-10 h-10 opacity-30" />
-                                        <p className="font-semibold text-sm">Sin miembros aún</p>
+                                        <p className="font-semibold text-sm">{""}<FinixUiText text={"Sin miembros aún"} />{""}</p>
                                     </div>
                                 ) : members.map((m: any) => (
                                     <div key={m.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
@@ -1287,8 +1274,7 @@ export default function CommunityDetail(props?: {
                                         {m.role === 'OWNER' && (
                                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
                                                 style={{ background: 'hsl(45 95% 55% / 0.15)', color: 'hsl(45 95% 45%)' }}>
-                                                <Crown className="w-2.5 h-2.5 inline mr-0.5" /> Creador
-                                            </span>
+                                                <Crown className="w-2.5 h-2.5 inline mr-0.5" /> {" "}<FinixUiText text={"Creador"} />{" "}</span>
                                         )}
                                     </div>
                                 ))}
@@ -1302,7 +1288,7 @@ export default function CommunityDetail(props?: {
                                 <div className="rounded-2xl p-4 space-y-3"
                                     style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
                                     <p className="text-[11px] font-bold uppercase tracking-widest"
-                                        style={{ color: 'hsl(var(--muted-foreground))' }}>Creador</p>
+                                        style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"Creador"} />{""}</p>
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-10 w-10">
                                             <AvatarImage src={community.creator.avatarUrl} />
@@ -1348,7 +1334,7 @@ export default function CommunityDetail(props?: {
                                 {community.plans.length > 0 && (
                                     <div className="space-y-2">
                                         <p className="text-[11px] font-bold uppercase tracking-widest"
-                                            style={{ color: 'hsl(var(--muted-foreground))' }}>Planes</p>
+                                            style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"Planes"} />{""}</p>
                                         {community.plans.map(plan => (
                                             <div key={plan.id} className="rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                                                 style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
@@ -1371,7 +1357,7 @@ export default function CommunityDetail(props?: {
                                     <div className="rounded-xl p-4 space-y-2"
                                         style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}>
                                         <p className="text-[11px] font-bold uppercase tracking-widest"
-                                            style={{ color: 'hsl(var(--muted-foreground))' }}>Reglas</p>
+                                            style={{ color: 'hsl(var(--muted-foreground))' }}>{""}<FinixUiText text={"Reglas"} />{""}</p>
                                         <p className="text-[12px] leading-relaxed whitespace-pre-wrap">{community.rules}</p>
                                     </div>
                                 )}
@@ -1381,9 +1367,7 @@ export default function CommunityDetail(props?: {
                                     style={{ background: 'hsl(45 95% 55% / 0.06)', border: '1px solid hsl(45 95% 55% / 0.2)' }}>
                                     <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: 'hsl(45 95% 50%)' }} />
                                     <p className="text-[11px] leading-relaxed" style={{ color: 'hsl(45 85% 45%)' }}>
-                                        Todo el contenido es <strong>educativo e informativo</strong>. Nada constituye
-                                        asesoramiento financiero ni garantía de rentabilidad.
-                                    </p>
+                                        {" "}<FinixUiText text={"Todo el contenido es"} />{" "}<strong>{""}<FinixUiText text={"educativo e informativo"} />{""}</strong>{""}<FinixUiText text={". Nada constituye asesoramiento financiero ni garantía de rentabilidad."} />{" "}</p>
                                 </div>
                             </div>
                         )}

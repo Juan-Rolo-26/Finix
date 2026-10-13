@@ -1,3 +1,4 @@
+import { useTranslation } from '@/i18n';
 export type VerifiedVariant = 'official' | 'verified' | 'influencer' | 'staff';
 
 interface VerifiedBadgeProps {
@@ -70,11 +71,12 @@ export default function VerifiedBadge({
     className = '',
     title,
 }: VerifiedBadgeProps) {
+    const { ui } = useTranslation();
     const activeVariant = resolveVerifiedVariant({ variant, isVerified, isInfluencer, role, username });
     if (!activeVariant) return null;
 
     const config = BADGE_CONFIGS[activeVariant];
-    const tooltip = title || config.label;
+    const tooltip = title || ui(config.label);
     const sizeConfig = SIZES[size] || SIZES.sm;
     const gradId = `finix-badge-grad-${activeVariant}-${size}`;
 

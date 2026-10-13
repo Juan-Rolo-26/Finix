@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Globe, DollarSign, Flame } from 'lucide-react';
@@ -129,11 +130,9 @@ export default function MarketOverview() {
                 <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-xl">
                         <Flame className="w-6 h-6 text-primary" />
-                        Mapa de Calor - Finviz (S&P 500)
-                    </CardTitle>
+                        {" "}<FinixUiText text={"Mapa de Calor - Finviz (S&P 500)"} />{" "}</CardTitle>
                     <CardDescription className="text-base">
-                        Heatmap estilo Finviz con breadth, ganadores y perdedores
-                    </CardDescription>
+                        {" "}<FinixUiText text={"Heatmap estilo Finviz con breadth, ganadores y perdedores"} />{" "}</CardDescription>
                 </CardHeader>
                 <CardContent className="px-5 pb-5 pt-0">
                     <FinvizHeatmap />
@@ -147,11 +146,9 @@ export default function MarketOverview() {
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-xl">
                             <DollarSign className="w-6 h-6 text-primary" />
-                            Tasas de Cambio
-                        </CardTitle>
+                            {" "}<FinixUiText text={"Tasas de Cambio"} />{" "}</CardTitle>
                         <CardDescription className="text-base">
-                            Cruces de divisas principales
-                        </CardDescription>
+                            {" "}<FinixUiText text={"Cruces de divisas principales"} />{" "}</CardDescription>
                     </CardHeader>
                     <CardContent className="px-5 pb-5 pt-0">
                         <div ref={forexRef} className="h-[420px] w-full sm:h-[560px] lg:h-[700px]" />
@@ -163,11 +160,9 @@ export default function MarketOverview() {
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-xl">
                             <Globe className="w-6 h-6 text-primary" />
-                            Mercado Cripto
-                        </CardTitle>
+                            {" "}<FinixUiText text={"Mercado Cripto"} />{" "}</CardTitle>
                         <CardDescription className="text-base">
-                            Top criptomonedas por capitalización
-                        </CardDescription>
+                            {" "}<FinixUiText text={"Top criptomonedas por capitalización"} />{" "}</CardDescription>
                     </CardHeader>
                     <CardContent className="px-5 pb-5 pt-0">
                         <div ref={cryptoRef} className="h-[460px] w-full sm:h-[600px] lg:h-[760px]" />

@@ -1,3 +1,4 @@
+import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, MessageSquare } from 'lucide-react';
@@ -49,13 +50,12 @@ export default function PostDetailPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-border bg-card/60 px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/60"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Volver
-                </button>
+                    {" "}<FinixUiText text={"Volver"} />{" "}</button>
 
                 {isLoading ? (
                     <div className="rounded-2xl border border-border bg-card/40 py-16 text-center">
                         <Loader2 className="w-10 h-10 mx-auto mb-3 animate-spin text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">Cargando publicación...</p>
+                        <p className="text-sm text-muted-foreground">{""}<FinixUiText text={"Cargando publicación..."} />{""}</p>
                     </div>
                 ) : post ? (
                     <PostCard
@@ -67,7 +67,7 @@ export default function PostDetailPage() {
                 ) : (
                     <div className="rounded-2xl border border-border bg-card/40 py-16 text-center">
                         <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                        <p className="text-sm text-muted-foreground">No se encontró la publicación</p>
+                        <p className="text-sm text-muted-foreground">{""}<FinixUiText text={"No se encontró la publicación"} />{""}</p>
                     </div>
                 )}
             </div>
