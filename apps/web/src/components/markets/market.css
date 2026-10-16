@@ -10,7 +10,7 @@
     --pm-negative: #fb7185;
     --pm-amber: #fbbf24;
     --pm-blue: #60a5fa;
-    font-family: Inter, sans-serif;
+    font-family: var(--finix-font-family);
     font-size: 16.5px;
     letter-spacing: 0;
 }

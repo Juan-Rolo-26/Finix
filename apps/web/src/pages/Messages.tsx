@@ -1,3 +1,4 @@
+import { resolveTradingViewSymbol } from '@/lib/tradingViewSymbols';
 import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -411,7 +412,7 @@ function SharedPostCard({
                         <img
                             src={resolveMediaUrl(firstMedia.url)}
                             alt={finixUi("Publicacion compartida")}
-                            className="w-full max-h-80 object-cover"
+                            className="w-full max-h-80 object-contain"
                             loading="lazy"
                         />
                     </div>
@@ -470,7 +471,7 @@ function MessageAttachmentCard({
     }
 
     if (message.attachmentType === 'chart') {
-        const symbol = typeof message.attachmentMeta?.symbol === 'string' ? message.attachmentMeta.symbol : 'ACTIVO';
+        const symbol = resolveTradingViewSymbol(typeof message.attachmentMeta?.symbol === 'string' ? message.attachmentMeta.symbol : undefined);
         const interval = typeof message.attachmentMeta?.interval === 'string' ? message.attachmentMeta.interval : 'D';
         const analysisType = typeof message.attachmentMeta?.analysisType === 'string' ? message.attachmentMeta.analysisType : '';
         const riskLevel = typeof message.attachmentMeta?.riskLevel === 'string' ? message.attachmentMeta.riskLevel : '';
@@ -487,7 +488,7 @@ function MessageAttachmentCard({
                     <img
                         src={resolveMediaUrl(message.attachmentUrl)}
                         alt={`Grafico ${symbol}`}
-                        className="w-full max-h-80 object-cover"
+                        className="w-full max-h-80 object-contain"
                         loading="lazy"
                     />
                 ) : (
@@ -1911,7 +1912,7 @@ export default function MessagesPage() {
                                                                 </div>
                                                             )}
 
-                                                            <div className={`flex flex-col max-w-[68%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                                            <div className={`flex min-w-0 flex-col max-w-[88%] sm:max-w-[78%] lg:max-w-[68%] ${isMe ? 'items-end' : 'items-start'}`}>
                                                                 {!isMe && activeConv?.isGroup && isFirstInGroup && (
                                                                     <span className="mb-1 px-1 text-[11px] font-semibold" style={{ color: textMuted }}>
                                                                         {msg.sender.username}

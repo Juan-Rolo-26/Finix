@@ -1,3 +1,4 @@
+import { resolveTradingViewSymbol } from '@/lib/tradingViewSymbols';
 import { useEffect, useRef, memo } from 'react';
 import { usePreferencesStore } from '../stores/preferencesStore';
 
@@ -67,19 +68,7 @@ function TradingViewChart({
         widgetContainer.style.display = 'block';
         containerRef.current.appendChild(widgetContainer);
 
-        const resolveSymbol = (sym: string): string => {
-            if (!sym) return 'NASDAQ:AAPL';
-            const upper = sym.trim().toUpperCase();
-            if (upper.includes(':')) return upper;
-            if (['SPY', 'VOO', 'IVV', 'DIA', 'IWM', 'VTI'].includes(upper)) return `AMEX:${upper}`;
-            if (['BTC', 'BTCUSDT'].includes(upper)) return 'BINANCE:BTCUSDT';
-            if (['ETH', 'ETHUSDT'].includes(upper)) return 'BINANCE:ETHUSDT';
-            if (['SOL', 'SOLUSDT'].includes(upper)) return 'BINANCE:SOLUSDT';
-            if (['BNB', 'XRP', 'ADA', 'DOGE', 'AVAX'].includes(upper)) return `BINANCE:${upper}USDT`;
-            return `NASDAQ:${upper}`;
-        };
-
-        const cleanSymbol = resolveSymbol(symbol);
+        const cleanSymbol = resolveTradingViewSymbol(symbol);
 
         // Load TradingView script if not already loaded
         const loadWidget = () => {

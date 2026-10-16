@@ -121,12 +121,16 @@ export interface DividendEventItem {
 
 export interface HomeCalendarEventCard {
     id: string;
-    type: 'EARNINGS' | 'ECONOMIC';
+    type: 'EARNINGS' | 'DIVIDEND' | 'ECONOMIC';
     country?: string; // US, AR
     ticker?: string; // For earnings
     title: string;
     subtitle?: string; // e.g. "Presenta resultados" or "Índice de Precios al Consumidor"
     date: string; // YYYY-MM-DD
+    amount?: number;
+    exDate?: string;
+    paymentDate?: string;
+    dateKind?: 'EX_DATE' | 'PAYMENT_DATE';
     time?: string; // HH:mm
     dayLabel: string; // e.g. "MIÉ", "JUE", "VIE"
     timingLabel?: string; // "Después del cierre", "Antes de la apertura"

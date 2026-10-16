@@ -23,6 +23,7 @@
 
     /* ─── DARK MODE (default) ─── */
     :root {
+        --finix-font-family: Inter, system-ui, sans-serif;
         font-size: 16px;
 
         /* ── Core palette ── */
@@ -303,14 +304,14 @@ label,
 table,
 th,
 td {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: var(--finix-font-family) !important;
 }
 
 code,
 pre,
 kbd,
 samp {
-    font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-family: var(--finix-font-family) !important;
 }
 
 body {
@@ -1584,7 +1585,7 @@ body {
 /* ─── Desktop-only tooltip override ─── */
 @media (min-width: 1024px) {
     [data-radix-tooltip-content] {
-        font-family: Inter, system-ui, sans-serif;
+        font-family: var(--finix-font-family);
         font-size: 12px;
         line-height: 1.45;
         padding: 5px 9px;
@@ -1612,3 +1613,12 @@ button, [role='tab'], [role='switch'] {
   min-width: 44px;
   min-height: 44px;
 }
+
+/* Finix owns one font across routes, portals, SVG labels and controls. */
+html, body, body *:not(.emoji-glyph):not(.emoji-glyph *), input::placeholder, textarea::placeholder {
+    font-family: var(--finix-font-family) !important;
+}
+.emoji-glyph { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif !important; }
+@keyframes finix-calendar-event-in { from { opacity: .35; } to { opacity: 1; } }
+.calendar-preview-event > div:last-child { animation: finix-calendar-event-in 220ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .calendar-preview-event > div:last-child { animation: none; } }

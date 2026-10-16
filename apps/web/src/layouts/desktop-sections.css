@@ -455,11 +455,11 @@
        RECHARTS / CHART CONSISTENCY
     ───────────────────────────────────────────────────────────────────── */
     .finix-desktop-shell .recharts-text {
-        font-family: Inter, system-ui, sans-serif !important;
+        font-family: var(--finix-font-family) !important;
         font-size: var(--desktop-meta) !important;
     }
     .finix-desktop-shell .recharts-default-tooltip {
-        font-family: Inter, system-ui, sans-serif !important;
+        font-family: var(--finix-font-family) !important;
         font-size: var(--desktop-meta) !important;
         border-radius: var(--desktop-card-radius) !important;
         border-color: hsl(var(--border)) !important;

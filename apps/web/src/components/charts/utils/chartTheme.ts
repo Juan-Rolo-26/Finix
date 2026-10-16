@@ -64,7 +64,7 @@ export const BENCHMARK_CONFIG: Record<BenchmarkKey, { label: string; color: stri
 // ─── Typography ───────────────────────────────────────────────────────────────
 
 export const CHART_FONT = {
-  family: '"Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif',
+  family: 'Inter, system-ui, sans-serif',
   sizeSm: 11,
   sizeMd: 12,
   sizeLg: 13,

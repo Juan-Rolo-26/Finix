@@ -1,3 +1,4 @@
+import { resolveTradingViewSymbol } from '@/lib/tradingViewSymbols';
 import { memo } from 'react';
 import TradingViewChart from './TradingViewChart';
 import { usePreferencesStore } from '../stores/preferencesStore';
@@ -14,54 +15,6 @@ interface TradingViewWidgetProps {
 /**
  * Normaliza tickers para que TradingView los cargue con su exchange canónico
  */
-function resolveSymbol(rawSymbol?: string): string {
-    if (!rawSymbol) return 'NASDAQ:AAPL';
-    const clean = rawSymbol.trim().toUpperCase().replace('$', '');
-
-    if (clean.includes(':')) return clean;
-
-    const cryptoMap: Record<string, string> = {
-        BTC: 'BINANCE:BTCUSDT',
-        BTCUSDT: 'BINANCE:BTCUSDT',
-        ETH: 'BINANCE:ETHUSDT',
-        ETHUSDT: 'BINANCE:ETHUSDT',
-        SOL: 'BINANCE:SOLUSDT',
-        SOLUSDT: 'BINANCE:SOLUSDT',
-        BNB: 'BINANCE:BNBUSDT',
-        XRP: 'BINANCE:XRPUSDT',
-        ADA: 'BINANCE:ADAUSDT',
-        DOGE: 'BINANCE:DOGEUSDT',
-    };
-    if (cryptoMap[clean]) return cryptoMap[clean];
-
-    const etfMap: Record<string, string> = {
-        SPY: 'AMEX:SPY',
-        QQQ: 'NASDAQ:QQQ',
-        DIA: 'AMEX:DIA',
-        IWM: 'AMEX:IWM',
-        VOO: 'AMEX:VOO',
-        IVV: 'AMEX:IVV',
-        VTI: 'AMEX:VTI',
-    };
-    if (etfMap[clean]) return etfMap[clean];
-
-    const argMap: Record<string, string> = {
-        GGAL: 'NASDAQ:GGAL',
-        YPF: 'NYSE:YPF',
-        YPFD: 'BCBA:YPFD',
-        BMA: 'NYSE:BMA',
-        PAMP: 'NYSE:PAM',
-        ALUA: 'BCBA:ALUA',
-        TXAR: 'BCBA:TXAR',
-        MELI: 'NASDAQ:MELI',
-    };
-    if (argMap[clean]) return argMap[clean];
-
-    const nyse = new Set(['KO', 'DIS', 'JNJ', 'JPM', 'V', 'MA', 'WMT', 'PG', 'HD', 'CVX', 'XOM', 'BAC', 'NKE', 'MCD', 'IBM']);
-    if (nyse.has(clean)) return `NYSE:${clean}`;
-
-    return `NASDAQ:${clean}`;
-}
 
 export function TradingViewWidget({
     symbol = 'NASDAQ:AAPL',
@@ -78,7 +31,7 @@ export function TradingViewWidget({
             : (storeTheme === 'light' ? 'light' : 'dark')
     );
 
-    const canonicalSymbol = resolveSymbol(symbol);
+    const canonicalSymbol = resolveTradingViewSymbol(symbol);
 
     return (
         <TradingViewChart

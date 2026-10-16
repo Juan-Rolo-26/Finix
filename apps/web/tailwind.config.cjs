@@ -33,9 +33,9 @@ module.exports = {
             },
             /* ── Font families ── */
             fontFamily: {
-                sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
-                heading: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-                mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+                sans: ['Inter', 'system-ui', 'sans-serif'],
+                heading: ['Inter', 'system-ui', 'sans-serif'],
+                mono: ['Inter', 'system-ui', 'sans-serif'],
             },
             /* ── Design tokens → Tailwind utilities ── */
             colors: {

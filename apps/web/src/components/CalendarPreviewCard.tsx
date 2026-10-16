@@ -1,201 +1,101 @@
-import { UiText as FinixUiText } from '@/i18n/UiText';
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, ChevronRight, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Calendar, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { formatFinancialAmount, hasEarningsData, normalizeEarnings, formatEconomicEventTitle } from '@finix/shared';
-import { AssetLogoImg } from '@/components/TopGainersCard';
+import { useTranslation } from '@/i18n';
+import { usePreferencesStore } from '@/stores/preferencesStore';
 
+type EventType = 'EARNINGS' | 'DIVIDEND' | 'ECONOMIC';
 interface CalendarHomeItem {
-    id: string;
-    type: 'EARNINGS' | 'ECONOMIC';
-    country?: string; // US, AR
-    ticker?: string;
-    title: string;
-    subtitle?: string;
-    date: string;
-    time?: string;
-    dayLabel: string;
-    timingLabel?: string;
-    importance: 'HIGH' | 'MEDIUM' | 'LOW';
-    impactScore: number;
-    logoUrl?: string;
-    epsEstimate?: number;
-    revenueEstimate?: number;
-    actualEps?: number;
-    actualRevenue?: number;
-    previousValue?: string;
-    consensusValue?: string;
-    dateStatus?: 'CONFIRMED' | 'ESTIMATED';
+    id: string; type: EventType; title: string; date: string; country?: string; ticker?: string;
+    time?: string; timingLabel?: string; importance?: string; impactScore?: number;
+    actualEps?: number; epsEstimate?: number; actualRevenue?: number; revenueEstimate?: number;
+    dateStatus?: string; previousValue?: string; consensusValue?: string; actualValue?: string;
+    amount?: number; exDate?: string; paymentDate?: string; dateKind?: 'EX_DATE' | 'PAYMENT_DATE';
 }
+const TYPES: EventType[] = ['EARNINGS', 'DIVIDEND', 'ECONOMIC'];
 
 export function CalendarPreviewCard() {
-    const navigate = useNavigate();
+    const { ui } = useTranslation();
+    const language = usePreferencesStore(state => state.language);
     const [events, setEvents] = useState<CalendarHomeItem[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [isError, setIsError] = useState<boolean>(false);
-
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [page, setPage] = useState(0);
+    const [paused, setPaused] = useState(false);
     useEffect(() => {
-        let isMounted = true;
-        apiFetch('/calendar/home')
-            .then(res => {
-                if (!res.ok) throw new Error('Error fetching calendar preview');
-                return res.json();
-            })
-            .then(data => {
-                if (isMounted) {
-                    setEvents(Array.isArray(data?.events) ? data.events.map((event: CalendarHomeItem) => event.type === 'EARNINGS' ? normalizeEarnings(event) : event).filter((event: CalendarHomeItem) => event.type !== 'EARNINGS' || hasEarningsData(event)) : []);
-                    setIsLoading(false);
-                }
-            })
-            .catch(() => {
-                if (isMounted) {
-                    setIsError(true);
-                    setIsLoading(false);
-                }
-            });
-        return () => { isMounted = false; };
+        const controller = new AbortController();
+        apiFetch('/calendar/home', { signal: controller.signal }).then(async response => {
+            if (!response.ok) throw new Error('calendar');
+            const data = await response.json();
+            if (!controller.signal.aborted) setEvents((Array.isArray(data.events) ? data.events : [])
+                .map((event: CalendarHomeItem) => event.type === 'EARNINGS' ? normalizeEarnings(event) : event)
+                .filter((event: CalendarHomeItem) => TYPES.includes(event.type) && /^\d{4}-\d{2}-\d{2}$/.test(event.date) && (event.type !== 'EARNINGS' || hasEarningsData(event))));
+        }).catch(() => { if (!controller.signal.aborted) setError(true); })
+            .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        return () => controller.abort();
     }, []);
-
+    const groups = useMemo(() => TYPES.map(type => events.filter(event => event.type === type)), [events]);
+    const canRotate = groups.some(group => group.length > 1);
+    const maxPages = Math.max(1, ...groups.map(group => group.length));
+    useEffect(() => {
+        if (!canRotate || paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const timer = window.setInterval(() => { if (!document.hidden) setPage(p => (p + 1) % maxPages); }, 30_000);
+        return () => window.clearInterval(timer);
+    }, [canRotate, paused, maxPages]);
+    const date = (value: string, options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short' }) => {
+        const parsed = new Date(value + 'T12:00:00');
+        return Number.isNaN(parsed.getTime()) ? ui('Fecha pendiente') : parsed.toLocaleDateString(language, options);
+    };
+    const labels = { EARNINGS: ui('Balance'), DIVIDEND: ui('Dividendo'), ECONOMIC: ui('Dato económico') };
+    const colors = { EARNINGS: 'text-amber-700 dark:text-amber-400 bg-amber-500/10', DIVIDEND: 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/10', ECONOMIC: 'text-violet-700 dark:text-violet-400 bg-violet-500/10' };
+    const empty = { EARNINGS: ui('Sin balances confirmados esta semana'), DIVIDEND: ui('Sin dividendos confirmados esta semana'), ECONOMIC: ui('Sin datos económicos confirmados esta semana') };
+    const detail = (event: CalendarHomeItem) => {
+        if (event.type === 'DIVIDEND') return [
+            event.amount != null ? new Intl.NumberFormat(language, { style: 'currency', currency: 'USD', maximumFractionDigits: 4 }).format(event.amount) + ' ' + ui('por acción') : '',
+            event.paymentDate ? `${ui('Pago')}: ${date(event.paymentDate)}` : ui('Pago pendiente'),
+        ].filter(Boolean).join(' · ');
+        if (event.type === 'EARNINGS') return [
+            event.actualEps != null ? `EPS: ${event.actualEps.toFixed(2)}` : event.epsEstimate != null ? `EPS ${ui('est.')}: ${event.epsEstimate.toFixed(2)}` : '',
+            event.actualRevenue != null ? `${ui('Ingresos')}: ${formatFinancialAmount(event.actualRevenue)}` : event.revenueEstimate != null ? `${ui('Ingresos est.')}: ${formatFinancialAmount(event.revenueEstimate)}` : '',
+        ].filter(Boolean).join(' · ');
+        return [event.actualValue != null ? `${ui('Actual')}: ${event.actualValue}` : '', event.consensusValue != null ? `${ui('Consenso')}: ${event.consensusValue}` : '', event.previousValue != null ? `${ui('Anterior')}: ${event.previousValue}` : ''].filter(Boolean).join(' · ');
+    };
     return (
-        <div
-            className="calendar-preview-card rounded-2xl border transition-all duration-300 overflow-hidden flex-1 flex flex-col min-h-0 shadow-sm"
-            style={{
-                background: 'var(--card-bg, hsl(var(--card)))',
-                borderColor: 'hsl(var(--border) / 0.6)',
-            }}
-        >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-border/40 shrink-0">
-                <div className="flex items-center gap-2.5">
-                    <div
-                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-2xs"
-                        style={{
-                            background: 'hsl(280 65% 60% / 0.15)',
-                            color: 'hsl(280 75% 65%)',
-                        }}
-                    >
-                        <Calendar className="w-4 h-4" />
-                    </div>
-                    <span className="text-[14.5px] font-bold tracking-tight text-foreground">
-                        {" "}<FinixUiText text={"Calendario"} />{" "}</span>
+        <section className="calendar-preview-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm"
+            onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocusCapture={() => setPaused(true)}
+            onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false); }} aria-label={ui('Calendario')}>
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/40 px-3 py-2">
+                <div className="flex min-w-0 items-center gap-2"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500"><Calendar className="h-4 w-4" /></span><h3 className="text-sm font-bold">{ui('Calendario')}</h3></div>
+                <div className="flex shrink-0 items-center gap-1">
+                    {canRotate && <button type="button" onClick={() => setPage(p => (p + 1) % maxPages)} aria-label={ui('Mostrar otros eventos')} title={ui('Mostrar otros eventos')} className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-primary"><RefreshCw className="h-3.5 w-3.5" /></button>}
+                    <Link to="/calendario" className="inline-flex min-h-11 items-center gap-0.5 whitespace-nowrap text-xs font-semibold text-primary">{ui('Ver todos')}<ChevronRight className="h-3.5 w-3.5" /></Link>
                 </div>
-                <button
-                    onClick={() => navigate('/calendario')}
-                    className="text-[12px] font-bold text-muted-foreground/80 hover:text-primary transition-colors flex items-center gap-0.5 group"
-                >
-                    <span>{""}<FinixUiText text={"Ver todos"} />{""}</span>
-                    <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                </button>
             </div>
-
-            {/* Content */}
-            <div className="p-2.5 flex-1 flex flex-col justify-between min-h-0">
-                {isLoading ? (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted-foreground py-6">
-                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                        <span className="text-[12px] font-medium">{""}<FinixUiText text={"Cargando eventos..."} />{""}</span>
-                    </div>
-                ) : isError || events.length === 0 ? (
-                    <div className="flex-1 flex items-center justify-center py-6 text-center text-muted-foreground">
-                        <p className="text-[13px] font-medium">{""}<FinixUiText text={"No hay eventos destacados para esta semana"} />{""}</p>
-                    </div>
-                ) : (
-                    <div className="flex-1 flex flex-col justify-between min-h-0 gap-2">
-                        {events.slice(0, 3).map((evt) => {
-                            const isEarnings = evt.type === 'EARNINGS';
-                            const flag = evt.country === 'AR' ? '🇦🇷' : '🇺🇸';
-                            const isHighImpact = evt.importance === 'HIGH' || evt.impactScore >= 80;
-
-                            return (
-                                <Link
-                                    key={evt.id}
-                                    to="/calendario"
-                                    className="flex-1 flex items-center gap-3 p-2.5 rounded-xl border border-border/40 bg-secondary/20 hover:bg-secondary/50 transition-all cursor-pointer group"
-                                >
-                                    {/* Left Time/Day Box */}
-                                    <div className="flex flex-col items-center justify-center min-w-[50px] py-1.5 px-2 rounded-xl bg-background/90 border border-border/40 text-center flex-shrink-0 shadow-2xs">
-                                        <span className="text-[11px] font-extrabold tracking-wider text-muted-foreground">
-                                            {evt.dayLabel}
-                                        </span>
-                                        <span className="text-[13px] font-black text-foreground">
-                                            {evt.time || (evt.timingLabel === 'Después del cierre' ? 'Cierre' : evt.timingLabel === 'Antes de la apertura' ? 'Apertura' : evt.timingLabel === 'Durante la rueda' ? 'Rueda' : 'Pendiente')}
-                                        </span>
-                                    </div>
-
-                                    {/* Main Info */}
-                                    <div className="flex-1 min-w-0">
-                                        {/* Category / Badge header */}
-                                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                                            {isEarnings ? (
-                                                <>
-                                                    <span className="text-[10px] font-black tracking-wider uppercase text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/25">
-                                                        {" "}<FinixUiText text={"📊 RESULTADOS"} />{" "}</span>
-                                                    {evt.dateStatus === 'ESTIMATED' && (
-                                                        <span className="text-[9.5px] font-semibold text-muted-foreground bg-secondary px-1.5 rounded">
-                                                            {" "}<FinixUiText text={"Fecha estimada"} />{" "}</span>
-                                                    )}
-                                                </>
-                                            ) : (
-                                                <span
-                                                    className={`text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md border shadow-2xs ${isHighImpact
-                                                        ? 'text-rose-500 bg-rose-500/10 border-rose-500/25'
-                                                        : 'text-amber-500 bg-amber-500/10 border-amber-500/25'
-                                                        }`}
-                                                >
-                                                    {flag} {" "}<FinixUiText text={"IMPACTO"} />{" "}{evt.importance === 'HIGH' ? 'ALTO' : 'MEDIO'}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Title & Logo */}
-                                        <div className="flex items-center gap-2">
-                                            {isEarnings && evt.ticker && (
-                                                <div className="w-4 h-4 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                                    <AssetLogoImg
-                                                        ticker={evt.ticker}
-                                                        src={evt.logoUrl}
-                                                        name={evt.title}
-                                                    />
-                                                </div>
-                                            )}
-                                            <p className="text-[13.5px] font-bold text-foreground line-clamp-1 leading-snug group-hover:text-primary transition-colors">
-                                                {isEarnings ? evt.title : formatEconomicEventTitle(evt.title, evt.country)}
-                                            </p>
-                                        </div>
-
-                                        {/* Subtitle / Details */}
-                                        {isEarnings ? (
-                                            <p className="text-[11.5px] text-muted-foreground mt-0.5 truncate">
-                                                {evt.timingLabel ? `${evt.timingLabel} · ` : ''}
-                                                {[
-                                                    evt.actualEps != null ? `EPS: $${evt.actualEps.toFixed(2)}` : evt.epsEstimate != null ? `EPS est.: $${evt.epsEstimate.toFixed(2)}` : '',
-                                                    evt.actualRevenue != null ? `Facturación: ${formatFinancialAmount(evt.actualRevenue)}` : evt.revenueEstimate != null ? `Facturación est.: ${formatFinancialAmount(evt.revenueEstimate)}` : '',
-                                                ].filter(Boolean).join(' · ')}
-                                            </p>
-                                        ) : (
-                                            (evt.consensusValue || evt.previousValue) ? (
-                                                <p className="text-[11.5px] text-muted-foreground mt-0.5 leading-tight truncate">
-                                                    {evt.consensusValue && (
-                                                        <span>{""}<FinixUiText text={"Consenso:"} />{" "}<strong className="text-foreground/90">{evt.consensusValue}</strong></span>
-                                                    )}
-                                                    {evt.previousValue && <span> {" "}<FinixUiText text={"· Ant:"} />{" "}{evt.previousValue}</span>}
-                                                </p>
-                                            ) : (
-                                                evt.subtitle && (
-                                                    <p className="text-[11.5px] text-muted-foreground mt-0.5 truncate">{evt.subtitle}</p>
-                                                )
-                                            )
-                                        )}
-                                    </div>
-                                </Link>
-                            );
-                        })}
-                    </div>
-                )}
+            <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
+                {loading ? <div className="flex flex-1 items-center justify-center gap-2 py-8 text-xs text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" />{ui('Cargando eventos...')}</div>
+                    : error ? <p role="status" className="p-5 text-center text-xs text-muted-foreground">{ui('No se pudo cargar el calendario. Volvé a intentarlo.')}</p>
+                    : TYPES.map((type, index) => {
+                        const group = groups[index], event = group.length ? group[page % group.length] : null;
+                        return <Link key={type} data-event-type={type} data-event-id={event?.id || ''} to="/calendario" className="calendar-preview-event flex min-h-0 flex-1 items-center gap-2.5 rounded-xl border border-border/40 bg-secondary/20 p-2.5 transition-colors hover:bg-secondary/60">
+                            <div className="flex w-14 shrink-0 flex-col items-center rounded-lg border border-border/50 bg-background px-1 py-1.5 text-center">
+                                <span className="text-[10px] font-semibold uppercase text-muted-foreground">{event ? date(event.date, { weekday: 'short' }) : '—'}</span>
+                                <span className="whitespace-nowrap text-xs font-bold">{event ? date(event.date) : '—'}</span>
+                                {event?.time && <span className="text-[10px] text-muted-foreground">{event.time}</span>}
+                            </div>
+                            <div className="min-w-0 flex-1" key={event?.id || type}>
+                                <div className="mb-0.5 flex flex-wrap items-center gap-1"><span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${colors[type]}`}>{labels[type]}</span>
+                                    {event?.dateStatus === 'ESTIMATED' && <span className="text-[9px] text-muted-foreground">{ui('Fecha estimada')}</span>}
+                                    {event?.type === 'DIVIDEND' && <span className="text-[9px] text-muted-foreground">{ui(event.dateKind === 'PAYMENT_DATE' ? 'Fecha de pago' : 'Ex dividendo')}</span>}
+                                </div>
+                                <p className="line-clamp-2 text-xs font-semibold leading-snug text-foreground" title={event?.title}>{event ? (event.type === 'ECONOMIC' ? formatEconomicEventTitle(event.title, event.country) : [event.ticker, event.title].filter(Boolean).join(' · ')) : empty[type]}</p>
+                                {event && <p className="mt-0.5 truncate text-[10px] leading-snug text-muted-foreground" title={detail(event)}>{detail(event) || (event.timingLabel ? ui(event.timingLabel) : '')}</p>}
+                            </div>
+                        </Link>;
+                    })}
             </div>
-        </div>
+        </section>
     );
 }
-
 export default CalendarPreviewCard;

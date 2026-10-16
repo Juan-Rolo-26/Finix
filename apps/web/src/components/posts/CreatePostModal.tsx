@@ -1,3 +1,5 @@
+import SymbolSearchInput from '@/components/SymbolSearchInput';
+import { resolveTradingViewSymbol } from '@/lib/tradingViewSymbols';
 import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import AccountRequired from '@/components/auth/AccountRequired';
@@ -14,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import {
     X, BarChart2, PenSquare,
-    Upload, Loader2, Trash2, Search, ChevronDown, Camera, Check,
+    Upload, Loader2, Trash2, ChevronDown, Camera, Check,
     Move, PenTool, Maximize2, ArrowLeft
 } from 'lucide-react';
 
@@ -226,7 +228,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
 
     const applySymbol = () => {
         const sym = symbolInput.trim().toUpperCase();
-        if (sym) { setAssetSymbol(sym); }
+        if (sym) { setAssetSymbol(resolveTradingViewSymbol(sym)); }
     };
 
     const toggleStudy = (studyName: string) => {
@@ -279,7 +281,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                 if (!finalContent) finalContent = `Análisis técnico de ${assetSymbol}`;
 
                 const stateToSave = {
-                    symbol: assetSymbol,
+                    symbol: resolveTradingViewSymbol(assetSymbol),
                     timeframe: tvInterval,
                     drawings: [],
                     theme: 'dark' as const,
@@ -289,7 +291,7 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                 let chartAnalysisId: string | undefined;
                 try {
                     const analysis = await createChartAnalysis({
-                        symbol: assetSymbol,
+                        symbol: resolveTradingViewSymbol(assetSymbol),
                         timeframe: tvInterval,
                         title: finalContent.slice(0, 60),
                         chartState: stateToSave as any,
@@ -494,14 +496,8 @@ export default function CreatePostModal({ onClose, onCreated }: CreatePostModalP
                                 {/* Search and Intervals */}
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-                                        <div className="relative flex-1">
-                                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                                            <input type="text" placeholder={finixUi("Símbolo: AAPL, BTCUSDT...")} value={symbolInput}
-                                                onChange={(e) => setSymbolInput(e.target.value.toUpperCase())}
-                                                onKeyDown={(e) => e.key === 'Enter' && applySymbol()}
-                                                className="w-full h-10 pl-8 pr-3 rounded-lg border border-border/50 bg-secondary/30 text-sm font-mono uppercase outline-none focus:border-primary/50 transition-colors"
-                                            />
-                                        </div>
+                                        <SymbolSearchInput value={symbolInput} onChange={setSymbolInput} onSubmit={applySymbol}
+                                            onSelect={symbol => { const canonical = resolveTradingViewSymbol(symbol); setSymbolInput(canonical); setAssetSymbol(canonical); }} />
                                         <Button size="sm" variant="outline" onClick={applySymbol} className="h-11 px-3.5 text-xs border-border/50 hover:border-primary/40 min-h-[44px] min-w-[44px]">{""}<FinixUiText text={"Cargar"} />{""}</Button>
                                     </div>
                                     <div className="flex items-center gap-1.5 flex-wrap">

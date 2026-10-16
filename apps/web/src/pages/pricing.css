@@ -1,5 +1,5 @@
 .finix-pricing {
-    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--finix-font-family);
     position: relative;
     overflow-x: hidden;
     background: hsl(var(--background));

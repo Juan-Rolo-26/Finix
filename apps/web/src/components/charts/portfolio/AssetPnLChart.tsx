@@ -199,7 +199,7 @@ export function AssetPnLChart({
                 dataKey="displayValue"
                 position="right"
                 formatter={(v: number) => sortBy === 'returnPct' ? formatPercentage(v, 1) : formatCompactCurrency(v, currency)}
-                style={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11, fontWeight: 600, fontFamily: 'monospace' }}
+                style={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}
               />
             </Bar>
           </BarChart>

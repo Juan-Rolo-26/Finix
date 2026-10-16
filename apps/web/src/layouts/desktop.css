@@ -57,7 +57,7 @@
         --ds-ease-out: cubic-bezier(0, 0, 0.2, 1);
         --ds-ease-in: cubic-bezier(0.4, 0, 1, 1);
 
-        font-family: Inter, system-ui, sans-serif;
+        font-family: var(--finix-font-family);
         font-size: var(--dt-body);
         line-height: 1.55;
         --radius: var(--ds-radius);
@@ -73,7 +73,7 @@
 
     /* ── Global typography reset for desktop content ── */
     .finix-desktop-shell .desktop-main :where(h1, h2, h3, h4, h5, h6, p, a, button, input, select, textarea, label, table, dl, small) {
-        font-family: Inter, system-ui, sans-serif;
+        font-family: var(--finix-font-family);
     }
 
     .finix-desktop-shell .desktop-main h1 {
@@ -317,7 +317,7 @@
         border-radius: 6px;
         background: hsl(var(--card));
         border: 1px solid hsl(var(--primary) / 0.28);
-        font-family: Inter, system-ui, sans-serif;
+        font-family: var(--finix-font-family);
     }
 
     /* Plans button */
@@ -476,7 +476,7 @@
         color: hsl(var(--popover-foreground));
         background: hsl(var(--popover));
         box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.22), 0 0 0 1px hsl(var(--border) / 0.5);
-        font-family: Inter, system-ui, sans-serif;
+        font-family: var(--finix-font-family);
         z-index: 70;
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
@@ -732,7 +732,7 @@
         padding: 6px;
         border-radius: 14px;
         z-index: 70;
-        font-family: Inter, system-ui, sans-serif;
+        font-family: var(--finix-font-family);
         border: 1px solid hsl(var(--border) / 0.85);
         box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.22), 0 0 0 1px hsl(var(--primary) / 0.1);
         background: hsl(var(--popover));
@@ -1629,7 +1629,7 @@
     }
 
     .finix-desktop-shell .recharts-text {
-        font-family: Inter, system-ui, sans-serif !important;
+        font-family: var(--finix-font-family) !important;
         font-size: var(--dt-caption);
     }
 
@@ -1703,7 +1703,7 @@
     }
 
     .finix-desktop-shell .desktop-portfolio-page .recharts-default-tooltip {
-        font-family: Inter, system-ui, sans-serif !important;
+        font-family: var(--finix-font-family) !important;
     }
 
     /* ───────────────────────────────────────────────────────────────────────

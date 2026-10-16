@@ -16,7 +16,7 @@
         padding: 80px var(--desktop-gutter) 48px;
     }
     .finix-desktop-shell .info-page :is(h1, h2, h3, h4, .font-heading) {
-        font-family: Inter, system-ui, sans-serif;
+        font-family: var(--finix-font-family);
     }
     /* info-page__tabs is now a card grid — reset old pill-container overrides */
     .finix-desktop-shell .info-page__tabs {

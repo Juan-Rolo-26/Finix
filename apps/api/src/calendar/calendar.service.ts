@@ -33,14 +33,8 @@ export class CalendarService {
         return (this.prisma as any).calendarSource;
     }
 
-    /**
-     * Devuelve los 3 eventos destacados para la tarjeta de Inicio:
-     * 1. Un resultado empresarial importante (earningsImpactScore >= 65)
-     * 2. Un evento económico importante de Estados Unidos
-     * 3. Un evento económico importante de Argentina
-     *
-     * Si no existe un evento en alguna categoría, se oculta esa categoría (sin inventar datos).
-     */
+    /** Real candidates for the home preview: earnings, dividends and economic releases.
+     * Missing categories stay empty; the UI never substitutes fabricated events. */
     private readonly homeCache = new TtlCache<HomeCalendarResponse>(2);
     async getHomeEvents(): Promise<HomeCalendarResponse> {
         const { mondayStr, fridayStr } = this.getCurrentWeekBounds();
@@ -51,7 +45,7 @@ export class CalendarService {
         const { mondayStr, fridayStr } = this.getCurrentWeekBounds();
 
         // Check if we have events in DB for the week
-        let [economicEvents, earningsEvents, liveEconomic, liveEarnings] = await Promise.all([
+        let [economicEvents, earningsEvents, liveEconomic, liveEarnings, storedDividends, liveDividends] = await Promise.all([
             this.prisma.marketCalendarEvent.findMany({
                 where: {
                     date: { gte: mondayStr, lte: fridayStr },
@@ -74,6 +68,10 @@ export class CalendarService {
             }),
             this.providerService.getUpcomingEconomicEvents(mondayStr, fridayStr),
             this.providerService.fetchTradingViewSP500Earnings({ from: mondayStr, to: fridayStr }),
+            this.prisma.marketDividendEvent?.findMany({ where: { isPublished: true, OR: [
+                { exDate: { gte: mondayStr, lte: fridayStr } }, { paymentDate: { gte: mondayStr, lte: fridayStr } },
+            ] }, orderBy: [{ exDate: 'asc' }] }).catch(() => []) ?? Promise.resolve([]),
+            this.providerService.fetchTradingViewSP500Dividends?.().catch(() => []) ?? Promise.resolve([]),
         ]);
 
         // Auto-seed or sync if database is empty for this week
@@ -106,124 +104,53 @@ export class CalendarService {
         earningsEvents = earningsEvents.map(normalizeEarnings).filter(isVisibleEarnings)
             .sort((a, b) => b.earningsImpactScore - a.earningsImpactScore || a.date.localeCompare(b.date));
         const selectedCards: HomeCalendarEventCard[] = [];
-
-        // 1. Top Earnings Candidate (threshold: earningsImpactScore >= 65)
-        const topEarnings = earningsEvents.find(e => e.earningsImpactScore >= 65);
-        if (topEarnings) {
-            const timingText = topEarnings.reportTiming === 'AMC'
-                ? 'Después del cierre'
-                : topEarnings.reportTiming === 'BMO'
-                    ? 'Antes de la apertura'
-                    : topEarnings.reportTiming === 'DMH' ? 'Durante la rueda' : 'Horario pendiente';
-
+        // Keep multiple real candidates per category so the preview can rotate.
+        for (const event of earningsEvents.slice(0, 12)) {
             selectedCards.push({
-                id: topEarnings.id,
-                type: 'EARNINGS',
-                ticker: topEarnings.ticker,
-                title: topEarnings.companyName,
-                subtitle: topEarnings.actualEps != null || topEarnings.actualRevenue != null ? 'Resultados publicados' : 'Presenta resultados',
-                date: topEarnings.date,
-                time: topEarnings.time || undefined,
-                dayLabel: this.getDayLabel(topEarnings.date),
-                timingLabel: timingText,
-                importance: topEarnings.earningsImpactScore >= 80 ? 'HIGH' : 'MEDIUM',
-                impactScore: topEarnings.earningsImpactScore,
-                logoUrl: topEarnings.logoUrl || this.earningsScoring.getTradingViewLogoUrl(topEarnings.ticker),
-                epsEstimate: topEarnings.epsEstimate ?? undefined,
-                revenueEstimate: topEarnings.revenueEstimate ?? undefined,
-                actualEps: topEarnings.actualEps ?? undefined,
-                actualRevenue: topEarnings.actualRevenue ?? undefined,
-                dateStatus: topEarnings.dateStatus as any,
+                id: event.id, type: 'EARNINGS', ticker: event.ticker, title: event.companyName,
+                date: event.date, time: event.time || undefined, dayLabel: this.getDayLabel(event.date),
+                timingLabel: event.reportTiming === 'AMC' ? 'Después del cierre' : event.reportTiming === 'BMO' ? 'Antes de la apertura' : event.reportTiming === 'DMH' ? 'Durante la rueda' : 'Horario pendiente',
+                importance: event.earningsImpactScore >= 80 ? 'HIGH' : 'MEDIUM', impactScore: event.earningsImpactScore,
+                logoUrl: event.logoUrl || this.earningsScoring.getTradingViewLogoUrl(event.ticker),
+                epsEstimate: event.epsEstimate ?? undefined, revenueEstimate: event.revenueEstimate ?? undefined,
+                actualEps: event.actualEps ?? undefined, actualRevenue: event.actualRevenue ?? undefined,
+                dateStatus: event.dateStatus as any,
             });
         }
-
-        // 2. Top US Economic Event (threshold: marketImpactScore >= 60)
-        const topUS = economicEvents.find(e => e.country === 'US' && e.marketImpactScore >= 60);
-        if (topUS) {
+        const storedDividendIds = new Map((storedDividends || []).map(event => [`${event.ticker.trim().toUpperCase()}|${event.exDate}`, event.id]));
+        const dividendKeys = new Set<string>();
+        for (const event of liveDividends || []) {
+            const exInRange = isCalendarDate(event.exDate) && event.exDate >= mondayStr && event.exDate <= fridayStr;
+            const paymentInRange = isCalendarDate(event.paymentDate) && event.paymentDate! >= mondayStr && event.paymentDate! <= fridayStr;
+            if (!event.ticker || (!exInRange && !paymentInRange)) continue;
+            const key = `${event.ticker.trim().toUpperCase()}|${event.exDate}`;
+            if (dividendKeys.has(key)) continue;
+            dividendKeys.add(key);
             selectedCards.push({
-                id: topUS.id,
-                type: 'ECONOMIC',
-                country: 'US',
-                title: formatEconomicEventTitle(topUS.title, topUS.country),
-                subtitle: 'Estados Unidos',
-                date: topUS.date,
-                time: topUS.time || undefined,
-                dayLabel: this.getDayLabel(topUS.date),
-                importance: topUS.importance as any,
-                impactScore: topUS.marketImpactScore,
-                previousValue: topUS.previousValue ?? undefined,
-                consensusValue: topUS.consensusValue ?? undefined,
-                actualValue: topUS.actualValue ?? undefined,
-                surprise: normalizeEconomicSurprise(topUS).surprise,
-                expectedMarketEffect: topUS.expectedMarketEffect ?? undefined,
-                affectedAssets: topUS.affectedAssets ? this.parseAffectedAssets(topUS.affectedAssets) : undefined,
+                id: storedDividendIds.get(key) || `dividend-${key}`, type: 'DIVIDEND', ticker: event.ticker,
+                title: event.companyName || event.ticker, date: exInRange ? event.exDate : event.paymentDate!,
+                dateKind: exInRange ? 'EX_DATE' : 'PAYMENT_DATE', dayLabel: this.getDayLabel(exInRange ? event.exDate : event.paymentDate!),
+                exDate: event.exDate, paymentDate: event.paymentDate, amount: event.amount,
+                importance: 'MEDIUM', impactScore: 50, logoUrl: event.logoUrl,
             });
+            if (dividendKeys.size >= 12) break;
         }
-
-        // 3. Top Argentina Economic Event (threshold: marketImpactScore >= 60)
-        const topAR = economicEvents.find(e => e.country === 'AR' && e.marketImpactScore >= 60);
-        if (topAR) {
+        const economicKeys = new Set<string>();
+        for (const event of economicEvents) {
+            const key = eventKey(event);
+            if (economicKeys.has(key) || !isCalendarDate(event.date)) continue;
+            economicKeys.add(key);
             selectedCards.push({
-                id: topAR.id,
-                type: 'ECONOMIC',
-                country: 'AR',
-                title: formatEconomicEventTitle(topAR.title, topAR.country),
-                subtitle: 'Argentina',
-                date: topAR.date,
-                time: topAR.time || undefined,
-                dayLabel: this.getDayLabel(topAR.date),
-                importance: topAR.importance as any,
-                impactScore: topAR.marketImpactScore,
-                previousValue: topAR.previousValue ?? undefined,
-                consensusValue: topAR.consensusValue ?? undefined,
-                actualValue: topAR.actualValue ?? undefined,
-                surprise: normalizeEconomicSurprise(topAR).surprise,
-                expectedMarketEffect: topAR.expectedMarketEffect ?? undefined,
-                affectedAssets: topAR.affectedAssets ? this.parseAffectedAssets(topAR.affectedAssets) : undefined,
+                id: event.id, type: 'ECONOMIC', country: event.country as any,
+                title: formatEconomicEventTitle(event.title, event.country), date: event.date,
+                time: event.time || undefined, dayLabel: this.getDayLabel(event.date),
+                importance: event.importance as any, impactScore: event.marketImpactScore,
+                previousValue: event.previousValue ?? undefined, consensusValue: event.consensusValue ?? undefined,
+                actualValue: event.actualValue ?? undefined,
             });
+            if (economicKeys.size >= 12) break;
         }
-
-        // Fill remaining slots up to 3 from other high-impact economic events if needed
-        const selectedEconomicTitles = new Set([topUS, topAR].filter(Boolean).map(event => event.title.trim().toLowerCase()));
-        if (selectedCards.length < 3) {
-            for (const eco of economicEvents) {
-                if (selectedCards.length >= 3) break;
-                if (!selectedCards.some(c => c.id === eco.id) && !selectedEconomicTitles.has(eco.title.trim().toLowerCase())) {
-                    selectedEconomicTitles.add(eco.title.trim().toLowerCase());
-                    selectedCards.push({
-                        id: eco.id,
-                        type: 'ECONOMIC',
-                        country: eco.country as any,
-                        title: formatEconomicEventTitle(eco.title, eco.country),
-                        subtitle: eco.country === 'AR' ? 'Argentina' : 'Estados Unidos',
-                        date: eco.date,
-                        time: eco.time || undefined,
-                        dayLabel: this.getDayLabel(eco.date),
-                        importance: eco.importance as any,
-                        impactScore: eco.marketImpactScore,
-                        previousValue: eco.previousValue ?? undefined,
-                        consensusValue: eco.consensusValue ?? undefined,
-                        actualValue: eco.actualValue ?? undefined,
-                        surprise: normalizeEconomicSurprise(eco).surprise,
-                        expectedMarketEffect: eco.expectedMarketEffect ?? undefined,
-                        affectedAssets: eco.affectedAssets ? this.parseAffectedAssets(eco.affectedAssets) : undefined,
-                    });
-                }
-            }
-        }
-
-        // Orden cronológico por fecha y hora
-        selectedCards.sort((a, b) => {
-            const dateComp = a.date.localeCompare(b.date);
-            if (dateComp !== 0) return dateComp;
-            return (a.time || '12:00').localeCompare(b.time || '12:00');
-        });
-
-        return {
-            events: selectedCards.slice(0, 3),
-            weekRange: { from: mondayStr, to: fridayStr },
-            updatedAt: new Date().toISOString(),
-        };
+        return { events: selectedCards, weekRange: { from: mondayStr, to: fridayStr }, updatedAt: new Date().toISOString() };
     }
 
     /**

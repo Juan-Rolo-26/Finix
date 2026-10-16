@@ -20,7 +20,7 @@ export class CalendarController {
 
     /**
      * Endpoint liviano para la tarjeta de Inicio (Home Card)
-     * Devuelve máximo 3 eventos destacados (1 Earnings + 1 US + 1 AR).
+     * Devuelve candidatos reales para rotar 1 balance, 1 dividendo y 1 dato económico.
      */
     @Get('home')
     async getHomeCalendar() {

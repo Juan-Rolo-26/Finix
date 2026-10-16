@@ -1,12 +1,12 @@
+import SymbolSearchInput from '@/components/SymbolSearchInput';
+import { resolveTradingViewSymbol } from '@/lib/tradingViewSymbols';
 import { UiText as FinixUiText } from '@/i18n/UiText';
-import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     BarChart2,
     ChevronDown,
     Loader2,
-    Search,
     X,
 } from 'lucide-react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
@@ -22,7 +22,7 @@ const POPULAR_SYMBOLS = [
     'GOOGL',
     'META',
     'NVDA',
-    'NYSE:SPY',
+    'AMEX:SPY',
     'BINANCE:BTCUSDT',
     'BINANCE:ETHUSDT',
 ];
@@ -74,7 +74,7 @@ function EmbeddedChart({ symbol, interval, theme, onWidgetReady }: EmbeddedChart
                 container_id: containerId,
                 width: '100%',
                 height: 520,
-                symbol,
+                symbol: resolveTradingViewSymbol(symbol),
                 interval,
                 timezone: 'America/Argentina/Buenos_Aires',
                 theme,
@@ -140,7 +140,6 @@ interface ChartAttachmentModalProps {
 }
 
 export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachmentModalProps) {
-    const { ui: finixUi } = useFinixUiTranslation();
 
     const { theme: appTheme } = usePreferencesStore();
     const tvTheme: 'dark' | 'light' = appTheme === 'light' ? 'light' : 'dark';
@@ -160,7 +159,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
     const applySymbol = () => {
         const next = symbolInput.trim().toUpperCase();
         if (next) {
-            setAssetSymbol(next);
+            setAssetSymbol(resolveTradingViewSymbol(next));
         }
     };
 
@@ -194,7 +193,7 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
                 type: 'chart',
                 url: uploaded?.url,
                 meta: {
-                    symbol: assetSymbol,
+                    symbol: resolveTradingViewSymbol(assetSymbol),
                     interval,
                     title: `Grafico ${assetSymbol}`,
                     analysisType,
@@ -247,17 +246,8 @@ export default function ChartAttachmentModal({ onClose, onSelect }: ChartAttachm
 
                 <div className="p-5 space-y-5">
                     <div className="flex flex-wrap items-center gap-2">
-                        <div className="relative flex-1 min-w-0">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                            <input
-                                type="text"
-                                value={symbolInput}
-                                onChange={(event) => setSymbolInput(event.target.value.toUpperCase())}
-                                onKeyDown={(event) => event.key === 'Enter' && applySymbol()}
-                                placeholder={finixUi("Simbolo: AAPL, BTCUSDT...")}
-                                className="w-full h-11 pl-9 pr-3 rounded-2xl border border-border/40 bg-secondary/30 text-sm font-mono uppercase outline-none focus:border-primary/40 transition-colors"
-                            />
-                        </div>
+                        <SymbolSearchInput value={symbolInput} onChange={setSymbolInput} onSubmit={applySymbol}
+                            onSelect={symbol => { const canonical = resolveTradingViewSymbol(symbol); setSymbolInput(canonical); setAssetSymbol(canonical); }} />
                         <button
                             onClick={applySymbol}
                             className="h-11 px-4 rounded-2xl border border-border/40 text-sm font-semibold hover:border-primary/40 hover:text-primary transition-colors"
