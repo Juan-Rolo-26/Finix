@@ -131,6 +131,7 @@ function MoversCard({ items, period, onPeriodChange, onItemClick, negative = fal
 }
 
 export default function WatchlistDashboard({ items, onItemClick, histories, defaultSubView = 'radar' }: WatchlistDashboardProps) {
+    const { ui: finixUi } = useFinixUiTranslation();
     const [subView, setSubView] = useState<DashboardSubView>(defaultSubView);
     const [activeCategories, setActiveCategories] = useState<Set<EventCategory>>(
         new Set(['prices', 'earnings'])
@@ -190,10 +191,11 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
     return (
         <div className="watchlist-dashboard">
             {/* SUB-NAVIGATION BAR */}
-            <div className="flex items-center gap-1.5 p-1 bg-secondary/50 border border-border/70 rounded-2xl mb-6 overflow-x-auto scrollbar-none">
+            <div className="watchlist-subnav mb-6 bg-secondary/50 border border-border/70 rounded-2xl" role="group" aria-label={finixUi("Vistas de seguimiento")}>
                 <button
                     type="button"
                     onClick={() => setSubView('radar')}
+                    aria-pressed={subView === 'radar'}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
                         subView === 'radar'
                             ? 'bg-card text-foreground shadow-xs border border-border/80'
@@ -206,6 +208,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                 <button
                     type="button"
                     onClick={() => setSubView('value')}
+                    aria-pressed={subView === 'value'}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
                         subView === 'value'
                             ? 'bg-card text-foreground shadow-xs border border-border/80'
@@ -218,6 +221,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                 <button
                     type="button"
                     onClick={() => setSubView('news')}
+                    aria-pressed={subView === 'news'}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
                         subView === 'news'
                             ? 'bg-card text-foreground shadow-xs border border-border/80'
@@ -230,6 +234,7 @@ export default function WatchlistDashboard({ items, onItemClick, histories, defa
                 <button
                     type="button"
                     onClick={() => setSubView('charts')}
+                    aria-pressed={subView === 'charts'}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
                         subView === 'charts'
                             ? 'bg-card text-foreground shadow-xs border border-border/80'

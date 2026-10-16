@@ -1598,6 +1598,15 @@ body {
     0%   { background-position: -200% 0; }
     100% { background-position: 200% 0; }
 }
+/* Chat controls share a row without forcing the text field past the viewport. */
+.messages-composer-tools > * { flex-shrink: 0; }
+@media (max-width: 1023px) {
+    .messages-page {
+        flex: none;
+        height: calc(100dvh - var(--finix-mobile-nav-height, calc(60px + env(safe-area-inset-bottom))));
+    }
+}
+
 /* Shared touch targets. Component layouts must wrap controls rather than shrink them. */
 button, [role='tab'], [role='switch'] {
   min-width: 44px;

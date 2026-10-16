@@ -1453,7 +1453,7 @@ export default function MessagesPage() {
                 />
             )}
 
-            <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="messages-page flex min-h-0 min-w-0 w-full flex-col flex-1 overflow-hidden">
                 <input
                     ref={imageInputRef}
                     type="file"
@@ -1462,7 +1462,7 @@ export default function MessagesPage() {
                     onChange={handleImageAttachmentChange}
                 />
 
-                <div className="relative flex flex-1 h-full overflow-hidden" style={{ background: bgPage }}>
+                <div className="relative flex min-h-0 min-w-0 w-full flex-1 h-full overflow-hidden" style={{ background: bgPage }}>
 
                     {/* ══ LEFT COLUMN – Conversation list ══════════════════════════════ */}
                     <AnimatePresence initial={false}>
@@ -2082,7 +2082,7 @@ export default function MessagesPage() {
 
                                 {/* ── Message input ── */}
                                 <div
-                                    className="flex-shrink-0 px-3 lg:px-4 py-3"
+                                    className="messages-composer min-w-0 flex-shrink-0 px-3 lg:px-4 py-3"
                                     style={{ borderTop: `1px solid ${borderColor}`, background: chatHeaderBg }}
                                 >
                                     {pendingAttachment && (
@@ -2177,7 +2177,7 @@ export default function MessagesPage() {
                                         </div>
                                     )}
 
-                                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                                    <div className="messages-composer-tools mb-2 flex items-center gap-2 overflow-x-auto">
                                         <span className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: textMuted }}>
                                             {" "}<FinixUiText text={"Enviar"} />{" "}</span>
                                         <button
@@ -2204,12 +2204,12 @@ export default function MessagesPage() {
                                         >
                                             <BarChart2 className="w-3.5 h-3.5 text-primary" />
                                             {" "}<FinixUiText text={"Grafico"} />{" "}</button>
-                                        <span className="text-xs" style={{ color: textMuted }}>
+                                        <span className="hidden sm:inline text-xs" style={{ color: textMuted }}>
                                             {" "}<FinixUiText text={"Texto desde el cuadro de abajo"} />{" "}</span>
                                     </div>
 
                                     <div
-                                        className="flex items-end gap-2 rounded-2xl px-3 py-2.5 transition-all"
+                                        className="messages-composer-input flex min-w-0 items-end gap-1 sm:gap-2 rounded-2xl px-2 sm:px-3 py-2 transition-all"
                                         style={{
                                             background: inputBg,
                                             border: `1px solid ${(inputText.trim() || pendingAttachment) ? 'hsl(158 100% 45% / 0.4)' : inputBorder}`,
@@ -2293,7 +2293,7 @@ export default function MessagesPage() {
                                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                                         exit={{ opacity: 0, y: 8, scale: 0.95 }}
                                                         transition={{ duration: 0.15 }}
-                                                        className="absolute bottom-full left-0 mb-3 w-[288px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border shadow-2xl z-20"
+                                                        className="absolute bottom-full -left-11 sm:left-0 mb-3 w-[288px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border shadow-2xl z-20"
                                                         style={{
                                                             background: isLight ? 'hsl(0 0% 100% / 0.98)' : 'hsl(0 0% 8% / 0.98)',
                                                             borderColor,
@@ -2351,9 +2351,10 @@ export default function MessagesPage() {
                                             value={inputText}
                                             onChange={(e) => handleInputChange(e.target.value)}
                                             onKeyDown={handleKeyDown}
-                                            placeholder={pendingAttachment ? 'Agrega un texto opcional...' : 'Escribi un mensaje, o comparti una foto, post o grafico...'}
+                                            aria-label={finixUi('Escribí un mensaje...')}
+                                            placeholder={pendingAttachment ? finixUi('Agrega un texto opcional...') : finixUi('Escribí un mensaje...')}
                                             rows={1}
-                                            className="flex-1 bg-transparent text-sm resize-none outline-none py-1.5 max-h-32 leading-relaxed placeholder:text-muted-foreground"
+                                            className="min-w-0 w-0 flex-1 min-h-[44px] bg-transparent text-base sm:text-sm resize-none outline-none py-2 max-h-32 leading-relaxed placeholder:text-muted-foreground"
                                             style={{
                                                 color: textPrimary,
                                                 scrollbarWidth: 'none',
@@ -2368,6 +2369,7 @@ export default function MessagesPage() {
                                         {/* Send button */}
                                         <motion.button
                                             onClick={handleSendMessage}
+                                            aria-label={finixUi("Enviar mensaje")}
                                             disabled={!canSendMessage}
                                             whileHover={canSendMessage ? { scale: 1.08 } : {}}
                                             whileTap={canSendMessage ? { scale: 0.92 } : {}}

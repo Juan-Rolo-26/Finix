@@ -125,15 +125,20 @@
         padding-inline: var(--desktop-gutter);
     }
 
+    /* Profile banners and chats use the available viewport width. */
+    .finix-desktop-shell .desktop-page-frame[data-page='profile'] > :first-child {
+        padding: 0 0 32px;
+    }
+
     /* Messages (chat) layout */
     .finix-desktop-shell .desktop-page-frame[data-layout='chat'] > .flex {
-        width: calc(100% - 2 * var(--desktop-gutter));
-        margin: 20px var(--desktop-gutter);
-        height: calc(100dvh - 160px);
+        width: 100%;
+        margin: 0;
+        height: calc(100dvh - 56px);
         min-height: 0;
         flex: none;
-        border: 1px solid hsl(var(--border));
-        border-radius: var(--desktop-card-radius);
+        border: 0;
+        border-radius: 0;
         background: hsl(var(--card));
     }
 

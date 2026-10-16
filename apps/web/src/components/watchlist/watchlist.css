@@ -136,7 +136,10 @@
 .watchlist-stats strong { font-size: 17px; color: hsl(var(--foreground)); font-variant-numeric: tabular-nums; }
 .watchlist-stats__positive svg, .watchlist-stats__positive strong { color: var(--watchlist-positive); }
 .watchlist-stats__negative svg, .watchlist-stats__negative strong { color: var(--watchlist-negative); }
-.watchlist-dashboard { display: flex; flex-direction: column; gap: 22px; }
+.watchlist-dashboard { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.watchlist-subnav { display: flex; align-items: center; gap: 6px; padding: 4px; width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: thin; overscroll-behavior-x: contain; }
+.watchlist-subnav > button { flex: 0 0 auto; white-space: nowrap; }
+.watchlist-subnav > button > svg { flex-shrink: 0; }
 .watchlist-insights { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .watchlist-insight { min-width: 0; padding: 20px; border: 1px solid hsl(var(--border)); border-radius: 8px; background: hsl(var(--card)); display: flex; flex-direction: column; gap: 20px; }
 .watchlist-insight__header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
