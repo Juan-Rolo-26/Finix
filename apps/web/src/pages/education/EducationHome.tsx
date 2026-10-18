@@ -219,7 +219,7 @@ export default function EducationHome() {
     return (
         <div className="min-h-screen bg-emerald-50/70 text-foreground pb-20 dark:bg-background">
             {/* HERO & SEARCH BAR */}
-            <section className="relative flex min-h-[540px] w-full items-center justify-center overflow-hidden rounded-b-[2rem] border-b border-emerald-200/70 bg-gradient-to-b from-emerald-100 via-emerald-50 to-background px-4 py-14 text-foreground sm:px-8 sm:py-16 lg:min-h-[600px] lg:px-12 lg:py-20 dark:border-emerald-900/40 dark:from-emerald-950/50 dark:via-background dark:to-background">
+            <section className="relative left-1/2 flex min-h-[540px] w-screen max-w-none -translate-x-1/2 items-center justify-center overflow-hidden rounded-b-[2rem] border-b border-emerald-200/70 bg-gradient-to-b from-emerald-100 via-emerald-50 to-background px-4 py-14 text-foreground sm:px-8 sm:py-16 lg:min-h-[600px] lg:px-12 lg:py-20 dark:border-emerald-900/40 dark:from-emerald-950/50 dark:via-background dark:to-background">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_75%_at_50%_-20%,rgba(16,185,129,0.15),transparent)] dark:bg-[radial-gradient(ellipse_80%_75%_at_50%_-20%,rgba(16,185,129,0.12),transparent)]" />
                 <div className="pointer-events-none absolute -right-24 -top-40 h-96 w-96 rounded-full border border-emerald-900/5 dark:border-emerald-100/5" />
                 <div className="pointer-events-none absolute -right-10 -top-24 h-72 w-72 rounded-full border border-emerald-900/5 dark:border-emerald-100/5" />

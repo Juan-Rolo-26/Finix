@@ -227,31 +227,17 @@ function HeadlinesCard({
     headlines,
     isLoading,
     onNavigate,
+    rotationIndex,
 }: {
     headlines: HeadlineItem[];
     isLoading: boolean;
     onNavigate: (path: string) => void;
+    rotationIndex: number;
 }) {
     const { ui: finixUi } = useFinixUiTranslation();
 
-    const [page, setPage] = useState(0);
     const totalPages = Math.max(1, Math.ceil(headlines.length / HEADLINES_PAGE_SIZE));
-
-    // Auto-rotate every 30 s — loops indefinitely through pages of 3 headlines
-    useEffect(() => {
-        if (isLoading || headlines.length <= HEADLINES_PAGE_SIZE) return;
-
-        const interval = setInterval(() => {
-            setPage(p => (p + 1) % totalPages);
-        }, HEADLINES_INTERVAL_MS);
-
-        return () => clearInterval(interval);
-    }, [isLoading, headlines.length, totalPages]);
-
-    // Keep page in valid bounds when headlines count changes
-    useEffect(() => {
-        setPage(p => (p >= totalPages ? 0 : p));
-    }, [totalPages]);
+    const page = rotationIndex % totalPages;
 
     // Build visible window of 3 — wraps around the array in a continuous loop
     const currentItems = Array.from(
@@ -356,6 +342,17 @@ export default function Dashboard() {
 
     const [headlines, setHeadlines] = useState<HeadlineItem[]>([]);
     const [isHeadlinesLoading, setIsHeadlinesLoading] = useState<boolean>(true);
+    const [dashboardRotationIndex, setDashboardRotationIndex] = useState(0);
+    const [dashboardRotationPaused, setDashboardRotationPaused] = useState(false);
+
+    // Advance calendar items and headline pages on the same 30-second beat.
+    useEffect(() => {
+        if (dashboardRotationPaused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const timer = window.setInterval(() => {
+            if (!document.hidden) setDashboardRotationIndex(index => index + 1);
+        }, HEADLINES_INTERVAL_MS);
+        return () => window.clearInterval(timer);
+    }, [dashboardRotationPaused]);
 
     const [activeTab, setActiveTab] = useState<FeedTab>('general');
     const owner = useAuthStore(state => state.user?.id);
@@ -492,7 +489,11 @@ export default function Dashboard() {
                     />
 
                     {/* Calendario Finix */}
-                    <CalendarPreviewCard />
+                    <CalendarPreviewCard
+                        rotationIndex={dashboardRotationIndex}
+                        onRotate={() => setDashboardRotationIndex(index => index + 1)}
+                        onRotationPauseChange={setDashboardRotationPaused}
+                    />
                 </aside>
 
                 {/* Right desktop column */}
@@ -514,6 +515,7 @@ export default function Dashboard() {
                         headlines={headlines}
                         isLoading={isHeadlinesLoading}
                         onNavigate={navigate}
+                        rotationIndex={dashboardRotationIndex}
                     />
                 </aside>
 

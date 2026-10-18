@@ -16,14 +16,16 @@ interface CalendarHomeItem {
 }
 const TYPES: EventType[] = ['EARNINGS', 'DIVIDEND', 'ECONOMIC'];
 
-export function CalendarPreviewCard() {
+export function CalendarPreviewCard({ rotationIndex, onRotate, onRotationPauseChange }: {
+    rotationIndex: number;
+    onRotate: () => void;
+    onRotationPauseChange: (paused: boolean) => void;
+}) {
     const { ui } = useTranslation();
     const language = usePreferencesStore(state => state.language);
     const [events, setEvents] = useState<CalendarHomeItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
-    const [page, setPage] = useState(0);
-    const [paused, setPaused] = useState(false);
     const loadEvents = useCallback(async (signal?: AbortSignal, showLoading = false) => {
         if (showLoading) setLoading(true);
         try {
@@ -56,11 +58,7 @@ export function CalendarPreviewCard() {
     const groups = useMemo(() => TYPES.map(type => events.filter(event => event.type === type)), [events]);
     const canRotate = groups.some(group => group.length > 1);
     const maxPages = Math.max(1, ...groups.map(group => group.length));
-    useEffect(() => {
-        if (!canRotate || paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        const timer = window.setInterval(() => { if (!document.hidden) setPage(p => (p + 1) % maxPages); }, 30_000);
-        return () => window.clearInterval(timer);
-    }, [canRotate, paused, maxPages]);
+    const page = rotationIndex % maxPages;
     const date = (value: string, options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short' }) => {
         const parsed = new Date(value + 'T12:00:00');
         return Number.isNaN(parsed.getTime()) ? ui('Fecha pendiente') : parsed.toLocaleDateString(language, options);
@@ -81,12 +79,12 @@ export function CalendarPreviewCard() {
     };
     return (
         <section className="calendar-preview-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm"
-            onFocusCapture={() => setPaused(true)}
-            onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false); }} aria-label={ui('Calendario')}>
+            onFocusCapture={() => onRotationPauseChange(true)}
+            onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onRotationPauseChange(false); }} aria-label={ui('Calendario')}>
             <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/40 px-3 py-2">
                 <div className="flex min-w-0 items-center gap-2"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500"><Calendar className="h-4 w-4" /></span><h3 className="text-sm font-bold">{ui('Calendario')}</h3></div>
                 <div className="flex shrink-0 items-center gap-1">
-                    {canRotate && <button type="button" onClick={() => setPage(p => (p + 1) % maxPages)} aria-label={ui('Mostrar otros eventos')} title={ui('Mostrar otros eventos')} className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-primary"><RefreshCw className="h-3.5 w-3.5" /></button>}
+                    {canRotate && <button type="button" onClick={onRotate} aria-label={ui('Mostrar otros eventos')} title={ui('Mostrar otros eventos')} className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-primary"><RefreshCw className="h-3.5 w-3.5" /></button>}
                     <Link to="/calendario" className="inline-flex min-h-11 items-center gap-0.5 whitespace-nowrap text-xs font-semibold text-primary">{ui('Ver todos')}<ChevronRight className="h-3.5 w-3.5" /></Link>
                 </div>
             </div>
