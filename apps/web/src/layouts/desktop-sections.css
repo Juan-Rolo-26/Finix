@@ -105,11 +105,9 @@
 
     /* Seguimiento uses the full viewport width; keep its internal content fluid. */
     .finix-desktop-shell .desktop-page-frame[data-page='market'] > .watchlist-page {
-        position: relative;
-        left: 50%;
         width: 100vw;
         max-width: 100vw;
-        transform: translateX(-50%);
+        margin-left: calc(50% - 50vw);
     }
 
     .finix-desktop-shell .watchlist-page .watchlist-shell {
