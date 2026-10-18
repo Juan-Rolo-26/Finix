@@ -103,6 +103,20 @@
         padding: 28px var(--desktop-gutter) 48px;
     }
 
+    /* Seguimiento uses the full viewport width; keep its internal content fluid. */
+    .finix-desktop-shell .desktop-page-frame[data-page='market'] > .watchlist-page {
+        position: relative;
+        left: 50%;
+        width: 100vw;
+        max-width: 100vw;
+        transform: translateX(-50%);
+    }
+
+    .finix-desktop-shell .watchlist-page .watchlist-shell {
+        width: 100%;
+        max-width: none;
+    }
+
     /* Market and Calendar pages: consistent gutter & matching top navbar width */
     .finix-desktop-shell .desktop-page-frame:is([data-page='mercado'], [data-page='market'], [data-page='calendario'], [data-page='calendar']) > :first-child {
         width: 100%;
