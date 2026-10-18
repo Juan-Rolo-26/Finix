@@ -200,7 +200,7 @@ export default function EducationArticlePage() {
         <div className="min-h-screen bg-background text-foreground pb-24">
             {/* TOP NAVIGATION BREADCRUMB */}
             <div className="border-b border-border/70 bg-card/40 sticky top-14 z-30 backdrop-blur-md px-4 py-3 relative overflow-hidden">
-                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 text-xs pt-0.5">
+                <div className="mx-auto flex w-full max-w-[1800px] items-center justify-between gap-4 px-2 text-sm pt-0.5">
                     <div className="flex items-center gap-1.5 overflow-hidden text-muted-foreground">
                         <Link to="/educativa" className="hover:text-primary transition-colors flex items-center gap-1 shrink-0">
                             <GraduationCap className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Educativa"} />{" "}</Link>
@@ -225,10 +225,10 @@ export default function EducationArticlePage() {
             </div>
 
             {/* MAIN 3-ZONE LAYOUT */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 lg:px-10 lg:py-10 2xl:px-14">
+                <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 xl:gap-8">
                     {/* LEFT SIDEBAR: THEMATIC CONTEXT */}
-                    <aside className="hidden lg:block lg:col-span-3 sticky top-28 space-y-6">
+                    <aside className="hidden min-w-0 space-y-6 lg:sticky lg:top-28 lg:col-span-2 lg:block">
                         <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-4">
                             <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
                                 <BookOpen className="w-4 h-4" />
@@ -247,7 +247,7 @@ export default function EducationArticlePage() {
                         </div>
 
                         {/* Category Fast Switcher */}
-                        <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-2 text-xs">
+                        <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-3 text-sm">
                             <h4 className="font-bold text-foreground mb-2">{""}<FinixUiText text={"Otras Categorías"} />{""}</h4>
                             {[
                                 { name: 'Fundamentos', slug: 'fundamentos' },
@@ -268,10 +268,10 @@ export default function EducationArticlePage() {
                     </aside>
 
                     {/* CENTRAL ZONE: ARTICLE CONTENT */}
-                    <div className="lg:col-span-6 space-y-8 min-w-0">
+                    <div className="min-w-0 space-y-8 lg:col-span-7">
                         {/* Header Details */}
                         <div className="space-y-4 border-b border-border/70 pb-6">
-                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                            <div className="flex flex-wrap items-center gap-2 text-sm">
                                 <span className={`font-bold px-2.5 py-0.5 rounded-full ${
                                     article.level === 'BEGINNER' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
                                     article.level === 'INTERMEDIATE' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
@@ -283,12 +283,12 @@ export default function EducationArticlePage() {
                                     <Clock className="w-3.5 h-3.5" /> {article.readTimeMinutes} {" "}<FinixUiText text={"min de lectura"} />{" "}</span>
                             </div>
 
-                            <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight leading-tight">
+                            <h1 className="text-3xl font-black leading-tight tracking-tight text-foreground sm:text-5xl">
                                 {article.title}
                             </h1>
 
                             {/* Executive Summary */}
-                            <div className="p-4 sm:p-5 rounded-2xl bg-primary/5 border border-primary/20 text-foreground text-sm sm:text-base leading-relaxed font-medium">
+                            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 text-base font-medium leading-relaxed text-foreground sm:p-6 sm:text-lg">
                                 {article.summary}
                             </div>
 
@@ -346,7 +346,7 @@ export default function EducationArticlePage() {
                         )}
 
                         {/* BODY CONTENT (MARKDOWN) */}
-                        <div className="prose prose-zinc dark:prose-invert max-w-none text-foreground/90 text-sm sm:text-base leading-relaxed space-y-4">
+                        <div className="prose prose-zinc max-w-none space-y-5 text-base leading-[1.8] text-foreground/90 dark:prose-invert sm:text-lg">
                             {article.content.split('\n\n').map((block: string, idx: number, blocks: string[]) => {
                                 const previousCaption = blocks[idx - 1]?.match(/^!\[([^\]]*)\]\(/)?.[1];
                                 if (previousCaption && block.trim() === previousCaption) return null;
@@ -358,7 +358,7 @@ export default function EducationArticlePage() {
                                         <Fragment key={idx}>
                                         <h3
                                             id={id}
-                                            className="text-lg sm:text-xl font-bold text-foreground mt-8 mb-3 scroll-mt-24 flex items-center justify-between group border-b border-border/40 pb-2"
+                                            className="group mt-10 mb-4 flex scroll-mt-24 items-center justify-between border-b border-border/40 pb-3 text-2xl font-bold text-foreground sm:text-3xl"
                                         >
                                             <span>{title}</span>
                                             <a
@@ -529,7 +529,7 @@ export default function EducationArticlePage() {
                     </div>
 
                     {/* RIGHT SIDEBAR: READING SUMMARY & FAST LINKS */}
-                    <aside className="hidden lg:block lg:col-span-3 sticky top-28 space-y-6">
+                    <aside className="hidden min-w-0 space-y-6 lg:sticky lg:top-28 lg:col-span-3 lg:block">
                         {/* TABLE OF CONTENTS (DESKTOP SCROLL-SPY) */}
                         {tocItems.length > 0 && (
                             <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-3">

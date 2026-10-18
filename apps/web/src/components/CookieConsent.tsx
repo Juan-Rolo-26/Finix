@@ -69,20 +69,21 @@ function CookieToggle({
                 <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{description}</p>
             </div>
             <button
+                type="button"
                 role="switch"
                 aria-checked={checked}
                 aria-label={`${label}: ${checked ? 'activado' : 'desactivado'}`}
                 disabled={disabled}
                 onClick={() => !disabled && onChange?.(!checked)}
-                className={`relative flex-shrink-0 w-10 h-5.5 rounded-full border transition-all duration-200 ${
+                className={`relative block box-border flex-shrink-0 appearance-none overflow-hidden p-0 w-10 h-[1.375rem] rounded-full border transition-all duration-200 ${
                     checked
                         ? 'bg-primary border-primary'
                         : 'bg-muted border-border'
                 } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
-                style={{ minWidth: '2.5rem', height: '1.375rem' }}
+                style={{ width: '2.5rem', minWidth: '2.5rem', height: '1.375rem', minHeight: '1.375rem', padding: 0, lineHeight: 0, aspectRatio: 'auto', borderRadius: 9999 }}
             >
                 <span
-                    className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                    className={`pointer-events-none absolute left-[3px] top-[3px] block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
                         checked ? 'translate-x-[1.125rem]' : 'translate-x-0'
                     }`}
                 />

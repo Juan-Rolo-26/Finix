@@ -270,13 +270,24 @@ export function PortfolioDashboard({
     data,
     className,
 }: PortfolioDashboardProps) {
-    const [selectedRange, setSelectedRange] = useState<TimeRange>('ALL');
+    const [selectedRange, setSelectedRange] = useState<TimeRange>('1M');
     const revision = JSON.stringify([
         assets.map(asset => [asset.ticker, asset.cantidad, asset.ppc, asset.precioActual]),
         movements.map(movement => [movement.fecha, movement.total, movement.tipoMovimiento]),
     ]);
     const { history, comparison, notice: historyNotice, loading: historyLoading } = usePortfolioHistory(portfolioId, currency, selectedRange, revision);
     const hasHistory = assets.length > 0 || movements.length > 0 || history.length > 0;
+    const monthlyReturns = metrics?.retornosMensuales ?? [];
+    const hasCurrentValuation = (metrics?.valorActual ?? 0) > 0 && (metrics?.capitalInvertido ?? 0) > 0;
+    const monthlyReturnsForChart = monthlyReturns.length || !hasCurrentValuation
+        ? monthlyReturns
+        : [{
+            monthKey: new Date().toISOString().slice(0, 7),
+            label: new Intl.DateTimeFormat('es-AR', { month: 'short' }).format(new Date()),
+            value: 0,
+            isPartial: true,
+            isBaseline: true,
+        }];
 
     const resolvedData = useMemo(() => {
         const base = resolveData({ metrics, assets, movements, data });
@@ -338,7 +349,7 @@ export function PortfolioDashboard({
             </div>
 
             <div className="space-y-6">
-                <MonthlyReturnChart returns={metrics?.retornosMensuales} />
+                <MonthlyReturnChart returns={monthlyReturnsForChart} />
                 <AllocationSummary data={Object.fromEntries(resolvedData.allocation.map(item => [item.name, item.value]))} />
             </div>
 
