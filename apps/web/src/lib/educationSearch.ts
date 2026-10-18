@@ -9,7 +9,7 @@ export interface SearchableArticle {
   subcategorySlug?: string;
 }
 
-export const normalizeEducationText = (value: string) => value.normalize('NFD')
+export const normalizeEducationText = (value: unknown) => (typeof value === 'string' ? value : '').normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
 const aliases: Record<string, string[]> = {

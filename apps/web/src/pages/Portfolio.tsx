@@ -325,10 +325,10 @@ function AssetRow({
       layout
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group flex flex-col md:grid md:grid-cols-[1.15fr_70px_95px_130px_115px_85px] items-start md:items-center gap-3 rounded-2xl border border-border/40 hover:border-border/80 bg-card/40 hover:bg-card/90 px-4 py-3.5 transition-all shadow-2xs hover:shadow-xs"
+      className="group flex flex-col xl:grid xl:grid-cols-[minmax(220px,2fr)_minmax(76px,.72fr)_minmax(105px,.95fr)_minmax(136px,1.2fr)_minmax(132px,1.2fr)_minmax(92px,.82fr)] items-start xl:items-center gap-x-5 gap-y-3 rounded-2xl border border-border/50 hover:border-emerald-500/25 bg-card/55 hover:bg-card/90 px-5 py-4 transition-colors shadow-2xs hover:shadow-sm"
     >
       {/* 1: Logo + Exchange + Name */}
-      <div className="w-full md:w-auto min-w-0 flex items-center justify-between md:justify-start">
+      <div className="w-full xl:w-auto min-w-0 flex items-center justify-between xl:justify-start">
         <AssetRowInfo
           symbol={symbol}
           subtext={`${fmtDecimal(asset.cantidad, 4)} unid. · PPC ${fmtCurrency(asset.ppc, currency)}${
@@ -339,7 +339,7 @@ function AssetRow({
           className="flex-1 min-w-0"
         />
         {/* Mobile-only value preview */}
-        <div className="flex md:hidden flex-col items-end shrink-0 pl-2">
+        <div className="flex xl:hidden flex-col items-end shrink-0 pl-2">
           <p className="text-sm font-bold tabular-nums">
             {hideValues ? "••••••" : fmtCompact(currentValue, currency)}
           </p>
@@ -361,7 +361,7 @@ function AssetRow({
       </div>
 
       {/* 2: Weight bar */}
-      <div className="hidden md:flex flex-col items-end gap-1 w-full">
+      <div className="hidden xl:flex flex-col items-end gap-1 w-full">
         <span className="text-[11px] text-muted-foreground font-semibold tabular-nums">{fmtDecimal(weight, 1)}%</span>
         <div className="w-full h-1.5 rounded-full bg-border/50 overflow-hidden">
           <div
@@ -372,7 +372,7 @@ function AssetRow({
       </div>
 
       {/* 3: Price */}
-      <div className="hidden md:block text-right w-full">
+      <div className="hidden xl:block text-right w-full">
         <p className="text-[13px] font-semibold tabular-nums text-foreground">{fmtCurrency(price, currency)}</p>
         {typeof dailyChange === 'number' ? (
           <p className={cn("text-[10px] font-semibold tabular-nums flex items-center justify-end gap-0.5", dailyChange >= 0 ? "text-emerald-500" : "text-red-500")}>
@@ -384,7 +384,7 @@ function AssetRow({
       </div>
 
       {/* 4: Precio CEDEAR (ARS) */}
-      <div className="hidden md:block text-right w-full">
+      <div className="hidden xl:block text-right w-full">
         {asset.isCedear && asset.cedearPriceArs ? (
           <div className="flex flex-col items-end">
             <div className="flex items-center justify-end gap-1">
@@ -416,7 +416,7 @@ function AssetRow({
       </div>
 
       {/* 5: Value & PnL */}
-      <div className="hidden md:block text-right w-full">
+      <div className="hidden xl:block text-right w-full">
         <p className="text-[14px] font-bold tabular-nums text-foreground">
           {hideValues ? "••••••" : fmtCompact(currentValue, currency)}
         </p>
@@ -432,20 +432,20 @@ function AssetRow({
       </div>
 
       {/* 6: Quick actions (Mobile & Desktop) */}
-      <div className="w-full md:w-auto flex items-center justify-end gap-1.5 pt-2 md:pt-0 border-t md:border-t-0 border-border/30 shrink-0">
+      <div className="w-full xl:w-auto flex items-center justify-end gap-2 pt-2 xl:pt-0 border-t xl:border-t-0 border-border/40 shrink-0">
         <button
           onClick={onBuy}
           title={`Comprar más ${asset.ticker}`}
-          className="flex-1 md:flex-none inline-flex items-center justify-center gap-1 h-7 px-2.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-all cursor-pointer"
+          className="flex-1 xl:flex-none inline-flex items-center justify-center gap-1 h-9 px-3 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-all cursor-pointer"
         >
-          <Plus className="w-3 h-3" /> <span className="md:hidden">{""}<FinixUiText text={"Comprar"} />{""}</span>
+          <Plus className="w-3 h-3" /> <span className="xl:hidden">{""}<FinixUiText text={"Comprar"} />{""}</span>
         </button>
         <button
           onClick={onSell}
           title={`Vender ${asset.ticker}`}
-          className="flex-1 md:flex-none inline-flex items-center justify-center gap-1 h-7 px-2.5 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[11px] font-bold transition-all cursor-pointer"
+          className="flex-1 xl:flex-none inline-flex items-center justify-center gap-1 h-9 px-3 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[11px] font-bold transition-all cursor-pointer"
         >
-          <Minus className="w-3 h-3" /> <span className="md:hidden">{""}<FinixUiText text={"Vender"} />{""}</span>
+          <Minus className="w-3 h-3" /> <span className="xl:hidden">{""}<FinixUiText text={"Vender"} />{""}</span>
         </button>
       </div>
     </motion.div>
@@ -1374,10 +1374,10 @@ const PortfolioPage = () => {
 
             {/* ── HOLDINGS ─────────────────────────────────────────────────────── */}
             <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
-              <CardHeader className="pb-3 flex flex-col items-center text-center space-y-3">
+              <CardHeader className="pb-4 flex flex-col items-stretch text-left space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
                   <div className="flex items-center justify-center sm:justify-start gap-3 w-full sm:w-auto">
-                    <CardTitle className="text-lg font-bold text-center">{""}<FinixUiText text={"Mis activos"} />{""}</CardTitle>
+                    <CardTitle className="text-lg font-bold text-left">{""}<FinixUiText text={"Mis activos"} />{""}</CardTitle>
                     <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5 rounded-full">
                       {displayPortfolio.assets.length} {displayPortfolio.assets.length === 1 ? 'posición' : 'posiciones'}
                     </Badge>
@@ -1431,7 +1431,7 @@ const PortfolioPage = () => {
 
                 {/* Asset Class Filter Pills */}
                 {displayPortfolio.assets.length > 0 && (
-                  <div className="flex items-center justify-center flex-wrap gap-1.5 pb-1 pt-3">
+                  <div className="flex items-center justify-start flex-wrap gap-2 pb-1 pt-2">
                     {ASSET_CLASS_FILTERS.filter(f => f.id === "all" || (assetClassCounts[f.id] ?? 0) > 0).map(f => {
                       const isSelected = assetClassFilter === f.id;
                       const count = assetClassCounts[f.id] ?? 0;
@@ -1493,7 +1493,7 @@ const PortfolioPage = () => {
                 ) : (
                   <div className="space-y-1">
                     {/* Desktop Table Header */}
-                    <div className="hidden md:grid md:grid-cols-[1.15fr_70px_95px_130px_115px_85px] items-center gap-3 px-4 py-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40 mb-1">
+                    <div className="hidden xl:grid xl:grid-cols-[minmax(220px,2fr)_minmax(76px,.72fr)_minmax(105px,.95fr)_minmax(136px,1.2fr)_minmax(132px,1.2fr)_minmax(92px,.82fr)] items-center gap-x-5 px-5 py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40 mb-1">
                       <span>{""}<FinixUiText text={"Activo"} />{""}</span>
                       <span className="text-right">{""}<FinixUiText text={"Peso"} />{""}</span>
                       <span className="text-right">{""}<FinixUiText text={"Cotización"} />{""}</span>
@@ -1519,13 +1519,13 @@ const PortfolioPage = () => {
             </Card>
 
             {/* ── ACTIVITY + DIVERSIFICATION Grid ─────────────────────────────── */}
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(330px,.85fr)]">
               {/* Activity */}
               <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
-                <CardHeader className="pb-3 flex flex-col items-center text-center">
+                <CardHeader className="pb-3 flex flex-col items-stretch text-left">
                   <div className="flex items-center justify-between flex-wrap gap-2 w-full">
-                    <CardTitle className="text-base font-bold text-center">{""}<FinixUiText text={"Actividad"} />{""}</CardTitle>
-                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                    <CardTitle className="text-base font-bold text-left">{""}<FinixUiText text={"Actividad"} />{""}</CardTitle>
+                    <div className="flex items-center justify-start gap-1.5 flex-wrap">
                       {["all", "compra", "venta"].map((f) => (
                         <button
                           key={f}
@@ -1625,8 +1625,8 @@ const PortfolioPage = () => {
                 {/* Insights */}
                 {displayPortfolio.assets.length > 0 && (
                   <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
-                    <CardHeader className="pb-3 flex flex-col items-center text-center">
-                      <CardTitle className="text-base font-bold flex items-center justify-center gap-2 text-center">
+                    <CardHeader className="pb-3 flex flex-col items-stretch text-left">
+                      <CardTitle className="text-base font-bold flex items-center justify-start gap-2 text-left">
                         <Sparkles className="w-4 h-4 text-primary" /> {" "}<FinixUiText text={"Insights"} />{" "}</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0 space-y-3">

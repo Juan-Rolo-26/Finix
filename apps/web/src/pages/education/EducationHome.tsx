@@ -36,6 +36,43 @@ interface Article {
     subcategory?: { id: string; name: string; slug: string };
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null && !Array.isArray(value);
+
+const toCategory = (value: unknown): Category | null => {
+    if (!isRecord(value) || typeof value.id !== "string" || typeof value.slug !== "string" || typeof value.name !== "string") return null;
+    return {
+        id: value.id, slug: value.slug, name: value.name,
+        description: typeof value.description === "string" ? value.description : "",
+        icon: typeof value.icon === "string" ? value.icon : "BookOpen",
+        ...(isRecord(value._count) && typeof value._count.articles === "number" ? { _count: { articles: value._count.articles } } : {}),
+    };
+};
+
+const toArticle = (value: unknown): Article | null => {
+    if (!isRecord(value) || typeof value.id !== "string" || typeof value.slug !== "string" || typeof value.title !== "string") return null;
+    const category = toCategory(value.category);
+    const subcategory = toCategory(value.subcategory);
+    const rawCover = isRecord(value.coverImage) ? value.coverImage : null;
+    const coverImage = rawCover && typeof rawCover.src === "string" && rawCover.src.trim()
+        ? { src: rawCover.src, alt: typeof rawCover.alt === "string" ? rawCover.alt : "" }
+        : undefined;
+    const level = value.level === "BEGINNER" || value.level === "INTERMEDIATE" || value.level === "ADVANCED"
+        ? value.level : "INTERMEDIATE";
+    return {
+        id: value.id, slug: value.slug, title: value.title,
+        summary: typeof value.summary === "string" ? value.summary : "",
+        level, readTimeMinutes: typeof value.readTimeMinutes === "number" && Number.isFinite(value.readTimeMinutes)
+            ? Math.max(1, Math.round(value.readTimeMinutes)) : 1,
+        formula: typeof value.formula === "string" ? value.formula : undefined,
+        interactiveWidget: typeof value.interactiveWidget === "string" ? value.interactiveWidget : undefined,
+        isFeatured: value.isFeatured === true,
+        coverImage,
+        ...(category ? { category: { id: category.id, name: category.name, slug: category.slug, icon: category.icon } } : {}),
+        ...(subcategory ? { subcategory: { id: subcategory.id, name: subcategory.name, slug: subcategory.slug } } : {}),
+    };
+};
+
 const CATEGORY_ICONS: Record<string, any> = {
     BookOpen,
     BarChart3,
@@ -75,7 +112,8 @@ export default function EducationHome() {
                     apiFetch('/education/articles?limit=200&page=1'),
                 ]);
                 if (catRes.ok && mounted) {
-                    setCategories(await catRes.json());
+                    const rawCategories: unknown = await catRes.json();
+                    setCategories(Array.isArray(rawCategories) ? rawCategories.map(toCategory).filter((item): item is Category => item !== null) : []);
                 }
 
                 // Fetch ALL articles by traversing pages until the catalog is complete
@@ -85,10 +123,15 @@ export default function EducationHome() {
                 do {
                     const artRes = page === 1 ? firstArtRes : await apiFetch(`/education/articles?limit=200&page=${page}`);
                     if (!artRes.ok) break;
-                    const data = await artRes.json();
-                    const items: Article[] = data.items || [];
+                    const data: unknown = await artRes.json();
+                    const payload: Record<string, unknown> = isRecord(data) ? data : {};
+                    const items = Array.isArray(payload.items)
+                        ? payload.items.map(toArticle).filter((item): item is Article => item !== null)
+                        : [];
                     allArticles = allArticles.concat(items);
-                    totalPages = data.pagination?.totalPages || 1;
+                    const pagination = isRecord(payload.pagination) ? payload.pagination : null;
+                    totalPages = typeof pagination?.totalPages === "number" && Number.isFinite(pagination.totalPages)
+                        ? Math.max(1, Math.floor(pagination.totalPages)) : 1;
                     page++;
                 } while (page <= totalPages);
 

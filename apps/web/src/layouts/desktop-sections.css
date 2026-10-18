@@ -103,13 +103,21 @@
         padding: 28px var(--desktop-gutter) 48px;
     }
 
-    /* Market, Portfolio, and Calendar pages: consistent gutter & matching top navbar width */
-    .finix-desktop-shell .desktop-page-frame:is([data-page='mercado'], [data-page='market'], [data-page='portfolio'], [data-page='calendario'], [data-page='calendar']) > :first-child {
+    /* Market and Calendar pages: consistent gutter & matching top navbar width */
+    .finix-desktop-shell .desktop-page-frame:is([data-page='mercado'], [data-page='market'], [data-page='calendario'], [data-page='calendar']) > :first-child {
         width: 100%;
         max-width: 1440px;
         min-width: 0;
         margin-inline: auto;
         padding: 24px clamp(20px, 2.5vw, 40px) 48px;
+    }
+
+    .finix-desktop-shell .desktop-page-frame[data-page='portfolio'] > :first-child {
+        width: 100%;
+        max-width: 1760px;
+        min-width: 0;
+        margin-inline: auto;
+        padding: 24px clamp(20px, 2.5vw, 44px) 48px;
     }
 
     .finix-desktop-shell .desktop-page-frame[data-page='mercado'] .max-w-7xl,
