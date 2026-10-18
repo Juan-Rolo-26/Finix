@@ -821,9 +821,10 @@ export class PortfolioPerformanceService {
         // Use the same historical closes and flow-adjusted returns as the
         // portfolio/benchmark curves, never today's quote for a past month.
         const performance = await this.getPerformance(portfolioId, userId, 'ALL', currency);
-        // A funded opening valuation is enough to display the current month at
-        // 0%. Missing price history still produces no usable series.
-        if (performance.insufficientData && performance.series.length !== 1) return [];
+        // Keep usable daily valuations even if another point in the requested
+        // range is missing. This lets the current month show its partial return
+        // instead of hiding it until the entire historical range is complete.
+        if (!performance.series.length) return [];
         const currentMonth = new Date().toISOString().slice(0, 7);
         const months = new Map<string, { factor: number; observations: number; hasBalance: boolean; hasOpeningCapital: boolean }>();
         const movementMonths = new Set((performance.markers ?? []).map(marker => marker.date.slice(0, 7)));

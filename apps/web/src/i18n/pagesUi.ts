@@ -783,6 +783,7 @@ export const pagesUi: Record<string, string> = {
   "El titular comparte sus rendimientos por rangos.": "The owner shares performance in ranges.",
   "Cargando el historial del portafolio…": "Loading portfolio history…",
   "El rendimiento mensual aparecerá cuando haya mediciones suficientes.": "Monthly performance will appear when sufficient measurements are available.",
+  "El rendimiento del mes aparecerá cuando haya una valuación comparable disponible.": "The month-to-date return will appear when a comparable valuation is available.",
   "Mes en curso: rendimiento acumulado hasta la última medición disponible.": "Current month: cumulative return up to the latest available measurement.",
   "Ver rendimientos por mes": "View monthly returns",
   "Mes": "Month",

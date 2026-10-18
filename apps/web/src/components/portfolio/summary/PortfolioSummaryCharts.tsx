@@ -52,7 +52,7 @@ export function MonthlyReturnChart({ returns = EMPTY_RETURNS, totalReturn, loadi
                     <p className="mt-1 text-sm text-muted-foreground">{""}<FinixUiText text={"Resultado sobre aportes netos"} />{""}</p>
                 </div>}
             </div>
-            {hidden ? <EmptyChart>{""}<FinixUiText text={"El titular comparte sus rendimientos por rangos."} />{""}</EmptyChart> : loading ? <EmptyChart>{""}<FinixUiText text={"Cargando el historial del portafolio…"} />{""}</EmptyChart> : !data.length ? <EmptyChart>{""}<FinixUiText text={"El rendimiento mensual aparecerá cuando haya mediciones suficientes."} />{""}</EmptyChart> : <>
+            {hidden ? <EmptyChart>{""}<FinixUiText text={"El titular comparte sus rendimientos por rangos."} />{""}</EmptyChart> : loading ? <EmptyChart>{""}<FinixUiText text={"Cargando el historial del portafolio…"} />{""}</EmptyChart> : !data.length ? <EmptyChart>{""}<FinixUiText text={"El rendimiento del mes aparecerá cuando haya una valuación comparable disponible."} />{""}</EmptyChart> : <>
                 <div className="rounded-2xl bg-secondary/20 px-1 pt-4 sm:px-3">
                     <div className="overflow-x-auto">
                         <div className="h-[300px] sm:h-[340px]" style={{ minWidth: Math.max(280, data.length * 66) }}>

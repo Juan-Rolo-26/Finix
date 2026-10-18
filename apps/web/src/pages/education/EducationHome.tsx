@@ -174,26 +174,28 @@ export default function EducationHome() {
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground pb-20">
+        <div className="min-h-screen bg-emerald-50/70 text-foreground pb-20 dark:bg-background">
             {/* HERO & SEARCH BAR */}
-            <section className="relative border-b border-border/80 bg-gradient-to-b from-primary/5 via-card to-background px-4 py-14 sm:py-16 lg:py-20 overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(16,185,129,0.15),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(16,185,129,0.12),rgba(0,0,0,0))] pointer-events-none" />
+            <section className="relative mx-auto max-w-[1800px] overflow-hidden rounded-b-[2rem] bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-700 px-4 py-14 text-white shadow-lg shadow-emerald-950/10 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_65%_at_50%_0%,rgba(255,255,255,0.16),transparent)]" />
+                <div className="pointer-events-none absolute -right-24 -top-40 h-96 w-96 rounded-full border border-white/10" />
+                <div className="pointer-events-none absolute -right-10 -top-24 h-72 w-72 rounded-full border border-white/10" />
 
-                <div className="max-w-6xl mx-auto text-center space-y-6 relative z-10">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-bold tracking-wider uppercase">
+                <div className="relative z-10 mx-auto max-w-7xl space-y-6 text-center">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold uppercase tracking-wider text-emerald-50 shadow-sm backdrop-blur-sm">
                         <GraduationCap className="w-4 h-4" />
                         {" "}<FinixUiText text={"Finix · Biblioteca de Consulta Financiera"} />{" "}</div>
 
-                    <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-foreground">
+                    <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl">
                         {" "}<FinixUiText text={"Biblioteca Educativa"} />{" "}</h1>
 
-                    <p className="text-base sm:text-lg lg:text-xl text-muted-foreground max-w-3xl mx-auto font-normal leading-relaxed">
+                    <p className="mx-auto max-w-4xl text-base font-normal leading-relaxed text-emerald-50/90 sm:text-lg lg:text-xl">
                         {" "}<FinixUiText text={"Consultá conceptos, fórmulas, indicadores y métricas de mercado con rigor técnico institucional. Libre acceso y sin registro requerido."} />{" "}</p>
 
-                    <Link to="/laboratorio" className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/25 bg-card px-5 py-3 text-base font-semibold text-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary">{""}<FinixUiText text={"Probá los conceptos en el Laboratorio"} />{" "}<ArrowRight className="h-4 w-4 shrink-0" /></Link>
+                    <Link to="/laboratorio" className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-white/70 bg-white px-6 py-3 text-base font-bold text-emerald-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-800">{""}<FinixUiText text={"Probá los conceptos en el Laboratorio"} />{" "}<ArrowRight className="h-4 w-4 shrink-0" /></Link>
                     {/* BUSCADOR INSTANTÁNEO */}
-                    <div className="max-w-3xl mx-auto relative pt-2">
-                        <div className="relative flex items-center shadow-md shadow-black/5 rounded-2xl bg-card border border-border/80 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary transition-all">
+                    <div className="relative mx-auto max-w-5xl pt-2">
+                        <div className="relative flex items-center rounded-2xl border border-white/70 bg-white shadow-xl shadow-emerald-950/15 transition-all focus-within:border-emerald-300 focus-within:ring-4 focus-within:ring-emerald-200/60">
                             <Search className="w-5 h-5 ml-4 text-muted-foreground shrink-0" />
                             <input
                                 type="text"
@@ -216,7 +218,7 @@ export default function EducationHome() {
 
                     {/* ACCESOS DIRECTOS POPULARES */}
                     <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-sm">
-                        <span className="text-muted-foreground font-medium mr-1">{""}<FinixUiText text={"Consultas rápidas:"} />{""}</span>
+                        <span className="mr-1 font-semibold text-emerald-50/90">{""}<FinixUiText text={"Consultas rápidas:"} />{""}</span>
                         {[
                             { label: 'PER (P/E)', term: 'PER' },
                             { label: 'RSI 14', term: 'RSI' },
@@ -237,8 +239,8 @@ export default function EducationHome() {
                                 onClick={() => handleSearchChange(item.term)}
                                 className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-all ${
                                     search.toLowerCase() === item.term.toLowerCase()
-                                        ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                                        : 'bg-card border-border/80 hover:border-primary/50 text-foreground hover:text-primary'
+                                        ? 'bg-white text-emerald-800 border-white shadow-sm'
+                                        : 'bg-white/10 border-white/20 hover:bg-white/20 text-white hover:text-white'
                                 }`}
                             >
                                 {item.label}
@@ -249,7 +251,7 @@ export default function EducationHome() {
             </section>
 
             {/* MAIN CATALOG & FILTERS */}
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 xl:px-10 py-8 space-y-8">
+            <div className="mx-auto max-w-[1800px] space-y-8 px-4 py-8 sm:px-8 xl:px-12 2xl:px-16">
                 {/* CATEGORY & LEVEL FILTER BAR */}
                 <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4 border-b border-border/80 pb-5">
                     {/* Category tabs */}
@@ -348,7 +350,7 @@ export default function EducationHome() {
                             {" "}<FinixUiText text={"Ver todos los artículos"} />{" "}</button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
                         {filteredArticles.map(art => {
                             const IconComp = CATEGORY_ICONS[art.category?.icon || 'BookOpen'] || BookOpen;
                             return (

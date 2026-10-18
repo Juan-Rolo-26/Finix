@@ -57,7 +57,7 @@ function CookieToggle({
     disabled?: boolean;
 }) {
     return (
-        <div className="flex items-start justify-between gap-4 py-3 border-b border-border/30 last:border-0">
+        <div className="flex items-start justify-between gap-4 rounded-xl border border-border/60 bg-background/75 px-4 py-4 shadow-sm">
             <div className="flex-1 min-w-0">
                 <p className="text-base font-semibold text-foreground flex items-center gap-2">
                     {label}
@@ -167,36 +167,36 @@ export default function CookieConsent() {
                         : 'bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:bottom-4 sm:max-w-sm'
                 }`}
             >
-                <div className={`relative bg-card border border-border/60 shadow-2xl rounded-2xl transition-all duration-300 max-h-[calc(100dvh-2rem)] ${showConfig ? 'w-full max-w-xl overflow-y-auto overscroll-contain' : 'w-full overflow-hidden'}`}>
+                <div className={`relative overflow-hidden rounded-3xl border border-border/60 bg-card shadow-2xl transition-all duration-300 max-h-[calc(100dvh-2rem)] ${showConfig ? 'w-full max-w-2xl overflow-y-auto overscroll-contain' : 'w-full overflow-hidden'}`}>
 
                     {/* ── Header ── */}
-                    <div className="p-5 pb-0">
+                    <div className="bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-700 p-6 text-white sm:p-8">
                         <div className="flex items-start justify-between gap-3 mb-3">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white shadow-inner">
                                     <Cookie className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <p className="font-bold text-base sm:text-lg text-foreground">{""}<FinixUiText text={"Configuración de cookies"} />{""}</p>
-                                    <p className="text-[10px] text-muted-foreground">{""}<FinixUiText text={"Finix ·"} />{" "}{new Date().getFullYear()}</p>
+                                    <p className="text-lg font-bold text-white sm:text-xl">{""}<FinixUiText text={"Configuración de cookies"} />{""}</p>
+                                    <p className="text-xs text-emerald-50/75">{""}<FinixUiText text={"Finix ·"} />{" "}{new Date().getFullYear()}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <p className="text-sm text-muted-foreground leading-relaxed mb-1">
+                        <p className="mb-1 text-base leading-relaxed text-emerald-50/90">
                             {" "}<FinixUiText text={"Usamos almacenamiento local necesario para el funcionamiento de Finix. La analítica anónima es opcional y solo se activa si la aceptás."} />{""}{' '}
-                            <Link to="/cookies" className="text-primary hover:underline" tabIndex={0}>
+                            <Link to="/cookies" className="font-semibold text-white underline decoration-white/50 underline-offset-4 hover:decoration-white" tabIndex={0}>
                                 {" "}<FinixUiText text={"Política de Cookies"} />{" "}</Link>
                         </p>
                     </div>
 
                     {/* ── Config panel (expandable) ── */}
                     {showConfig && (
-                        <div className="px-6 sm:px-7 mt-5 border-t border-border/40 pt-5">
-                            <p className="text-sm sm:text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <div className="space-y-3 px-5 pb-2 pt-5 sm:px-7">
+                            <p className="mb-3 flex items-center gap-2 text-base font-bold text-foreground sm:text-lg">
                                 <Shield className="w-3.5 h-3.5 text-primary" />
                                 {" "}<FinixUiText text={"Personalizar preferencias"} />{" "}</p>
-                            <div className="space-y-0">
+                            <div className="space-y-2">
                                 <CookieToggle
                                     label="Estrictamente necesario"
                                     description="Autenticación de sesión y funcionamiento básico de la plataforma. No puede deshabilitarse."
@@ -216,7 +216,7 @@ export default function CookieConsent() {
                                     onChange={v => setPrefs(p => ({ ...p, analytics: v }))}
                                 />
                             </div>
-                            <div className="mt-2 p-4 rounded-xl bg-muted/20 border border-border/30">
+                            <div className="mt-3 rounded-xl border border-emerald-200/70 bg-emerald-50/70 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
                                 <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                                     <strong className="text-foreground">{""}<FinixUiText text={"Nota:"} />{""}</strong> {" "}<FinixUiText text={"La analítica propia es anónima y opcional. Finix no usa cookies de publicidad ni rastreo entre sitios. TradingView puede establecer sus propias cookies según sus políticas."} />{" "}</p>
                             </div>

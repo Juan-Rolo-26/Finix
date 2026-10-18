@@ -81,7 +81,7 @@ export function CalendarPreviewCard() {
     };
     return (
         <section className="calendar-preview-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm"
-            onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocusCapture={() => setPaused(true)}
+            onFocusCapture={() => setPaused(true)}
             onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false); }} aria-label={ui('Calendario')}>
             <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/40 px-3 py-2">
                 <div className="flex min-w-0 items-center gap-2"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500"><Calendar className="h-4 w-4" /></span><h3 className="text-sm font-bold">{ui('Calendario')}</h3></div>

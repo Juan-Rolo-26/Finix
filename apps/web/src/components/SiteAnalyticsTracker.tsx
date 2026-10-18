@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useAuthStore } from '@/stores/authStore';
 
 const CONSENT_KEY = 'finix_cookie_consent';
 const VISITOR_KEY = 'finix_analytics_visitor';
 const SESSION_KEY = 'finix_analytics_session';
 const SESSION_TIMEOUT = 30 * 60 * 1000;
+const ANALYTICS_EXCLUDED_EMAILS = new Set(['finixarg@gmail.com', 'juanpablorolo2007@gmail.com']);
 
 function analyticsAllowed() {
     try {
@@ -56,6 +58,8 @@ function identity() {
 export default function SiteAnalyticsTracker() {
     const { pathname } = useLocation();
     const page = safePage(pathname);
+    const userEmail = useAuthStore(state => String(state.user?.email || '').trim().toLowerCase());
+    const excludedFromAnalytics = ANALYTICS_EXCLUDED_EMAILS.has(userEmail);
     const [consentVersion, setConsentVersion] = useState(() => analyticsAllowed() ? 1 : 0);
 
     useEffect(() => {
@@ -69,7 +73,7 @@ export default function SiteAnalyticsTracker() {
     }, []);
 
     useEffect(() => {
-        if (!analyticsAllowed()) return;
+        if (!analyticsAllowed() || excludedFromAnalytics) return;
         let alive = true;
         const ids = identity();
         let pageViewId = '';
@@ -130,7 +134,7 @@ export default function SiteAnalyticsTracker() {
             window.removeEventListener('pagehide', onPageHide);
             if (document.visibilityState === 'visible') flush(Math.min(30, Math.floor((Date.now() - lastSentAt) / 1000)));
         };
-    }, [page, consentVersion]);
+    }, [page, consentVersion, excludedFromAnalytics]);
 
     return null;
 }
